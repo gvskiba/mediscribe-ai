@@ -1,719 +1,1235 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import {
+  FileText, Activity, Beaker, Code, Brain, Pill, Plus, Settings,
+  RotateCcw, ArrowLeft
+} from "lucide-react";
 
-// ── Styles (injected once) ────────────────────────────────────────────
-(() => {
-  if (document.getElementById("cns-css")) return;
-  const s = document.createElement("style");
-  s.id = "cns-css";
-  s.textContent = `
-    .cns-wrap { position:fixed; inset:0; display:flex; flex-direction:column;
-      background:var(--npi-bg,#050f1e); font-family:'DM Sans',sans-serif; color:var(--npi-txt,#fff); }
-    .cns-wrap.embedded { position:relative; inset:auto; height:100%; }
+// NoteDetail tab components
+import NoteEditorTabs from "../components/notes/NoteEditorTabs";
+import TranscriptionModal from "../components/studio/TranscriptionModal";
+import TemplatePicker from "../components/studio/TemplatePicker";
+import AINoteSummaryPanel from "../components/studio/AINoteSummaryPanel";
+import NewPatientInput from "./NewPatientInput";
 
-    .cns-top { height:52px; flex-shrink:0; background:var(--npi-panel,#081628);
-      border-bottom:1px solid var(--npi-bd,#1a3555); display:flex; align-items:center;
-      padding:0 16px; gap:10px; z-index:10; overflow:hidden; }
-    .cns-top-badge { font-family:'JetBrains Mono',monospace; font-size:9px; flex-shrink:0;
-      background:rgba(0,229,192,.08); border:1px solid rgba(0,229,192,.3);
-      color:var(--npi-teal,#00e5c0); border-radius:20px; padding:2px 10px; letter-spacing:2px; }
-    .cns-top-patient { font-family:'Playfair Display',serif; font-size:15px; font-weight:600;
-      color:var(--npi-txt,#fff); white-space:nowrap; }
-    .cns-top-meta { font-size:11px; color:var(--npi-txt3,#a8c8e8); white-space:nowrap; }
-    .cns-top-acts { margin-left:auto; display:flex; gap:6px; align-items:center; flex-shrink:0; }
+// Studio section components (inline below)
 
-    .cns-btn { padding:5px 13px; border-radius:7px; font-size:11px; font-weight:600;
-      cursor:pointer; display:inline-flex; align-items:center; gap:5px;
-      font-family:'DM Sans',sans-serif; transition:all .15s; white-space:nowrap; border:none; }
-    .cns-btn:disabled { opacity:.45; cursor:not-allowed; }
-    .cns-btn-ghost { background:var(--npi-up,#0e2544);
-      border:1px solid var(--npi-bd,#1a3555)!important; color:var(--npi-txt2,#d0e8ff); }
-    .cns-btn-ghost:hover { border-color:var(--npi-bhi,#2a4f7a)!important; color:var(--npi-txt,#fff); }
-    .cns-btn-teal  { background:var(--npi-teal,#00e5c0); color:#050f1e; }
-    .cns-btn-teal:hover  { filter:brightness(1.12); }
-    .cns-btn-gold  { background:rgba(245,200,66,.12); color:var(--npi-gold,#f5c842);
-      border:1px solid rgba(245,200,66,.3)!important; }
-    .cns-btn-gold:hover  { background:rgba(245,200,66,.2); }
-
-    .cns-body { flex:1; display:flex; min-height:0; }
-
-    .cns-sidebar { width:240px; flex-shrink:0; background:var(--npi-panel,#081628);
-      border-right:1px solid var(--npi-bd,#1a3555); display:flex; flex-direction:column; overflow-y:auto; }
-    .cns-sidebar::-webkit-scrollbar { width:3px; }
-    .cns-sidebar::-webkit-scrollbar-thumb { background:var(--npi-bhi,#2a4f7a); border-radius:2px; }
-
-    .cns-sb-head { padding:12px 14px 8px; flex-shrink:0; border-bottom:1px solid rgba(26,53,85,.5); }
-    .cns-sb-title { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--npi-txt4,#7aa0c0);
-      letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
-    .cns-progress-bar { height:3px; background:var(--npi-up,#0e2544); border-radius:2px; overflow:hidden; }
-    .cns-progress-fill { height:100%;
-      background:linear-gradient(90deg,var(--npi-teal,#00e5c0),var(--npi-blue,#3b9eff));
-      border-radius:2px; transition:width .4s ease; }
-    .cns-progress-label { font-family:'JetBrains Mono',monospace; font-size:9px;
-      color:var(--npi-txt3,#a8c8e8); margin-top:4px; }
-
-    .cns-sb-items { padding:8px; flex:1; display:flex; flex-direction:column; gap:2px; }
-    .cns-sb-item { display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:8px;
-      cursor:pointer; transition:all .15s; border:1px solid transparent; }
-    .cns-sb-item:hover { background:var(--npi-up,#0e2544); border-color:var(--npi-bd,#1a3555); }
-    .cns-sb-item.active { background:rgba(59,158,255,.08); border-color:rgba(59,158,255,.3); }
-    .cns-sb-item-icon { font-size:14px; flex-shrink:0; }
-    .cns-sb-item-info { flex:1; min-width:0; }
-    .cns-sb-item-name { font-size:12px; font-weight:500; color:var(--npi-txt2,#d0e8ff);
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cns-sb-item.active .cns-sb-item-name { color:var(--npi-txt,#fff); font-weight:600; }
-    .cns-sb-key { font-family:'JetBrains Mono',monospace; font-size:8px;
-      color:var(--npi-txt4,#7aa0c0); background:var(--npi-up,#0e2544);
-      border:1px solid var(--npi-bd,#1a3555); border-radius:4px; padding:1px 5px; flex-shrink:0; }
-
-    .cns-sb-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-    .cns-sb-dot.empty    { background:var(--npi-txt4,#7aa0c0); opacity:.4; }
-    .cns-sb-dot.draft    { background:var(--npi-orange,#ff9f43); box-shadow:0 0 4px rgba(255,159,67,.5); }
-    .cns-sb-dot.complete { background:var(--npi-teal,#00e5c0);  box-shadow:0 0 4px rgba(0,229,192,.5); }
-    .cns-sb-dot.locked   { background:var(--npi-blue,#3b9eff);  box-shadow:0 0 4px rgba(59,158,255,.5); }
-
-    .cns-sb-legend { padding:10px 14px 14px; border-top:1px solid rgba(26,53,85,.4); flex-shrink:0; }
-    .cns-sb-legend-title { font-family:'JetBrains Mono',monospace; font-size:8px;
-      color:var(--npi-txt4,#7aa0c0); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:7px; }
-    .cns-sc-row { display:flex; align-items:center; gap:7px; margin-bottom:5px; }
-    .cns-sc-key { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--npi-txt2,#d0e8ff);
-      background:var(--npi-up,#0e2544); border:1px solid var(--npi-bd,#1a3555);
-      border-radius:4px; padding:1px 6px; flex-shrink:0; }
-    .cns-sc-desc { font-size:10px; color:var(--npi-txt3,#a8c8e8); }
-
-    .cns-note-area { flex:1; overflow-y:auto; padding:20px 24px 40px;
-      display:flex; flex-direction:column; gap:14px; }
-    .cns-note-area::-webkit-scrollbar { width:4px; }
-    .cns-note-area::-webkit-scrollbar-thumb { background:var(--npi-bhi,#2a4f7a); border-radius:2px; }
-
-    .cns-section { background:rgba(8,22,40,.78); border:1px solid rgba(26,53,85,.5);
-      border-radius:12px; overflow:hidden; transition:border-color .2s; backdrop-filter:blur(12px); }
-    .cns-section:focus-within { border-color:var(--npi-bhi,#2a4f7a); }
-    .cns-section.active-section { border-color:rgba(59,158,255,.4); box-shadow:0 0 20px rgba(59,158,255,.08); }
-
-    .cns-section-header { display:flex; align-items:center; gap:9px; padding:10px 14px;
-      background:rgba(14,37,68,.4); border-bottom:1px solid rgba(26,53,85,.4); cursor:pointer; }
-    .cns-section-icon  { font-size:15px; }
-    .cns-section-title { font-family:'DM Sans',sans-serif; font-size:12px; font-weight:700;
-      color:var(--npi-txt,#fff); flex:1; }
-    .cns-section-shortcut { font-family:'JetBrains Mono',monospace; font-size:8px;
-      color:var(--npi-txt4,#7aa0c0); background:var(--npi-up,#0e2544);
-      border:1px solid var(--npi-bd,#1a3555); border-radius:4px; padding:1px 6px; }
-    .cns-section-acts { display:flex; gap:5px; align-items:center; }
-
-    .cns-section-status { font-family:'JetBrains Mono',monospace; font-size:8px;
-      font-weight:700; padding:2px 8px; border-radius:20px; }
-    .cns-section-status.empty    { background:rgba(90,130,168,.12); color:var(--npi-txt4,#7aa0c0);
-      border:1px solid rgba(90,130,168,.2); }
-    .cns-section-status.draft    { background:rgba(255,159,67,.1);  color:var(--npi-orange,#ff9f43);
-      border:1px solid rgba(255,159,67,.3); }
-    .cns-section-status.complete { background:rgba(0,229,192,.1);   color:var(--npi-teal,#00e5c0);
-      border:1px solid rgba(0,229,192,.3); }
-    .cns-section-status.locked   { background:rgba(59,158,255,.1);  color:var(--npi-blue,#3b9eff);
-      border:1px solid rgba(59,158,255,.3); }
-
-    .cns-icon-btn { width:28px; height:28px; border-radius:6px;
-      border:1px solid var(--npi-bd,#1a3555); background:var(--npi-up,#0e2544);
-      color:var(--npi-txt3,#a8c8e8); font-size:13px; cursor:pointer;
-      display:flex; align-items:center; justify-content:center; transition:all .15s; }
-    .cns-icon-btn:hover   { border-color:var(--npi-bhi,#2a4f7a); color:var(--npi-txt2,#d0e8ff); }
-    .cns-icon-btn:disabled { opacity:.4; cursor:not-allowed; }
-    .cns-icon-btn.spin    { animation:cns-spin .8s linear infinite; }
-    @keyframes cns-spin   { to { transform:rotate(360deg); } }
-
-    .cns-ta { width:100%; padding:13px 14px; background:transparent; border:none;
-      color:var(--npi-txt,#fff); font-family:'JetBrains Mono',monospace; font-size:12px;
-      line-height:1.75; resize:none; outline:none; min-height:80px; display:block; box-sizing:border-box; }
-    .cns-ta::placeholder { color:var(--npi-txt4,#7aa0c0); font-style:italic; font-size:11px; }
-    .cns-ta:disabled { opacity:.5; cursor:default; }
-    .cns-ta.locked { background:rgba(59,158,255,.03); color:var(--npi-txt2,#d0e8ff); }
-
-    .cns-section-footer { display:flex; align-items:center; padding:5px 14px 8px; gap:10px; }
-    .cns-char-count { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--npi-txt4,#7aa0c0); }
-    .cns-mark-done { margin-left:auto; font-size:9px; font-weight:600; cursor:pointer;
-      color:var(--npi-teal,#00e5c0); font-family:'JetBrains Mono',monospace; letter-spacing:.5px;
-      text-transform:uppercase; transition:opacity .15s; }
-    .cns-mark-done:hover { opacity:.7; }
-
-    .cns-loading-bar { height:2px; flex-shrink:0;
-      background:linear-gradient(90deg,var(--npi-teal,#00e5c0),var(--npi-blue,#3b9eff),var(--npi-teal,#00e5c0));
-      background-size:200% auto; animation:cns-sweep 1.4s linear infinite; }
-    @keyframes cns-sweep { to { background-position:200% center; } }
-
-    .cns-sig { background:rgba(8,22,40,.6); border:1px solid rgba(26,53,85,.5);
-      border-radius:12px; padding:16px 18px;
-      font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--npi-txt3,#a8c8e8); }
-
-    @media print {
-      .cns-sidebar,.cns-top-acts,.cns-section-acts,.cns-section-footer,
-      .cns-btn,.cns-icon-btn,.cns-loading-bar { display:none!important; }
-      .cns-wrap  { position:static; background:white; color:black; }
-      .cns-top   { background:white; border-bottom:1px solid #ccc; }
-      .cns-section { background:white; border:1px solid #ddd; page-break-inside:avoid; }
-      .cns-ta { color:black; font-size:11px; }
-    }
-  `;
-  document.head.appendChild(s);
-})();
-
-// ── Section definitions ───────────────────────────────────────────────
-const SECTIONS = [
-  { id:"header", title:"Patient Header",             icon:"👤", key:"1" },
-  { id:"cc",     title:"Chief Complaint",             icon:"💬", key:"2" },
-  { id:"hpi",    title:"History of Present Illness",  icon:"📝", key:"3" },
-  { id:"pmh",    title:"PMH / Meds / Allergies",      icon:"💊", key:"4" },
-  { id:"ros",    title:"Review of Systems",            icon:"🔍", key:"5" },
-  { id:"vitals", title:"Vital Signs",                  icon:"📈", key:"6" },
-  { id:"pe",     title:"Physical Examination",         icon:"🩺", key:"7" },
-  { id:"mdm",    title:"Assessment & Plan",            icon:"⚖️", key:"8" },
-  { id:"dispo",  title:"Disposition",                  icon:"🚪", key:"9" },
-];
-
-const PLACEHOLDERS = {
-  header:"Patient header auto-populates from demographics.",
-  cc:"Chief complaint...",
-  hpi:"History of present illness...",
-  pmh:"Past medical history, medications, allergies...",
-  ros:"Review of systems...",
-  vitals:"Vital signs...",
-  pe:"Physical examination findings...",
-  mdm:"Impression, differential, plan...",
-  dispo:"Disposition and discharge instructions...",
+const C = {
+  navy:"#050f1e", slate:"#0b1d35", panel:"#0d2240", edge:"#162d4f",
+  border:"#1e3a5f", muted:"#2a4d72", dim:"#4a7299", text:"#c8ddf0",
+  bright:"#e8f4ff", teal:"#00d4bc", amber:"#f5a623", red:"#ff5c6c",
+  green:"#2ecc71", purple:"#9b6dff", blue:"#4a90d9", rose:"#f472b6", gold:"#f0c040",
 };
 
-// ── Structured data → note text ───────────────────────────────────────
-function assembleSection(id, d = {}) {
-  const {
-    demo = {}, cc = {}, vitals = {}, medications = [], allergies = [],
-    pmhSelected = {}, pmhExtra = "", surgHx = "", famHx = "", socHx = "",
-    rosState = {}, rosNotes = {}, rosSymptoms = {},
-    peState = {}, peFindings = {},
-    esiLevel = "", registration = {},
-  } = d;
+const STUDIO_SECTIONS = [
+  {id:"overview",icon:"🏥",name:"Overview",sub:"Patient summary",group:"ENCOUNTER"},
+  {id:"cc_hpi",icon:"📝",name:"CC & HPI",sub:"Chief complaint",group:"SUBJECTIVE"},
+  {id:"pmh",icon:"📋",name:"History",sub:"PMH / Social / Family",group:"SUBJECTIVE"},
+  {id:"meds",icon:"💊",name:"Medications",sub:"Active meds + allergies",group:"SUBJECTIVE"},
+  {id:"ros",icon:"🔍",name:"Review of Systems",sub:"Systems review",group:"SUBJECTIVE"},
+  {id:"vitals",icon:"📊",name:"Vital Signs",sub:"Current hemodynamics",group:"OBJECTIVE"},
+  {id:"pe",icon:"🩺",name:"Physical Exam",sub:"Head-to-toe",group:"OBJECTIVE"},
+  {id:"labs",icon:"🧪",name:"Lab Results",sub:"CBC, BMP, ABG...",group:"OBJECTIVE"},
+  {id:"imaging",icon:"🔬",name:"Imaging & Dx",sub:"CXR, ECG, UA...",group:"OBJECTIVE"},
+  {id:"assessment",icon:"⚕️",name:"Assessment & Plan",sub:"Diagnosis + management",group:"ASSESSMENT"},
+  {id:"disposition",icon:"🚑",name:"Disposition",sub:"Admit / discharge",group:"ASSESSMENT"},
+];
+const STUDIO_GROUPS = ["ENCOUNTER","SUBJECTIVE","OBJECTIVE","ASSESSMENT"];
 
-  const dateStr = new Date().toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
-  const timeStr = new Date().toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit" });
-  const name    = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "Unknown Patient";
-  const line    = "─".repeat(58);
+const EMPTY_PT = {
+  name:"", mrn:"", dob:"", age:"", sex:"Male", encounter:"", type:"ED Visit", provider:"",
+  allergies:[], meds:[],
+  vitals:{hr:"",sbp:"",dbp:"",temp:"",rr:"",spo2:"",gcs:"",wt:"",ht:"",bmi:""},
+  labs:[], cc:"", hpi:"", pmh:[], psh:[], social:"", family:"",
+  ros:{
+    constitutional:{pos:[],neg:["Weight loss"]},
+    cardiovascular:{pos:[],neg:["Chest pain","Palpitations","Edema"]},
+    respiratory:{pos:[],neg:["Shortness of breath","Cough","Wheezing"]},
+    gastrointestinal:{pos:[],neg:["Nausea","Vomiting","Abdominal pain","Diarrhea"]},
+    genitourinary:{pos:[],neg:["Dysuria","Frequency","Decreased UO","Hematuria"]},
+    neurological:{pos:[],neg:["Altered mentation","Focal weakness","Headache"]},
+    musculoskeletal:{pos:[],neg:["Myalgias","Joint pain"]},
+    integumentary:{pos:[],neg:["Rash"]},
+  },
+  pe:{
+    general:{f:[],n:"",abn:false},
+    heent:{f:[],n:"",abn:false},
+    cardiovascular:{f:[],n:"",abn:false},
+    pulmonary:{f:[],n:"",abn:false},
+    abdomen:{f:[],n:"",abn:false},
+    neurological:{f:[],n:"",abn:false},
+    extremities:{f:[],n:"",abn:false},
+    skin:{f:[],n:"",abn:false},
+  },
+  imaging:[], assessment:[], disposition:"", dc:"",
+};
 
-  switch (id) {
-    case "header":
-      return [
-        "EMERGENCY DEPARTMENT NOTE", line,
-        `Patient:    ${name}`,
-        (demo.age || demo.sex) && `Age / Sex:  ${[demo.age ? demo.age + "y" : "", demo.sex].filter(Boolean).join(" · ")}`,
-        demo.dob  && `DOB:        ${demo.dob}`,
-        (registration.mrn || demo.mrn) && `MRN:        ${registration.mrn || demo.mrn}`,
-        registration.room && `Room:       ${registration.room}`,
-        esiLevel  && `ESI Level:  ${esiLevel}`,
-        `Date / Time: ${dateStr}  ${timeStr}`,
-        allergies.length && `${line}\nALLERGIES:  ⚠  ${allergies.join(" · ")}`,
-      ].filter(Boolean).join("\n");
+// ── Tab Groups for the Notes Detail view ──
+const TAB_GROUPS = [
+  { id:'patient', label:'Patient', color:'blue',
+    tabs:[{id:'clinical_note',label:'Clinical Note',icon:FileText},{id:'patient_intake',label:'Subjective',icon:Activity}]},
+  { id:'examination', label:'Objective', color:'emerald',
+    tabs:[{id:'physical_exam',label:'Physical Exam',icon:Activity},{id:'labs_imaging',label:'Labs & Imaging',icon:Beaker}]},
+  { id:'assessment', label:'Assessment', color:'rose',
+    tabs:[{id:'differential',label:'Diagnoses',icon:Code},{id:'mdm',label:'MDM',icon:Brain}]},
+  { id:'plan', label:'Plan', color:'amber',
+    tabs:[{id:'treatment_plan',label:'Treatment Plan',icon:FileText},{id:'medications',label:'Medications',icon:Pill},{id:'procedures',label:'Procedures',icon:Activity}]},
+  { id:'disposition', label:'Disposition', color:'purple',
+    tabs:[{id:'disposition_plan',label:'Disposition',icon:FileText},{id:'discharge_summary',label:'Discharge Summary',icon:FileText}]},
+];
 
-    case "cc":
-      return cc.text ? `Chief Complaint:\n${cc.text}` : "";
+export default function ClinicalNoteStudio() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const urlParams = new URLSearchParams(window.location.search);
+  const noteId = urlParams.get("noteId") || urlParams.get("id");
+  const urlTab = urlParams.get("tab");
 
-    case "hpi":
-      if (cc.hpi) return cc.hpi;
-      if (!cc.text) return "";
-      return [
-        `Patient presents with ${cc.text}.`,
-        cc.onset     && `Onset ${cc.onset}.`,
-        cc.duration  && `Duration ${cc.duration}.`,
-        cc.quality   && `Quality described as ${cc.quality}.`,
-        cc.severity  && `Severity rated ${cc.severity}/10.`,
-        cc.radiation && `Radiation to ${cc.radiation}.`,
-        cc.aggravate && `Aggravated by ${cc.aggravate}.`,
-        cc.relieve   && `Relieved by ${cc.relieve}.`,
-        cc.assoc     && `Associated symptoms: ${cc.assoc}.`,
-      ].filter(Boolean).join(" ");
+  // Mode: "intake" = new patient input, "studio" = structured input, "notes" = NoteDetail tab view
+  // Default to intake when no noteId; switch to studio after note created/loaded
+  const [mode, setMode] = useState(noteId ? "studio" : "intake");
+  const [clock, setClock] = useState("");
 
-    case "pmh": {
-      const pmhList = Object.entries(pmhSelected).filter(([, v]) => v).map(([k]) => k);
-      const pmhStr  = pmhList.length
-        ? pmhList.join(", ") + (pmhExtra ? ", " + pmhExtra : "")
-        : (pmhExtra || "None documented.");
-      return [
-        "PAST MEDICAL HISTORY:", pmhStr,
-        surgHx && `\nSURGICAL HISTORY:\n${surgHx}`,
-        famHx  && `\nFAMILY HISTORY:\n${famHx}`,
-        socHx  && `\nSOCIAL HISTORY:\n${socHx}`,
-        `\nMEDICATIONS:\n${medications.length ? medications.join("\n") : "None documented."}`,
-        `\nALLERGIES:\n${allergies.length ? allergies.join(", ") : "NKDA"}`,
-      ].filter(Boolean).join("\n");
-    }
+  // Studio state
+  const [cur, setCur] = useState("overview");
+  const [analyses, setAnalyses] = useState({});
+  const [done, setDone] = useState({});
+  const [analyzing, setAnalyzing] = useState(false);
+  const [rpContent, setRpContent] = useState("default");
+  const [rpData, setRpData] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [pt, setPt] = useState({...EMPTY_PT});
+  const [dxList, setDxList] = useState([]);
+  const [completion, setCompletion] = useState(45);
+  const [savedNoteId, setSavedNoteId] = useState(noteId || null);
+  const [saving, setSaving] = useState(false);
+  const [aiPanelTab, setAiPanelTab] = useState("analysis"); // "analysis" | "summary"
 
-    case "ros": {
-      // Handles both rosState (string values) and rosSymptoms (boolean map)
-      const stateKeys = Object.keys(rosState);
-      const symptomKeys = Object.keys(rosSymptoms);
-      if (!stateKeys.length && !symptomKeys.length) return "";
+  // NoteDetail state
+  const [activeTab, setActiveTab] = useState(urlTab || "patient_intake");
+  const [tabGroups, setTabGroups] = useState(TAB_GROUPS);
+  const [customizing, setCustomizing] = useState(false);
+  const [showCreateTabDialog, setShowCreateTabDialog] = useState(false);
+  const [selectedGroupForNewTab, setSelectedGroupForNewTab] = useState(null);
+  const [newTabName, setNewTabName] = useState("");
+  const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupColor, setNewGroupColor] = useState("blue");
+  const [physicalExamNormal, setPhysicalExamNormal] = useState(false);
+  const [rosNormal, setRosNormal] = useState(false);
+  const [autosaveEnabled] = useState(true);
+  const [autoSaveStatus, setAutoSaveStatus] = useState(null);
+  const [vitalSignsAnalysis, setVitalSignsAnalysis] = useState(null);
+  const [loadingVitalAnalysis, setLoadingVitalAnalysis] = useState(false);
+  const [vitalSignsHistory, setVitalSignsHistory] = useState([]);
+  const [checkingGrammar, setCheckingGrammar] = useState(false);
+  const [grammarSuggestions, setGrammarSuggestions] = useState(null);
+  const [analyzingRawData, setAnalyzingRawData] = useState(false);
+  const [structuredPreview, setStructuredPreview] = useState(null);
+  const [showStructuredPreview, setShowStructuredPreview] = useState(false);
+  const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [showGuidelinePrompt, setShowGuidelinePrompt] = useState(false);
+  const [loadingDifferential, setLoadingDifferential] = useState(false);
+  const [differentialDiagnosis, setDifferentialDiagnosis] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [exportingFormat, setExportingFormat] = useState(null);
+  const [showTranscription, setShowTranscription] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
-      const pos = stateKeys.filter(s => rosState[s] === "positive" || rosState[s] === true);
-      const neg = stateKeys.filter(s => rosState[s] === "negative" || rosState[s] === false);
-      const symPos = symptomKeys.filter(s => rosSymptoms[s] === true);
-
-      const allPos = [...new Set([...pos, ...symPos])];
-      if (!allPos.length && !neg.length) return "";
-
-      return [
-        "REVIEW OF SYSTEMS:",
-        allPos.length && "\nPOSITIVE:",
-        ...allPos.map(s => `  (+) ${s}${rosNotes?.[s] ? " — " + rosNotes[s] : ""}`),
-        neg.length && "\nNEGATIVE (pertinent):",
-        ...neg.map(s => `  (−) ${s}`),
-      ].filter(Boolean).join("\n");
-    }
-
-    case "vitals": {
-      const entries = [
-        ["BP",     vitals.bp],
-        ["HR",     vitals.hr],
-        ["RR",     vitals.rr],
-        ["SpO₂",   vitals.spo2],
-        ["Temp",   vitals.temp],
-        ["GCS",    vitals.gcs],
-        ["Wt",     vitals.weight ? vitals.weight + " kg" : null],
-        ["O₂ del", vitals.o2del || null],
-        ["Pain",   vitals.pain  ? vitals.pain + "/10" : null],
-      ].filter(([, v]) => v);
-      if (!entries.length) return "";
-      return "VITAL SIGNS:\n" + entries.map(([k, v]) => `  ${k.padEnd(8)}: ${v}`).join("\n");
-    }
-
-    case "pe": {
-      const systems = Object.keys(peState);
-      if (!systems.length) return "";
-      return [
-        "PHYSICAL EXAMINATION:",
-        ...systems
-          .map(s => { const f = peFindings?.[s] || peState[s]; return f ? `  ${s}: ${f}` : null; })
-          .filter(Boolean),
-      ].join("\n");
-    }
-
-    case "mdm":
-      return [
-        "MEDICAL DECISION MAKING:", "",
-        "Impression:", "  1. ", "",
-        "Differential:", "  • ", "",
-        "Plan:", "  1. ", "  2. ", "  3. ", "",
-        "Risk stratification: [ ] Low   [ ] Moderate   [ ] High",
-      ].join("\n");
-
-    case "dispo":
-      return [
-        "DISPOSITION:", "",
-        "[ ] Discharge home",
-        "[ ] Admission to: ___________  Service: ___________",
-        "[ ] Observation — expected stay: ___________",
-        "[ ] Transfer to: ___________", "",
-        "Discharge instructions provided: [ ] Yes",
-        "Return precautions discussed:     [ ] Yes",
-        "Follow-up with: ___________  in ___________", "",
-        "Attending Physician: ___________   Time: ___________",
-      ].join("\n");
-
-    default:
-      return "";
-  }
-}
-
-// Lazy initializer — runs once at mount with real patientData
-function buildInitialSections(patientData) {
-  const m = {};
-  SECTIONS.forEach(s => {
-    const auto = assembleSection(s.id, patientData);
-    m[s.id] = { content: auto, status: auto ? "draft" : "empty", locked: false };
+  // Load the saved/existing note for NoteDetail view
+  const { data: note, isLoading: noteLoading } = useQuery({
+    queryKey: ["studioNote", savedNoteId],
+    queryFn: async () => {
+      const results = await base44.entities.ClinicalNote.filter({ id: savedNoteId });
+      return results?.[0] || null;
+    },
+    enabled: !!savedNoteId,
   });
-  return m;
-}
 
-// ── Main component ────────────────────────────────────────────────────
-export default function ClinicalNoteStudio({ patientData: propData, embedded = false, onBack }) {
-  const navigate       = useNavigate();
-  const location       = useLocation();
-  const [searchParams] = useSearchParams();
-  const urlNoteId      = searchParams.get("noteId");
+  const { data: templates = [] } = useQuery({
+    queryKey: ["noteTemplates"],
+    queryFn: () => base44.entities.NoteTemplate.list(),
+    enabled: mode === "notes",
+  });
 
-  // Stable patientData reference — prevents dep-chain cascade on every render
-  const patientData = useMemo(
-    () => propData || location.state?.patientData || {},
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [propData, location.key]
+  const { data: customTabGroups = [] } = useQuery({
+    queryKey: ["customTabGroups"],
+    queryFn: async () => {
+      const groups = await base44.entities.TabGroup.list();
+      return groups.sort((a, b) => a.order - b.order);
+    },
+    enabled: mode === "notes",
+  });
+
+  // When URL has a noteId and note is loaded, populate studio and stay in studio mode
+  useEffect(() => {
+    if (noteId && note) {
+      setSavedNoteId(note.id);
+      // If a specific tab is requested via URL, switch to notes mode
+      if (urlTab) {
+        setMode("notes"); // Switch to notes mode to display the tabbed interface
+        setActiveTab(urlTab); // Set the active tab to the one specified in the URL
+      }
+    }
+  }, [noteId, note?.id, urlTab]);
+
+  // Hydrate studio form when existing note loads (only on initial load from URL)
+  useEffect(() => {
+    if (!note || !noteId) return; // Only hydrate if note was loaded from URL
+    const n = note;
+    const vs = n.vital_signs || {};
+    setPt({
+      name: n.patient_name || "",
+      mrn: n.patient_id || "",
+      dob: n.date_of_birth || "",
+      age: n.patient_age || "",
+      sex: n.patient_gender === "female" ? "Female" : n.patient_gender === "other" ? "Other" : "Male",
+      encounter: n.date_of_visit || "",
+      type: n.note_type || "ED Visit",
+      provider: "",
+      allergies: n.allergies || [],
+      meds: [],
+      vitals: {
+        hr: vs.heart_rate?.value || "",
+        sbp: vs.blood_pressure?.systolic || "",
+        dbp: vs.blood_pressure?.diastolic || "",
+        temp: vs.temperature?.value || "",
+        rr: vs.respiratory_rate?.value || "",
+        spo2: vs.oxygen_saturation?.value || "",
+        gcs: "",
+        wt: vs.weight?.value || "",
+        ht: vs.height?.value || "",
+        bmi: "",
+      },
+      labs: (n.lab_findings || []).map(l => ({n:l.test_name,v:l.result,ref:l.reference_range,u:l.unit,f:l.status==="abnormal"?"H":"N"})),
+      cc: n.chief_complaint || "",
+      hpi: n.history_of_present_illness || "",
+      pmh: n.medical_history ? n.medical_history.split(", ").filter(Boolean) : [],
+      psh: [], social: "", family: "",
+      ros: EMPTY_PT.ros,
+      pe: EMPTY_PT.pe,
+      imaging: (n.imaging_findings || []).map(i => ({type:i.study_type,title:i.location||"",date:"Today",f:i.findings||"",imp:i.impression||"",abn:false})),
+      assessment: [], disposition: "", dc: n.disposition_plan || "",
+    });
+    setDxList((n.diagnoses || []).map(d => ({dx:d,plan:""})));
+    setSavedNoteId(n.id);
+  }, [note?.id, noteId]);
+
+  // Merge custom tab groups
+  useEffect(() => {
+    if (!customTabGroups?.length) return;
+    const persistedMap = {};
+    customTabGroups.forEach(g => { persistedMap[g.group_id] = g; });
+    const defaultGroupsMerged = TAB_GROUPS.map(g => {
+      const persisted = persistedMap[g.id];
+      if (persisted) {
+        const tabById = Object.fromEntries(g.tabs.map(t => [t.id, t]));
+        const reorderedTabs = persisted.tabs.map(t => ({...tabById[t.id],...t,icon:tabById[t.id]?.icon||Plus,label:tabById[t.id]?.label||t.label}));
+        const persistedIds = new Set(persisted.tabs.map(t => t.id));
+        const extraTabs = g.tabs.filter(t => !persistedIds.has(t.id));
+        return {...g, tabs:[...reorderedTabs,...extraTabs]};
+      }
+      return g;
+    });
+    const defaultIds = new Set(TAB_GROUPS.map(g => g.id));
+    const customOnlyGroups = customTabGroups
+      .filter(g => !defaultIds.has(g.group_id))
+      .map(g => ({id:g.group_id,label:g.label,color:g.color,tabs:g.tabs.map(t=>({...t,icon:Plus}))}));
+    const merged = [...defaultGroupsMerged, ...customOnlyGroups];
+    setTabGroups(prev => {
+      const prevStr = JSON.stringify(prev.map(g=>({id:g.id,tabs:g.tabs.map(t=>t.id)})));
+      const nextStr = JSON.stringify(merged.map(g=>({id:g.id,tabs:g.tabs.map(t=>t.id)})));
+      return prevStr === nextStr ? prev : merged;
+    });
+  }, [customTabGroups]);
+
+  useEffect(() => {
+    if (noteId) localStorage.setItem('currentOpenNote', noteId);
+  }, [noteId]);
+
+  useEffect(() => {
+    const handler = () => setAiSidebarOpen(true);
+    window.addEventListener('openAISidebar', handler);
+    return () => window.removeEventListener('openAISidebar', handler);
+  }, []);
+
+  useEffect(() => {
+    if (note) {
+      setPhysicalExamNormal(note.physical_exam === "No abnormalities noted. All systems within normal limits on examination.");
+      setRosNormal(note.review_of_systems?.includes("REVIEW OF SYSTEMS:") && note.review_of_systems?.includes("Denies fever, chills, weight loss"));
+    }
+  }, [note?.id]);
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setClock(new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}));
+    }, 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  // Auto-save is handled by individual tab components; this is just a status indicator
+  const isSaving = false;
+
+  const finalizeMutation = useMutation({
+    mutationFn: async () => { await base44.entities.ClinicalNote.update(savedNoteId, {status:"finalized"}); },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({queryKey:["studioNote",savedNoteId]});
+      await new Promise(r => setTimeout(r, 500));
+    },
+    onError: () => toast.error("Failed to finalize note"),
+  });
+
+  const exportNote = async (fmt) => {
+    setExportingFormat(fmt);
+    try {
+      const response = await base44.functions.invoke('exportClinicalNote', {noteId:savedNoteId,format:fmt});
+      const blob = new Blob([response.data], {type:fmt==='pdf'?'application/pdf':'text/plain'});
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${note.patient_name}_${note.date_of_visit||'Note'}.${fmt==='pdf'?'pdf':'txt'}`;
+      document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); a.remove();
+    } catch (e) { alert(`Failed to export note as ${fmt}`); }
+    finally { setExportingFormat(null); }
+  };
+
+  // Tab navigation helpers
+  const allTabIds = tabGroups.flatMap(g => g.tabs.map(t => t.id));
+  const handleNext = () => { const i = allTabIds.indexOf(activeTab); if (i < allTabIds.length-1) setActiveTab(allTabIds[i+1]); };
+  const handleBack = () => { const i = allTabIds.indexOf(activeTab); if (i > 0) setActiveTab(allTabIds[i-1]); };
+  const isFirstTab = () => allTabIds.indexOf(activeTab) === 0;
+  const isLastTab = () => allTabIds.indexOf(activeTab) === allTabIds.length-1;
+
+  // Tab management
+  const handleCreateTab = (groupId) => { setSelectedGroupForNewTab(groupId); setNewTabName(""); setShowCreateTabDialog(true); };
+  const handleSaveNewTab = async () => {
+    if (!newTabName.trim()) { toast.error("Tab name required"); return; }
+    const tabId = `custom_${selectedGroupForNewTab}_${Date.now()}`;
+    const dbGroups = await base44.entities.TabGroup.filter({group_id:selectedGroupForNewTab});
+    if (dbGroups.length > 0) {
+      await base44.entities.TabGroup.update(dbGroups[0].id, {tabs:[...dbGroups[0].tabs,{id:tabId,label:newTabName}]});
+      queryClient.invalidateQueries({queryKey:["customTabGroups"]});
+    }
+    setShowCreateTabDialog(false); setNewTabName(""); toast.success("Tab created");
+  };
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) { toast.error("Group name required"); return; }
+    const groupId = `custom_group_${Date.now()}`;
+    await base44.entities.TabGroup.create({group_id:groupId,label:newGroupName,color:newGroupColor,tabs:[],order:tabGroups.length});
+    queryClient.invalidateQueries({queryKey:["customTabGroups"]});
+    setShowCreateGroupDialog(false); setNewGroupName(""); setNewGroupColor("blue"); toast.success("Group created");
+  };
+  const resetTabLayout = async () => {
+    const all = await base44.entities.TabGroup.list();
+    await Promise.all(all.map(g => base44.entities.TabGroup.delete(g.id)));
+    queryClient.invalidateQueries({queryKey:["customTabGroups"]});
+    setTabGroups(TAB_GROUPS); toast.success("Tab layout reset");
+  };
+
+  // Studio helpers
+  const showToast = (msg, type="i") => {
+    const id = Date.now();
+    setToasts(t => [...t,{id,msg,type}]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id!==id)), 3000);
+  };
+  const updatePt = (path, val) => {
+    setPt(prev => {
+      const next = {...prev};
+      const keys = path.split(".");
+      let obj = next;
+      for (let i=0;i<keys.length-1;i++) { obj[keys[i]]={...obj[keys[i]]}; obj=obj[keys[i]]; }
+      obj[keys[keys.length-1]] = val;
+      return next;
+    });
+  };
+  const addDx = () => setDxList(prev => [...prev,{dx:"",plan:""}]);
+  const removeDx = (i) => setDxList(prev => prev.filter((_,idx)=>idx!==i));
+  const updateDx = (i,field,val) => setDxList(prev => prev.map((d,idx)=>idx===i?{...d,[field]:val}:d));
+
+  const buildNotePayload = (status="draft") => {
+    const payload = {
+      patient_name:pt.name, patient_id:pt.mrn, patient_age:pt.age,
+      patient_gender:pt.sex?.toLowerCase()||"male", date_of_birth:pt.dob,
+      date_of_visit:pt.encounter||new Date().toISOString().split("T")[0],
+      note_type:"progress_note", chief_complaint:pt.cc, history_of_present_illness:pt.hpi,
+      assessment:pt.assessment||"", plan:pt.plan||"",
+      medical_history:pt.pmh.join(", "), allergies:pt.allergies.filter(Boolean),
+      diagnoses:dxList.map(d=>d.dx).filter(Boolean), disposition_plan:pt.dc,
+      vital_signs:{},
+      lab_findings:pt.labs.filter(l=>l.n).map(l=>({test_name:l.n,result:l.v,reference_range:l.ref,unit:l.u,status:l.f==="H"||l.f==="L"?"abnormal":"normal"})),
+      imaging_findings:pt.imaging.filter(i=>i.type).map(i=>({study_type:i.type,location:i.title,findings:i.f,impression:i.imp})),
+      raw_note:`CC: ${pt.cc}\nHPI: ${pt.hpi}\nAssessment: ${dxList.map((d,i)=>`${i+1}. ${d.dx}: ${d.plan}`).join('; ')}`,
+      status,
+    };
+    // Only add vital signs that have values
+    if (pt.vitals.hr) payload.vital_signs.heart_rate = {value:+pt.vitals.hr,unit:"bpm"};
+    if (pt.vitals.sbp && pt.vitals.dbp) payload.vital_signs.blood_pressure = {systolic:+pt.vitals.sbp,diastolic:+pt.vitals.dbp,unit:"mmHg"};
+    if (pt.vitals.temp) payload.vital_signs.temperature = {value:+pt.vitals.temp,unit:"F"};
+    if (pt.vitals.rr) payload.vital_signs.respiratory_rate = {value:+pt.vitals.rr,unit:"breaths/min"};
+    if (pt.vitals.spo2) payload.vital_signs.oxygen_saturation = {value:+pt.vitals.spo2,unit:"%"};
+    if (pt.vitals.wt) payload.vital_signs.weight = {value:+pt.vitals.wt,unit:"lbs"};
+    if (pt.vitals.ht) payload.vital_signs.height = {value:+pt.vitals.ht,unit:"in"};
+    return payload;
+  };
+
+  const saveNote = async () => {
+    if (!pt.name && !pt.cc) { showToast("Enter patient name or chief complaint first","e"); return; }
+    setSaving(true);
+    try {
+      const payload = buildNotePayload("draft");
+      let id = savedNoteId;
+      if (id) { await base44.entities.ClinicalNote.update(id, payload); }
+      else {
+        const created = await base44.entities.ClinicalNote.create(payload);
+        id = created.id; setSavedNoteId(id);
+        window.history.replaceState({},'',"?noteId="+id);
+      }
+      showToast("Note saved","s");
+      queryClient.invalidateQueries({queryKey:["studioNote",id]});
+    } catch(err) { showToast("Save failed: "+err.message,"e"); }
+    finally { setSaving(false); }
+  };
+
+  const signNote = async () => {
+    if (!pt.name && !pt.cc) { showToast("Enter patient info before signing","e"); return; }
+    setSaving(true);
+    try {
+      const payload = buildNotePayload("finalized");
+      let id = savedNoteId;
+      if (id) { await base44.entities.ClinicalNote.update(id, payload); }
+      else {
+        const created = await base44.entities.ClinicalNote.create(payload);
+        id = created.id; setSavedNoteId(id);
+        window.history.replaceState({},'',"?noteId="+id);
+      }
+      showToast("Note signed and finalized","s");
+      queryClient.invalidateQueries({queryKey:["studioNote",id]});
+    } catch(err) { showToast("Sign failed: "+err.message,"e"); }
+    finally { setSaving(false); }
+  };
+
+  // Apply transcription output to the studio form
+  const handleApplyTranscription = ({ cc, hpi }) => {
+    if (cc) updatePt("cc", cc);
+    if (hpi) updatePt("hpi", hpi);
+    showToast("Transcription applied to note", "s");
+  };
+
+  // Apply AI summary (Assessment & Plan) to the studio form
+  const handleApplySummary = (result) => {
+    if (result.assessment) updatePt("assessment", result.assessment);
+    if (result.plan) updatePt("plan", result.plan);
+    if (result.chief_complaint && !pt.cc) updatePt("cc", result.chief_complaint);
+    if (result.summary) updatePt("hpi", pt.hpi ? pt.hpi + "\n\n" + result.summary : result.summary);
+    if (result.diagnoses?.length) {
+      setDxList(result.diagnoses.map(dx => ({ dx, plan: "" })));
+    }
+    showToast("Assessment & Plan applied to note", "s");
+  };
+
+  // Apply template-generated note to the studio form
+  const handleApplyTemplate = ({ generatedNote, template }) => {
+    if (generatedNote) {
+      updatePt("hpi", generatedNote.slice(0, 1200));
+      if (template?.name) updatePt("type", template.name);
+    }
+    showToast("Template applied to note", "s");
+  };
+
+  const secContent = (id) => {
+    const v = pt.vitals;
+    const map = {
+      overview:`Patient: ${pt.name}, ${pt.age} ${pt.sex}. CC: ${pt.cc}`,
+      cc_hpi:`CC: ${pt.cc}\nHPI: ${pt.hpi}`,
+      pmh:`PMH: ${pt.pmh.join(', ')}\nPSH: ${pt.psh.join(', ')}\nSocial: ${pt.social}\nFamily: ${pt.family}\nAllergies: ${pt.allergies.join(', ')}`,
+      meds:`Medications: ${pt.meds.map(m=>m.n+' '+m.d).join('; ')}\nAllergies: ${pt.allergies.join(', ')}`,
+      ros:Object.entries(pt.ros).map(([sys,d])=>`${sys}: POS: ${d.pos.join(',')||'none'} | NEG: ${d.neg.join(',')}`).join('\n'),
+      vitals:`HR:${v.hr} BP:${v.sbp}/${v.dbp} Temp:${v.temp} RR:${v.rr} SpO2:${v.spo2}% GCS:${v.gcs}`,
+      pe:Object.entries(pt.pe).map(([s,d])=>`${s}: ${d.n}`).join('\n'),
+      labs:pt.labs.map(l=>`${l.n}: ${l.v} ${l.u} (ref ${l.ref}) [${l.f}]`).join('\n'),
+      imaging:pt.imaging.map(i=>`${i.type}: ${i.f} Impression: ${i.imp}`).join('\n'),
+      assessment:dxList.map((d,i)=>`${i+1}. ${d.dx}: ${d.plan}`).join('\n'),
+      disposition:`Dispo: ${pt.disposition}. ${pt.dc}`,
+    };
+    return map[id] || '';
+  };
+
+  const analyzeSection = async (id) => {
+    if (analyzing) { showToast('Analysis in progress','i'); return; }
+    setAnalyzing(true); setRpContent("loading");
+    const sec = STUDIO_SECTIONS.find(s=>s.id===id);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt:`You are Notrya AI, a clinical documentation assistant. Analyze this ${sec?.name||id} section of a clinical note and provide structured insights.\n\nSection content:\n${secContent(id)}\n\nReturn a JSON object with: {"summary":"2-3 sentence clinical summary","abnormals":[{"finding":"string","severity":"critical|high|moderate","detail":"string"}],"insights":["string"],"recommendation":"string","tags":[{"text":"string","color":"red|amber|green|blue"}]}`,
+        response_json_schema:{type:"object",properties:{summary:{type:"string"},abnormals:{type:"array",items:{type:"object"}},insights:{type:"array",items:{type:"string"}},recommendation:{type:"string"},tags:{type:"array",items:{type:"object"}}}},
+      });
+      setAnalyses(prev=>({...prev,[id]:result})); setDone(prev=>({...prev,[id]:true}));
+      setRpContent("analysis"); setRpData(result); setCompletion(c=>Math.min(100,c+8));
+      showToast(`${sec?.name||id} analyzed`,'s');
+    } catch(err) { showToast('Analysis failed: '+err.message,'e'); setRpContent("default"); }
+    finally { setAnalyzing(false); }
+  };
+
+  const analyzeAll = async () => {
+    showToast('Analyzing all sections...','i');
+    for (const id of ['vitals','labs','pe','assessment','cc_hpi','imaging']) {
+      await analyzeSection(id);
+      await new Promise(r=>setTimeout(r,300));
+    }
+    showToast('Complete note analysis done','s');
+  };
+
+  const generateSummary = async () => {
+    showToast('Generating clinical summary...','i'); setRpContent("loading");
+    const allContent = `Patient: ${pt.name} ${pt.age} ${pt.sex}\nCC: ${pt.cc}\nVitals: HR ${pt.vitals.hr} BP ${pt.vitals.sbp}/${pt.vitals.dbp} Temp ${pt.vitals.temp} RR ${pt.vitals.rr} SpO2 ${pt.vitals.spo2}%\nLabs: ${pt.labs.map(l=>l.n+' '+l.v).join(', ')}\nImaging: ${pt.imaging.map(i=>i.type+': '+i.imp).join('; ')}\nDx: ${dxList.map((d,i)=>i+1+'. '+d.dx).join('; ')}\nDisposition: ${pt.disposition}`;
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt:`Generate a comprehensive clinical note summary for this patient encounter.\n\n${allContent}\n\nReturn JSON: {"summary":"3-4 sentence overview","criticals":[{"item":"string","flag":"critical|high|moderate"}],"keyDx":["string"],"actions":["string"],"mdm":"string"}`,
+        response_json_schema:{type:"object",properties:{summary:{type:"string"},criticals:{type:"array",items:{type:"object"}},keyDx:{type:"array",items:{type:"string"}},actions:{type:"array",items:{type:"string"}},mdm:{type:"string"}}},
+      });
+      setRpContent("summary"); setRpData(result); showToast('Summary generated','s');
+    } catch(err) { showToast('Error: '+err.message,'e'); setRpContent("default"); }
+  };
+
+  const switchSec = (id) => {
+    setCur(id);
+    if (analyses[id]) { setRpContent("analysis"); setRpData(analyses[id]); }
+    else setRpContent("default");
+  };
+
+  const totalAbn = pt.labs.filter(l=>l.f!=='N').length + Object.values(pt.pe).filter(p=>p.abn).length + pt.imaging.filter(i=>i.abn).length;
+  const curSec = STUDIO_SECTIONS.find(s=>s.id===cur);
+
+  const inputS = {width:"100%",background:"transparent",border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 9px",color:C.text,fontFamily:"'DM Sans',sans-serif",fontSize:12,outline:"none"};
+  const textareaS = {...inputS,resize:"vertical",minHeight:65,lineHeight:1.65,display:"block"};
+  const labelS = {fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.dim,letterSpacing:".1em",display:"block",marginBottom:4};
+
+  const renderStudioSection = () => {
+    switch(cur) {
+      case "overview": return <SectionOverview pt={pt} totalAbn={totalAbn} dxList={dxList} />;
+      case "cc_hpi": return <SectionCCHPI pt={pt} updatePt={updatePt} inputS={inputS} textareaS={textareaS} labelS={labelS} />;
+      case "pmh": return <SectionPMH pt={pt} updatePt={updatePt} inputS={inputS} textareaS={textareaS} labelS={labelS} />;
+      case "meds": return <SectionMeds pt={pt} updatePt={updatePt} inputS={inputS} labelS={labelS} />;
+      case "ros": return <SectionROS pt={pt} updatePt={updatePt} />;
+      case "vitals": return <SectionVitals pt={pt} updatePt={updatePt} />;
+      case "pe": return <SectionPE pt={pt} updatePt={updatePt} />;
+      case "labs": return <SectionLabs pt={pt} updatePt={updatePt} />;
+      case "imaging": return <SectionImaging pt={pt} updatePt={updatePt} />;
+      case "assessment": return <SectionAssessment dxList={dxList} addDx={addDx} removeDx={removeDx} updateDx={updateDx} inputS={inputS} textareaS={textareaS} />;
+      case "disposition": return <SectionDisposition pt={pt} updatePt={updatePt} inputS={inputS} textareaS={textareaS} labelS={labelS} />;
+      default: return null;
+    }
+  };
+
+  // ── Shared Navbar ──
+  const renderNavbar = () => (
+    <nav style={{height:52,background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,backdropFilter:"blur(20px)",display:"flex",alignItems:"center",padding:"0 16px",gap:12,flexShrink:0,zIndex:100}}>
+      <Link to="/Home" style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</Link>
+      <div style={{width:1,height:16,background:C.border}} />
+      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>CLINICAL NOTE STUDIO</span>
+
+      {/* Mode toggle */}
+      <div style={{display:"flex",alignItems:"center",gap:2,padding:"3px",borderRadius:10,background:C.edge,border:`1px solid ${C.border}`}}>
+        <button onClick={()=>setMode("intake")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="intake"?C.green:"transparent",color:mode==="intake"?C.navy:C.dim,transition:"all .15s"}}>➕ New Patient</button>
+        <button onClick={()=>setMode("studio")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="studio"?C.teal:"transparent",color:mode==="studio"?C.navy:C.dim,transition:"all .15s"}}>✦ Studio</button>
+        <button onClick={()=>setMode("notes")} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="notes"?C.blue:"transparent",color:mode==="notes"?C.bright:C.dim,transition:"all .15s"}}>📋 Note Detail</button>
+        <button onClick={()=>setShowTemplatePicker(true)} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.purple}}>📄 Templates</button>
+        <button onClick={()=>setShowTranscription(true)} style={{padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.amber}}>🎙️ Transcribe</button>
+      </div>
+
+      <div style={{flex:1}} />
+
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"5px 12px",borderRadius:10,background:C.panel,border:`1px solid ${C.border}`}}>
+        <div>
+          <div style={{fontSize:13,fontWeight:600,color:C.bright}}>{pt.name||note?.patient_name||"New Patient"}</div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.dim}}>{[pt.mrn||note?.patient_id,pt.age||note?.patient_age].filter(Boolean).join(' · ')||"Enter patient info"}</div>
+        </div>
+      </div>
+
+      <div style={{display:"flex",gap:6}}>
+        {mode==="studio" && <>
+          <button onClick={saveNote} disabled={saving} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:600,cursor:saving?"not-allowed":"pointer",border:`1px solid ${C.border}`,background:C.edge,color:C.dim,opacity:saving?.5:1}}>{saving?"Saving...":"💾 Save"}</button>
+          <button onClick={signNote} disabled={saving} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:700,cursor:saving?"not-allowed":"pointer",border:"none",background:`linear-gradient(135deg,${C.teal},#00b8a5)`,color:C.navy,opacity:saving?.5:1}}>✍️ Sign Note</button>
+        </>}
+        {mode==="notes" && (
+          <button onClick={()=>{setMode("studio");}} style={{padding:"5px 13px",borderRadius:9,fontSize:12,fontWeight:600,cursor:"pointer",border:`1px solid ${C.border}`,background:C.edge,color:C.dim}}>✦ Switch to Studio</button>
+        )}
+      </div>
+      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.dim}}>{clock}</span>
+    </nav>
   );
 
-  const { demo = {}, cc = {}, medications = [], allergies = [], registration = {}, esiLevel = "" } = patientData;
-  const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
-
-  const [sections, setSections] = useState(() => buildInitialSections(patientData));
-  const [focused,  setFocused]  = useState("header");
-  const [loading,  setLoading]  = useState({});
-  const [anyBusy,  setAnyBusy]  = useState(false);
-  const [saved,    setSaved]    = useState(false);
-
-  // Refs
-  const sectionsRef    = useRef(sections);   // always-current mirror — no stale closures
-  const sectionDivRefs = useRef({});
-  const textareaRefs   = useRef({});
-  const savedNoteIdRef = useRef(urlNoteId || null);  // create once, update thereafter
-
-  useEffect(() => { sectionsRef.current = sections; }, [sections]);
-
-  // Load existing note when arriving via ?noteId=
-  useEffect(() => {
-    if (!urlNoteId || propData) return;
-    base44.entities.ClinicalNote.get(urlNoteId)
-      .then(note => {
-        savedNoteIdRef.current = urlNoteId;
-        if (note?.raw_note) {
-          setSections(prev => ({
-            ...prev,
-            mdm: { content: note.raw_note, status: "draft", locked: false },
-          }));
-        }
-        toast.info("Note loaded.");
-      })
-      .catch(() => {}); // Not found — start fresh
-  }, [urlNoteId, propData]);
-
-  // Auto-resize textareas after AI content loads
-  // (onInput only fires for user keyboard events, not state updates)
-  useEffect(() => {
-    Object.keys(sections).forEach(id => {
-      const ta = textareaRefs.current[id];
-      if (!ta) return;
-      ta.style.height = "auto";
-      ta.style.height = ta.scrollHeight + "px";
-    });
-  }, [sections]);
-
-  const completedCount = useMemo(() =>
-    SECTIONS.filter(s => ["complete", "locked"].includes(sections[s.id]?.status)).length,
-  [sections]);
-
-  // ── Mutations ───────────────────────────────────────────────────────
-  const updateSection = useCallback((id, content) => {
-    setSections(prev => ({ ...prev, [id]: { ...prev[id], content, status: content ? "draft" : "empty" } }));
-    setSaved(false);
-  }, []);
-
-  const markComplete = useCallback((id) => {
-    setSections(prev => ({
-      ...prev,
-      [id]: { ...prev[id], status: prev[id].status === "complete" ? "draft" : "complete" },
-    }));
-  }, []);
-
-  const toggleLock = useCallback((id) => {
-    setSections(prev => ({
-      ...prev,
-      [id]: { ...prev[id], locked: !prev[id].locked, status: !prev[id].locked ? "locked" : "complete" },
-    }));
-  }, []);
-
-  // ── AI generation ───────────────────────────────────────────────────
-  // Uses sectionsRef so sections is never in the dep array — no stale closures
-  const generateSection = useCallback(async (id) => {
-    const sec = SECTIONS.find(s => s.id === id);
-    if (!sec || sectionsRef.current[id]?.locked) return;
-
-    setLoading(l => ({ ...l, [id]: true }));
-    setAnyBusy(true);
-
-    const prompt = [
-      "You are a clinical documentation assistant in an emergency medicine platform.",
-      `Generate ONLY the "${sec.title}" section of an ED note in standard EP documentation style.`,
-      "Be concise and clinically precise. Return ONLY the section text — no label, no preamble.",
-      `Patient: ${patientName}.  CC: ${cc.text || "not documented"}.`,
-      `Current content: ${sectionsRef.current[id]?.content || "(empty)"}`,
-    ].join("\n");
-
-    try {
-      const res  = await base44.integrations.Core.InvokeLLM({ prompt });
-      const text = typeof res === "string" ? res : JSON.stringify(res);
-      setSections(prev => ({ ...prev, [id]: { ...prev[id], content: text, status: "draft" } }));
-      setSaved(false);
-    } catch {
-      toast.error("AI generation failed.");
-    } finally {
-      setLoading(prev => {
-        const next = { ...prev, [id]: false };
-        setAnyBusy(Object.values(next).some(Boolean));
-        return next;
-      });
-    }
-  }, [patientName, cc.text]);
-
-  const generateAll = useCallback(async () => {
-    const empty = SECTIONS.filter(s => {
-      const sec = sectionsRef.current[s.id];
-      return !sec?.content || sec.status === "empty";
-    });
-    if (!empty.length) { toast.info("All sections have content."); return; }
-    toast.info(`Generating ${empty.length} sections…`);
-    for (const s of empty) await generateSection(s.id);
-    toast.success("Done.");
-  }, [generateSection]);
-
-  const rebuildAll = useCallback(() => {
-    setSections(buildInitialSections(patientData));
-    setSaved(false);
-    toast.success("Note rebuilt from patient data.");
-  }, [patientData]);
-
-  const copyAll = useCallback(async () => {
-    const divider = "\n\n" + "─".repeat(58) + "\n\n";
-    const full = SECTIONS.map(s => sectionsRef.current[s.id]?.content).filter(Boolean).join(divider);
-    try {
-      await navigator.clipboard.writeText(full);
-      toast.success("Note copied.");
-    } catch {
-      toast.error("Clipboard access denied.");
-    }
-  }, []);
-
-  const printNote = useCallback(() => window.print(), []);
-
-  // First save creates, subsequent saves update — no duplicate records
-  const saveNote = useCallback(async () => {
-    const full = SECTIONS.map(s => sectionsRef.current[s.id]?.content).filter(Boolean).join("\n\n");
-    try {
-      if (savedNoteIdRef.current) {
-        await base44.entities.ClinicalNote.update(savedNoteIdRef.current, {
-          raw_note: full, status: "draft",
-        });
-      } else {
-        const created = await base44.entities.ClinicalNote.create({
-          raw_note: full, patient_name: patientName,
-          patient_id: registration.mrn || demo.mrn || "",
-          patient_age: demo.age || "", patient_gender: demo.sex || "",
-          chief_complaint: cc.text || "",
-          medications, allergies, status: "draft",
-        });
-        savedNoteIdRef.current = created.id;
-      }
-      setSaved(true);
-      toast.success("Note saved.");
-    } catch (e) {
-      toast.error("Save failed: " + (e?.message || "unknown error"));
-    }
-  }, [patientName, demo, registration, cc, medications, allergies]);
-
-  // ── Keyboard shortcuts ──────────────────────────────────────────────
-  useEffect(() => {
-    const handler = (e) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (!mod) return;
-
-      // ⌘1–9 → jump to section
-      const sIdx = parseInt(e.key, 10) - 1;
-      if (!Number.isNaN(sIdx) && sIdx >= 0 && sIdx < SECTIONS.length) {
-        e.preventDefault();
-        const target = SECTIONS[sIdx].id;
-        setFocused(target);
-        sectionDivRefs.current[target]?.scrollIntoView({ behavior:"smooth", block:"start" });
-        return;
-      }
-
-      switch (true) {
-        case e.key === "g" && !e.shiftKey: e.preventDefault(); generateSection(focused); break;
-        case e.key === "g" &&  e.shiftKey: e.preventDefault(); generateAll();            break;
-        case e.key === "s":                e.preventDefault(); saveNote();               break;
-        case e.key === "p":                e.preventDefault(); printNote();              break;
-        case e.key === "c" &&  e.shiftKey: e.preventDefault(); copyAll();               break;
-        case e.key === "r":                e.preventDefault(); rebuildAll();             break;
-        default: break;
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [focused, generateSection, generateAll, saveNote, printNote, copyAll, rebuildAll]);
-
-  // ── Render ──────────────────────────────────────────────────────────
-  return (
-    <div className={`cns-wrap${embedded ? " embedded" : ""}`}>
-      {anyBusy && <div className="cns-loading-bar"/>}
-
-      {/* Top bar */}
-      <div className="cns-top">
-        <button
-          className="cns-btn cns-btn-ghost"
-          onClick={() => onBack ? onBack() : navigate(-1)}
-        >← Back</button>
-        <span className="cns-top-badge">NOTE STUDIO</span>
-        <span className="cns-top-patient">{patientName}</span>
-        {(demo.age || demo.sex) && (
-          <span className="cns-top-meta">
-            {[demo.age ? demo.age + "y" : "", demo.sex].filter(Boolean).join(" · ")}
-          </span>
-        )}
-        {cc.text && (
-          <span className="cns-top-meta" style={{ color:"var(--npi-orange,#ff9f43)", fontWeight:600 }}>
-            CC: {cc.text}
-          </span>
-        )}
-        {esiLevel && (
-          <span style={{
-            fontFamily:"JetBrains Mono", fontSize:10, fontWeight:700,
-            padding:"2px 9px", borderRadius:4, flexShrink:0,
-            background:"rgba(255,107,107,.1)", color:"var(--npi-coral,#ff6b6b)",
-            border:"1px solid rgba(255,107,107,.3)",
-          }}>ESI {esiLevel}</span>
-        )}
-        <div className="cns-top-acts">
-          <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:"var(--npi-txt4,#7aa0c0)" }}>
-            {completedCount}/{SECTIONS.length} done
-          </span>
-          <button className="cns-btn cns-btn-ghost" onClick={rebuildAll} title="⌘R">↺ Rebuild</button>
-          <button className="cns-btn cns-btn-gold"  onClick={generateAll} disabled={anyBusy} title="⌘⇧G">
-            {anyBusy ? "⟳ Generating…" : "✦ Generate All"}
-          </button>
-          <button className="cns-btn cns-btn-ghost" onClick={copyAll}   title="⌘⇧C">⎘ Copy</button>
-          <button className="cns-btn cns-btn-ghost" onClick={printNote} title="⌘P">⎙ Print</button>
-          <button className="cns-btn cns-btn-teal"  onClick={saveNote}  title="⌘S">
-            {saved ? "✓ Saved" : "💾 Save"}
-          </button>
+  const renderNoteTypeBar = () => (
+    <div style={{height:48,background:`linear-gradient(90deg, ${C.panel}, ${C.slate})`,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",padding:"0 16px",gap:12,flexShrink:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <span style={{fontSize:14}}>📝</span>
+        <div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,letterSpacing:".1em"}}>NOTE TYPE · LOCATION</div>
+          <div style={{fontSize:12,fontWeight:600,color:C.bright}}>{pt.type||"Progress Note"} · {pt.mrn||"—"}</div>
         </div>
       </div>
+      <div style={{width:1,height:24,background:C.border}} />
+      <div style={{display:"flex",alignItems:"center",gap:3}}>
+        {note?.status==="finalized"&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:6,background:"rgba(46,204,113,.15)",color:C.green,border:`1px solid rgba(46,204,113,.32)`}}>✓ SIGNED</span>}
+      </div>
+      <div style={{flex:1}} />
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <button style={{padding:"4px 10px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",border:`1px solid ${C.border}`,background:C.edge,color:C.dim}}>⬇ Export</button>
+        <button onClick={handleNext} style={{padding:"4px 12px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",border:"none",background:C.teal,color:C.navy}}>Next Objective →</button>
+      </div>
+    </div>
+  );
 
-      {/* Body */}
-      <div className="cns-body">
+  // ── INTAKE MODE ──
+  if (mode === "intake") {
+    return (
+      <div style={{fontFamily:"'DM Sans',sans-serif",background:C.navy,height:"100vh",color:C.text,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        `}</style>
+        {/* Minimal top bar for mode switching */}
+        <nav style={{height:40,background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",padding:"0 16px",gap:12,flexShrink:0,zIndex:100}}>
+          <Link to="/Home" style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</Link>
+          <div style={{width:1,height:14,background:C.border}} />
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>CLINICAL NOTE STUDIO</span>
+          <div style={{display:"flex",alignItems:"center",gap:2,padding:"2px",borderRadius:9,background:C.edge,border:`1px solid ${C.border}`}}>
+            <button style={{padding:"3px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:C.green,color:C.navy,transition:"all .15s"}}>➕ New Patient</button>
+            <button onClick={()=>setMode("studio")} style={{padding:"3px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.dim,transition:"all .15s"}}>✦ Studio</button>
+            {savedNoteId && <button onClick={()=>setMode("notes")} style={{padding:"3px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:"transparent",color:C.dim,transition:"all .15s"}}>📋 Note Detail</button>}
+          </div>
+          <div style={{flex:1}} />
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.dim}}>{clock}</span>
+        </nav>
+        {/* NewPatientInput fills the rest — override its margin-left since we're inside studio */}
+        <div style={{flex:1,overflow:"hidden",position:"relative"}}>
+          <style>{`.npi-root { margin-left: 0 !important; height: calc(100vh - 40px) !important; }`}</style>
+          <NewPatientInput />
+        </div>
+      </div>
+    );
+  }
 
-        {/* Sidebar */}
-        <div className="cns-sidebar">
-          <div className="cns-sb-head">
-            <div className="cns-sb-title">Note Sections</div>
-            <div className="cns-progress-bar">
-              <div className="cns-progress-fill" style={{ width:`${(completedCount / SECTIONS.length) * 100}%` }}/>
-            </div>
-            <div className="cns-progress-label">{completedCount} of {SECTIONS.length} signed off</div>
-          </div>
-          <div className="cns-sb-items">
-            {SECTIONS.map(s => {
-              const st = sections[s.id]?.status || "empty";
-              return (
-                <div
-                  key={s.id}
-                  className={`cns-sb-item${focused === s.id ? " active" : ""}`}
-                  onClick={() => {
-                    setFocused(s.id);
-                    sectionDivRefs.current[s.id]?.scrollIntoView({ behavior:"smooth", block:"start" });
-                  }}
-                >
-                  <span className="cns-sb-item-icon">{s.icon}</span>
-                  <div className="cns-sb-item-info">
-                    <div className="cns-sb-item-name">{s.title}</div>
-                  </div>
-                  <span className="cns-sb-key">⌘{s.key}</span>
-                  <div className={`cns-sb-dot ${st}`}/>
-                </div>
-              );
-            })}
-          </div>
-          <div className="cns-sb-legend">
-            <div className="cns-sb-legend-title">Shortcuts</div>
-            {[
-              ["⌘ 1–9", "Jump to section"],
-              ["⌘ G",   "AI: generate focused"],
-              ["⌘ ⇧ G","AI: all empty"],
-              ["⌘ R",   "Rebuild from data"],
-              ["⌘ ⇧ C","Copy full note"],
-              ["⌘ S",   "Save"],
-              ["⌘ P",   "Print"],
-            ].map(([k, d]) => (
-              <div key={k} className="cns-sc-row">
-                <span className="cns-sc-key">{k}</span>
-                <span className="cns-sc-desc">{d}</span>
+  // ── STUDIO MODE ──
+  if (mode === "studio") {
+    return (
+      <div style={{fontFamily:"'DM Sans',sans-serif",background:C.navy,height:"100vh",color:C.text,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+          @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+          @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+          @keyframes spin{to{transform:rotate(360deg)}}
+          @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+          @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,92,108,0)}60%{box-shadow:0 0 14px 0 rgba(255,92,108,.3)}}
+          ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
+          textarea,input,select{transition:border-color .15s}
+          textarea:focus,input:focus,select:focus{border-color:#4a7299 !important;outline:none}
+          textarea::placeholder,input::placeholder{color:#2a4d72}
+          select option{background:#0b1d35}
+        `}</style>
+
+        {renderNavbar()}
+        {mode === "studio" && renderNoteTypeBar()}
+
+        <div style={{display:"flex",flex:1,overflow:"hidden"}}>
+          {/* Sidebar */}
+          <div style={{width:230,flexShrink:0,background:C.panel,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <div style={{padding:"12px 14px 10px",borderBottom:`1px solid ${C.border}`}}>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,letterSpacing:".1em",marginBottom:4}}>PATIENT · ENCOUNTER</div>
+              <input value={pt.name} onChange={e=>updatePt("name",e.target.value)} placeholder="Patient Name" style={{width:"100%",background:C.edge,border:`1px solid ${C.border}`,borderRadius:6,padding:"5px 8px",color:C.bright,fontSize:13,fontWeight:700,outline:"none",marginBottom:5,fontFamily:"'Playfair Display',serif"}} />
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:5}}>
+                <input value={pt.mrn} onChange={e=>updatePt("mrn",e.target.value)} placeholder="MRN" style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 7px",color:C.dim,fontSize:11,outline:"none",fontFamily:"'JetBrains Mono',monospace"}} />
+                <input value={pt.age} onChange={e=>updatePt("age",e.target.value)} placeholder="Age" style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 7px",color:C.dim,fontSize:11,outline:"none",fontFamily:"'JetBrains Mono',monospace"}} />
               </div>
+              {totalAbn>0 && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,padding:"2px 8px",borderRadius:7,background:"rgba(255,92,108,.1)",border:"1px solid rgba(255,92,108,.3)",color:C.red,display:"inline-block"}}>⚠ {totalAbn} Abnormal</div>}
+            </div>
+            <div style={{padding:"8px 14px",borderBottom:`1px solid ${C.border}`}}>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,letterSpacing:".1em",display:"flex",justifyContent:"space-between",marginBottom:5}}><span>COMPLETION</span><span>{completion}%</span></div>
+              <div style={{height:4,borderRadius:2,background:C.edge,overflow:"hidden"}}>
+                <div style={{height:"100%",background:`linear-gradient(90deg,${C.teal},#00b8a5)`,borderRadius:2,width:`${completion}%`,transition:"width .5s"}} />
+              </div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"6px 8px"}}>
+              {STUDIO_GROUPS.map(g => (
+                <div key={g}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,letterSpacing:".12em",padding:"6px 8px 3px",textTransform:"uppercase"}}>{g}</div>
+                  {STUDIO_SECTIONS.filter(s=>s.group===g).map(sec => {
+                    const isDone = done[sec.id];
+                    const isActive = cur===sec.id;
+                    return (
+                      <div key={sec.id} onClick={()=>switchSec(sec.id)} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 10px",borderRadius:10,cursor:"pointer",marginBottom:1,transition:"all .15s",background:isActive?"rgba(0,212,188,.08)":"transparent",border:`1px solid ${isActive?"rgba(0,212,188,.3)":"transparent"}`}}>
+                        <div style={{fontSize:14,width:20,textAlign:"center",flexShrink:0}}>{sec.icon}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:12,fontWeight:500,color:isActive?C.teal:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{sec.name}</div>
+                          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,marginTop:1}}>{sec.sub}</div>
+                        </div>
+                        {isDone && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,minWidth:16,height:16,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(46,204,113,.1)",color:C.green,border:"1px solid rgba(46,204,113,.25)",padding:"0 4px"}}>✓</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            <div style={{padding:"8px 10px",borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:5}}>
+              <button onClick={analyzeAll} style={{padding:"7px 10px",borderRadius:9,fontSize:11,fontWeight:500,cursor:"pointer",background:"rgba(0,212,188,.07)",border:"1px solid rgba(0,212,188,.28)",color:C.teal,display:"flex",alignItems:"center",gap:7}}>✦ Analyze Entire Note</button>
+              <button onClick={generateSummary} style={{padding:"7px 10px",borderRadius:9,fontSize:11,fontWeight:500,cursor:"pointer",background:C.edge,border:`1px solid ${C.border}`,color:C.dim,display:"flex",alignItems:"center",gap:7}}>📋 Generate Summary</button>
+              {savedNoteId && <button onClick={()=>setMode("notes")} style={{padding:"7px 10px",borderRadius:9,fontSize:11,fontWeight:500,cursor:"pointer",background:"rgba(74,144,217,.08)",border:"1px solid rgba(74,144,217,.28)",color:C.blue,display:"flex",alignItems:"center",gap:7}}>📋 Open Note Detail View</button>}
+            </div>
+          </div>
+
+          {/* Center */}
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
+            <div style={{padding:"14px 20px 12px",background:C.slate,borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:38,height:38,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0,background:"rgba(0,212,188,.1)",border:"1px solid rgba(0,212,188,.28)"}}>{curSec?.icon}</div>
+                <div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:21,fontWeight:700,color:C.bright,letterSpacing:"-.02em"}}>{curSec?.name}</div>
+                  <div style={{fontSize:12,color:C.dim,marginTop:1}}>{curSec?.sub}</div>
+                </div>
+                <div style={{flex:1}} />
+                <button onClick={()=>analyzeSection(cur)} disabled={analyzing} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:10,cursor:analyzing?"not-allowed":"pointer",background:"rgba(155,109,255,.1)",border:"1px solid rgba(155,109,255,.3)",color:C.purple,fontSize:12,fontWeight:600,opacity:analyzing?.45:1}}>
+                  {analyzing?<div style={{width:13,height:13,border:"2px solid rgba(155,109,255,.3)",borderTopColor:C.purple,borderRadius:"50%",animation:"spin .6s linear infinite"}} />:"✦"}
+                  {analyzing?"Analyzing...":"Analyze Section"}
+                </button>
+              </div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>{renderStudioSection()}</div>
+          </div>
+
+          {/* Right AI Panel */}
+          <div style={{width:310,flexShrink:0,background:C.panel,borderLeft:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <div style={{padding:"10px 14px 0",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <div style={{width:7,height:7,borderRadius:"50%",background:C.purple,animation:"pulse .8s infinite"}} />
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.purple,letterSpacing:".12em",flex:1}}>✦ AI ASSISTANT</div>
+              </div>
+              {/* Tab switcher */}
+              <div style={{display:"flex",gap:2,paddingBottom:0}}>
+                {[
+                  {id:"analysis", label:"Section Analysis"},
+                  {id:"summary", label:"Auto Summary"},
+                ].map(tab => (
+                  <button key={tab.id} onClick={()=>setAiPanelTab(tab.id)} style={{
+                    flex:1, padding:"5px 8px", borderRadius:"7px 7px 0 0", fontSize:10, fontWeight:600, cursor:"pointer",
+                    border:`1px solid ${aiPanelTab===tab.id ? C.border : "transparent"}`,
+                    borderBottom: aiPanelTab===tab.id ? `1px solid ${C.panel}` : `1px solid ${C.border}`,
+                    background: aiPanelTab===tab.id ? C.panel : "transparent",
+                    color: aiPanelTab===tab.id ? C.teal : C.dim,
+                    fontFamily:"'DM Sans',sans-serif", transition:"all .15s",
+                  }}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
+              {aiPanelTab === "analysis" && <>
+                {rpContent==="loading" && <AILoadingState />}
+                {rpContent==="analysis" && rpData && <AIAnalysisPanel data={rpData} />}
+                {rpContent==="summary" && rpData && <AISummaryPanel data={rpData} />}
+                {rpContent==="default" && <AIDefaultState />}
+              </>}
+              {aiPanelTab === "summary" && (
+                <AINoteSummaryPanel
+                  noteId={savedNoteId}
+                  pt={pt}
+                  onApply={handleApplySummary}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Toasts */}
+        <div style={{position:"fixed",bottom:18,right:18,display:"flex",flexDirection:"column",gap:6,zIndex:9999}}>
+          {toasts.map(t=>(
+            <div key={t.id} style={{padding:"10px 14px",borderRadius:10,fontSize:12,animation:"fadeUp .2s ease",backdropFilter:"blur(8px)",background:t.type==='s'?"rgba(46,204,113,.11)":t.type==='e'?"rgba(255,92,108,.11)":"rgba(74,144,217,.11)",border:`1px solid ${t.type==='s'?"rgba(46,204,113,.38)":t.type==='e'?"rgba(255,92,108,.38)":"rgba(74,144,217,.38)"}`,color:t.type==='s'?C.green:t.type==='e'?C.red:C.blue}}>{t.msg}</div>
+          ))}
+        </div>
+
+        {/* Transcription Modal */}
+        <TranscriptionModal
+          open={showTranscription}
+          onClose={()=>setShowTranscription(false)}
+          onApplyToNote={handleApplyTranscription}
+        />
+
+        {/* Template Picker Modal */}
+        <TemplatePicker
+          open={showTemplatePicker}
+          onClose={()=>setShowTemplatePicker(false)}
+          onApply={handleApplyTemplate}
+        />
+      </div>
+    );
+  }
+
+  // ── NOTE DETAIL MODE ──
+
+  if (noteLoading && savedNoteId) {
+    return (
+      <div style={{background:C.navy,minHeight:"100vh",padding:40}}>
+        <Skeleton className="h-10 w-48 rounded-xl mb-4" />
+        <Skeleton className="h-64 rounded-2xl mb-4" />
+        <Skeleton className="h-96 rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (!note && savedNoteId) {
+    return (
+      <div style={{background:C.navy,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div className="text-center">
+          <FileText className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-slate-300">Note not found</h2>
+          <button onClick={()=>setMode("studio")} className="text-blue-400 hover:underline text-sm mt-2 block">← Back to Studio</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Full NoteDetail view
+  return (
+    <div style={{background:C.navy,fontFamily:"DM Sans,sans-serif",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
+      {/* Mode toggle bar */}
+      <div style={{background:"rgba(11,29,53,.97)",borderBottom:`1px solid ${C.border}`,padding:"8px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0,zIndex:100}}>
+        <Link to="/Home" style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:C.bright,cursor:"pointer",letterSpacing:"-.02em",textDecoration:"none"}}>Notrya</Link>
+        <div style={{width:1,height:14,background:C.border}} />
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.teal,letterSpacing:".12em"}}>CLINICAL NOTE STUDIO</span>
+        <div style={{display:"flex",alignItems:"center",gap:2,padding:"2px",borderRadius:9,background:C.edge,border:`1px solid ${C.border}`}}>
+          <button onClick={()=>setMode("studio")} style={{padding:"3px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="studio"?C.teal:"transparent",color:mode==="studio"?C.navy:C.dim,transition:"all .15s"}}>✦ Studio</button>
+          <button onClick={()=>setMode("notes")} style={{padding:"3px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:mode==="notes"?C.blue:"transparent",color:mode==="notes"?C.bright:C.dim,transition:"all .15s"}}>📋 Note Detail</button>
+        </div>
+        <div style={{flex:1}} />
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.dim}}>{clock}</span>
+      </div>
+
+      <NoteEditorTabs note={note} noteId={savedNoteId} initialTab={urlTab || activeTab} />
+    </div>
+  );
+}
+
+// ─── Studio Section Components ────────────────────────────────────
+
+function FC({title,badge,badgeColor="b",abn,children}){
+  const bk={a:"rgba(255,92,108,.16)",w:"rgba(245,166,35,.13)",g:"rgba(46,204,113,.1)",b:"rgba(74,144,217,.1)"};
+  const bt={a:C.red,w:C.amber,g:C.green,b:C.blue};
+  return(
+    <div style={{background:C.panel,border:`1px solid ${abn?"rgba(255,92,108,.4)":C.border}`,borderRadius:12,marginBottom:11,overflow:"hidden"}}>
+      <div style={{padding:"9px 14px",background:"rgba(0,0,0,.15)",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.dim,letterSpacing:".1em",flex:1}}>{title}</div>
+        {badge&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:7,background:bk[badgeColor]||bk.b,border:`1px solid ${(bt[badgeColor]||bt.b)}55`,color:bt[badgeColor]||bt.b}}>{badge}</span>}
+      </div>
+      <div style={{padding:"12px 14px"}}>{children}</div>
+    </div>
+  );
+}
+
+function SectionOverview({pt,totalAbn,dxList}){
+  const v=pt.vitals;
+  const stats=[
+    {lbl:"Heart Rate",val:v.hr,unit:"bpm",color:+v.hr>100||+v.hr<60?C.red:C.green},
+    {lbl:"Blood Pressure",val:v.sbp&&v.dbp?`${v.sbp}/${v.dbp}`:v.sbp||"—",unit:"mmHg",color:+v.sbp<90?C.red:C.green},
+    {lbl:"Temperature",val:v.temp,unit:"°C",color:+v.temp>38.3?C.red:C.green},
+    {lbl:"SpO₂",val:v.spo2,unit:"%",color:+v.spo2<94?C.red:+v.spo2<96?C.amber:C.green},
+    {lbl:"GCS",val:v.gcs,unit:"/15",color:+v.gcs<14?C.red:+v.gcs<15?C.amber:C.green},
+    {lbl:"Resp Rate",val:v.rr,unit:"br/min",color:+v.rr>20?C.amber:C.green},
+  ];
+  return(
+    <>
+      {totalAbn>0&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",borderRadius:11,background:"rgba(255,92,108,.07)",border:"1px solid rgba(255,92,108,.32)",marginBottom:14}}>
+        <span>🔴</span>
+        <div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.red,marginBottom:3}}>ABNORMAL FINDINGS — {totalAbn} TOTAL</div>
+          <div style={{fontSize:12,color:C.text,lineHeight:1.65}}>Review flagged sections for abnormal labs, physical exam findings, and imaging results.</div>
+        </div>
+      </div>}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11,marginBottom:11}}>
+        <FC title="PATIENT INFORMATION">
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            {[["Name",pt.name||"—"],["MRN",pt.mrn||"—"],["DOB",pt.dob||"—"],["Age/Sex",[pt.age,pt.sex].filter(Boolean).join(' ')||"—"],["Visit Type",pt.type||"—"],["Provider",pt.provider||"—"]].map(([l,v])=>(
+              <div key={l}><div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted}}>{l}</div><div style={{fontSize:12,fontWeight:500,color:C.text}}>{v}</div></div>
             ))}
           </div>
+        </FC>
+        <FC title="CHIEF COMPLAINT" badge={pt.cc?"HPI":"EMPTY"} badgeColor={pt.cc?"b":"w"}>
+          <div style={{fontSize:12,color:C.text,lineHeight:1.75}}>{pt.cc||<span style={{color:C.muted}}>No chief complaint entered yet.</span>}</div>
+        </FC>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:9}}>
+        {stats.map(s=>(
+          <div key={s.lbl} style={{background:C.edge,borderRadius:10,padding:"10px 12px",border:`1px solid ${s.val?s.color+"32":C.border}`}}>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,marginBottom:3}}>{s.lbl}</div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:20,fontWeight:700,color:s.val?s.color:C.muted}}>{s.val||"—"}</div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.muted}}>{s.unit}</div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function SectionCCHPI({pt,updatePt,inputS,textareaS,labelS}){
+  return(
+    <>
+      <FC title="CHIEF COMPLAINT" badge="SUBJECTIVE" badgeColor="b">
+        <textarea style={{...textareaS,minHeight:50}} value={pt.cc} onChange={e=>updatePt("cc",e.target.value)} placeholder="Enter chief complaint..." />
+      </FC>
+      <FC title="HISTORY OF PRESENT ILLNESS" badge="HPI" badgeColor="b">
+        <textarea style={{...textareaS,minHeight:130}} value={pt.hpi} onChange={e=>updatePt("hpi",e.target.value)} placeholder="Enter HPI with OLDCARTS elements..." />
+      </FC>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
+        {[["ONSET / TIMING","onset"],["SEVERITY / QUALITY","severity"],["MODIFYING FACTORS","modifying"],["ASSOCIATED SYMPTOMS","associated"]].map(([lbl,key])=>(
+          <FC key={key} title={lbl}><textarea style={{...textareaS,minHeight:45}} value={pt[key]||""} onChange={e=>updatePt(key,e.target.value)} placeholder="..." /></FC>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function SectionPMH({pt,updatePt,inputS,textareaS,labelS}){
+  return(
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
+      <div>
+        <FC title="PAST MEDICAL HISTORY"><textarea style={{...textareaS,minHeight:80}} value={pt.pmh.join('\n')} onChange={e=>updatePt("pmh",e.target.value.split('\n'))} placeholder="One condition per line..." /></FC>
+        <FC title="PAST SURGICAL HISTORY"><textarea style={{...textareaS,minHeight:60}} value={pt.psh.join('\n')} onChange={e=>updatePt("psh",e.target.value.split('\n'))} placeholder="One procedure per line..." /></FC>
+        <FC title="FAMILY HISTORY"><textarea style={{...textareaS,minHeight:55}} value={pt.family} onChange={e=>updatePt("family",e.target.value)} placeholder="Family history..." /></FC>
+      </div>
+      <div>
+        <FC title="SOCIAL HISTORY"><textarea style={{...textareaS,minHeight:70}} value={pt.social} onChange={e=>updatePt("social",e.target.value)} placeholder="Smoking, alcohol, drugs, occupation..." /></FC>
+        <FC title="ALLERGIES" badge={pt.allergies.length>0?`⚠ ${pt.allergies.length} KNOWN`:"NONE"} badgeColor={pt.allergies.length>0?"a":"g"} abn={pt.allergies.length>0}>
+          <textarea style={{...textareaS,minHeight:55}} value={pt.allergies.join('\n')} onChange={e=>updatePt("allergies",e.target.value.split('\n').filter(Boolean))} placeholder="One allergy per line (Drug — Reaction)..." />
+          {pt.allergies.filter(Boolean).map((a,i)=><div key={i} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 11px",borderRadius:9,background:"rgba(255,92,108,.09)",border:"1px solid rgba(255,92,108,.28)",margin:3,fontSize:12,color:C.red}}>⚠ {a}</div>)}
+        </FC>
+      </div>
+    </div>
+  );
+}
+
+function SectionMeds({pt,updatePt,inputS,labelS}){
+  return(
+    <>
+      <FC title="MEDICATIONS" badge={`${pt.meds.length} ACTIVE`} badgeColor="g">
+        {pt.meds.length>0?(
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr>{["MEDICATION","DOSE","ROUTE","FREQ","STATUS"].map(h=><th key={h} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,padding:"7px 12px",borderBottom:`1px solid ${C.border}`,background:"rgba(0,0,0,.2)",textAlign:"left"}}>{h}</th>)}</tr></thead>
+            <tbody>{pt.meds.map((m,i)=><tr key={i}><td style={{padding:"7px 12px",fontSize:12,fontWeight:500,color:C.bright,borderBottom:`1px solid rgba(255,255,255,.04)`}}>{m.n}</td><td style={{padding:"7px 12px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.teal,borderBottom:`1px solid rgba(255,255,255,.04)`}}>{m.d}</td><td style={{padding:"7px 12px",fontSize:11,color:C.dim,borderBottom:`1px solid rgba(255,255,255,.04)`}}>{m.r}</td><td style={{padding:"7px 12px",fontSize:11,color:C.dim,borderBottom:`1px solid rgba(255,255,255,.04)`}}>{m.f}</td><td style={{padding:"7px 12px",borderBottom:`1px solid rgba(255,255,255,.04)`}}><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,padding:"2px 7px",borderRadius:7,background:"rgba(46,204,113,.11)",color:C.green,border:"1px solid rgba(46,204,113,.22)"}}>ACTIVE</span></td></tr>)}</tbody>
+          </table>
+        ):<div style={{textAlign:"center",padding:"20px",color:C.muted,fontSize:12}}>No medications added.</div>}
+      </FC>
+      <FC title="ALLERGIES" badge={pt.allergies.length>0?`⚠ ${pt.allergies.length} KNOWN`:"NONE KNOWN"} badgeColor={pt.allergies.length>0?"a":"g"} abn={pt.allergies.length>0}>
+        {pt.allergies.filter(Boolean).length>0?pt.allergies.filter(Boolean).map((a,i)=><div key={i} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 11px",borderRadius:9,background:"rgba(255,92,108,.09)",border:"1px solid rgba(255,92,108,.28)",margin:3,fontSize:12,color:C.red}}>⚠ {a}</div>):<div style={{color:C.muted,fontSize:12}}>No known drug allergies</div>}
+      </FC>
+    </>
+  );
+}
+
+function SectionROS({pt,updatePt}){
+  const posSystems=Object.entries(pt.ros).filter(([_,v])=>v.pos.length>0);
+  const sysNames={constitutional:"Constitutional",cardiovascular:"Cardiovascular",respiratory:"Respiratory",gastrointestinal:"Gastrointestinal",genitourinary:"Genitourinary",neurological:"Neurological",musculoskeletal:"Musculoskeletal",integumentary:"Integumentary"};
+  const toggle=(sys,polarity,symptom)=>{
+    const cur=pt.ros[sys][polarity];
+    const opp=polarity==="pos"?"neg":"pos";
+    const newCur=cur.includes(symptom)?cur.filter(s=>s!==symptom):[...cur,symptom];
+    const newOpp=pt.ros[sys][opp].filter(s=>s!==symptom);
+    updatePt("ros",{...pt.ros,[sys]:{...pt.ros[sys],[polarity]:newCur,[opp]:newOpp}});
+  };
+  return(
+    <>
+      {posSystems.length>0&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",borderRadius:11,background:"rgba(255,92,108,.07)",border:"1px solid rgba(255,92,108,.32)",marginBottom:14}}>
+        <span>⚠️</span>
+        <div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.red,marginBottom:3}}>POSITIVE FINDINGS — {posSystems.length} SYSTEMS</div>
+          <div style={{fontSize:12,color:C.text,lineHeight:1.65}}>{posSystems.map(([k,v])=><span key={k} style={{display:"inline-block",padding:"1px 8px",borderRadius:6,background:"rgba(255,92,108,.14)",border:"1px solid rgba(255,92,108,.28)",color:C.red,fontSize:11,margin:"2px 3px"}}>{sysNames[k]||k}: {v.pos.join(', ')}</span>)}</div>
         </div>
-
-        {/* Note sections */}
-        <div className="cns-note-area">
-          {SECTIONS.map(s => {
-            const st   = sections[s.id]?.status || "empty";
-            const lk   = sections[s.id]?.locked  || false;
-            const txt  = sections[s.id]?.content  || "";
-            const busy = loading[s.id]             || false;
-
-            return (
-              <div
-                key={s.id}
-                ref={el => { sectionDivRefs.current[s.id] = el; }}
-                className={`cns-section${focused === s.id ? " active-section" : ""}`}
-                onClick={() => setFocused(s.id)}
-              >
-                <div className="cns-section-header">
-                  <span className="cns-section-icon">{s.icon}</span>
-                  <span className="cns-section-title">{s.title}</span>
-                  <span className="cns-section-shortcut">⌘{s.key}</span>
-                  <div className="cns-section-acts">
-                    <span className={`cns-section-status ${st}`}>
-                      {st === "locked" ? "🔒 locked" : st}
-                    </span>
-                    <button
-                      className={`cns-icon-btn${busy ? " spin" : ""}`}
-                      title="AI Generate (⌘G)"
-                      disabled={lk || busy}
-                      onClick={e => { e.stopPropagation(); generateSection(s.id); }}
-                    >
-                      {busy ? "⟳" : "✦"}
-                    </button>
-                    <button
-                      className="cns-icon-btn"
-                      title={lk ? "Unlock" : "Lock section"}
-                      onClick={e => { e.stopPropagation(); toggleLock(s.id); }}
-                      style={{ color: lk ? "var(--npi-blue,#3b9eff)" : undefined }}
-                    >
-                      {lk ? "🔒" : "🔓"}
-                    </button>
-                  </div>
-                </div>
-
-                <textarea
-                  ref={el => { textareaRefs.current[s.id] = el; }}
-                  className={`cns-ta${lk ? " locked" : ""}`}
-                  value={txt}
-                  disabled={lk}
-                  placeholder={PLACEHOLDERS[s.id] || ""}
-                  onChange={e => updateSection(s.id, e.target.value)}
-                  onFocus={() => setFocused(s.id)}
-                  onInput={e => {
-                    e.target.style.height = "auto";
-                    e.target.style.height = e.target.scrollHeight + "px";
-                  }}
-                />
-
-                <div className="cns-section-footer">
-                  <span className="cns-char-count">
-                    {txt.length} chars · {txt ? txt.split("\n").length : 0} lines
-                  </span>
-                  {!lk && (
-                    <span className="cns-mark-done" onClick={() => markComplete(s.id)}>
-                      {st === "complete" ? "✓ done — undo" : "Mark complete ✓"}
-                    </span>
-                  )}
-                </div>
+      </div>}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        {Object.entries(pt.ros).map(([sys,data])=>{
+          const hasPos=data.pos.length>0;
+          const allSyms=[...new Set([...data.pos,...data.neg])];
+          return(
+            <div key={sys} style={{background:hasPos?"rgba(255,92,108,.05)":C.edge,border:`1px solid ${hasPos?"rgba(255,92,108,.4)":C.border}`,borderRadius:10,padding:"10px 12px"}}>
+              <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                {sysNames[sys]||sys}
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:hasPos?C.red:C.green}}>{hasPos?'POS':'NEG'}</span>
               </div>
-            );
-          })}
-
-          {/* Signature */}
-          <div className="cns-sig">
-            <div style={{ fontSize:9, letterSpacing:2, textTransform:"uppercase",
-              color:"var(--npi-txt4,#7aa0c0)", marginBottom:8 }}>ELECTRONIC SIGNATURE</div>
-            <div>Attending Physician: ___________________________  Date: ______________</div>
-            <div style={{ marginTop:6, fontSize:10, color:"var(--npi-txt4,#7aa0c0)" }}>
-              I have personally seen and evaluated this patient and agree with the above documentation.
-              Notrya is a clinical decision support tool. Verify all clinical decisions independently.
+              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                {allSyms.map(s=>{
+                  const isPos=data.pos.includes(s);
+                  const isNeg=data.neg.includes(s);
+                  return<span key={s} onClick={()=>toggle(sys,isPos?"pos":"neg",s)} style={{padding:"3px 9px",borderRadius:7,fontSize:11,cursor:"pointer",background:isPos?"rgba(255,92,108,.13)":isNeg?"rgba(46,204,113,.09)":"transparent",border:`1px solid ${isPos?"rgba(255,92,108,.38)":isNeg?"rgba(46,204,113,.28)":C.border}`,color:isPos?C.red:isNeg?C.green:C.dim}}>{s}</span>;
+                })}
+              </div>
             </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function SectionVitals({pt,updatePt}){
+  const vDefs=[
+    {k:"hr",lbl:"HEART RATE",unit:"bpm",ref:"60-100",abn:v=>+v>100||+v<60,warn:()=>false},
+    {k:"sbp",lbl:"SYS BP",unit:"mmHg",ref:"90-140",abn:v=>+v<90,warn:v=>+v>160},
+    {k:"dbp",lbl:"DIA BP",unit:"mmHg",ref:"60-90",abn:v=>+v<60,warn:()=>false},
+    {k:"temp",lbl:"TEMPERATURE",unit:"°C",ref:"36.1-37.2",abn:v=>+v>38.3||+v<35,warn:v=>+v>37.5},
+    {k:"rr",lbl:"RESP RATE",unit:"br/min",ref:"12-20",abn:v=>+v>24||+v<10,warn:v=>+v>20},
+    {k:"spo2",lbl:"SpO₂",unit:"%",ref:"≥96%",abn:v=>+v<94,warn:v=>+v<96},
+    {k:"gcs",lbl:"GCS",unit:"/15",ref:"15",abn:v=>+v<14,warn:v=>+v<15},
+    {k:"wt",lbl:"WEIGHT",unit:"kg",ref:"—",abn:()=>false,warn:()=>false},
+    {k:"ht",lbl:"HEIGHT",unit:"cm",ref:"—",abn:()=>false,warn:()=>false},
+    {k:"bmi",lbl:"BMI",unit:"kg/m²",ref:"18.5-24.9",abn:v=>+v>40,warn:v=>+v>29.9||+v<18.5},
+  ];
+  const abnDefs=vDefs.filter(d=>pt.vitals[d.k]&&d.abn(pt.vitals[d.k]));
+  return(
+    <>
+      {abnDefs.length>0&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",borderRadius:11,background:"rgba(255,92,108,.07)",border:"1px solid rgba(255,92,108,.32)",marginBottom:14}}>
+        <span>🔴</span>
+        <div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.red,marginBottom:3}}>CRITICAL VITAL ABNORMALITIES — {abnDefs.length} OUT OF RANGE</div>
+          <div style={{fontSize:12,color:C.text}}>{abnDefs.map(d=><span key={d.k} style={{display:"inline-block",padding:"1px 8px",borderRadius:6,background:"rgba(255,92,108,.14)",border:"1px solid rgba(255,92,108,.28)",color:C.red,fontSize:11,margin:"2px 3px"}}>{d.lbl}: {pt.vitals[d.k]} {d.unit}</span>)}</div>
+        </div>
+      </div>}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+        {vDefs.map(d=>{
+          const val=pt.vitals[d.k];
+          const isAbn=val&&d.abn(val);
+          const isWarn=val&&!isAbn&&d.warn(val);
+          return(
+            <div key={d.k} style={{background:isAbn?"rgba(255,92,108,.07)":isWarn?"rgba(245,166,35,.05)":C.edge,border:`1px solid ${isAbn?"rgba(255,92,108,.5)":isWarn?"rgba(245,166,35,.4)":C.border}`,borderRadius:11,padding:11}}>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.muted,letterSpacing:".07em",marginBottom:3}}>{d.lbl}</div>
+              <input value={val} onChange={e=>updatePt(`vitals.${d.k}`,e.target.value)} style={{width:"100%",background:"transparent",border:"none",color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:21,fontWeight:700,outline:"none"}} placeholder="—" />
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.muted,marginTop:2}}>{d.unit}</div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,marginTop:3,color:isAbn?C.red:isWarn?C.amber:val?C.green:C.muted}}>{isAbn?"⚠":isWarn?"!":val?"✓":"—"} {d.ref}</div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function SectionPE({pt,updatePt}){
+  const syNames={general:"General",heent:"HEENT",cardiovascular:"Cardiovascular",pulmonary:"Pulmonary",abdomen:"Abdomen",neurological:"Neurological",extremities:"Extremities",skin:"Skin"};
+  const abnSys=Object.entries(pt.pe).filter(([_,v])=>v.abn);
+  const toggleAbn=sys=>updatePt("pe",{...pt.pe,[sys]:{...pt.pe[sys],abn:!pt.pe[sys].abn}});
+  const updateNote=(sys,val)=>updatePt("pe",{...pt.pe,[sys]:{...pt.pe[sys],n:val}});
+  return(
+    <>
+      {abnSys.length>0&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",borderRadius:11,background:"rgba(255,92,108,.07)",border:"1px solid rgba(255,92,108,.32)",marginBottom:14}}>
+        <span>🔴</span>
+        <div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.red,marginBottom:3}}>ABNORMAL PHYSICAL FINDINGS — {abnSys.length} SYSTEMS</div>
+          <div style={{fontSize:12,color:C.text}}>{abnSys.map(([k])=><span key={k} style={{display:"inline-block",padding:"1px 8px",borderRadius:6,background:"rgba(255,92,108,.14)",border:"1px solid rgba(255,92,108,.28)",color:C.red,fontSize:11,margin:"2px 3px"}}>{syNames[k]||k}</span>)}</div>
+        </div>
+      </div>}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+        {Object.entries(pt.pe).map(([sys,data])=>(
+          <div key={sys} style={{background:data.abn?"rgba(255,92,108,.05)":C.edge,border:`1px solid ${data.abn?"rgba(255,92,108,.4)":C.border}`,borderRadius:11,padding:11}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.dim,letterSpacing:".06em",textTransform:"uppercase",marginBottom:7,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              {syNames[sys]||sys}
+              <button onClick={()=>toggleAbn(sys)} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:7,cursor:"pointer",background:data.abn?"rgba(255,92,108,.16)":"rgba(46,204,113,.1)",border:`1px solid ${data.abn?"rgba(255,92,108,.32)":"rgba(46,204,113,.22)"}`,color:data.abn?C.red:C.green}}>{data.abn?"ABNORMAL":"NORMAL"}</button>
+            </div>
+            <textarea value={data.n} onChange={e=>updateNote(sys,e.target.value)} rows={2} style={{width:"100%",background:"transparent",border:"none",borderTop:`1px solid ${C.border}`,paddingTop:7,color:C.text,fontFamily:"'DM Sans',sans-serif",fontSize:12,outline:"none",resize:"none",lineHeight:1.6}} placeholder={`${syNames[sys]||sys} examination findings...`} />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function SectionLabs({pt,updatePt}){
+  const labs=pt.labs;
+  const abnLabs=labs.filter(l=>l.f&&l.f!=='N');
+  const addLab=()=>updatePt("labs",[...labs,{n:"",v:"",ref:"",u:"",f:"N"}]);
+  const updateLab=(i,field,val)=>updatePt("labs",labs.map((l,idx)=>idx===i?{...l,[field]:val}:l));
+  const removeLab=(i)=>updatePt("labs",labs.filter((_,idx)=>idx!==i));
+  return(
+    <>
+      {abnLabs.length>0&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",borderRadius:11,background:"rgba(255,92,108,.07)",border:"1px solid rgba(255,92,108,.32)",marginBottom:14}}>
+        <span>🔴</span>
+        <div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.red,marginBottom:3}}>CRITICAL LAB ABNORMALITIES — {abnLabs.length} VALUES OUT OF RANGE</div>
+          <div style={{fontSize:12,color:C.text}}>{abnLabs.map((l,i)=><span key={i} style={{display:"inline-block",padding:"1px 8px",borderRadius:6,background:"rgba(255,92,108,.14)",border:"1px solid rgba(255,92,108,.28)",color:C.red,fontSize:11,margin:"2px 3px"}}>{l.n}: {l.v} ({l.f==='H'?'HIGH':'LOW'})</span>)}</div>
+        </div>
+      </div>}
+      <div style={{background:C.panel,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",marginBottom:11}}>
+        <div style={{padding:"9px 14px",background:"rgba(0,0,0,.15)",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8}}>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.dim,flex:1}}>LAB RESULTS</div>
+          {abnLabs.length>0&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:7,background:"rgba(255,92,108,.16)",color:C.red,border:"1px solid rgba(255,92,108,.32)"}}>{abnLabs.length} ABNORMAL</span>}
+        </div>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>{["TEST","RESULT","REFERENCE","UNITS","FLAG",""].map(h=><th key={h} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.dim,padding:"7px 12px",borderBottom:`1px solid ${C.border}`,textAlign:"left",background:C.edge}}>{h}</th>)}</tr></thead>
+          <tbody>
+            {labs.map((l,i)=>{
+              const fg=l.f==='H'||l.f==='L'?C.red:C.text;
+              const ar=l.f==='H'?'↑':l.f==='L'?'↓':'';
+              return(
+                <tr key={i}>
+                  <td style={{padding:"7px 12px",borderBottom:`1px solid rgba(255,255,255,.04)`}}><input value={l.n} onChange={e=>updateLab(i,'n',e.target.value)} style={{background:"transparent",border:"none",color:C.text,fontSize:12,outline:"none",width:"100%"}} placeholder="Test name" /></td>
+                  <td style={{padding:"7px 12px",borderBottom:`1px solid rgba(255,255,255,.04)`}}><input value={l.v} onChange={e=>updateLab(i,'v',e.target.value)} style={{background:"transparent",border:"none",color:fg,fontFamily:"'JetBrains Mono',monospace",fontWeight:600,fontSize:12,outline:"none",width:"80px"}} placeholder="—" />{ar&&<span style={{fontSize:10,color:C.red,marginLeft:2}}>{ar}</span>}</td>
+                  <td style={{padding:"7px 12px",borderBottom:`1px solid rgba(255,255,255,.04)`}}><input value={l.ref} onChange={e=>updateLab(i,'ref',e.target.value)} style={{background:"transparent",border:"none",color:C.muted,fontFamily:"'JetBrains Mono',monospace",fontSize:10,outline:"none",width:"100%"}} placeholder="ref range" /></td>
+                  <td style={{padding:"7px 12px",borderBottom:`1px solid rgba(255,255,255,.04)`}}><input value={l.u} onChange={e=>updateLab(i,'u',e.target.value)} style={{background:"transparent",border:"none",color:C.muted,fontFamily:"'JetBrains Mono',monospace",fontSize:10,outline:"none",width:"80px"}} placeholder="unit" /></td>
+                  <td style={{padding:"7px 12px",borderBottom:`1px solid rgba(255,255,255,.04)`}}><select value={l.f} onChange={e=>updateLab(i,'f',e.target.value)} style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:5,padding:"2px 5px",color:l.f!=='N'?C.red:C.green,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",outline:"none"}}><option value="N">N</option><option value="H">H</option><option value="L">L</option></select></td>
+                  <td style={{padding:"7px 8px",borderBottom:`1px solid rgba(255,255,255,.04)`}}><button onClick={()=>removeLab(i)} style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:14,padding:"2px 5px"}}>×</button></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div style={{padding:"8px 14px"}}><button onClick={addLab} style={{padding:"7px 14px",borderRadius:9,background:"transparent",border:`1px dashed ${C.border}`,color:C.dim,fontSize:11,cursor:"pointer"}}>+ Add Lab Result</button></div>
+      </div>
+    </>
+  );
+}
+
+function SectionImaging({pt,updatePt}){
+  const imaging=pt.imaging;
+  const abnImg=imaging.filter(i=>i.abn);
+  const addImg=()=>updatePt("imaging",[...imaging,{type:"",title:"",date:"Today",f:"",imp:"",abn:false}]);
+  const updateImg=(i,field,val)=>updatePt("imaging",imaging.map((img,idx)=>idx===i?{...img,[field]:val}:img));
+  const removeImg=(i)=>updatePt("imaging",imaging.filter((_,idx)=>idx!==i));
+  return(
+    <>
+      {abnImg.length>0&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",borderRadius:11,background:"rgba(255,92,108,.07)",border:"1px solid rgba(255,92,108,.32)",marginBottom:14}}>
+        <span>🔴</span>
+        <div><div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.red,marginBottom:3}}>ABNORMAL DIAGNOSTIC FINDINGS</div>
+        <div style={{fontSize:12,color:C.text}}>{abnImg.map((img,i)=><span key={i} style={{display:"inline-block",padding:"1px 8px",borderRadius:6,background:"rgba(255,92,108,.14)",border:"1px solid rgba(255,92,108,.28)",color:C.red,fontSize:11,margin:"2px 3px"}}>{img.type}: {img.imp}</span>)}</div></div>
+      </div>}
+      {imaging.map((img,i)=>(
+        <div key={i} style={{background:C.edge,border:`1px solid ${img.abn?"rgba(255,92,108,.38)":C.border}`,borderRadius:11,padding:11,marginBottom:9}}>
+          <div style={{display:"grid",gridTemplateColumns:"80px 1fr 80px auto",gap:8,marginBottom:8}}>
+            <input value={img.type} onChange={e=>updateImg(i,'type',e.target.value)} placeholder="TYPE" style={{background:C.panel,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 7px",color:C.blue,fontFamily:"'JetBrains Mono',monospace",fontSize:10,outline:"none",fontWeight:700}} />
+            <input value={img.title} onChange={e=>updateImg(i,'title',e.target.value)} placeholder="Study name / title" style={{background:C.panel,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",color:C.bright,fontSize:13,fontWeight:600,outline:"none"}} />
+            <input value={img.date} onChange={e=>updateImg(i,'date',e.target.value)} placeholder="Date" style={{background:C.panel,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 7px",color:C.dim,fontSize:11,outline:"none"}} />
+            <button onClick={()=>removeImg(i)} style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:"2px 6px"}}>×</button>
+          </div>
+          <textarea value={img.f} onChange={e=>updateImg(i,'f',e.target.value)} rows={2} placeholder="Findings..." style={{width:"100%",background:"transparent",border:"none",color:C.text,fontFamily:"'DM Sans',sans-serif",fontSize:12,outline:"none",resize:"none",lineHeight:1.65,marginBottom:5}} />
+          <div style={{borderTop:`1px solid ${C.border}`,paddingTop:7,display:"flex",gap:8,alignItems:"center"}}>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.amber,fontWeight:700}}>IMPRESSION:</span>
+            <input value={img.imp} onChange={e=>updateImg(i,'imp',e.target.value)} placeholder="Impression..." style={{flex:1,background:"transparent",border:"none",color:C.dim,fontSize:12,outline:"none"}} />
+            <button onClick={()=>updateImg(i,'abn',!img.abn)} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:7,cursor:"pointer",background:img.abn?"rgba(255,92,108,.16)":"rgba(46,204,113,.1)",border:`1px solid ${img.abn?"rgba(255,92,108,.32)":"rgba(46,204,113,.22)"}`,color:img.abn?C.red:C.green}}>{img.abn?"ABNORMAL":"NORMAL"}</button>
           </div>
         </div>
+      ))}
+      <button onClick={addImg} style={{width:"100%",padding:10,borderRadius:11,background:"transparent",border:`1px dashed ${C.border}`,color:C.dim,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>+ Add Imaging / Diagnostic Study</button>
+    </>
+  );
+}
+
+function SectionAssessment({dxList,addDx,removeDx,updateDx,inputS,textareaS}){
+  return(
+    <>
+      {dxList.map((dx,i)=>(
+        <div key={i} style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:11,padding:11,marginBottom:9}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:C.teal,width:22,height:22,borderRadius:"50%",border:"1px solid rgba(0,212,188,.38)",background:"rgba(0,212,188,.09)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+            <input value={dx.dx} onChange={e=>updateDx(i,'dx',e.target.value)} placeholder="Enter diagnosis..." style={{flex:1,background:"transparent",border:"none",color:C.bright,fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:600,outline:"none"}} />
+            <button onClick={()=>removeDx(i)} style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:"3px 6px"}}>×</button>
+          </div>
+          <textarea value={dx.plan} onChange={e=>updateDx(i,'plan',e.target.value)} rows={3} placeholder="Management plan..." style={{width:"100%",background:"transparent",border:"none",borderTop:`1px solid ${C.border}`,paddingTop:7,color:C.text,fontFamily:"'DM Sans',sans-serif",fontSize:12,outline:"none",resize:"none",lineHeight:1.65}} />
+        </div>
+      ))}
+      <button onClick={addDx} style={{width:"100%",padding:10,borderRadius:11,background:"transparent",border:`1px dashed ${C.border}`,color:C.dim,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>+ Add Diagnosis</button>
+    </>
+  );
+}
+
+function SectionDisposition({pt,updatePt,inputS,textareaS,labelS}){
+  const opts=[{id:"admit-icu",lbl:"Admit — ICU",icon:"🏥"},{id:"admit-floor",lbl:"Admit — Floor",icon:"🛏️"},{id:"obs",lbl:"Observation",icon:"👁️"},{id:"discharge",lbl:"Discharge Home",icon:"🏠"}];
+  return(
+    <>
+      <FC title="DISPOSITION DECISION">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+          {opts.map(o=><div key={o.id} onClick={()=>updatePt("disposition",o.id)} style={{padding:12,borderRadius:11,border:`2px solid ${pt.disposition===o.id?C.teal:C.border}`,cursor:"pointer",textAlign:"center",transition:"all .15s",background:pt.disposition===o.id?"rgba(0,212,188,.07)":C.edge}}>
+            <div style={{fontSize:22,marginBottom:4}}>{o.icon}</div>
+            <div style={{fontSize:12,fontWeight:600,color:pt.disposition===o.id?C.teal:C.text}}>{o.lbl}</div>
+          </div>)}
+        </div>
+      </FC>
+      <FC title="DISPOSITION NOTES"><textarea style={{...textareaS,minHeight:65}} value={pt.dc} onChange={e=>updatePt("dc",e.target.value)} placeholder="Disposition notes, instructions, consultations..." /></FC>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
+        <FC title="FOLLOW-UP INSTRUCTIONS"><textarea style={{...textareaS,minHeight:55}} value={pt.followup||""} onChange={e=>updatePt("followup",e.target.value)} placeholder="Follow-up instructions..." /></FC>
+        <FC title="PATIENT EDUCATION"><textarea style={{...textareaS,minHeight:55}} value={pt.education||""} onChange={e=>updatePt("education",e.target.value)} placeholder="Patient education notes..." /></FC>
       </div>
+    </>
+  );
+}
+
+function AILoadingState(){
+  const shimmer={background:"linear-gradient(90deg,#162d4f 0%,#2a4d7220 50%,#162d4f 100%)",backgroundSize:"600px 100%",animation:"shimmer 1.4s infinite",minHeight:55,borderRadius:"0 0 11px 11px"};
+  return(
+    <>
+      <div style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:11,marginBottom:10,overflow:"hidden"}}>
+        <div style={{padding:"9px 12px",borderBottom:`1px solid ${C.border}`,background:"rgba(0,0,0,.2)",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:12}}>✦</span><span style={{fontSize:11,fontWeight:600,color:C.text,flex:1}}>Analyzing...</span></div>
+        <div style={shimmer} />
+      </div>
+    </>
+  );
+}
+
+function AIAnalysisPanel({data}){
+  return(
+    <>
+      <div style={{background:"linear-gradient(135deg,rgba(0,212,188,.06),rgba(155,109,255,.03))",border:"1px solid rgba(0,212,188,.22)",borderRadius:12,padding:12,marginBottom:11}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.teal,letterSpacing:".12em",marginBottom:6}}>✦ AI ANALYSIS</div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.7}}>{data.summary||""}</div>
+      </div>
+      {data.abnormals?.length>0&&<div style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:11,marginBottom:10,overflow:"hidden"}}>
+        <div style={{padding:"9px 12px",borderBottom:`1px solid ${C.border}`,background:"rgba(0,0,0,.2)",display:"flex",alignItems:"center",gap:6}}><span>⚠️</span><span style={{fontSize:11,fontWeight:600,color:C.text,flex:1}}>Abnormal Findings</span><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,padding:"1px 7px",borderRadius:7,background:"rgba(255,92,108,.13)",color:C.red,border:"1px solid rgba(255,92,108,.28)"}}>{data.abnormals.length}</span></div>
+        <div style={{padding:"10px 12px"}}>{data.abnormals.map((a,i)=>{const dc=a.severity==='critical'?C.red:a.severity==='high'?C.amber:C.blue;return<div key={i} style={{display:"flex",gap:6,padding:"5px 0",borderBottom:i<data.abnormals.length-1?"1px solid rgba(255,255,255,.04)":"none"}}><div style={{width:5,height:5,borderRadius:"50%",background:dc,flexShrink:0,marginTop:5}} /><div style={{fontSize:11,color:C.text,lineHeight:1.55,flex:1}}><strong style={{color:dc}}>{a.finding}</strong> — {a.detail}</div></div>;})}</div>
+      </div>}
+      {data.insights?.length>0&&<div style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:11,marginBottom:10,overflow:"hidden"}}>
+        <div style={{padding:"9px 12px",borderBottom:`1px solid ${C.border}`,background:"rgba(0,0,0,.2)",display:"flex",alignItems:"center",gap:6}}><span>💡</span><span style={{fontSize:11,fontWeight:600,color:C.text}}>Clinical Insights</span></div>
+        <div style={{padding:"10px 12px"}}>{data.insights.map((ins,i)=><div key={i} style={{display:"flex",gap:6,padding:"5px 0",borderBottom:i<data.insights.length-1?"1px solid rgba(255,255,255,.04)":"none"}}><div style={{width:5,height:5,borderRadius:"50%",background:C.purple,flexShrink:0,marginTop:5}} /><div style={{fontSize:11,color:C.text,lineHeight:1.55,flex:1}}>{ins}</div></div>)}</div>
+      </div>}
+      {data.recommendation&&<div style={{padding:"9px 12px",borderRadius:9,background:"rgba(0,212,188,.05)",border:"1px solid rgba(0,212,188,.22)",fontSize:12,color:C.teal,marginBottom:9}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,letterSpacing:".1em",marginBottom:4}}>RECOMMENDATION</div>{data.recommendation}
+      </div>}
+      {data.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4}}>{data.tags.map((t,i)=>{const bc=t.color==='red'?"rgba(255,92,108,.14)":t.color==='amber'?"rgba(245,166,35,.11)":t.color==='green'?"rgba(46,204,113,.09)":"rgba(74,144,217,.1)";const tc=t.color==='red'?C.red:t.color==='amber'?C.amber:t.color==='green'?C.green:C.blue;return<span key={i} style={{padding:"2px 7px",borderRadius:7,fontSize:10,background:bc,color:tc,border:`1px solid ${tc}28`}}>{t.text}</span>;})}</div>}
+    </>
+  );
+}
+
+function AISummaryPanel({data}){
+  return(
+    <>
+      <div style={{background:"linear-gradient(135deg,rgba(0,212,188,.06),rgba(155,109,255,.03))",border:"1px solid rgba(0,212,188,.22)",borderRadius:12,padding:12,marginBottom:11}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.teal,letterSpacing:".12em",marginBottom:6}}>✦ NOTE SUMMARY</div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.7}}>{data.summary||""}</div>
+      </div>
+      {data.criticals?.length>0&&<div style={{background:"rgba(255,92,108,.05)",border:"1px solid rgba(255,92,108,.22)",borderRadius:11,padding:"10px 12px",marginBottom:10}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:C.red,letterSpacing:".1em",marginBottom:7}}>⚠ CRITICAL FINDINGS</div>
+        {data.criticals.map((c,i)=>{const dc=c.flag==='critical'?C.red:c.flag==='high'?C.amber:C.blue;return<div key={i} style={{fontSize:11,color:C.text,padding:"4px 0",borderBottom:"1px solid rgba(255,255,255,.04)",display:"flex",gap:5}}><span style={{color:dc}}>•</span><span>{c.item}</span></div>;})}
+      </div>}
+      {data.keyDx?.length>0&&<div style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:11,marginBottom:10,overflow:"hidden"}}>
+        <div style={{padding:"9px 12px",borderBottom:`1px solid ${C.border}`,background:"rgba(0,0,0,.2)",display:"flex",alignItems:"center",gap:6}}><span>⚕️</span><span style={{fontSize:11,fontWeight:600,color:C.text}}>Key Diagnoses</span></div>
+        <div style={{padding:"10px 12px"}}>{data.keyDx.map((d,i)=><div key={i} style={{display:"flex",gap:6,padding:"5px 0",borderBottom:i<data.keyDx.length-1?"1px solid rgba(255,255,255,.04)":"none"}}><div style={{width:5,height:5,borderRadius:"50%",background:C.teal,flexShrink:0,marginTop:5}} /><div style={{fontSize:11,color:C.text,lineHeight:1.55,flex:1}}>{i+1}. {d}</div></div>)}</div>
+      </div>}
+      {data.actions?.length>0&&<div style={{background:C.edge,border:`1px solid ${C.border}`,borderRadius:11,marginBottom:10,overflow:"hidden"}}>
+        <div style={{padding:"9px 12px",borderBottom:`1px solid ${C.border}`,background:"rgba(0,0,0,.2)",display:"flex",alignItems:"center",gap:6}}><span>⚡</span><span style={{fontSize:11,fontWeight:600,color:C.text}}>Recommended Actions</span></div>
+        <div style={{padding:"10px 12px"}}>{data.actions.map((a,i)=><div key={i} style={{display:"flex",gap:6,padding:"5px 0",borderBottom:i<data.actions.length-1?"1px solid rgba(255,255,255,.04)":"none"}}><div style={{width:5,height:5,borderRadius:"50%",background:C.amber,flexShrink:0,marginTop:5}} /><div style={{fontSize:11,color:C.text,lineHeight:1.55,flex:1}}>{a}</div></div>)}</div>
+      </div>}
+      {data.mdm&&<div style={{padding:"8px 12px",borderRadius:9,background:"rgba(74,144,217,.07)",border:"1px solid rgba(74,144,217,.22)",fontSize:11,color:C.blue}}><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,letterSpacing:".1em"}}>MDM LEVEL: </span>{data.mdm}</div>}
+    </>
+  );
+}
+
+function AIDefaultState(){
+  return(
+    <div style={{padding:"22px 14px",textAlign:"center",color:C.muted}}>
+      <div style={{fontSize:30,marginBottom:9,opacity:.4}}>🤖</div>
+      <div style={{fontSize:12,color:C.dim,lineHeight:1.7}}>Select a section and click <strong style={{color:C.purple}}>Analyze Section</strong> for AI insights, or use <strong style={{color:C.teal}}>Analyze Entire Note</strong> for a complete review.</div>
     </div>
   );
 }

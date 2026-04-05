@@ -902,7 +902,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                 onClick={() => { if (coll) { toggleCollapse(s.id); setFocused(s.id); } else setFocused(s.id); }}
               >
                 {/* Section header */}
-                <div className="cns2-sec-hdr" onClick={() => { if (!coll) toggleCollapse(s.id); }}>
+                <div className="cns2-sec-hdr" onClick={() => { toggleCollapse(s.id); setFocused(s.id); }}>
                   <span className="cns2-sec-num">{s.key}</span>
                   <span className="cns2-sec-icon">{s.icon}</span>
                   <div className="cns2-sec-info">

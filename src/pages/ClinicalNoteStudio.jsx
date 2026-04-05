@@ -98,7 +98,7 @@ import { toast } from "sonner";
 .cns2-area { flex:1; overflow-y:auto; padding:14px 18px 40px; display:flex; flex-direction:column; gap:8px; }
 
 .cns2-sec { background:rgba(8,22,40,.82); border:1px solid rgba(26,53,85,.5);
-  border-radius:12px; overflow:hidden; transition:border-color .2s, box-shadow .2s; }
+  border-radius:12px; transition:border-color .2s, box-shadow .2s; }
 .cns2-sec:focus-within { border-color:var(--bhi); }
 .cns2-sec.focused { border-color:rgba(59,158,255,.45);
   box-shadow:0 0 0 1px rgba(59,158,255,.12), 0 4px 20px rgba(0,0,0,.3); }

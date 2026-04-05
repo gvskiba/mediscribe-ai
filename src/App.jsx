@@ -53,6 +53,7 @@ import DischargeHub from '@/pages/DischargeHub';
 import BillingSubmissions from '@/pages/BillingSubmissions';
 import WoundHub from '@/pages/WoundHub';
 import ClinicalNoteStudio from '@/pages/ClinicalNoteStudio';
+import EDTrackingBoard from '@/pages/EDTrackingBoard';
 
 
 
@@ -156,6 +157,7 @@ const AuthenticatedApp = () => {
       <Route path="/billing-submissions" element={<BillingSubmissions />} />
       <Route path="/wound-hub" element={<LayoutWrapper currentPageName="WoundHub"><WoundHub /></LayoutWrapper>} />
       <Route path="/ClinicalNoteStudio" element={<ClinicalNoteStudio />} />
+      <Route path="/EDTrackingBoard" element={<EDTrackingBoard />} />
 
 
       <Route path="*" element={<PageNotFound />} />

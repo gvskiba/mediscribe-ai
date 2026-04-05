@@ -4,6 +4,7 @@
  * Fast Track · CC Quick Sort · Chief Complaint Protocols · AI Assistant
  */
 import { useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
 (() => {
@@ -455,6 +456,7 @@ function VitalRow({ row }) {
 //  MAIN COMPONENT
 // ════════════════════════════════════════════════════════════
 export default function TriageHub() {
+  const navigate = useNavigate();
   const [nav, setNav]               = useState("reference");
   const [toasts, setToasts]         = useState([]);
   const [search, setSearch]         = useState("");
@@ -1164,6 +1166,7 @@ Format: {"summary":"Direct answer","keyPoints":["Point 1","Point 2","Point 3"],"
       {/* MAIN */}
       <main style={{flex:1,padding:"30px 38px 52px",overflowY:"auto",position:"relative",zIndex:1}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:22}}>
+          <button onClick={()=>navigate('/hub')} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:9,border:"1px solid rgba(251,146,60,0.35)",background:"rgba(251,146,60,0.08)",color:AC,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(251,146,60,0.18)";e.currentTarget.style.borderColor="rgba(251,146,60,0.6)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(251,146,60,0.08)";e.currentTarget.style.borderColor="rgba(251,146,60,0.35)";}}>← Back to Hub</button>
           <div style={{height:1,width:24,background:`${activeNav?.accent||AC}60`,borderRadius:1}}/>
           <span style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:activeNav?.accent||AC,textTransform:"uppercase",letterSpacing:".14em",fontWeight:700}}>{activeNav?.label}</span>
           <div style={{flex:1,height:1,background:`linear-gradient(90deg,${activeNav?.accent||AC}30,transparent)`}}/>

@@ -10,7 +10,6 @@ import { toast } from "sonner";
   s.textContent = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-/* FIX 1: vars scoped to .cns2 — no global :root pollution */
 .cns2 {
   --bg:#050f1e; --panel:#081628; --card:#0b1e36; --up:#0e2544;
   --bd:#1a3555; --bhi:#2a4f7a;
@@ -18,236 +17,228 @@ import { toast } from "sonner";
   --orange:#ff9f43; --purple:#9b6dff; --green:#3dffa0; --red:#ff4444;
   --t:#f2f7ff; --t2:#b8d4f0; --t3:#82aece; --t4:#5a82a8;
 }
-.cns2 *{box-sizing:border-box}
-.cns2,::-webkit-scrollbar{width:3px;height:3px}
-.cns2 ::-webkit-scrollbar{width:3px;height:3px}
-.cns2 ::-webkit-scrollbar-thumb{background:var(--bhi);border-radius:2px}
+.cns2 * { box-sizing: border-box; }
+.cns2 ::-webkit-scrollbar { width: 3px; height: 3px; }
+.cns2 ::-webkit-scrollbar-thumb { background: var(--bhi); border-radius: 2px; }
 
-.cns2{position:fixed;inset:0;display:flex;flex-direction:column;
-  background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--t)}
-.cns2.emb{position:relative;inset:auto;height:100%}
+.cns2 { position:fixed; inset:0; display:flex; flex-direction:column;
+  background:var(--bg); font-family:'DM Sans',sans-serif; color:var(--t); }
+.cns2.emb { position:relative; inset:auto; height:100%; }
 
-.cns2-top{height:54px;flex-shrink:0;background:var(--panel);border-bottom:1px solid var(--bd);
-  display:flex;align-items:center;padding:0 16px;gap:10px;z-index:20;overflow:hidden}
-.cns2-badge{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;
-  background:rgba(0,229,192,.08);border:1px solid rgba(0,229,192,.3);
-  color:var(--teal);border-radius:20px;padding:2px 10px;white-space:nowrap;flex-shrink:0}
-.cns2-ptname{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;
-  color:var(--t);white-space:nowrap}
-.cns2-meta{font-size:11px;color:var(--t3);white-space:nowrap}
-.cns2-cc{font-size:11px;color:var(--orange);font-weight:600;white-space:nowrap;
-  font-family:'JetBrains Mono',monospace}
-.cns2-esi{font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:700;
-  padding:2px 9px;border-radius:4px;flex-shrink:0;
-  background:rgba(255,107,107,.1);color:var(--coral);border:1px solid rgba(255,107,107,.3)}
-.cns2-timer{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
-  padding:3px 10px;border-radius:6px;flex-shrink:0;letter-spacing:1px;
-  background:rgba(245,200,66,.08);color:var(--gold);border:1px solid rgba(245,200,66,.25)}
-.cns2-timer.over{background:rgba(255,107,107,.1);color:var(--coral);border-color:rgba(255,107,107,.3)}
-.cns2-acts{margin-left:auto;display:flex;gap:5px;align-items:center;flex-shrink:0}
-.cns2-prog-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.cns2-prog-dots{display:flex;gap:3px}
-.cns2-prog-dot{width:8px;height:8px;border-radius:50%;background:var(--up);
-  border:1px solid var(--bd);transition:all .3s}
-.cns2-prog-dot.done{background:var(--teal);border-color:var(--teal)}
-.cns2-prog-dot.draft{background:var(--orange);border-color:var(--orange)}
+.cns2-top { height:54px; flex-shrink:0; background:var(--panel); border-bottom:1px solid var(--bd);
+  display:flex; align-items:center; padding:0 16px; gap:10px; z-index:20; overflow:hidden; }
+.cns2-badge { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px;
+  background:rgba(0,229,192,.08); border:1px solid rgba(0,229,192,.3);
+  color:var(--teal); border-radius:20px; padding:2px 10px; white-space:nowrap; flex-shrink:0; }
+.cns2-ptname { font-family:'Playfair Display',serif; font-size:16px; font-weight:700;
+  color:var(--t); white-space:nowrap; }
+.cns2-meta { font-size:11px; color:var(--t3); white-space:nowrap; }
+.cns2-cc { font-size:11px; color:var(--orange); font-weight:600; white-space:nowrap;
+  font-family:'JetBrains Mono',monospace; }
+.cns2-esi { font-size:10px; font-family:'JetBrains Mono',monospace; font-weight:700;
+  padding:2px 9px; border-radius:4px; flex-shrink:0;
+  background:rgba(255,107,107,.1); color:var(--coral); border:1px solid rgba(255,107,107,.3); }
+.cns2-timer { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;
+  padding:3px 10px; border-radius:6px; flex-shrink:0; letter-spacing:1px;
+  background:rgba(245,200,66,.08); color:var(--gold); border:1px solid rgba(245,200,66,.25); }
+.cns2-timer.over { background:rgba(255,107,107,.1); color:var(--coral); border-color:rgba(255,107,107,.3); }
+.cns2-acts { margin-left:auto; display:flex; gap:5px; align-items:center; flex-shrink:0; }
+.cns2-prog-wrap { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.cns2-prog-dots { display:flex; gap:3px; }
+.cns2-prog-dot { width:8px; height:8px; border-radius:50%; background:var(--up);
+  border:1px solid var(--bd); transition:all .3s; }
+.cns2-prog-dot.done { background:var(--teal); border-color:var(--teal); }
+.cns2-prog-dot.draft { background:var(--orange); border-color:var(--orange); }
 
-.cns2 .btn{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;
-  display:inline-flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;
-  transition:all .15s;white-space:nowrap;border:none}
-.cns2 .btn:disabled{opacity:.4;cursor:not-allowed}
-.cns2 .btn-ghost{background:var(--up);border:1px solid var(--bd)!important;color:var(--t2)}
-.cns2 .btn-ghost:hover{border-color:var(--bhi)!important;color:var(--t)}
-.cns2 .btn-teal{background:var(--teal);color:var(--bg)}
-.cns2 .btn-teal:hover{filter:brightness(1.1)}
-.cns2 .btn-gold{background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.3)!important}
-.cns2 .btn-gold:hover{background:rgba(245,200,66,.2)}
+.cns2 .btn { padding:5px 12px; border-radius:7px; font-size:11px; font-weight:600; cursor:pointer;
+  display:inline-flex; align-items:center; gap:5px; font-family:'DM Sans',sans-serif;
+  transition:all .15s; white-space:nowrap; border:none; }
+.cns2 .btn:disabled { opacity:.4; cursor:not-allowed; }
+.cns2 .btn-ghost { background:var(--up); border:1px solid var(--bd) !important; color:var(--t2); }
+.cns2 .btn-ghost:hover { border-color:var(--bhi) !important; color:var(--t); }
+.cns2 .btn-teal { background:var(--teal); color:var(--bg); }
+.cns2 .btn-teal:hover { filter:brightness(1.1); }
+.cns2 .btn-gold { background:rgba(245,200,66,.1); color:var(--gold); border:1px solid rgba(245,200,66,.3) !important; }
+.cns2 .btn-gold:hover { background:rgba(245,200,66,.2); }
 
-.cns2-body{flex:1;display:flex;min-height:0}
+.cns2-body { flex:1; display:flex; min-height:0; }
 
-.cns2-sb{width:210px;flex-shrink:0;background:var(--panel);
-  border-right:1px solid var(--bd);display:flex;flex-direction:column}
-.cns2-sb-head{padding:14px 14px 10px;flex-shrink:0;border-bottom:1px solid rgba(26,53,85,.5)}
-.cns2-sb-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t4);
-  letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
-.cns2-sb-bar{height:3px;background:var(--up);border-radius:2px;overflow:hidden;margin-bottom:5px}
-.cns2-sb-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));
-  border-radius:2px;transition:width .5s ease}
-.cns2-sb-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3)}
-.cns2-sb-list{padding:6px;flex:1;display:flex;flex-direction:column;gap:1px;overflow-y:auto}
-.cns2-sb-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:8px;
-  cursor:pointer;transition:all .15s;border:1px solid transparent}
-.cns2-sb-item:hover{background:rgba(59,158,255,.06);border-color:rgba(59,158,255,.2)}
-.cns2-sb-item.on{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.35)}
-.cns2-sb-ico{font-size:13px;flex-shrink:0}
-.cns2-sb-txt{flex:1;min-width:0}
-.cns2-sb-name{font-size:11px;font-weight:500;color:var(--t2);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cns2-sb-item.on .cns2-sb-name{color:var(--t);font-weight:600}
-.cns2-sb-key{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t4);
-  background:var(--up);border:1px solid var(--bd);border-radius:3px;padding:1px 4px;flex-shrink:0}
-.cns2-sb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:all .3s}
-.cns2-sb-dot.empty{background:var(--t4);opacity:.35}
-.cns2-sb-dot.draft{background:var(--orange);box-shadow:0 0 5px rgba(255,159,67,.5)}
-.cns2-sb-dot.complete{background:var(--teal);box-shadow:0 0 5px rgba(0,229,192,.5)}
-.cns2-sb-dot.locked{background:var(--blue);box-shadow:0 0 5px rgba(59,158,255,.5)}
-.cns2-sb-legend{padding:10px 14px 14px;border-top:1px solid rgba(26,53,85,.4);flex-shrink:0}
-.cns2-sc-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
-.cns2-sc-k{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t2);
-  background:var(--up);border:1px solid var(--bd);border-radius:3px;padding:1px 5px;flex-shrink:0}
-.cns2-sc-d{font-size:10px;color:var(--t4)}
+.cns2-sb { width:210px; flex-shrink:0; background:var(--panel);
+  border-right:1px solid var(--bd); display:flex; flex-direction:column; }
+.cns2-sb-head { padding:14px 14px 10px; flex-shrink:0; border-bottom:1px solid rgba(26,53,85,.5); }
+.cns2-sb-label { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t4);
+  letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+.cns2-sb-bar { height:3px; background:var(--up); border-radius:2px; overflow:hidden; margin-bottom:5px; }
+.cns2-sb-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--blue));
+  border-radius:2px; transition:width .5s ease; }
+.cns2-sb-sub { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--t3); }
+.cns2-sb-list { padding:6px; flex:1; display:flex; flex-direction:column; gap:1px; overflow-y:auto; }
+.cns2-sb-item { display:flex; align-items:center; gap:7px; padding:6px 8px; border-radius:8px;
+  cursor:pointer; transition:all .15s; border:1px solid transparent; }
+.cns2-sb-item:hover { background:rgba(59,158,255,.06); border-color:rgba(59,158,255,.2); }
+.cns2-sb-item.on { background:rgba(59,158,255,.1); border-color:rgba(59,158,255,.35); }
+.cns2-sb-ico { font-size:13px; flex-shrink:0; }
+.cns2-sb-txt { flex:1; min-width:0; }
+.cns2-sb-name { font-size:11px; font-weight:500; color:var(--t2);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cns2-sb-item.on .cns2-sb-name { color:var(--t); font-weight:600; }
+.cns2-sb-key { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t4);
+  background:var(--up); border:1px solid var(--bd); border-radius:3px; padding:1px 4px; flex-shrink:0; }
+.cns2-sb-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; transition:all .3s; }
+.cns2-sb-dot.empty  { background:var(--t4); opacity:.35; }
+.cns2-sb-dot.draft  { background:var(--orange); box-shadow:0 0 5px rgba(255,159,67,.5); }
+.cns2-sb-dot.complete { background:var(--teal); box-shadow:0 0 5px rgba(0,229,192,.5); }
+.cns2-sb-dot.locked { background:var(--blue); box-shadow:0 0 5px rgba(59,158,255,.5); }
+.cns2-sb-legend { padding:10px 14px 14px; border-top:1px solid rgba(26,53,85,.4); flex-shrink:0; }
+.cns2-sc-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+.cns2-sc-k { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t2);
+  background:var(--up); border:1px solid var(--bd); border-radius:3px; padding:1px 5px; flex-shrink:0; }
+.cns2-sc-d { font-size:10px; color:var(--t4); }
 
-.cns2-area{flex:1;overflow-y:auto;padding:14px 18px 40px;
-  display:flex;flex-direction:column;gap:8px}
+.cns2-area { flex:1; overflow-y:auto; padding:14px 18px 40px; display:flex; flex-direction:column; gap:8px; }
 
-.cns2-sec{background:rgba(8,22,40,.82);border:1px solid rgba(26,53,85,.5);
-  border-radius:12px;overflow:hidden;transition:border-color .2s,box-shadow .2s}
-.cns2-sec:focus-within{border-color:var(--bhi)}
-.cns2-sec.focused{border-color:rgba(59,158,255,.45);
-  box-shadow:0 0 0 1px rgba(59,158,255,.12),0 4px 20px rgba(0,0,0,.3)}
-.cns2-sec-hdr{display:flex;align-items:center;gap:9px;padding:10px 14px;
-  background:rgba(11,30,54,.6);border-bottom:1px solid rgba(26,53,85,.4);
-  cursor:pointer;user-select:none;transition:background .15s}
-.cns2-sec.collapsed .cns2-sec-hdr{border-bottom:none}
-.cns2-sec-hdr:hover{background:rgba(14,37,68,.7)}
-.cns2-sec-num{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
-  color:var(--t4);flex-shrink:0;width:16px;text-align:center}
-.cns2-sec-icon{font-size:15px;flex-shrink:0}
-.cns2-sec-info{flex:1;min-width:0}
-.cns2-sec-title{font-size:13px;font-weight:600;color:var(--t);letter-spacing:.01em}
-.cns2-sec-preview{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t4);
-  margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px}
-.cns2-sec-short{font-family:'JetBrains Mono',monospace;font-size:8px;
-  color:var(--t4);background:var(--up);border:1px solid var(--bd);
-  border-radius:3px;padding:1px 5px;flex-shrink:0}
-.cns2-sec-acts{display:flex;gap:4px;align-items:center}
-.cns2-status{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;
-  padding:2px 8px;border-radius:20px;white-space:nowrap}
-.st-empty   {background:rgba(90,130,168,.1); color:var(--t4);    border:1px solid rgba(90,130,168,.2)}
-.st-draft   {background:rgba(255,159,67,.1); color:var(--orange); border:1px solid rgba(255,159,67,.3)}
-.st-complete{background:rgba(0,229,192,.1);  color:var(--teal);   border:1px solid rgba(0,229,192,.3)}
-.st-locked  {background:rgba(59,158,255,.1); color:var(--blue);   border:1px solid rgba(59,158,255,.3)}
-.cns2 .ibtn{width:26px;height:26px;border-radius:6px;border:1px solid var(--bd);
-  background:var(--up);color:var(--t3);font-size:12px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
-.cns2 .ibtn:hover{border-color:var(--bhi);color:var(--t2)}
-.cns2 .ibtn:disabled{opacity:.35;cursor:not-allowed}
-.cns2 .ibtn.spin{animation:cns2-spin .8s linear infinite}
-@keyframes cns2-spin{to{transform:rotate(360deg)}}
-.cns2-chevron{font-size:11px;color:var(--t4);transition:transform .2s;flex-shrink:0}
-.cns2-sec.collapsed .cns2-chevron{transform:rotate(-90deg)}
+.cns2-sec { background:rgba(8,22,40,.82); border:1px solid rgba(26,53,85,.5);
+  border-radius:12px; overflow:hidden; transition:border-color .2s, box-shadow .2s; }
+.cns2-sec:focus-within { border-color:var(--bhi); }
+.cns2-sec.focused { border-color:rgba(59,158,255,.45);
+  box-shadow:0 0 0 1px rgba(59,158,255,.12), 0 4px 20px rgba(0,0,0,.3); }
+.cns2-sec-hdr { display:flex; align-items:center; gap:9px; padding:10px 14px;
+  background:rgba(11,30,54,.6); border-bottom:1px solid rgba(26,53,85,.4);
+  cursor:pointer; user-select:none; transition:background .15s; }
+.cns2-sec.collapsed .cns2-sec-hdr { border-bottom:none; }
+.cns2-sec-hdr:hover { background:rgba(14,37,68,.7); }
+.cns2-sec-num { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700;
+  color:var(--t4); flex-shrink:0; width:16px; text-align:center; }
+.cns2-sec-icon { font-size:15px; flex-shrink:0; }
+.cns2-sec-info { flex:1; min-width:0; }
+.cns2-sec-title { font-size:13px; font-weight:600; color:var(--t); letter-spacing:.01em; }
+.cns2-sec-preview { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--t4);
+  margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:360px; }
+.cns2-sec-short { font-family:'JetBrains Mono',monospace; font-size:8px;
+  color:var(--t4); background:var(--up); border:1px solid var(--bd);
+  border-radius:3px; padding:1px 5px; flex-shrink:0; }
+.cns2-sec-acts { display:flex; gap:4px; align-items:center; }
+.cns2-status { font-family:'JetBrains Mono',monospace; font-size:8px; font-weight:700;
+  padding:2px 8px; border-radius:20px; white-space:nowrap; }
+.st-empty    { background:rgba(90,130,168,.1);  color:var(--t4);     border:1px solid rgba(90,130,168,.2); }
+.st-draft    { background:rgba(255,159,67,.1);  color:var(--orange); border:1px solid rgba(255,159,67,.3); }
+.st-complete { background:rgba(0,229,192,.1);   color:var(--teal);   border:1px solid rgba(0,229,192,.3); }
+.st-locked   { background:rgba(59,158,255,.1);  color:var(--blue);   border:1px solid rgba(59,158,255,.3); }
+.cns2 .ibtn { width:26px; height:26px; border-radius:6px; border:1px solid var(--bd);
+  background:var(--up); color:var(--t3); font-size:12px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; transition:all .15s; flex-shrink:0; }
+.cns2 .ibtn:hover { border-color:var(--bhi); color:var(--t2); }
+.cns2 .ibtn:disabled { opacity:.35; cursor:not-allowed; }
+.cns2 .ibtn.spin { animation:cns2-spin .8s linear infinite; }
+@keyframes cns2-spin { to { transform:rotate(360deg); } }
+.cns2-chevron { font-size:11px; color:var(--t4); transition:transform .2s; flex-shrink:0; }
+.cns2-sec.collapsed .cns2-chevron { transform:rotate(-90deg); }
 
-.cns2-macro-bar{display:flex;gap:5px;flex-wrap:wrap;padding:7px 14px 6px;
-  border-bottom:1px solid rgba(26,53,85,.25)}
-.macro-pill{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;
-  padding:3px 9px;border-radius:20px;cursor:pointer;white-space:nowrap;
-  background:rgba(59,158,255,.06);border:1px solid rgba(59,158,255,.2);
-  color:var(--t3);transition:all .12s}
-.macro-pill:hover{background:rgba(59,158,255,.14);color:var(--t2);border-color:rgba(59,158,255,.4)}
-.macro-pill.teal{background:rgba(0,229,192,.06);border-color:rgba(0,229,192,.2);color:var(--teal)}
-.macro-pill.teal:hover{background:rgba(0,229,192,.14)}
+.cns2-macro-bar { display:flex; gap:5px; flex-wrap:wrap; padding:7px 14px 6px;
+  border-bottom:1px solid rgba(26,53,85,.25); }
+.macro-pill { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500;
+  padding:3px 9px; border-radius:20px; cursor:pointer; white-space:nowrap;
+  background:rgba(59,158,255,.06); border:1px solid rgba(59,158,255,.2);
+  color:var(--t3); transition:all .12s; }
+.macro-pill:hover { background:rgba(59,158,255,.14); color:var(--t2); border-color:rgba(59,158,255,.4); }
+.macro-pill.teal { background:rgba(0,229,192,.06); border-color:rgba(0,229,192,.2); color:var(--teal); }
+.macro-pill.teal:hover { background:rgba(0,229,192,.14); }
 
-.cns2-sec-body{padding:2px 0 0}
-.cns2-ta{width:100%;padding:12px 14px;background:rgba(14,37,68,.4);border:none;
-  border-top:1px solid rgba(26,53,85,.5);
-  color:var(--t);font-family:'JetBrains Mono',monospace;font-size:12px;
-  line-height:1.8;resize:vertical;outline:none;min-height:100px;display:block;box-sizing:border-box;
-  transition:background .15s}
-.cns2-ta:focus{background:rgba(14,37,68,.65);border-top-color:rgba(59,158,255,.3)}
-.cns2-ta:hover:not(:disabled){background:rgba(14,37,68,.55)}
-.cns2-ta::placeholder{color:var(--t4);font-style:italic;font-size:11px}
-.cns2-ta:disabled{opacity:.45;cursor:default}
-.cns2-ta.locked{background:rgba(59,158,255,.03);color:var(--t2)}
-.cns2-sec-foot{display:flex;align-items:center;padding:4px 14px 8px;gap:10px}
-.cns2-chars{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t4)}
-.cns2-done-link{margin-left:auto;font-size:9px;font-weight:600;cursor:pointer;
-  color:var(--teal);font-family:'JetBrains Mono',monospace;letter-spacing:.5px;
-  text-transform:uppercase;transition:opacity .15s}
-.cns2-done-link:hover{opacity:.7}
+.cns2-sec-body { padding:2px 0 0; }
+.cns2-ta { width:100%; padding:12px 14px; background:transparent; border:none;
+  color:var(--t); font-family:'JetBrains Mono',monospace; font-size:12px;
+  line-height:1.8; resize:none; outline:none; min-height:80px; display:block; box-sizing:border-box; }
+.cns2-ta::placeholder { color:var(--t4); font-style:italic; font-size:11px; }
+.cns2-ta:disabled { opacity:.45; cursor:default; }
+.cns2-ta.locked { background:rgba(59,158,255,.03); color:var(--t2); }
+.cns2-sec-foot { display:flex; align-items:center; padding:4px 14px 8px; gap:10px; }
+.cns2-chars { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--t4); }
+.cns2-done-link { margin-left:auto; font-size:9px; font-weight:600; cursor:pointer;
+  color:var(--teal); font-family:'JetBrains Mono',monospace; letter-spacing:.5px;
+  text-transform:uppercase; transition:opacity .15s; }
+.cns2-done-link:hover { opacity:.7; }
 
-.mdm-builder{padding:12px 14px 10px;display:flex;flex-direction:column;gap:10px}
-.mdm-row{display:flex;flex-direction:column;gap:4px}
-.mdm-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t4);
-  letter-spacing:1.5px;text-transform:uppercase}
-.mdm-inp{background:var(--up);border:1px solid var(--bd);border-radius:7px;
-  padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:12px;
-  color:var(--t);outline:none;width:100%;transition:border-color .15s}
-.mdm-inp:focus{border-color:var(--bhi)}
-.mdm-inp::placeholder{color:var(--t4);font-style:italic}
-.risk-row{display:flex;gap:6px}
-.risk-btn{flex:1;padding:8px 6px;border-radius:8px;font-size:11px;font-weight:600;
-  cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center;border:2px solid transparent}
-.risk-btn.low{background:rgba(61,255,160,.08);color:var(--green);border-color:rgba(61,255,160,.2)}
-.risk-btn.low.sel{background:rgba(61,255,160,.18);border-color:var(--green);box-shadow:0 0 10px rgba(61,255,160,.2)}
-.risk-btn.mod{background:rgba(245,200,66,.08);color:var(--gold);border-color:rgba(245,200,66,.2)}
-.risk-btn.mod.sel{background:rgba(245,200,66,.18);border-color:var(--gold);box-shadow:0 0 10px rgba(245,200,66,.2)}
-.risk-btn.high{background:rgba(255,68,68,.08);color:var(--red);border-color:rgba(255,68,68,.2)}
-.risk-btn.high.sel{background:rgba(255,68,68,.18);border-color:var(--red);box-shadow:0 0 10px rgba(255,68,68,.2)}
-.mdm-data-grid{display:flex;gap:6px;flex-wrap:wrap}
-.data-chip{font-size:10px;font-family:'DM Sans',sans-serif;padding:4px 10px;border-radius:6px;
-  cursor:pointer;border:1px solid rgba(59,158,255,.2);background:rgba(59,158,255,.05);
-  color:var(--t3);transition:all .12x;user-select:none}
-.data-chip.sel{background:rgba(59,158,255,.15);border-color:var(--blue);color:var(--t2)}
-.mdm-plan-list{display:flex;flex-direction:column;gap:4px}
-.mdm-plan-row{display:flex;align-items:center;gap:7px}
-.mdm-plan-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t4);flex-shrink:0;width:16px}
-.mdm-plan-inp{flex:1;background:var(--up);border:1px solid var(--bd);border-radius:6px;
-  padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;
-  color:var(--t);outline:none;transition:border-color .15s}
-.mdm-plan-inp:focus{border-color:var(--bhi)}
-.mdm-plan-inp::placeholder{color:var(--t4);font-style:italic}
-.mdm-add-btn{font-size:10px;color:var(--teal);background:none;border:none;
-  cursor:pointer;font-family:'JetBrains Mono',monospace;padding:2px 0;text-align:left}
-.mdm-build-btn,.dispo-build-btn{align-self:flex-end;background:var(--teal);color:var(--bg);
-  border:none;border-radius:7px;padding:7px 16px;font-size:11px;font-weight:700;
-  cursor:pointer;font-family:'DM Sans',sans-serif;transition:filter .15s}
-.mdm-build-btn:hover,.dispo-build-btn:hover{filter:brightness(1.1)}
+.mdm-builder { padding:12px 14px 10px; display:flex; flex-direction:column; gap:10px; }
+.mdm-row { display:flex; flex-direction:column; gap:4px; }
+.mdm-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t4);
+  letter-spacing:1.5px; text-transform:uppercase; }
+.mdm-inp { background:var(--up); border:1px solid var(--bd); border-radius:7px;
+  padding:7px 11px; font-family:'JetBrains Mono',monospace; font-size:12px;
+  color:var(--t); outline:none; width:100%; transition:border-color .15s; }
+.mdm-inp:focus { border-color:var(--bhi); }
+.mdm-inp::placeholder { color:var(--t4); font-style:italic; }
+.risk-row { display:flex; gap:6px; }
+.risk-btn { flex:1; padding:8px 6px; border-radius:8px; font-size:11px; font-weight:600;
+  cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .15s; text-align:center; border:2px solid transparent; }
+.risk-btn.low  { background:rgba(61,255,160,.08); color:var(--green); border-color:rgba(61,255,160,.2); }
+.risk-btn.low.sel  { background:rgba(61,255,160,.18); border-color:var(--green); box-shadow:0 0 10px rgba(61,255,160,.2); }
+.risk-btn.mod  { background:rgba(245,200,66,.08); color:var(--gold); border-color:rgba(245,200,66,.2); }
+.risk-btn.mod.sel  { background:rgba(245,200,66,.18); border-color:var(--gold); box-shadow:0 0 10px rgba(245,200,66,.2); }
+.risk-btn.high { background:rgba(255,68,68,.08); color:var(--red); border-color:rgba(255,68,68,.2); }
+.risk-btn.high.sel { background:rgba(255,68,68,.18); border-color:var(--red); box-shadow:0 0 10px rgba(255,68,68,.2); }
+.mdm-data-grid { display:flex; gap:6px; flex-wrap:wrap; }
+.data-chip { font-size:10px; font-family:'DM Sans',sans-serif; padding:4px 10px; border-radius:6px;
+  cursor:pointer; border:1px solid rgba(59,158,255,.2); background:rgba(59,158,255,.05);
+  color:var(--t3); transition:all .12s; user-select:none; }
+.data-chip.sel { background:rgba(59,158,255,.15); border-color:var(--blue); color:var(--t2); }
+.mdm-plan-list { display:flex; flex-direction:column; gap:4px; }
+.mdm-plan-row { display:flex; align-items:center; gap:7px; }
+.mdm-plan-num { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--t4); flex-shrink:0; width:16px; }
+.mdm-plan-inp { flex:1; background:var(--up); border:1px solid var(--bd); border-radius:6px;
+  padding:6px 10px; font-family:'JetBrains Mono',monospace; font-size:11px;
+  color:var(--t); outline:none; transition:border-color .15s; }
+.mdm-plan-inp:focus { border-color:var(--bhi); }
+.mdm-plan-inp::placeholder { color:var(--t4); font-style:italic; }
+.mdm-add-btn { font-size:10px; color:var(--teal); background:none; border:none;
+  cursor:pointer; font-family:'JetBrains Mono',monospace; padding:2px 0; text-align:left; }
+.mdm-build-btn, .dispo-build-btn { align-self:flex-end; background:var(--teal); color:var(--bg);
+  border:none; border-radius:7px; padding:7px 16px; font-size:11px; font-weight:700;
+  cursor:pointer; font-family:'DM Sans',sans-serif; transition:filter .15s; }
+.mdm-build-btn:hover, .dispo-build-btn:hover { filter:brightness(1.1); }
 
-.dispo-builder{padding:12px 14px 10px;display:flex;flex-direction:column;gap:10px}
-.dispo-big-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.dispo-big{padding:12px 8px;border-radius:9px;cursor:pointer;text-align:center;
-  font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;
-  transition:all .15s;border:2px solid transparent}
-.dispo-big.discharge{background:rgba(0,229,192,.08);color:var(--teal);border-color:rgba(0,229,192,.2)}
-.dispo-big.discharge.sel{background:rgba(0,229,192,.18);border-color:var(--teal);box-shadow:0 0 12px rgba(0,229,192,.2)}
-.dispo-big.admit{background:rgba(255,107,107,.08);color:var(--coral);border-color:rgba(255,107,107,.2)}
-.dispo-big.admit.sel{background:rgba(255,107,107,.18);border-color:var(--coral);box-shadow:0 0 12px rgba(255,107,107,.2)}
-.dispo-big.obs{background:rgba(245,200,66,.08);color:var(--gold);border-color:rgba(245,200,66,.2)}
-.dispo-big.obs.sel{background:rgba(245,200,66,.18);border-color:var(--gold);box-shadow:0 0 12px rgba(245,200,66,.2)}
-.dispo-big.transfer{background:rgba(155,109,255,.08);color:var(--purple);border-color:rgba(155,109,255,.2)}
-.dispo-big.transfer.sel{background:rgba(155,109,255,.18);border-color:var(--purple);box-shadow:0 0 12px rgba(155,109,255,.2)}
-.dispo-big-icon{font-size:18px;margin-bottom:4px}
-.dispo-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.dispo-field{display:flex;flex-direction:column;gap:3px}
-.dispo-precautions{display:flex;gap:5px;flex-wrap:wrap}
-.precaution{font-size:10px;font-family:'DM Sans',sans-serif;padding:4px 9px;border-radius:6px;
-  cursor:pointer;user-select:none;transition:all .12s;
-  background:rgba(255,159,67,.05);border:1px solid rgba(255,159,67,.2);color:var(--t3)}
-.precaution.sel{background:rgba(255,159,67,.15);border-color:var(--orange);color:var(--t2)}
+.dispo-builder { padding:12px 14px 10px; display:flex; flex-direction:column; gap:10px; }
+.dispo-big-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.dispo-big { padding:12px 8px; border-radius:9px; cursor:pointer; text-align:center;
+  font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif;
+  transition:all .15s; border:2px solid transparent; }
+.dispo-big.discharge { background:rgba(0,229,192,.08); color:var(--teal); border-color:rgba(0,229,192,.2); }
+.dispo-big.discharge.sel { background:rgba(0,229,192,.18); border-color:var(--teal); box-shadow:0 0 12px rgba(0,229,192,.2); }
+.dispo-big.admit { background:rgba(255,107,107,.08); color:var(--coral); border-color:rgba(255,107,107,.2); }
+.dispo-big.admit.sel { background:rgba(255,107,107,.18); border-color:var(--coral); box-shadow:0 0 12px rgba(255,107,107,.2); }
+.dispo-big.obs { background:rgba(245,200,66,.08); color:var(--gold); border-color:rgba(245,200,66,.2); }
+.dispo-big.obs.sel { background:rgba(245,200,66,.18); border-color:var(--gold); box-shadow:0 0 12px rgba(245,200,66,.2); }
+.dispo-big.transfer { background:rgba(155,109,255,.08); color:var(--purple); border-color:rgba(155,109,255,.2); }
+.dispo-big.transfer.sel { background:rgba(155,109,255,.18); border-color:var(--purple); box-shadow:0 0 12px rgba(155,109,255,.2); }
+.dispo-big-icon { font-size:18px; margin-bottom:4px; }
+.dispo-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.dispo-field { display:flex; flex-direction:column; gap:3px; }
+.dispo-precautions { display:flex; gap:5px; flex-wrap:wrap; }
+.precaution { font-size:10px; font-family:'DM Sans',sans-serif; padding:4px 9px; border-radius:6px;
+  cursor:pointer; user-select:none; transition:all .12s;
+  background:rgba(255,159,67,.05); border:1px solid rgba(255,159,67,.2); color:var(--t3); }
+.precaution.sel { background:rgba(255,159,67,.15); border-color:var(--orange); color:var(--t2); }
 
-.cns2-sig{background:rgba(8,22,40,.6);border:1px solid rgba(26,53,85,.4);
-  border-radius:12px;padding:14px 16px;font-family:'JetBrains Mono',monospace;
-  font-size:11px;color:var(--t3)}
-.cns2-sig-lbl{font-size:8px;letter-spacing:2px;text-transform:uppercase;
-  color:var(--t4);margin-bottom:7px}
+.cns2-sig { background:rgba(8,22,40,.6); border:1px solid rgba(26,53,85,.4);
+  border-radius:12px; padding:14px 16px; font-family:'JetBrains Mono',monospace;
+  font-size:11px; color:var(--t3); }
+.cns2-sig-lbl { font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--t4); margin-bottom:7px; }
 
-.cns2-load{height:2px;flex-shrink:0;
+.cns2-load { height:2px; flex-shrink:0;
   background:linear-gradient(90deg,var(--teal),var(--blue),var(--teal));
-  background-size:200% auto;animation:cns2-sweep 1.4s linear infinite}
-@keyframes cns2-sweep{to{background-position:200% center}}
+  background-size:200% auto; animation:cns2-sweep 1.4s linear infinite; }
+@keyframes cns2-sweep { to { background-position:200% center; } }
 
-@media print{
-  .cns2-sb,.cns2-acts,.cns2-sec-acts,.cns2-sec-foot,
-  .cns2-macro-bar,.mdm-builder,.dispo-builder,.btn,.ibtn{display:none!important}
-  .cns2{position:static;background:white;color:black}
-  .cns2-top{background:white;border-bottom:1px solid #ccc}
-  .cns2-sec{background:white;border:1px solid #ddd;page-break-inside:avoid}
-  .cns2-ta{color:black;font-size:11px}
+@media print {
+  .cns2-sb, .cns2-acts, .cns2-sec-acts, .cns2-sec-foot,
+  .cns2-macro-bar, .mdm-builder, .dispo-builder, .btn, .ibtn { display:none !important; }
+  .cns2 { position:static; background:white; color:black; }
+  .cns2-top { background:white; border-bottom:1px solid #ccc; }
+  .cns2-sec { background:white; border:1px solid #ddd; page-break-inside:avoid; }
+  .cns2-ta { color:black; font-size:11px; }
 }`;
   document.head.appendChild(s);
 })();
 
-// ── Sections ──────────────────────────────────────────────────────────
 const SECTIONS = [
   { id:"header", title:"Patient Header",             icon:"👤", key:"1" },
   { id:"cc",     title:"Chief Complaint",             icon:"💬", key:"2" },
@@ -262,11 +253,11 @@ const SECTIONS = [
 
 const MACROS = {
   ros: [
-    { label:"All sys neg",   cls:"teal", text:"REVIEW OF SYSTEMS:\nAll systems reviewed and negative except as noted in HPI." },
-    { label:"Pertinent neg", cls:"",     text:"Pertinent negatives: denies fever, chills, nausea, vomiting, diarrhea, headache, vision changes, chest pain, shortness of breath, palpitations, dysuria, rash." },
-    { label:"Neg CV/Resp",   cls:"",     text:"  (−) Palpitations  (−) Orthopnea  (−) PND  (−) Leg swelling\n  (−) Cough  (−) Hemoptysis  (−) Wheezing" },
-    { label:"Neg GI/GU",     cls:"",     text:"  (−) Nausea  (−) Vomiting  (−) Diarrhea  (−) Constipation  (−) Melena\n  (−) Hematochezia  (−) Dysuria  (−) Hematuria  (−) Frequency" },
-    { label:"Neg Neuro",     cls:"",     text:"  (−) Headache  (−) Vision changes  (−) Weakness  (−) Numbness  (−) Tingling  (−) Syncope" },
+    { label:"All sys neg",    cls:"teal", text:"REVIEW OF SYSTEMS:\nAll systems reviewed and negative except as noted in HPI." },
+    { label:"Pertinent neg",  cls:"",     text:"Pertinent negatives: denies fever, chills, nausea, vomiting, diarrhea, headache, vision changes, chest pain, shortness of breath, palpitations, dysuria, rash." },
+    { label:"Neg CV/Resp",    cls:"",     text:"  (−) Palpitations  (−) Orthopnea  (−) PND  (−) Leg swelling\n  (−) Cough  (−) Hemoptysis  (−) Wheezing" },
+    { label:"Neg GI/GU",      cls:"",     text:"  (−) Nausea  (−) Vomiting  (−) Diarrhea  (−) Constipation  (−) Melena\n  (−) Hematochezia  (−) Dysuria  (−) Hematuria  (−) Frequency" },
+    { label:"Neg Neuro",      cls:"",     text:"  (−) Headache  (−) Vision changes  (−) Weakness  (−) Numbness  (−) Tingling  (−) Syncope" },
   ],
   pe: [
     { label:"Normal adult exam", cls:"teal", text:"PHYSICAL EXAMINATION:\n  Gen:    Alert, oriented x3, well-appearing, no acute distress\n  HEENT:  Normocephalic/atraumatic. PERRL. EOMI. Oropharynx clear.\n  Neck:   Supple. No lymphadenopathy. No JVD. No meningismus.\n  CV:     Regular rate and rhythm. S1/S2 normal. No murmurs/rubs/gallops.\n  Lungs:  Clear to auscultation bilaterally. No wheezes/rales/rhonchi.\n  Abd:    Soft, non-tender, non-distended. Normoactive bowel sounds. No guarding or rigidity.\n  Ext:    No cyanosis, clubbing, or edema. Pulses 2+ bilaterally.\n  Neuro:  Alert and oriented x3. CN II-XII grossly intact. No focal neurological deficits." },
@@ -281,7 +272,6 @@ const MACROS = {
 const DATA_OPTS = ["Labs ordered","Imaging ordered","ECG","External records reviewed","Specialist consulted","New Rx / Rx changed"];
 const PRECAUTIONS = ["Worsening symptoms","Fever >101°F","Chest pain","Difficulty breathing","New or worsening pain","Unable to tolerate PO","Falls or altered mental status"];
 
-// ── Note assembly ─────────────────────────────────────────────────────
 function assembleSection(id, d = {}) {
   const {
     demo = {}, cc = {}, vitals = {}, medications = [], allergies = [],
@@ -292,19 +282,19 @@ function assembleSection(id, d = {}) {
   } = d;
   const dateStr = new Date().toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
   const timeStr = new Date().toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit" });
-  const name    = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "Unknown Patient";
-  const ln      = "─".repeat(58);
+  const name = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "Unknown Patient";
+  const ln = "─".repeat(58);
 
   switch (id) {
     case "header":
       return [
         "EMERGENCY DEPARTMENT NOTE", ln,
         `Patient:    ${name}`,
-        (demo.age || demo.sex) && `Age / Sex:  ${[demo.age ? demo.age+"y" : "", demo.sex].filter(Boolean).join(" · ")}`,
-        demo.dob  && `DOB:        ${demo.dob}`,
+        (demo.age || demo.sex) && `Age / Sex:  ${[demo.age ? demo.age + "y" : "", demo.sex].filter(Boolean).join(" · ")}`,
+        demo.dob && `DOB:        ${demo.dob}`,
         (registration.mrn || demo.mrn) && `MRN:        ${registration.mrn || demo.mrn}`,
         registration.room && `Room:       ${registration.room}`,
-        esiLevel  && `ESI Level:  ${esiLevel}`,
+        esiLevel && `ESI Level:  ${esiLevel}`,
         `Date / Time: ${dateStr}  ${timeStr}`,
         allergies.length && `${ln}\nALLERGIES:  ⚠  ${allergies.join(" · ")}`,
       ].filter(Boolean).join("\n");
@@ -326,7 +316,9 @@ function assembleSection(id, d = {}) {
       ].filter(Boolean).join(" ");
     case "pmh": {
       const pmhList = Object.entries(pmhSelected).filter(([, v]) => v).map(([k]) => k);
-      const pmhStr  = pmhList.length ? pmhList.join(", ") + (pmhExtra ? ", " + pmhExtra : "") : (pmhExtra || "None documented.");
+      const pmhStr = pmhList.length
+        ? pmhList.join(", ") + (pmhExtra ? ", " + pmhExtra : "")
+        : pmhExtra || "None documented.";
       return [
         "PAST MEDICAL HISTORY:", pmhStr,
         surgHx && `\nSURGICAL HISTORY:\n${surgHx}`,
@@ -353,12 +345,11 @@ function assembleSection(id, d = {}) {
     }
     case "vitals": {
       const entries = [
-        ["BP",     vitals.bp],    ["HR",    vitals.hr],
-        ["RR",     vitals.rr],    ["SpO₂",  vitals.spo2],
-        ["Temp",   vitals.temp],  ["GCS",   vitals.gcs],
+        ["BP", vitals.bp], ["HR", vitals.hr], ["RR", vitals.rr], ["SpO₂", vitals.spo2],
+        ["Temp", vitals.temp], ["GCS", vitals.gcs],
         ["Wt",     vitals.weight ? vitals.weight + " kg" : null],
         ["O₂ del", vitals.o2del || null],
-        ["Pain",   vitals.pain   ? vitals.pain + "/10"  : null],
+        ["Pain",   vitals.pain  ? vitals.pain + "/10"  : null],
       ].filter(([, v]) => v);
       if (!entries.length) return "";
       return "VITAL SIGNS:\n" + entries.map(([k, v]) => `  ${k.padEnd(8)}: ${v}`).join("\n");
@@ -372,7 +363,7 @@ function assembleSection(id, d = {}) {
     }
     case "mdm":
     case "dispo":
-      return "";   // both use structured builders
+      return "";
     default:
       return "";
   }
@@ -387,15 +378,14 @@ function buildInitialSections(patientData) {
   return m;
 }
 
-// ── MDM Builder ───────────────────────────────────────────────────────
 function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, onApply }) {
   const toggleData = useCallback(
-    (item) => setData(d => d.includes(item) ? d.filter(x => x !== item) : [...d, item]),
+    item => setData(d => d.includes(item) ? d.filter(x => x !== item) : [...d, item]),
     [setData]
   );
 
   const build = useCallback(() => {
-    const dxList   = dx.filter(Boolean);
+    const dxList = dx.filter(Boolean);
     const planList = plan.filter(Boolean);
     if (!dxList.length && !risk && !data.length && !planList.length) {
       toast.error("Fill in at least one field before applying.");
@@ -404,7 +394,7 @@ function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, on
     const lines = ["MEDICAL DECISION MAKING:", ""];
     if (dxList.length) {
       lines.push("Impression:");
-      dxList.forEach((d, i) => lines.push(`  ${i+1}. ${d}`));
+      dxList.forEach((d, i) => lines.push(`  ${i + 1}. ${d}`));
       lines.push("");
     }
     if (risk) { lines.push(`Risk Stratification: ${risk.toUpperCase()}`); lines.push(""); }
@@ -415,7 +405,7 @@ function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, on
     }
     if (planList.length) {
       lines.push("Plan:");
-      planList.forEach((p, i) => lines.push(`  ${i+1}. ${p}`));
+      planList.forEach((p, i) => lines.push(`  ${i + 1}. ${p}`));
     }
     onApply(lines.join("\n"));
   }, [dx, risk, data, plan, onApply]);
@@ -426,15 +416,15 @@ function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, on
         <div className="mdm-lbl">Impression / Diagnosis</div>
         {dx.map((v, i) => (
           <input key={i} className="mdm-inp" value={v}
-            placeholder={`Diagnosis ${i+1}...`}
-            onChange={e => { const n=[...dx]; n[i]=e.target.value; setDx(n); }} />
+            placeholder={`Diagnosis ${i + 1}...`}
+            onChange={e => { const n = [...dx]; n[i] = e.target.value; setDx(n); }} />
         ))}
       </div>
       <div className="mdm-row">
         <div className="mdm-lbl">Risk Stratification</div>
         <div className="risk-row">
-          {[["low","Low"],["mod","Moderate"],["high","High"]].map(([v, label]) => (
-            <button key={v} className={`risk-btn ${v}${risk===v?" sel":""}`}
+          {[["low", "Low"], ["mod", "Moderate"], ["high", "High"]].map(([v, label]) => (
+            <button key={v} className={`risk-btn ${v}${risk === v ? " sel" : ""}`}
               onClick={() => setRisk(r => r === v ? "" : v)}>{label}</button>
           ))}
         </div>
@@ -443,7 +433,7 @@ function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, on
         <div className="mdm-lbl">Data / Complexity</div>
         <div className="mdm-data-grid">
           {DATA_OPTS.map(opt => (
-            <div key={opt} className={`data-chip${data.includes(opt)?" sel":""}`}
+            <div key={opt} className={`data-chip${data.includes(opt) ? " sel" : ""}`}
               onClick={() => toggleData(opt)}>{opt}</div>
           ))}
         </div>
@@ -453,10 +443,10 @@ function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, on
         <div className="mdm-plan-list">
           {plan.map((v, i) => (
             <div key={i} className="mdm-plan-row">
-              <span className="mdm-plan-num">{i+1}.</span>
+              <span className="mdm-plan-num">{i + 1}.</span>
               <input className="mdm-plan-inp" value={v}
-                placeholder={`Plan item ${i+1}...`}
-                onChange={e => { const n=[...plan]; n[i]=e.target.value; setPlan(n); }} />
+                placeholder={`Plan item ${i + 1}...`}
+                onChange={e => { const n = [...plan]; n[i] = e.target.value; setPlan(n); }} />
             </div>
           ))}
           {plan.length < 6 && (
@@ -469,32 +459,23 @@ function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, on
   );
 }
 
-// ── Dispo Builder ─────────────────────────────────────────────────────
 function DispoBuilder({ mode, setMode, service, setService, followup, setFollowup, fwTime, setFwTime, prec, setPrec, onApply }) {
   const togglePrec = useCallback(
-    (item) => setPrec(d => d.includes(item) ? d.filter(x => x !== item) : [...d, item]),
+    item => setPrec(d => d.includes(item) ? d.filter(x => x !== item) : [...d, item]),
     [setPrec]
   );
 
   const build = useCallback(() => {
     if (!mode) { toast.error("Select a disposition first."); return; }
     const lines = ["DISPOSITION:", ""];
-    if (mode === "discharge") {
-      lines.push("Patient discharged home in stable condition.");
-    } else if (mode === "admit") {
-      lines.push(`Admitted to hospital${service ? ". Service: " + service : "."}`);
-    } else if (mode === "obs") {
-      lines.push("Patient placed in observation status for further monitoring and evaluation.");
-    } else if (mode === "transfer") {
-      lines.push(`Patient transferred to ${service || "receiving facility"} for higher level of care.`);
-    }
+    if (mode === "discharge")      lines.push("Patient discharged home in stable condition.");
+    else if (mode === "admit")     lines.push(`Admitted to hospital${service ? ". Service: " + service : "."}`);
+    else if (mode === "obs")       lines.push("Patient placed in observation status for further monitoring and evaluation.");
+    else if (mode === "transfer")  lines.push(`Patient transferred to ${service || "receiving facility"} for higher level of care.`);
     lines.push("");
     if (mode === "discharge") {
       lines.push("Discharge instructions provided: Yes");
-      if (prec.length) {
-        lines.push("Return precautions discussed:");
-        prec.forEach(p => lines.push(`  · ${p}`));
-      }
+      if (prec.length) { lines.push("Return precautions discussed:"); prec.forEach(p => lines.push(`  · ${p}`)); }
     }
     if (followup) lines.push(`\nFollow-up: ${followup}${fwTime ? " in " + fwTime : ""}`);
     lines.push("\nAttending Physician: ___________   Time: ___________");
@@ -512,7 +493,7 @@ function DispoBuilder({ mode, setMode, service, setService, followup, setFollowu
             { v:"obs",       label:"Observation",     icon:"⏱",  cls:"obs"       },
             { v:"transfer",  label:"Transfer",        icon:"🚑", cls:"transfer"  },
           ].map(({ v, label, icon, cls }) => (
-            <div key={v} className={`dispo-big ${cls}${mode===v?" sel":""}`}
+            <div key={v} className={`dispo-big ${cls}${mode === v ? " sel" : ""}`}
               onClick={() => setMode(m => m === v ? "" : v)}>
               <div className="dispo-big-icon">{icon}</div>
               {label}
@@ -535,7 +516,7 @@ function DispoBuilder({ mode, setMode, service, setService, followup, setFollowu
           <div className="mdm-lbl">Return Precautions</div>
           <div className="dispo-precautions">
             {PRECAUTIONS.map(p => (
-              <div key={p} className={`precaution${prec.includes(p)?" sel":""}`}
+              <div key={p} className={`precaution${prec.includes(p) ? " sel" : ""}`}
                 onClick={() => togglePrec(p)}>{p}</div>
             ))}
           </div>
@@ -558,7 +539,6 @@ function DispoBuilder({ mode, setMode, service, setService, followup, setFollowu
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────
 export default function ClinicalNoteStudio({ patientData: propData, embedded = false, onBack }) {
   const navigate       = useNavigate();
   const location       = useLocation();
@@ -581,10 +561,10 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
   const [startTime] = useState(() => Date.now());
   const [elapsed,   setElapsed]   = useState(0);
 
-  const [mdmDx,    setMdmDx]    = useState(["", "", ""]);
-  const [mdmRisk,  setMdmRisk]  = useState("");
-  const [mdmData,  setMdmData]  = useState([]);
-  const [mdmPlan,  setMdmPlan]  = useState(["", "", ""]);
+  const [mdmDx,         setMdmDx]         = useState(["", "", ""]);
+  const [mdmRisk,       setMdmRisk]       = useState("");
+  const [mdmData,       setMdmData]       = useState([]);
+  const [mdmPlan,       setMdmPlan]       = useState(["", "", ""]);
   const [dispoMode,     setDispoMode]     = useState("");
   const [dispoService,  setDispoService]  = useState("");
   const [dispoFollowup, setDispoFollowup] = useState("");
@@ -787,7 +767,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
 
   return (
     <div className={`cns2${embedded ? " emb" : ""}`}>
-      {anyBusy && <div className="cns2-load"/>}
+      {anyBusy && <div className="cns2-load" />}
 
       <div className="cns2-top">
         <button className="btn btn-ghost" style={{ flexShrink:0 }}
@@ -795,7 +775,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
         <div className="cns2-badge">NOTE STUDIO</div>
         <span className="cns2-ptname">{patientName}</span>
         {(demo.age || demo.sex) && (
-          <span className="cns2-meta">{[demo.age ? demo.age+"y" : "", demo.sex].filter(Boolean).join(" · ")}</span>
+          <span className="cns2-meta">{[demo.age ? demo.age + "y" : "", demo.sex].filter(Boolean).join(" · ")}</span>
         )}
         {cc.text && <span className="cns2-cc">CC: {cc.text}</span>}
         {esiLevel && <span className="cns2-esi">ESI {esiLevel}</span>}
@@ -803,7 +783,10 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
           <div className="cns2-prog-dots">
             {SECTIONS.map(s => {
               const st = sections[s.id]?.status || "empty";
-              return <div key={s.id} className={`cns2-prog-dot${["complete","locked"].includes(st)?" done":st==="draft"?" draft":""}`} title={s.title}/>;
+              return (
+                <div key={s.id} title={s.title}
+                  className={`cns2-prog-dot${["complete","locked"].includes(st) ? " done" : st === "draft" ? " draft" : ""}`} />
+              );
             })}
           </div>
           <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--t4)" }}>
@@ -813,7 +796,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
         <div className={`cns2-timer${elapsed > 300 ? " over" : ""}`} title="Time since note opened">{timerStr}</div>
         <div className="cns2-acts">
           <button className="btn btn-ghost" onClick={rebuildAll} title="⌘R">↺ Rebuild</button>
-          <button className="btn btn-gold"  onClick={generateAll} disabled={anyBusy} title="⌘⇧G">
+          <button className="btn btn-gold" onClick={generateAll} disabled={anyBusy} title="⌘⇧G">
             {anyBusy ? "⟳ Generating…" : "✦ Generate All"}
           </button>
           <button className="btn btn-ghost" onClick={copyAll}   title="⌘⇧C">⎘ Copy</button>
@@ -827,7 +810,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
           <div className="cns2-sb-head">
             <div className="cns2-sb-label">Sections</div>
             <div className="cns2-sb-bar">
-              <div className="cns2-sb-fill" style={{ width:`${(completedCount/SECTIONS.length)*100}%` }}/>
+              <div className="cns2-sb-fill" style={{ width:`${(completedCount / SECTIONS.length) * 100}%` }} />
             </div>
             <div className="cns2-sb-sub">{completedCount} of {SECTIONS.length} signed off</div>
           </div>
@@ -836,7 +819,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
               const st = sections[s.id]?.status || "empty";
               return (
                 <div key={s.id}
-                  className={`cns2-sb-item${focused===s.id?" on":""}`}
+                  className={`cns2-sb-item${focused === s.id ? " on" : ""}`}
                   onClick={() => {
                     setFocused(s.id);
                     setSections(prev => ({ ...prev, [s.id]: { ...prev[s.id], collapsed: false } }));
@@ -846,13 +829,13 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                   <span className="cns2-sb-ico">{s.icon}</span>
                   <div className="cns2-sb-txt"><div className="cns2-sb-name">{s.title}</div></div>
                   <span className="cns2-sb-key">⌘{s.key}</span>
-                  <div className={`cns2-sb-dot ${st}`}/>
+                  <div className={`cns2-sb-dot ${st}`} />
                 </div>
               );
             })}
           </div>
           <div className="cns2-sb-legend">
-            {[["⌘ 1–9","Jump section"],["⌘ G","AI generate"],["⌘ R","Rebuild"],["⌘ S","Save"],["⌘ P","Print"]].map(([k,d]) => (
+            {[["⌘ 1–9","Jump section"],["⌘ G","AI generate"],["⌘ R","Rebuild"],["⌘ S","Save"],["⌘ P","Print"]].map(([k, d]) => (
               <div key={k} className="cns2-sc-row">
                 <span className="cns2-sc-k">{k}</span>
                 <span className="cns2-sc-d">{d}</span>
@@ -876,8 +859,8 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
             return (
               <div key={s.id}
                 ref={el => { sectionDivRefs.current[s.id] = el; }}
-                className={`cns2-sec${focused===s.id?" focused":""}${coll?" collapsed":""}`}
-                onClick={() => { if (coll) { toggleCollapse(s.id); } else setFocused(s.id); }}
+                className={`cns2-sec${focused === s.id ? " focused" : ""}${coll ? " collapsed" : ""}`}
+                onClick={() => { if (coll) toggleCollapse(s.id); else setFocused(s.id); }}
               >
                 <div className="cns2-sec-hdr"
                   onClick={e => { e.stopPropagation(); toggleCollapse(s.id); setFocused(s.id); }}>
@@ -892,7 +875,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                   <span className="cns2-sec-short">⌘{s.key}</span>
                   <div className="cns2-sec-acts" onClick={e => e.stopPropagation()}>
                     <span className={`cns2-status st-${st}`}>{st === "locked" ? "🔒 locked" : st}</span>
-                    <button className={`ibtn${busy?" spin":""}`} title="AI Generate (⌘G)"
+                    <button className={`ibtn${busy ? " spin" : ""}`} title="AI Generate (⌘G)"
                       disabled={lk || busy} onClick={() => generateSection(s.id)}>
                       {busy ? "⟳" : "✦"}
                     </button>
@@ -908,7 +891,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                 {!coll && hasMacros && !lk && (
                   <div className="cns2-macro-bar" onClick={e => e.stopPropagation()}>
                     {MACROS[s.id].map(m => (
-                      <button key={m.label} className={`macro-pill ${m.cls||""}`}
+                      <button key={m.label} className={`macro-pill ${m.cls || ""}`}
                         onClick={() => applyMacro(s.id, m.text)}>{m.label}</button>
                     ))}
                   </div>
@@ -917,10 +900,10 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                 {!coll && isMDM && !lk && (
                   <div onClick={e => e.stopPropagation()}>
                     <MDMBuilder
-                      dx={mdmDx}         setDx={setMdmDx}
-                      risk={mdmRisk}     setRisk={setMdmRisk}
-                      data={mdmData}     setData={setMdmData}
-                      plan={mdmPlan}     setPlan={setMdmPlan}
+                      dx={mdmDx}      setDx={setMdmDx}
+                      risk={mdmRisk}  setRisk={setMdmRisk}
+                      data={mdmData}  setData={setMdmData}
+                      plan={mdmPlan}  setPlan={setMdmPlan}
                       onApply={applyMDM}
                     />
                   </div>
@@ -943,7 +926,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                   <div className="cns2-sec-body" onClick={e => e.stopPropagation()}>
                     <textarea
                       ref={el => { textareaRefs.current[s.id] = el; }}
-                      className={`cns2-ta${lk?" locked":""}`}
+                      className={`cns2-ta${lk ? " locked" : ""}`}
                       value={txt}
                       disabled={lk}
                       placeholder={isMDM || isDispo ? "Use the builder above, or type directly here…" : `${s.title}…`}

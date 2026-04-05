@@ -4,8 +4,8 @@ const S = {
   bg:'#050f1e', panel:'#081628', card:'#0b1e36', up:'#0e2544',
   border:'#1a3555', borderHi:'#2a4f7a',
   blue:'#3b9eff', cyan:'#00d4ff', teal:'#00e5c0', gold:'#f5c842',
-  coral:'#ff6b6b', orange:'#ff9f43', txt:'#e8f0fe', txt2:'#8aaccc',
-  txt3:'#4a6a8a', txt4:'#2e4a6a',
+  coral:'#ff6b6b', orange:'#ff9f43', txt:'#f4f9ff', txt2:'#c0d8f0',
+  txt3:'#8aaccc', txt4:'#5a82a8',
 };
 
 const CSS = `

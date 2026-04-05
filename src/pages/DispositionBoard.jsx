@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Patient, DispositionRecord } from "@/api/entities";
+import FloorPlanView from "@/components/disposition/FloorPlanView";
 
 const PREFIX = "dsp";
 
@@ -700,6 +701,7 @@ export default function DispositionBoard({ onBack }) {
   const [filter,    setFilter]    = useState("all");
   const [modal,     setModal]     = useState(null);
   const [toast,     setToast]     = useState("");
+  const [mainView,  setMainView]  = useState("cards"); // "cards" | "floor"
 
   // ── Live clocks ────────────────────────────────────────────────────
   // Boarding timers update every minute
@@ -772,6 +774,26 @@ export default function DispositionBoard({ onBack }) {
       await DispositionRecord.update(recordId, { dispo_status: "complete" });
       showToast("Patient marked complete");
       setModal(null);
+      fetchAll();
+    } catch {
+      showToast("Error updating status");
+    }
+  }, [fetchAll, showToast]);
+
+  const handleMoveToRoom = useCallback(async (patientId, newRoom) => {
+    try {
+      await Patient.update(patientId, { patient_id: newRoom });
+      showToast(`Moved to Room ${newRoom}`);
+      fetchAll();
+    } catch {
+      showToast("Error moving patient");
+    }
+  }, [fetchAll, showToast]);
+
+  const handleUpdateStatus = useCallback(async (recordId, newStatus) => {
+    try {
+      await DispositionRecord.update(recordId, { dispo_status: newStatus });
+      showToast(`Status → ${newStatus}`);
       fetchAll();
     } catch {
       showToast("Error updating status");
@@ -909,6 +931,24 @@ export default function DispositionBoard({ onBack }) {
           </div>
         )}
 
+        {/* View toggle */}
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+          <div style={{ display:"flex", gap:4, ...glass, padding:"4px", borderRadius:10 }}>
+            {[
+              { id:"cards", label:"🃏 Cards"      },
+              { id:"floor", label:"🏥 Floor Plan" },
+            ].map(v => (
+              <button key={v.id} onClick={() => setMainView(v.id)} style={{
+                fontFamily:"DM Sans", fontWeight:600, fontSize:12,
+                padding:"6px 14px", borderRadius:8, cursor:"pointer",
+                border:`1px solid ${mainView===v.id ? T.teal+"55":"transparent"}`,
+                background:mainView===v.id ? `${T.teal}16`:"transparent",
+                color:mainView===v.id ? T.teal : T.txt3, transition:"all .12s",
+              }}>{v.label}</button>
+            ))}
+          </div>
+        </div>
+
         {/* Filter pills */}
         <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:14 }}>
           {FILTER_PILLS.map(fp => (
@@ -949,8 +989,8 @@ export default function DispositionBoard({ onBack }) {
           </div>
         )}
 
-        {/* Patient grid */}
-        {!loading && sorted.length > 0 && (
+        {/* Patient grid — cards view */}
+        {!loading && sorted.length > 0 && mainView === "cards" && (
           <div style={{
             display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",
             gap:12, marginBottom:24,
@@ -965,6 +1005,17 @@ export default function DispositionBoard({ onBack }) {
                 onSetDispo={()=> setModal({ patient, record: null })}
               />
             ))}
+          </div>
+        )}
+
+        {/* Floor plan / status board view */}
+        {!loading && mainView === "floor" && (
+          <div style={{ marginBottom:24 }}>
+            <FloorPlanView
+              enriched={sorted}
+              onMoveToRoom={handleMoveToRoom}
+              onUpdateStatus={handleUpdateStatus}
+            />
           </div>
         )}
 

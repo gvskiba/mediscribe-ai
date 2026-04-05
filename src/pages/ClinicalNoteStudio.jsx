@@ -96,7 +96,7 @@ import { toast } from "sonner";
 .cns2-sc-d{font-size:10px;color:var(--t4)}
  
 /* ── NOTE AREA ── */
-.cns2-area{flex:1;overflow-y:auto;padding:14px 18px 40px;
+.cns2-area{flex:1;overflow-y:auto;padding:80px 18px 40px;
   display:flex;flex-direction:column;gap:8px}
  
 /* ── SECTION CARD ── */

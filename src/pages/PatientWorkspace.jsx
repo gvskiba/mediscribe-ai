@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import GlobalNav from "@/pages/GlobalNav";
+import GlobalNav from "@/components/GlobalNav";
 import { base44 } from "@/api/base44Client";
 
 const PREFIX  = "pw";

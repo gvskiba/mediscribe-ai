@@ -65,10 +65,20 @@ import PatientWorkspace from '@/pages/PatientWorkspace';
 import ShiftSignout from '@/pages/ShiftSignout';
 import GlobalNav from '@/components/GlobalNav';
 import NotryaFloatingAI from '@/components/ai/NotryaFloatingAI';
+import { useLocation } from 'react-router-dom';
 import AddendumManager from '@/pages/AddendumManager';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 
 
+
+// Pages that have their own built-in AI floating button
+const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
+
+function GlobalFloatingAI() {
+  const location = useLocation();
+  if (PAGES_WITH_OWN_AI.has(location.pathname)) return null;
+  return <NotryaFloatingAI />;
+}
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -106,7 +116,7 @@ const AuthenticatedApp = () => {
     <>
       <GlobalNav />
       <PatientSidebar />
-      <NotryaFloatingAI />
+      <GlobalFloatingAI />
       <Routes>
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>

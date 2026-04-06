@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 
 const T = {
   bg:"#050f1e", panel:"#081628", card:"#0b1e36",
@@ -67,15 +69,13 @@ function PulseRing({ active }) {
     <div style={{ position:"relative", display:"inline-flex" }}>
       {active && (
         <span style={{
-          position:"absolute", inset:"-6px",
-          borderRadius:"50%",
+          position:"absolute", inset:"-6px", borderRadius:"50%",
           border:`2px solid ${T.red}`,
           animation:"resus-ping 1s ease-out infinite",
         }} />
       )}
       <span style={{
-        display:"inline-block", width:14, height:14,
-        borderRadius:"50%",
+        display:"inline-block", width:14, height:14, borderRadius:"50%",
         background: active ? T.red : "rgba(42,79,122,0.4)",
         boxShadow: active ? `0 0 10px ${T.red}80` : "none",
         transition:"all .3s",
@@ -84,28 +84,80 @@ function PulseRing({ active }) {
   );
 }
 
+// ── Patient selector modal ──────────────────────────────────────────
+function PatientModal({ onSelect, onClose }) {
+  const [name, setName] = useState("");
+  const [mrn,  setMrn]  = useState("");
+
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:999,
+      background:"rgba(5,15,30,0.85)", backdropFilter:"blur(8px)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+    }}>
+      <div style={{
+        background:T.panel, border:"1px solid rgba(42,79,122,0.5)",
+        borderRadius:14, padding:24, width:340,
+        boxShadow:"0 24px 80px rgba(0,0,0,0.7)",
+      }}>
+        <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:15, color:T.txt, marginBottom:4 }}>
+          Link to Patient
+        </div>
+        <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt4, marginBottom:16 }}>
+          Optional — enter patient info to save with this code.
+        </div>
+        {[["Patient Name", name, setName],["MRN / Patient ID", mrn, setMrn]].map(([label, val, set]) => (
+          <div key={label} style={{ marginBottom:10 }}>
+            <div style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase", marginBottom:4 }}>{label}</div>
+            <input value={val} onChange={e => set(e.target.value)}
+              style={{ width:"100%", background:"rgba(14,37,68,0.8)", border:"1px solid rgba(42,79,122,0.5)", borderRadius:8, padding:"8px 11px", fontFamily:"JetBrains Mono", fontSize:12, color:T.txt, outline:"none" }} />
+          </div>
+        ))}
+        <div style={{ display:"flex", gap:8, marginTop:16 }}>
+          <button onClick={() => onSelect({ patient_name: name || "Unknown", patient_id: mrn || "" })}
+            style={{ flex:2, background:T.teal, color:T.bg, border:"none", borderRadius:8, padding:"9px", fontFamily:"DM Sans", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+            Start Code
+          </button>
+          <button onClick={onClose}
+            style={{ flex:1, background:"rgba(42,79,122,0.2)", color:T.txt3, border:"1px solid rgba(42,79,122,0.4)", borderRadius:8, padding:"9px", fontFamily:"DM Sans", fontWeight:600, fontSize:12, cursor:"pointer" }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ResuscitationTimer({ onClose }) {
+  const [showPatientModal, setShowPatientModal] = useState(false);
+  const [patient,       setPatient]       = useState(null);
+  const [eventId,       setEventId]       = useState(null);
   const [running,       setRunning]       = useState(false);
-  const [elapsed,       setElapsed]       = useState(0);      // total code time (secs)
-  const [cprElapsed,    setCprElapsed]    = useState(0);      // secs since last CPR cycle start
-  const [pulseElapsed,  setPulseElapsed]  = useState(0);      // secs since last pulse check
+  const [elapsed,       setElapsed]       = useState(0);
+  const [cprElapsed,    setCprElapsed]    = useState(0);
+  const [pulseElapsed,  setPulseElapsed]  = useState(0);
   const [drugTimers,    setDrugTimers]    = useState(() =>
-    Object.fromEntries(DRUGS.map(d => [d.id, 0]))             // secs since last given
+    Object.fromEntries(DRUGS.map(d => [d.id, 0]))
   );
   const [shocks,        setShocks]        = useState(0);
   const [rhythm,        setRhythm]        = useState("Unknown");
   const [rosc,          setRosc]          = useState(false);
   const [log,           setLog]           = useState([]);
-  const [drugGiven,     setDrugGiven]     = useState({});     // flash state
+  const [drugGiven,     setDrugGiven]     = useState({});
+  const [saving,        setSaving]        = useState(false);
+  const [addingToChart, setAddingToChart] = useState(false);
+  const [startedAt,     setStartedAt]     = useState(null);
 
-  const CPR_CYCLE  = 120;  // 2-minute CPR cycles
-  const PULSE_INT  = 120;  // pulse check every 2 min
+  // track medications given for saving
+  const medsGivenRef = useRef([]);
 
+  const CPR_CYCLE = 120;
+  const PULSE_INT = 120;
   const intervalRef = useRef(null);
+  const saveTimerRef = useRef(null);
 
-  const addLog = useCallback((msg, color = T.teal) => {
-    const time = elapsed;
-    setLog(prev => [{ msg, time, color, id: Date.now() }, ...prev].slice(0, 30));
+  const addLog = useCallback((msg, color = T.teal, type = "info") => {
+    setLog(prev => [{ msg, time: elapsed, color, type, id: Date.now() }, ...prev].slice(0, 30));
   }, [elapsed]);
 
   useEffect(() => {
@@ -126,84 +178,217 @@ export default function ResuscitationTimer({ onClose }) {
     return () => clearInterval(intervalRef.current);
   }, [running, rosc]);
 
-  // Auto-alerts via log
+  // Auto-save every 30 seconds while running
+  useEffect(() => {
+    if (running && eventId) {
+      saveTimerRef.current = setInterval(() => saveToDb("active"), 30000);
+    } else {
+      clearInterval(saveTimerRef.current);
+    }
+    return () => clearInterval(saveTimerRef.current);
+  }, [running, eventId, elapsed]);
+
   const prevCprRef   = useRef(0);
   const prevPulseRef = useRef(0);
   const prevDrugRef  = useRef({});
 
   useEffect(() => {
     if (!running) return;
-    // CPR cycle complete
     if (cprElapsed > 0 && cprElapsed % CPR_CYCLE === 0 && cprElapsed !== prevCprRef.current) {
       prevCprRef.current = cprElapsed;
-      addLog("⚡ CPR cycle complete — consider rhythm check", T.gold);
+      addLog("⚡ CPR cycle complete — consider rhythm check", T.gold, "cpr");
     }
-    // Pulse check
     if (pulseElapsed > 0 && pulseElapsed % PULSE_INT === 0 && pulseElapsed !== prevPulseRef.current) {
       prevPulseRef.current = pulseElapsed;
-      addLog("👆 Time for a pulse check!", T.orange);
+      addLog("👆 Time for a pulse check!", T.orange, "pulse");
     }
-    // Drug alerts
     DRUGS.forEach(d => {
       const t = drugTimers[d.id];
       if (t > 0 && t % d.interval === 0 && t !== prevDrugRef.current[d.id]) {
         prevDrugRef.current = { ...prevDrugRef.current, [d.id]: t };
-        addLog(`💊 ${d.name} DUE — ${d.dose}`, d.color);
+        addLog(`💊 ${d.name} DUE — ${d.dose}`, d.color, "drug_due");
       }
     });
   }, [elapsed, cprElapsed, pulseElapsed, drugTimers, running, addLog]);
 
-  function handleStart() {
-    if (!running && elapsed === 0) addLog("🚨 Code started", T.red);
-    setRunning(r => !r);
+  // ── DB helpers ──────────────────────────────────────────────────
+  async function saveToDb(status = "active") {
+    if (!eventId) return;
+    await base44.entities.ResuscitationEvent.update(eventId, {
+      total_duration_seconds: elapsed,
+      status,
+      rosc_achieved: rosc,
+      rosc_time_seconds: rosc ? elapsed : null,
+      rhythm,
+      shocks_delivered: shocks,
+      medications_given: medsGivenRef.current,
+      events_log: log.map(e => ({ msg: e.msg, time_seconds: e.time, type: e.type || "info" })).reverse(),
+    });
   }
 
-  function handleReset() {
-    setRunning(false);
-    setElapsed(0);
-    setCprElapsed(0);
-    setPulseElapsed(0);
-    setDrugTimers(Object.fromEntries(DRUGS.map(d => [d.id, 0])));
-    setShocks(0);
-    setRosc(false);
-    setLog([]);
-    prevCprRef.current = 0;
-    prevPulseRef.current = 0;
-    prevDrugRef.current = {};
+  async function createEvent(patientInfo) {
+    const now = new Date().toISOString();
+    setStartedAt(now);
+    const rec = await base44.entities.ResuscitationEvent.create({
+      patient_id: patientInfo.patient_id,
+      patient_name: patientInfo.patient_name,
+      started_at: now,
+      status: "active",
+      rhythm: "Unknown",
+      shocks_delivered: 0,
+      rosc_achieved: false,
+      medications_given: [],
+      events_log: [],
+      total_duration_seconds: 0,
+    });
+    return rec.id;
+  }
+
+  // ── Actions ──────────────────────────────────────────────────────
+  function handleStartClick() {
+    if (elapsed === 0 && !running) {
+      setShowPatientModal(true);
+    } else {
+      setRunning(r => !r);
+    }
+  }
+
+  async function handlePatientSelect(patientInfo) {
+    setShowPatientModal(false);
+    setPatient(patientInfo);
+    const id = await createEvent(patientInfo);
+    setEventId(id);
+    addLog("🚨 Code started", T.red, "start");
+    setRunning(true);
   }
 
   function handleCPRReset() {
     setCprElapsed(0);
-    addLog("🔄 CPR cycle reset", T.teal);
+    addLog("🔄 CPR cycle reset", T.teal, "cpr");
   }
 
   function handlePulseCheck() {
     setPulseElapsed(0);
-    addLog("👆 Pulse check performed", T.blue);
+    addLog("👆 Pulse check performed", T.blue, "pulse");
   }
 
   function handleShock() {
     const n = shocks + 1;
     setShocks(n);
     setCprElapsed(0);
-    addLog(`⚡ SHOCK #${n} delivered — ${rhythm} — resuming CPR`, T.red);
+    addLog(`⚡ SHOCK #${n} delivered — ${rhythm} — resuming CPR`, T.red, "shock");
   }
 
   function handleDrugGiven(drug) {
+    const t = elapsed;
     setDrugTimers(prev => ({ ...prev, [drug.id]: 0 }));
     setDrugGiven(prev => ({ ...prev, [drug.id]: true }));
     setTimeout(() => setDrugGiven(prev => ({ ...prev, [drug.id]: false })), 1200);
-    addLog(`💊 ${drug.name} ${drug.dose} given`, drug.color);
+    medsGivenRef.current = [...medsGivenRef.current, { drug: drug.name, dose: drug.dose, time_seconds: t }];
+    addLog(`💊 ${drug.name} ${drug.dose} given`, drug.color, "medication");
   }
 
-  function handleROSC() {
+  async function handleROSC() {
     setRunning(false);
     setRosc(true);
-    addLog(`✅ ROSC achieved at ${fmtTime(elapsed)}`, T.green);
+    addLog(`✅ ROSC achieved at ${fmtTime(elapsed)}`, T.green, "rosc");
+    if (eventId) {
+      setSaving(true);
+      await base44.entities.ResuscitationEvent.update(eventId, {
+        status: "completed",
+        rosc_achieved: true,
+        rosc_time_seconds: elapsed,
+        total_duration_seconds: elapsed,
+        rhythm,
+        shocks_delivered: shocks,
+        medications_given: medsGivenRef.current,
+        events_log: log.map(e => ({ msg: e.msg, time_seconds: e.time, type: e.type || "info" })).reverse(),
+      });
+      setSaving(false);
+      toast.success("Code event saved.");
+    }
+  }
+
+  async function handleEndCode() {
+    setRunning(false);
+    if (eventId) {
+      setSaving(true);
+      await saveToDb("aborted");
+      setSaving(false);
+      toast.success("Code event saved.");
+    }
+  }
+
+  async function handleAddToChart() {
+    if (!eventId) { toast.error("Save the code first."); return; }
+    setAddingToChart(true);
+    try {
+      const logText = log.map(e => `[${fmtTime(e.time)}] ${e.msg}`).reverse().join("\n");
+      const medsText = medsGivenRef.current.map(m => `  - ${m.drug} ${m.dose} at T+${fmtTime(m.time_seconds)}`).join("\n") || "  None documented";
+
+      const prompt = `You are a clinical documentation specialist. Generate a concise emergency medicine procedure note for a cardiac arrest resuscitation based on the following data.
+
+Patient: ${patient?.patient_name || "Unknown"} ${patient?.patient_id ? `(MRN: ${patient.patient_id})` : ""}
+Code Duration: ${fmtTime(elapsed)}
+Primary Rhythm: ${rhythm}
+Shocks Delivered: ${shocks}
+ROSC: ${rosc ? `Yes, at T+${fmtTime(elapsed)}` : "No"}
+
+Medications Given:
+${medsText}
+
+Event Timeline:
+${logText}
+
+Write a formal ED procedure note in SOAP format including: indication, procedure performed, technique (CPR quality, airway management), medications administered with times, shocks delivered, patient response, and disposition/outcome. Use standard EP documentation style.`;
+
+      const noteText = await base44.integrations.Core.InvokeLLM({ prompt });
+
+      const note = await base44.entities.ClinicalNote.create({
+        patient_name: patient?.patient_name || "Unknown",
+        patient_id: patient?.patient_id || "",
+        raw_note: noteText,
+        note_type: "procedure_note",
+        chief_complaint: "Cardiac Arrest",
+        status: "draft",
+        plan: noteText,
+      });
+
+      // Link back
+      await base44.entities.ResuscitationEvent.update(eventId, { note_id: note.id });
+
+      toast.success("Procedure note added to chart!");
+    } catch (e) {
+      toast.error("Failed to generate note: " + e.message);
+    }
+    setAddingToChart(false);
+  }
+
+  async function handleReset() {
+    if (eventId && running) {
+      await saveToDb("aborted");
+    }
+    setRunning(false);
+    setElapsed(0);
+    setCprElapsed(0);
+    setPulseElapsed(0);
+    setDrugTimers(Object.fromEntries(DRUGS.map(d => [d.id, 0])));
+    setShocks(0);
+    setRhythm("Unknown");
+    setRosc(false);
+    setLog([]);
+    setPatient(null);
+    setEventId(null);
+    setStartedAt(null);
+    medsGivenRef.current = [];
+    prevCprRef.current = 0;
+    prevPulseRef.current = 0;
+    prevDrugRef.current = {};
   }
 
   const shockable = rhythm === "VF" || rhythm === "Pulseless VT";
   const urgentDrugs = DRUGS.filter(d => drugTimers[d.id] >= d.interval);
+  const codeDone = !running && elapsed > 0;
 
   return (
     <>
@@ -213,6 +398,13 @@ export default function ResuscitationTimer({ onClose }) {
         @keyframes resus-flash { 0%,100%{opacity:1} 50%{opacity:0.3} }
         .resus-urgent { animation: resus-flash 0.6s ease-in-out 3; }
       `}</style>
+
+      {showPatientModal && (
+        <PatientModal
+          onSelect={handlePatientSelect}
+          onClose={() => setShowPatientModal(false)}
+        />
+      )}
 
       <div style={{
         fontFamily:"DM Sans, sans-serif", color:T.txt,
@@ -226,15 +418,26 @@ export default function ResuscitationTimer({ onClose }) {
         {/* ── Header ── */}
         <div style={{
           background:T.panel, borderBottom:"1px solid rgba(42,79,122,0.4)",
-          padding:"12px 16px", display:"flex", alignItems:"center", gap:12,
+          padding:"12px 16px", display:"flex", alignItems:"center", gap:12, flexWrap:"wrap",
         }}>
           <PulseRing active={running && !rosc} />
           <span style={{ fontFamily:"JetBrains Mono", fontSize:10, fontWeight:700, color:T.coral, letterSpacing:2 }}>RESUSCITATION</span>
+          {patient && (
+            <span style={{ fontFamily:"DM Sans", fontSize:12, fontWeight:600, color:T.txt2 }}>
+              {patient.patient_name}{patient.patient_id ? ` · ${patient.patient_id}` : ""}
+            </span>
+          )}
           <div style={{ flex:1 }} />
+          {saving && <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.gold }}>saving…</span>}
           {rosc && (
             <span style={{ fontFamily:"JetBrains Mono", fontSize:10, fontWeight:700,
               padding:"3px 10px", borderRadius:20, background:`${T.green}18`,
               border:`1px solid ${T.green}45`, color:T.green }}>✅ ROSC</span>
+          )}
+          {eventId && (
+            <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.teal,
+              padding:"2px 8px", borderRadius:20, background:`${T.teal}10`,
+              border:`1px solid ${T.teal}30` }}>💾 Linked</span>
           )}
           {onClose && (
             <button onClick={onClose} style={{
@@ -263,7 +466,7 @@ export default function ResuscitationTimer({ onClose }) {
 
             {/* Start / Stop / Reset */}
             <div style={{ display:"flex", gap:8 }}>
-              <button onClick={handleStart} disabled={rosc} style={{
+              <button onClick={handleStartClick} disabled={rosc} style={{
                 flex:2, fontFamily:"DM Sans", fontWeight:700, fontSize:14,
                 padding:"11px", borderRadius:10, cursor:rosc?"not-allowed":"pointer",
                 border:`1px solid ${running ? T.gold+"55" : T.red+"55"}`,
@@ -338,14 +541,37 @@ export default function ResuscitationTimer({ onClose }) {
             </button>
 
             {/* ROSC */}
-            <button onClick={handleROSC} disabled={rosc} style={{
+            <button onClick={handleROSC} disabled={rosc || elapsed === 0} style={{
               fontFamily:"DM Sans", fontWeight:700, fontSize:13,
               padding:"10px", borderRadius:9,
-              cursor:rosc?"not-allowed":"pointer",
+              cursor:(rosc||elapsed===0)?"not-allowed":"pointer",
               border:`1px solid ${T.green}45`, background:`${T.green}10`, color:T.green,
-              opacity:rosc?0.5:1, transition:"all .15s",
+              opacity:(rosc||elapsed===0)?0.5:1, transition:"all .15s",
             }}>✅ ROSC Achieved</button>
 
+            {/* End Code (no ROSC) */}
+            {elapsed > 0 && !rosc && (
+              <button onClick={handleEndCode} disabled={running} style={{
+                fontFamily:"DM Sans", fontWeight:600, fontSize:12,
+                padding:"9px", borderRadius:9, cursor:running?"not-allowed":"pointer",
+                border:"1px solid rgba(255,107,107,0.3)",
+                background:"rgba(255,107,107,0.07)", color:T.coral,
+                opacity:running?0.4:1,
+              }}>🛑 End Code (No ROSC)</button>
+            )}
+
+            {/* Add to Chart */}
+            {codeDone && (
+              <button onClick={handleAddToChart} disabled={addingToChart} style={{
+                fontFamily:"DM Sans", fontWeight:700, fontSize:13,
+                padding:"11px", borderRadius:9, cursor:addingToChart?"not-allowed":"pointer",
+                border:`1px solid ${T.purple}55`, background:`${T.purple}12`, color:T.purple,
+                opacity:addingToChart?0.6:1, transition:"all .15s",
+                display:"flex", alignItems:"center", justifyContent:"center", gap:7,
+              }}>
+                {addingToChart ? "⟳ Generating Note…" : "📋 Add to Chart"}
+              </button>
+            )}
           </div>
 
           {/* ── Right: Drugs + Log ── */}
@@ -367,7 +593,6 @@ export default function ResuscitationTimer({ onClose }) {
                       background: overdue ? `${drug.color}0d` : "rgba(8,22,40,0.6)",
                       transition:"border-color .3s",
                     }}>
-                      {/* Progress bar */}
                       <div style={{ height:3, background:"rgba(42,79,122,0.3)", position:"relative" }}>
                         <div style={{
                           position:"absolute", top:0, left:0, height:"100%",
@@ -378,9 +603,7 @@ export default function ResuscitationTimer({ onClose }) {
                       </div>
                       <div style={{ padding:"7px 10px", display:"flex", alignItems:"center", gap:8 }}>
                         <div style={{ flex:1 }}>
-                          <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:12, color:T.txt }}>
-                            {drug.name}
-                          </div>
+                          <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:12, color:T.txt }}>{drug.name}</div>
                           <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4 }}>{drug.dose}</div>
                         </div>
                         <div style={{ textAlign:"right" }}>
@@ -395,12 +618,12 @@ export default function ResuscitationTimer({ onClose }) {
                             {t > 0 ? `last: ${fmtTime(t)} ago` : "not given"}
                           </div>
                         </div>
-                        <button onClick={() => handleDrugGiven(drug)} style={{
+                        <button onClick={() => handleDrugGiven(drug)} disabled={!running} style={{
                           fontFamily:"DM Sans", fontWeight:700, fontSize:10,
-                          padding:"5px 10px", borderRadius:7, cursor:"pointer",
+                          padding:"5px 10px", borderRadius:7, cursor:running?"pointer":"not-allowed",
                           border:`1px solid ${drug.color}50`,
                           background:`${drug.color}14`, color:drug.color,
-                          flexShrink:0, transition:"all .12s",
+                          flexShrink:0, opacity:running?1:0.4,
                         }}>Given</button>
                       </div>
                     </div>
@@ -412,12 +635,9 @@ export default function ResuscitationTimer({ onClose }) {
             {/* Event log */}
             <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0 }}>
               <div style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>
-                Event Log
+                Event Log {eventId && <span style={{ color:T.teal }}>· auto-saving</span>}
               </div>
-              <div style={{
-                flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:4,
-                maxHeight:200,
-              }}>
+              <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:4, maxHeight:200 }}>
                 {log.length === 0 && (
                   <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt4, fontStyle:"italic", padding:"8px 0" }}>
                     Events will appear here...
@@ -467,12 +687,12 @@ export default function ResuscitationTimer({ onClose }) {
         {elapsed > 0 && (
           <div style={{
             background:T.panel, borderTop:"1px solid rgba(42,79,122,0.3)",
-            padding:"8px 16px", display:"flex", gap:20, flexWrap:"wrap",
+            padding:"8px 16px", display:"flex", gap:20, flexWrap:"wrap", alignItems:"center",
           }}>
             {[
-              { label:"Total Time",  val:fmtTime(elapsed),      color:T.txt2   },
-              { label:"Shocks",      val:shocks,                 color:T.red    },
-              { label:"Rhythm",      val:rhythm,                 color:T.blue   },
+              { label:"Total Time",  val:fmtTime(elapsed),  color:T.txt2   },
+              { label:"Shocks",      val:shocks,             color:T.red    },
+              { label:"Rhythm",      val:rhythm,             color:T.blue   },
               { label:"Status",      val:rosc ? "ROSC" : running ? "Active" : "Paused",
                 color: rosc ? T.green : running ? T.coral : T.gold },
             ].map(({ label, val, color }) => (
@@ -481,9 +701,14 @@ export default function ResuscitationTimer({ onClose }) {
                 <div style={{ fontFamily:"JetBrains Mono", fontSize:13, fontWeight:700, color }}>{val}</div>
               </div>
             ))}
+            {medsGivenRef.current.length > 0 && (
+              <div>
+                <div style={{ fontFamily:"JetBrains Mono", fontSize:7, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase" }}>Meds Given</div>
+                <div style={{ fontFamily:"JetBrains Mono", fontSize:13, fontWeight:700, color:T.orange }}>{medsGivenRef.current.length}</div>
+              </div>
+            )}
           </div>
         )}
-
       </div>
     </>
   );

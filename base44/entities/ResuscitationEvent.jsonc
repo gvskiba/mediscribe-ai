@@ -1,0 +1,91 @@
+{
+  "name": "ResuscitationEvent",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "Patient MRN or ID"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Patient name for display"
+    },
+    "note_id": {
+      "type": "string",
+      "description": "Optional linked ClinicalNote ID"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the code started"
+    },
+    "total_duration_seconds": {
+      "type": "number",
+      "description": "Total code time in seconds"
+    },
+    "rosc_achieved": {
+      "type": "boolean",
+      "default": false
+    },
+    "rosc_time_seconds": {
+      "type": "number",
+      "description": "Elapsed seconds at ROSC"
+    },
+    "rhythm": {
+      "type": "string",
+      "description": "Primary rhythm (VF, PEA, etc.)"
+    },
+    "shocks_delivered": {
+      "type": "number",
+      "default": 0
+    },
+    "medications_given": {
+      "type": "array",
+      "description": "Log of medications administered",
+      "items": {
+        "type": "object",
+        "properties": {
+          "drug": {
+            "type": "string"
+          },
+          "dose": {
+            "type": "string"
+          },
+          "time_seconds": {
+            "type": "number"
+          }
+        }
+      },
+      "default": []
+    },
+    "events_log": {
+      "type": "array",
+      "description": "Timestamped event log",
+      "items": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          },
+          "time_seconds": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "aborted"
+      ],
+      "default": "active"
+    }
+  },
+  "required": []
+}

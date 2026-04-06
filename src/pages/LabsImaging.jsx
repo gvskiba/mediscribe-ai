@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 
+import { base44 } from '@/api/base44Client';
+
 // ── Font injection (idempotent) ────────────────────────────────
 (() => {
   if (document.getElementById("notrya-li-fonts")) return;
@@ -402,8 +404,20 @@ Status options: normal, low, high, critical_low, critical_high, elevated`,
       });
       const data = await res.json();
       const raw = (data.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim();
-      setLabResult(JSON.parse(raw));
+      const parsedLabs = JSON.parse(raw);
+      setLabResult(parsedLabs);
       toast("Lab analysis complete","success");
+      try {
+        await base44.entities.ClinicalResult.bulkCreate(
+          labs.map(l => ({
+            name: l.name,
+            value: l.value,
+            unit: l.unit,
+            flag: l.status === 'critical_low' || l.status === 'critical_high' ? 'critical' : 'normal',
+            resulted_at: new Date().toISOString(),
+          }))
+        );
+      } catch {}
     } catch(e) { toast("Lab analysis failed — check connection","error"); }
     finally { setLabBusy(false); }
   };
@@ -426,8 +440,20 @@ Status options: normal, low, high, critical_low, critical_high, elevated`,
       });
       const data = await res.json();
       const raw = (data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim();
-      setImgResult(JSON.parse(raw));
+      const parsedImg = JSON.parse(raw);
+      setImgResult(parsedImg);
       toast("Imaging analysis complete","success");
+      try {
+        await base44.entities.ClinicalOrder.create({
+          order_name: `Imaging Study — ${parsedImg.modality || 'Unknown'}`,
+          order_type: 'imaging',
+          details: imgMode==="text" ? imgText : 'Uploaded image',
+          result: parsedImg.impression || '',
+          status: 'completed',
+          ordered_at: new Date().toISOString(),
+          result_at: new Date().toISOString(),
+        });
+      } catch {}
     } catch(e) { toast("Imaging analysis failed","error"); }
     finally { setImgBusy(false); }
   };
@@ -450,8 +476,20 @@ Status options: normal, low, high, critical_low, critical_high, elevated`,
       });
       const data = await res.json();
       const raw = (data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim();
-      setEkgResult(JSON.parse(raw));
+      const parsedEkg = JSON.parse(raw);
+      setEkgResult(parsedEkg);
       toast("EKG interpretation complete","success");
+      try {
+        await base44.entities.ClinicalOrder.create({
+          order_name: 'EKG / ECG',
+          order_type: 'procedure',
+          details: ekgMode==="text" ? ekgText : 'Uploaded tracing',
+          result: parsedEkg.interpretation || '',
+          status: 'completed',
+          ordered_at: new Date().toISOString(),
+          result_at: new Date().toISOString(),
+        });
+      } catch {}
     } catch(e) { toast("EKG analysis failed","error"); }
     finally { setEkgBusy(false); }
   };

@@ -756,6 +756,7 @@ export default function EDTrackingBoard({ onBack }) {
               <button onClick={() => navigate("/NewPatientInput")} style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"5px 14px", borderRadius:8, cursor:"pointer", border:`1px solid ${T.teal}40`, background:`${T.teal}10`, color:T.teal }}>+ New Patient</button>
               <button onClick={() => navigate("/ClinicalNoteStudio")} style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"5px 14px", borderRadius:8, cursor:"pointer", border:`1px solid ${T.purple}40`, background:`${T.purple}10`, color:T.purple }}>🖊️ Note Studio</button>
               <button onClick={() => navigate("/DispositionBoard")} style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"5px 14px", borderRadius:8, cursor:"pointer", border:`1px solid ${T.teal}40`, background:`${T.teal}0a`, color:T.teal }}>🚪 Dispo Board</button>
+              <button onClick={() => navigate("/critical-inbox")} style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:11, padding:"5px 14px", borderRadius:8, cursor:"pointer", border:`1px solid ${T.red}50`, background:`${T.red}14`, color:T.red }}>🔴 Critical Inbox</button>
               <NotifBell count={unreadCount} onClick={() => setShowNotifPanel(p => !p)} />
             </div>
           </div>

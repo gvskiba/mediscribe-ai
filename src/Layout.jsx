@@ -40,6 +40,7 @@ const APP_ICONS = [
   { icon: '💊', label: 'Drugs',     page: '/DrugsBugs' },
   { icon: '🧮', label: 'Calc',      page: '/Calculators' },
   { icon: '🏥', label: 'Hub',       page: '/hub' },
+  { icon: '🔴', label: 'Critical',  page: '/critical-inbox' },
 ];
 
 /* ─────────────────────────────────────────────

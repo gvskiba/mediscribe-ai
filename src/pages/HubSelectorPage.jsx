@@ -605,6 +605,24 @@ const HUBS = [
     priority: 32,
     essential: false,
   },
+  {
+    id: "critical-inbox",
+    route: "/critical-inbox",
+    icon: "🔴",
+    abbr: "CRITICAL",
+    title: "Critical Results Inbox",
+    subtitle: "Critical & panic value alerts · Acknowledge · Audit trail · Escalation timers",
+    color: "#ff4444",
+    glow: "rgba(255,68,68,0.45)",
+    glass: "rgba(255,68,68,0.08)",
+    border: "rgba(255,68,68,0.3)",
+    accent: "#ff7777",
+    category: "Tools",
+    stats: ["Critical Values", "Ack Audit Trail", "Escalation Timers"],
+    badge: "Live",
+    priority: 1.5,
+    essential: true,
+  },
 ];
 
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -616,7 +634,7 @@ const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
-  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results", "/consult-hub", "/procedure-hub", "/id-hub", "/discharge-hub", "/wound-hub", "/DispositionBoard",
+  "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub", "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub", "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results", "/consult-hub", "/procedure-hub", "/id-hub", "/discharge-hub", "/wound-hub", "/DispositionBoard", "/critical-inbox",
 ]);
 
 function Background() {

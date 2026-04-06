@@ -64,6 +64,7 @@ import CommandCenterWrapper from '@/pages/CommandCenterWrapper';
 import PatientWorkspace from '@/pages/PatientWorkspace';
 import ShiftSignout from '@/pages/ShiftSignout';
 import GlobalNav from '@/components/GlobalNav';
+import AddendumManager from '@/pages/AddendumManager';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 
 
@@ -179,6 +180,7 @@ const AuthenticatedApp = () => {
       <Route path="/command-center" element={<CommandCenterWrapper />} />
       <Route path="/patient-workspace" element={<PatientWorkspace />} />
       <Route path="/shift-signout" element={<ShiftSignout />} />
+      <Route path="/AddendumManager" element={<AddendumManager />} />
 
 
       <Route path="*" element={<PageNotFound />} />

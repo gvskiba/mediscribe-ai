@@ -116,9 +116,14 @@ function HubCard({ page, current, navigate, delay = 0 }) {
 // ══════════════════════════════════════════════════════════════════════
 //  GLOBAL NAV
 // ══════════════════════════════════════════════════════════════════════
+// Pages with their own full navigation — GlobalNav should not render
+const EXCLUDED_ROUTES = new Set(["/NewPatientInput", "/ClinicalNoteStudio", "/NotryaApp"]);
+
 export default function GlobalNav({ alerts = 0 }) {
   const navigate  = useNavigate();
   const location  = useLocation();
+
+  if (EXCLUDED_ROUTES.has(location.pathname)) return null;
   const [open,   setOpen]   = useState(false);
   const [search, setSearch] = useState("");
   const [recent, setRecent] = useState([]);

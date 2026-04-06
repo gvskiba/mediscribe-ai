@@ -62,6 +62,7 @@ import NotryaLanding from '@/pages/NotryaLanding';
 import ProviderCommandCenter from '@/pages/ProviderCommandCenter';
 import CommandCenterWrapper from '@/pages/CommandCenterWrapper';
 import PatientWorkspace from '@/pages/PatientWorkspace';
+import ShiftSignout from '@/pages/ShiftSignout';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 
 
@@ -175,6 +176,7 @@ const AuthenticatedApp = () => {
       <Route path="/landing" element={<NotryaLanding />} />
       <Route path="/command-center" element={<CommandCenterWrapper />} />
       <Route path="/patient-workspace" element={<PatientWorkspace />} />
+      <Route path="/shift-signout" element={<ShiftSignout />} />
 
 
       <Route path="*" element={<PageNotFound />} />

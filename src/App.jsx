@@ -55,6 +55,7 @@ import WoundHub from '@/pages/WoundHub';
 import ClinicalNoteStudio from '@/pages/ClinicalNoteStudio';
 import DispositionBoard from '@/pages/DispositionBoard';
 import SmartDosingHub from '@/pages/SmartDosingHub';
+import DDxEngine from '@/pages/DDxEngine';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 
 
@@ -162,6 +163,7 @@ const AuthenticatedApp = () => {
       <Route path="/EDTrackingBoard" element={<EDTrackingBoard />} />
       <Route path="/DispositionBoard" element={<DispositionBoard />} />
       <Route path="/smart-dosing" element={<SmartDosingHub />} />
+      <Route path="/ddx-engine" element={<DDxEngine />} />
 
 
       <Route path="*" element={<PageNotFound />} />

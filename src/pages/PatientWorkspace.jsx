@@ -719,7 +719,7 @@ export default function PatientWorkspace({ onBack }) {
           {NAV_GROUPS.map(g => (
             <button key={g.key}
               className={`nv3-group-tab${activeGroup===g.key?" active":""}`}
-              style={({ "--nv3-accent":g.accent } as any)}
+              style={{ "--nv3-accent":g.accent }}
               onClick={() => selectGroup(g.key)}>
               <span>{g.icon}</span><span>{g.label}</span>
               <div className={`nv3-group-badge ${getGroupBadge(g.key)}`}/>
@@ -731,7 +731,7 @@ export default function PatientWorkspace({ onBack }) {
           {currentSections.map(s => (
             <button key={s.id}
               className={`nv3-pill${activeSection===s.id?" active":""}`}
-              style={activeSection===s.id ? ({ "--nv3-accent":currentGroup?.accent, "--nv3-accent-rgb":currentGroup?.accentRgb } as any) : {}}
+              style={activeSection===s.id ? { "--nv3-accent":currentGroup?.accent, "--nv3-accent-rgb":currentGroup?.accentRgb } : {}}
               onClick={() => selectSection(s.id)}>
               <span className="nv3-pill-ico">{s.icon}</span>{s.label}
               <div className={`nv3-pill-dot ${navDots[s.id]||"empty"}`}/>
@@ -845,7 +845,7 @@ export default function PatientWorkspace({ onBack }) {
               value={aiInput}
               onChange={e => setAiInput(e.target.value)}
               onKeyDown={e => { if (e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAI(aiInput);} }}
-              onInput={e => { const t=e.target as HTMLTextAreaElement; t.style.height="auto"; t.style.height=Math.min(t.scrollHeight,80)+"px"; }}
+              onInput={e => { const t=e.currentTarget; t.style.height="auto"; t.style.height=Math.min(t.scrollHeight,80)+"px"; }}
               disabled={aiLoading}
             />
             <button className="pw-ai-send" onClick={() => sendAI(aiInput)} disabled={aiLoading||!aiInput.trim()}>↑</button>

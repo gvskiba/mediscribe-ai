@@ -1,599 +1,1055 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
-import { usePatientData } from "@/lib/PatientDataContext";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { Patient, ClinicalResult, Order, ClinicalNote, DispositionRecord } from "@/api/entities";
+import { InvokeLLM } from "@/integrations/Core";
 
-import OfflineSync from "./components/offline/OfflineSync";
-import NotryaFloatingAI from "./components/ai/NotryaFloatingAI";
+const PREFIX = "ptw";
 
-/* ─────────────────────────────────────────────
-   DESIGN TOKENS (inlined so layout is self-contained)
-───────────────────────────────────────────── */
+(() => {
+  const id = `${PREFIX}-fonts`;
+  if (document.getElementById(id)) return;
+  const l = document.createElement("link");
+  l.id = id; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  document.head.appendChild(l);
+  const s = document.createElement("style"); s.id = `${PREFIX}-css`;
+  s.textContent = `
+    * { box-sizing:border-box; margin:0; padding:0; }
+    ::-webkit-scrollbar { width:3px; } ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(42,79,122,.5); border-radius:2px; }
+    @keyframes ${PREFIX}fade  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes ${PREFIX}shim  { 0%,100%{background-position:-200% center} 50%{background-position:200% center} }
+    @keyframes ${PREFIX}pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+    @keyframes ${PREFIX}rise  { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
+    @keyframes ${PREFIX}think { 0%{opacity:.3;transform:scale(.9)} 50%{opacity:1;transform:scale(1)} 100%{opacity:.3;transform:scale(.9)} }
+    @keyframes ${PREFIX}orb0  { 0%,100%{transform:translate(-50%,-50%) scale(1)} 50%{transform:translate(-50%,-50%) scale(1.1)} }
+    @keyframes ${PREFIX}orb1  { 0%,100%{transform:translate(-50%,-50%) scale(1.07)} 50%{transform:translate(-50%,-50%) scale(.92)} }
+    .${PREFIX}-fade  { animation:${PREFIX}fade .22s ease both; }
+    .${PREFIX}-pulse { animation:${PREFIX}pulse 1.8s ease-in-out infinite; }
+    .${PREFIX}-rise  { animation:${PREFIX}rise .3s cubic-bezier(.2,.8,.3,1) both; }
+    .${PREFIX}-think { animation:${PREFIX}think 1.2s ease-in-out infinite; }
+  `;
+  document.head.appendChild(s);
+})();
+
 const T = {
-  bg:        '#050f1e',
-  panel:     '#081628',
-  card:      '#0b1e36',
-  up:        '#0e2544',
-  border:    '#1a3555',
-  borderHi:  '#2a4f7a',
-  blue:      '#3b9eff',
-  teal:      '#00e5c0',
-  gold:      '#f5c842',
-  coral:     '#ff6b6b',
-  orange:    '#ff9f43',
-  txt:       '#ffffff',
-  txt2:      '#d0e8ff',
-  txt3:      '#a8c8e8',
-  txt4:      '#7aa0c0',
+  bg:"#050f1e", txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
+  teal:"#00e5c0", gold:"#f5c842", red:"#ff4444", green:"#3dffa0",
+  blue:"#3b9eff", purple:"#9b6dff", orange:"#ff9f43", coral:"#ff6b6b",
 };
 
-/* ─────────────────────────────────────────────
-   APP-LEVEL ICON SIDEBAR NAVIGATION
-───────────────────────────────────────────── */
-const APP_ICONS = [
-  { icon: '🏠', label: 'Home',      page: '/' },
-  { icon: '⚕️', label: 'Command',   page: '/command-center' },
-  { icon: '📊', label: 'Dashboard', page: '/Dashboard' },
-  { icon: '🆕', label: 'New PT',    page: '/NewPatientInput' },
-  { icon: '📝', label: 'New Note',  page: '/NewNote' },
-  { icon: '👥', label: 'Patients',  page: '/PatientDashboard' },
-  { icon: '🔄', label: 'Shift',     page: '/Shift' },
-  { icon: '💊', label: 'Drugs',     page: '/DrugsBugs' },
-  { icon: '🧮', label: 'Calc',      page: '/Calculators' },
-  { icon: '🏥', label: 'Hub',       page: '/hub' },
-  { icon: '🔴', label: 'Critical',  page: '/critical-inbox' },
-];
-
-/* ─────────────────────────────────────────────
-   CHART SECTION SIDEBAR GROUPS
-───────────────────────────────────────────── */
-const CHART_GROUPS = [
-  {
-    label: 'Intake',
-    groupIcon: '📋',
-    items: [
-      { icon: '📊', label: 'Patient Chart',      page: '/NewPatientInput?tab=chart' },
-      { icon: '👤', label: 'Demographics',       page: '/NewPatientInput?tab=demo' },
-      { icon: '💬', label: 'Chief Complaint',    page: '/NewPatientInput?tab=cc' },
-      { icon: '📈', label: 'Vitals',             page: '/NewPatientInput?tab=vit' },
-      { icon: '💊', label: 'Meds & PMH',         page: '/NewPatientInput?tab=meds' },
-    ]
-  },
-  {
-    label: 'Documentation',
-    groupIcon: '🩺',
-    items: [
-      { icon: '📝', label: 'HPI',             page: '/hpi' },
-      { icon: '🔍', label: 'Review of Systems',  page: '/NewPatientInput?tab=ros' },
-      { icon: '🩺', label: 'Physical Exam',      page: '/NewPatientInput?tab=pe' },
-      { icon: '⚖️', label: 'MDM',               page: '/NewPatientInput?tab=mdm' },
-      { icon: '🗺️', label: 'ER Plan Builder',   page: '/NewPatientInput?tab=erplan' },
-      { icon: '📋', label: 'Orders',            page: '/NewPatientInput?tab=orders' },
-      { icon: '🧪', label: 'Results',            page: '/Results' },
-    ]
-  },
-  {
-    label: 'Disposition',
-    groupIcon: '🚪',
-    items: [
-      { icon: '🚪', label: 'Discharge',         page: '/NewPatientInput?tab=discharge' },
-      { icon: '💉', label: 'eRx',               page: '/NewPatientInput?tab=erx' },
-    ]
-  },
-  {
-    label: 'Tools',
-    groupIcon: '🔧',
-    items: [
-      { icon: '🤖', label: 'AutoCoder',         page: '/NewPatientInput?tab=autocoder' },
-      { icon: '✂️', label: 'Procedures',        page: '/NewPatientInput?tab=procedures' },
-      { icon: '🏠', label: 'Hub',                page: '/hub' },
-    ]
-  },
-];
-
-const ALL_CHART_ITEMS = CHART_GROUPS.flatMap(g => g.items);
-
-/* ─────────────────────────────────────────────
-   PAGE ABBREVIATIONS for logo box
-───────────────────────────────────────────── */
-const PAGE_ABBR = {
-  Dashboard: 'Db', PatientDashboard: 'Pt', NewPatientInput: 'NP',
-  PatientChart: 'Pc', ClinicalNoteStudio: 'Cs', NoteCreationHub: 'Nh',
-  NoteEditorTabs: 'Ne', NotesLibrary: 'Nl', Results: 'Re',
-  DischargePlanning: 'Dc', OrderSetBuilder: 'Os', BillingDashboard: 'Bi',
-  AutoCoder: 'Ac', NursingFlowsheet: 'Nf', ClinicalDecisionSupport: 'Cd',
-  DiagnosticStewardship: 'Ds', DrugsBugs: 'Db', AntibioticStewardship: 'Ab',
-  MedicationReference: 'Mr', CMELearningCenter: 'Ce', PediatricDosing: 'Pd',
-  MedicalKnowledgeBase: 'Kb', KnowledgeBaseV2: 'K2', PatientEducationGenerator: 'Pe',
-  EDProcedureNotes: 'Ed', Calculators: 'Ca', NoteTemplates: 'Nt',
-  CustomTemplates: 'Ct', SmartTemplates: 'St', Snippets: 'Sn',
-  AddendumManager: 'Am', AppSettings: 'As', UserSettings: 'Us', UserPreferences: 'Up',
-  Shift: 'Sh', CommandCenter: 'Cc', ERPlanBuilder: 'Ep', ERx: 'Rx',
-  MedicalDecisionMaking: 'Md', Home: 'Hm',
+const glass = {
+  backdropFilter:"blur(20px) saturate(180%)", WebkitBackdropFilter:"blur(20px) saturate(180%)",
+  background:"rgba(8,22,40,0.82)", border:"1px solid rgba(42,79,122,0.35)", borderRadius:14,
 };
 
-/* ─────────────────────────────────────────────
-   PAGES WHERE CHART SIDEBAR IS HIDDEN
-   (landing/utility pages — no patient context)
-───────────────────────────────────────────── */
-const NO_CHART_SIDEBAR = new Set([
-  'Home', 'Dashboard', 'AppSettings', 'UserSettings', 'UserPreferences',
-  'CMELearningCenter', 'MedicalKnowledgeBase', 'KnowledgeBaseV2',
-  'MedicalNews', 'Calendar', 'Calculators', 'DrugsBugs', 'AntibioticStewardship',
-  'DrugReference', 'PediatricDosing', 'Snippets',
-  'NoteTemplates', 'CustomTemplates', 'SmartTemplates', 'AddendumManager',
-  'CantMissDiagnoses', 'CommandCenter', 'Shift', 'NursingFlowsheet',
-]);
+const STATUS_CFG = {
+  critical:{ color:T.red },  results:{ color:T.blue },
+  pending: { color:T.gold }, stable:{ color:T.teal }, waiting:{ color:T.txt4 },
+};
 
-/* ─────────────────────────────────────────────
-   PAGES THAT RENDER FULL-SCREEN (no shell)
-───────────────────────────────────────────── */
-const FULLSCREEN_PAGES = new Set([
-  'ClinicalNoteStudio', 'NoteDetail', 'PatientDashboard',
-  'ERPlanBuilder', 'ERx',
-  'KnowledgeBaseV2', 'PatientEducationGenerator',
-  'DiagnosticStewardship', 'NoteCreationHub',
-  'EDProcedureNotesNew',
-  'AutoCoder', 'NursingFlowsheet', 'ClinicalDecisionSupport',
-  'DischargePlanning', 'UserPreferences', 'NoteTemplates', 'CustomTemplates',
-  'NewPatientInput', 'NotryaACS',
-]);
+const FLAG_CFG = {
+  critical:{ color:T.red,    label:"CRIT" },
+  abnormal:{ color:T.gold,   label:"ABN"  },
+  normal:  { color:T.green,  label:"WNL"  },
+};
 
-/* ═══════════════════════════════════════════════════
-   GLOBAL CSS
-═══════════════════════════════════════════════════ */
-const GLOBAL_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+const CONV_CFG = {
+  complete:  { color:T.teal,   label:"COMPLETE",   icon:"✓" },
+  converging:{ color:T.green,  label:"CONVERGING", icon:"→" },
+  developing:{ color:T.gold,   label:"DEVELOPING", icon:"◎" },
+  fragmented:{ color:T.red,    label:"FRAGMENTED", icon:"⚡" },
+};
 
-.v2-shell *, .v2-shell *::before, .v2-shell *::after { box-sizing: border-box; }
-.v2-shell { font-family: 'DM Sans', sans-serif; }
+// ── CC → relevant high-risk drugs for renal dosing display ────────────
+const CC_DRUGS = {
+  "chest pain"       :["Heparin","Enoxaparin","Aspirin","Metoprolol","Morphine"],
+  "shortness of breath":["Furosemide","Enoxaparin","Levofloxacin","Vancomycin","Digoxin"],
+  "sepsis"           :["Vancomycin","Pip-Tazo","Meropenem","Gentamicin","Levofloxacin"],
+  "altered mental"   :["Levetiracetam","Phenytoin","Haloperidol","Lorazepam","Vancomycin"],
+  "abdominal pain"   :["Pip-Tazo","Metronidazole","Ketorolac","Morphine","Ceftriaxone"],
+  "back pain"        :["Ketorolac","Cyclobenzaprine","Morphine","Gabapentin","Naproxen"],
+  "pneumonia"        :["Levofloxacin","Azithromycin","Pip-Tazo","Ceftriaxone","Vancomycin"],
+  "uti"              :["Ceftriaxone","TMP-SMX","Levofloxacin","Ampicillin","Nitrofurantoin"],
+  "default"          :["Vancomycin","Enoxaparin","Morphine","Ketorolac","Metoprolol"],
+};
 
-/* ICON SIDEBAR */
-.v2-isb {
-  position: fixed; top: 0; left: 0; bottom: 0; width: 56px;
-  background: #040d19; border-right: 1px solid #1a3555;
-  display: flex; flex-direction: column; align-items: center; z-index: 300;
-}
-.v2-isb-logo {
-  width: 100%; height: 48px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  border-bottom: 1px solid #1a3555;
-}
-.v2-isb-logo-box {
-  width: 30px; height: 30px; background: #3b9eff; border-radius: 7px;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Playfair Display', serif; font-size: 12px; font-weight: 700;
-  color: white; cursor: pointer; transition: transform 0.2s;
-  user-select: none;
-}
-.v2-isb-logo-box:hover { filter: brightness(1.2); }
-.v2-isb-scroll {
-  flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center;
-  padding: 8px 0; gap: 2px; overflow-y: auto;
-}
-.v2-isb-btn {
-  width: 42px; height: 42px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
-  color: #4a6a8a; border: 1px solid transparent; font-size: 16px;
-  text-decoration: none;
-}
-.v2-isb-btn:hover { background: #0e2544; border-color: #1a3555; color: #8aaccc; }
-.v2-isb-btn.active { background: rgba(59,158,255,0.1); border-color: rgba(59,158,255,0.3); color: #3b9eff; }
-.v2-isb-lbl { font-size: 8px; line-height: 1; white-space: nowrap; color: inherit; }
-.v2-isb-sep { width: 30px; height: 1px; background: #1a3555; margin: 4px 0; flex-shrink: 0; }
-.v2-isb-bottom {
-  padding: 8px 0; border-top: 1px solid #1a3555;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
+const DRUG_RENAL_FLAGS = {
+  "Vancomycin":    { flag:"caution", note:"Renally cleared — dose per CrCl"      },
+  "Enoxaparin":    { flag:"caution", note:"Reduce to q24h if CrCl <30"           },
+  "Morphine":      { flag:"avoid",   note:"Active metabolite — use fentanyl <30" },
+  "Ketorolac":     { flag:"avoid",   note:"Nephrotoxic NSAID — avoid CrCl <30"   },
+  "Pip-Tazo":      { flag:"caution", note:"Reduce dose at eGFR <40"              },
+  "Meropenem":     { flag:"caution", note:"Dose adjust at eGFR <50"              },
+  "Gentamicin":    { flag:"avoid",   note:"Avoid CrCl <30 — nephrotoxic"        },
+  "Levofloxacin":  { flag:"caution", note:"Reduce dose at CrCl <50"             },
+  "TMP-SMX":       { flag:"avoid",   note:"Contraindicated CrCl <15"            },
+  "Levetiracetam": { flag:"caution", note:"Dose reduce at CrCl <80"             },
+  "Digoxin":       { flag:"avoid",   note:"Major toxicity risk in renal failure" },
+  "Furosemide":    { flag:"ok",      note:"Higher doses may be needed in CKD"   },
+  "Gabapentin":    { flag:"caution", note:"Major reductions required in CKD"    },
+  "Metoprolol":    { flag:"ok",      note:"No renal adjustment needed"          },
+  "Ceftriaxone":   { flag:"ok",      note:"No dose adjustment needed"           },
+  "Azithromycin":  { flag:"ok",      note:"No renal adjustment"                  },
+  "Metronidazole": { flag:"ok",      note:"Reduce in severe hepatic disease"    },
+  "Aspirin":       { flag:"caution", note:"Use with caution in renal failure"   },
+  "Heparin":       { flag:"ok",      note:"Preferred anticoagulant in ESRD"     },
+  "Ampicillin":    { flag:"caution", note:"Adjust interval at CrCl <30"        },
+  "Haloperidol":   { flag:"ok",      note:"No significant renal adjustment"     },
+  "Lorazepam":     { flag:"ok",      note:"No renal adjustment"                  },
+  "Nitrofurantoin":{ flag:"avoid",   note:"Contraindicated CrCl <45"           },
+  "Cyclobenzaprine":{ flag:"caution",note:"Use caution in older patients"       },
+  "Naproxen":      { flag:"avoid",   note:"Nephrotoxic NSAID — avoid in CKD"   },
+  "Phenytoin":     { flag:"caution", note:"Monitor free level in renal failure" },
+};
+
+// ── HELPERS ───────────────────────────────────────────────────────────
+function minsAgo(iso) {
+  if (!iso) return null;
+  return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
 }
 
-/* TOP BAR */
-.v2-top {
-  position: fixed; top: 0; left: 56px; right: 0; height: 64px;
-  background: #081628; border-bottom: 1px solid #1a3555;
-  z-index: 200; display: flex; flex-direction: column;
+function fmtElapsed(mins) {
+  if (mins === null || mins === undefined) return "—";
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60); const m = mins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
 }
-.v2-top-r1 {
-  height: 44px; flex-shrink: 0;
-  display: flex; align-items: center; padding: 0 14px; gap: 8px;
-  border-bottom: 1px solid rgba(26,53,85,0.5);
-}
-.v2-top-r2 {
-  height: 44px; flex-shrink: 0;
-  display: flex; align-items: center; padding: 0 14px; gap: 7px; overflow: hidden;
-}
-.v2-welcome { font-size: 12px; color: #8aaccc; font-weight: 500; white-space: nowrap; }
-.v2-welcome strong { color: #e8f0fe; }
-.v2-vsep { width: 1.5px; height: 20px; background: linear-gradient(180deg, rgba(26,53,85,0.3) 0%, rgba(59,158,255,0.4) 50%, rgba(26,53,85,0.3) 100%); flex-shrink: 0; border-radius: 1px; box-shadow: 0 0 6px rgba(59,158,255,0.15); }
-.v2-stat {
-  display: flex; align-items: center; gap: 5px;
-  background: #0e2544; border: 1px solid #1a3555; border-radius: 6px; padding: 3px 10px;
-  cursor: pointer; transition: border-color 0.15s;
-}
-.v2-stat:hover { border-color: #2a4f7a; }
-.v2-stat-v { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: #e8f0fe; }
-.v2-stat-v.alert { color: #f5c842; }
-.v2-stat-l { font-size: 9px; color: #4a6a8a; text-transform: uppercase; letter-spacing: 0.04em; }
-.v2-r1-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.v2-clock {
-  background: #0e2544; border: 1px solid #1a3555; border-radius: 6px;
-  padding: 3px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8aaccc;
-}
-.v2-aion {
-  display: flex; align-items: center; gap: 4px;
-  background: rgba(0,229,192,0.08); border: 1px solid rgba(0,229,192,0.3);
-  border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #00e5c0;
-}
-.v2-aion-dot { width: 6px; height: 6px; border-radius: 50%; background: #00e5c0; animation: v2aipulse 2s ease-in-out infinite; }
-@keyframes v2aipulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,229,192,0.4)} 50%{box-shadow:0 0 0 5px rgba(0,229,192,0)} }
-.v2-newpt {
-  background: #00e5c0; color: #050f1e; border: none; border-radius: 6px;
-  padding: 4px 12px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
-}
-.v2-newpt:hover { filter: brightness(1.15); }
-/* Row 2 items */
-.v2-chart-badge {
-  font-family: 'JetBrains Mono', monospace; font-size: 10px;
-  background: #0e2544; border: 1px solid #1a3555; border-radius: 20px;
-  padding: 1px 8px; color: #00e5c0; white-space: nowrap; flex-shrink: 0;
-}
-.v2-pt-name {
-  font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600;
-  color: #e8f0fe; white-space: nowrap; flex-shrink: 0;
-}
-.v2-pt-meta { font-size: 11px; color: #4a6a8a; white-space: nowrap; flex-shrink: 0; }
-.v2-pt-cc {
-  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
-  color: #ff9f43; white-space: nowrap; flex-shrink: 0;
-}
-.v2-vital { display: flex; align-items: center; gap: 3px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; white-space: nowrap; flex-shrink: 0; }
-.v2-vital .vl { color: #2e4a6a; font-size: 9px; }
-.v2-vital .vv { color: #8aaccc; }
-.v2-vital .vv.abn { color: #ff6b6b; animation: v2glowred 2s ease-in-out infinite; }
-@keyframes v2glowred { 0%,100%{text-shadow:0 0 4px rgba(255,107,107,0.4)} 50%{text-shadow:0 0 10px rgba(255,107,107,0.9)} }
-.v2-badge-monitor { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(255,107,107,0.15); color: #ff6b6b; border: 1px solid rgba(255,107,107,0.3); white-space: nowrap; flex-shrink: 0; }
-.v2-badge-room { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(0,229,192,0.1); color: #00e5c0; border: 1px solid rgba(0,229,192,0.3); white-space: nowrap; flex-shrink: 0; }
-.v2-chart-acts { margin-left: auto; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
-.v2-btn-ghost {
-  background: #0e2544; border: 1px solid #1a3555; border-radius: 6px;
-  padding: 4px 10px; font-size: 11px; color: #8aaccc; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;
-  font-family: 'DM Sans', sans-serif;
-}
-.v2-btn-ghost:hover { border-color: #2a4f7a; color: #e8f0fe; }
-.v2-btn-teal {
-  background: #00e5c0; color: #050f1e; border: none; border-radius: 6px;
-  padding: 4px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
-}
-.v2-btn-teal:hover { filter: brightness(1.15); }
-.v2-btn-coral {
-  background: rgba(255,107,107,0.15); color: #ff6b6b; border: 1px solid rgba(255,107,107,0.3);
-  border-radius: 6px; padding: 4px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
-}
-.v2-btn-coral:hover { background: rgba(255,107,107,0.25); }
 
-/* CHART SECTION SIDEBAR */
-.v2-csb {
-  position: fixed; top: 64px; left: 56px; bottom: 50px; width: 170px;
-  background: #081628; border-right: 1px solid #1a3555;
-  overflow-y: auto; padding: 10px 8px;
-  display: flex; flex-direction: column; gap: 1px; z-index: 100;
+function fmtTime(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
 }
-.v2-csb-group {
-  font-size: 9px; color: #2e4a6a; text-transform: uppercase;
-  letter-spacing: 0.08em; padding: 10px 8px 4px; font-weight: 600;
+
+function calcCrCl(age, weight, scr, sex, height) {
+  if (!age || !weight || !scr || scr <= 0) return null;
+  const ibwBase = sex === "F" ? 45.5 : 50;
+  const inchOver60 = height ? Math.max(0, (height / 2.54) - 60) : 0;
+  const ibw = ibwBase + 2.3 * inchOver60;
+  const useWt = ibw > 0 && weight > ibw ? ibw : weight;
+  const base = ((140 - age) * useWt) / (72 * scr);
+  return sex === "F" ? base * 0.85 : base;
 }
-.v2-csb-group:first-child { padding-top: 4px; }
-.v2-csb-item {
-  display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: 6px;
-  cursor: pointer; transition: all 0.15s; border: 1px solid transparent;
-  font-size: 12px; color: #8aaccc; user-select: none; text-decoration: none;
+
+function convState(patient, orders, results, notes, dispos) {
+  const note  = notes.find(n => n.patient === patient.id);
+  const dispo = dispos.find(d => d.patient === patient.id);
+  const ptRes = results.filter(r => r.patient === patient.id);
+  const ptOrd = orders.filter(o => o.patient === patient.id);
+  const mins  = minsAgo(patient.arrived_at);
+  if (dispo?.dispo_status === "complete" || dispo?.dispo_status === "ready") return "complete";
+  if (ptRes.some(r => r.flag === "critical" && !r.acknowledged)) return "fragmented";
+  if (!note?.assessment && mins > 120) return "fragmented";
+  if (ptOrd.some(o => o.status === "pending" && o.urgency === "stat")) return "developing";
+  if (!note?.assessment) return "developing";
+  return note?.signed ? "converging" : "developing";
 }
-.v2-csb-item:hover { background: #0e2544; border-color: #1a3555; color: #e8f0fe; }
-.v2-csb-item.active { background: rgba(59,158,255,0.1); border-color: rgba(59,158,255,0.3); color: #3b9eff; }
-.v2-csb-icon { font-size: 13px; width: 18px; text-align: center; flex-shrink: 0; }
-.v2-csb-dot { width: 6px; height: 6px; border-radius: 50%; background: #1a3555; margin-left: auto; flex-shrink: 0; }
-.v2-csb-dot.done    { background: #00e5c0; box-shadow: 0 0 5px rgba(0,229,192,0.5); }
-.v2-csb-dot.partial { background: #ff9f43; box-shadow: 0 0 5px rgba(255,159,67,0.5); }
-.v2-csb-div { height: 1px; background: #1a3555; margin: 6px 4px; }
-.v2-csb::-webkit-scrollbar { width: 4px; }
-.v2-csb::-webkit-scrollbar-thumb { background: #1a3555; border-radius: 2px; }
 
-/* CONTENT AREA */
-.v2-content-with-sb { margin-left: 226px; } /* 56 icon + 170 chart sb */
-.v2-content-no-sb   { margin-left: 56px; padding-bottom: 108px; }
-.v2-content-wrap {
-  margin-top: 64px; margin-bottom: 108px;
-  min-height: calc(100vh - 172px); overflow-y: auto;
+function getDrugsForCC(cc) {
+  const ccLow = (cc || "").toLowerCase();
+  for (const [k, drugs] of Object.entries(CC_DRUGS)) {
+    if (k !== "default" && ccLow.includes(k)) return drugs;
+  }
+  return CC_DRUGS["default"];
 }
-.v2-content-inner { padding: 20px 24px; }
-.v2-content-full { padding: 0; max-width: none; width: 100%; height: 100%; }
 
-/* BOTTOM BAR */
-.bottom-nav{position:fixed;bottom:0;left:56px;right:0;height:108px;background:#081628;border-top:1px solid #1a3555;z-index:200;display:flex;flex-direction:column}
-.bn-sub-wrap{position:relative;flex-shrink:0;height:44px}
-.bn-sub-wrap::before,.bn-sub-wrap::after{content:'';position:absolute;top:0;bottom:0;width:24px;z-index:2;pointer-events:none}
-.bn-sub-wrap::before{left:0;background:linear-gradient(90deg,#081628,transparent)}
-.bn-sub-wrap::after{right:0;background:linear-gradient(-90deg,#081628,transparent)}
-.bn-sub-row{height:44px;display:flex;align-items:center;padding:0 12px;gap:6px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid rgba(26,53,85,.4);scrollbar-width:none;-ms-overflow-style:none}
-.bn-sub-row::-webkit-scrollbar{display:none}
-.bn-sub-pill{display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;color:#4a6a8a;background:transparent;border:1px solid transparent;cursor:pointer;transition:all .2s ease;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif;text-decoration:none}
-.bn-sub-pill:hover{color:#8aaccc;background:#0e2544;border-color:#1a3555}
-.bn-sub-pill.active{color:#3b9eff;background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.35);font-weight:600}
-.pill-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.pill-dot.done{background:#00e5c0;box-shadow:0 0 4px rgba(0,229,192,.5)}
-.pill-dot.partial{background:#ff9f43}
-.pill-dot.empty{background:#2e4a6a}
-.bn-groups{height:64px;flex-shrink:0;display:flex;align-items:stretch}
-.bn-group-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;position:relative;transition:all .2s ease;border:none;background:none;font-family:'DM Sans',sans-serif;padding:6px 0}
-.bn-group-tab::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:#3b9eff;border-radius:0 0 2px 2px;transform:scaleX(0);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
-.bn-group-tab.active::before{transform:scaleX(1)}
-.bn-group-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:transparent;border:1px solid transparent;transition:all .2s ease;position:relative}
-.bn-group-tab:hover .bn-group-icon{background:#0e2544;border-color:#1a3555}
-.bn-group-tab.active .bn-group-icon{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.3)}
-.bn-group-badge{position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;border:1.5px solid #081628}
-.bn-group-badge.done{background:#00e5c0}
-.bn-group-badge.partial{background:#ff9f43}
-.bn-group-badge.empty{background:transparent;border-color:transparent}
-.bn-group-label{font-size:9px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:#2e4a6a;transition:color .2s}
-.bn-group-tab:hover .bn-group-label{color:#4a6a8a}
-.bn-group-tab.active .bn-group-label{color:#3b9eff;font-weight:600}
-.bn-group-tab+.bn-group-tab{border-left:1px solid rgba(26,53,85,.4)}
-`;
+function buildContext(patient, orders, results, notes, dispos) {
+  const note  = notes.find(n => n.patient === patient.id);
+  const dispo = dispos.find(d => d.patient === patient.id);
+  const ptRes = results.filter(r => r.patient === patient.id);
+  const ptOrd = orders.filter(o => o.patient === patient.id);
+  const lines = [
+    `PATIENT: ${patient.age}${patient.sex}, Room ${patient.room}, ${fmtElapsed(minsAgo(patient.arrived_at))} in ED`,
+    `CC: ${patient.cc} | Provider: ${patient.provider || "Unassigned"} | Nurse: ${patient.nurse || "—"}`,
+  ];
+  if (ptRes.length) {
+    lines.push("RESULTS:");
+    ptRes.forEach(r => lines.push(`  ${r.name}: ${r.value}${r.unit?" "+r.unit:""} [${(r.flag||"normal").toUpperCase()}]${r.flag==="critical"&&!r.acknowledged?" ⚠ UNACKNOWLEDGED":""}`));
+  }
+  if (ptOrd.length) {
+    lines.push("ORDERS:");
+    ptOrd.forEach(o => lines.push(`  ${o.name}: ${(o.status||"").toUpperCase()} (${o.urgency||""})`));
+  }
+  if (note) {
+    if (note.hpi)        lines.push(`HPI: ${note.hpi}`);
+    if (note.assessment) lines.push(`ASSESSMENT: ${note.assessment}`);
+    if (note.plan)       lines.push(`PLAN: ${note.plan}`);
+  }
+  if (dispo) lines.push(`DISPO: ${(dispo.dispo_type||"undecided").toUpperCase()} — ${(dispo.dispo_status||"").toUpperCase()}`);
+  return lines.join("\n");
+}
 
-/* ═══════════════════════════════════════════════════
-   DOT STATE HELPERS
-═══════════════════════════════════════════════════ */
-const STEP_STATES = [
-  'done', 'partial', 'done', 'empty',
-  'partial', 'empty', 'empty', 'empty',
-  'empty', 'empty', 'empty',
-  'empty', 'empty', 'empty',
-];
+// ══════════════════════════════════════════════════════════════════════
+//  MODULE-SCOPE PRIMITIVES
+// ══════════════════════════════════════════════════════════════════════
 
-/* ═══════════════════════════════════════════════════
-   LAYOUT COMPONENT
-═══════════════════════════════════════════════════ */
-export default function Layout({ children, currentPageName }) {
-  const { patientData } = usePatientData();
-  const [user, setUser] = useState(null);
-  const [clock, setClock] = useState('');
-  const [activeGroup, setActiveGroup] = useState('Intake');
-  const navigate = useNavigate();
-  const location = useLocation();
+function AmbientBg() {
+  return (
+    <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0 }}>
+      {[
+        { l:"12%", t:"20%", r:300, c:"rgba(0,229,192,0.045)",   a:0 },
+        { l:"88%", t:"15%", r:260, c:"rgba(59,158,255,0.04)",   a:1 },
+        { l:"70%", t:"75%", r:320, c:"rgba(155,109,255,0.035)", a:0 },
+      ].map((o,i) => (
+        <div key={i} style={{
+          position:"absolute", left:o.l, top:o.t, width:o.r*2, height:o.r*2,
+          borderRadius:"50%", background:`radial-gradient(circle,${o.c} 0%,transparent 68%)`,
+          transform:"translate(-50%,-50%)",
+          animation:`${PREFIX}orb${o.a} ${9+i*1.5}s ease-in-out infinite`,
+        }}/>
+      ))}
+    </div>
+  );
+}
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
-  }, []);
+function Toast({ msg, err }) {
+  return (
+    <div style={{
+      position:"fixed", bottom:80, left:"50%", transform:"translateX(-50%)",
+      background:"rgba(8,22,40,0.96)", borderRadius:10, padding:"10px 20px",
+      border:`1px solid ${err ? T.red+"55" : T.teal+"45"}`,
+      fontFamily:"DM Sans", fontWeight:600, fontSize:13,
+      color:err ? T.coral : T.teal, zIndex:9999, pointerEvents:"none",
+      animation:`${PREFIX}fade .2s ease both`,
+    }}>{msg}</div>
+  );
+}
 
-  useEffect(() => {
-    const tick = () => {
-      const d = new Date();
-      setClock(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
-    };
-    tick();
-    const t = setInterval(tick, 10000);
-    return () => clearInterval(t);
-  }, []);
+function ThinkDots() {
+  return (
+    <div style={{ display:"flex", gap:4 }}>
+      {[0,1,2].map(i => (
+        <div key={i} className={`${PREFIX}-think`} style={{ width:5, height:5, borderRadius:"50%", background:T.purple, animationDelay:`${i*.2}s` }}/>
+      ))}
+    </div>
+  );
+}
 
-  useEffect(() => {
-    const found = CHART_GROUPS.find(g =>
-      g.items.some(item => {
-        const itemSearch = item.page.includes('?') ? item.page.split('?')[1] : '';
-        return item.page.includes('?')
-          ? location.pathname === item.page.split('?')[0] && location.search === '?' + itemSearch
-          : location.pathname === item.page && !location.search;
-      })
-    );
-    if (found) setActiveGroup(found.label);
-  }, [location]);
+function QHeader({ label, color, right }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+      <div style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:color||T.txt4, letterSpacing:2, textTransform:"uppercase" }}>
+        {label}
+      </div>
+      {right}
+    </div>
+  );
+}
 
-  const isFullscreen = FULLSCREEN_PAGES.has(currentPageName);
-  const showChartSidebar = !NO_CHART_SIDEBAR.has(currentPageName) && !isFullscreen;
-  const pageAbbr = PAGE_ABBR[currentPageName] || currentPageName?.slice(0, 2) || 'Nx';
+function Chip({ label, color, pulse }) {
+  return (
+    <span className={pulse ? `${PREFIX}-pulse` : ""} style={{
+      fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700,
+      padding:"2px 7px", borderRadius:20, display:"inline-block",
+      background:`${color}16`, border:`1px solid ${color}38`, color,
+    }}>{label}</span>
+  );
+}
 
-  // Find active chart item
-  const activePath = location.pathname + location.search;
-  const activeChartIdx = ALL_CHART_ITEMS.findIndex(i => i.page === activePath || i.page.split('?')[0] === location.pathname);
-  const activeChartItem = ALL_CHART_ITEMS[activeChartIdx];
-
-  // Stepper nav
-  const navPrev = () => { if (activeChartIdx > 0) navigate(ALL_CHART_ITEMS[activeChartIdx - 1].page); };
-  const navNext = () => { if (activeChartIdx < ALL_CHART_ITEMS.length - 1) navigate(ALL_CHART_ITEMS[activeChartIdx + 1].page); };
-  const prevLabel = activeChartIdx > 0 ? ALL_CHART_ITEMS[activeChartIdx - 1].label : '';
-  const curLabel  = activeChartItem?.label || currentPageName || '';
-
-  if (isFullscreen) {
+// ── Story Quadrant ────────────────────────────────────────────────────
+function StoryQuadrant({ narrative, onGenerate, hasDispo }) {
+  if (narrative?.status === "loading") {
     return (
-      <div className="v2-shell">
-        <style>{GLOBAL_CSS}</style>
-        <OfflineSync />
-        {children}
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, padding:"28px 0" }}>
+        <ThinkDots/>
+        <span style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt4 }}>Synthesizing clinical story...</span>
       </div>
     );
   }
 
+  const conv = narrative?.convergence;
+  const cc   = conv ? (CONV_CFG[conv] || CONV_CFG.developing) : null;
+
   return (
-    <div className="v2-shell" style={{ background: T.bg, minHeight: '100vh', color: T.txt }}>
-      <style>{GLOBAL_CSS}</style>
-      <OfflineSync />
-
-      {/* ── ICON SIDEBAR ── */}
-      <aside className="v2-isb">
-        <div className="v2-isb-logo">
-          <div className="v2-isb-logo-box">{pageAbbr}</div>
+    <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+      {!narrative || narrative.status === "idle" ? (
+        <div style={{ textAlign:"center", padding:"20px 0" }}>
+          <button onClick={onGenerate} style={{
+            fontFamily:"DM Sans", fontWeight:700, fontSize:12,
+            padding:"10px 22px", borderRadius:9, cursor:"pointer",
+            border:`1px solid ${T.purple}45`, background:`${T.purple}10`, color:T.purple,
+          }}>🧠 Generate Story</button>
         </div>
-        <div className="v2-isb-scroll">
-          {APP_ICONS.map(item => (
-            <Link
-              key={item.page}
-              to={item.page}
-              className={`v2-isb-btn${location.pathname === item.page ? ' active' : ''}`}
-              title={item.label}
-            >
-              <span>{item.icon}</span>
-              <span className="v2-isb-lbl">{item.label}</span>
-            </Link>
-          ))}
-        </div>
-        <div className="v2-isb-bottom">
-          <Link to="/AppSettings" className={`v2-isb-btn${currentPageName === 'AppSettings' ? ' active' : ''}`} title="Settings">
-            <span>⚙️</span>
-            <span className="v2-isb-lbl">Settings</span>
-          </Link>
-        </div>
-      </aside>
-
-      {/* ── MERGED TOP BAR ── */}
-      <header className="v2-top">
-        {/* Row 1 */}
-        <div className="v2-top-r1">
-          <span className="v2-welcome">
-            Welcome, <strong>{user?.full_name ? `Dr. ${user.full_name}` : 'Dr. Skiba'}</strong>
-          </span>
-          <div className="v2-vsep" />
-          {[['8','Active',false],['14','Pending',true],['3','Orders',false],['11.6','Hours',false]].map(([v,l,a]) => (
-            <div key={l} className="v2-stat">
-              <span className={`v2-stat-v${a ? ' alert' : ''}`}>{v}</span>
-              <span className="v2-stat-l">{l}</span>
+      ) : (
+        <>
+          {conv && cc && (
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <Chip label={`${cc.icon} ${cc.label}`} color={cc.color}/>
+              <button onClick={onGenerate} style={{
+                fontFamily:"JetBrains Mono", fontSize:8, cursor:"pointer",
+                background:"none", border:"none", color:T.txt4,
+              }}>↺ Refresh</button>
+            </div>
+          )}
+          <p style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt, lineHeight:1.75, fontStyle:"italic" }}>
+            {narrative.text}
+          </p>
+          {narrative.watchFor && (
+            <div style={{ padding:"8px 10px", borderRadius:8, borderLeft:`3px solid ${T.gold}`, background:`${T.gold}08` }}>
+              <div style={{ fontFamily:"JetBrains Mono", fontSize:7, color:T.gold, letterSpacing:1.5, textTransform:"uppercase", marginBottom:3 }}>Watch For</div>
+              <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt2 }}>{narrative.watchFor}</div>
+            </div>
+          )}
+          {narrative.breaks?.map((b, i) => (
+            <div key={i} style={{ padding:"8px 10px", borderRadius:8, borderLeft:`3px solid ${T.red}`, background:`${T.red}09` }}>
+              <div style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.red, marginBottom:3 }}>⚡ {b.finding}</div>
+              <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt2 }}>{b.concern}</div>
             </div>
           ))}
-          <div className="v2-r1-right">
-            <div className="v2-clock">{clock}</div>
-            <div className="v2-aion"><div className="v2-aion-dot" /> AI ON</div>
-            <button className="v2-newpt" onClick={() => navigate('/NewPatientInput')}>+ New Patient</button>
-          </div>
-        </div>
+          {narrative.status === "error" && (
+            <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.coral }}>Generation failed</div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
-        {/* Row 2 */}
-        <div className="v2-top-r2">
-          <span className="v2-chart-badge">{patientData.mrn || '—'}</span>
-          <span className="v2-pt-name">{patientData.firstName || patientData.lastName ? `${patientData.firstName} ${patientData.lastName}`.trim() : '—'}</span>
-          <span className="v2-pt-meta">{patientData.age || '—'} {patientData.sex ? `y/o · ${patientData.sex}` : ''} {patientData.dob ? `· ${patientData.dob}` : ''}</span>
-          <span className="v2-pt-cc">{patientData.cc_text ? `CC: ${patientData.cc_text}` : '—'}</span>
-          <div className="v2-vsep" />
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(6, 1fr)',
-            gap: '8px',
-            padding: '6px 0',
-          }}>
-            {[['BP', patientData.bp || '—', 'mmHg', patientData.bp && parseInt(patientData.bp) > 140],
-              ['HR', patientData.hr || '—', 'bpm', patientData.hr && parseInt(patientData.hr) > 100],
-              ['RR', patientData.rr || '—', '/min', false],
-              ['SpO₂', patientData.spo2 || '—', '%', patientData.spo2 && parseInt(patientData.spo2) < 94],
-              ['Temp', patientData.temp || '—', '°F', false],
-              ['GCS', patientData.gcs || '15', '', false]
-            ].map(([label, value, unit, isAbnormal]) => (
-              <div key={label} style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '6px 8px',
-                borderRadius: '7px',
-                background: isAbnormal ? 'rgba(255, 107, 107, 0.08)' : 'rgba(14, 37, 68, 0.7)',
-                border: `1px solid ${isAbnormal ? 'rgba(255, 107, 107, 0.25)' : 'rgba(26, 53, 85, 0.6)'}`,
+// ── Results + Orders Quadrant ─────────────────────────────────────────
+function ResultsOrdersQuadrant({ results, orders, onAck, onAddOrder, patientId, showToast }) {
+  const [addOpen,    setAddOpen]    = useState(false);
+  const [newName,    setNewName]    = useState("");
+  const [newUrgency, setNewUrgency] = useState("routine");
+  const [saving,     setSaving]     = useState(false);
+
+  const pend = orders.filter(o => o.status === "pending");
+  const done = orders.filter(o => o.status !== "pending");
+
+  async function submitOrder() {
+    if (!newName.trim()) return;
+    setSaving(true);
+    await onAddOrder(patientId, newName.trim(), newUrgency);
+    setNewName(""); setNewUrgency("routine"); setAddOpen(false); setSaving(false);
+  }
+
+  const iStyle = {
+    background:"rgba(14,37,68,0.8)", border:"1px solid rgba(42,79,122,0.4)",
+    borderRadius:7, padding:"6px 10px",
+    fontFamily:"DM Sans", fontSize:11, color:T.txt, outline:"none",
+    width:"100%",
+  };
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+      {/* Results */}
+      {results.length === 0 ? (
+        <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt4, fontStyle:"italic" }}>No results yet</div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+          {results.map(r => {
+            const fc = FLAG_CFG[r.flag] || FLAG_CFG.normal;
+            const isUnacked = r.flag === "critical" && !r.acknowledged;
+            return (
+              <div key={r.id} style={{
+                padding:"7px 10px", borderRadius:8,
+                border:`1px solid ${isUnacked ? T.red+"40" : "rgba(42,79,122,0.2)"}`,
+                borderLeft:`3px solid ${isUnacked ? T.red : fc.color}`,
+                background:`${fc.color}07`,
+                display:"flex", alignItems:"center", gap:8,
               }}>
-                <span style={{
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: '7px',
-                  fontWeight: '700',
-                  color: isAbnormal ? '#ff6b6b' : '#7aa0c0',
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase',
-                  marginBottom: '3px',
-                }}>
-                  {label}
-                </span>
-                <span style={{
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: '15px',
-                  fontWeight: '700',
-                  color: isAbnormal ? '#ff6b6b' : '#e8f0fe',
-                  lineHeight: '1.1',
-                }}>
-                  {value}
-                </span>
-                {unit && (
-                  <span style={{
-                    fontFamily: '"DM Sans", sans-serif',
-                    fontSize: '8px',
-                    color: isAbnormal ? '#ff6b6b' : '#a8c8e8',
-                    marginTop: '2px',
-                  }}>
-                    {unit}
-                  </span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:12, color:T.txt }}>{r.name}</div>
+                  {r.ref_range && <div style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4 }}>ref {r.ref_range}</div>}
+                </div>
+                <div style={{ textAlign:"right" }}>
+                  <div style={{ fontFamily:"JetBrains Mono", fontWeight:700, fontSize:13, color:fc.color }}>{r.value}</div>
+                  {r.unit && <div style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4 }}>{r.unit}</div>}
+                </div>
+                <Chip label={r.acknowledged && r.flag==="critical" ? "ACKED" : fc.label} color={fc.color}/>
+                {isUnacked && (
+                  <button onClick={() => onAck(r.id)} style={{
+                    fontFamily:"DM Sans", fontWeight:700, fontSize:9, padding:"3px 8px",
+                    borderRadius:6, cursor:"pointer", border:`1px solid ${T.green}45`,
+                    background:`${T.green}12`, color:T.green, flexShrink:0,
+                  }}>Ack</button>
                 )}
               </div>
-            ))}
-          </div>
-          <div className="v2-vsep" />
-          {patientData.triage && <span className="v2-badge-monitor">{patientData.triage.toUpperCase()}</span>}
-          <div className="v2-chart-acts">
-            <button className="v2-btn-ghost" onClick={() => navigate('/NewPatientInput?tab=orders')}>📋 Orders</button>
-
-            <button className="v2-btn-teal">💾 Save Chart</button>
-          </div>
-        </div>
-      </header>
-
-      {/* ── MAIN CONTENT ── */}
-      <div
-        className="v2-content-no-sb"
-        style={{ minHeight: 'calc(100vh - 196px)' }}
-      >
-        <div className="v2-content-inner">
-          {children}
-        </div>
-      </div>
-
-      {/* ── BOTTOM BAR ── */}
-      <nav className="bottom-nav">
-        <div className="bn-sub-wrap">
-          <div className="bn-sub-row">
-            {(CHART_GROUPS.find(g => g.label === activeGroup) || CHART_GROUPS[0]).items.map((item) => {
-              const itemSearch = item.page.includes('?') ? item.page.split('?')[1] : '';
-              const isActive = item.page.includes('?')
-                ? location.pathname === item.page.split('?')[0] && location.search === '?' + itemSearch
-                : location.pathname === item.page && !location.search;
-              return (
-                <Link key={item.page} to={item.page} className={`bn-sub-pill${isActive ? ' active' : ''}`}>
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                  <span className={`pill-dot ${isActive ? 'done' : 'empty'}`}></span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-        <div className="bn-groups">
-          {CHART_GROUPS.map((group) => {
-            const isGroupActive = activeGroup === group.label;
-            const hasActive = group.items.some(item => {
-              const itemSearch = item.page.includes('?') ? item.page.split('?')[1] : '';
-              return item.page.includes('?')
-                ? location.pathname === item.page.split('?')[0] && location.search === '?' + itemSearch
-                : location.pathname === item.page && !location.search;
-            });
-            return (
-              <button key={group.label} className={`bn-group-tab${isGroupActive ? ' active' : ''}`} onClick={() => setActiveGroup(group.label)}>
-                <div className="bn-group-icon">
-                  {group.groupIcon}
-                  <span className={`bn-group-badge ${hasActive ? 'done' : 'empty'}`}></span>
-                </div>
-                <span className="bn-group-label">{group.label}</span>
-              </button>
             );
           })}
         </div>
-      </nav>
+      )}
 
-      <NotryaFloatingAI />
+      {/* Orders */}
+      <div style={{ borderTop:"1px solid rgba(42,79,122,0.25)", paddingTop:9 }}>
+        <div style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>
+          Orders ({orders.length})
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+          {pend.map(o => (
+            <div key={o.id} style={{ display:"flex", alignItems:"center", gap:7, padding:"5px 9px", borderRadius:7, background:`${T.gold}09`, borderLeft:`2px solid ${T.gold}` }}>
+              <span className={`${PREFIX}-pulse`} style={{ width:6, height:6, borderRadius:"50%", background:T.gold, flexShrink:0, display:"inline-block" }}/>
+              <span style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt, flex:1 }}>{o.name}</span>
+              <span style={{ fontFamily:"JetBrains Mono", fontSize:8, color:o.urgency==="stat"?T.red:T.txt4 }}>{(o.urgency||"").toUpperCase()}</span>
+            </div>
+          ))}
+          {done.map(o => (
+            <div key={o.id} style={{ display:"flex", alignItems:"center", gap:7, padding:"4px 9px", borderRadius:7, background:"rgba(14,37,68,0.3)" }}>
+              <span style={{ color:T.green, fontSize:10 }}>✓</span>
+              <span style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt3, flex:1 }}>{o.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {addOpen ? (
+        <div style={{ ...glass, padding:10, display:"flex", flexDirection:"column", gap:7, borderRadius:9 }}>
+          <input type="text" value={newName} onChange={e => setNewName(e.target.value)}
+            placeholder="Order name (e.g. CBC, CT Head w/o)" style={iStyle}/>
+          <div style={{ display:"flex", gap:5 }}>
+            {["stat","routine"].map(u => (
+              <button key={u} onClick={() => setNewUrgency(u)} style={{
+                flex:1, fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700,
+                padding:"5px", borderRadius:7, cursor:"pointer", textTransform:"uppercase",
+                border:`1px solid ${newUrgency===u?(u==="stat"?T.red:T.teal)+"55":"rgba(42,79,122,0.35)"}`,
+                background:newUrgency===u?`${u==="stat"?T.red:T.teal}12`:"transparent",
+                color:newUrgency===u?(u==="stat"?T.red:T.teal):T.txt3,
+              }}>{u}</button>
+            ))}
+          </div>
+          <div style={{ display:"flex", gap:5 }}>
+            <button onClick={submitOrder} disabled={!newName.trim()||saving} style={{
+              flex:2, fontFamily:"DM Sans", fontWeight:700, fontSize:11, padding:"7px",
+              borderRadius:7, cursor:newName.trim()&&!saving?"pointer":"not-allowed",
+              border:`1px solid ${T.blue}40`, background:`${T.blue}10`, color:T.blue,
+              opacity:!newName.trim()||saving?.5:1,
+            }}>{saving?"Ordering...":"Place Order"}</button>
+            <button onClick={() => { setAddOpen(false); setNewName(""); }} style={{
+              flex:1, fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"7px",
+              borderRadius:7, cursor:"pointer", border:"1px solid rgba(42,79,122,0.4)",
+              background:"transparent", color:T.txt4,
+            }}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setAddOpen(true)} style={{
+          fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"7px",
+          borderRadius:8, cursor:"pointer", border:`1px solid ${T.blue}30`,
+          background:`${T.blue}08`, color:T.blue,
+        }}>+ Add Order</button>
+      )}
+    </div>
+  );
+}
+
+// ── Note Quadrant ─────────────────────────────────────────────────────
+function NoteQuadrant({ note, patientId, onSave, onSign, onDraft, drafting }) {
+  const [editing,  setEditing]  = useState(false);
+  const [hpi,      setHpi]      = useState(note?.hpi        || "");
+  const [assess,   setAssess]   = useState(note?.assessment || "");
+  const [plan,     setPlan]     = useState(note?.plan       || "");
+  const [saving,   setSaving]   = useState(false);
+
+  useEffect(() => {
+    setHpi(note?.hpi || ""); setAssess(note?.assessment || ""); setPlan(note?.plan || "");
+  }, [note]);
+
+  async function handleSave() {
+    setSaving(true);
+    await onSave(patientId, { hpi, assessment:assess, plan, patient:patientId });
+    setEditing(false);
+    setSaving(false);
+  }
+
+  const taStyle = {
+    background:"rgba(14,37,68,0.8)", border:"1px solid rgba(0,229,192,0.25)",
+    borderRadius:8, padding:"8px 10px",
+    fontFamily:"DM Sans", fontSize:12, color:T.txt,
+    outline:"none", width:"100%", resize:"vertical", lineHeight:1.6,
+  };
+
+  const SECTIONS = [
+    { key:"hpi", label:"HPI", color:T.teal, val:hpi, set:setHpi },
+    { key:"ass", label:"Assessment", color:T.gold, val:assess, set:setAssess },
+    { key:"plan",label:"Plan", color:T.blue, val:plan, set:setPlan },
+  ];
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+      {drafting && (
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <ThinkDots/>
+          <span style={{ fontFamily:"DM Sans", fontSize:11, color:T.purple }}>Drafting note sections...</span>
+        </div>
+      )}
+
+      {SECTIONS.map(({ key, label, color, val, set }) => (
+        <div key={key} style={{ padding:"9px 11px", borderRadius:9, borderLeft:`3px solid ${color}`, background:`${color}07` }}>
+          <div style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color, letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>{label}</div>
+          {editing ? (
+            <textarea value={val} onChange={e => set(e.target.value)} rows={3} style={taStyle}/>
+          ) : (
+            <p style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt2, lineHeight:1.65 }}>
+              {val || <span style={{ color:T.txt4, fontStyle:"italic" }}>Not yet documented</span>}
+            </p>
+          )}
+        </div>
+      ))}
+
+      <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+        {editing ? (
+          <>
+            <button onClick={handleSave} disabled={saving} style={{
+              flex:2, fontFamily:"DM Sans", fontWeight:700, fontSize:11, padding:"8px",
+              borderRadius:8, cursor:"pointer", border:`1px solid ${T.teal}40`,
+              background:`${T.teal}10`, color:T.teal, opacity:saving?.6:1,
+            }}>{saving ? "Saving..." : "Save Note"}</button>
+            <button onClick={() => setEditing(false)} style={{
+              flex:1, fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"8px",
+              borderRadius:8, cursor:"pointer", border:"1px solid rgba(42,79,122,0.4)",
+              background:"transparent", color:T.txt4,
+            }}>Cancel</button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => setEditing(true)} style={{
+              flex:1, fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"7px",
+              borderRadius:8, cursor:"pointer", border:`1px solid rgba(42,79,122,0.4)`,
+              background:"transparent", color:T.txt3,
+            }}>✏️ Edit</button>
+            <button onClick={onDraft} disabled={drafting} style={{
+              flex:1, fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"7px",
+              borderRadius:8, cursor:"pointer", border:`1px solid ${T.purple}35`,
+              background:`${T.purple}0a`, color:T.purple, opacity:drafting?.6:1,
+            }}>🤖 AI Draft</button>
+            {!note?.signed && (
+              <button onClick={onSign} style={{
+                flex:1, fontFamily:"DM Sans", fontWeight:700, fontSize:11, padding:"7px",
+                borderRadius:8, cursor:"pointer", border:`1px solid ${T.green}40`,
+                background:`${T.green}10`, color:T.green,
+              }}>✅ Sign</button>
+            )}
+            {note?.signed && <Chip label="SIGNED" color={T.green}/>}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Dispo + Dosing Quadrant ───────────────────────────────────────────
+function DispoDosingQuadrant({ dispo, patient, orders, results, notes, dispos }) {
+  const crcl = calcCrCl(parseFloat(patient.age), parseFloat(patient.weight), parseFloat(patient.scr), patient.sex, parseFloat(patient.height));
+  const drugs = getDrugsForCC(patient.cc);
+  const renalTier = !crcl ? "unknown" : crcl >= 60 ? "normal" : crcl >= 30 ? "moderate" : "severe";
+  const renalColor = renalTier === "normal" ? T.green : renalTier === "moderate" ? T.gold : renalTier === "severe" ? T.red : T.txt4;
+
+  const boardMins = dispo?.boarding_start ? minsAgo(dispo.boarding_start) : null;
+  const dtCfg     = { admit:{color:T.blue}, discharge:{color:T.green}, transfer:{color:T.purple}, observation:{color:T.teal} };
+  const dc        = dispo ? (dtCfg[dispo.dispo_type] || { color:T.txt4 }) : null;
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+      {/* Dispo block */}
+      {dispo ? (
+        <div style={{ padding:"10px 12px", borderRadius:9, borderLeft:`3px solid ${dc.color}`, background:`${dc.color}09` }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+            <div style={{ fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, color:dc.color }}>
+              {(dispo.dispo_type||"UNDECIDED").toUpperCase()}
+            </div>
+            <Chip label={(dispo.dispo_status||"").toUpperCase()} color={dc.color}/>
+          </div>
+          {dispo.accepting_service && (
+            <div style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt, fontWeight:600 }}>{dispo.accepting_service}</div>
+          )}
+          {dispo.accepting_physician && (
+            <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt3 }}>{dispo.accepting_physician}</div>
+          )}
+          {dispo.destination && (
+            <div style={{ fontFamily:"JetBrains Mono", fontSize:10, color:dc.color, marginTop:2 }}>→ {dispo.destination}</div>
+          )}
+          {boardMins !== null && (
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:6, paddingTop:6, borderTop:"1px solid rgba(42,79,122,0.2)" }}>
+              <span style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4, letterSpacing:1.5 }}>BOARDING</span>
+              <span style={{ fontFamily:"JetBrains Mono", fontWeight:700, fontSize:16, color:boardMins>=240?T.red:boardMins>=120?T.orange:T.teal }}>
+                {fmtElapsed(boardMins)}
+              </span>
+            </div>
+          )}
+          {dispo.est_dispo_time && (
+            <div style={{ fontFamily:"DM Sans", fontSize:10, color:T.txt4, marginTop:4 }}>Est: {dispo.est_dispo_time}</div>
+          )}
+        </div>
+      ) : (
+        <div style={{ padding:"10px 12px", borderRadius:9, background:"rgba(14,37,68,0.4)", border:"1px solid rgba(42,79,122,0.25)", fontFamily:"DM Sans", fontSize:11, color:T.txt4, fontStyle:"italic" }}>
+          No disposition set yet
+        </div>
+      )}
+
+      {/* Renal status */}
+      <div style={{ borderTop:"1px solid rgba(42,79,122,0.25)", paddingTop:9 }}>
+        <div style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>
+          Renal Dosing
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+          {crcl !== null ? (
+            <>
+              <span style={{ fontFamily:"JetBrains Mono", fontWeight:700, fontSize:20, color:renalColor }}>{Math.round(crcl)}</span>
+              <span style={{ fontFamily:"DM Sans", fontSize:10, color:T.txt4 }}>mL/min CrCl</span>
+              <Chip label={renalTier.toUpperCase()} color={renalColor}/>
+            </>
+          ) : (
+            <span style={{ fontFamily:"DM Sans", fontSize:10, color:T.txt4, fontStyle:"italic" }}>Enter SCr/Wt/Age for CrCl</span>
+          )}
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+          {drugs.map(drug => {
+            const dr = DRUG_RENAL_FLAGS[drug];
+            const fc = !dr ? { color:T.txt4, flag:"ok" } : dr.flag==="ok" ? { color:T.green } : dr.flag==="caution" ? { color:T.gold } : { color:T.red };
+            return (
+              <div key={drug} style={{ display:"flex", alignItems:"center", gap:7, padding:"4px 8px", borderRadius:7, background:"rgba(14,37,68,0.35)" }}>
+                <span style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt, flex:1 }}>{drug}</span>
+                {dr && <span style={{ fontFamily:"JetBrains Mono", fontSize:8, color:fc.color }}>{dr.flag.toUpperCase()}</span>}
+                {dr && crcl && <span style={{ fontFamily:"DM Sans", fontSize:9, color:T.txt4 }}>{dr.note}</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Slide-up Panel ────────────────────────────────────────────────────
+function SlidePanel({ title, color, children, onClose }) {
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:500, display:"flex", flexDirection:"column", justifyContent:"flex-end" }} onClick={onClose}>
+      <div
+        className={`${PREFIX}-rise`}
+        onClick={e => e.stopPropagation()}
+        style={{
+          ...glass, borderRadius:"16px 16px 0 0", maxHeight:"72vh",
+          border:"1px solid rgba(42,79,122,0.4)",
+          borderBottom:"none",
+          boxShadow:`0 -16px 60px rgba(0,0,0,0.6),0 0 40px ${color}10`,
+          display:"flex", flexDirection:"column",
+        }}
+      >
+        <div style={{ padding:"14px 18px 10px", borderBottom:"1px solid rgba(42,79,122,0.3)", display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0 }}>
+          <span style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:14, color:T.txt }}>{title}</span>
+          <button onClick={onClose} style={{ fontFamily:"DM Sans", fontSize:12, fontWeight:600, padding:"4px 10px", borderRadius:7, cursor:"pointer", border:"1px solid rgba(42,79,122,0.45)", background:"rgba(14,37,68,0.6)", color:T.txt3 }}>✕</button>
+        </div>
+        <div style={{ overflowY:"auto", padding:"12px 18px 18px", flex:1 }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  MAIN EXPORT
+// ══════════════════════════════════════════════════════════════════════
+
+export default function PatientWorkspace({ patient: initPatient, patientId, onBack, onNavigate }) {
+  const [patient,   setPatient]   = useState(initPatient || null);
+  const [results,   setResults]   = useState([]);
+  const [orders,    setOrders]    = useState([]);
+  const [note,      setNote]      = useState(null);
+  const [dispo,     setDispo]     = useState(null);
+  const [allNotes,  setAllNotes]  = useState([]);
+  const [allDispos, setAllDispos] = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [narrative, setNarrative] = useState({ status:"idle" });
+  const [panel,     setPanel]     = useState(null); // "ddx"|"consult"|"handoff"|"safety"
+  const [panelData, setPanelData] = useState({});
+  const [drafting,  setDrafting]  = useState(false);
+  const [toast,     setToast]     = useState({ msg:"", err:false });
+  const autoRan = useRef(false);
+
+  const pid = patient?.id || patientId;
+
+  function showToast(msg, err = false) { setToast({ msg, err }); setTimeout(() => setToast({ msg:"", err:false }), 2400); }
+
+  // ── Fetch ─────────────────────────────────────────────────────────
+  const fetchAll = useCallback(async () => {
+    if (!pid) return;
+    try {
+      const [pts, res, ords, nts, dps] = await Promise.all([
+        initPatient ? Promise.resolve([initPatient]) : Patient.filter({ id:pid }),
+        ClinicalResult.filter({ patient:pid }),
+        Order.filter({ patient:pid }),
+        ClinicalNote.list(), DispositionRecord.list(),
+      ]);
+      if (pts?.length) setPatient(pts[0]);
+      setResults(res || []);
+      setOrders(ords || []);
+      setAllNotes(nts || []);
+      setAllDispos(dps || []);
+      setNote((nts || []).find(n => n.patient === pid) || null);
+      setDispo((dps || []).find(d => d.patient === pid) || null);
+    } catch { showToast("Error loading patient data", true); }
+    finally { setLoading(false); }
+  }, [pid]);
+
+  useEffect(() => { fetchAll(); const t = setInterval(fetchAll, 30000); return () => clearInterval(t); }, [fetchAll]);
+
+  // ── Auto-generate narrative once ──────────────────────────────────
+  useEffect(() => {
+    if (autoRan.current || loading || !patient) return;
+    autoRan.current = true;
+    generateNarrative();
+  }, [loading, patient]);
+
+  // ── AI: Narrative ─────────────────────────────────────────────────
+  async function generateNarrative() {
+    if (!patient) return;
+    setNarrative({ status:"loading" });
+    try {
+      const ctx = buildContext(patient, orders, results, allNotes, allDispos);
+      const raw = await InvokeLLM({
+        prompt:`You are a senior emergency medicine attending. Synthesize a living clinical narrative.\n\n${ctx}\n\nReturn ONLY valid JSON:\n{"oneliner":"one sentence","text":"3-5 sentence curbside report with specific values","convergence":"converging|developing|fragmented|complete","breaks":[{"finding":"specific","concern":"why it contradicts the story"}],"watchFor":"single next decision point"}`,
+        add_context_from_previous_calls:false,
+      });
+      const parsed = JSON.parse((typeof raw === "string" ? raw : raw?.content || "{}").replace(/```json|```/g,"").trim());
+      setNarrative({ ...parsed, status:"done" });
+    } catch { setNarrative({ status:"error" }); }
+  }
+
+  // ── AI: Note Draft ────────────────────────────────────────────────
+  async function draftNote() {
+    if (!patient) return;
+    setDrafting(true);
+    try {
+      const ctx = buildContext(patient, orders, results, allNotes, allDispos);
+      const raw = await InvokeLLM({
+        prompt:`You are an emergency medicine physician. Draft the note for this patient.\n\n${ctx}\n\nReturn ONLY valid JSON:\n{"hpi":"detailed HPI paragraph","assessment":"assessment paragraph with diagnosis and key findings","plan":"numbered plan as a single string"}`,
+        add_context_from_previous_calls:false,
+      });
+      const parsed = JSON.parse((typeof raw === "string" ? raw : raw?.content || "{}").replace(/```json|```/g,"").trim());
+      const existing = allNotes.find(n => n.patient === pid);
+      const payload  = { patient:pid, hpi:parsed.hpi||"", assessment:parsed.assessment||"", plan:parsed.plan||"" };
+      if (existing) await ClinicalNote.update(existing.id, payload);
+      else await ClinicalNote.create(payload);
+      showToast("Note drafted");
+      fetchAll();
+    } catch { showToast("Draft failed", true); }
+    finally { setDrafting(false); }
+  }
+
+  // ── AI: Panel content ─────────────────────────────────────────────
+  async function openPanel(type) {
+    setPanel(type);
+    if (panelData[type]) return;
+    setPanelData(prev => ({ ...prev, [type]:{ status:"loading" } }));
+    try {
+      const ctx = buildContext(patient, orders, results, allNotes, allDispos);
+      let prompt = "";
+      if (type === "safety") {
+        prompt = `Patient safety pre-discharge review.\n\n${ctx}\n\nReturn ONLY valid JSON:\n{"safeToDischarge":true/false,"overallRisk":"low|moderate|high","concerns":[{"category":"labs|diagnosis|medications|followup","issue":"specific issue","action":"what to do"}],"confirmBefore":["item to verify"],"summary":"1-2 sentence assessment"}`;
+      } else if (type === "handoff") {
+        prompt = `Generate I-PASS handoff for shift change.\n\n${ctx}\n\nFormat as plain text with these headers:\n**I — ILLNESS SEVERITY:** [Critical/Unstable/Stable/Good]\n**P — PATIENT SUMMARY:** [2-3 sentences]\n**A — ACTION LIST:**\n  1. [pending item]\n**S — SITUATION AWARENESS:**\n  - If [trigger]: [action]\n**S — SYNTHESIS:** [one sentence for incoming provider]`;
+      } else if (type === "ddx") {
+        prompt = `Emergency medicine differential for this patient.\n\n${ctx}\n\nReturn ONLY valid JSON:\n{"differentials":[{"rank":1,"diagnosis":"name","tier":"must_rule_out|high|moderate|low","rationale":"1-2 sentences","next":["next step"]}],"insight":"one clinical pearl"}`;
+      } else if (type === "consult") {
+        return; // consult uses free-text input, handled separately
+      }
+      const raw     = await InvokeLLM({ prompt, add_context_from_previous_calls:false });
+      const textRaw = typeof raw === "string" ? raw : raw?.content || "";
+      let content;
+      try { content = JSON.parse(textRaw.replace(/```json|```/g,"").trim()); }
+      catch { content = { text: textRaw }; }
+      setPanelData(prev => ({ ...prev, [type]:{ status:"done", ...content } }));
+    } catch { setPanelData(prev => ({ ...prev, [type]:{ status:"error" } })); }
+  }
+
+  // ── Write helpers ─────────────────────────────────────────────────
+  const handleAck = useCallback(async (id) => {
+    try {
+      await ClinicalResult.update(id, { acknowledged:true, acknowledged_at:new Date().toISOString() });
+      showToast("Acknowledged"); fetchAll();
+    } catch { showToast("Error", true); }
+  }, [fetchAll]);
+
+  const handleAddOrder = useCallback(async (pid, name, urgency) => {
+    try {
+      await Order.create({ patient:pid, name, urgency, status:"pending" });
+      showToast(`${name} ordered`); fetchAll();
+    } catch { showToast("Error", true); }
+  }, [fetchAll]);
+
+  const handleSaveNote = useCallback(async (pid, payload) => {
+    try {
+      const existing = allNotes.find(n => n.patient === pid);
+      if (existing) await ClinicalNote.update(existing.id, payload);
+      else await ClinicalNote.create(payload);
+      showToast("Note saved"); fetchAll();
+    } catch { showToast("Error saving note", true); }
+  }, [allNotes, fetchAll]);
+
+  const handleSignNote = useCallback(async () => {
+    try {
+      const n = allNotes.find(nn => nn.patient === pid);
+      if (n) { await ClinicalNote.update(n.id, { signed:true }); showToast("Note signed"); fetchAll(); }
+    } catch { showToast("Error signing note", true); }
+  }, [allNotes, pid, fetchAll]);
+
+  if (!patient && loading) {
+    return (
+      <div style={{ background:T.bg, minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ fontFamily:"DM Sans", fontSize:14, color:T.txt4 }}>Loading patient...</div>
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div style={{ background:T.bg, minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ fontFamily:"DM Sans", fontSize:14, color:T.coral }}>Patient not found</div>
+      </div>
+    );
+  }
+
+  const stColor = (STATUS_CFG[patient.status] || STATUS_CFG.waiting).color;
+  const conv    = convState(patient, orders, results, allNotes, allDispos);
+  const cc      = CONV_CFG[conv] || CONV_CFG.developing;
+  const ptMins  = minsAgo(patient.arrived_at);
+  const critCt  = results.filter(r => r.flag === "critical" && !r.acknowledged).length;
+
+  const Q_HEIGHT = 340;
+
+  return (
+    <div style={{ background:T.bg, minHeight:"100vh", color:T.txt, fontFamily:"DM Sans, sans-serif", position:"relative", overflowX:"hidden", paddingBottom:72 }}>
+      <AmbientBg/>
+      {toast.msg && <Toast msg={toast.msg} err={toast.err}/>}
+
+      {/* Panels */}
+      {panel === "ddx" && (
+        <SlidePanel title="DDx Engine" color={T.purple} onClose={() => setPanel(null)}>
+          {panelData.ddx?.status === "loading" && <div style={{ display:"flex", gap:8, alignItems:"center", padding:"20px 0" }}><ThinkDots/><span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt4 }}>Generating differential...</span></div>}
+          {panelData.ddx?.status === "error" && <div style={{ color:T.coral, fontFamily:"DM Sans", fontSize:12 }}>Generation failed</div>}
+          {panelData.ddx?.differentials?.map((dx, i) => {
+            const tc = { must_rule_out:T.red, high:T.orange, moderate:T.gold, low:T.teal }[dx.tier] || T.txt4;
+            return (
+              <div key={i} style={{ padding:"10px 12px", borderRadius:10, borderLeft:`3px solid ${tc}`, background:`${tc}08`, marginBottom:7 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                  <span style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:13, color:T.txt }}>{dx.rank}. {dx.diagnosis}</span>
+                  <Chip label={dx.tier.replace("_"," ").toUpperCase()} color={tc}/>
+                </div>
+                <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt3, lineHeight:1.6 }}>{dx.rationale}</div>
+                {dx.next?.length > 0 && <div style={{ fontFamily:"DM Sans", fontSize:10, color:T.teal, marginTop:5 }}>{dx.next.join(" · ")}</div>}
+              </div>
+            );
+          })}
+          {panelData.ddx?.insight && <div style={{ padding:"9px 12px", borderRadius:9, background:`${T.gold}09`, borderLeft:`3px solid ${T.gold}`, fontFamily:"DM Sans", fontSize:12, color:T.txt2, marginTop:8 }}>💡 {panelData.ddx.insight}</div>}
+        </SlidePanel>
+      )}
+
+      {panel === "handoff" && (
+        <SlidePanel title="I-PASS Handoff" color={T.blue} onClose={() => setPanel(null)}>
+          {panelData.handoff?.status === "loading" && <div style={{ display:"flex", gap:8, alignItems:"center", padding:"20px 0" }}><ThinkDots/><span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt4 }}>Generating handoff...</span></div>}
+          {panelData.handoff?.text && (
+            <>
+              <div style={{ ...glass, padding:14, whiteSpace:"pre-wrap", fontFamily:"DM Sans", fontSize:12, color:T.txt, lineHeight:1.75, borderLeft:`3px solid ${T.blue}`, background:`${T.blue}07`, marginBottom:10 }}>
+                {panelData.handoff.text}
+              </div>
+              <button onClick={() => { if (navigator.clipboard) navigator.clipboard.writeText(panelData.handoff.text); showToast("Copied"); }} style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:11, padding:"8px 16px", borderRadius:8, cursor:"pointer", border:`1px solid ${T.teal}40`, background:`${T.teal}10`, color:T.teal }}>📋 Copy</button>
+            </>
+          )}
+        </SlidePanel>
+      )}
+
+      {panel === "safety" && (
+        <SlidePanel title="Pre-Discharge Safety Check" color={T.green} onClose={() => setPanel(null)}>
+          {panelData.safety?.status === "loading" && <div style={{ display:"flex", gap:8, alignItems:"center", padding:"20px 0" }}><ThinkDots/><span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt4 }}>Reviewing case for discharge safety...</span></div>}
+          {panelData.safety?.status === "done" && (
+            <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+              <div style={{ padding:"11px 13px", borderRadius:10, borderLeft:`4px solid ${panelData.safety.safeToDischarge ? T.green : T.red}`, background:`${panelData.safety.safeToDischarge ? T.green : T.red}0b` }}>
+                <div style={{ fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, color:panelData.safety.safeToDischarge ? T.green : T.red, letterSpacing:1.5, marginBottom:4 }}>{panelData.safety.safeToDischarge ? "✅ CLEARED" : "⚠️ CONCERNS — REVIEW BEFORE DISCHARGE"}</div>
+                <div style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt2 }}>{panelData.safety.summary}</div>
+              </div>
+              {panelData.safety.concerns?.map((c, i) => (
+                <div key={i} style={{ padding:"9px 12px", borderRadius:9, background:"rgba(14,37,68,0.5)", borderLeft:`3px solid ${T.orange}` }}>
+                  <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:12, color:T.txt, marginBottom:2 }}>{c.issue}</div>
+                  <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.teal }}>▸ {c.action}</div>
+                </div>
+              ))}
+              {panelData.safety.confirmBefore?.length > 0 && (
+                <div style={{ ...glass, padding:"10px 13px", borderLeft:`3px solid ${T.purple}`, background:`${T.purple}07` }}>
+                  <div style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.purple, letterSpacing:1.5, textTransform:"uppercase", marginBottom:7 }}>Confirm Before Discharge</div>
+                  {panelData.safety.confirmBefore.map((item, i) => (
+                    <div key={i} style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt, marginBottom:5, display:"flex", gap:6 }}>
+                      <span style={{ color:T.teal }}>□</span>{item}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </SlidePanel>
+      )}
+
+      {panel === "consult" && (
+        <SlidePanel title="Quick Consult" color={T.purple} onClose={() => setPanel(null)}>
+          <ConsultPanel patient={patient} context={buildContext(patient, orders, results, allNotes, allDispos)}/>
+        </SlidePanel>
+      )}
+
+      <div style={{ position:"relative", zIndex:1 }}>
+
+        {/* ── HEADER ─────────────────────────────────────────────── */}
+        <div style={{
+          ...glass, margin:"12px 12px 10px", padding:"10px 14px",
+          borderRadius:12, borderLeft:`3px solid ${stColor}`,
+          display:"flex", alignItems:"center", gap:12, flexWrap:"wrap",
+        }}>
+          <span style={{ fontFamily:"JetBrains Mono", fontWeight:700, fontSize:26, color:stColor, lineHeight:1 }}>
+            Rm {patient.room}
+          </span>
+          <div style={{ flex:1 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+              <span style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:16, color:T.txt }}>{patient.cc}</span>
+              <Chip label={`${cc.icon} ${cc.label}`} color={cc.color}/>
+              {critCt > 0 && <Chip label={`🚨 ${critCt} CRIT`} color={T.red} pulse/>}
+            </div>
+            <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt4, marginTop:2 }}>
+              {patient.age}{patient.sex} · {patient.provider || "—"} · {patient.nurse || "—"} · {fmtElapsed(ptMins)} in ED
+            </div>
+          </div>
+          {onBack && (
+            <button onClick={onBack} style={{
+              fontFamily:"DM Sans", fontWeight:600, fontSize:11, padding:"5px 12px",
+              borderRadius:8, cursor:"pointer", border:"1px solid rgba(42,79,122,0.5)",
+              background:"rgba(14,37,68,0.6)", color:T.txt3,
+            }}>← Back</button>
+          )}
+        </div>
+
+        {/* ── 2×2 GRID ───────────────────────────────────────────── */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, padding:"0 12px" }}>
+
+          {/* TL: Story */}
+          <div style={{ ...glass, padding:"12px 14px", overflow:"hidden" }}>
+            <QHeader label="Clinical Story" color={T.purple}
+              right={<button onClick={generateNarrative} style={{ fontFamily:"JetBrains Mono", fontSize:8, cursor:"pointer", background:"none", border:"none", color:T.txt4 }}>↺</button>}
+            />
+            <div style={{ maxHeight:Q_HEIGHT, overflowY:"auto" }}>
+              <StoryQuadrant narrative={narrative} onGenerate={generateNarrative} hasDispo={!!dispo}/>
+            </div>
+          </div>
+
+          {/* TR: Results + Orders */}
+          <div style={{ ...glass, padding:"12px 14px" }}>
+            <QHeader label={`Results (${results.length}) · Orders (${orders.length})`} color={T.blue}/>
+            <div style={{ maxHeight:Q_HEIGHT, overflowY:"auto" }}>
+              <ResultsOrdersQuadrant
+                results={results} orders={orders}
+                onAck={handleAck} onAddOrder={handleAddOrder}
+                patientId={pid} showToast={showToast}
+              />
+            </div>
+          </div>
+
+          {/* BL: Note */}
+          <div style={{ ...glass, padding:"12px 14px" }}>
+            <QHeader label={note?.signed ? "Note — Signed" : "Note — Draft"} color={note?.signed ? T.green : T.gold}
+              right={!note?.signed && <Chip label="UNSIGNED" color={T.orange}/>}
+            />
+            <div style={{ maxHeight:Q_HEIGHT, overflowY:"auto" }}>
+              <NoteQuadrant note={note} patientId={pid} onSave={handleSaveNote} onSign={handleSignNote} onDraft={draftNote} drafting={drafting}/>
+            </div>
+          </div>
+
+          {/* BR: Dispo + Dosing */}
+          <div style={{ ...glass, padding:"12px 14px" }}>
+            <QHeader label="Dispo + Dosing" color={T.teal}/>
+            <div style={{ maxHeight:Q_HEIGHT, overflowY:"auto" }}>
+              <DispoDosingQuadrant dispo={dispo} patient={patient} orders={orders} results={results} notes={allNotes} dispos={allDispos}/>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── PERSISTENT ACTION BAR ─────────────────────────────────── */}
+      <div style={{
+        position:"fixed", bottom:0, left:0, right:0, zIndex:200,
+        backdropFilter:"blur(20px) saturate(180%)", WebkitBackdropFilter:"blur(20px) saturate(180%)",
+        background:"rgba(5,10,20,0.94)",
+        borderTop:"1px solid rgba(42,79,122,0.4)",
+        padding:"8px 16px",
+        display:"flex", gap:8,
+      }}>
+        {[
+          { id:"ddx",     icon:"🔍", label:"DDx Engine",    color:T.purple },
+          { id:"safety",  icon:"🛡", label:"Safety Check",  color:T.green  },
+          { id:"handoff", icon:"📋", label:"Handoff",       color:T.blue   },
+          { id:"consult", icon:"🤖", label:"Quick Consult", color:T.teal   },
+        ].map(a => (
+          <button key={a.id} onClick={() => openPanel(a.id)} style={{
+            flex:1, fontFamily:"DM Sans", fontWeight:700,
+            fontSize:"clamp(10px,1.4vw,13px)",
+            padding:"9px 8px", borderRadius:9, cursor:"pointer",
+            border:`1px solid ${panel===a.id ? a.color+"55" : a.color+"22"}`,
+            background: panel===a.id ? `${a.color}18` : `${a.color}08`,
+            color:a.color, display:"flex", alignItems:"center", justifyContent:"center", gap:5,
+            transition:"all .12s",
+          }}>
+            <span>{a.icon}</span>
+            <span>{a.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Quick Consult (module-scope — used inside SlidePanel) ─────────────
+function ConsultPanel({ patient, context }) {
+  const [q,    setQ]    = useState("");
+  const [ans,  setAns]  = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const QUICK = [
+    "What is the safest opioid for this patient?",
+    "Which antibiotics should I avoid?",
+    "Is this patient safe for contrast?",
+    "What is the discharge plan for this diagnosis?",
+    "Are there drug interactions I should know about?",
+  ];
+
+  async function ask() {
+    if (!q.trim()) return;
+    setBusy(true); setAns("");
+    try {
+      const raw = await InvokeLLM({
+        prompt: `You are a senior emergency medicine attending. Answer concisely and clinically.\n\nPATIENT CONTEXT:\n${context}\n\nQUESTION: ${q}\n\nRespond in 3-5 sentences maximum. Be direct, specific, and use actual values from the context where relevant.`,
+        add_context_from_previous_calls:false,
+      });
+      setAns(typeof raw === "string" ? raw : raw?.content || "No response");
+    } catch { setAns("Consult unavailable. Please contact clinical pharmacist or specialist."); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+        {QUICK.map(prompt => (
+          <button key={prompt} onClick={() => setQ(prompt)} style={{
+            fontFamily:"DM Sans", fontSize:10, fontWeight:500, padding:"4px 10px",
+            borderRadius:20, cursor:"pointer", border:`1px solid ${T.teal}28`,
+            background:`${T.teal}07`, color:T.txt3,
+          }}>{prompt}</button>
+        ))}
+      </div>
+      <textarea value={q} onChange={e => setQ(e.target.value)} rows={3}
+        placeholder="Ask any clinical question — patient context is included automatically..."
+        style={{
+          background:"rgba(14,37,68,0.8)", border:`1px solid ${q ? T.teal+"45" : "rgba(42,79,122,0.4)"}`,
+          borderRadius:10, padding:"10px 12px", fontFamily:"DM Sans", fontSize:12,
+          color:T.txt, outline:"none", width:"100%", resize:"none", lineHeight:1.55,
+        }}
+      />
+      <button onClick={ask} disabled={!q.trim() || busy} style={{
+        fontFamily:"DM Sans", fontWeight:700, fontSize:13, padding:"10px",
+        borderRadius:9, cursor:q.trim() && !busy ? "pointer" : "not-allowed",
+        border:`1px solid ${T.teal}40`, background:`${T.teal}10`, color:T.teal,
+        opacity:!q.trim() || busy ? .5 : 1,
+      }}>{busy ? "Consulting..." : "Ask"}</button>
+      {busy && <div style={{ display:"flex", gap:8, alignItems:"center" }}><ThinkDots/><span style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt4 }}>Thinking...</span></div>}
+      {ans && !busy && (
+        <div className={`${PREFIX}-fade`} style={{ ...glass, padding:14, borderLeft:`3px solid ${T.teal}`, background:`${T.teal}06`, fontFamily:"DM Sans", fontSize:13, color:T.txt, lineHeight:1.7 }}>
+          {ans}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,46 @@
+{
+  "name": "HandoffEntry",
+  "type": "object",
+  "properties": {
+    "handoff_record": {
+      "type": "string",
+      "description": "Reference to ShiftHandoff ID"
+    },
+    "patient": {
+      "type": "string",
+      "description": "Reference to Patient ID"
+    },
+    "ipass": {
+      "type": "string",
+      "description": "Full I-PASS handoff text"
+    },
+    "worry": {
+      "type": "boolean",
+      "default": false,
+      "description": "Outgoing provider flagged this patient as a worry"
+    },
+    "worry_reason": {
+      "type": "string",
+      "description": "Reason for concern"
+    },
+    "pending_items": {
+      "type": "string",
+      "description": "Pending tasks or items"
+    },
+    "acknowledged": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether incoming provider acknowledged this patient"
+    },
+    "acknowledged_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When acknowledgment occurred"
+    },
+    "acknowledged_by": {
+      "type": "string",
+      "description": "Name of the provider who acknowledged"
+    }
+  },
+  "required": []
+}

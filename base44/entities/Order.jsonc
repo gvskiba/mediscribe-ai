@@ -1,0 +1,48 @@
+{
+  "name": "Order",
+  "type": "object",
+  "properties": {
+    "patient": {
+      "type": "string",
+      "description": "Reference to Patient ID"
+    },
+    "name": {
+      "type": "string",
+      "description": "Order name (e.g. CBC, CT Head w/o)"
+    },
+    "urgency": {
+      "type": "string",
+      "enum": [
+        "stat",
+        "routine",
+        "urgent"
+      ],
+      "default": "routine",
+      "description": "Order urgency"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "resulted",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Order status"
+    },
+    "ordered_by": {
+      "type": "string",
+      "description": "Provider who placed the order"
+    },
+    "ordered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the order was placed"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": []
+}

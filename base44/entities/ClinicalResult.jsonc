@@ -1,0 +1,51 @@
+{
+  "name": "ClinicalResult",
+  "type": "object",
+  "properties": {
+    "patient": {
+      "type": "string",
+      "description": "Reference to Patient ID"
+    },
+    "name": {
+      "type": "string",
+      "description": "Result name (e.g. WBC, Troponin)"
+    },
+    "value": {
+      "type": "string",
+      "description": "Result value"
+    },
+    "unit": {
+      "type": "string",
+      "description": "Unit of measurement"
+    },
+    "ref_range": {
+      "type": "string",
+      "description": "Normal reference range"
+    },
+    "flag": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "abnormal",
+        "critical"
+      ],
+      "default": "normal",
+      "description": "Result severity flag"
+    },
+    "acknowledged": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether critical result has been acknowledged"
+    },
+    "acknowledged_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resulted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the result was resulted"
+    }
+  },
+  "required": []
+}

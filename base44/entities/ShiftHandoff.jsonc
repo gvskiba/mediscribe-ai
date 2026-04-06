@@ -1,0 +1,39 @@
+{
+  "name": "ShiftHandoff",
+  "type": "object",
+  "properties": {
+    "outgoing_provider": {
+      "type": "string",
+      "description": "Name of the provider signing out"
+    },
+    "incoming_provider": {
+      "type": "string",
+      "description": "Name of the provider taking over"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the handoff was started"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the outgoing provider completed their signout"
+    },
+    "shift_notes": {
+      "type": "string",
+      "description": "General shift notes for the incoming provider"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending_ack",
+        "complete"
+      ],
+      "default": "active",
+      "description": "Handoff lifecycle status"
+    }
+  },
+  "required": []
+}

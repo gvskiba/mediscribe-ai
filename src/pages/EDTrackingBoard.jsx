@@ -387,21 +387,31 @@ function PatientRow({ pt, onOpen, onOrders, onNote }) {
 // ── Expanded patient detail panel ───────────────────────────────────
 function PatientDetail({ pt, onNavigate }) {
   const [activeTab, setActiveTab] = useState("overview");
-  const tabs = [
-    { id:"overview", label:"Overview", icon:"📋" },
-    { id:"orders",   label:"Orders",   icon:"📋" },
-    { id:"results",  label:"Results",  icon:"🧪" },
-    { id:"notes",    label:"Notes",    icon:"📝" },
-    { id:"vitals",   label:"Vitals",   icon:"📈" },
-  ];
-
-  const sampleOrders = [
+  const [orders, setOrders] = useState([
     { name:"CBC w/ diff", status:"pending", urgency:"stat", time:"08:32" },
     { name:"BMP", status:"resulted", urgency:"stat", time:"08:32" },
     { name:"Troponin x2", status:"pending", urgency:"stat", time:"08:34" },
     { name:"12-Lead ECG", status:"resulted", urgency:"stat", time:"08:35" },
     { name:"CXR PA/Lat", status:"pending", urgency:"routine", time:"08:40" },
     { name:"IV Access", status:"resulted", urgency:"routine", time:"08:30" },
+  ]);
+  const [newOrder, setNewOrder] = useState({ name:"", urgency:"routine" });
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  const addOrder = () => {
+    if (!newOrder.name.trim()) return;
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+    setOrders(prev => [{ name:newOrder.name.trim(), status:"pending", urgency:newOrder.urgency, time }, ...prev]);
+    setNewOrder({ name:"", urgency:"routine" });
+    setShowAddForm(false);
+  };
+  const tabs = [
+    { id:"overview", label:"Overview", icon:"📋" },
+    { id:"orders",   label:"Orders",   icon:"📋" },
+    { id:"results",  label:"Results",  icon:"🧪" },
+    { id:"notes",    label:"Notes",    icon:"📝" },
+    { id:"vitals",   label:"Vitals",   icon:"📈" },
   ];
 
   const sampleResults = [
@@ -485,10 +495,56 @@ function PatientDetail({ pt, onNavigate }) {
         {/* ORDERS */}
         {activeTab==="orders" && (
           <div style={{ width:"100%" }}>
+            {/* Add Order Button / Form */}
+            {!showAddForm ? (
+              <div style={{ marginBottom:10 }}>
+                <button onClick={() => setShowAddForm(true)}
+                  style={{ padding:"6px 14px", borderRadius:6, border:`1px solid rgba(0,229,192,.3)`, background:"rgba(0,229,192,.08)", color:T.teal, fontFamily:"DM Sans", fontSize:11, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}>
+                  + Add Order
+                </button>
+              </div>
+            ) : (
+              <div style={{ background:"rgba(11,30,54,.8)", border:`1px solid rgba(59,158,255,.3)`, borderRadius:8, padding:"12px 14px", marginBottom:12 }}>
+                <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.blue, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>New Order</div>
+                <div style={{ display:"flex", gap:8, alignItems:"flex-end", flexWrap:"wrap" }}>
+                  <div style={{ flex:1, minWidth:180 }}>
+                    <div style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.t4, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Order Name *</div>
+                    <input
+                      autoFocus
+                      value={newOrder.name}
+                      onChange={e => setNewOrder(p => ({...p, name:e.target.value}))}
+                      onKeyDown={e => { if(e.key==="Enter") addOrder(); if(e.key==="Escape") setShowAddForm(false); }}
+                      placeholder="e.g. CBC, CT Head, Morphine 4mg IV"
+                      style={{ width:"100%", background:"rgba(14,37,68,.8)", border:`1px solid rgba(42,79,122,.5)`, borderRadius:6, padding:"7px 10px", color:T.t, fontFamily:"DM Sans", fontSize:12, outline:"none" }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.t4, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Urgency</div>
+                    <select value={newOrder.urgency} onChange={e => setNewOrder(p => ({...p, urgency:e.target.value}))}
+                      style={{ background:"rgba(14,37,68,.8)", border:`1px solid rgba(42,79,122,.5)`, borderRadius:6, padding:"7px 12px", color:T.t, fontFamily:"DM Sans", fontSize:12, outline:"none", cursor:"pointer" }}>
+                      <option value="stat">STAT</option>
+                      <option value="urgent">URGENT</option>
+                      <option value="routine">ROUTINE</option>
+                    </select>
+                  </div>
+                  <div style={{ display:"flex", gap:6 }}>
+                    <button onClick={addOrder}
+                      style={{ padding:"7px 16px", borderRadius:6, border:"none", background:T.teal, color:"#050f1e", fontFamily:"DM Sans", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                      ✓ Place Order
+                    </button>
+                    <button onClick={() => { setShowAddForm(false); setNewOrder({ name:"", urgency:"routine" }); }}
+                      style={{ padding:"7px 12px", borderRadius:6, border:`1px solid rgba(42,79,122,.4)`, background:"transparent", color:T.t3, fontFamily:"DM Sans", fontSize:11, cursor:"pointer" }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Orders list */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 80px 80px 60px", gap:8, padding:"0 4px 6px", borderBottom:`1px solid rgba(26,53,85,.3)`, marginBottom:6 }}>
               {["Order","Status","Urgency","Time"].map(h => <span key={h} style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.t4, textTransform:"uppercase", letterSpacing:1 }}>{h}</span>)}
             </div>
-            {sampleOrders.map((o,i) => (
+            {orders.map((o,i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 80px 80px 60px", gap:8, padding:"6px 4px", borderBottom:`1px solid rgba(26,53,85,.2)`, alignItems:"center" }}>
                 <span style={{ fontSize:12, color:T.t }}>{o.name}</span>
                 <span style={{ fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, color:statusColor(o.status) }}>{o.status.toUpperCase()}</span>

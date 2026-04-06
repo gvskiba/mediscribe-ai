@@ -63,6 +63,7 @@ import ProviderCommandCenter from '@/pages/ProviderCommandCenter';
 import CommandCenterWrapper from '@/pages/CommandCenterWrapper';
 import PatientWorkspace from '@/pages/PatientWorkspace';
 import ShiftSignout from '@/pages/ShiftSignout';
+import GlobalNav from '@/components/GlobalNav';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 
 
@@ -101,6 +102,7 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <>
+      <GlobalNav />
       <PatientSidebar />
       <Routes>
       <Route path="/" element={

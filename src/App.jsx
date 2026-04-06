@@ -71,6 +71,15 @@ import EDTrackingBoard from '@/pages/EDTrackingBoard';
 
 
 
+// Pages that hide the global nav
+const PAGES_WITHOUT_NAV = new Set(["/EDTrackingBoard"]);
+
+function GlobalNavWrapper() {
+  const location = useLocation();
+  if (PAGES_WITHOUT_NAV.has(location.pathname)) return null;
+  return <GlobalNav />;
+}
+
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
 
@@ -114,7 +123,7 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <>
-      <GlobalNav />
+      <GlobalNavWrapper />
       <PatientSidebar />
       <GlobalFloatingAI />
       <Routes>

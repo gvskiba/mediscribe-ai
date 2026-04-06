@@ -37,7 +37,7 @@ const PREFIX = "ddx";
 })();
 
 const T = {
-  bg:"#050f1e", txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
+  bg:"#050f1e", txt:"#ffffff", txt2:"#d8ecff", txt3:"#a8ccee", txt4:"#7aaace",
   teal:"#00e5c0", gold:"#f5c842", red:"#ff4444", green:"#3dffa0",
   blue:"#3b9eff", purple:"#9b6dff", orange:"#ff9f43", coral:"#ff6b6b",
 };

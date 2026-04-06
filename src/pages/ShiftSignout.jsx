@@ -35,7 +35,7 @@ const PREFIX = "sox";
       background-size:300% auto; -webkit-background-clip:text;
       -webkit-text-fill-color:transparent; background-clip:text;
       animation:${PREFIX}shim 5s linear infinite;
-      padding-right:0.15em;
+      display:inline-block; padding-bottom:0.15em; line-height:1.2;
     }
   `;
   document.head.appendChild(s);

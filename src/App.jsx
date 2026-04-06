@@ -64,6 +64,7 @@ import CommandCenterWrapper from '@/pages/CommandCenterWrapper';
 import PatientWorkspace from '@/pages/PatientWorkspace';
 import ShiftSignout from '@/pages/ShiftSignout';
 import GlobalNav from '@/components/GlobalNav';
+import NotryaFloatingAI from '@/components/ai/NotryaFloatingAI';
 import AddendumManager from '@/pages/AddendumManager';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 
@@ -105,6 +106,7 @@ const AuthenticatedApp = () => {
     <>
       <GlobalNav />
       <PatientSidebar />
+      <NotryaFloatingAI />
       <Routes>
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>

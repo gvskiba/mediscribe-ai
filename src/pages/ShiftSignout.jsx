@@ -32,9 +32,10 @@ const PREFIX = "sox";
     .${PREFIX}-check { animation:${PREFIX}check .3s ease both; }
     .${PREFIX}-shim  {
       background:linear-gradient(90deg,#f2f7ff 0%,#fff 20%,#00e5c0 45%,#f5c842 70%,#f2f7ff 100%);
-      background-size:250% auto; -webkit-background-clip:text;
+      background-size:300% auto; -webkit-background-clip:text;
       -webkit-text-fill-color:transparent; background-clip:text;
       animation:${PREFIX}shim 5s linear infinite;
+      padding-right:0.15em;
     }
   `;
   document.head.appendChild(s);

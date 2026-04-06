@@ -1,0 +1,61 @@
+{
+  "name": "DispositionRecord",
+  "type": "object",
+  "properties": {
+    "patient": {
+      "type": "string",
+      "description": "Patient entity ID"
+    },
+    "dispo_type": {
+      "type": "string",
+      "enum": [
+        "admit",
+        "discharge",
+        "transfer",
+        "observation",
+        "ama"
+      ],
+      "default": "admit"
+    },
+    "dispo_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "requested",
+        "arranged",
+        "boarding",
+        "ready",
+        "complete"
+      ],
+      "default": "pending"
+    },
+    "accepting_physician": {
+      "type": "string"
+    },
+    "accepting_service": {
+      "type": "string"
+    },
+    "destination": {
+      "type": "string"
+    },
+    "est_dispo_time": {
+      "type": "string"
+    },
+    "boarding_start": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "bed_request_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "bed_assigned_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

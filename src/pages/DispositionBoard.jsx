@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Patient, DispositionRecord } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
+const Patient = base44.entities.Patient;
+const DispositionRecord = base44.entities.DispositionRecord;
 import FloorPlanView from "@/components/disposition/FloorPlanView";
 
 const PREFIX = "dsp";

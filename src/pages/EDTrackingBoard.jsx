@@ -793,6 +793,10 @@ export default function TrackingBoard({ onBack }) {
 
           {/* Toolbar */}
           <div className="tb-toolbar">
+            {/* Search */}
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search name, room, CC…" className="tb-search"/>
+            <div style={{ width:1, height:20, background:"rgba(42,79,122,.4)" }}/>
             {/* Status filters */}
             {["All","triage","workup","awaiting","ready","boarding"].map(s => {
               const cfg = s === "All" ? null : STATUS_CFG[s];
@@ -830,10 +834,7 @@ export default function TrackingBoard({ onBack }) {
               style={{ background:"rgba(14,37,68,.8)", border:"1px solid rgba(42,79,122,.35)", borderRadius:20, padding:"4px 12px", outline:"none", fontFamily:"JetBrains Mono", fontSize:9, color:T.t3, cursor:"pointer" }}>
               {providers.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
-            {/* Search */}
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search name, room, CC…" className="tb-search" style={{ marginLeft:"auto" }}/>
-            <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.t4 }}>
+            <div style={{ marginLeft:"auto", fontFamily:"JetBrains Mono", fontSize:9, color:T.t4 }}>
               {filtered.length}/{PATIENTS.length} patients
             </div>
           </div>

@@ -301,8 +301,6 @@ export default function GlobalNav({ alerts = 0 }) {
   const cmdRef  = useRef(null);
   const listRef = useRef(null);
 
-  if (EXCLUDED_ROUTES.has(location.pathname)) return null;
-
   const currentId   = ROUTE_TO_ID[location.pathname] || null;
   const currentPage = PAGES.find(p => p.id === currentId);
 
@@ -383,6 +381,8 @@ export default function GlobalNav({ alerts = 0 }) {
   }, [hubOpen]);
 
   // ── Palette grouping ────────────────────────────────────────────
+  if (EXCLUDED_ROUTES.has(location.pathname)) return null;
+
   const paletteGroups = cmdQ.trim()
     ? null
     : CATS.map(cat => ({ cat, pages: cmdFiltered.filter(p => p.cat === cat) })).filter(g => g.pages.length > 0);

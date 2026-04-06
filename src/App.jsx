@@ -190,7 +190,7 @@ const AuthenticatedApp = () => {
       <Route path="/narrative-engine" element={<ClinicalNarrativeEngine />} />
       <Route path="/landing" element={<NotryaLanding />} />
       <Route path="/command-center" element={<CommandCenterWrapper />} />
-      <Route path="/patient-workspace" element={<PatientWorkspace />} />
+      <Route path="/patient-workspace" element={<LayoutWrapper currentPageName="PatientWorkspace"><PatientWorkspace /></LayoutWrapper>} />
       <Route path="/shift-signout" element={<ShiftSignout />} />
       <Route path="/AddendumManager" element={<AddendumManager />} />
 

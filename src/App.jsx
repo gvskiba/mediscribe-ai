@@ -61,6 +61,7 @@ import ClinicalNarrativeEngine from '@/pages/ClinicalNarrativeEngine';
 import NotryaLanding from '@/pages/NotryaLanding';
 import ProviderCommandCenter from '@/pages/ProviderCommandCenter';
 import CommandCenterWrapper from '@/pages/CommandCenterWrapper';
+import PatientWorkspace from '@/pages/PatientWorkspace';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 
 
@@ -173,6 +174,7 @@ const AuthenticatedApp = () => {
       <Route path="/narrative-engine" element={<ClinicalNarrativeEngine />} />
       <Route path="/landing" element={<NotryaLanding />} />
       <Route path="/command-center" element={<CommandCenterWrapper />} />
+      <Route path="/patient-workspace" element={<PatientWorkspace />} />
 
 
       <Route path="*" element={<PageNotFound />} />

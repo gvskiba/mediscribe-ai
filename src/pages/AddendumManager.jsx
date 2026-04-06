@@ -580,11 +580,11 @@ export default function AddendumManager() {
   }
 
   return (
-    <div style={{ height: "100%", minHeight: "100vh", background: G.navy, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "calc(100vh - 48px)", background: G.navy, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
       <div style={{
         height: "54px", background: G.slate, borderBottom: `1px solid ${G.border}`,
         display: "flex", alignItems: "center", padding: "0 20px", gap: "14px",
-        position: "sticky", top: 0, zIndex: 100,
+        position: "sticky", top: "48px", zIndex: 100,
       }}>
         <span style={{ fontFamily: F.display, fontSize: "18px", color: G.bright, letterSpacing: "-0.01em" }}>Notrya</span>
         <span style={{ color: G.border }}>|</span>

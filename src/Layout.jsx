@@ -32,6 +32,7 @@ const T = {
 ───────────────────────────────────────────── */
 const APP_ICONS = [
   { icon: '🏠', label: 'Home',      page: '/' },
+  { icon: '⚕️', label: 'Command',   page: '/command-center' },
   { icon: '📊', label: 'Dashboard', page: '/Dashboard' },
   { icon: '🆕', label: 'New PT',    page: '/NewPatientInput' },
   { icon: '📝', label: 'New Note',  page: '/NewNote' },

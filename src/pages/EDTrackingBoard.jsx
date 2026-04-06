@@ -384,6 +384,180 @@ function PatientRow({ pt, onOpen, onOrders, onNote }) {
   );
 }
 
+// ── Expanded patient detail panel ───────────────────────────────────
+function PatientDetail({ pt, onNavigate }) {
+  const [activeTab, setActiveTab] = useState("overview");
+  const tabs = [
+    { id:"overview", label:"Overview", icon:"📋" },
+    { id:"orders",   label:"Orders",   icon:"📋" },
+    { id:"results",  label:"Results",  icon:"🧪" },
+    { id:"notes",    label:"Notes",    icon:"📝" },
+    { id:"vitals",   label:"Vitals",   icon:"📈" },
+  ];
+
+  const sampleOrders = [
+    { name:"CBC w/ diff", status:"pending", urgency:"stat", time:"08:32" },
+    { name:"BMP", status:"resulted", urgency:"stat", time:"08:32" },
+    { name:"Troponin x2", status:"pending", urgency:"stat", time:"08:34" },
+    { name:"12-Lead ECG", status:"resulted", urgency:"stat", time:"08:35" },
+    { name:"CXR PA/Lat", status:"pending", urgency:"routine", time:"08:40" },
+    { name:"IV Access", status:"resulted", urgency:"routine", time:"08:30" },
+  ];
+
+  const sampleResults = [
+    { name:"Troponin I", value:"0.04", unit:"ng/mL", flag:"normal", time:"09:10" },
+    { name:"WBC", value:"12.4", unit:"K/uL", flag:"high", time:"09:08" },
+    { name:"Hgb", value:"14.2", unit:"g/dL", flag:"normal", time:"09:08" },
+    { name:"Na", value:"138", unit:"mEq/L", flag:"normal", time:"09:09" },
+    { name:"K", value:"3.3", unit:"mEq/L", flag:"low", time:"09:09" },
+    { name:"Creatinine", value:"1.8", unit:"mg/dL", flag:"high", time:"09:09" },
+    { name:"Glucose", value:"142", unit:"mg/dL", flag:"high", time:"09:09" },
+  ];
+
+  const flagColor = (f) => f==="high"||f==="critical" ? T.coral : f==="low" ? T.gold : T.green;
+  const urgencyColor = (u) => u==="stat" ? T.coral : T.t3;
+  const statusColor = (s) => s==="resulted" ? T.green : T.gold;
+
+  return (
+    <div style={{ borderTop:`1px solid rgba(42,79,122,.4)`, background:"rgba(5,15,30,0.6)", padding:"0" }}>
+      {/* Tabs */}
+      <div style={{ display:"flex", gap:2, padding:"8px 14px 0", borderBottom:`1px solid rgba(26,53,85,.4)` }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={e => { e.stopPropagation(); setActiveTab(t.id); }}
+            style={{
+              padding:"5px 12px", borderRadius:"6px 6px 0 0", border:"none", cursor:"pointer",
+              fontFamily:"JetBrains Mono", fontSize:10, fontWeight:600, letterSpacing:.5,
+              background: activeTab===t.id ? "rgba(59,158,255,.12)" : "transparent",
+              color: activeTab===t.id ? T.blue : T.t4,
+              borderBottom: activeTab===t.id ? `2px solid ${T.blue}` : "2px solid transparent",
+            }}>
+            {t.icon} {t.label}
+          </button>
+        ))}
+        <div style={{ marginLeft:"auto", display:"flex", gap:6, alignItems:"center", paddingBottom:6 }}>
+          <button onClick={e => { e.stopPropagation(); onNavigate(`/NewPatientInput?mrn=${pt.mrn}`); }}
+            style={{ padding:"4px 12px", borderRadius:6, border:`1px solid rgba(0,229,192,.3)`, background:"rgba(0,229,192,.08)", color:T.teal, fontFamily:"DM Sans", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+            Open Full Chart →
+          </button>
+        </div>
+      </div>
+
+      {/* Tab content */}
+      <div style={{ padding:"12px 14px", display:"flex", gap:12, flexWrap:"wrap" }} onClick={e => e.stopPropagation()}>
+
+        {/* OVERVIEW */}
+        {activeTab==="overview" && (
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, width:"100%" }}>
+            <div style={{ background:"rgba(11,30,54,.6)", border:`1px solid rgba(26,53,85,.5)`, borderRadius:8, padding:"10px 12px" }}>
+              <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.t4, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Patient Info</div>
+              {[["Name", `${pt.last}, ${pt.first}`],["MRN", pt.mrn],["Age/Sex", `${pt.age} ${pt.sex}`],["Provider", pt.provider],["Room", pt.room]].map(([k,v]) => (
+                <div key={k} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                  <span style={{ fontSize:11, color:T.t4 }}>{k}</span>
+                  <span style={{ fontSize:11, color:T.t, fontWeight:500 }}>{v}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ background:"rgba(11,30,54,.6)", border:`1px solid rgba(26,53,85,.5)`, borderRadius:8, padding:"10px 12px" }}>
+              <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.t4, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Current Vitals</div>
+              {[["HR", pt.vitals.hr, parseInt(pt.vitals.hr)>100||parseInt(pt.vitals.hr)<50],["BP", pt.vitals.bp, parseInt(pt.vitals.bp)>160||parseInt(pt.vitals.bp)<90],["SpO₂", pt.vitals.spo2, parseInt(pt.vitals.spo2)<94]].map(([k,v,abn]) => (
+                <div key={k} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                  <span style={{ fontSize:11, color:T.t4 }}>{k}</span>
+                  <span style={{ fontSize:12, fontFamily:"JetBrains Mono", fontWeight:700, color: abn ? T.coral : T.green }}>{v}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ background:"rgba(11,30,54,.6)", border:`1px solid rgba(26,53,85,.5)`, borderRadius:8, padding:"10px 12px" }}>
+              <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.t4, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Allergies & Flags</div>
+              <div style={{ marginBottom:6 }}>
+                {pt.allergies.length > 0
+                  ? pt.allergies.map(a => <span key={a} style={{ display:"inline-block", margin:"0 4px 4px 0", padding:"2px 8px", borderRadius:12, background:"rgba(255,107,107,.15)", border:"1px solid rgba(255,107,107,.3)", color:T.coral, fontSize:10, fontWeight:600 }}>{a}</span>)
+                  : <span style={{ fontSize:11, color:T.green }}>NKDA</span>}
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginTop:4 }}>
+                {Object.entries(pt.flags).filter(([,v])=>v).map(([k]) => (
+                  <span key={k} style={{ padding:"2px 7px", borderRadius:4, background:FLAG_CFG[k]?.bg, color:FLAG_CFG[k]?.color, fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700 }}>{FLAG_CFG[k]?.label}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ORDERS */}
+        {activeTab==="orders" && (
+          <div style={{ width:"100%" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 80px 80px 60px", gap:8, padding:"0 4px 6px", borderBottom:`1px solid rgba(26,53,85,.3)`, marginBottom:6 }}>
+              {["Order","Status","Urgency","Time"].map(h => <span key={h} style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.t4, textTransform:"uppercase", letterSpacing:1 }}>{h}</span>)}
+            </div>
+            {sampleOrders.map((o,i) => (
+              <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 80px 80px 60px", gap:8, padding:"6px 4px", borderBottom:`1px solid rgba(26,53,85,.2)`, alignItems:"center" }}>
+                <span style={{ fontSize:12, color:T.t }}>{o.name}</span>
+                <span style={{ fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, color:statusColor(o.status) }}>{o.status.toUpperCase()}</span>
+                <span style={{ fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, color:urgencyColor(o.urgency) }}>{o.urgency.toUpperCase()}</span>
+                <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.t3 }}>{o.time}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* RESULTS */}
+        {activeTab==="results" && (
+          <div style={{ width:"100%" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 80px 80px 100px 60px", gap:8, padding:"0 4px 6px", borderBottom:`1px solid rgba(26,53,85,.3)`, marginBottom:6 }}>
+              {["Test","Value","Unit","Flag","Time"].map(h => <span key={h} style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.t4, textTransform:"uppercase", letterSpacing:1 }}>{h}</span>)}
+            </div>
+            {sampleResults.map((r,i) => (
+              <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 80px 80px 100px 60px", gap:8, padding:"6px 4px", borderBottom:`1px solid rgba(26,53,85,.2)`, alignItems:"center" }}>
+                <span style={{ fontSize:12, color:T.t }}>{r.name}</span>
+                <span style={{ fontFamily:"JetBrains Mono", fontSize:12, fontWeight:700, color:flagColor(r.flag) }}>{r.value}</span>
+                <span style={{ fontFamily:"JetBrains Mono", fontSize:10, color:T.t3 }}>{r.unit}</span>
+                <span style={{ fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, color:flagColor(r.flag), background:`${flagColor(r.flag)}18`, padding:"1px 7px", borderRadius:4 }}>{r.flag.toUpperCase()}</span>
+                <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.t3 }}>{r.time}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* NOTES */}
+        {activeTab==="notes" && (
+          <div style={{ width:"100%" }}>
+            <div style={{ background:"rgba(11,30,54,.6)", border:`1px solid rgba(26,53,85,.5)`, borderRadius:8, padding:"12px 14px" }}>
+              <div style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.t4, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Chief Complaint &amp; HPI</div>
+              <div style={{ fontSize:12, color:T.t2, lineHeight:1.6 }}>
+                <strong style={{ color:T.t }}>{pt.cc}</strong><br/>
+                Patient is a {pt.age}-year-old {pt.sex=="M"?"male":"female"} presenting with {pt.cc.toLowerCase()}. Arrived via EMS. Vitals notable for HR {pt.vitals.hr}, BP {pt.vitals.bp}, SpO₂ {pt.vitals.spo2}.
+              </div>
+            </div>
+            <div style={{ marginTop:10, display:"flex", gap:8 }}>
+              <button onClick={() => onNavigate(`/ClinicalNoteStudio?mrn=${pt.mrn}`)}
+                style={{ padding:"6px 14px", borderRadius:6, border:`1px solid rgba(59,158,255,.3)`, background:"rgba(59,158,255,.08)", color:T.blue, fontFamily:"DM Sans", fontSize:11, fontWeight:600, cursor:"pointer" }}>
+                📝 Open Note Editor
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* VITALS */}
+        {activeTab==="vitals" && (
+          <div style={{ width:"100%", display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(140px, 1fr))", gap:10 }}>
+            {[["Heart Rate",pt.vitals.hr,"bpm",parseInt(pt.vitals.hr)>100||parseInt(pt.vitals.hr)<50],
+              ["Blood Pressure",pt.vitals.bp,"mmHg",parseInt(pt.vitals.bp)>160||parseInt(pt.vitals.bp)<90],
+              ["SpO₂",pt.vitals.spo2,"",parseInt(pt.vitals.spo2)<94],
+            ].map(([label,val,unit,abn]) => (
+              <div key={label} style={{ background:"rgba(11,30,54,.6)", border:`1px solid ${abn ? "rgba(255,107,107,.3)" : "rgba(26,53,85,.5)"}`, borderRadius:10, padding:"12px 14px", textAlign:"center" }}>
+                <div style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.t4, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>{label}</div>
+                <div style={{ fontFamily:"JetBrains Mono", fontSize:22, fontWeight:700, color: abn ? T.coral : T.green }}>{val}</div>
+                {unit && <div style={{ fontSize:10, color:T.t4, marginTop:2 }}>{unit}</div>}
+                {abn && <div style={{ fontSize:9, color:T.coral, marginTop:4, fontWeight:700 }}>⚠ ABNORMAL</div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
 // ── Main export ───────────────────────────────────────────────────────
 export default function TrackingBoard({ onBack }) {
   const navigate = useNavigate();
@@ -505,6 +679,11 @@ export default function TrackingBoard({ onBack }) {
 
   const currentGroup    = useMemo(() => NAV_GROUPS.find(g => g.key === activeGroup), [activeGroup]);
   const currentSections = currentGroup?.sections || [];
+
+  const [expandedId, setExpandedId] = useState(null);
+  const toggleExpand = useCallback((pt) => {
+    setExpandedId(prev => prev === pt.id ? null : pt.id);
+  }, []);
 
   const openPatient  = useCallback((pt) => navigate(`/NewPatientInput?mrn=${pt.mrn}`), [navigate]);
   const openOrders   = useCallback((pt) => navigate(`/NewPatientInput?tab=orders&mrn=${pt.mrn}`), [navigate]);
@@ -651,8 +830,9 @@ export default function TrackingBoard({ onBack }) {
             </div>
           ) : (
             filtered.map((pt, i) => (
-              <div key={pt.id} className={`${PREFIX}-fade`} style={{ animationDelay:`${i * 0.03}s` }}>
-                <PatientRow pt={pt} onOpen={openPatient} onOrders={openOrders} onNote={openNote}/>
+              <div key={pt.id} className={`${PREFIX}-fade`} style={{ animationDelay:`${i * 0.03}s`, borderRadius:10, overflow:"hidden", border:`1px solid ${expandedId===pt.id ? "rgba(59,158,255,.35)" : "rgba(26,53,85,.45)"}`, background:"rgba(8,22,40,.75)" }}>
+                <PatientRow pt={pt} onOpen={toggleExpand} onOrders={openOrders} onNote={openNote}/>
+                {expandedId===pt.id && <PatientDetail pt={pt} onNavigate={navigate} />}
               </div>
             ))
           )}

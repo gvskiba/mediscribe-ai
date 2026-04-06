@@ -1,29 +1,36 @@
-import { useState, useCallback, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { useState, useCallback, useMemo } from "react";
+import { InvokeLLM } from "@/integrations/Core";
 
 const PREFIX = "ddx";
 
 (() => {
-  if (document.getElementById(`${PREFIX}-css`)) return;
+  const fontId = `${PREFIX}-fonts`;
+  if (document.getElementById(fontId)) return;
+  const l = document.createElement("link");
+  l.id = fontId; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  document.head.appendChild(l);
   const s = document.createElement("style"); s.id = `${PREFIX}-css`;
   s.textContent = `
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-    @keyframes ${PREFIX}fade { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes ${PREFIX}shim { 0%,100%{background-position:-200% center} 50%{background-position:200% center} }
-    @keyframes ${PREFIX}spin { to{transform:rotate(360deg)} }
-    @keyframes ${PREFIX}orb0 { 0%,100%{transform:translate(-50%,-50%) scale(1)} 50%{transform:translate(-50%,-50%) scale(1.12)} }
-    @keyframes ${PREFIX}orb1 { 0%,100%{transform:translate(-50%,-50%) scale(1.08)} 50%{transform:translate(-50%,-50%) scale(0.9)} }
-    @keyframes ${PREFIX}orb2 { 0%,100%{transform:translate(-50%,-50%) scale(0.94)} 50%{transform:translate(-50%,-50%) scale(1.1)} }
-    @keyframes ${PREFIX}pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    @keyframes ${PREFIX}bar { from{width:0%} to{width:100%} }
-    .${PREFIX}-fade  { animation:${PREFIX}fade .25s ease both; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    ::-webkit-scrollbar { width:3px; height:3px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(42,79,122,.5); border-radius:2px; }
+    @keyframes ${PREFIX}fade  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes ${PREFIX}shim  { 0%,100%{background-position:-200% center} 50%{background-position:200% center} }
+    @keyframes ${PREFIX}orb0  { 0%,100%{transform:translate(-50%,-50%) scale(1)}    50%{transform:translate(-50%,-50%) scale(1.1)} }
+    @keyframes ${PREFIX}orb1  { 0%,100%{transform:translate(-50%,-50%) scale(1.07)} 50%{transform:translate(-50%,-50%) scale(.92)} }
+    @keyframes ${PREFIX}orb2  { 0%,100%{transform:translate(-50%,-50%) scale(.95)}  50%{transform:translate(-50%,-50%) scale(1.09)} }
+    @keyframes ${PREFIX}pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    @keyframes ${PREFIX}spin  { to{transform:rotate(360deg)} }
+    .${PREFIX}-fade  { animation:${PREFIX}fade  .25s ease both; }
     .${PREFIX}-pulse { animation:${PREFIX}pulse 1.8s ease-in-out infinite; }
-    .${PREFIX}-spin  { animation:${PREFIX}spin .8s linear infinite; display:inline-block; }
+    .${PREFIX}-spin  { animation:${PREFIX}spin  1s linear infinite; }
     .${PREFIX}-shim  {
-      background:linear-gradient(90deg,#f2f7ff 0%,#fff 20%,#00e5c0 45%,#3b9eff 70%,#f2f7ff 100%);
+      background:linear-gradient(90deg,#f2f7ff 0%,#fff 25%,#00e5c0 50%,#3b9eff 75%,#f2f7ff 100%);
       background-size:250% auto; -webkit-background-clip:text;
       -webkit-text-fill-color:transparent; background-clip:text;
-      animation:${PREFIX}shim 5s linear infinite;
+      animation:${PREFIX}shim 6s linear infinite;
     }
   `;
   document.head.appendChild(s);
@@ -31,230 +38,529 @@ const PREFIX = "ddx";
 
 const T = {
   bg:"#050f1e", txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
-  teal:"#00e5c0", gold:"#f5c842", red:"#ff4444", coral:"#ff6b6b",
-  blue:"#3b9eff", purple:"#9b6dff", orange:"#ff9f43", green:"#3dffa0",
+  teal:"#00e5c0", gold:"#f5c842", red:"#ff4444", green:"#3dffa0",
+  blue:"#3b9eff", purple:"#9b6dff", orange:"#ff9f43", coral:"#ff6b6b",
 };
 
 const glass = {
   backdropFilter:"blur(20px) saturate(180%)", WebkitBackdropFilter:"blur(20px) saturate(180%)",
-  background:"rgba(8,22,40,0.82)", border:"1px solid rgba(42,79,122,0.38)", borderRadius:14,
+  background:"rgba(8,22,40,0.78)", border:"1px solid rgba(42,79,122,0.35)", borderRadius:14,
 };
 
-// ── LIKELIHOOD CONFIG ────────────────────────────────────────────────
-const LIKELIHOOD = [
-  { key:"must_rule_out", label:"Must Rule Out",  color:"#ff4444", icon:"⚡", desc:"Life-threatening — cannot miss" },
-  { key:"likely",        label:"Most Likely",    color:"#3b9eff", icon:"🎯", desc:"Highest probability" },
-  { key:"consider",      label:"Consider",       color:"#f5c842", icon:"🔍", desc:"Reasonable differential" },
-  { key:"less_likely",   label:"Less Likely",    color:"#5a82a8", icon:"📋", desc:"Lower probability, keep in mind" },
+// ── TIER CONFIG ───────────────────────────────────────────────────────
+const TIER = {
+  must_rule_out: { label:"Must Rule Out", color:T.red,    icon:"🚨", rank:0 },
+  high:          { label:"High",          color:T.orange, icon:"🔴", rank:1 },
+  moderate:      { label:"Moderate",      color:T.gold,   icon:"🟡", rank:2 },
+  low:           { label:"Low",           color:T.teal,   icon:"🟢", rank:3 },
+};
+
+// ── QUICK CC PRESETS ──────────────────────────────────────────────────
+const CC_QUICK = [
+  "Chest Pain", "Shortness of Breath", "Abdominal Pain", "Headache",
+  "Syncope", "Altered Mental Status", "Back Pain", "Leg Pain/Swelling",
+  "Fever", "Dizziness", "Palpitations", "Trauma — Head",
+  "Ankle/Foot Injury", "Knee Injury", "Weakness/Numbness",
 ];
 
-// ── QUICK TEMPLATES ──────────────────────────────────────────────────
-const TEMPLATES = [
-  { label:"Chest Pain",        icon:"💔",
-    prompt:"55M with sudden onset severe tearing chest pain radiating to the back, diaphoresis, BP 180/100" },
-  { label:"Dyspnea",           icon:"🫁",
-    prompt:"68F with 3 days progressive shortness of breath, orthopnea, +2 pitting edema bilateral ankles" },
-  { label:"Altered Mental Status", icon:"🧠",
-    prompt:"72M brought in by EMS with acute confusion, fever 39.2°C, urinary incontinence, no focal deficits" },
-  { label:"Abdominal Pain",    icon:"🫃",
-    prompt:"28F with 24h severe RLQ pain migrating from periumbilical, nausea, anorexia, rebound tenderness" },
-  { label:"Syncope",           icon:"😵",
-    prompt:"45M with sudden LOC at rest, no prodrome, rapid recovery, HTN, family history of sudden death" },
-  { label:"Headache",          icon:"🤕",
-    prompt:"38F with worst headache of life, sudden onset, thunderclap quality, nuchal rigidity" },
-  { label:"Sepsis",            icon:"🦠",
-    prompt:"82F from nursing home, fever 38.8°C, HR 118, BP 88/52, AMS, cloudy urine, creatinine 2.4" },
-  { label:"Pediatric Fever",   icon:"👶",
-    prompt:"3yo M with fever 40°C x 2 days, irritable, neck stiffness, petechial rash on trunk" },
+// ── CLINICAL DECISION RULES ───────────────────────────────────────────
+// criteria type: "bool" (0 or points) | "choice" (options with different points)
+const RULES = [
+  {
+    id:"heart", name:"HEART Score", icon:"❤️",
+    cc:["Chest Pain","Palpitations","Syncope"],
+    desc:"Risk stratification for chest pain patients. Predicts 6-week MACE.",
+    cite:"Brady et al., 2010",
+    criteria:[
+      { id:"history", label:"History", type:"choice", choices:[
+        {l:"Slightly suspicious",   p:0},
+        {l:"Moderately suspicious", p:1},
+        {l:"Highly suspicious",     p:2},
+      ]},
+      { id:"ekg", label:"EKG", type:"choice", choices:[
+        {l:"Normal",                             p:0},
+        {l:"Non-specific repolarization change", p:1},
+        {l:"Significant ST deviation",           p:2},
+      ]},
+      { id:"age", label:"Age", type:"choice", choices:[
+        {l:"< 45",  p:0},
+        {l:"45–64", p:1},
+        {l:"≥ 65",  p:2},
+      ]},
+      { id:"risk", label:"Risk Factors", type:"choice", choices:[
+        {l:"No known risk factors",                    p:0},
+        {l:"1–2 risk factors or obesity or smoker",    p:1},
+        {l:"≥ 3 RFs or hx atherosclerosis or DM",      p:2},
+      ]},
+      { id:"trop", label:"Troponin", type:"choice", choices:[
+        {l:"≤ normal limit",   p:0},
+        {l:"1–3× normal",      p:1},
+        {l:"> 3× normal",      p:2},
+      ]},
+    ],
+    interpret(score) {
+      if (score <= 3) return { label:"Low Risk", color:T.green,  action:"0.9–1.7% MACE — Consider early discharge with outpatient follow-up" };
+      if (score <= 6) return { label:"Moderate Risk", color:T.gold, action:"12–16.6% MACE — Admit for observation; serial troponins; stress test or cath" };
+      return           { label:"High Risk", color:T.red,   action:"50–65% MACE — Early invasive strategy; cardiology consult" };
+    },
+  },
+  {
+    id:"wells_dvt", name:"Wells DVT", icon:"🦵",
+    cc:["Leg Pain/Swelling","Shortness of Breath"],
+    desc:"Pre-test probability for deep vein thrombosis.",
+    cite:"Wells et al., 1997",
+    criteria:[
+      { id:"cancer",     label:"Active cancer (treatment or palliation within 6mo)", type:"bool", points:1 },
+      { id:"paralysis",  label:"Paralysis, paresis, or recent plaster immobilization", type:"bool", points:1 },
+      { id:"bedridden",  label:"Recently bedridden >3d or major surgery <12 weeks",  type:"bool", points:1 },
+      { id:"tenderness", label:"Localized tenderness along deep venous system",       type:"bool", points:1 },
+      { id:"leg_swollen",label:"Entire leg swollen",                                  type:"bool", points:1 },
+      { id:"calf",       label:"Calf swelling >3cm compared with other leg",          type:"bool", points:1 },
+      { id:"pitting",    label:"Pitting edema (greater in symptomatic leg)",          type:"bool", points:1 },
+      { id:"collateral", label:"Collateral superficial veins (nonvaricose)",          type:"bool", points:1 },
+      { id:"prev_dvt",   label:"Previously documented DVT",                          type:"bool", points:1 },
+      { id:"alt_dx",     label:"Alternative diagnosis at least as likely as DVT",    type:"bool", points:-2 },
+    ],
+    interpret(score) {
+      if (score <= 1) return { label:"Low Probability", color:T.green,  action:"DVT unlikely. D-dimer if negative rules out DVT; no imaging needed if PERC met" };
+      if (score <= 2) return { label:"Moderate Probability", color:T.gold, action:"DVT possible. Obtain compression ultrasound" };
+      return           { label:"High Probability", color:T.red,   action:"DVT likely. Compression ultrasound; consider anticoagulation before imaging" };
+    },
+  },
+  {
+    id:"wells_pe", name:"Wells PE", icon:"🫁",
+    cc:["Shortness of Breath","Chest Pain","Leg Pain/Swelling","Palpitations","Syncope"],
+    desc:"Pre-test clinical probability for pulmonary embolism.",
+    cite:"Wells et al., 2000",
+    criteria:[
+      { id:"dvt_sx",   label:"Clinical signs/symptoms of DVT",                          type:"bool", points:3   },
+      { id:"alt_less", label:"PE is #1 diagnosis OR equally likely",                    type:"bool", points:3   },
+      { id:"hr100",    label:"Heart rate > 100 bpm",                                    type:"bool", points:1.5 },
+      { id:"immob",    label:"Immobilization ≥3d or surgery in previous 4 weeks",       type:"bool", points:1.5 },
+      { id:"prev_pe",  label:"Previous DVT or PE",                                      type:"bool", points:1.5 },
+      { id:"hemopt",   label:"Hemoptysis",                                              type:"bool", points:1   },
+      { id:"malig",    label:"Malignancy (treated within 6mo or palliative)",           type:"bool", points:1   },
+    ],
+    interpret(score) {
+      if (score < 2)  return { label:"Low Probability", color:T.green,  action:"~2% PE prevalence. If PERC criteria all absent → rule out PE. Otherwise D-dimer" };
+      if (score <= 6) return { label:"Moderate Probability", color:T.gold, action:"~17% PE prevalence. D-dimer if ≤4; if elevated → CT-PA. Consider PERC if borderline" };
+      return           { label:"High Probability", color:T.red,   action:"~65% PE prevalence. Proceed directly to CT-PA. Consider anticoagulation before imaging" };
+    },
+  },
+  {
+    id:"perc", name:"PERC Rule", icon:"🫀",
+    cc:["Shortness of Breath","Chest Pain","Palpitations"],
+    desc:"Rules out PE if ALL 8 criteria are absent AND pre-test probability is low (Wells <2).",
+    cite:"Kline et al., 2004",
+    criteria:[
+      { id:"age50",    label:"Age ≥ 50",                          type:"bool", points:1 },
+      { id:"hr100",    label:"Heart rate ≥ 100 bpm",              type:"bool", points:1 },
+      { id:"spo2",     label:"SpO₂ < 95% on room air",            type:"bool", points:1 },
+      { id:"leg_sx",   label:"Unilateral leg swelling",           type:"bool", points:1 },
+      { id:"hemopt",   label:"Hemoptysis",                        type:"bool", points:1 },
+      { id:"surgery",  label:"Recent surgery or trauma within 4 weeks", type:"bool", points:1 },
+      { id:"prev_pe",  label:"Prior PE or DVT",                   type:"bool", points:1 },
+      { id:"hormone",  label:"Exogenous estrogen use",            type:"bool", points:1 },
+    ],
+    interpret(score) {
+      if (score === 0) return { label:"PERC Negative", color:T.green,  action:"PE ruled out — no further workup if low pre-test probability (Wells <2). ~0.3% miss rate" };
+      return           { label:"PERC Positive", color:T.red,   action:"PERC not met — obtain D-dimer and apply Wells criteria. Further workup required" };
+    },
+  },
+  {
+    id:"nexus", name:"NEXUS C-Spine", icon:"🦴",
+    cc:["Trauma — Head","Weakness/Numbness","Back Pain"],
+    desc:"Cervical spine imaging decision rule. All 5 criteria must be ABSENT to clear.",
+    cite:"Hoffman et al., 2000",
+    criteria:[
+      { id:"midline",    label:"Midline cervical tenderness",                          type:"bool", points:1 },
+      { id:"focal_neuro",label:"Focal neurological deficit",                           type:"bool", points:1 },
+      { id:"altered",    label:"Altered level of alertness",                           type:"bool", points:1 },
+      { id:"intox",      label:"Evidence of intoxication",                             type:"bool", points:1 },
+      { id:"distract",   label:"Presence of a painful, distracting injury",           type:"bool", points:1 },
+    ],
+    interpret(score) {
+      if (score === 0) return { label:"Low Risk — C-Spine Cleared", color:T.green,  action:"No imaging required. 99.6% sensitivity for clinically significant injury" };
+      return           { label:"Imaging Required", color:T.red,   action:"≥1 criterion present — obtain CT C-spine. Consider MRI if neurological deficit" };
+    },
+  },
+  {
+    id:"ottawa_ankle", name:"Ottawa Ankle Rule", icon:"🦶",
+    cc:["Ankle/Foot Injury"],
+    desc:"Indicates need for ankle/foot X-ray after acute ankle injury.",
+    cite:"Stiell et al., 1992",
+    criteria:[
+      { id:"lat_mal",  label:"Bone tenderness at posterior edge or tip of lateral malleolus",  type:"bool", points:1 },
+      { id:"med_mal",  label:"Bone tenderness at posterior edge or tip of medial malleolus",   type:"bool", points:1 },
+      { id:"wt_bear_a",label:"Unable to bear weight (4 steps) immediately and in ED",          type:"bool", points:1 },
+      { id:"5th_met",  label:"Bone tenderness at base of 5th metatarsal (foot zone)",          type:"bool", points:1 },
+      { id:"navic",    label:"Bone tenderness at navicular bone (foot zone)",                   type:"bool", points:1 },
+    ],
+    interpret(score) {
+      const ankle = score >= 1;
+      if (!ankle) return { label:"No X-ray Indicated", color:T.green, action:"Ottawa negative — X-ray not required. 97-99% sensitive for fracture" };
+      return             { label:"X-ray Indicated",    color:T.gold,  action:"One or more criteria met — obtain ankle ± foot X-ray series" };
+    },
+  },
+  {
+    id:"ottawa_knee", name:"Ottawa Knee Rule", icon:"🦵",
+    cc:["Knee Injury"],
+    desc:"Indicates need for knee X-ray after acute knee injury.",
+    cite:"Stiell et al., 1995",
+    criteria:[
+      { id:"age55",   label:"Age ≥ 55",                                 type:"bool", points:1 },
+      { id:"pat",     label:"Isolated tenderness of the patella",        type:"bool", points:1 },
+      { id:"fibula",  label:"Tenderness at head of fibula",              type:"bool", points:1 },
+      { id:"flex90",  label:"Inability to flex knee to 90°",             type:"bool", points:1 },
+      { id:"wt_bear", label:"Inability to bear weight (4 steps) in ED", type:"bool", points:1 },
+    ],
+    interpret(score) {
+      if (score === 0) return { label:"No X-ray Indicated", color:T.green, action:"Ottawa Knee negative — X-ray not required. 97% sensitivity for fracture" };
+      return           { label:"X-ray Indicated",    color:T.gold,  action:"≥1 criterion present — obtain knee X-ray (AP and lateral)" };
+    },
+  },
+  {
+    id:"pecarn", name:"PECARN Head CT", icon:"👶",
+    cc:["Trauma — Head","Altered Mental Status"],
+    desc:"Pediatric head CT decision rule. Apply to children after head trauma.",
+    cite:"Kuppermann et al., 2009",
+    criteria:[
+      { id:"age_lt2",    label:"Patient age < 2 years",                              type:"bool", points:0 },
+      { id:"gcs_lt15",   label:"GCS < 15",                                           type:"bool", points:2 },
+      { id:"palpable_fx",label:"Palpable skull fracture",                            type:"bool", points:2 },
+      { id:"ams",        label:"Altered mental status (agitation, somnolence, slow response)", type:"bool", points:2 },
+      { id:"hematoma",   label:"Occipital/parietal/temporal scalp hematoma (if <2yo)", type:"bool", points:1 },
+      { id:"loc_5s",     label:"LOC ≥ 5 seconds",                                   type:"bool", points:1 },
+      { id:"mech",       label:"Severe mechanism (MVA, fall >1.5m/<2yo or >3ft/>2yo, struck by high-force object)", type:"bool", points:1 },
+      { id:"acting",     label:"Not acting normally per parent (if <2yo)",           type:"bool", points:1 },
+      { id:"vomiting",   label:"Vomiting (if ≥2yo)",                               type:"bool", points:1 },
+      { id:"headache",   label:"Severe headache (if ≥2yo)",                         type:"bool", points:1 },
+    ],
+    interpret(score) {
+      const highItems = ["gcs_lt15","palpable_fx","ams"];
+      if (score >= 2) return { label:"High Risk — CT Indicated",    color:T.red,    action:"High-risk features present. CT head indicated. Risk of ciTBI >4%" };
+      if (score === 1) return { label:"Intermediate — Observe/CT", color:T.gold,   action:"Intermediate risk. Shared decision: observation vs CT. ciTBI risk ~0.9–1.5%" };
+      return                  { label:"Low Risk — CT Not Indicated", color:T.green, action:"Very low risk (<0.02–0.05% ciTBI). CT not routinely indicated. Observe and discharge" };
+    },
+  },
+  {
+    id:"canadian_head", name:"Canadian CT Head", icon:"🧠",
+    cc:["Trauma — Head","Headache","Altered Mental Status"],
+    desc:"Indicates CT for adults with minor head injury (LOC, amnesia, or confusion). GCS 13–15.",
+    cite:"Stiell et al., 2001",
+    criteria:[
+      { id:"gcs_2h",    label:"GCS score < 15 at 2 hours after injury",             type:"bool", points:2 },
+      { id:"open_fx",   label:"Suspected open or depressed skull fracture",          type:"bool", points:2 },
+      { id:"basal_fx",  label:"Any sign of basal skull fracture (raccoon eyes, hemotympanum, CSF otorrhea/rhinorrhea, Battle's sign)", type:"bool", points:2 },
+      { id:"vomiting",  label:"Vomiting ≥ 2 episodes",                              type:"bool", points:2 },
+      { id:"age65",     label:"Age ≥ 65",                                           type:"bool", points:2 },
+      { id:"amnesia30", label:"Amnesia before impact ≥ 30 minutes",                type:"bool", points:1 },
+      { id:"dangerous", label:"Dangerous mechanism (pedestrian, ejection, fall >3 feet)", type:"bool", points:1 },
+    ],
+    interpret(score) {
+      if (score >= 2) return { label:"High Risk — CT Required",    color:T.red,   action:"High-risk features for neurological intervention or brain injury. CT head indicated" };
+      if (score === 1) return { label:"Medium Risk — CT Required", color:T.gold,  action:"Medium-risk features. CT head recommended to detect brain injury (may not need intervention)" };
+      return           { label:"Low Risk — CT Not Required",color:T.green, action:"No high or medium risk criteria. CT not required. 100% sensitive for neurosurgical intervention" };
+    },
+  },
 ];
 
-// ── HELPERS ──────────────────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────────────
+function calcScore(rule, values) {
+  return rule.criteria.reduce((sum, c) => {
+    if (c.type === "bool")   return sum + (values[c.id] ? c.points : 0);
+    if (c.type === "choice") {
+      const ch = c.choices[values[c.id] ?? 0];
+      return sum + (ch ? ch.p : 0);
+    }
+    return sum;
+  }, 0);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  MODULE-SCOPE PRIMITIVES
+// ══════════════════════════════════════════════════════════════════════
+
 function AmbientBg() {
   return (
     <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0 }}>
       {[
-        { l:"8%",  t:"18%", r:300, c:"rgba(59,158,255,0.055)"  },
-        { l:"88%", t:"10%", r:260, c:"rgba(0,229,192,0.045)"   },
-        { l:"80%", t:"78%", r:340, c:"rgba(155,109,255,0.038)" },
-        { l:"18%", t:"80%", r:220, c:"rgba(245,200,66,0.038)"  },
-      ].map((o, i) => (
+        { l:"10%", t:"15%", r:300, c:"rgba(0,229,192,0.05)"   },
+        { l:"88%", t:"10%", r:260, c:"rgba(59,158,255,0.05)"  },
+        { l:"75%", t:"78%", r:340, c:"rgba(155,109,255,0.04)" },
+        { l:"20%", t:"78%", r:220, c:"rgba(245,200,66,0.04)"  },
+      ].map((o,i) => (
         <div key={i} style={{
           position:"absolute", left:o.l, top:o.t,
           width:o.r*2, height:o.r*2, borderRadius:"50%",
           background:`radial-gradient(circle,${o.c} 0%,transparent 68%)`,
           transform:"translate(-50%,-50%)",
-          animation:`${PREFIX}orb${i%3} ${8+i*1.4}s ease-in-out infinite`,
+          animation:`${PREFIX}orb${i%3} ${8+i*1.3}s ease-in-out infinite`,
         }}/>
       ))}
     </div>
   );
 }
 
-function Chip({ label, active, color, onClick }) {
+function HubBadge({ onBack }) {
   return (
-    <button onClick={onClick} style={{
-      fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, letterSpacing:1,
-      padding:"4px 10px", borderRadius:20, cursor:"pointer", transition:"all .15s",
-      textTransform:"uppercase",
-      border:`1px solid ${active ? color+"66" : color+"25"}`,
-      background: active ? `${color}16` : `${color}06`,
-      color: active ? color : T.txt3,
-    }}>{label}</button>
+    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:9 }}>
+      <div style={{
+        backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)",
+        background:"rgba(5,15,30,0.9)", border:"1px solid rgba(42,79,122,0.6)",
+        borderRadius:10, padding:"5px 12px", display:"flex", alignItems:"center", gap:8,
+      }}>
+        <span style={{ fontFamily:"JetBrains Mono", fontSize:10, color:T.gold, letterSpacing:3 }}>NOTRYA</span>
+        <span style={{ color:T.txt4, fontFamily:"JetBrains Mono", fontSize:10 }}>/</span>
+        <span style={{ fontFamily:"JetBrains Mono", fontSize:10, color:T.txt3, letterSpacing:2 }}>DDX ENGINE</span>
+      </div>
+      <div style={{ height:1, flex:1, background:"linear-gradient(90deg,rgba(0,229,192,0.5),transparent)" }}/>
+      {onBack && (
+        <button onClick={onBack} style={{
+          fontFamily:"DM Sans", fontSize:11, fontWeight:600, padding:"5px 14px",
+          borderRadius:8, cursor:"pointer", border:"1px solid rgba(42,79,122,0.5)",
+          background:"rgba(14,37,68,0.6)", color:T.txt3,
+        }}>← Hub</button>
+      )}
+    </div>
   );
 }
 
-function DiagnosisCard({ dx, index, onNote, onBookmark, bookmarked }) {
-  const [open, setOpen] = useState(false);
-  const cfg = LIKELIHOOD.find(l => l.key === dx.likelihood) || LIKELIHOOD[1];
+function Toast({ msg }) {
+  return (
+    <div style={{
+      position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)",
+      background:"rgba(8,22,40,0.96)", border:"1px solid rgba(0,229,192,0.4)",
+      borderRadius:10, padding:"10px 20px", fontFamily:"DM Sans", fontWeight:600,
+      fontSize:13, color:T.teal, zIndex:99999, pointerEvents:"none",
+      animation:`${PREFIX}fade .2s ease both`,
+    }}>{msg}</div>
+  );
+}
 
-  const urgencyBar = dx.urgency >= 8
-    ? T.red
-    : dx.urgency >= 5
-    ? T.gold
-    : T.green;
+// ── DDx Result Card ───────────────────────────────────────────────────
+function DxCard({ dx, index, suggestedRules, onRule }) {
+  const [open, setOpen] = useState(index === 0);
+  const t = TIER[dx.tier] || TIER.moderate;
+  const linked = (dx.rules || []).filter(r => RULES.find(rl => rl.name === r || rl.id === r));
 
   return (
     <div className={`${PREFIX}-fade`} style={{
-      ...glass,
-      borderLeft:`3px solid ${cfg.color}`,
-      overflow:"hidden",
-      animationDelay:`${index * 0.06}s`,
-      background: dx.likelihood === "must_rule_out"
+      ...glass, overflow:"hidden",
+      borderLeft:`3px solid ${t.color}`,
+      background: dx.tier === "must_rule_out"
         ? `linear-gradient(135deg,${T.red}0b,rgba(8,22,40,0.82))`
-        : "rgba(8,22,40,0.82)",
+        : "rgba(8,22,40,0.78)",
+      animationDelay:`${index * 0.07}s`,
     }}>
-      {/* Card Header */}
-      <div
-        onClick={() => setOpen(o => !o)}
-        style={{ padding:"12px 14px", cursor:"pointer", display:"flex", alignItems:"flex-start", gap:10 }}
-      >
-        {/* Rank badge */}
-        <div style={{
-          flexShrink:0, width:28, height:28, borderRadius:"50%",
-          background:`${cfg.color}18`, border:`1.5px solid ${cfg.color}40`,
-          display:"flex", alignItems:"center", justifyContent:"center",
-          fontFamily:"JetBrains Mono", fontSize:11, fontWeight:700, color:cfg.color,
-        }}>{index + 1}</div>
-
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:7, flexWrap:"wrap", marginBottom:4 }}>
-            <span style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:14, color:T.txt }}>{dx.diagnosis}</span>
-            {dx.icd10 && (
-              <span style={{
-                fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4,
-                background:"rgba(14,37,68,0.7)", border:"1px solid rgba(42,79,122,0.35)",
-                padding:"1px 6px", borderRadius:4,
-              }}>{dx.icd10}</span>
-            )}
-            <span style={{
-              fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700,
-              padding:"1px 7px", borderRadius:20,
-              background:`${cfg.color}14`, border:`1px solid ${cfg.color}35`,
-              color:cfg.color, letterSpacing:.5,
-            }}>{cfg.icon} {cfg.label.toUpperCase()}</span>
-          </div>
-          <div style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt3, lineHeight:1.5 }}>
-            {dx.reasoning}
-          </div>
-          {/* Urgency bar */}
-          {dx.urgency && (
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6 }}>
-              <span style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4, width:40 }}>URGENCY</span>
-              <div style={{ flex:1, height:4, background:"rgba(42,79,122,0.3)", borderRadius:2, overflow:"hidden" }}>
-                <div style={{
-                  height:"100%", width:`${dx.urgency * 10}%`,
-                  background:urgencyBar, borderRadius:2,
-                  transition:"width 0.6s ease",
-                }}/>
-              </div>
-              <span style={{ fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, color:urgencyBar }}>{dx.urgency}/10</span>
+      <div onClick={() => setOpen(p => !p)} style={{
+        padding:"11px 13px", cursor:"pointer",
+        display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10,
+      }}>
+        <div style={{ display:"flex", alignItems:"flex-start", gap:10, flex:1, minWidth:0 }}>
+          <div style={{
+            fontFamily:"JetBrains Mono", fontWeight:700, fontSize:14,
+            color:T.txt4, flexShrink:0, minWidth:18, marginTop:1,
+          }}>#{index+1}</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:14, color:T.txt, marginBottom:3 }}>
+              {dx.diagnosis}
             </div>
-          )}
+            <div style={{ display:"flex", gap:5, flexWrap:"wrap", alignItems:"center" }}>
+              <span style={{
+                fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700,
+                padding:"2px 7px", borderRadius:20,
+                background:`${t.color}18`, border:`1px solid ${t.color}40`, color:t.color,
+              }}>{t.icon} {t.label.toUpperCase()}</span>
+              {linked.map(r => (
+                <button key={r} onClick={e => { e.stopPropagation(); onRule(r); }} style={{
+                  fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700,
+                  padding:"2px 7px", borderRadius:20, cursor:"pointer",
+                  background:`${T.blue}12`, border:`1px solid ${T.blue}30`, color:T.blue,
+                }}>📐 {r}</button>
+              ))}
+            </div>
+          </div>
         </div>
-
-        <div style={{ display:"flex", gap:5, flexShrink:0 }}>
-          <button
-            onClick={e => { e.stopPropagation(); onBookmark(); }}
-            style={{
-              width:26, height:26, borderRadius:6, cursor:"pointer",
-              border:`1px solid ${bookmarked ? T.gold+"44" : "rgba(42,79,122,0.35)"}`,
-              background: bookmarked ? `${T.gold}14` : "transparent",
-              color: bookmarked ? T.gold : T.txt4, fontSize:12,
-              display:"flex", alignItems:"center", justifyContent:"center",
-            }}
-          >★</button>
-          <span style={{ color:T.txt4, fontSize:11, lineHeight:"26px" }}>{open ? "▲" : "▼"}</span>
-        </div>
+        <span style={{ color:T.txt4, fontSize:10, flexShrink:0, marginTop:2 }}>{open ? "▲" : "▼"}</span>
       </div>
 
-      {/* Expanded */}
       {open && (
-        <div className={`${PREFIX}-fade`} style={{ borderTop:"1px solid rgba(42,79,122,0.28)", padding:"12px 14px" }}>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
-            {dx.key_features?.length > 0 && (
-              <DetailBlock label="Supporting Features" color={T.teal} items={dx.key_features} />
-            )}
-            {dx.against?.length > 0 && (
-              <DetailBlock label="Against This Dx" color={T.coral} items={dx.against} />
-            )}
-          </div>
-          {dx.workup?.length > 0 && (
-            <div style={{ marginBottom:8 }}>
-              <div style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.blue, letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>
-                Recommended Workup
+        <div className={`${PREFIX}-fade`} style={{ borderTop:"1px solid rgba(42,79,122,0.22)", padding:"10px 13px 12px" }}>
+          {dx.rationale && (
+            <div style={{ marginBottom:9 }}>
+              <div style={{
+                fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.txt4,
+                letterSpacing:1.5, textTransform:"uppercase", marginBottom:5,
+              }}>Rationale</div>
+              <div style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt2, lineHeight:1.65 }}>
+                {dx.rationale}
               </div>
+            </div>
+          )}
+          {dx.keyNext && dx.keyNext.length > 0 && (
+            <div style={{ marginBottom:9 }}>
+              <div style={{
+                fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.teal,
+                letterSpacing:1.5, textTransform:"uppercase", marginBottom:5,
+              }}>Next Steps</div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                {dx.workup.map((w, i) => (
+                {dx.keyNext.map((step, i) => (
                   <span key={i} style={{
-                    fontFamily:"DM Sans", fontSize:11, padding:"3px 9px", borderRadius:20,
-                    background:`${T.blue}0e`, border:`1px solid ${T.blue}2a`, color:T.txt2,
-                  }}>{w}</span>
+                    fontFamily:"DM Sans", fontWeight:500, fontSize:11,
+                    padding:"3px 9px", borderRadius:20,
+                    background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.18)",
+                    color:T.teal,
+                  }}>▸ {step}</span>
                 ))}
               </div>
             </div>
           )}
-          {dx.management && (
-            <div style={{
-              ...glass, padding:"8px 12px", borderLeft:`3px solid ${T.purple}`,
-              background:`${T.purple}06`, borderRadius:10,
-            }}>
-              <div style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.purple, letterSpacing:1.5, textTransform:"uppercase", marginBottom:3 }}>Initial Management</div>
-              <div style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt2, lineHeight:1.55 }}>{dx.management}</div>
-            </div>
-          )}
-          {/* Notes input */}
-          <div style={{ marginTop:8 }}>
-            <button onClick={() => onNote(dx.diagnosis)} style={{
-              fontFamily:"DM Sans", fontSize:10, fontWeight:600,
-              padding:"4px 10px", borderRadius:7, cursor:"pointer",
-              border:`1px solid ${T.teal}28`, background:`${T.teal}08`, color:T.teal,
-            }}>+ Add Note</button>
-            {dx.note && (
-              <div style={{
-                marginTop:6, fontFamily:"DM Sans", fontSize:11,
-                color:T.txt3, background:"rgba(14,37,68,0.5)",
-                padding:"6px 10px", borderRadius:8, borderLeft:`2px solid ${T.teal}`,
-              }}>{dx.note}</div>
-            )}
-          </div>
         </div>
       )}
     </div>
   );
 }
 
-function DetailBlock({ label, color, items }) {
+// ── Rule Calculator ───────────────────────────────────────────────────
+function RuleCalc({ rule }) {
+  const [values, setValues] = useState({});
+  const score  = useMemo(() => calcScore(rule, values), [rule, values]);
+  const result = useMemo(() => rule.interpret(score), [rule, score, values]);
+  const maxPossible = rule.criteria.reduce((s, c) => {
+    if (c.type === "bool")   return s + Math.max(0, c.points);
+    if (c.type === "choice") return s + Math.max(...c.choices.map(ch => ch.p));
+    return s;
+  }, 0);
+
+  function setVal(id, val) { setValues(prev => ({ ...prev, [id]: val })); }
+
   return (
-    <div>
-      <div style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color, letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>{label}</div>
-      <ul style={{ margin:0, padding:0, listStyle:"none" }}>
-        {items.map((item, i) => (
-          <li key={i} style={{ display:"flex", alignItems:"flex-start", gap:5, marginBottom:3 }}>
-            <span style={{ color, fontSize:8, marginTop:3, flexShrink:0 }}>●</span>
-            <span style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt2, lineHeight:1.45 }}>{item}</span>
-          </li>
+    <div className={`${PREFIX}-fade`} style={{ display:"flex", flexDirection:"column", gap:10 }}>
+      {/* Header */}
+      <div style={{
+        ...glass, padding:"12px 14px",
+        borderLeft:`3px solid ${T.blue}`, background:`${T.blue}07`,
+        display:"flex", justifyContent:"space-between", alignItems:"flex-start",
+      }}>
+        <div>
+          <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:15, color:T.txt, marginBottom:2 }}>
+            {rule.icon} {rule.name}
+          </div>
+          <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt3 }}>{rule.desc}</div>
+        </div>
+        <div style={{ textAlign:"right", flexShrink:0, marginLeft:12 }}>
+          <div style={{
+            fontFamily:"JetBrains Mono", fontWeight:700,
+            fontSize:"clamp(26px,3vw,36px)", color:result.color, lineHeight:1,
+          }}>{score}</div>
+          <div style={{ fontFamily:"DM Sans", fontSize:9, color:T.txt4 }}>/ {maxPossible}</div>
+        </div>
+      </div>
+
+      {/* Criteria */}
+      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+        {rule.criteria.map(c => (
+          <div key={c.id} style={{
+            ...glass, padding:"9px 12px", borderRadius:10,
+            background: values[c.id] ? `${T.teal}08` : "rgba(8,22,40,0.6)",
+            border:`1px solid ${values[c.id] ? T.teal+"28" : "rgba(42,79,122,0.3)"}`,
+          }}>
+            {c.type === "bool" ? (
+              <div
+                onClick={() => setVal(c.id, !values[c.id])}
+                style={{ display:"flex", alignItems:"flex-start", gap:10, cursor:"pointer" }}
+              >
+                <div style={{
+                  width:18, height:18, borderRadius:5, flexShrink:0, marginTop:1,
+                  border:`2px solid ${values[c.id] ? T.teal : "rgba(42,79,122,0.5)"}`,
+                  background: values[c.id] ? T.teal : "transparent",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  transition:"all .12s",
+                }}>
+                  {values[c.id] && <span style={{ fontSize:10, color:"#050f1e", fontWeight:700 }}>✓</span>}
+                </div>
+                <div style={{ flex:1 }}>
+                  <span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt, fontWeight:values[c.id] ? 600 : 400 }}>
+                    {c.label}
+                  </span>
+                </div>
+                <span style={{
+                  fontFamily:"JetBrains Mono", fontSize:10, fontWeight:700,
+                  color: c.points < 0 ? T.red : T.teal, flexShrink:0,
+                }}>
+                  {c.points > 0 ? `+${c.points}` : c.points}
+                </span>
+              </div>
+            ) : (
+              <div>
+                <div style={{
+                  fontFamily:"DM Sans", fontSize:12, color:T.txt, marginBottom:7, fontWeight:500,
+                }}>{c.label}</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {c.choices.map((ch, i) => (
+                    <div
+                      key={i}
+                      onClick={() => setVal(c.id, i)}
+                      style={{
+                        display:"flex", alignItems:"center", justifyContent:"space-between",
+                        padding:"6px 10px", borderRadius:8, cursor:"pointer",
+                        border:`1px solid ${(values[c.id]??0)===i ? T.teal+"45" : "rgba(42,79,122,0.25)"}`,
+                        background: (values[c.id]??0)===i ? `${T.teal}12` : "rgba(14,37,68,0.3)",
+                        transition:"all .1s",
+                      }}
+                    >
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <div style={{
+                          width:12, height:12, borderRadius:"50%", flexShrink:0,
+                          border:`2px solid ${(values[c.id]??0)===i ? T.teal : "rgba(42,79,122,0.5)"}`,
+                          background: (values[c.id]??0)===i ? T.teal : "transparent",
+                          transition:"all .1s",
+                        }}/>
+                        <span style={{
+                          fontFamily:"DM Sans", fontSize:11,
+                          color:(values[c.id]??0)===i ? T.txt : T.txt3,
+                          fontWeight:(values[c.id]??0)===i ? 600 : 400,
+                        }}>{ch.l}</span>
+                      </div>
+                      <span style={{
+                        fontFamily:"JetBrains Mono", fontSize:10, fontWeight:700,
+                        color:(values[c.id]??0)===i ? T.teal : T.txt4,
+                      }}>+{ch.p}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         ))}
-      </ul>
+      </div>
+
+      {/* Result banner */}
+      <div style={{
+        ...glass, padding:"12px 14px",
+        borderLeft:`3px solid ${result.color}`,
+        background:`${result.color}0d`,
+        display:"flex", alignItems:"center", justifyContent:"space-between", gap:12,
+      }}>
+        <div style={{ flex:1 }}>
+          <div style={{
+            fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700,
+            color:result.color, letterSpacing:1.5, textTransform:"uppercase", marginBottom:4,
+          }}>{result.label}</div>
+          <div style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt2, lineHeight:1.55 }}>
+            {result.action}
+          </div>
+        </div>
+        <div style={{
+          fontFamily:"JetBrains Mono", fontWeight:700, fontSize:28,
+          color:result.color, flexShrink:0, lineHeight:1,
+        }}>{score}</div>
+      </div>
+
+      <div style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4, textAlign:"right" }}>
+        Ref: {rule.cite}
+      </div>
     </div>
   );
 }
@@ -262,147 +568,120 @@ function DetailBlock({ label, color, items }) {
 // ══════════════════════════════════════════════════════════════════════
 //  MAIN EXPORT
 // ══════════════════════════════════════════════════════════════════════
+
 export default function DDxEngine({ onBack }) {
-  const [presentation, setPresentation] = useState("");
-  const [vitals,        setVitals]       = useState("");
-  const [pmh,           setPmh]          = useState("");
-  const [labs,          setLabs]         = useState("");
-  const [results,       setResults]      = useState(null);
-  const [loading,       setLoading]      = useState(false);
-  const [activeFilter,  setActiveFilter] = useState("all");
-  const [bookmarks,     setBookmarks]    = useState(new Set());
-  const [noteModal,     setNoteModal]    = useState(null);
-  const [noteText,      setNoteText]     = useState("");
-  const [toast,         setToast]        = useState("");
-  const textareaRef = useRef(null);
+  // — inputs
+  const [cc,       setCc]       = useState("");
+  const [age,      setAge]      = useState("");
+  const [sex,      setSex]      = useState("M");
+  const [vitals,   setVitals]   = useState({ hr:"", sbp:"", dbp:"", rr:"", spo2:"", temp:"" });
+  const [context,  setContext]  = useState("");
+  // — state
+  const [tab,      setTab]      = useState("ddx");
+  const [busy,     setBusy]     = useState(false);
+  const [result,   setResult]   = useState(null);
+  const [error,    setError]    = useState("");
+  const [activeRule,setActiveRule] = useState(null);
+  const [toast,    setToast]    = useState("");
 
-  function showToast(msg) { setToast(msg); setTimeout(() => setToast(""), 2200); }
+  const showToast = useCallback((msg) => { setToast(msg); setTimeout(()=>setToast(""),2200); }, []);
 
-  function toggleBookmark(dx) {
-    setBookmarks(prev => {
-      const next = new Set(prev);
-      if (next.has(dx)) next.delete(dx); else next.add(dx);
-      return next;
-    });
+  function setVital(k, v) { setVitals(prev => ({ ...prev, [k]:v })); }
+
+  // ── Suggested rules for current CC ───────────────────────────────
+  const suggestedRules = useMemo(() => {
+    if (!cc) return [];
+    return RULES.filter(r => r.cc.some(c => cc.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(cc.toLowerCase())));
+  }, [cc]);
+
+  // ── Navigate to a rule from a DDx card ───────────────────────────
+  function handleRuleLink(ruleName) {
+    const r = RULES.find(rl => rl.name === ruleName || rl.id === ruleName);
+    if (r) { setActiveRule(r.id); setTab("rules"); }
   }
 
-  function handleNote(dxName) {
-    setNoteModal(dxName);
-    const existing = results?.diagnoses.find(d => d.diagnosis === dxName)?.note || "";
-    setNoteText(existing);
-  }
-
-  function saveNote() {
-    if (!noteModal) return;
-    setResults(prev => ({
-      ...prev,
-      diagnoses: prev.diagnoses.map(d =>
-        d.diagnosis === noteModal ? { ...d, note: noteText } : d
-      ),
-    }));
-    setNoteModal(null);
-    setNoteText("");
-    showToast("Note saved");
-  }
-
-  const generate = useCallback(async () => {
-    if (!presentation.trim()) return;
-    setLoading(true);
-    setResults(null);
+  // ── Generate DDx ─────────────────────────────────────────────────
+  async function handleGenerate() {
+    if (!cc.trim()) return;
+    setBusy(true);
+    setResult(null);
+    setError("");
     try {
-      const prompt = `You are an expert emergency medicine attending physician. Generate a comprehensive differential diagnosis.
+      const vStr = Object.entries(vitals)
+        .filter(([,v]) => v)
+        .map(([k,v]) => `${k.toUpperCase()}: ${v}`)
+        .join(", ");
 
-Clinical Presentation: ${presentation}
-${vitals ? `Vital Signs: ${vitals}` : ""}
-${pmh ? `Past Medical History / Medications / Allergies: ${pmh}` : ""}
-${labs ? `Available Labs / Imaging / ECG: ${labs}` : ""}
+      const ruleNames = RULES.map(r => r.name).join(", ");
 
-Return a JSON object with this EXACT schema:
+      const prompt = `You are an expert emergency medicine physician. Generate a structured differential diagnosis.
+
+PATIENT:
+- Chief Complaint: ${cc}
+- Age: ${age || "unknown"}, Sex: ${sex}
+- Vitals: ${vStr || "not provided"}
+- Clinical context: ${context || "none provided"}
+
+INSTRUCTIONS:
+Return ONLY valid JSON (no markdown, no backticks, no preamble). Schema:
 {
-  "summary": "2-sentence clinical synthesis",
-  "red_flags": ["list of critical red flags present in this case"],
-  "diagnoses": [
+  "differentials": [
     {
-      "diagnosis": "Diagnosis name",
-      "icd10": "ICD-10 code",
-      "likelihood": "must_rule_out" | "likely" | "consider" | "less_likely",
-      "urgency": 8,
-      "reasoning": "2-3 sentence explanation why this fits",
-      "key_features": ["supporting feature 1", "feature 2"],
-      "against": ["feature arguing against", "another"],
-      "workup": ["Test 1", "Test 2", "Test 3"],
-      "management": "Brief initial management steps"
+      "rank": 1,
+      "diagnosis": "string",
+      "tier": "must_rule_out|high|moderate|low",
+      "rationale": "2-3 sentences explaining why this fits the presentation",
+      "keyNext": ["workup step 1", "workup step 2", "workup step 3"],
+      "rules": ["rule name if applicable from: ${ruleNames}"]
     }
   ],
-  "cant_miss": "The single most dangerous diagnosis that must be excluded first and why",
-  "next_step": "The single most important next action right now"
+  "redFlags": ["immediate concern 1", "immediate concern 2"],
+  "suggestedRules": ["rule id from: ${RULES.map(r=>r.id).join(", ")}"],
+  "insight": "One key clinical pearl for this presentation"
 }
 
-Rules:
-- Include 6–10 diagnoses spanning must_rule_out → less_likely
-- Always include at least 1 must_rule_out life-threatening diagnosis
-- Urgency 1–10 (10 = immediate life threat)
-- Be specific and clinically accurate
-- Sort diagnoses: must_rule_out first, then by probability`;
+TIER DEFINITIONS:
+- must_rule_out: Life-threatening diagnoses that must be excluded even if low probability
+- high: Most likely given the clinical picture
+- moderate: Reasonable possibility warranting workup
+- low: On the differential but less supported by the presentation
 
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            summary:    { type: "string" },
-            red_flags:  { type: "array", items: { type: "string" } },
-            diagnoses:  { type: "array" },
-            cant_miss:  { type: "string" },
-            next_step:  { type: "string" },
-          },
-        },
-      });
-      setResults(typeof res === "string" ? JSON.parse(res) : res);
-    } catch (e) {
-      showToast("Generation failed — check your inputs and try again");
+Include 6-10 differentials. Be specific and clinically accurate. Always include life-threatening diagnoses in must_rule_out tier even if less likely.`;
+
+      const raw = await InvokeLLM({ prompt, add_context_from_previous_calls: false });
+      const text = typeof raw === "string" ? raw : raw?.content || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      setResult(parsed);
+      if (parsed.suggestedRules?.length) {
+        const first = RULES.find(r => parsed.suggestedRules.includes(r.id));
+        if (first) setActiveRule(first.id);
+      }
+    } catch {
+      setError("Could not generate DDx. Check your inputs and try again.");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
-  }, [presentation, vitals, pmh, labs]);
-
-  const filtered = results?.diagnoses?.filter(d =>
-    activeFilter === "all" ||
-    (activeFilter === "bookmarked" && bookmarks.has(d.diagnosis)) ||
-    d.likelihood === activeFilter
-  ) || [];
-
-  const mustRuleOut = results?.diagnoses?.filter(d => d.likelihood === "must_rule_out") || [];
-
-  async function copyReport() {
-    if (!results) return;
-    const lines = [
-      `DIFFERENTIAL DIAGNOSIS REPORT`,
-      `Generated: ${new Date().toLocaleString()}`,
-      ``,
-      `PRESENTATION: ${presentation}`,
-      ``,
-      `CLINICAL SUMMARY: ${results.summary}`,
-      ``,
-      `CAN'T MISS: ${results.cant_miss}`,
-      `NEXT STEP: ${results.next_step}`,
-      ``,
-      `RED FLAGS: ${results.red_flags?.join(", ")}`,
-      ``,
-      `DIFFERENTIAL DIAGNOSES:`,
-      ...(results.diagnoses || []).map((d, i) =>
-        `${i+1}. [${d.likelihood?.toUpperCase()}] ${d.diagnosis} (ICD: ${d.icd10 || "—"}) — Urgency ${d.urgency}/10\n   ${d.reasoning}`
-      ),
-    ];
-    await navigator.clipboard.writeText(lines.join("\n"));
-    showToast("Report copied to clipboard");
   }
 
-  const iField = {
+  const rulesByCC = useMemo(() => {
+    if (!cc) return RULES;
+    const matched = RULES.filter(r => r.cc.some(c => cc.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(cc.toLowerCase())));
+    const rest = RULES.filter(r => !matched.includes(r));
+    return [...matched, ...rest];
+  }, [cc]);
+
+  const activeRuleObj = useMemo(() => RULES.find(r => r.id === activeRule), [activeRule]);
+
+  const TABS = [
+    { id:"ddx",   label:"DDx Generator",   icon:"🧠" },
+    { id:"rules", label:"Decision Rules",   icon:"📐" },
+  ];
+
+  const inputStyle = {
     background:"rgba(14,37,68,0.8)", border:"1px solid rgba(42,79,122,0.4)",
-    borderRadius:10, padding:"10px 13px", fontFamily:"DM Sans", fontSize:13,
-    color:T.txt, outline:"none", width:"100%", resize:"vertical",
-    lineHeight:1.6, transition:"border-color .12s",
+    borderRadius:8, padding:"7px 11px", fontFamily:"DM Sans", fontSize:12,
+    color:T.txt, outline:"none", width:"100%", transition:"border-color .12s",
   };
 
   return (
@@ -411,349 +690,336 @@ Rules:
       position:"relative", overflowX:"hidden", color:T.txt,
     }}>
       <AmbientBg/>
+      {toast && <Toast msg={toast}/>}
 
-      {/* Toast */}
-      {toast && (
-        <div style={{
-          position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)",
-          background:"rgba(8,22,40,0.96)", border:"1px solid rgba(0,229,192,0.4)",
-          borderRadius:10, padding:"10px 20px", fontFamily:"DM Sans",
-          fontWeight:600, fontSize:13, color:T.teal, zIndex:99999,
-          pointerEvents:"none", animation:`${PREFIX}fade .2s ease both`,
-        }}>{toast}</div>
-      )}
-
-      {/* Note Modal */}
-      {noteModal && (
-        <div
-          style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(3,8,18,0.88)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}
-          onClick={() => setNoteModal(null)}
-        >
-          <div style={{ ...glass, width:"100%", maxWidth:480 }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding:"14px 16px 10px", borderBottom:"1px solid rgba(42,79,122,0.35)" }}>
-              <div style={{ fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, color:T.teal, letterSpacing:2, marginBottom:3 }}>NOTE</div>
-              <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:15, color:T.txt }}>{noteModal}</div>
-            </div>
-            <div style={{ padding:14 }}>
-              <textarea
-                value={noteText} onChange={e => setNoteText(e.target.value)}
-                placeholder="Add clinical notes, bedside observations, or reasoning..."
-                rows={4} style={{ ...iField, fontSize:12 }}
-              />
-              <div style={{ display:"flex", gap:8, marginTop:10 }}>
-                <button onClick={saveNote} style={{
-                  flex:1, fontFamily:"DM Sans", fontWeight:700, fontSize:13,
-                  padding:"10px", borderRadius:9, cursor:"pointer",
-                  border:`1px solid ${T.teal}40`, background:`${T.teal}12`, color:T.teal,
-                }}>Save Note</button>
-                <button onClick={() => setNoteModal(null)} style={{
-                  fontFamily:"DM Sans", fontSize:12, padding:"10px 16px", borderRadius:9,
-                  cursor:"pointer", border:"1px solid rgba(42,79,122,0.4)",
-                  background:"transparent", color:T.txt3,
-                }}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div style={{ position:"relative", zIndex:1, maxWidth:1300, margin:"0 auto", padding:"0 16px" }}>
+      <div style={{ position:"relative", zIndex:1, maxWidth:1400, margin:"0 auto", padding:"0 16px" }}>
 
         {/* Header */}
         <div style={{ padding:"18px 0 14px" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:9 }}>
-            <div style={{
-              backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)",
-              background:"rgba(5,15,30,0.9)", border:"1px solid rgba(42,79,122,0.6)",
-              borderRadius:10, padding:"5px 12px", display:"flex", alignItems:"center", gap:8,
-            }}>
-              <span style={{ fontFamily:"JetBrains Mono", fontSize:10, color:T.gold, letterSpacing:3 }}>NOTRYA</span>
-              <span style={{ color:T.txt4, fontFamily:"JetBrains Mono", fontSize:10 }}>/</span>
-              <span style={{ fontFamily:"JetBrains Mono", fontSize:10, color:T.txt3, letterSpacing:2 }}>DDx ENGINE</span>
-            </div>
-            <div style={{ height:1, flex:1, background:"linear-gradient(90deg,rgba(0,229,192,0.5),transparent)" }}/>
-            {onBack && (
-              <button onClick={onBack} style={{
-                fontFamily:"DM Sans", fontSize:11, fontWeight:600, padding:"5px 14px",
-                borderRadius:8, cursor:"pointer", border:"1px solid rgba(42,79,122,0.5)",
-                background:"rgba(14,37,68,0.6)", color:T.txt3,
-              }}>← Hub</button>
-            )}
-          </div>
+          <HubBadge onBack={onBack}/>
           <h1 className={`${PREFIX}-shim`} style={{
-            fontFamily:"Playfair Display", fontSize:"clamp(24px,3.5vw,38px)",
-            fontWeight:900, letterSpacing:-1, lineHeight:1.1, marginBottom:5,
-          }}>
-            Differential Diagnosis Engine
-          </h1>
+            fontFamily:"Playfair Display", fontSize:"clamp(22px,3.5vw,36px)",
+            fontWeight:900, letterSpacing:-1, lineHeight:1.1, marginBottom:4,
+          }}>DDx Engine</h1>
           <p style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt3 }}>
-            AI-powered DDx generation · Life-threat identification · Evidence-based workup · Clinical reasoning support
+            AI-powered differential · weighted probability tiers · {RULES.length} embedded decision rules · no manual reference lookup
           </p>
         </div>
 
-        <div style={{ display:"grid", gridTemplateColumns:"380px 1fr", gap:14, alignItems:"start" }}>
+        {/* Tabs */}
+        <div style={{ ...glass, padding:"5px", display:"flex", gap:4, marginBottom:14 }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              flex:"1 1 auto", fontFamily:"DM Sans", fontWeight:600, fontSize:12,
+              padding:"9px 8px", borderRadius:9, cursor:"pointer", textAlign:"center", transition:"all .15s",
+              border:`1px solid ${tab===t.id ? T.purple+"50" : "transparent"}`,
+              background: tab===t.id ? `linear-gradient(135deg,${T.purple}16,${T.purple}06)` : "transparent",
+              color: tab===t.id ? T.purple : T.txt3,
+            }}>{t.icon} {t.label}</button>
+          ))}
+        </div>
 
-          {/* LEFT: Input panel */}
-          <div style={{ display:"flex", flexDirection:"column", gap:10, position:"sticky", top:14 }}>
-            {/* Quick templates */}
-            <div style={{ ...glass, padding:"12px 14px" }}>
-              <div style={{
-                fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.teal,
-                letterSpacing:2, textTransform:"uppercase", marginBottom:8,
-              }}>Quick Templates</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:5 }}>
-                {TEMPLATES.map(t => (
-                  <button key={t.label} onClick={() => setPresentation(t.prompt)} style={{
-                    fontFamily:"DM Sans", fontWeight:500, fontSize:11,
-                    padding:"6px 8px", borderRadius:8, cursor:"pointer", textAlign:"left",
-                    border:`1px solid rgba(42,79,122,0.35)`,
-                    background:"rgba(14,37,68,0.5)", color:T.txt3,
-                    transition:"all .12s",
-                    display:"flex", alignItems:"center", gap:5,
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,229,192,0.35)"; e.currentTarget.style.color = T.txt2; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(42,79,122,0.35)"; e.currentTarget.style.color = T.txt3; }}
-                  >
-                    <span style={{ fontSize:13 }}>{t.icon}</span>
-                    <span>{t.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Input form */}
-            <div style={{ ...glass, padding:"14px" }}>
-              <div style={{
-                fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.blue,
-                letterSpacing:2, textTransform:"uppercase", marginBottom:10,
-              }}>Clinical Presentation *</div>
-              <textarea
-                ref={textareaRef}
-                value={presentation}
-                onChange={e => setPresentation(e.target.value)}
-                placeholder="Age, sex, chief complaint, onset, duration, quality, severity, associated symptoms, relevant context..."
-                rows={5}
-                style={{
-                  ...iField,
-                  border:`1px solid ${presentation ? "rgba(59,158,255,0.4)" : "rgba(42,79,122,0.4)"}`,
-                  marginBottom:10,
-                }}
-              />
-
-              <div style={{
-                fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.txt4,
-                letterSpacing:2, textTransform:"uppercase", marginBottom:4,
-              }}>Vital Signs (optional)</div>
-              <textarea
-                value={vitals}
-                onChange={e => setVitals(e.target.value)}
-                placeholder="HR, BP, RR, SpO2, Temp, GCS..."
-                rows={2}
-                style={{ ...iField, fontSize:12, marginBottom:10 }}
-              />
-
-              <div style={{
-                fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.txt4,
-                letterSpacing:2, textTransform:"uppercase", marginBottom:4,
-              }}>PMH / Meds / Allergies (optional)</div>
-              <textarea
-                value={pmh}
-                onChange={e => setPmh(e.target.value)}
-                placeholder="Past medical history, current medications, allergies..."
-                rows={2}
-                style={{ ...iField, fontSize:12, marginBottom:10 }}
-              />
-
-              <div style={{
-                fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.txt4,
-                letterSpacing:2, textTransform:"uppercase", marginBottom:4,
-              }}>Labs / Imaging / ECG (optional)</div>
-              <textarea
-                value={labs}
-                onChange={e => setLabs(e.target.value)}
-                placeholder="Troponin, BNP, CBC, CXR, CT findings, ECG interpretation..."
-                rows={2}
-                style={{ ...iField, fontSize:12, marginBottom:12 }}
-              />
-
-              <button
-                onClick={generate}
-                disabled={!presentation.trim() || loading}
-                style={{
-                  width:"100%", fontFamily:"DM Sans", fontWeight:700, fontSize:14,
-                  padding:"13px", borderRadius:10, cursor: loading || !presentation.trim() ? "not-allowed" : "pointer",
-                  border:`1px solid ${T.teal}40`,
-                  background: loading || !presentation.trim() ? "rgba(0,229,192,0.06)" : `linear-gradient(135deg,${T.teal}22,${T.blue}16)`,
-                  color: !presentation.trim() ? T.txt4 : T.teal,
-                  opacity: !presentation.trim() ? 0.55 : 1,
-                  transition:"all .15s",
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-                }}
-              >
-                {loading ? (
-                  <>
-                    <span className={`${PREFIX}-spin`}>⟳</span>
-                    Generating DDx...
-                  </>
-                ) : (
-                  <> ✦ Generate Differential </>
-                )}
-              </button>
-
-              {presentation.trim() && !loading && (
-                <button
-                  onClick={() => { setPresentation(""); setVitals(""); setPmh(""); setLabs(""); setResults(null); }}
-                  style={{
-                    width:"100%", marginTop:6, fontFamily:"DM Sans", fontWeight:500, fontSize:11,
-                    padding:"7px", borderRadius:8, cursor:"pointer",
-                    border:"1px solid rgba(42,79,122,0.3)", background:"transparent", color:T.txt4,
-                  }}
-                >Clear All</button>
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT: Results panel */}
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-
-            {/* Empty state */}
-            {!results && !loading && (
-              <div style={{
-                ...glass, padding:"48px 24px", textAlign:"center",
-                display:"flex", flexDirection:"column", alignItems:"center", gap:12,
-              }}>
-                <div style={{ fontSize:48, lineHeight:1 }}>🧠</div>
-                <div style={{ fontFamily:"Playfair Display", fontSize:20, fontWeight:700, color:T.txt }}>
-                  DDx Engine Ready
-                </div>
-                <div style={{ fontFamily:"DM Sans", fontSize:13, color:T.txt3, maxWidth:340, lineHeight:1.6 }}>
-                  Enter a clinical presentation or select a template to generate an evidence-based differential diagnosis with life-threat identification, workup, and management guidance.
-                </div>
-              </div>
-            )}
-
-            {/* Loading skeleton */}
-            {loading && (
+        {/* ── DDX GENERATOR TAB ──────────────────────────────────── */}
+        {tab === "ddx" && (
+          <div className={`${PREFIX}-fade`}>
+            <div style={{
+              display:"grid",
+              gridTemplateColumns: result ? "1fr 1.6fr" : "1fr",
+              gap:14, marginBottom:24, alignItems:"start",
+            }}>
+              {/* Input panel */}
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                <div style={{ ...glass, padding:"18px", borderLeft:`3px solid ${T.blue}` }}>
-                  <div className={`${PREFIX}-pulse`} style={{ fontFamily:"DM Sans", fontSize:13, color:T.blue }}>
-                    ✦ Analyzing clinical presentation and generating differential...
-                  </div>
+                <div style={{ ...glass, padding:"14px" }}>
                   <div style={{
-                    height:3, background:"rgba(42,79,122,0.2)", borderRadius:2, marginTop:12, overflow:"hidden",
-                  }}>
-                    <div className={`${PREFIX}-pulse`} style={{
-                      height:"100%", width:"60%",
-                      background:`linear-gradient(90deg,${T.teal},${T.blue})`,
-                      borderRadius:2,
-                    }}/>
+                    fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.purple,
+                    letterSpacing:2, textTransform:"uppercase", marginBottom:10,
+                  }}>Chief Complaint</div>
+                  <input
+                    type="text" value={cc} onChange={e => setCc(e.target.value)}
+                    placeholder="e.g. Chest pain, Shortness of breath..."
+                    style={{ ...inputStyle, border:`1px solid ${cc ? T.purple+"45" : "rgba(42,79,122,0.4)"}`, marginBottom:8 }}
+                  />
+                  {/* Quick CC */}
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                    {CC_QUICK.map(q => (
+                      <button key={q} onClick={() => setCc(q)} style={{
+                        fontFamily:"DM Sans", fontWeight:500, fontSize:9,
+                        padding:"3px 8px", borderRadius:20, cursor:"pointer",
+                        border:`1px solid ${cc===q ? T.purple+"55" : T.purple+"1e"}`,
+                        background: cc===q ? `${T.purple}14` : `${T.purple}06`,
+                        color: cc===q ? T.purple : T.txt4, transition:"all .1s",
+                      }}>{q}</button>
+                    ))}
                   </div>
                 </div>
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className={`${PREFIX}-pulse`} style={{
-                    ...glass, height:90, borderRadius:14,
-                    animationDelay:`${i * 0.15}s`,
-                  }}/>
-                ))}
-              </div>
-            )}
 
-            {/* Results */}
-            {results && !loading && (
-              <>
-                {/* Summary card */}
-                <div className={`${PREFIX}-fade`} style={{
-                  ...glass, padding:"14px 16px",
-                  borderTop:`3px solid ${T.teal}`,
-                  background:`linear-gradient(135deg,${T.teal}07,rgba(8,22,40,0.82))`,
-                }}>
-                  <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10, flexWrap:"wrap" }}>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.teal, letterSpacing:2, textTransform:"uppercase", marginBottom:5 }}>Clinical Synthesis</div>
-                      <div style={{ fontFamily:"DM Sans", fontSize:13, color:T.txt2, lineHeight:1.6 }}>{results.summary}</div>
+                {/* Patient + vitals */}
+                <div style={{ ...glass, padding:"14px" }}>
+                  <div style={{
+                    fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.teal,
+                    letterSpacing:2, textTransform:"uppercase", marginBottom:8,
+                  }}>Patient & Vitals</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:8 }}>
+                    {[
+                      { k:"hr",  ph:"HR",     u:"bpm"   },
+                      { k:"sbp", ph:"SBP",    u:"mmHg"  },
+                      { k:"rr",  ph:"RR",     u:"/min"  },
+                      { k:"spo2",ph:"SpO₂",   u:"%"     },
+                      { k:"temp",ph:"Temp",   u:"°F"    },
+                      { k:"dbp", ph:"DBP",    u:"mmHg"  },
+                    ].map(({ k, ph, u }) => (
+                      <div key={k} style={{ position:"relative" }}>
+                        <input type="number" value={vitals[k]} onChange={e => setVital(k, e.target.value)}
+                          placeholder={ph}
+                          style={{ ...inputStyle, paddingRight:36, fontSize:11 }}
+                        />
+                        <span style={{
+                          position:"absolute", right:9, top:"50%", transform:"translateY(-50%)",
+                          fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4,
+                        }}>{u}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:7 }}>
+                    <div>
+                      <div style={{ fontFamily:"JetBrains Mono", fontSize:7, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase", marginBottom:3 }}>Age</div>
+                      <input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Age"
+                        style={inputStyle}/>
                     </div>
-                    <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-                      <button onClick={copyReport} style={{
-                        fontFamily:"DM Sans", fontSize:11, fontWeight:600,
-                        padding:"5px 12px", borderRadius:8, cursor:"pointer",
-                        border:`1px solid ${T.teal}30`, background:`${T.teal}0a`, color:T.teal,
-                      }}>⎘ Copy Report</button>
+                    <div>
+                      <div style={{ fontFamily:"JetBrains Mono", fontSize:7, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase", marginBottom:3 }}>Sex</div>
+                      <div style={{ display:"flex", gap:4 }}>
+                        {["M","F"].map(s => (
+                          <button key={s} onClick={() => setSex(s)} style={{
+                            flex:1, fontFamily:"JetBrains Mono", fontSize:11, fontWeight:700,
+                            padding:"7px", borderRadius:8, cursor:"pointer",
+                            border:`1px solid ${sex===s ? T.blue+"55" : "rgba(42,79,122,0.35)"}`,
+                            background: sex===s ? `${T.blue}14` : "transparent",
+                            color: sex===s ? T.blue : T.txt3,
+                          }}>{s}</button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Can't Miss + Next Step */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                  <div style={{ ...glass, padding:"12px 14px", borderLeft:`3px solid ${T.red}`, background:`${T.red}08` }}>
-                    <div style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.red, letterSpacing:2, textTransform:"uppercase", marginBottom:4 }}>⚡ Can't Miss</div>
-                    <div style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt2, lineHeight:1.5 }}>{results.cant_miss}</div>
-                  </div>
-                  <div style={{ ...glass, padding:"12px 14px", borderLeft:`3px solid ${T.gold}`, background:`${T.gold}08` }}>
-                    <div style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.gold, letterSpacing:2, textTransform:"uppercase", marginBottom:4 }}>→ Next Step</div>
-                    <div style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt2, lineHeight:1.5 }}>{results.next_step}</div>
-                  </div>
+                {/* Clinical context */}
+                <div style={{ ...glass, padding:"14px" }}>
+                  <div style={{
+                    fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.gold,
+                    letterSpacing:2, textTransform:"uppercase", marginBottom:7,
+                  }}>Clinical Context</div>
+                  <textarea
+                    value={context} onChange={e => setContext(e.target.value)} rows={5}
+                    placeholder="Symptoms, exam findings, PMH, meds, risk factors, onset/duration, associated symptoms...
+
+Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoretic, onset 45min ago. PMH: HTN, DM2, smoker. Meds: metoprolol, lisinopril. EKG pending. No prior cardiac hx."
+                    style={{ ...inputStyle, resize:"vertical", lineHeight:1.55 }}
+                  />
                 </div>
 
-                {/* Red flags */}
-                {results.red_flags?.length > 0 && (
-                  <div style={{ ...glass, padding:"10px 14px", borderLeft:`3px solid ${T.coral}`, background:`${T.coral}07` }}>
-                    <div style={{ fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.coral, letterSpacing:2, textTransform:"uppercase", marginBottom:6 }}>🚨 Red Flags Present</div>
+                {/* Suggested rules based on CC */}
+                {suggestedRules.length > 0 && (
+                  <div style={{ ...glass, padding:"12px 14px", background:`${T.blue}06` }}>
+                    <div style={{
+                      fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.blue,
+                      letterSpacing:1.5, textTransform:"uppercase", marginBottom:7,
+                    }}>Relevant Decision Rules</div>
                     <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                      {results.red_flags.map((rf, i) => (
-                        <span key={i} style={{
-                          fontFamily:"DM Sans", fontSize:11, padding:"2px 9px", borderRadius:20,
-                          background:`${T.coral}12`, border:`1px solid ${T.coral}30`, color:T.txt2,
-                        }}>{rf}</span>
+                      {suggestedRules.map(r => (
+                        <button key={r.id} onClick={() => { setActiveRule(r.id); setTab("rules"); }} style={{
+                          fontFamily:"DM Sans", fontWeight:600, fontSize:11,
+                          padding:"5px 11px", borderRadius:20, cursor:"pointer",
+                          border:`1px solid ${T.blue}35`, background:`${T.blue}0e`, color:T.blue,
+                        }}>{r.icon} {r.name}</button>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Filter tabs */}
-                <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                  <Chip label={`All (${results.diagnoses?.length})`} active={activeFilter==="all"} color={T.teal} onClick={() => setActiveFilter("all")} />
-                  {LIKELIHOOD.map(l => {
-                    const cnt = results.diagnoses?.filter(d => d.likelihood === l.key).length || 0;
-                    if (!cnt) return null;
-                    return <Chip key={l.key} label={`${l.label} (${cnt})`} active={activeFilter===l.key} color={l.color} onClick={() => setActiveFilter(l.key)} />;
+                <button
+                  onClick={handleGenerate}
+                  disabled={!cc.trim() || busy}
+                  style={{
+                    fontFamily:"DM Sans", fontWeight:800, fontSize:14,
+                    padding:"14px", borderRadius:10,
+                    cursor: cc.trim() && !busy ? "pointer" : "not-allowed",
+                    border:`1px solid ${T.purple}50`,
+                    background: cc.trim() ? `${T.purple}1c` : "rgba(14,37,68,0.4)",
+                    color: cc.trim() ? T.purple : T.txt4,
+                    opacity: busy ? 0.7 : 1, transition:"all .12s",
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:10,
+                  }}>
+                  {busy
+                    ? <><span className={`${PREFIX}-spin`} style={{ display:"inline-block", fontSize:16 }}>⚙️</span> Generating Differential...</>
+                    : "🧠 Generate Differential"}
+                </button>
+
+                {error && (
+                  <div style={{
+                    ...glass, padding:"10px 14px", borderLeft:`3px solid ${T.red}`,
+                    background:`${T.red}0a`,
+                    fontFamily:"DM Sans", fontSize:12, color:T.coral,
+                  }}>{error}</div>
+                )}
+              </div>
+
+              {/* Results panel */}
+              {result && (
+                <div className={`${PREFIX}-fade`} style={{ display:"flex", flexDirection:"column", gap:10 }}>
+
+                  {/* Red flags */}
+                  {result.redFlags?.length > 0 && (
+                    <div style={{
+                      ...glass, padding:"10px 13px",
+                      borderLeft:`3px solid ${T.red}`, background:`${T.red}0b`,
+                    }}>
+                      <div style={{
+                        fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.red,
+                        letterSpacing:1.5, textTransform:"uppercase", marginBottom:6,
+                      }}>🚨 Immediate Concerns</div>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                        {result.redFlags.map((f, i) => (
+                          <span key={i} style={{
+                            fontFamily:"DM Sans", fontWeight:600, fontSize:11,
+                            padding:"3px 9px", borderRadius:20,
+                            background:`${T.red}14`, border:`1px solid ${T.red}30`, color:T.coral,
+                          }}>{f}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Clinical insight */}
+                  {result.insight && (
+                    <div style={{
+                      ...glass, padding:"9px 13px",
+                      borderLeft:`3px solid ${T.gold}`, background:`${T.gold}07`,
+                      fontFamily:"DM Sans", fontSize:12, color:T.txt2, fontStyle:"italic",
+                    }}>
+                      💡 {result.insight}
+                    </div>
+                  )}
+
+                  {/* Tier groups */}
+                  {["must_rule_out","high","moderate","low"].map(tier => {
+                    const items = result.differentials?.filter(d => d.tier === tier) || [];
+                    if (!items.length) return null;
+                    const tc = TIER[tier];
+                    return (
+                      <div key={tier}>
+                        <div style={{
+                          fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700,
+                          color:tc.color, letterSpacing:2, textTransform:"uppercase",
+                          marginBottom:6, paddingLeft:4,
+                        }}>{tc.icon} {tc.label} ({items.length})</div>
+                        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                          {items.map((dx, i) => (
+                            <DxCard
+                              key={dx.rank || i}
+                              dx={dx}
+                              index={i}
+                              suggestedRules={result.suggestedRules || []}
+                              onRule={handleRuleLink}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
                   })}
-                  {bookmarks.size > 0 && (
-                    <Chip label={`★ Saved (${bookmarks.size})`} active={activeFilter==="bookmarked"} color={T.gold} onClick={() => setActiveFilter("bookmarked")} />
+
+                  {/* Suggested rules from AI */}
+                  {result.suggestedRules?.length > 0 && (
+                    <div style={{ ...glass, padding:"11px 13px", background:`${T.blue}07` }}>
+                      <div style={{
+                        fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.blue,
+                        letterSpacing:1.5, textTransform:"uppercase", marginBottom:7,
+                      }}>📐 AI-Suggested Decision Rules</div>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                        {result.suggestedRules.map(rid => {
+                          const r = RULES.find(rl => rl.id === rid);
+                          return r ? (
+                            <button key={rid} onClick={() => { setActiveRule(rid); setTab("rules"); }} style={{
+                              fontFamily:"DM Sans", fontWeight:600, fontSize:11,
+                              padding:"5px 12px", borderRadius:20, cursor:"pointer",
+                              border:`1px solid ${T.blue}40`, background:`${T.blue}10`, color:T.blue,
+                            }}>{r.icon} {r.name} →</button>
+                          ) : null;
+                        })}
+                      </div>
+                    </div>
                   )}
                 </div>
+              )}
 
-                {/* Diagnoses list */}
-                <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:24 }}>
-                  {filtered.length === 0 ? (
-                    <div style={{ ...glass, padding:"24px", textAlign:"center", color:T.txt4, fontFamily:"DM Sans", fontSize:13 }}>
-                      No diagnoses match this filter
-                    </div>
-                  ) : filtered.map((dx, i) => (
-                    <DiagnosisCard
-                      key={dx.diagnosis}
-                      dx={dx}
-                      index={i}
-                      onNote={handleNote}
-                      onBookmark={() => toggleBookmark(dx.diagnosis)}
-                      bookmarked={bookmarks.has(dx.diagnosis)}
-                    />
-                  ))}
-                </div>
+              {/* Empty state */}
+              {!result && !busy && (
+                <div style={{ display:"none" }}/>
+              )}
 
-                {/* Disclaimer */}
-                <div style={{
-                  ...glass, padding:"10px 14px", marginBottom:24,
-                  background:`${T.gold}07`, borderLeft:`3px solid ${T.gold}`,
-                }}>
-                  <div style={{ fontFamily:"DM Sans", fontSize:11, color:T.txt4, lineHeight:1.6 }}>
-                    ⚠️ <strong style={{ color:T.gold }}>Clinical Decision Support Only.</strong>{" "}
-                    AI-generated differential diagnoses require clinical verification. This tool does not replace physician judgment, physical examination, or direct patient care. Always confirm with clinical pharmacist, specialist, or attending as appropriate.
-                  </div>
-                </div>
-              </>
-            )}
+            </div>
           </div>
+        )}
+
+        {/* ── DECISION RULES TAB ─────────────────────────────────── */}
+        {tab === "rules" && (
+          <div className={`${PREFIX}-fade`} style={{
+            display:"grid", gridTemplateColumns:"220px 1fr",
+            gap:14, marginBottom:24, alignItems:"start",
+          }}>
+            {/* Rule selector */}
+            <div style={{ display:"flex", flexDirection:"column", gap:5, position:"sticky", top:16 }}>
+              {rulesByCC.map(r => {
+                const isSuggested = suggestedRules.some(sr => sr.id === r.id);
+                return (
+                  <button key={r.id} onClick={() => setActiveRule(r.id)} style={{
+                    fontFamily:"DM Sans", fontWeight:600, fontSize:12,
+                    padding:"9px 12px", borderRadius:10, cursor:"pointer", textAlign:"left",
+                    border:`1px solid ${activeRule===r.id ? T.blue+"55" : isSuggested ? T.blue+"25" : "rgba(42,79,122,0.3)"}`,
+                    background: activeRule===r.id ? `${T.blue}14` : isSuggested ? `${T.blue}07` : "rgba(8,22,40,0.5)",
+                    color: activeRule===r.id ? T.blue : isSuggested ? T.txt2 : T.txt3,
+                    display:"flex", alignItems:"center", gap:8,
+                    transition:"all .12s",
+                  }}>
+                    <span style={{ fontSize:14, flexShrink:0 }}>{r.icon}</span>
+                    <span style={{ flex:1, lineHeight:1.3 }}>{r.name}</span>
+                    {isSuggested && (
+                      <span style={{
+                        fontFamily:"JetBrains Mono", fontSize:6, color:T.blue,
+                        background:`${T.blue}15`, padding:"1px 5px", borderRadius:10,
+                      }}>CC</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active rule calculator */}
+            <div>
+              {activeRuleObj
+                ? <RuleCalc key={activeRuleObj.id} rule={activeRuleObj}/>
+                : (
+                  <div style={{
+                    ...glass, padding:"40px", textAlign:"center",
+                    display:"flex", flexDirection:"column", alignItems:"center", gap:10,
+                  }}>
+                    <span style={{ fontSize:32 }}>📐</span>
+                    <span style={{ fontFamily:"DM Sans", fontSize:14, color:T.txt2, fontWeight:600 }}>Select a decision rule</span>
+                    <span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt4 }}>Rules relevant to your CC are highlighted</span>
+                  </div>
+                )
+              }
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{ textAlign:"center", paddingBottom:24 }}>
+          <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4, letterSpacing:1.5 }}>
+            NOTRYA · DDX ENGINE · AI-ASSISTED — CLINICAL JUDGMENT REQUIRED · NOT A SUBSTITUTE FOR PHYSICIAN ASSESSMENT
+          </span>
         </div>
+
       </div>
     </div>
   );

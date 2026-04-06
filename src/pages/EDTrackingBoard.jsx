@@ -40,7 +40,7 @@ const PAGE_ID = "tracking";
   --teal:#00e5c0; --gold:#f5c842; --red:#ff4444; --coral:#ff6b6b;
   --green:#3dffa0; --blue:#3b9eff; --purple:#9b6dff; --orange:#ff9f43;
   --t:#f2f7ff; --t2:#b8d4f0; --t3:#82aece; --t4:#5a82a8;
-  position:fixed; inset:0; display:flex; flex-direction:column;
+  position:fixed; top:48px; left:0; right:0; bottom:0; display:flex; flex-direction:column;
   background:var(--bg); font-family:'DM Sans',sans-serif; color:var(--t); overflow:hidden;
 }
 
@@ -786,36 +786,6 @@ export default function TrackingBoard({ onBack }) {
         <div className="tb-clock">{clock}</div>
       </div>
 
-      {/* Workflow nav */}
-      <div className="nv3-nav">
-        <div className="nv3-group-row">
-          {NAV_GROUPS.map(g => (
-            <button key={g.key}
-              className={`nv3-group-tab${activeGroup===g.key?" active":""}`}
-              style={{ "--nv3-accent":g.accent }}
-              onClick={() => selectGroup(g.key)}
-            >
-              <span>{g.icon}</span><span>{g.label}</span>
-              <div className={`nv3-group-badge ${getGroupBadge(g.key)}`}/>
-            </button>
-          ))}
-        </div>
-        <div className="nv3-pill-row" ref={pillsRef}>
-          <div className="nv3-pill-fade-l"/>
-          {currentSections.map(s => (
-            <button key={s.id}
-              className={`nv3-pill${activeSection===s.id?" active":""}`}
-              style={activeSection===s.id ? { "--nv3-accent":currentGroup?.accent, "--nv3-accent-rgb":currentGroup?.accentRgb } : {}}
-              onClick={() => selectSection(s.id)}
-            >
-              <span className="nv3-pill-ico">{s.icon}</span>{s.label}
-              <div className={`nv3-pill-dot ${navDots[s.id]||"empty"}`}/>
-              {s.sc && <span className="nv3-pill-sc">⌘{s.sc}</span>}
-            </button>
-          ))}
-          <div className="nv3-pill-fade-r"/>
-        </div>
-      </div>
 
       {/* Content */}
       <div className="nv3-content-wrap">

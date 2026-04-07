@@ -68,6 +68,7 @@ import NotryaFloatingAI from '@/components/ai/NotryaFloatingAI';
 import { useLocation } from 'react-router-dom';
 import AddendumManager from '@/pages/AddendumManager';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
+import DischargeDisposition from '@/pages/DischargeDisposition';
 
 
 
@@ -193,6 +194,7 @@ const AuthenticatedApp = () => {
       <Route path="/patient-workspace" element={<LayoutWrapper currentPageName="PatientWorkspace"><PatientWorkspace /></LayoutWrapper>} />
       <Route path="/shift-signout" element={<ShiftSignout />} />
       <Route path="/AddendumManager" element={<AddendumManager />} />
+      <Route path="/discharge-disposition" element={<DischargeDisposition />} />
 
 
       <Route path="*" element={<PageNotFound />} />

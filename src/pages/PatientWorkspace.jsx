@@ -701,7 +701,7 @@ export default function PatientWorkspace({ onBack }) {
           <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate("/TrackingBoard")}>← Board</button>
           <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate(`/ClinicalNoteStudio?mrn=${pt.mrn}`)}>📄 Note Studio</button>
           <button className="nv3-btn nv3-btn-ghost">📋 New Order</button>
-          <button className="nv3-btn nv3-btn-coral">🚪 Discharge</button>
+          <button className="nv3-btn nv3-btn-coral" onClick={() => navigate('/discharge-hub')}>🚪 Discharge</button>
           <button className="nv3-btn nv3-btn-teal">💾 Save Chart</button>
         </div>
       </div>
@@ -791,7 +791,7 @@ export default function PatientWorkspace({ onBack }) {
         <button className="nv3-btn nv3-btn-ghost">📋 New Order</button>
         <button className="nv3-btn nv3-btn-ghost">📞 Consult</button>
         <button className="nv3-btn nv3-btn-ghost">🔬 Procedures</button>
-        <button className="nv3-btn nv3-btn-coral">🚪 Discharge</button>
+        <button className="nv3-btn nv3-btn-coral" onClick={() => navigate('/discharge-hub')}>🚪 Discharge</button>
         <button className="nv3-btn nv3-btn-teal">💾 Save Chart</button>
       </div>
     </div>

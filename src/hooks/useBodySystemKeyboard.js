@@ -1,128 +1,134 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from 'react';
 
 /**
- * Shared keyboard navigation hook for PE and ROS body-system panels.
+ * useBodySystemKeyboard
+ * Shared keyboard navigation hook for PETab and ROSTab.
  *
- * Controls:
- *   ↑ / ↓          — navigate findings within active system
- *   ← / →          — switch system (prev / next)
- *   Letter key      — jump to system by its `key` property
- *   Space           — toggle finding (null → normal → abnormal → null)
- *   Enter           — mark focused finding as normal (absent for ROS)
- *   X               — mark focused finding as abnormal (present for ROS)
- *   ⌘ + Enter       — mark entire active system normal
- *   ⌘ + Shift + N   — mark all systems normal
- *   Escape          — exit keyboard mode
+ * Keyboard map (when panel is focused):
+ *   ↑ / ↓              Navigate findings within the active system
+ *   ← / →              Jump to previous / next system
+ *   Letter key          Jump to system by its assigned shortcut key (when no finding focused)
+ *   Space               Toggle finding state: null → normal → abnormal → null
+ *   Enter               Mark focused finding normal — OR mark whole system normal if none focused
+ *   X                   Mark focused finding abnormal (reports, for ROS)
+ *   Tab / Shift+Tab     Next / previous finding
+ *   ⌘/Ctrl + Enter      Mark whole system normal regardless of focus
+ *   ⌘/Ctrl + Shift + N  Mark ALL systems normal
+ *   Escape              Deselect focused finding → blur panel
  */
 export function useBodySystemKeyboard({
-  systems = [],
-  onFindingAction,  // (action: 'toggle'|'normal'|'abnormal', sysId, findingId) => void
-  onSystemNormal,   // (sysId) => void
-  onAllNormal,      // () => void
+  systems,
+  onFindingAction,   // (action: 'toggle'|'normal'|'abnormal', systemId, findingId) => void
+  onSystemNormal,    // (systemId) => void
+  onAllNormal,       // () => void
 }) {
-  const [activeSystemIdx,  setActiveSystemIdx]  = useState(0);
+  const [activeSystemIdx, setActiveSystemIdx] = useState(0);
   const [activeFindingIdx, setActiveFindingIdx] = useState(-1);
-  const [isFocused,        setIsFocused]        = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const panelRef = useRef(null);
 
-  const goToSystem = useCallback((letter) => {
-    const idx = systems.findIndex(s => s.key?.toUpperCase() === letter.toUpperCase());
-    if (idx >= 0) {
-      setActiveSystemIdx(idx);
-      setActiveFindingIdx(-1);
-    }
-  }, [systems]);
+  const goToSystem = useCallback((idx) => {
+    const clamped = Math.max(0, Math.min(idx, systems.length - 1));
+    setActiveSystemIdx(clamped);
+    setActiveFindingIdx(-1);
+  }, [systems.length]);
 
   const handleKeyDown = useCallback((e) => {
-    if (!isFocused) return;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 
-    const mod      = e.metaKey || e.ctrlKey;
-    const sys      = systems[activeSystemIdx];
-    const findings = sys?.findings || sys?.symptoms || [];
-    const total    = findings.length;
+    const mod = e.metaKey || e.ctrlKey;
+    const sys = systems[activeSystemIdx];
+    const items = sys?.findings || sys?.symptoms || [];
+    const hasFinding = activeFindingIdx >= 0 && activeFindingIdx < items.length;
 
-    if (e.key === "Escape") {
-      setIsFocused(false);
-      setActiveFindingIdx(-1);
-      panelRef.current?.blur();
-      return;
+    // ── Global mod shortcuts ──────────────────────────────────────────────
+    if (mod && e.shiftKey && e.key.toLowerCase() === 'n') {
+      e.preventDefault(); onAllNormal?.(); return;
     }
+    if (mod && e.key === 'Enter') {
+      e.preventDefault(); if (sys) onSystemNormal?.(sys.id); return;
+    }
+    if (mod) return; // pass all other mod combos through
 
-    if (mod && e.shiftKey && e.key.toUpperCase() === "N") {
-      e.preventDefault();
-      onAllNormal?.();
-      return;
-    }
+    // ── Navigation & actions ──────────────────────────────────────────────
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault(); goToSystem(activeSystemIdx - 1); break;
 
-    if (mod && e.key === "Enter") {
-      e.preventDefault();
-      onSystemNormal?.(sys?.id);
-      return;
-    }
+      case 'ArrowRight':
+        e.preventDefault(); goToSystem(activeSystemIdx + 1); break;
 
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      setActiveSystemIdx(i => Math.max(0, i - 1));
-      setActiveFindingIdx(-1);
-      return;
-    }
-    if (e.key === "ArrowRight") {
-      e.preventDefault();
-      setActiveSystemIdx(i => Math.min(systems.length - 1, i + 1));
-      setActiveFindingIdx(-1);
-      return;
-    }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActiveFindingIdx(i => Math.min(total - 1, i < 0 ? 0 : i + 1));
-      return;
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActiveFindingIdx(i => Math.max(0, i <= 0 ? 0 : i - 1));
-      return;
-    }
+      case 'ArrowUp':
+        e.preventDefault();
+        if (items.length > 0)
+          setActiveFindingIdx(i => (i <= 0 ? 0 : i - 1));
+        break;
 
-    if (activeFindingIdx >= 0 && activeFindingIdx < total) {
-      const fid = findings[activeFindingIdx]?.id;
-      if (fid) {
-        if (e.key === " ") {
+      case 'ArrowDown':
+        e.preventDefault();
+        if (items.length > 0)
+          setActiveFindingIdx(i => Math.min(items.length - 1, i < 0 ? 0 : i + 1));
+        break;
+
+      case 'Tab':
+        if (items.length > 0) {
           e.preventDefault();
-          onFindingAction?.("toggle", sys.id, fid);
-          return;
+          setActiveFindingIdx(i => e.shiftKey
+            ? Math.max(0, i <= 0 ? 0 : i - 1)
+            : Math.min(items.length - 1, i < 0 ? 0 : i + 1));
         }
-        if (e.key === "Enter") {
+        break;
+
+      case 'Escape':
+        e.preventDefault();
+        if (hasFinding) {
+          setActiveFindingIdx(-1);
+        } else {
+          setIsFocused(false);
+          panelRef.current?.blur();
+        }
+        break;
+
+      case ' ':
+      case 'Spacebar':
+        if (hasFinding) {
           e.preventDefault();
-          onFindingAction?.("normal", sys.id, fid);
-          return;
+          onFindingAction?.('toggle', sys.id, items[activeFindingIdx].id);
         }
-        if (e.key.toUpperCase() === "X" && !mod) {
+        break;
+
+      case 'Enter':
+        e.preventDefault();
+        if (hasFinding) {
+          onFindingAction?.('normal', sys.id, items[activeFindingIdx].id);
+        } else if (sys) {
+          onSystemNormal?.(sys.id);
+        }
+        break;
+
+      case 'x':
+      case 'X':
+        if (hasFinding) {
           e.preventDefault();
-          onFindingAction?.("abnormal", sys.id, fid);
-          return;
+          onFindingAction?.('abnormal', sys.id, items[activeFindingIdx].id);
         }
-      }
+        break;
+
+      default:
+        // Single-letter system jump — only fires when no finding is focused
+        if (/^[A-Za-z]$/.test(e.key) && !hasFinding) {
+          const found = systems.findIndex(s => s.key === e.key.toUpperCase());
+          if (found >= 0) { e.preventDefault(); goToSystem(found); }
+        }
+        break;
     }
+  }, [activeSystemIdx, activeFindingIdx, systems, goToSystem, onFindingAction, onSystemNormal, onAllNormal]);
 
-    // Single letter jump — only when not in an input/textarea
-    if (
-      e.key.length === 1 &&
-      /^[A-Za-z]$/.test(e.key) &&
-      !mod &&
-      !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName)
-    ) {
-      goToSystem(e.key);
-    }
-  }, [isFocused, activeSystemIdx, activeFindingIdx, systems, onFindingAction, onSystemNormal, onAllNormal, goToSystem]);
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
-
+  // Spread onto the panel wrapper div
   const panelProps = {
     ref: panelRef,
     tabIndex: 0,
+    style: { outline: 'none' },
     onFocus: () => setIsFocused(true),
     onBlur: (e) => {
       if (!panelRef.current?.contains(e.relatedTarget)) {
@@ -130,7 +136,7 @@ export function useBodySystemKeyboard({
         setActiveFindingIdx(-1);
       }
     },
-    style: { outline: "none" },
+    onKeyDown: handleKeyDown,
   };
 
   return {

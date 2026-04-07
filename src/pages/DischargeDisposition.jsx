@@ -915,13 +915,7 @@ export default function DischargeDisposition({ onBack }) {
       {toast.msg && <Toast msg={toast.msg} type={toast.type}/>}
 
       {/* Global nav */}
-      <GlobalNav
-        current={PAGE_ID}
-        onNavigate={handleNavigate}
-        onBack={onBack || (() => navigate(`/PatientWorkspace?mrn=${pt.mrn}`))}
-        hasBack
-        alerts={0}
-      />
+      <GlobalNav alerts={0} />
 
       {/* Patient context bar */}
       <div className="nv3-bar2">
@@ -951,12 +945,8 @@ export default function DischargeDisposition({ onBack }) {
           ESI {pt.esi}
         </span>
         <div className="nv3-bar2-acts">
-          <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate(`/PatientWorkspace?mrn=${pt.mrn}`)}>
-            ← Workspace
-          </button>
-          <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate(`/ClinicalNoteStudio?mrn=${pt.mrn}`)}>
-            📄 Note Studio
-          </button>
+          <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate(`/patient-workspace?mrn=${pt.mrn}`)}>← Workspace</button>
+          <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate(`/ClinicalNoteStudio?mrn=${pt.mrn}`)}>📄 Note Studio</button>
           <button
             className={`nv3-btn${canSign ? " nv3-btn-teal" : " nv3-btn-gold"}`}
             onClick={handleSign}
@@ -1043,10 +1033,7 @@ export default function DischargeDisposition({ onBack }) {
 
             {/* eRx — shown for discharge + obs */}
             {(form.dispo === "discharge" || form.dispo === "obs") && (
-              <div className="dc-card">
-                <div className="dc-sec-lbl">Prescriptions &amp; Medications<div className="dc-sec-lbl-line"/></div>
-                <ErxForm state={form} dispatch={dispatch}/>
-              </div>
+              <ErxForm state={form} dispatch={dispatch}/>
             )}
 
             {/* Attestation + sign */}

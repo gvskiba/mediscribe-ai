@@ -324,7 +324,7 @@ export default function NotryaHome() {
       <BgMesh />
       <div style={{ position:"relative", zIndex:1 }}>
 
-        <nav style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, background:"rgba(5,15,30,0.88)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(255,255,255,0.06)", padding:"0 32px", height:56, display:"flex", alignItems:"center", gap:20 }}>
+        <nav style={{ position:"fixed", top:48, left:0, right:0, zIndex:100, background:"rgba(5,15,30,0.88)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(255,255,255,0.06)", padding:"0 32px", height:56, display:"flex", alignItems:"center", gap:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ width:32, height:32, borderRadius:9, background:"linear-gradient(135deg,#3b9eff,#00e5c0)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:700, fontFamily:"'Playfair Display',serif", color:"#050f1e", boxShadow:"0 0 16px rgba(0,229,192,0.4)" }}>N</div>
             <span style={{ fontSize:16, fontWeight:700, color:T.txt, fontFamily:"'Playfair Display',serif", letterSpacing:".02em" }}>Notrya</span>
@@ -348,7 +348,7 @@ export default function NotryaHome() {
           </div>
         </nav>
 
-        <div style={{ padding:"56px 32px 48px", maxWidth:1440, margin:"0 auto" }}>
+        <div style={{ padding:"104px 32px 48px", maxWidth:1440, margin:"0 auto" }}>
 
           <div style={{ padding:"56px 0 40px", textAlign:"center", animation:"nh-fadeInUp .6s ease" }}>
             <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"5px 14px", borderRadius:20, marginBottom:24, background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.25)", fontSize:11, fontWeight:600, color:T.teal }}>
@@ -391,7 +391,7 @@ export default function NotryaHome() {
             </div>
 
             {/* AI Chat panel: FIX — explicit 640px height, no calc(100vh) */}
-            <div style={{ position:"sticky", top:68, display:"flex", flexDirection:"column" }}>
+            <div style={{ position:"sticky", top:116, display:"flex", flexDirection:"column" }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
                 <div style={{ height:1, flex:1, background:"rgba(255,255,255,0.06)" }} />
                 <span style={{ fontSize:10, fontWeight:700, color:T.txt3, textTransform:"uppercase", letterSpacing:".1em" }}>Notrya AI</span>

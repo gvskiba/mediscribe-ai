@@ -20,6 +20,7 @@ import ACSPage from "@/components/acs/ACSPage";
 import ERPlanBuilder from "@/pages/ERPlanBuilder";
 import HPIPage from "@/pages/HPI";
 import ResultsViewer from "@/pages/ResultsViewer";
+import CDSAlertsSidebar from "@/components/npi/CDSAlertsSidebar";
 import ERxHub from "@/pages/ERx";
 
 // ─── NAV DATA ────────────────────────────────────────
@@ -546,6 +547,14 @@ export default function NewPatientInput() {
         <main className="npi-content">
           {renderContent()}
         </main>
+        <CDSAlertsSidebar
+          medications={medications}
+          allergies={allergies}
+          vitals={vitals}
+          pmhSelected={pmhSelected}
+          age={demo.age}
+          cc={cc.text}
+        />
       </div>
 
       {/* ═══ AI SCRIM ═══ */}

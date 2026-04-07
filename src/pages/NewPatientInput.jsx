@@ -93,6 +93,21 @@ const QUICK_ACTIONS = [
 const SYSTEM_PROMPT =
   "You are Notrya AI — a helpful AI assistant embedded in an emergency medicine documentation platform. Respond in 2–4 concise, actionable sentences. Be direct. Never fabricate data.";
 
+// ── Patient context builder (module scope) ─────────────────────────────────
+function buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab) {
+  const name = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
+  const pmhList = Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]).join(", ") || "none";
+  return [
+    `Patient: ${name}, ${demo.age || "?"}${demo.sex ? " " + demo.sex : ""}.`,
+    cc.text     ? `CC: ${cc.text}.`                                  : null,
+    vitals.bp   ? `BP ${vitals.bp}  HR ${vitals.hr || "\u2014"}  SpO\u2082 ${vitals.spo2 || "\u2014"}  T ${vitals.temp || "\u2014"}.` : null,
+    allergies.length ? `Allergies: ${allergies.join(", ")}.`         : `Allergies: NKDA.`,
+    pmhList !== "none" ? `PMH: ${pmhList}.`                          : null,
+    cc.hpi      ? `HPI summary: ${cc.hpi.slice(0, 200)}.`            : null,
+    `Active section: ${currentTab}.`,
+  ].filter(Boolean).join(" ");
+}
+
 export default function NewPatientInput() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -170,6 +185,7 @@ export default function NewPatientInput() {
   const msgsRef = useRef(null);
   const inputRef = useRef(null);
   const pillsRef = useRef(null);
+  const patientRef = useRef({});
 
   useEffect(() => {
     msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior: "smooth" });
@@ -192,19 +208,41 @@ export default function NewPatientInput() {
     active?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [currentTab, activeGroup]);
 
+  // Sync patient data into ref for stable keyboard handler
+  useEffect(() => {
+    patientRef.current = {
+      demo, cc, vitals, medications, allergies,
+      pmhSelected, pmhExtra, surgHx, famHx, socHx,
+      rosState, rosNotes, rosSymptoms, peState, peFindings,
+      esiLevel, registration,
+    };
+  }, [
+    demo, cc, vitals, medications, allergies,
+    pmhSelected, pmhExtra, surgHx, famHx, socHx,
+    rosState, rosNotes, rosSymptoms, peState, peFindings,
+    esiLevel, registration,
+  ]);
+
   // Auto-update navDots as data is entered
   useEffect(() => {
     setNavDots(prev => ({
       ...prev,
-      demo:  (demo.firstName || demo.lastName || demo.age) ? "done" : "empty",
-      cc:    cc.text                                        ? "done" : "empty",
-      vit:   (vitals.bp || vitals.hr)                       ? "done" : "empty",
-      meds:  (medications.length || allergies.length)       ? "done" : "empty",
-      hpi:   cc.hpi ? "done" : cc.text                      ? "partial" : "empty",
-      ros:   Object.keys(rosState).length > 3  ? "done" : Object.keys(rosState).length > 0 ? "partial" : "empty",
-      pe:    Object.keys(peState).length > 3   ? "done" : Object.keys(peState).length > 0  ? "partial" : "empty",
+      demo:   (demo.firstName || demo.lastName || demo.age) ? "done"    : "empty",
+      cc:     cc.text                                        ? "done"    : "empty",
+      vit:    (vitals.bp || vitals.hr)                       ? "done"    : "empty",
+      meds:   (medications.length || allergies.length)       ? "done"    : "empty",
+      hpi:    cc.hpi ? "done" : cc.text                      ? "partial" : "empty",
+      ros:    Object.keys(rosState).length > 3 ? "done" : Object.keys(rosState).length > 0 ? "partial" : "empty",
+      pe:     Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
     }));
-  }, [demo, cc, vitals, medications, allergies, rosState, peState]);
+  }, [
+    demo.firstName, demo.lastName, demo.age,
+    cc.text, cc.hpi,
+    vitals.bp, vitals.hr,
+    medications.length, allergies.length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    Object.keys(rosState).length, Object.keys(peState).length,
+  ]);
 
   // Navigation helpers
   const selectGroup = useCallback((group) => {
@@ -338,21 +376,23 @@ export default function NewPatientInput() {
     setAiMsgs((m) => [...m, { role: "user", text: text.trim() }]);
     setAiInput("");
     setAiLoading(true);
-    const ctx = `Active section: ${currentTab}`;
-    const newHistory = [...history, { role: "user", content: ctx + "\n\n" + text.trim() }];
+    const patientCtx = buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab);
+    const newHistory = [...history, { role: "user", content: patientCtx + "\n\n" + text.trim() }];
     setHistory(newHistory);
     try {
-      const res = await base44.integrations.Core.InvokeLLM({ prompt: SYSTEM_PROMPT + "\n\n" + ctx + "\n\n" + text.trim() });
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: SYSTEM_PROMPT + "\n\nPATIENT CONTEXT:\n" + patientCtx + "\n\nPHYSICIAN QUESTION:\n" + text.trim()
+      });
       const reply = typeof res === "string" ? res : JSON.stringify(res);
       setHistory((h) => [...h, { role: "assistant", content: reply }]);
       setAiMsgs((m) => [...m, { role: "bot", text: reply }]);
       setAiOpen((open) => { if (!open) setUnread((u) => u + 1); return open; });
     } catch {
-      setAiMsgs((m) => [...m, { role: "sys", text: "⚠ Connection error — please try again." }]);
+      setAiMsgs((m) => [...m, { role: "sys", text: "\u26a0 Connection error \u2014 please try again." }]);
     } finally {
       setAiLoading(false);
     }
-  }, [aiLoading, history, currentTab]);
+  }, [aiLoading, history, currentTab, demo, cc, vitals, allergies, pmhSelected]);
 
   const handleAIKey = (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(aiInput); }

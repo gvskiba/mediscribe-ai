@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef, useReducer } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import GlobalNav from "@/components/GlobalNav";
+import PatientContextBar from "@/pages/PatientContextBar";
 import { base44 } from "@/api/base44Client";
 
 const PREFIX  = "dc";
@@ -918,45 +919,16 @@ export default function DischargeDisposition({ onBack }) {
       <GlobalNav alerts={0} />
 
       {/* Patient context bar */}
-      <div className="nv3-bar2">
-        <span className="nv3-chart-id">{pt.mrn}</span>
-        <span className="nv3-pt-name">{pt.last}, {pt.first}</span>
-        <span className="nv3-pt-meta">{pt.age}{pt.sex} · {pt.dob}</span>
-        <span className="nv3-pt-cc">CC: {pt.cc}</span>
-        {pt.allergies.length > 0 && (
-          <div className="nv3-allergy">
-            <span>⚠️</span>
-            <span className="nv3-allergy-lbl">Allergy</span>
-            {pt.allergies.map(a => <span key={a} className="nv3-allergy-pill">{a}</span>)}
-          </div>
-        )}
-        <div className="nv3-vdiv"/>
-        {[["HR", pt.vitals.hr + "", pt.vitals.hr > 100 || pt.vitals.hr < 50],
-          ["BP", pt.vitals.bp, parseInt(pt.vitals.bp) > 160],
-          ["SpO₂", pt.vitals.spo2 + "%", pt.vitals.spo2 < 94]
-        ].map(([k, v, abn], idx) => (
-          <div key={idx} className="nv3-vital">
-            <span className="nv3-vl">{k}</span>
-            <span className={`nv3-vv${abn ? " abn" : ""}`}>{v}</span>
-          </div>
-        ))}
-        <div className="nv3-vdiv"/>
-        <span className="nv3-esi" style={{ background:esiCfg.bg, color:esiCfg.color, border:`1px solid ${esiCfg.color}44` }}>
-          ESI {pt.esi}
-        </span>
-        <div className="nv3-bar2-acts">
-          <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate(`/patient-workspace?mrn=${pt.mrn}`)}>← Workspace</button>
-          <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate(`/ClinicalNoteStudio?mrn=${pt.mrn}`)}>📄 Note Studio</button>
-          <button
-            className={`nv3-btn${canSign ? " nv3-btn-teal" : " nv3-btn-gold"}`}
-            onClick={handleSign}
-            disabled={form.signed}
-          >
-            {form.signed ? "✓ Signed" : canSign ? "✍ Sign & Complete" : `⚠ ${blockers.length} Required`}
-          </button>
-        </div>
-      </div>
-
+      <PatientContextBar
+        pt={pt}
+        onBack={() => navigate(`/patient-workspace?mrn=${pt.mrn}`)}
+        backLabel="Workspace"
+        signState={form.signed ? "signed" : canSign ? "ready" : "pending"}
+        blockerCount={blockers.length}
+        onSign={handleSign}
+        onNoteStudio={() => navigate(`/ClinicalNoteStudio?mrn=${pt.mrn}`)}
+        showSave={false}
+      />
 
       {/* Content */}
       <div className="nv3-content-wrap">

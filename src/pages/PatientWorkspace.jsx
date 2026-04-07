@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import PatientContextBar from "@/pages/PatientContextBar";
 import { usePatientData } from "@/lib/PatientDataContext";
 import { base44 } from "@/api/base44Client";
 
@@ -670,42 +671,15 @@ export default function PatientWorkspace({ onBack }) {
 
 
       {/* Patient context bar */}
-      <div className="nv3-bar2">
-        <span className="nv3-chart-id">{pt.mrn}</span>
-        <span className="nv3-pt-name">{pt.last}, {pt.first}</span>
-        <span className="nv3-pt-meta">{pt.age}{pt.sex} · {pt.dob}</span>
-        <span className="nv3-pt-cc">CC: {pt.cc}</span>
-        {pt.allergies.length > 0 && (
-          <div className="nv3-allergy">
-            <span>⚠️</span>
-            <span className="nv3-allergy-lbl">Allergy</span>
-            {pt.allergies.map(a => <span key={a} className="nv3-allergy-pill">{a}</span>)}
-          </div>
-        )}
-        <div className="nv3-vdiv"/>
-        {[["HR", pt.vitals[pt.vitals.length-1].hr + "", pt.vitals[pt.vitals.length-1].hr > 100 || pt.vitals[pt.vitals.length-1].hr < 50],
-          ["BP", pt.vitals[pt.vitals.length-1].bp, parseInt(pt.vitals[pt.vitals.length-1].bp) > 160],
-          ["SpO₂", pt.vitals[pt.vitals.length-1].spo2 + "%", pt.vitals[pt.vitals.length-1].spo2 < 94]
-        ].map(([k, v, abn]) => (
-          <div key={k} className="nv3-vital">
-            <span className="nv3-vl">{k}</span>
-            <span className={`nv3-vv${abn ? " abn" : ""}`}>{v}</span>
-          </div>
-        ))}
-        <div className="nv3-vdiv"/>
-        <span className="nv3-esi" style={{ background:esiCfg.bg, color:esiCfg.color, border:`1px solid ${esiCfg.color}44` }}>ESI {pt.esi}</span>
-        <span style={{ fontFamily:"JetBrains Mono", fontSize:10, color: los.over ? T.coral : los.warn ? T.gold : T.t3, marginLeft:2, flexShrink:0 }}>
-          ⏱ {los.str}
-        </span>
-        <div className="nv3-bar2-acts">
-          <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate("/TrackingBoard")}>← Board</button>
-          <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate(`/ClinicalNoteStudio?mrn=${pt.mrn}`)}>📄 Note Studio</button>
-          <button className="nv3-btn nv3-btn-ghost" onClick={() => navigate('/EDOrders')}>📋 New Order</button>
-          <button className="nv3-btn nv3-btn-coral" onClick={() => navigate('/discharge-hub')}>🚪 Discharge</button>
-          <button className="nv3-btn nv3-btn-teal">💾 Save Chart</button>
-        </div>
-      </div>
-
+      <PatientContextBar
+        pt={pt}
+        onBack={() => navigate("/EDTrackingBoard")}
+        backLabel="Board"
+        signState="pending"
+        onNoteStudio={() => navigate(`/ClinicalNoteStudio?mrn=${pt.mrn}`)}
+        onDischarge={() => navigate(`/discharge-disposition?mrn=${pt.mrn}`)}
+        onSave={() => {}}
+      />
 
       {/* 3-column body */}
       <div className="pw-body">

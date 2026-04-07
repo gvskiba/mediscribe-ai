@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import GlobalNav from "@/components/GlobalNav";
 import { base44 } from "@/api/base44Client";
 
 const PREFIX  = "pw";
@@ -673,8 +672,7 @@ export default function PatientWorkspace({ onBack }) {
       <AmbientBg/>
       {toast && <Toast msg={toast}/>}
 
-      {/* Global nav */}
-      <GlobalNav current={PAGE_ID} onNavigate={handleNavigate} onBack={onBack || (() => navigate("/TrackingBoard"))} hasBack alerts={0}/>
+
 
       {/* Patient context bar */}
       <div className="nv3-bar2">

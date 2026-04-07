@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { usePatientData } from "@/lib/PatientDataContext";
 import { base44 } from "@/api/base44Client";
 
 const PREFIX  = "pw";
@@ -565,18 +566,28 @@ export default function PatientWorkspace({ onBack }) {
     active?.scrollIntoView({ behavior:"smooth", inline:"center", block:"nearest" });
   }, [activeSection, activeGroup]);
 
+  const { updatePatientData } = usePatientData();
+
+  // Sync current patient into global context so floating AI has access
+  useEffect(() => {
+    updatePatientData({
+      firstName: pt.first, lastName: pt.last,
+      age: String(pt.age), sex: pt.sex,
+      mrn: pt.mrn, cc_text: pt.cc,
+      allergies: pt.allergies,
+      bp: pt.vitals[pt.vitals.length-1].bp,
+      hr: String(pt.vitals[pt.vitals.length-1].hr),
+      spo2: String(pt.vitals[pt.vitals.length-1].spo2),
+    });
+  }, [pt.mrn]); // eslint-disable-line
+
   // Workspace state
   const [tab,       setTab]       = useState("chart");
-  const [aiOpen,    setAiOpen]    = useState(true);
-  const [aiMsgs,    setAiMsgs]    = useState([{ role:"sys", text:`Workspace loaded — ${pt.first} ${pt.last}, ${pt.age}${pt.sex}, ${pt.cc}. Ask me anything about this patient.` }]);
-  const [aiInput,   setAiInput]   = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
   const [notes,     setNotes]     = useState({});
   const [generating,setGenerating]= useState("");
   const [toast,     setToast]     = useState("");
 
-  const msgsRef  = useRef(null);
-  const notesRef = useRef(notes); // FIX 3: stable ref so generateSection doesn't re-create on every keystroke
+  const notesRef = useRef(notes);
   useEffect(() => { notesRef.current = notes; }, [notes]);
 
   // FIX 2: minute-tick so LOS display stays current
@@ -590,29 +601,13 @@ export default function PatientWorkspace({ onBack }) {
     setToast(msg); setTimeout(() => setToast(""), 2200);
   }, []);
 
-  useEffect(() => {
-    msgsRef.current?.scrollTo({ top:msgsRef.current.scrollHeight, behavior:"smooth" });
-  }, [aiMsgs, aiLoading]);
+
 
   // FIX 2: compute fresh on every render (tick drives re-renders each minute)
   const los = losStr(pt.arrival); // eslint-disable-line react-hooks/exhaustive-deps
   const esiCfg = ESI_CFG[pt.esi] || ESI_CFG[5];
 
-  // AI send
-  const sendAI = useCallback(async (text) => {
-    if (!text.trim() || aiLoading) return;
-    setAiMsgs(m => [...m, { role:"user", text:text.trim() }]);
-    setAiInput(""); setAiLoading(true);
-    try {
-      const ctx = `Patient: ${pt.first} ${pt.last}, ${pt.age}${pt.sex}. CC: ${pt.cc}. Allergies: ${pt.allergies.join(", ")||"NKDA"}. PMH: ${pt.pmh.join(", ")}.`;
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`You are Notrya AI, an ED clinical assistant. Be concise and clinically precise.\n\n${ctx}\n\n${text.trim()}`
-      });
-      const reply = typeof res === "string" ? res : JSON.stringify(res);
-      setAiMsgs(m => [...m, { role:"bot", text:reply }]);
-    } catch { setAiMsgs(m => [...m, { role:"sys", text:"⚠ AI unavailable — check connection." }]); }
-    finally  { setAiLoading(false); }
-  }, [aiLoading, pt]);
+
 
   // AI generate note section
   const generateSection = useCallback(async (secId, secLabel) => {
@@ -774,12 +769,6 @@ export default function PatientWorkspace({ onBack }) {
               </button>
             ))}
             <div style={{ flex:1 }}/>
-            <button
-              className="nv3-btn nv3-btn-purple"
-              style={{ margin:"7px 6px", fontSize:10, padding:"3px 10px" }}
-              onClick={() => setAiOpen(o => !o)}>
-              {aiOpen ? "✕ AI" : "✦ AI"}
-            </button>
           </div>
           <div className="pw-tab-content">
             {tab === "chart"   && <ChartTab pt={pt}/>}
@@ -788,39 +777,6 @@ export default function PatientWorkspace({ onBack }) {
           </div>
         </div>
 
-        {/* Right AI panel */}
-        <div className={`pw-ai${aiOpen ? "" : " closed"}`}>
-          <div className="pw-ai-hdr">
-            <div style={{ width:28, height:28, borderRadius:8, background:`linear-gradient(135deg,${T.purple},#7b4dff)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>✦</div>
-            <div className="pw-ai-title">Notrya AI</div>
-            <button className="pw-ai-close" onClick={() => setAiOpen(false)}>✕</button>
-          </div>
-          <div className="pw-ai-msgs" ref={msgsRef}>
-            {aiMsgs.map((m, i) => (
-              <div key={i} className={`pw-ai-msg ${m.role}`}
-                dangerouslySetInnerHTML={{ __html: m.text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,'<strong style="color:#9b6dff">$1</strong>') }}/>
-            ))}
-            {aiLoading && <div className="pw-ai-dots"><span/><span/><span/></div>}
-          </div>
-          <div className="pw-ai-quick">
-            {QUICK_PROMPTS.map(q => (
-              <button key={q.label} className="pw-ai-qbtn" disabled={aiLoading} onClick={() => sendAI(q.prompt)}>
-                {q.label}
-              </button>
-            ))}
-          </div>
-          <div className="pw-ai-input">
-            <textarea className="pw-ai-ta" rows={1}
-              placeholder="Ask anything about this patient…"
-              value={aiInput}
-              onChange={e => setAiInput(e.target.value)}
-              onKeyDown={e => { if (e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAI(aiInput);} }}
-              onInput={e => { const t=e.currentTarget; t.style.height="auto"; t.style.height=Math.min(t.scrollHeight,80)+"px"; }}
-              disabled={aiLoading}
-            />
-            <button className="pw-ai-send" onClick={() => sendAI(aiInput)} disabled={aiLoading||!aiInput.trim()}>↑</button>
-          </div>
-        </div>
       </div>
 
       {/* Bottom action bar */}

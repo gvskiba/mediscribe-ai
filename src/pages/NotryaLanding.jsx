@@ -284,15 +284,26 @@ export default function NotryaLanding({ onBack }) {
       {/* ── HERO ── */}
       <div style={{ position:"relative", zIndex:2, minHeight:"100vh", display:"flex", alignItems:"center", padding:"100px 64px 80px", overflow:"hidden" }}>
         <div style={{ maxWidth:800, animation:`${PREFIX}up .9s ease both .1s` }}>
-          <div style={{
-            display:"inline-flex", alignItems:"center", gap:8, marginBottom:22,
-            fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, letterSpacing:3,
-            color:T.teal, textTransform:"uppercase",
-            padding:"5px 14px", border:"1px solid rgba(0,229,192,0.22)", borderRadius:20,
-            background:"rgba(0,229,192,0.06)",
-          }}>
-            <span className={`${PREFIX}-pulse`} style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:T.teal }}/>
-            Clinical Intelligence Platform
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:22 }}>
+            <div style={{
+              display:"inline-flex", alignItems:"center", gap:8,
+              fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, letterSpacing:3,
+              color:T.teal, textTransform:"uppercase",
+              padding:"5px 14px", border:"1px solid rgba(0,229,192,0.22)", borderRadius:20,
+              background:"rgba(0,229,192,0.06)",
+            }}>
+              <span className={`${PREFIX}-pulse`} style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:T.teal }}/>
+              Clinical Intelligence Platform
+            </div>
+            <div style={{
+              display:"inline-flex", alignItems:"center", gap:6,
+              fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, letterSpacing:3,
+              color:T.blue, textTransform:"uppercase",
+              padding:"5px 14px", border:"1px solid rgba(59,158,255,0.28)", borderRadius:20,
+              background:"rgba(59,158,255,0.07)",
+            }}>
+              ⌨ Powered by Keyboard-First Technology
+            </div>
           </div>
 
           <div className={`${PREFIX}-shim`} style={{

@@ -964,7 +964,7 @@ export default function NewPatientInput() {
                         {/* ROS body systems — inline expansion */}
                         {item.section === "ros" && currentTab === "ros" && ROS_RAIL_SYSTEMS.map((sys, i) => (
                           <button key={sys.id} className={`npi-wf-sys-item${i === rosActiveSystem ? " active" : ""}`}
-                            onClick={() => { setRosActiveSystem(i); panelProps?.ref?.current?.focus?.(); }}>
+                            onClick={() => setRosActiveSystem(i)}>
                             <span className="npi-wf-sys-icon">{sys.icon}</span>
                             <span className="npi-wf-sys-label">{sys.label}</span>
                             <span className={`npi-wf-item-dot ${getRosSysDot(sys.id)}`} />

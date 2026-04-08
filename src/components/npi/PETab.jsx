@@ -260,9 +260,8 @@ function KbLegend({ isFocused }) {
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function PETab({ peState, setPeState, peFindings, setPeFindings, onAdvance }) {
+export default function PETab({ peState, setPeState, peFindings, setPeFindings, onAdvance, extSysIdx, onSysChange }) {
   const [examData, setExamData] = useState(initExamData);
-  const sidebarRef = useRef(null);
   const mainRef    = useRef(null);
 
   // ── Action handlers ──────────────────────────────────────────────────────
@@ -372,11 +371,17 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
     setPeFindings(newFindings);
   }, [examData, setPeState, setPeFindings]);
 
-  // ── Auto-scroll sidebar to active system ─────────────────────────────────
+  // ── Two-way sync with parent rail ────────────────────────────────────────
   useEffect(() => {
-    const el = sidebarRef.current?.querySelector(`[data-sysid='${activeSys?.id}']`);
-    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [activeSystemIdx, activeSys?.id]);
+    if (extSysIdx !== undefined && extSysIdx !== activeSystemIdx) {
+      setActiveSystemIdx(extSysIdx);
+      setActiveFindingIdx(-1);
+    }
+  }, [extSysIdx]); // eslint-disable-line
+
+  useEffect(() => {
+    onSysChange?.(activeSystemIdx);
+  }, [activeSystemIdx, onSysChange]);
 
   // ── Auto-scroll main area to focused chip ────────────────────────────────
   useEffect(() => {
@@ -428,24 +433,6 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
 
         {/* ── BODY ─────────────────────────────────────────────────────── */}
         <div className="pe-body">
-
-          {/* ── SIDEBAR ──────────────────────────────────────────────── */}
-          <div className="pe-sidebar" ref={sidebarRef}>
-            {PE_SYSTEMS.map((s, i) => (
-              <div key={s.id} data-sysid={s.id}>
-                <SysItem
-                  sys={s}
-                  isActive={i === activeSystemIdx}
-                  status={getSysStatus(examData[s.id]?.findings || {})}
-                  onClick={() => {
-                    setActiveSystemIdx(i);
-                    setActiveFindingIdx(-1);
-                    panelProps.ref.current?.focus();
-                  }}
-                />
-              </div>
-            ))}
-          </div>
 
           {/* ── MAIN PANEL ───────────────────────────────────────────── */}
           <div className="pe-main" ref={mainRef}>
@@ -537,7 +524,7 @@ const PE_CSS = `
 .pe-btn-clear-all:hover{border-color:rgba(255,107,107,.4);color:var(--npi-coral)}
 
 /* Body layout */
-.pe-body{display:grid;grid-template-columns:208px 1fr;flex:1;overflow:hidden;min-height:0}
+.pe-body{display:grid;grid-template-columns:1fr;flex:1;overflow:hidden;min-height:0}
 
 /* Sidebar */
 .pe-sidebar{border-right:1px solid var(--npi-bd);overflow-y:auto;background:var(--npi-panel);scrollbar-width:thin;scrollbar-color:#1a3555 transparent}

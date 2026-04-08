@@ -26,11 +26,11 @@ const NAV_DATA = {
   intake: [
     { section: "chart",      icon: "📊", label: "Patient Chart",    abbr: "Pc", dot: "done"    },
     { section: "demo",       icon: "👤", label: "Demographics",      abbr: "Dm", dot: "partial" },
-    { section: "cc",         icon: "💬", label: "Chief Complaint",   abbr: "Cc", dot: "empty"   },
     { section: "vit",        icon: "📈", label: "Vitals",            abbr: "Vt", dot: "empty"   },
     { section: "meds",       icon: "💊", label: "Meds & PMH",        abbr: "Rx", dot: "empty"   },
   ],
   documentation: [
+    { section: "cc",         icon: "💬", label: "Chief Complaint",   abbr: "Cc", dot: "empty"   },
     { section: "hpi",        icon: "📝", label: "HPI",              abbr: "Hp", dot: "empty"   },
     { section: "ros",        icon: "🔍", label: "Review of Systems", abbr: "Rs", dot: "empty"   },
     { section: "pe",         icon: "🩺", label: "Physical Exam",     abbr: "Pe", dot: "empty"   },

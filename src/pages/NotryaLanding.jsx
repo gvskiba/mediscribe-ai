@@ -284,7 +284,7 @@ export default function NotryaLanding({ onBack }) {
       {/* ── HERO ── */}
       <div style={{ position:"relative", zIndex:2, minHeight:"100vh", display:"flex", alignItems:"center", padding:"100px 64px 80px", overflow:"hidden" }}>
         <div style={{ maxWidth:800, animation:`${PREFIX}up .9s ease both .1s` }}>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:22 }}>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, marginBottom:22 }}>
             <div style={{
               display:"inline-flex", alignItems:"center", gap:8,
               fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, letterSpacing:3,

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import React from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";

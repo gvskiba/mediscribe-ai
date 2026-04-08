@@ -20,11 +20,12 @@ import ERPlanBuilder from "@/pages/ERPlanBuilder";
 import ResultsViewer from "@/pages/ResultsViewer";
 import CDSAlertsSidebar from "@/components/npi/CDSAlertsSidebar";
 import ERxHub from "@/pages/ERx";
+import ClinicalNoteStudio from "@/components/npi/ClinicalNoteStudio";
 
 // ─── NAV DATA ─────────────────────────────────────────────────────────────────
 const NAV_DATA = {
   intake: [
-    { section: "chart",      icon: "📊", label: "Patient Chart",    abbr: "Pc", dot: "done"    },
+    { section: "chart",      icon: "📄", label: "Clinical Note",    abbr: "Cn", dot: "done"    },
     { section: "demo",       icon: "👤", label: "Demographics",      abbr: "Dm", dot: "partial" },
     { section: "cc",         icon: "💬", label: "Chief Complaint",   abbr: "Cc", dot: "empty"   },
     { section: "vit",        icon: "📈", label: "Vitals",            abbr: "Vt", dot: "empty"   },
@@ -671,8 +672,8 @@ export default function NewPatientInput() {
       case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
       case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} />;
       case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("mdm")} />;
-      case "mdm":        return <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} rosState={rosState} peState={peState} />;
-      case "chart":      return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto"    }}><NotryaApp embedded patientName={patientName} demo={demo} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} /></div>;
+      case "mdm":        return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
+      case "chart":      return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
       case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
       case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
       case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><EDOrders embedded patientName={patientName} patientAllergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} /></div>;
@@ -755,8 +756,8 @@ export default function NewPatientInput() {
           <div className="npi-top-acts">
             <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>📋 Orders</button>
             <button className="npi-btn-ghost" onClick={() => navigate("/EDTrackingBoard")}>🏥 Track Board</button>
-            <button className="npi-btn-ghost" title="Open Note Studio (Cmd+Shift+E)" onClick={() =>
-              navigate("/ClinicalNoteStudio", { state:{ patientData:{ demo,cc,vitals,medications,allergies,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration } } })
+            <button className="npi-btn-ghost" title="Open Clinical Note (Cmd+Shift+E)" onClick={() => selectSection("chart")
+
             }>📄 Note Studio</button>
             <button className="npi-btn-coral" onClick={() => selectSection("discharge")}>🚪 Discharge</button>
             <button className="npi-btn-primary" onClick={handleSaveChart}>💾 Save Chart</button>

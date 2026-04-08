@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import React from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -723,7 +722,7 @@ export default function NewPatientInput() {
       case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("hpi")} />;
       case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
       case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />;
-      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("mdm")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} />;
+      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("mdm")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
       case "mdm":        return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
       case "chart":      return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
       case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
@@ -964,7 +963,7 @@ export default function NewPatientInput() {
                         {/* ROS body systems — inline expansion */}
                         {item.section === "ros" && currentTab === "ros" && ROS_RAIL_SYSTEMS.map((sys, i) => (
                           <button key={sys.id} className={`npi-wf-sys-item${i === rosActiveSystem ? " active" : ""}`}
-                            onClick={() => setRosActiveSystem(i)}>
+                            onClick={() => { setRosActiveSystem(i); panelProps?.ref?.current?.focus?.(); }}>
                             <span className="npi-wf-sys-icon">{sys.icon}</span>
                             <span className="npi-wf-sys-label">{sys.label}</span>
                             <span className={`npi-wf-item-dot ${getRosSysDot(sys.id)}`} />

@@ -22,40 +22,43 @@ import CDSAlertsSidebar from "@/components/npi/CDSAlertsSidebar";
 import ERxHub from "@/pages/ERx";
 import ClinicalNoteStudio from "@/components/npi/ClinicalNoteStudio";
 
-// ─── NAV DATA ─────────────────────────────────────────────────────────────────
+// ─── NAV DATA — 5-stage clinical workflow ─────────────────────────────────────
+// register → assess → note (destination) → orders → close
 const NAV_DATA = {
-  intake: [
-    { section: "chart",      icon: "📄", label: "Clinical Note",    abbr: "Cn", dot: "done"    },
-    { section: "demo",       icon: "👤", label: "Demographics",      abbr: "Dm", dot: "partial" },
+  register: [
+    { section: "demo",       icon: "👤", label: "Demographics",      abbr: "Dm", dot: "empty"   },
     { section: "cc",         icon: "💬", label: "Chief Complaint",   abbr: "Cc", dot: "empty"   },
     { section: "vit",        icon: "📈", label: "Vitals",            abbr: "Vt", dot: "empty"   },
     { section: "meds",       icon: "💊", label: "Meds & PMH",        abbr: "Rx", dot: "empty"   },
   ],
-  documentation: [
-    { section: "hpi",        icon: "📝", label: "HPI",              abbr: "Hp", dot: "empty"   },
+  assess: [
+    { section: "hpi",        icon: "📝", label: "HPI",               abbr: "Hp", dot: "empty"   },
     { section: "ros",        icon: "🔍", label: "Review of Systems", abbr: "Rs", dot: "empty"   },
     { section: "pe",         icon: "🩺", label: "Physical Exam",     abbr: "Pe", dot: "empty"   },
-    { section: "mdm",        icon: "⚖️", label: "MDM",              abbr: "Md", dot: "empty"   },
-    { section: "erplan",     icon: "🗺️", label: "ER Plan Builder",   abbr: "Ep", dot: "empty"   },
+  ],
+  note: [
+    { section: "chart",      icon: "📄", label: "Clinical Note",     abbr: "Cn", dot: "empty"   },
+  ],
+  orders: [
     { section: "orders",     icon: "📋", label: "Orders",            abbr: "Or", dot: "empty"   },
-    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results" },
-  ],
-  disposition: [
-    { section: "discharge",  icon: "🚪", label: "Discharge",         abbr: "Dc", dot: "empty"   },
     { section: "erx",        icon: "💉", label: "eRx",               abbr: "Ex", dot: "empty"   },
-  ],
-  tools: [
-    { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty"   },
+    { section: "erplan",     icon: "🗺️", label: "ER Plan Builder",   abbr: "Ep", dot: "empty"   },
     { section: "procedures", icon: "✂️", label: "Procedures",        abbr: "Pr", dot: "empty"   },
+  ],
+  close: [
+    { section: "discharge",  icon: "🚪", label: "Discharge",         abbr: "Dc", dot: "empty"   },
+    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results" },
+    { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty"   },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",        abbr: "Mr", dot: "empty"   },
   ],
 };
 
 const GROUP_META = [
-  { key: "intake",        icon: "📋", label: "Intake"        },
-  { key: "documentation", icon: "🩺", label: "Documentation" },
-  { key: "disposition",   icon: "🚪", label: "Disposition"   },
-  { key: "tools",         icon: "🔧", label: "Tools"         },
+  { key: "register", icon: "👤", label: "Register" },
+  { key: "assess",   icon: "🔍", label: "Assess"   },
+  { key: "note",     icon: "📄", label: "Note"      },
+  { key: "orders",   icon: "📋", label: "Orders"    },
+  { key: "close",    icon: "🚪", label: "Close"     },
 ];
 
 const APP_ICONS = [
@@ -74,10 +77,10 @@ const APP_ICONS = [
 const ALL_SECTIONS = Object.values(NAV_DATA).flat();
 
 const SHORTCUT_MAP = {
-  "1": "demo", "2": "cc",  "3": "vit",
-  "4": "meds", "5": "hpi", "6": "ros",
-  "7": "pe",   "8": "mdm", "9": "orders",
-  "0": "autocoder",
+  "1": "demo", "2": "cc",    "3": "vit",
+  "4": "meds", "5": "hpi",   "6": "ros",
+  "7": "pe",   "8": "chart", "9": "orders",
+  "0": "discharge",
 };
 const SECTION_SHORTCUT = Object.fromEntries(
   Object.entries(SHORTCUT_MAP).map(([k, v]) => [v, k])
@@ -447,7 +450,7 @@ export default function NewPatientInput() {
     for (const [group, items] of Object.entries(NAV_DATA)) {
       if (items.find(i => i.section === tab)) return group;
     }
-    return "intake";
+    return "register";
   });
 
   const [navDots, setNavDots] = useState(() => {
@@ -504,7 +507,6 @@ export default function NewPatientInput() {
   const [history, setHistory]     = useState([]);
   const msgsRef  = useRef(null);
   const inputRef = useRef(null);
-  const pillsRef = useRef(null);
 
   useEffect(() => {
     msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior:"smooth" });
@@ -519,12 +521,6 @@ export default function NewPatientInput() {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [aiOpen]);
-
-  useEffect(() => {
-    const row = pillsRef.current;
-    if (!row) return;
-    row.querySelector(".npi-bn-sub-pill.active")?.scrollIntoView({ behavior:"smooth", inline:"center", block:"nearest" });
-  }, [currentTab, activeGroup]);
 
   // ── navDots ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -550,6 +546,8 @@ export default function NewPatientInput() {
   const selectGroup = useCallback((group) => {
     setActiveGroup(group);
     const items = NAV_DATA[group];
+    // Note group has only one section — go there directly
+    if (items.length === 1) { navigate(`/NewPatientInput?tab=${items[0].section}`); return; }
     const target = items.find(i => i.section === currentTab) ? currentTab : items[0].section;
     navigate(`/NewPatientInput?tab=${target}`);
   }, [currentTab, navigate]);
@@ -826,7 +824,7 @@ export default function NewPatientInput() {
               <button onClick={() => setShowShortcuts(false)} style={{ background:"#0e2544",border:"1px solid #1a3555",borderRadius:6,width:28,height:28,color:"#7aa0c0",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
             </div>
             {[
-              { section:"Navigate to section", rows:[["Cmd 1","Demographics"],["Cmd 2","Chief Complaint"],["Cmd 3","Vitals"],["Cmd 4","Meds & PMH"],["Cmd 5","HPI"],["Cmd 6","ROS"],["Cmd 7","Physical Exam"],["Cmd 8","MDM"],["Cmd 9","Orders"],["Cmd 0","AutoCoder"]] },
+              { section:"Navigate to section", rows:[["Cmd 1","Demographics"],["Cmd 2","Chief Complaint"],["Cmd 3","Vitals"],["Cmd 4","Meds & PMH"],["Cmd 5","HPI"],["Cmd 6","ROS"],["Cmd 7","Physical Exam"],["Cmd 8","Clinical Note"],["Cmd 9","Orders"],["Cmd 0","Discharge"]] },
               { section:"HPI (scan mode)", rows:[["Y / Enter","Symptom present"],["N","Symptom absent"],["Space","Skip symptom"],["0-9","Pain scale or option #"],["Arrow Up/Down","Navigate rows"],["Backspace","Go back one row"],["Esc","Finish & build narrative"]] },
               { section:"Actions", rows:[["Cmd Shift E","Open Note Studio"],["Cmd Shift S","Save Chart"],["Cmd Shift N","New Patient"],["?","Toggle shortcuts"]] },
             ].map(({ section, rows }) => (
@@ -847,33 +845,89 @@ export default function NewPatientInput() {
         </div>
       )}
 
-      {/* BOTTOM NAV */}
-      <nav className="npi-bottom-nav">
-        <div className="npi-bn-sub-wrap">
-          <div className="npi-bn-sub-row" ref={pillsRef}>
-            {subItems.map(item => (
-              <button key={item.section} className={`npi-bn-sub-pill${item.section===currentTab?" active":""}`}
-                onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}>
-                <span className="pill-icon">{item.icon}</span>
-                {item.label}
-                <span className={`pill-dot ${navDots[item.section]||"empty"}`} />
-                {SECTION_SHORTCUT[item.section] && <span className="pill-sc">Cmd+{SECTION_SHORTCUT[item.section]}</span>}
-              </button>
-            ))}
+      {/* WORKFLOW RAIL — left vertical nav replacing bottom bar */}
+      <aside className="npi-wf-rail">
+        {/* Patient card header — always visible in the rail */}
+        <div className="npi-wf-pt">
+          <div className="npi-wf-pt-name">{patientName}</div>
+          <div className="npi-wf-pt-meta">
+            {demo.age && <span>{demo.age}y {demo.sex ? `· ${demo.sex}` : ""}</span>}
+            {cc.text && <span className="npi-wf-pt-cc">{cc.text}</span>}
           </div>
+          {esiLevel && (
+            <span className="npi-wf-esi" style={{
+              color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)",
+              borderColor: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.3)`,
+              background: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.08)`,
+            }}>ESI {esiLevel}</span>
+          )}
         </div>
-        <div className="npi-bn-groups">
-          {GROUP_META.map(g => (
-            <button key={g.key} className={`npi-bn-group-tab${g.key===activeGroup?" active":""}`} onClick={() => selectGroup(g.key)}>
-              <div className="npi-bn-group-icon">
-                {g.icon}
-                <span className={`npi-bn-group-badge ${getGroupBadge(g.key)}`} />
-              </div>
-              <span className="npi-bn-group-label">{g.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+
+        {/* 5 workflow group sections */}
+        {GROUP_META.map(g => {
+          const isActive = g.key === activeGroup;
+          const items    = NAV_DATA[g.key] || [];
+          const badge    = getGroupBadge(g.key);
+          return (
+            <div key={g.key} className="npi-wf-group">
+              {/* Group header */}
+              <button
+                className={`npi-wf-gh${isActive ? " active" : ""}${g.key === "note" ? " note-grp" : ""}`}
+                onClick={() => selectGroup(g.key)}
+              >
+                <span className="npi-wf-gh-icon">{g.icon}</span>
+                <span className="npi-wf-gh-label">{g.label}</span>
+                <span className={`npi-wf-gh-badge ${badge}`} />
+              </button>
+
+              {/* Section list — only when this group is active */}
+              {isActive && (
+                <div className="npi-wf-items">
+                  {g.key === "note" ? (
+                    /* Note group: upstream readiness chips + keyboard hints */
+                    <>
+                      {[
+                        { id:"reg",  label:"Register",     done: !!(demo.firstName||demo.lastName) && !!cc.text && (!!vitals.bp||!!vitals.hr) },
+                        { id:"asmt", label:"Assessment",   done: !!(cc.hpi) && Object.keys(rosState).length > 0 && Object.keys(peState).length > 0 },
+                        { id:"note", label:"Clinical Note", active: true },
+                      ].map(chip => (
+                        <div key={chip.id}
+                          className={`npi-wf-chip${chip.active ? " active" : chip.done ? " done" : " todo"}`}
+                          onClick={() => !chip.active && selectGroup(chip.id === "reg" ? "register" : "assess")}
+                          style={{ cursor: chip.active ? "default" : "pointer" }}
+                        >
+                          <span className="npi-wf-chip-icon">{chip.active ? "📄" : chip.done ? "✓" : "○"}</span>
+                          <span>{chip.label}</span>
+                        </div>
+                      ))}
+                      <div className="npi-wf-note-kbd">
+                        {[["⌘D","Impression"],["⌘M","MDM"],["⌘G","Generate"]].map(([k,d]) => (
+                          <span key={k}><kbd>{k}</kbd>{d}</span>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    /* Standard groups: section buttons */
+                    items.map(item => (
+                      <button key={item.section}
+                        className={`npi-wf-item${item.section === currentTab ? " active" : ""}`}
+                        onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}
+                      >
+                        <span className="npi-wf-item-icon">{item.icon}</span>
+                        <span className="npi-wf-item-label">{item.label}</span>
+                        <span className={`npi-wf-item-dot ${navDots[item.section]||"empty"}`} />
+                        {SECTION_SHORTCUT[item.section] && (
+                          <span className="npi-wf-item-sc">⌘{SECTION_SHORTCUT[item.section]}</span>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </aside>
     </>
   );
 }
@@ -887,7 +941,7 @@ const CSS = `
   --npi-bd:#1a3555;--npi-bhi:#2a4f7a;--npi-blue:#3b9eff;--npi-teal:#00e5c0;
   --npi-gold:#f5c842;--npi-coral:#ff6b6b;--npi-orange:#ff9f43;--npi-purple:#9b6dff;
   --npi-txt:#ffffff;--npi-txt2:#d0e8ff;--npi-txt3:#a8c8e8;--npi-txt4:#7aa0c0;
-  --npi-isb:56px;--npi-top:88px;--npi-bot:108px;
+  --npi-isb:56px;--npi-wf:190px;--npi-top:88px;
 }
 
 .npi-isb{position:fixed;top:0;left:0;bottom:0;width:var(--npi-isb);background:#040d19;border-right:1px solid var(--npi-bd);display:flex;flex-direction:column;align-items:center;z-index:300}
@@ -902,7 +956,7 @@ const CSS = `
 .npi-isb-sep{width:30px;height:1px;background:var(--npi-bd);margin:4px 0;flex-shrink:0}
 .npi-isb-bottom{padding:8px 0;border-top:1px solid var(--npi-bd);display:flex;flex-direction:column;align-items:center;gap:2px}
 
-.npi-top-bar{position:fixed;top:0;left:var(--npi-isb);right:0;height:var(--npi-top);background:var(--npi-panel);border-bottom:1px solid var(--npi-bd);z-index:200;display:flex;flex-direction:column}
+.npi-top-bar{position:fixed;top:0;left:calc(var(--npi-isb) + var(--npi-wf));right:0;height:var(--npi-top);background:var(--npi-panel);border-bottom:1px solid var(--npi-bd);z-index:200;display:flex;flex-direction:column}
 .npi-top-row-1{height:44px;flex-shrink:0;display:flex;align-items:center;padding:0 14px;gap:8px;border-bottom:1px solid rgba(26,53,85,.5)}
 .npi-welcome{font-size:12px;color:var(--npi-txt2);font-weight:500;white-space:nowrap}
 .npi-welcome strong{color:var(--npi-txt)}
@@ -945,52 +999,80 @@ const CSS = `
 .npi-status-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap}
 .npi-status-room{background:rgba(0,229,192,.1);color:var(--npi-teal);border:1px solid rgba(0,229,192,.3)}
 
-.npi-main-wrap{position:fixed;top:var(--npi-top);left:var(--npi-isb);right:0;bottom:var(--npi-bot);display:flex;background:var(--npi-bg)}
+.npi-main-wrap{position:fixed;top:var(--npi-top);left:calc(var(--npi-isb) + var(--npi-wf));right:0;bottom:0;display:flex;background:var(--npi-bg)}
 .npi-content{flex:1;overflow-y:auto;padding:18px 28px 24px;display:flex;flex-direction:column;gap:18px;min-height:0}
 
-.npi-bottom-nav{position:fixed;bottom:0;left:var(--npi-isb);right:0;height:var(--npi-bot);background:var(--npi-panel);border-top:1px solid var(--npi-bd);z-index:200;display:flex;flex-direction:column}
-.npi-bn-sub-wrap{position:relative;flex-shrink:0;height:44px}
-.npi-bn-sub-wrap::before,.npi-bn-sub-wrap::after{content:'';position:absolute;top:0;bottom:0;width:24px;z-index:2;pointer-events:none}
-.npi-bn-sub-wrap::before{left:0;background:linear-gradient(90deg,var(--npi-panel) 0%,transparent 100%)}
-.npi-bn-sub-wrap::after{right:0;background:linear-gradient(-90deg,var(--npi-panel) 0%,transparent 100%)}
-.npi-bn-sub-row{height:44px;display:flex;align-items:center;padding:0 12px;gap:6px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid rgba(26,53,85,.4);scrollbar-width:none;-ms-overflow-style:none}
-.npi-bn-sub-row::-webkit-scrollbar{display:none}
-.npi-bn-sub-pill{display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;color:var(--npi-txt3);background:transparent;border:1px solid transparent;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif}
-.npi-bn-sub-pill:hover{color:var(--npi-txt2);background:var(--npi-up);border-color:var(--npi-bd)}
-.npi-bn-sub-pill.active{color:var(--npi-blue);background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.35);font-weight:600}
-.npi-bn-sub-pill .pill-icon{font-size:12px}
-.npi-bn-sub-pill .pill-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.npi-bn-sub-pill .pill-dot.done{background:var(--npi-teal);box-shadow:0 0 4px rgba(0,229,192,.5)}
-.npi-bn-sub-pill .pill-dot.partial{background:var(--npi-orange);box-shadow:0 0 4px rgba(255,159,67,.5)}
-.npi-bn-sub-pill .pill-dot.empty{background:var(--npi-txt4)}
-.npi-bn-sub-pill .pill-sc{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--npi-txt4);background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:3px;padding:1px 4px;opacity:0;transition:opacity .15s}
-.npi-bn-sub-pill:hover .pill-sc{opacity:1}
-.npi-bn-groups{height:64px;flex-shrink:0;display:flex;align-items:stretch}
-.npi-bn-group-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;position:relative;transition:all .2s;border:none;background:none;font-family:'DM Sans',sans-serif;padding:6px 0}
-.npi-bn-group-tab::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--npi-blue);border-radius:0 0 2px 2px;transform:scaleX(0);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
-.npi-bn-group-tab.active::before{transform:scaleX(1)}
-.npi-bn-group-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:transparent;border:1px solid transparent;transition:all .2s;position:relative}
-.npi-bn-group-tab:hover .npi-bn-group-icon{background:var(--npi-up);border-color:var(--npi-bd)}
-.npi-bn-group-tab.active .npi-bn-group-icon{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.3)}
-.npi-bn-group-badge{position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--npi-panel)}
-.npi-bn-group-badge.done{background:var(--npi-teal)}
-.npi-bn-group-badge.partial{background:var(--npi-orange)}
-.npi-bn-group-badge.empty{background:transparent;border-color:transparent}
-.npi-bn-group-label{font-size:9px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--npi-txt4);transition:color .2s}
-.npi-bn-group-tab:hover .npi-bn-group-label{color:var(--npi-txt3)}
-.npi-bn-group-tab.active .npi-bn-group-label{color:var(--npi-blue);font-weight:600}
-.npi-bn-group-tab+.npi-bn-group-tab{border-left:1px solid rgba(26,53,85,.4)}
+/* ── WORKFLOW RAIL (replaces bottom nav) ─────────────────────────────────── */
+.npi-wf-rail{position:fixed;top:0;left:var(--npi-isb);bottom:0;width:var(--npi-wf);background:var(--npi-panel);border-right:1px solid var(--npi-bd);z-index:250;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.npi-wf-rail::-webkit-scrollbar{width:3px}
+.npi-wf-rail::-webkit-scrollbar-thumb{background:var(--npi-bd);border-radius:2px}
+
+/* Patient card — top of rail, same height as top bar */
+.npi-wf-pt{height:var(--npi-top);flex-shrink:0;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;gap:3px;border-bottom:1px solid var(--npi-bd);background:rgba(8,22,40,.8)}
+.npi-wf-pt-name{font-family:'Playfair Display',serif;font-size:13px;font-weight:600;color:var(--npi-txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.npi-wf-pt-meta{display:flex;flex-direction:column;gap:2px}
+.npi-wf-pt-meta span{font-size:10px;color:var(--npi-txt4);font-family:'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.npi-wf-pt-cc{color:var(--npi-teal) !important;font-size:10px !important}
+.npi-wf-esi{display:inline-block;margin-top:3px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:1px 7px;border-radius:4px;border:1px solid;align-self:flex-start}
+
+/* Group container */
+.npi-wf-group{border-bottom:1px solid rgba(26,53,85,.5);flex-shrink:0}
+
+/* Group header button */
+.npi-wf-gh{width:100%;display:flex;align-items:center;gap:8px;padding:9px 12px;background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s;position:relative;text-align:left}
+.npi-wf-gh:hover{background:rgba(255,255,255,.03)}
+.npi-wf-gh.active{background:rgba(59,158,255,.05)}
+.npi-wf-gh.active::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:3px;background:var(--npi-blue);border-radius:0 2px 2px 0}
+.npi-wf-gh.note-grp.active{background:rgba(0,229,192,.05)}
+.npi-wf-gh.note-grp.active::before{background:var(--npi-teal)}
+.npi-wf-gh-icon{font-size:14px;flex-shrink:0;line-height:1}
+.npi-wf-gh-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--npi-txt4);flex:1;transition:color .15s}
+.npi-wf-gh:hover .npi-wf-gh-label{color:var(--npi-txt3)}
+.npi-wf-gh.active .npi-wf-gh-label{color:var(--npi-blue)}
+.npi-wf-gh.note-grp.active .npi-wf-gh-label{color:var(--npi-teal)}
+.npi-wf-gh-badge{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.npi-wf-gh-badge.done{background:var(--npi-teal);box-shadow:0 0 4px rgba(0,229,192,.4)}
+.npi-wf-gh-badge.partial{background:var(--npi-orange)}
+.npi-wf-gh-badge.empty{background:transparent;border:1.5px solid rgba(26,53,85,.8)}
+
+/* Section item buttons */
+.npi-wf-items{padding:2px 0 6px}
+.npi-wf-item{width:100%;display:flex;align-items:center;gap:7px;padding:6px 12px 6px 22px;background:none;border:none;cursor:pointer;transition:all .12s;font-family:'DM Sans',sans-serif;text-align:left;position:relative}
+.npi-wf-item:hover{background:rgba(255,255,255,.025)}
+.npi-wf-item.active{background:rgba(59,158,255,.08)}
+.npi-wf-item.active::before{content:'';position:absolute;left:10px;top:50%;transform:translateY(-50%);width:2px;height:12px;background:var(--npi-blue);border-radius:1px}
+.npi-wf-item-icon{font-size:12px;flex-shrink:0;opacity:.65;line-height:1}
+.npi-wf-item-label{font-size:11px;color:var(--npi-txt3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .12s;line-height:1.2}
+.npi-wf-item.active .npi-wf-item-label,.npi-wf-item:hover .npi-wf-item-label{color:var(--npi-txt2)}
+.npi-wf-item.active .npi-wf-item-label{font-weight:500;color:var(--npi-txt)}
+.npi-wf-item-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.npi-wf-item-dot.done{background:var(--npi-teal);box-shadow:0 0 3px rgba(0,229,192,.4)}
+.npi-wf-item-dot.partial{background:var(--npi-orange)}
+.npi-wf-item-dot.empty{background:transparent;border:1px solid rgba(122,160,192,.4)}
+.npi-wf-item-sc{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--npi-txt4);background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:3px;padding:0 4px;opacity:0;transition:opacity .12s;flex-shrink:0}
+.npi-wf-item:hover .npi-wf-item-sc{opacity:1}
+
+/* Note group chips */
+.npi-wf-chip{display:flex;align-items:center;gap:7px;padding:6px 12px 6px 14px;font-size:11px;font-family:'DM Sans',sans-serif;margin:2px 6px;border-radius:7px;transition:all .12s;border:1px solid transparent}
+.npi-wf-chip.active{color:var(--npi-teal);background:rgba(0,229,192,.08);border-color:rgba(0,229,192,.2);font-weight:600}
+.npi-wf-chip.done{color:var(--npi-teal);background:rgba(0,229,192,.04);border-color:rgba(0,229,192,.12)}
+.npi-wf-chip.todo{color:var(--npi-txt4)}
+.npi-wf-chip.todo:hover{color:var(--npi-txt2);background:var(--npi-up);border-color:var(--npi-bd)}
+.npi-wf-chip-icon{font-size:12px;flex-shrink:0;line-height:1}
+.npi-wf-note-kbd{padding:6px 14px 8px;display:flex;flex-direction:column;gap:5px}
+.npi-wf-note-kbd span{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--npi-txt4);display:flex;align-items:center;gap:5px}
+.npi-wf-note-kbd kbd{background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:3px;padding:0 5px;color:var(--npi-blue);font-family:'JetBrains Mono',monospace;font-size:9px}
 
 .npi-scrim{position:fixed;inset:0;z-index:9997;background:rgba(3,8,16,.4);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .3s}
 .npi-scrim.open{opacity:1;pointer-events:auto}
-.npi-fab{position:fixed;bottom:124px;right:24px;z-index:9999;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--npi-teal) 0%,#00b4d8 100%);box-shadow:0 6px 24px rgba(0,229,192,.35);transition:all .35s cubic-bezier(.34,1.56,.64,1);animation:npi-ring 3s ease-in-out infinite}
+.npi-fab{position:fixed;bottom:24px;right:24px;z-index:9999;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--npi-teal) 0%,#00b4d8 100%);box-shadow:0 6px 24px rgba(0,229,192,.35);transition:all .35s cubic-bezier(.34,1.56,.64,1);animation:npi-ring 3s ease-in-out infinite}
 .npi-fab:hover{transform:scale(1.1)}
 .npi-fab.open{animation:none;background:linear-gradient(135deg,var(--npi-coral) 0%,#e05555 100%);box-shadow:0 6px 24px rgba(255,107,107,.35);transform:rotate(90deg)}
 @keyframes npi-ring{0%,100%{box-shadow:0 6px 24px rgba(0,229,192,.35),0 0 0 0 rgba(0,229,192,.28)}50%{box-shadow:0 6px 24px rgba(0,229,192,.35),0 0 0 10px rgba(0,229,192,0)}}
 .npi-fab-icon{font-size:22px;line-height:1}
 .npi-fab-badge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:10px;background:var(--npi-coral);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--npi-bg);padding:0 4px;opacity:0;transform:scale(0);transition:all .3s cubic-bezier(.34,1.56,.64,1)}
 .npi-fab-badge.show{opacity:1;transform:scale(1)}
-.npi-overlay{position:fixed;bottom:180px;right:24px;z-index:9998;width:330px;height:500px;background:#081628;border:1px solid var(--npi-bd);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55);opacity:0;transform:translateY(20px) scale(.94);pointer-events:none;transition:all .35s cubic-bezier(.34,1.56,.64,1)}
+.npi-overlay{position:fixed;bottom:90px;right:24px;z-index:9998;width:330px;height:500px;background:#081628;border:1px solid var(--npi-bd);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55);opacity:0;transform:translateY(20px) scale(.94);pointer-events:none;transition:all .35s cubic-bezier(.34,1.56,.64,1)}
 .npi-overlay.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
 .npi-n-hdr{padding:14px 14px 10px;flex-shrink:0;border-bottom:1px solid var(--npi-bd);background:linear-gradient(180deg,rgba(0,229,192,.05) 0%,transparent 100%)}
 .npi-n-hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -1026,7 +1108,7 @@ const CSS = `
 .npi-n-send:hover{transform:scale(1.08)}
 .npi-n-send:disabled{opacity:.4;cursor:not-allowed;transform:none}
 
-.npi-sc-hint-fab{position:fixed;bottom:184px;left:66px;z-index:9990;width:26px;height:26px;border-radius:50%;background:var(--npi-up);border:1px solid var(--npi-bd);color:var(--npi-txt4);font-size:12px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.npi-sc-hint-fab{position:fixed;bottom:76px;left:66px;z-index:9990;width:26px;height:26px;border-radius:50%;background:var(--npi-up);border:1px solid var(--npi-bd);color:var(--npi-txt4);font-size:12px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
 .npi-sc-hint-fab:hover{border-color:var(--npi-bhi);color:var(--npi-txt2);background:var(--npi-card)}
 
 /* ── INLINE HPI TAB ─────────────────────────────────────────────────────── */

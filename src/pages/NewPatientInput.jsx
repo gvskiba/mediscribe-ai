@@ -82,6 +82,37 @@ const QUICK_ACTIONS = [
   { icon: "🧠", label: "DDx",       prompt: "Suggest differential diagnoses based on current data."   },
 ];
 
+// ─── BODY SYSTEM LISTS FOR WORKFLOW RAIL ─────────────────────────────────────
+// Minimal data only — full symptom/finding data stays in the tab components.
+// IDs must match ROS_SYSTEMS / PE_SYSTEMS in ROSTab.jsx / PETab.jsx.
+const ROS_RAIL_SYSTEMS = [
+  { id: "const",   icon: "🌡️", label: "Constitutional"   },
+  { id: "heent",   icon: "👁️", label: "HEENT"            },
+  { id: "cv",      icon: "❤️", label: "Cardiovascular"   },
+  { id: "resp",    icon: "🫁", label: "Respiratory"      },
+  { id: "gi",      icon: "🫃", label: "GI / Abdomen"     },
+  { id: "gu",      icon: "🔵", label: "Genitourinary"    },
+  { id: "msk",     icon: "🦴", label: "MSK"              },
+  { id: "neuro",   icon: "🧠", label: "Neurological"     },
+  { id: "psych",   icon: "🧘", label: "Psychiatric"      },
+  { id: "skin",    icon: "🩹", label: "Skin"             },
+  { id: "endo",    icon: "⚗️", label: "Endocrine"        },
+  { id: "heme",    icon: "🩸", label: "Heme / Lymph"     },
+  { id: "allergy", icon: "🌿", label: "Allergic / Immuno"},
+];
+const PE_RAIL_SYSTEMS = [
+  { id: "gen",   icon: "🧍", label: "General"        },
+  { id: "heent", icon: "👁️", label: "HEENT"          },
+  { id: "neck",  icon: "🔵", label: "Neck"           },
+  { id: "cv",    icon: "❤️", label: "Cardiovascular" },
+  { id: "resp",  icon: "🫁", label: "Respiratory"    },
+  { id: "abd",   icon: "🫃", label: "Abdomen"        },
+  { id: "msk",   icon: "🦴", label: "MSK"            },
+  { id: "neuro", icon: "🧠", label: "Neurological"   },
+  { id: "skin",  icon: "🩹", label: "Skin"           },
+  { id: "psych", icon: "🧘", label: "Psychiatric"    },
+];
+
 const SYSTEM_PROMPT =
   "You are Notrya AI — a helpful AI assistant embedded in an emergency medicine documentation platform. Respond in 2-4 concise, actionable sentences. Be direct. Never fabricate data.";
 
@@ -489,6 +520,8 @@ export default function NewPatientInput() {
   const [esiLevel, setEsiLevel]   = useState("");
   const [registration, setRegistration] = useState({ mrn:"", room:"" });
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [rosActiveSystem, setRosActiveSystem] = useState(0);
+  const [peActiveSystem,  setPeActiveSystem]  = useState(0);
 
   // ── AI state ─────────────────────────────────────────────────────────────
   const [aiOpen, setAiOpen]       = useState(false);
@@ -570,6 +603,20 @@ export default function NewPatientInput() {
     if (key === "temp") return n > 39.5 || n < 35.5 ? " abn" : n > 38 || n < 36 ? " warn" : "";
     if (key === "bp")   return n > 180 || n < 80  ? " abn" : n > 140 || n < 90 ? " warn" : "";
     return "";
+  };
+
+  // Per-system completion dots derived from lifted rosState / peState
+  const getRosSysDot = (sysId) => {
+    const st = rosState[sysId];
+    if (!st) return "empty";
+    if (st === "has-positives") return "partial";
+    return "done";
+  };
+  const getPeSysDot = (sysId) => {
+    const st = peState[sysId];
+    if (!st) return "empty";
+    if (st === "has-positives" || st === "abnormal" || st === "mixed") return "partial";
+    return "done";
   };
 
   const toggleAI = useCallback(() => {
@@ -674,8 +721,8 @@ export default function NewPatientInput() {
       case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} onAdvance={() => selectSection("meds")} />;
       case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("hpi")} />;
       case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
-      case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} />;
-      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("mdm")} />;
+      case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />;
+      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("mdm")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} />;
       case "mdm":        return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
       case "chart":      return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
       case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
@@ -901,17 +948,37 @@ export default function NewPatientInput() {
                   ) : (
                     /* Standard groups: section buttons */
                     items.map(item => (
-                      <button key={item.section}
-                        className={`npi-wf-item${item.section === currentTab ? " active" : ""}`}
-                        onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}
-                      >
-                        <span className="npi-wf-item-icon">{item.icon}</span>
-                        <span className="npi-wf-item-label">{item.label}</span>
-                        <span className={`npi-wf-item-dot ${navDots[item.section]||"empty"}`} />
-                        {SECTION_SHORTCUT[item.section] && (
-                          <span className="npi-wf-item-sc">⌘{SECTION_SHORTCUT[item.section]}</span>
-                        )}
-                      </button>
+                      <React.Fragment key={item.section}>
+                        <button
+                          className={`npi-wf-item${item.section === currentTab ? " active" : ""}`}
+                          onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}
+                        >
+                          <span className="npi-wf-item-icon">{item.icon}</span>
+                          <span className="npi-wf-item-label">{item.label}</span>
+                          <span className={`npi-wf-item-dot ${navDots[item.section]||"empty"}`} />
+                          {SECTION_SHORTCUT[item.section] && (
+                            <span className="npi-wf-item-sc">⌘{SECTION_SHORTCUT[item.section]}</span>
+                          )}
+                        </button>
+                        {/* ROS body systems — inline expansion */}
+                        {item.section === "ros" && currentTab === "ros" && ROS_RAIL_SYSTEMS.map((sys, i) => (
+                          <button key={sys.id} className={`npi-wf-sys-item${i === rosActiveSystem ? " active" : ""}`}
+                            onClick={() => { setRosActiveSystem(i); panelProps?.ref?.current?.focus?.(); }}>
+                            <span className="npi-wf-sys-icon">{sys.icon}</span>
+                            <span className="npi-wf-sys-label">{sys.label}</span>
+                            <span className={`npi-wf-item-dot ${getRosSysDot(sys.id)}`} />
+                          </button>
+                        ))}
+                        {/* PE organ systems — inline expansion */}
+                        {item.section === "pe" && currentTab === "pe" && PE_RAIL_SYSTEMS.map((sys, i) => (
+                          <button key={sys.id} className={`npi-wf-sys-item${i === peActiveSystem ? " active" : ""}`}
+                            onClick={() => { setPeActiveSystem(i); }}>
+                            <span className="npi-wf-sys-icon">{sys.icon}</span>
+                            <span className="npi-wf-sys-label">{sys.label}</span>
+                            <span className={`npi-wf-item-dot ${getPeSysDot(sys.id)}`} />
+                          </button>
+                        ))}
+                      </React.Fragment>
                     ))
                   )}
                 </div>
@@ -1039,6 +1106,16 @@ const CSS = `
 .npi-wf-item-dot.empty{background:transparent;border:1px solid rgba(122,160,192,.4)}
 .npi-wf-item-sc{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--npi-txt4);background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:3px;padding:0 4px;opacity:0;transition:opacity .12s;flex-shrink:0}
 .npi-wf-item:hover .npi-wf-item-sc{opacity:1}
+
+/* Body system sub-items — inline expansion in rail for ROS and PE */
+.npi-wf-sys-item{width:100%;display:flex;align-items:center;gap:6px;padding:5px 12px 5px 28px;background:none;border:none;cursor:pointer;transition:all .12s;font-family:'DM Sans',sans-serif;text-align:left;position:relative}
+.npi-wf-sys-item:hover{background:rgba(255,255,255,.02)}
+.npi-wf-sys-item.active{background:rgba(0,229,192,.06)}
+.npi-wf-sys-item.active::before{content:'';position:absolute;left:16px;top:50%;transform:translateY(-50%);width:2px;height:10px;background:var(--npi-teal);border-radius:1px}
+.npi-wf-sys-icon{font-size:11px;flex-shrink:0;line-height:1;opacity:.6}
+.npi-wf-sys-label{font-size:10px;color:var(--npi-txt3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .12s}
+.npi-wf-sys-item:hover .npi-wf-sys-label{color:var(--npi-txt2)}
+.npi-wf-sys-item.active .npi-wf-sys-label{color:var(--npi-teal);font-weight:500}
 
 /* Note group chips */
 .npi-wf-chip{display:flex;align-items:center;gap:7px;padding:6px 12px 6px 14px;font-size:11px;font-family:'DM Sans',sans-serif;margin:2px 6px;border-radius:7px;transition:all .12s;border:1px solid transparent}

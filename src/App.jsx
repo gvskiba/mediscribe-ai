@@ -67,6 +67,7 @@ import GlobalNav from '@/components/GlobalNav';
 import NotryaFloatingAI from '@/components/ai/NotryaFloatingAI';
 import { useLocation } from 'react-router-dom';
 import AddendumManager from '@/pages/AddendumManager';
+import ClinicalNoteV2 from '@/pages/ClinicalNoteV2';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 import DischargeDisposition from '@/pages/DischargeDisposition';
 
@@ -195,6 +196,7 @@ const AuthenticatedApp = () => {
       <Route path="/shift-signout" element={<ShiftSignout />} />
       <Route path="/AddendumManager" element={<AddendumManager />} />
       <Route path="/discharge-disposition" element={<DischargeDisposition />} />
+      <Route path="/ClinicalNoteV2" element={<ClinicalNoteV2 />} />
 
 
       <Route path="*" element={<PageNotFound />} />

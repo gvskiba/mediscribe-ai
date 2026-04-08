@@ -448,14 +448,17 @@ export default function NewPatientInput() {
     return m;
   });
 
-  const [clock, setClock] = useState("");
+  // ── Door-time counter (mounts when intake begins) ───────────────────────
+  const arrivalTimeRef = useRef(Date.now());
+  const [doorTime, setDoorTime] = useState("0m");
   useEffect(() => {
-    const tick = () => {
-      const d = new Date();
-      setClock(String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"));
+    const update = () => {
+      const mins = Math.floor((Date.now() - arrivalTimeRef.current) / 60000);
+      const h = Math.floor(mins / 60), m = mins % 60;
+      setDoorTime(h > 0 ? `${h}h ${m}m` : `${m}m`);
     };
-    tick();
-    const id = setInterval(tick, 10000);
+    update();
+    const id = setInterval(update, 60000);
     return () => clearInterval(id);
   }, []);
 
@@ -554,6 +557,20 @@ export default function NewPatientInput() {
     if (items.some(i => navDots[i.section] === "done" || navDots[i.section] === "partial")) return "partial";
     return "empty";
   }, [navDots]);
+
+  // Returns " abn" | " warn" | "" for vital colour coding
+  const vitalClass = (key, raw) => {
+    if (!raw || raw === "—") return "";
+    const src = key === "bp" ? String(raw).split("/")[0] : raw;
+    const n = parseFloat(src);
+    if (isNaN(n)) return "";
+    if (key === "hr")   return n > 110 || n < 50 ? " abn" : n > 90 || n < 55 ? " warn" : "";
+    if (key === "rr")   return n > 22  || n < 8  ? " abn" : n > 20 || n < 10 ? " warn" : "";
+    if (key === "spo2") return n < 90  ? " abn" : n < 94  ? " warn" : "";
+    if (key === "temp") return n > 39.5 || n < 35.5 ? " abn" : n > 38 || n < 36 ? " warn" : "";
+    if (key === "bp")   return n > 180 || n < 80  ? " abn" : n > 140 || n < 90 ? " warn" : "";
+    return "";
+  };
 
   const toggleAI = useCallback(() => {
     setAiOpen(o => { if (!o) setUnread(0); return !o; });
@@ -680,54 +697,46 @@ export default function NewPatientInput() {
       {/* TOP BAR */}
       <header className="npi-top-bar">
         <div className="npi-top-row-1">
-          <span className="npi-welcome">Welcome, <strong>Dr. Skiba</strong></span>
+          <span className="npi-dr-label">Dr. Skiba <span className="npi-dr-role">ED</span></span>
           <div className="npi-vsep" />
           <div className="npi-stat"><span className="npi-stat-val">0</span><span className="npi-stat-lbl">Active</span></div>
           <div className="npi-stat"><span className="npi-stat-val alert">14</span><span className="npi-stat-lbl">Pending</span></div>
-          <div className="npi-stat"><span className="npi-stat-val">—</span><span className="npi-stat-lbl">Orders</span></div>
-          <div className="npi-stat"><span className="npi-stat-val">11.6</span><span className="npi-stat-lbl">Hours</span></div>
+          <div className="npi-vsep" />
+          <button className="npi-tb-link" onClick={() => navigate("/EDTrackingBoard")}>🏥 Track Board</button>
           <div className="npi-top-right">
-            <div className="npi-clock">{clock}</div>
-            <div className="npi-ai-on"><div className="npi-ai-dot" /> AI ON</div>
+            <button className={`npi-ai-btn${aiOpen?" open":""}`} onClick={toggleAI} title="Notrya AI">
+              <div className="npi-ai-dot" /> AI
+              {unread > 0 && <span className="npi-ai-badge">{unread > 9 ? "9+" : unread}</span>}
+            </button>
             <button className="npi-new-pt" onClick={() => navigate("/NewPatientInput?tab=demo")}>+ New Patient</button>
             <Link to="/AppSettings" className="npi-tb-settings" title="Settings">⚙️</Link>
           </div>
         </div>
         <div className="npi-top-row-2">
-          <span className="npi-chart-badge">{registration.mrn||"PT-NEW"}</span>
+          {/* MRN badge — amber unregistered, teal once assigned */}
+          <span className={`npi-chart-badge${registration.mrn ? " registered" : ""}`}>
+            {registration.mrn || "PT-NEW"}
+          </span>
+          {/* Patient name — dominant safety identifier */}
           <span className="npi-pt-name">{patientName}</span>
-          {demo.age && <span className="npi-pt-meta">{demo.age}y · {demo.sex||"—"}</span>}
-          {cc.text && <span className="npi-pt-cc">CC: {cc.text}</span>}
-          <div className="npi-allergy-wrap" onClick={() => selectSection("meds")}>
-            <span>⚠️</span>
-            <span className="npi-allergy-lbl">Allergies</span>
-            <div className="npi-allergy-pills">
-              {allergies.length === 0
-                ? <span className="npi-allergy-pill npi-muted">None</span>
-                : allergies.slice(0,2).map(a => <span key={a} className="npi-allergy-pill">{a}</span>)}
-            </div>
+          {/* Door-to-present timer */}
+          <span className="npi-door-time" title="Time since intake started">⏱ {doorTime}</span>
+          {/* Allergy — two distinct visual states */}
+          <div className={`npi-allergy-wrap${allergies.length > 0 ? " has-allergies" : ""}`}
+               onClick={() => selectSection("meds")} title="Click to view/edit medications">
+            {allergies.length === 0
+              ? <span className="npi-allergy-nka">✓ NKA</span>
+              : <span className="npi-allergy-alert">
+                  ⚠ {allergies.slice(0, 2).join(" · ")}{allergies.length > 2 ? ` +${allergies.length - 2}` : ""}
+                </span>
+            }
           </div>
-          <div className="npi-vb-div" />
-          <div className="npi-vb-vital"><span className="npi-vl">BP</span><span className="npi-vv">{vitals.bp||"—"}</span></div>
-          <div className="npi-vb-vital"><span className="npi-vl">HR</span><span className={parseInt(vitals.hr)>120?"npi-vv npi-abn":"npi-vv"}>{vitals.hr||"—"}</span></div>
-          <div className="npi-vb-vital"><span className="npi-vl">RR</span><span className="npi-vv">{vitals.rr||"—"}</span></div>
-          <div className="npi-vb-vital"><span className="npi-vl">SpO₂</span><span className="npi-vv">{vitals.spo2||"—"}</span></div>
-          <div className="npi-vb-vital"><span className="npi-vl">T</span><span className="npi-vv">{vitals.temp||"—"}</span></div>
-          <div className="npi-vb-div" />
-          <span className="npi-status-badge" style={esiLevel ? {
-            background:`rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.1)`,
-            color:esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)",
-            border:`1px solid rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.3)`,
-          }:{ color:"var(--npi-txt4)", border:"1px solid var(--npi-bd)" }}>ESI {esiLevel||"—"}</span>
-          {registration.room && <span className="npi-status-badge npi-status-room">Room {registration.room}</span>}
+          {/* Action buttons */}
           <div className="npi-top-acts">
-            <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>📋 Orders</button>
-            <button className="npi-btn-ghost" onClick={() => navigate("/EDTrackingBoard")}>🏥 Track Board</button>
-            <button className="npi-btn-ghost" title="Open Clinical Note (Cmd+Shift+E)" onClick={() => selectSection("chart")
-
-            }>📄 Note Studio</button>
+            <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>+ Order</button>
+            <button className="npi-btn-ghost" onClick={() => selectSection("orders")} title="Request consultation">👥 Consult</button>
             <button className="npi-btn-coral" onClick={() => selectSection("discharge")}>🚪 Discharge</button>
-            <button className="npi-btn-primary" onClick={handleSaveChart}>💾 Save Chart</button>
+            <button className="npi-btn-primary" onClick={handleSaveChart}>✍ Sign & Save</button>
           </div>
         </div>
       </header>
@@ -739,9 +748,7 @@ export default function NewPatientInput() {
       </div>
 
       {/* AI SCRIM */}
-      <div className={`npi-scrim${aiOpen?" open":""}`} onClick={toggleAI} />
-
-      {/* AI CHAT OVERLAY */}
+      <div className={`npi-scrim${aiOpen?" open":""}`} onClick={toggleAI} />      {/* AI CHAT OVERLAY */}
       <div className={`npi-overlay${aiOpen?" open":""}`}>
         <div className="npi-n-hdr">
           <div className="npi-n-hdr-top">
@@ -774,12 +781,6 @@ export default function NewPatientInput() {
           <button className="npi-n-send" onClick={() => sendMessage(aiInput)} disabled={aiLoading||!aiInput.trim()}>↑</button>
         </div>
       </div>
-
-      {/* AI FAB */}
-      <button className={`npi-fab${aiOpen?" open":""}`} onClick={toggleAI} title="Notrya AI">
-        <span className="npi-fab-icon">{aiOpen?"✕":"🤖"}</span>
-        <span className={`npi-fab-badge${unread>0?" show":""}`}>{unread>9?"9+":unread}</span>
-      </button>
 
       {/* SHORTCUT ? FAB */}
       <button className="npi-sc-hint-fab" title="Keyboard shortcuts (?)" onClick={() => setShowShortcuts(s=>!s)}>?</button>
@@ -823,13 +824,35 @@ export default function NewPatientInput() {
             {demo.age && <span>{demo.age}y {demo.sex ? `· ${demo.sex}` : ""}</span>}
             {cc.text && <span className="npi-wf-pt-cc">{cc.text}</span>}
           </div>
-          {esiLevel && (
-            <span className="npi-wf-esi" style={{
-              color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)",
-              borderColor: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.3)`,
-              background: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.08)`,
-            }}>ESI {esiLevel}</span>
-          )}
+          <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:2 }}>
+            {esiLevel && (
+              <span className="npi-wf-esi" style={{
+                color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)",
+                borderColor: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.3)`,
+                background: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.08)`,
+              }}>ESI {esiLevel}</span>
+            )}
+            {registration.room && (
+              <span className="npi-wf-esi" style={{ color:"var(--npi-teal)", borderColor:"rgba(0,229,192,.3)", background:"rgba(0,229,192,.08)" }}>
+                Rm {registration.room}
+              </span>
+            )}
+          </div>
+          {/* Vitals strip — always visible, colour-coded */}
+          <div className="npi-wf-vitals">
+            {[
+              { key:"bp",   lbl:"BP",   val: vitals.bp   || "—" },
+              { key:"hr",   lbl:"HR",   val: vitals.hr   || "—" },
+              { key:"rr",   lbl:"RR",   val: vitals.rr   || "—" },
+              { key:"spo2", lbl:"SpO₂", val: vitals.spo2 || "—" },
+              { key:"temp", lbl:"T",    val: vitals.temp || "—" },
+            ].map(v => (
+              <div key={v.key} className="npi-wf-v-row">
+                <span className="npi-wf-v-lbl">{v.lbl}</span>
+                <span className={`npi-wf-v-val${vitalClass(v.key, v.val)}`}>{v.val}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* 5 workflow group sections */}
@@ -918,25 +941,36 @@ const CSS = `
 
 .npi-top-bar{position:fixed;top:0;left:var(--npi-wf);right:0;height:var(--npi-top);background:var(--npi-panel);border-bottom:1px solid var(--npi-bd);z-index:200;display:flex;flex-direction:column}
 .npi-top-row-1{height:44px;flex-shrink:0;display:flex;align-items:center;padding:0 14px;gap:8px;border-bottom:1px solid rgba(26,53,85,.5)}
-.npi-welcome{font-size:12px;color:var(--npi-txt2);font-weight:500;white-space:nowrap}
-.npi-welcome strong{color:var(--npi-txt)}
+.npi-dr-label{font-size:12px;font-weight:500;color:var(--npi-txt2);white-space:nowrap;flex-shrink:0}
+.npi-dr-role{font-size:10px;font-weight:400;color:var(--npi-txt4);margin-left:3px}
+.npi-tb-link{background:none;border:1px solid var(--npi-bd);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--npi-txt3);cursor:pointer;white-space:nowrap;transition:all .15s;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:4px}
+.npi-tb-link:hover{border-color:var(--npi-bhi);color:var(--npi-txt2);background:var(--npi-up)}
+.npi-ai-btn{display:flex;align-items:center;gap:5px;background:rgba(0,229,192,.08);border:1px solid rgba(0,229,192,.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--npi-teal);cursor:pointer;position:relative;transition:all .15s;font-family:'DM Sans',sans-serif}
+.npi-ai-btn:hover{background:rgba(0,229,192,.15)}
+.npi-ai-btn.open{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.4);color:var(--npi-coral)}
+.npi-ai-dot{width:6px;height:6px;border-radius:50%;background:var(--npi-teal);animation:npi-ai-pulse 2s ease-in-out infinite;flex-shrink:0}
+.npi-ai-btn.open .npi-ai-dot{background:var(--npi-coral);animation:none}
+.npi-ai-badge{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;border-radius:8px;background:var(--npi-coral);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--npi-panel);padding:0 3px}
 .npi-vsep{width:1px;height:20px;background:var(--npi-bd);flex-shrink:0}
 .npi-stat{display:flex;align-items:center;gap:5px;background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:6px;padding:3px 10px;cursor:pointer}
 .npi-stat-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--npi-txt)}
 .npi-stat-val.alert{color:var(--npi-gold)}
 .npi-stat-lbl{font-size:9px;color:var(--npi-txt3);text-transform:uppercase;letter-spacing:.04em}
 .npi-top-right{margin-left:auto;display:flex;align-items:center;gap:6px}
-.npi-clock{background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:6px;padding:3px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--npi-txt2)}
-.npi-ai-on{display:flex;align-items:center;gap:4px;background:rgba(0,229,192,.08);border:1px solid rgba(0,229,192,.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--npi-teal)}
-.npi-ai-dot{width:6px;height:6px;border-radius:50%;background:var(--npi-teal);animation:npi-ai-pulse 2s ease-in-out infinite}
+
 @keyframes npi-ai-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,192,.4)}50%{box-shadow:0 0 0 5px rgba(0,229,192,0)}}
 .npi-new-pt{background:var(--npi-teal);color:var(--npi-bg);border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;transition:filter .15s;white-space:nowrap}
 .npi-new-pt:hover{filter:brightness(1.15)}
 .npi-top-row-2{height:44px;flex-shrink:0;display:flex;align-items:center;padding:0 14px;gap:8px;overflow:hidden}
-.npi-chart-badge{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:20px;padding:1px 8px;color:var(--npi-teal);white-space:nowrap}
-.npi-pt-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:var(--npi-txt);white-space:nowrap}
-.npi-pt-meta{font-size:11px;color:var(--npi-txt3);white-space:nowrap}
-.npi-pt-cc{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--npi-orange);white-space:nowrap}
+.npi-chart-badge{font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(255,159,67,.08);border:1px solid rgba(255,159,67,.3);border-radius:20px;padding:1px 8px;color:var(--npi-orange);white-space:nowrap;flex-shrink:0}
+.npi-chart-badge.registered{background:rgba(59,158,255,.08);border-color:rgba(59,158,255,.3);color:var(--npi-blue)}
+.npi-pt-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--npi-txt);white-space:nowrap;flex-shrink:0;letter-spacing:-.01em}
+.npi-door-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--npi-txt4);white-space:nowrap;flex-shrink:0;letter-spacing:.02em}
+.npi-allergy-wrap{display:flex;align-items:center;cursor:pointer;flex-shrink:0;transition:opacity .15s}
+.npi-allergy-wrap:hover{opacity:.85}
+.npi-allergy-nka{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:var(--npi-teal);background:rgba(0,229,192,.06);border:1px solid rgba(0,229,192,.2);border-radius:6px;padding:2px 8px;white-space:nowrap}
+.npi-allergy-alert{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#fff;background:var(--npi-coral);border:1px solid rgba(255,107,107,.5);border-radius:6px;padding:3px 10px;white-space:nowrap;animation:npi-allergy-pulse 3s ease-in-out infinite}
+@keyframes npi-allergy-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,107,.3)}50%{box-shadow:0 0 0 4px rgba(255,107,107,0)}}
 .npi-top-acts{margin-left:auto;display:flex;align-items:center;gap:5px;flex-shrink:0}
 .npi-btn-ghost{background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--npi-txt2);cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:all .15s;font-family:'DM Sans',sans-serif}
 .npi-btn-ghost:hover{border-color:var(--npi-bhi);color:var(--npi-txt)}
@@ -944,20 +978,7 @@ const CSS = `
 .npi-btn-primary:hover{filter:brightness(1.15)}
 .npi-btn-coral{background:rgba(255,107,107,.15);color:var(--npi-coral);border:1px solid rgba(255,107,107,.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:all .15s;font-family:'DM Sans',sans-serif}
 .npi-btn-coral:hover{background:rgba(255,107,107,.25)}
-.npi-allergy-wrap{display:flex;align-items:center;gap:5px;background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.35);border-radius:6px;padding:3px 10px;cursor:pointer;flex-shrink:0;transition:background .15s}
-.npi-allergy-wrap:hover{background:rgba(255,107,107,.16)}
-.npi-allergy-lbl{font-size:9px;color:var(--npi-coral);text-transform:uppercase;letter-spacing:.06em;font-weight:600;white-space:nowrap}
-.npi-allergy-pills{display:flex;gap:4px}
-.npi-allergy-pill{font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;background:rgba(255,107,107,.2);color:var(--npi-coral);border-radius:4px;padding:1px 6px;white-space:nowrap}
-.npi-allergy-pill.npi-muted{background:rgba(74,106,138,.15);color:var(--npi-txt3)}
-.npi-vb-div{width:1px;height:18px;background:var(--npi-bd);flex-shrink:0}
-.npi-vb-vital{display:flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:10.5px;white-space:nowrap}
-.npi-vl{color:var(--npi-txt4);font-size:9px}
-.npi-vv{color:var(--npi-txt2)}
-.npi-vv.npi-abn{color:var(--npi-coral);animation:npi-glow-red 2s ease-in-out infinite}
-@keyframes npi-glow-red{0%,100%{text-shadow:0 0 4px rgba(255,107,107,.4)}50%{text-shadow:0 0 10px rgba(255,107,107,.9)}}
-.npi-status-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap}
-.npi-status-room{background:rgba(0,229,192,.1);color:var(--npi-teal);border:1px solid rgba(0,229,192,.3)}
+
 
 .npi-main-wrap{position:fixed;top:var(--npi-top);left:var(--npi-wf);right:0;bottom:0;display:flex;background:var(--npi-bg)}
 .npi-content{flex:1;overflow-y:auto;padding:18px 28px 24px;display:flex;flex-direction:column;gap:18px;min-height:0}
@@ -967,13 +988,20 @@ const CSS = `
 .npi-wf-rail::-webkit-scrollbar{width:3px}
 .npi-wf-rail::-webkit-scrollbar-thumb{background:var(--npi-bd);border-radius:2px}
 
-/* Patient card — top of rail, same height as top bar */
-.npi-wf-pt{height:var(--npi-top);flex-shrink:0;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;gap:3px;border-bottom:1px solid var(--npi-bd);background:rgba(8,22,40,.8)}
+/* Patient card — top of rail, flexible height to fit vitals */
+.npi-wf-pt{flex-shrink:0;padding:10px 12px 8px;display:flex;flex-direction:column;gap:3px;border-bottom:1px solid var(--npi-bd);background:rgba(8,22,40,.8)}
 .npi-wf-pt-name{font-family:'Playfair Display',serif;font-size:13px;font-weight:600;color:var(--npi-txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .npi-wf-pt-meta{display:flex;flex-direction:column;gap:2px}
 .npi-wf-pt-meta span{font-size:10px;color:var(--npi-txt4);font-family:'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .npi-wf-pt-cc{color:var(--npi-teal) !important;font-size:10px !important}
-.npi-wf-esi{display:inline-block;margin-top:3px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:1px 7px;border-radius:4px;border:1px solid;align-self:flex-start}
+.npi-wf-esi{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:1px 7px;border-radius:4px;border:1px solid;align-self:flex-start}
+.npi-wf-vitals{margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,53,85,.5);display:flex;flex-direction:column;gap:3px}
+.npi-wf-v-row{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.npi-wf-v-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--npi-txt4);flex-shrink:0;min-width:32px}
+.npi-wf-v-val{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--npi-txt2)}
+.npi-wf-v-val.warn{color:var(--npi-orange)}
+.npi-wf-v-val.abn{color:var(--npi-coral);animation:npi-glow-red 2s ease-in-out infinite}
+@keyframes npi-glow-red{0%,100%{text-shadow:0 0 4px rgba(255,107,107,.3)}50%{text-shadow:0 0 8px rgba(255,107,107,.8)}}
 
 /* Group container */
 .npi-wf-group{border-bottom:1px solid rgba(26,53,85,.5);flex-shrink:0}
@@ -1025,14 +1053,7 @@ const CSS = `
 
 .npi-scrim{position:fixed;inset:0;z-index:9997;background:rgba(3,8,16,.4);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .3s}
 .npi-scrim.open{opacity:1;pointer-events:auto}
-.npi-fab{position:fixed;bottom:24px;right:24px;z-index:9999;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--npi-teal) 0%,#00b4d8 100%);box-shadow:0 6px 24px rgba(0,229,192,.35);transition:all .35s cubic-bezier(.34,1.56,.64,1);animation:npi-ring 3s ease-in-out infinite}
-.npi-fab:hover{transform:scale(1.1)}
-.npi-fab.open{animation:none;background:linear-gradient(135deg,var(--npi-coral) 0%,#e05555 100%);box-shadow:0 6px 24px rgba(255,107,107,.35);transform:rotate(90deg)}
-@keyframes npi-ring{0%,100%{box-shadow:0 6px 24px rgba(0,229,192,.35),0 0 0 0 rgba(0,229,192,.28)}50%{box-shadow:0 6px 24px rgba(0,229,192,.35),0 0 0 10px rgba(0,229,192,0)}}
-.npi-fab-icon{font-size:22px;line-height:1}
-.npi-fab-badge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:10px;background:var(--npi-coral);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--npi-bg);padding:0 4px;opacity:0;transform:scale(0);transition:all .3s cubic-bezier(.34,1.56,.64,1)}
-.npi-fab-badge.show{opacity:1;transform:scale(1)}
-.npi-overlay{position:fixed;bottom:90px;right:24px;z-index:9998;width:330px;height:500px;background:#081628;border:1px solid var(--npi-bd);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55);opacity:0;transform:translateY(20px) scale(.94);pointer-events:none;transition:all .35s cubic-bezier(.34,1.56,.64,1)}
+.npi-overlay{position:fixed;bottom:24px;right:24px;z-index:9998;width:330px;height:500px;background:#081628;border:1px solid var(--npi-bd);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55);opacity:0;transform:translateY(20px) scale(.94);pointer-events:none;transition:all .35s cubic-bezier(.34,1.56,.64,1)}
 .npi-overlay.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
 .npi-n-hdr{padding:14px 14px 10px;flex-shrink:0;border-bottom:1px solid var(--npi-bd);background:linear-gradient(180deg,rgba(0,229,192,.05) 0%,transparent 100%)}
 .npi-n-hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}

@@ -271,8 +271,40 @@ function KbLegend({ isFocused }) {
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+// ─── CC → FOCUSED SYSTEM MAPPING ─────────────────────────────────────────────
+const CC_SYS_MAP = [
+  { kws:['chest'],           ids:['cv','resp','gi','msk']           },
+  { kws:['palpitat'],        ids:['cv','neuro']                     },
+  { kws:['syncope','faint'], ids:['cv','neuro','const']             },
+  { kws:['breath','dyspn'],  ids:['resp','cv','psych']              },
+  { kws:['cough','wheez'],   ids:['resp','allergy','gi']            },
+  { kws:['abdom','stomach'], ids:['gi','gu','msk','const']          },
+  { kws:['nausea','vomit'],  ids:['gi','const','neuro']             },
+  { kws:['diarrhea'],        ids:['gi','const']                     },
+  { kws:['headache','head'], ids:['neuro','heent','cv']             },
+  { kws:['dizzi','vertigo'], ids:['neuro','cv','heent']             },
+  { kws:['weak','fatigue'],  ids:['const','neuro','cv','endo']      },
+  { kws:['back','lumbar'],   ids:['msk','gi','gu','neuro']          },
+  { kws:['joint','arthr'],   ids:['msk','skin','allergy']           },
+  { kws:['trauma','injur'],  ids:['msk','neuro','skin']             },
+  { kws:['fever','infect'],  ids:['const','heent','resp','gi','gu'] },
+  { kws:['rash','skin'],     ids:['skin','allergy','const']         },
+  { kws:['urin','dysuria'],  ids:['gu','gi']                        },
+  { kws:['anxiet','panic'],  ids:['psych','cv','resp']              },
+];
+function getFocusedIds(cc) {
+  if (!cc) return ['const','cv','resp','gi','msk'];
+  const lc = cc.toLowerCase();
+  for (const { kws, ids } of CC_SYS_MAP) {
+    if (kws.some(kw => lc.includes(kw))) return ids;
+  }
+  return ['const','cv','resp','gi','msk'];
+}
+
 export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSysIdx, onSysChange }) {
   const [rosData, setRosData] = useState(initRosData);
+  const [docMode,      setDocMode]      = useState('focused'); // 'focused' | 'full'
+  const [remainderNeg, setRemainderNeg] = useState(false);
   const mainRef    = useRef(null);
 
   // ── Action handlers ──────────────────────────────────────────────────────
@@ -351,8 +383,10 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
       const st = getSysStatus(rosData[s.id]?.symptoms || {});
       if (st !== 'empty') newState[s.id] = st;
     });
+    if (remainderNeg) newState._remainderNeg = true;
+    if (docMode !== 'full') newState._mode = docMode;
     onStateChange?.(newState);
-  }, [rosData, onStateChange]);
+  }, [rosData, remainderNeg, docMode, onStateChange]);
 
   // ── Two-way sync with parent rail ────────────────────────────────────────
   // Rail → tab: when rail clicks a system, update internal keyboard state
@@ -377,6 +411,9 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
   }, [activeFindingIdx]);
 
   // ── Computed stats ───────────────────────────────────────────────────────
+  const focusedIds   = getFocusedIds(chiefComplaint);
+  const visibleSys   = docMode === 'full' ? ROS_SYSTEMS : ROS_SYSTEMS.filter(s => focusedIds.includes(s.id));
+  const hiddenCount  = ROS_SYSTEMS.length - visibleSys.length;
   const totalSystems    = ROS_SYSTEMS.length;
   const reviewedSystems = ROS_SYSTEMS.filter(s => getSysStatus(rosData[s.id]?.symptoms || {}) !== 'empty').length;
   const positiveSystems = ROS_SYSTEMS.filter(s => getSysStatus(rosData[s.id]?.symptoms || {}) === 'has-positives').length;
@@ -392,9 +429,15 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
         {/* ── HEADER BAR ───────────────────────────────────────────────── */}
         <div className="ros-hdr">
           <span className="ros-hdr-title">Review of Systems</span>
-          {chiefComplaint && (
-            <span className="ros-hdr-cc">CC: {chiefComplaint}</span>
-          )}
+          {/* Mode toggle */}
+          <div className="ros-mode-toggle">
+            <button className={`ros-mode-btn${docMode==='focused'?' active':''}`} onClick={() => setDocMode('focused')}>
+              Focused{docMode==='focused' && chiefComplaint ? ` (${visibleSys.length})` : ''}
+            </button>
+            <button className={`ros-mode-btn${docMode==='full'?' active':''}`} onClick={() => setDocMode('full')}>
+              Full ({totalSystems})
+            </button>
+          </div>
           <div className="ros-hdr-stats">
             <span className="ros-hdr-badge ros-hdr-badge-blue">
               {reviewedSystems} / {totalSystems} reviewed
@@ -407,7 +450,7 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
           </div>
           <div className="ros-hdr-acts">
             <button className="ros-btn-deny-all" onClick={markAllNormal}>✓ Deny All</button>
-            <button className="ros-btn-clear-all" onClick={clearAll}>✕ Clear All</button>
+            <button className="ros-btn-clear-all" onClick={() => { clearAll(); setRemainderNeg(false); }}>✕ Clear</button>
             {onAdvance && (
               <button onClick={onAdvance} style={{ background:'rgba(0,229,192,.15)', border:'1px solid rgba(0,229,192,.4)', borderRadius:6, padding:'4px 14px', fontSize:11, fontWeight:700, color:'#00e5c0', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
                 → PE
@@ -473,6 +516,33 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
                     <span key={sym.id} className="ros-pos-pill">{sym.label}</span>
                   ))
                 }
+              </div>
+            )}
+
+            {/* ── FOCUSED MODE: Remainder banner ───────────────────────── */}
+            {docMode === 'focused' && hiddenCount > 0 && (
+              <div className={`ros-remainder${remainderNeg ? ' ros-remainder-done' : ''}`}>
+                {remainderNeg ? (
+                  <>
+                    <span className="ros-remainder-ico">✓</span>
+                    <span className="ros-remainder-txt">
+                      Remaining {hiddenCount} systems reviewed — all negative
+                    </span>
+                    <button className="ros-remainder-undo" onClick={() => setRemainderNeg(false)}>undo</button>
+                  </>
+                ) : (
+                  <>
+                    <span className="ros-remainder-txt ros-remainder-pending">
+                      {hiddenCount} systems not yet reviewed
+                    </span>
+                    <button className="ros-remainder-btn" onClick={() => setRemainderNeg(true)}>
+                      ✓ Mark all others negative
+                    </button>
+                    <button className="ros-remainder-expand" onClick={() => setDocMode('full')}>
+                      or expand to full ROS
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
@@ -577,4 +647,24 @@ const ROS_CSS = `
 .ros-kb-item kbd{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:3px;padding:1px 5px;color:var(--npi-txt2);white-space:nowrap}
 .ros-kb-item span{font-size:10px;color:var(--npi-txt4);white-space:nowrap}
 .ros-kb-prompt{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--npi-txt4);font-style:italic}
+
+/* Mode toggle */
+.ros-mode-toggle{display:flex;gap:0;border:1px solid var(--npi-bd);border-radius:6px;overflow:hidden;flex-shrink:0}
+.ros-mode-btn{padding:3px 10px;font-size:10px;font-weight:500;font-family:'DM Sans',sans-serif;background:transparent;border:none;color:var(--npi-txt4);cursor:pointer;transition:all .15s}
+.ros-mode-btn:hover{color:var(--npi-txt2);background:var(--npi-up)}
+.ros-mode-btn.active{background:rgba(0,229,192,.12);color:var(--npi-teal);font-weight:600}
+.ros-mode-btn+.ros-mode-btn{border-left:1px solid var(--npi-bd)}
+
+/* Remainder banner */
+.ros-remainder{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;border:1px dashed rgba(26,53,85,.8);background:rgba(8,22,40,.4);flex-wrap:wrap;margin-top:4px}
+.ros-remainder-done{border-color:rgba(0,229,192,.25);background:rgba(0,229,192,.05)}
+.ros-remainder-ico{color:#00e5c0;font-size:12px;flex-shrink:0}
+.ros-remainder-txt{font-size:11px;color:var(--npi-txt3);flex:1}
+.ros-remainder-pending{color:var(--npi-txt4) !important}
+.ros-remainder-btn{padding:4px 12px;border-radius:5px;font-size:10px;font-weight:600;font-family:'DM Sans',sans-serif;background:rgba(0,229,192,.1);border:1px solid rgba(0,229,192,.3);color:#00e5c0;cursor:pointer;transition:all .15s;white-space:nowrap}
+.ros-remainder-btn:hover{background:rgba(0,229,192,.2)}
+.ros-remainder-expand{padding:4px 10px;border-radius:5px;font-size:10px;font-family:'DM Sans',sans-serif;background:transparent;border:1px solid var(--npi-bd);color:var(--npi-txt4);cursor:pointer;transition:all .15s;white-space:nowrap}
+.ros-remainder-expand:hover{color:var(--npi-txt2);border-color:var(--npi-bhi)}
+.ros-remainder-undo{padding:2px 8px;border-radius:4px;font-size:9px;font-family:'JetBrains Mono',monospace;background:transparent;border:1px solid rgba(26,53,85,.6);color:var(--npi-txt4);cursor:pointer;margin-left:auto}
+.ros-remainder-undo:hover{color:var(--npi-coral);border-color:rgba(255,107,107,.3)}
 `;

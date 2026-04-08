@@ -123,7 +123,7 @@ const SEV_ICON = { critical: "🚨", warning: "⚠️", info: "ℹ️" };
 export default function CDSAlertsSidebar({ medications, allergies, vitals, pmhSelected, age, cc }) {
   const [alerts,    setAlerts]    = useState([]);
   const [expanded,  setExpanded]  = useState({});
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const debounceRef = useRef(null);
 
   // Re-run rules whenever inputs change, debounced 400ms

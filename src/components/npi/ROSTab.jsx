@@ -5,231 +5,172 @@ import { useBodySystemKeyboard } from '@/hooks/useBodySystemKeyboard';
 const ROS_SYSTEMS = [
   {
     id: 'const', key: 'O', label: 'Constitutional', icon: '🌡️',
-    denyAll: 'Denies fever, chills, fatigue, weight loss, night sweats, appetite changes',
+    denyAll: 'Denies fever, chills, fatigue, weight loss, night sweats',
     symptoms: [
-      { id: 'fever',         label: 'Fever'                  },
-      { id: 'chills',        label: 'Chills / rigors'        },
-      { id: 'fatigue',       label: 'Fatigue / malaise'      },
-      { id: 'wt-loss',       label: 'Weight loss'            },
-      { id: 'wt-gain',       label: 'Weight gain'            },
-      { id: 'night-sweat',   label: 'Night sweats'           },
-      { id: 'anorexia',      label: 'Anorexia / poor appetite'},
-      { id: 'dehydration',   label: 'Signs of dehydration'   },
-      { id: 'generalized-weak', label: 'Generalized weakness'},
+      { id: 'fever',       label: 'Fever'           },
+      { id: 'chills',      label: 'Chills'          },
+      { id: 'fatigue',     label: 'Fatigue / malaise'},
+      { id: 'wt-loss',     label: 'Weight loss'     },
+      { id: 'wt-gain',     label: 'Weight gain'     },
+      { id: 'night-sweat', label: 'Night sweats'    },
+      { id: 'anorexia',    label: 'Anorexia'        },
     ],
   },
   {
     id: 'heent', key: 'H', label: 'HEENT', icon: '👁️',
-    denyAll: 'Denies headache, vision changes, ear pain, hearing loss, nasal congestion, sore throat',
+    denyAll: 'Denies headache, vision changes, ear pain, hearing loss, sore throat',
     symptoms: [
-      { id: 'headache',      label: 'Headache'               },
-      { id: 'vision-chg',    label: 'Vision changes'         },
-      { id: 'diplopia',      label: 'Diplopia'               },
-      { id: 'eye-pain',      label: 'Eye pain / redness'     },
-      { id: 'photophobia',   label: 'Photophobia'            },
-      { id: 'eye-discharge', label: 'Eye discharge'          },
-      { id: 'ear-pain',      label: 'Ear pain / otalgia'     },
-      { id: 'hearing-loss',  label: 'Hearing loss'           },
-      { id: 'tinnitus',      label: 'Tinnitus'               },
-      { id: 'nasal-cong',    label: 'Nasal congestion'       },
-      { id: 'rhinorrhea',    label: 'Rhinorrhea'             },
-      { id: 'epistaxis',     label: 'Epistaxis'              },
-      { id: 'sore-throat',   label: 'Sore throat'            },
-      { id: 'hoarseness',    label: 'Hoarseness'             },
-      { id: 'dental-pain',   label: 'Dental / jaw pain'      },
-      { id: 'facial-pain',   label: 'Facial pain / pressure' },
-      { id: 'mouth-sores',   label: 'Mouth sores / lesions'  },
+      { id: 'headache',     label: 'Headache'          },
+      { id: 'vision-chg',   label: 'Vision changes'    },
+      { id: 'ear-pain',     label: 'Ear pain'          },
+      { id: 'hearing-loss', label: 'Hearing loss'      },
+      { id: 'tinnitus',     label: 'Tinnitus'          },
+      { id: 'nasal-cong',   label: 'Nasal congestion'  },
+      { id: 'rhinorrhea',   label: 'Rhinorrhea'        },
+      { id: 'sore-throat',  label: 'Sore throat'       },
+      { id: 'dental-pain',  label: 'Dental pain'       },
     ],
   },
   {
     id: 'cv', key: 'C', label: 'Cardiovascular', icon: '❤️',
     denyAll: 'Denies chest pain, palpitations, dyspnea on exertion, syncope, leg swelling',
     symptoms: [
-      { id: 'cp',             label: 'Chest pain / pressure'  },
-      { id: 'chest-tight',    label: 'Chest tightness'        },
-      { id: 'palpitations',   label: 'Palpitations'           },
-      { id: 'doe',            label: 'Dyspnea on exertion'    },
-      { id: 'orthopnea',      label: 'Orthopnea'              },
-      { id: 'pnd',            label: 'PND'                    },
-      { id: 'syncope',        label: 'Syncope'                },
-      { id: 'presyncope',     label: 'Pre-syncope / near-faint'},
-      { id: 'leg-swell',      label: 'Leg swelling / edema'   },
-      { id: 'claudication',   label: 'Claudication'           },
-      { id: 'cold-extremities',label: 'Cold extremities'      },
+      { id: 'cp',          label: 'Chest pain'         },
+      { id: 'palpitations',label: 'Palpitations'       },
+      { id: 'doe',         label: 'Dyspnea on exertion'},
+      { id: 'orthopnea',   label: 'Orthopnea'          },
+      { id: 'pnd',         label: 'PND'                },
+      { id: 'syncope',     label: 'Syncope'            },
+      { id: 'presyncope',  label: 'Pre-syncope'        },
+      { id: 'leg-swell',   label: 'Leg swelling'       },
     ],
   },
   {
     id: 'resp', key: 'R', label: 'Respiratory', icon: '🫁',
-    denyAll: 'Denies shortness of breath, cough, hemoptysis, wheezing, chest pain with breathing',
+    denyAll: 'Denies shortness of breath, cough, hemoptysis, wheezing',
     symptoms: [
-      { id: 'sob',            label: 'Shortness of breath'    },
-      { id: 'dyspnea-rest',   label: 'Dyspnea at rest'        },
-      { id: 'cough',          label: 'Cough (dry)'            },
-      { id: 'prod-cough',     label: 'Productive cough'       },
-      { id: 'hemoptysis',     label: 'Hemoptysis'             },
-      { id: 'wheezing',       label: 'Wheezing'               },
-      { id: 'pleuritic-cp',   label: 'Pleuritic chest pain'   },
-      { id: 'apnea',          label: 'Apnea / snoring'        },
-      { id: 'stridor',        label: 'Stridor'                },
+      { id: 'sob',          label: 'Shortness of breath' },
+      { id: 'cough',        label: 'Cough'                },
+      { id: 'prod-cough',   label: 'Productive cough'     },
+      { id: 'hemoptysis',   label: 'Hemoptysis'           },
+      { id: 'wheezing',     label: 'Wheezing'             },
+      { id: 'pleuritic-cp', label: 'Pleuritic chest pain' },
     ],
   },
   {
     id: 'gi', key: 'G', label: 'GI / Abdomen', icon: '🫃',
     denyAll: 'Denies abdominal pain, nausea, vomiting, diarrhea, blood in stool',
     symptoms: [
-      { id: 'abd-pain',       label: 'Abdominal pain'         },
-      { id: 'nausea',         label: 'Nausea'                 },
-      { id: 'vomiting',       label: 'Vomiting'               },
-      { id: 'diarrhea',       label: 'Diarrhea'               },
-      { id: 'constipation',   label: 'Constipation'           },
-      { id: 'hematochezia',   label: 'Hematochezia'           },
-      { id: 'melena',         label: 'Melena'                 },
-      { id: 'hematemesis',    label: 'Hematemesis'            },
-      { id: 'dysphagia',      label: 'Dysphagia'              },
-      { id: 'odynophagia',    label: 'Odynophagia'            },
-      { id: 'heartburn',      label: 'Heartburn / GERD'       },
-      { id: 'bloating',       label: 'Bloating / distension'  },
-      { id: 'flatulence',     label: 'Excessive flatulence'   },
-      { id: 'jaundice',       label: 'Jaundice'               },
-      { id: 'rectal-pain',    label: 'Rectal pain'            },
-      { id: 'appetite-chg',   label: 'Appetite changes'       },
+      { id: 'abd-pain',     label: 'Abdominal pain'   },
+      { id: 'nausea',       label: 'Nausea'           },
+      { id: 'vomiting',     label: 'Vomiting'         },
+      { id: 'diarrhea',     label: 'Diarrhea'         },
+      { id: 'constipation', label: 'Constipation'     },
+      { id: 'hematochezia', label: 'Hematochezia'     },
+      { id: 'melena',       label: 'Melena'           },
+      { id: 'hematemesis',  label: 'Hematemesis'      },
+      { id: 'dysphagia',    label: 'Dysphagia'        },
+      { id: 'heartburn',    label: 'Heartburn / GERD' },
+      { id: 'jaundice',     label: 'Jaundice'         },
     ],
   },
   {
     id: 'gu', key: 'U', label: 'Genitourinary', icon: '🔵',
-    denyAll: 'Denies dysuria, hematuria, urinary frequency, urgency, discharge',
+    denyAll: 'Denies dysuria, hematuria, urinary frequency, discharge',
     symptoms: [
-      { id: 'dysuria',        label: 'Dysuria'                },
-      { id: 'hematuria',      label: 'Hematuria'              },
-      { id: 'frequency',      label: 'Urinary frequency'      },
-      { id: 'urgency',        label: 'Urinary urgency'        },
-      { id: 'nocturia',       label: 'Nocturia'               },
-      { id: 'incontinence',   label: 'Incontinence'           },
-      { id: 'retention',      label: 'Urinary retention'      },
-      { id: 'discharge',      label: 'Urethral / vaginal discharge'},
-      { id: 'pelvic-pain',    label: 'Pelvic pain'            },
-      { id: 'vag-bleed',      label: 'Vaginal bleeding'       },
-      { id: 'amenorrhea',     label: 'Amenorrhea'             },
-      { id: 'testicular-pain',label: 'Testicular pain'        },
-      { id: 'erectile',       label: 'Erectile dysfunction'   },
-      { id: 'flank-pain',     label: 'Flank pain'             },
+      { id: 'dysuria',     label: 'Dysuria'           },
+      { id: 'hematuria',   label: 'Hematuria'         },
+      { id: 'frequency',   label: 'Urinary frequency' },
+      { id: 'urgency',     label: 'Urinary urgency'   },
+      { id: 'retention',   label: 'Urinary retention' },
+      { id: 'discharge',   label: 'Discharge'         },
+      { id: 'pelvic-pain', label: 'Pelvic pain'       },
+      { id: 'vag-bleed',   label: 'Vaginal bleeding'  },
     ],
   },
   {
-    id: 'msk', key: 'M', label: 'Musculoskeletal', icon: '🦴',
-    denyAll: 'Denies joint pain, back pain, myalgia, joint swelling, morning stiffness',
+    id: 'msk', key: 'M', label: 'MSK', icon: '🦴',
+    denyAll: 'Denies joint pain, back pain, myalgia, joint swelling',
     symptoms: [
-      { id: 'joint-pain',     label: 'Joint pain / arthralgia'},
-      { id: 'back-pain',      label: 'Back pain'              },
-      { id: 'neck-pain',      label: 'Neck pain'              },
-      { id: 'hip-pain',       label: 'Hip pain'               },
-      { id: 'knee-pain',      label: 'Knee pain'              },
-      { id: 'shoulder-pain',  label: 'Shoulder pain'          },
-      { id: 'myalgia',        label: 'Myalgia'                },
-      { id: 'muscle-cramps',  label: 'Muscle cramps'          },
-      { id: 'weakness',       label: 'Focal weakness'         },
-      { id: 'joint-swell',    label: 'Joint swelling'         },
-      { id: 'stiffness',      label: 'Morning stiffness'      },
-      { id: 'gait-chg',       label: 'Gait changes'           },
-      { id: 'fracture',       label: 'Recent fracture'        },
+      { id: 'joint-pain',  label: 'Joint pain'         },
+      { id: 'back-pain',   label: 'Back pain'          },
+      { id: 'neck-pain',   label: 'Neck pain'          },
+      { id: 'myalgia',     label: 'Myalgia'            },
+      { id: 'weakness',    label: 'Weakness'           },
+      { id: 'joint-swell', label: 'Joint swelling'     },
+      { id: 'stiffness',   label: 'Morning stiffness'  },
     ],
   },
   {
     id: 'neuro', key: 'N', label: 'Neurological', icon: '🧠',
-    denyAll: 'Denies dizziness, syncope, seizures, numbness, focal weakness, speech changes',
+    denyAll: 'Denies dizziness, syncope, seizures, numbness, focal weakness',
     symptoms: [
-      { id: 'dizziness',      label: 'Dizziness / vertigo'    },
-      { id: 'lightheaded',    label: 'Lightheadedness'        },
-      { id: 'neuro-syncope',  label: 'Syncope / blackout'     },
-      { id: 'seizure',        label: 'Seizure activity'       },
-      { id: 'numbness',       label: 'Numbness / tingling'    },
-      { id: 'focal-weak',     label: 'Focal weakness'         },
-      { id: 'speech-chg',     label: 'Speech changes'         },
-      { id: 'aphasia',        label: 'Difficulty finding words'},
-      { id: 'memory-chg',     label: 'Memory / cognitive changes'},
-      { id: 'vision-n',       label: 'Vision changes / loss'  },
-      { id: 'tremor',         label: 'Tremor'                 },
-      { id: 'coordination',   label: 'Balance / coordination issues'},
-      { id: 'headache-n',     label: 'Headache'               },
-      { id: 'facial-numb',    label: 'Facial numbness / droop'},
+      { id: 'dizziness',    label: 'Dizziness / vertigo' },
+      { id: 'neuro-syncope',label: 'Syncope'              },
+      { id: 'seizure',      label: 'Seizure activity'     },
+      { id: 'numbness',     label: 'Numbness / tingling'  },
+      { id: 'focal-weak',   label: 'Focal weakness'       },
+      { id: 'speech-chg',   label: 'Speech changes'       },
+      { id: 'memory-chg',   label: 'Memory changes'       },
+      { id: 'vision-n',     label: 'Vision changes'       },
+      { id: 'tremor',       label: 'Tremor'               },
     ],
   },
   {
     id: 'psych', key: 'P', label: 'Psychiatric', icon: '🧘',
-    denyAll: 'Denies depression, anxiety, suicidal/homicidal ideation, hallucinations, sleep disturbance',
+    denyAll: 'Denies depression, anxiety, suicidal/homicidal ideation, hallucinations',
     symptoms: [
-      { id: 'depression',     label: 'Depression / hopelessness'},
-      { id: 'anxiety',        label: 'Anxiety / excessive worry'},
-      { id: 'panic',          label: 'Panic attacks'           },
-      { id: 'si',             label: 'Suicidal ideation'       },
-      { id: 'hi',             label: 'Homicidal ideation'      },
-      { id: 'hallucin',       label: 'Hallucinations'          },
-      { id: 'paranoia',       label: 'Paranoia / delusions'    },
-      { id: 'sleep-dist',     label: 'Sleep disturbance'       },
-      { id: 'insomnia',       label: 'Insomnia'                },
-      { id: 'mood-chg',       label: 'Mood changes'            },
-      { id: 'ptsd',           label: 'PTSD / trauma symptoms'  },
-      { id: 'eating-dist',    label: 'Eating disturbance'      },
-      { id: 'substance',      label: 'Substance use concerns'  },
+      { id: 'depression',  label: 'Depression'         },
+      { id: 'anxiety',     label: 'Anxiety'            },
+      { id: 'si',          label: 'Suicidal ideation'  },
+      { id: 'hi',          label: 'Homicidal ideation' },
+      { id: 'hallucin',    label: 'Hallucinations'     },
+      { id: 'sleep-dist',  label: 'Sleep disturbance'  },
+      { id: 'mood-chg',    label: 'Mood changes'       },
     ],
   },
   {
     id: 'skin', key: 'S', label: 'Skin', icon: '🩹',
-    denyAll: 'Denies rash, pruritus, new skin lesions, hair loss, nail changes',
+    denyAll: 'Denies rash, pruritus, new skin lesions',
     symptoms: [
-      { id: 'rash',           label: 'Rash'                   },
-      { id: 'pruritus',       label: 'Pruritus / itching'     },
-      { id: 'new-lesion',     label: 'New skin lesion'        },
-      { id: 'hair-loss',      label: 'Hair loss / alopecia'   },
-      { id: 'nail-chg',       label: 'Nail changes'           },
-      { id: 'nh-wound',       label: 'Non-healing wound'      },
-      { id: 'skin-dryness',   label: 'Skin dryness / scaling' },
-      { id: 'urticaria',      label: 'Hives / urticaria'      },
-      { id: 'acne',           label: 'Acne / comedones'       },
-      { id: 'petechiae-s',    label: 'Petechiae / purpura'    },
+      { id: 'rash',        label: 'Rash'              },
+      { id: 'pruritus',    label: 'Pruritus'          },
+      { id: 'new-lesion',  label: 'New skin lesion'   },
+      { id: 'hair-loss',   label: 'Hair loss'         },
+      { id: 'nail-chg',    label: 'Nail changes'      },
+      { id: 'nh-wound',    label: 'Non-healing wound' },
     ],
   },
   {
     id: 'endo', key: 'E', label: 'Endocrine', icon: '⚗️',
-    denyAll: 'Denies polydipsia, polyuria, heat/cold intolerance, excessive sweating',
+    denyAll: 'Denies polydipsia, polyuria, heat/cold intolerance',
     symptoms: [
-      { id: 'polydipsia',     label: 'Polydipsia'             },
-      { id: 'polyuria',       label: 'Polyuria'               },
-      { id: 'polyphagia',     label: 'Polyphagia'             },
-      { id: 'heat-intol',     label: 'Heat intolerance'       },
-      { id: 'cold-intol',     label: 'Cold intolerance'       },
-      { id: 'thyroid-sx',     label: 'Thyroid symptoms'       },
-      { id: 'exc-sweating',   label: 'Excessive sweating'     },
-      { id: 'menstrual-irr',  label: 'Menstrual irregularity' },
-      { id: 'hirsutism',      label: 'Hirsutism'              },
-      { id: 'galactorrhea',   label: 'Galactorrhea'           },
+      { id: 'polydipsia',  label: 'Polydipsia'         },
+      { id: 'polyuria',    label: 'Polyuria'           },
+      { id: 'heat-intol',  label: 'Heat intolerance'   },
+      { id: 'cold-intol',  label: 'Cold intolerance'   },
+      { id: 'thyroid-sx',  label: 'Thyroid symptoms'   },
     ],
   },
   {
     id: 'heme', key: 'B', label: 'Heme / Lymph', icon: '🩸',
-    denyAll: 'Denies easy bruising, easy bleeding, lymphadenopathy, anemia symptoms',
+    denyAll: 'Denies easy bruising, easy bleeding, lymphadenopathy',
     symptoms: [
-      { id: 'bruising',       label: 'Easy bruising'          },
-      { id: 'bleeding',       label: 'Easy / abnormal bleeding'},
-      { id: 'lad',            label: 'Lymphadenopathy'        },
-      { id: 'anemia-sx',      label: 'Anemia symptoms'        },
-      { id: 'clot-hx',        label: 'Clotting / DVT history' },
-      { id: 'petechiae-h',    label: 'Petechiae'              },
-      { id: 'splenomeg',      label: 'Splenomegaly symptoms'  },
-      { id: 'blood-tx',       label: 'Prior blood transfusion'},
+      { id: 'bruising',    label: 'Easy bruising'      },
+      { id: 'bleeding',    label: 'Easy bleeding'      },
+      { id: 'lad',         label: 'Lymphadenopathy'    },
+      { id: 'anemia-sx',   label: 'Anemia symptoms'    },
+      { id: 'clot-hx',     label: 'Clotting history'   },
     ],
   },
   {
     id: 'allergy', key: 'L', label: 'Allergic / Immuno', icon: '🌿',
-    denyAll: 'Denies seasonal allergies, recurrent infections, asthma symptoms, food allergies',
+    denyAll: 'Denies seasonal allergies, recurrent infections, asthma symptoms',
     symptoms: [
-      { id: 'seasonal',       label: 'Seasonal allergies'     },
-      { id: 'food-allergy',   label: 'Food allergies'         },
-      { id: 'asthma-sx',      label: 'Asthma symptoms'        },
-      { id: 'recur-infx',     label: 'Recurrent infections'   },
-      { id: 'drug-react',     label: 'Drug reactions'         },
-      { id: 'anaphylaxis',    label: 'Anaphylaxis history'    },
-      { id: 'autoimmune',     label: 'Autoimmune symptoms'    },
+      { id: 'seasonal',    label: 'Seasonal allergies'   },
+      { id: 'food-allergy',label: 'Food allergies'       },
+      { id: 'asthma-sx',   label: 'Asthma symptoms'      },
+      { id: 'recur-infx',  label: 'Recurrent infections' },
     ],
   },
 ];
@@ -253,16 +194,14 @@ function initRosData() {
   return d;
 }
 
-let _rosCustomIdCounter = 0;
-function genCustomId() { return `ros-custom-${++_rosCustomIdCounter}-${Date.now()}`; }
-
 // ─── PRIMITIVES ───────────────────────────────────────────────────────────────
+
 function SysItem({ sys, isActive, status, onClick }) {
   const dotBg = {
-    reviewed:        '#00e5c0',
+    reviewed:     '#00e5c0',
     'has-positives': '#ff6b6b',
-    partial:         '#ff9f43',
-    empty:           'transparent',
+    partial:      '#ff9f43',
+    empty:        'transparent',
   }[status];
   const dotBorder = status === 'empty' ? '1.5px solid #2a4f7a' : 'none';
   return (
@@ -275,7 +214,7 @@ function SysItem({ sys, isActive, status, onClick }) {
   );
 }
 
-function SymptomChip({ symptom, value, kbFocused, onClick, onRemove }) {
+function SymptomChip({ symptom, value, kbFocused, onClick }) {
   const isAbsent  = value === 'absent';
   const isPresent = value === 'present';
   const cls = ['ros-chip',
@@ -294,9 +233,6 @@ function SymptomChip({ symptom, value, kbFocused, onClick, onRemove }) {
         {' '}{symptom.label}
       </span>
       {kbFocused && <span className="ros-chip-hint">↵ · X</span>}
-      {onRemove && (
-        <span className="ros-chip-remove" onClick={e => { e.stopPropagation(); onRemove(); }} title="Remove">×</span>
-      )}
     </button>
   );
 }
@@ -335,16 +271,12 @@ function KbLegend({ isFocused }) {
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function ROSTab({ onStateChange, chiefComplaint }) {
-  const [rosData, setRosData]               = useState(initRosData);
-  const [customSymptoms, setCustomSymptoms] = useState({});  // { sysId: [{id, label}] }
-  const [addingFor, setAddingFor]           = useState(null);
-  const [customInput, setCustomInput]       = useState('');
-  const sidebarRef  = useRef(null);
-  const mainRef     = useRef(null);
-  const addInputRef = useRef(null);
+export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSysIdx, onSysChange }) {
+  const [rosData, setRosData] = useState(initRosData);
+  const mainRef    = useRef(null);
 
   // ── Action handlers ──────────────────────────────────────────────────────
+  // For ROS: 'normal' = 'absent' (patient denies), 'abnormal' = 'present' (patient reports)
   const handleFindingAction = useCallback((action, sysId, symId) => {
     setRosData(prev => {
       const cur = prev[sysId]?.symptoms[symId];
@@ -369,79 +301,32 @@ export default function ROSTab({ onStateChange, chiefComplaint }) {
     setRosData(prev => ({
       ...prev,
       [sysId]: {
-        symptoms: Object.fromEntries([
-          ...sys.symptoms.map(sym => [sym.id, 'absent']),
-          ...(customSymptoms[sysId] || []).map(cs => [cs.id, 'absent']),
-        ]),
+        ...prev[sysId],
+        symptoms: Object.fromEntries(sys.symptoms.map(sym => [sym.id, 'absent'])),
       },
     }));
-  }, [customSymptoms]);
+  }, []);
 
   const markAllNormal = useCallback(() => {
     const updated = {};
     ROS_SYSTEMS.forEach(s => {
       updated[s.id] = {
-        symptoms: Object.fromEntries([
-          ...s.symptoms.map(sym => [sym.id, 'absent']),
-          ...(customSymptoms[s.id] || []).map(cs => [cs.id, 'absent']),
-        ]),
+        symptoms: Object.fromEntries(s.symptoms.map(sym => [sym.id, 'absent'])),
       };
     });
     setRosData(updated);
-  }, [customSymptoms]);
+  }, []);
 
   const clearSystem = useCallback((sysId) => {
     const sys = ROS_SYSTEMS.find(s => s.id === sysId);
     if (!sys) return;
     setRosData(prev => ({
       ...prev,
-      [sysId]: {
-        symptoms: Object.fromEntries([
-          ...sys.symptoms.map(sym => [sym.id, null]),
-          ...(customSymptoms[sysId] || []).map(cs => [cs.id, null]),
-        ]),
-      },
+      [sysId]: { symptoms: Object.fromEntries(sys.symptoms.map(sym => [sym.id, null])) },
     }));
-  }, [customSymptoms]);
+  }, []);
 
   const clearAll = useCallback(() => setRosData(initRosData()), []);
-
-  // ── Custom symptom handlers ──────────────────────────────────────────────
-  const handleAddCustomSymptom = useCallback((sysId, label) => {
-    if (!label.trim()) return;
-    const id = genCustomId();
-    setCustomSymptoms(prev => ({
-      ...prev,
-      [sysId]: [...(prev[sysId] || []), { id, label: label.trim() }],
-    }));
-    setRosData(prev => ({
-      ...prev,
-      [sysId]: {
-        ...prev[sysId],
-        symptoms: { ...prev[sysId]?.symptoms, [id]: null },
-      },
-    }));
-    setCustomInput('');
-    setAddingFor(null);
-  }, []);
-
-  const handleRemoveCustomSymptom = useCallback((sysId, symId) => {
-    setCustomSymptoms(prev => ({
-      ...prev,
-      [sysId]: (prev[sysId] || []).filter(cs => cs.id !== symId),
-    }));
-    setRosData(prev => {
-      const newSym = { ...prev[sysId]?.symptoms };
-      delete newSym[symId];
-      return { ...prev, [sysId]: { ...prev[sysId], symptoms: newSym } };
-    });
-  }, []);
-
-  const startAdding = useCallback((sysId) => {
-    setAddingFor(sysId);
-    setCustomInput('');
-    setTimeout(() => addInputRef.current?.focus(), 50);
-  }, []);
 
   // ── Keyboard hook ────────────────────────────────────────────────────────
   const {
@@ -455,10 +340,9 @@ export default function ROSTab({ onStateChange, chiefComplaint }) {
     onAllNormal:     markAllNormal,
   });
 
-  const activeSys  = ROS_SYSTEMS[activeSystemIdx];
-  const sysData    = rosData[activeSys?.id] || { symptoms: {} };
-  const sysStatus  = getSysStatus(sysData.symptoms);
-  const sysCustoms = customSymptoms[activeSys?.id] || [];
+  const activeSys = ROS_SYSTEMS[activeSystemIdx];
+  const sysData   = rosData[activeSys?.id] || { symptoms: {} };
+  const sysStatus = getSysStatus(sysData.symptoms);
 
   // ── Sync to parent ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -470,11 +354,21 @@ export default function ROSTab({ onStateChange, chiefComplaint }) {
     onStateChange?.(newState);
   }, [rosData, onStateChange]);
 
+  // ── Two-way sync with parent rail ────────────────────────────────────────
+  // Rail → tab: when rail clicks a system, update internal keyboard state
   useEffect(() => {
-    const el = sidebarRef.current?.querySelector(`[data-sysid='${activeSys?.id}']`);
-    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [activeSystemIdx, activeSys?.id]);
+    if (extSysIdx !== undefined && extSysIdx !== activeSystemIdx) {
+      setActiveSystemIdx(extSysIdx);
+      setActiveFindingIdx(-1);
+    }
+  }, [extSysIdx]); // eslint-disable-line
 
+  // Tab → rail: when keyboard changes system, notify parent
+  useEffect(() => {
+    onSysChange?.(activeSystemIdx);
+  }, [activeSystemIdx, onSysChange]);
+
+  // ── Auto-scroll chips ────────────────────────────────────────────────────
   useEffect(() => {
     if (activeFindingIdx >= 0) {
       const el = mainRef.current?.querySelector(`[data-sidx='${activeFindingIdx}']`);
@@ -482,10 +376,13 @@ export default function ROSTab({ onStateChange, chiefComplaint }) {
     }
   }, [activeFindingIdx]);
 
+  // ── Computed stats ───────────────────────────────────────────────────────
   const totalSystems    = ROS_SYSTEMS.length;
   const reviewedSystems = ROS_SYSTEMS.filter(s => getSysStatus(rosData[s.id]?.symptoms || {}) !== 'empty').length;
   const positiveSystems = ROS_SYSTEMS.filter(s => getSysStatus(rosData[s.id]?.symptoms || {}) === 'has-positives').length;
-  const showDenyAll     = sysStatus === 'reviewed';
+
+  // ── Deny-all statement ───────────────────────────────────────────────────
+  const showDenyAll = sysStatus === 'reviewed';
 
   return (
     <>
@@ -511,30 +408,16 @@ export default function ROSTab({ onStateChange, chiefComplaint }) {
           <div className="ros-hdr-acts">
             <button className="ros-btn-deny-all" onClick={markAllNormal}>✓ Deny All</button>
             <button className="ros-btn-clear-all" onClick={clearAll}>✕ Clear All</button>
+            {onAdvance && (
+              <button onClick={onAdvance} style={{ background:'rgba(0,229,192,.15)', border:'1px solid rgba(0,229,192,.4)', borderRadius:6, padding:'4px 14px', fontSize:11, fontWeight:700, color:'#00e5c0', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+                → PE
+              </button>
+            )}
           </div>
         </div>
 
         {/* ── BODY ─────────────────────────────────────────────────────── */}
         <div className="ros-body">
-
-          {/* ── SIDEBAR ──────────────────────────────────────────────── */}
-          <div className="ros-sidebar" ref={sidebarRef}>
-            {ROS_SYSTEMS.map((s, i) => (
-              <div key={s.id} data-sysid={s.id}>
-                <SysItem
-                  sys={s}
-                  isActive={i === activeSystemIdx}
-                  status={getSysStatus(rosData[s.id]?.symptoms || {})}
-                  onClick={() => {
-                    setActiveSystemIdx(i);
-                    setActiveFindingIdx(-1);
-                    setAddingFor(null);
-                    panelProps.ref.current?.focus();
-                  }}
-                />
-              </div>
-            ))}
-          </div>
 
           {/* ── MAIN PANEL ───────────────────────────────────────────── */}
           <div className="ros-main" ref={mainRef}>
@@ -578,57 +461,13 @@ export default function ROSTab({ onStateChange, chiefComplaint }) {
                   />
                 </div>
               ))}
-
-              {/* Custom symptom chips */}
-              {sysCustoms.map(cs => (
-                <SymptomChip
-                  key={cs.id}
-                  symptom={cs}
-                  value={sysData.symptoms[cs.id]}
-                  kbFocused={false}
-                  onClick={() => handleFindingAction('toggle', activeSys.id, cs.id)}
-                  onRemove={() => handleRemoveCustomSymptom(activeSys.id, cs.id)}
-                />
-              ))}
-            </div>
-
-            {/* Add Custom Symptom */}
-            <div className="ros-add-custom">
-              {addingFor === activeSys?.id ? (
-                <div className="ros-add-input-row">
-                  <input
-                    ref={addInputRef}
-                    className="ros-add-input"
-                    placeholder="Custom symptom label…"
-                    value={customInput}
-                    onChange={e => setCustomInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') handleAddCustomSymptom(activeSys.id, customInput);
-                      if (e.key === 'Escape') { setAddingFor(null); setCustomInput(''); }
-                    }}
-                  />
-                  <button
-                    className="ros-add-confirm"
-                    onClick={() => handleAddCustomSymptom(activeSys.id, customInput)}
-                  >Add</button>
-                  <button
-                    className="ros-add-cancel"
-                    onClick={() => { setAddingFor(null); setCustomInput(''); }}
-                  >✕</button>
-                </div>
-              ) : (
-                <button
-                  className="ros-add-btn"
-                  onClick={() => startAdding(activeSys?.id)}
-                >+ Add Custom Symptom</button>
-              )}
             </div>
 
             {/* Positive findings summary strip */}
             {sysStatus === 'has-positives' && (
               <div className="ros-pos-strip">
                 <span className="ros-pos-label">Reported:</span>
-                {[...( activeSys?.symptoms || []), ...sysCustoms]
+                {activeSys?.symptoms
                   .filter(sym => sysData.symptoms[sym.id] === 'present')
                   .map(sym => (
                     <span key={sym.id} className="ros-pos-pill">{sym.label}</span>
@@ -650,9 +489,11 @@ export default function ROSTab({ onStateChange, chiefComplaint }) {
 const ROS_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
 
+/* Container */
 .ros-wrap{display:flex;flex-direction:column;height:100%;background:var(--npi-bg);border-radius:12px;border:1px solid var(--npi-bd);overflow:hidden;transition:border-color .2s,box-shadow .2s}
 .ros-wrap.ros-focused{border-color:rgba(0,229,192,.35);box-shadow:0 0 0 1px rgba(0,229,192,.1),0 0 40px rgba(0,229,192,.04)}
 
+/* Header */
 .ros-hdr{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--npi-panel);border-bottom:1px solid var(--npi-bd);flex-shrink:0;flex-wrap:wrap}
 .ros-hdr-title{font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:var(--npi-txt);white-space:nowrap}
 .ros-hdr-cc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--npi-orange);background:rgba(255,159,67,.08);border:1px solid rgba(255,159,67,.25);border-radius:4px;padding:2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
@@ -666,8 +507,10 @@ const ROS_CSS = `
 .ros-btn-clear-all{background:transparent;border:1px solid var(--npi-bd);border-radius:6px;padding:4px 12px;font-size:11px;color:var(--npi-txt4);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
 .ros-btn-clear-all:hover{border-color:rgba(255,107,107,.4);color:var(--npi-coral)}
 
-.ros-body{display:grid;grid-template-columns:208px 1fr;flex:1;overflow:hidden;min-height:0}
+/* Body layout */
+.ros-body{display:grid;grid-template-columns:1fr;flex:1;overflow:hidden;min-height:0}
 
+/* Sidebar */
 .ros-sidebar{border-right:1px solid var(--npi-bd);overflow-y:auto;background:var(--npi-panel);scrollbar-width:thin;scrollbar-color:#1a3555 transparent}
 .ros-sidebar::-webkit-scrollbar{width:3px}
 .ros-sidebar::-webkit-scrollbar-thumb{background:#1a3555;border-radius:2px}
@@ -680,10 +523,12 @@ const ROS_CSS = `
 .ros-sys-lbl{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
 .ros-sys-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background .2s}
 
+/* Main panel */
 .ros-main{overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:#1a3555 transparent}
 .ros-main::-webkit-scrollbar{width:3px}
 .ros-main::-webkit-scrollbar-thumb{background:#1a3555;border-radius:2px}
 
+/* System header */
 .ros-sys-hdr{display:flex;align-items:center;gap:8px;padding-bottom:13px;border-bottom:1px solid rgba(26,53,85,.5)}
 .ros-sys-hdr-ico{font-size:20px;line-height:1}
 .ros-sys-hdr-name{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--npi-txt)}
@@ -698,12 +543,15 @@ const ROS_CSS = `
 .ros-btn-sys-clear{background:transparent;border:1px solid var(--npi-bd);border-radius:5px;padding:3px 10px;font-size:11px;color:var(--npi-txt4);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
 .ros-btn-sys-clear:hover{border-color:rgba(255,107,107,.35);color:var(--npi-coral)}
 
+/* Deny-all statement */
 .ros-deny-stmt{display:flex;align-items:flex-start;gap:9px;padding:10px 14px;background:rgba(0,229,192,.06);border:1px solid rgba(0,229,192,.18);border-radius:8px}
 .ros-deny-ico{color:#00e5c0;font-size:13px;flex-shrink:0;margin-top:2px}
 .ros-deny-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(0,229,192,.75);font-style:italic;line-height:1.65}
 
+/* Chips grid */
 .ros-chips-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
 
+/* Symptom chip */
 .ros-chip{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:8px;border:1px solid var(--npi-bd);background:rgba(14,37,68,.5);cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s,color .15s;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--npi-txt4);text-align:left;width:100%}
 .ros-chip:hover{border-color:var(--npi-bhi);color:var(--npi-txt2);background:rgba(14,37,68,.9)}
 .ros-chip-a{background:rgba(0,229,192,.08);border-color:rgba(0,229,192,.32);color:var(--npi-txt2)}
@@ -715,26 +563,13 @@ const ROS_CSS = `
 .ros-denies{font-family:'JetBrains Mono',monospace;font-size:9px;color:#00e5c0;margin-right:3px}
 .ros-reports{font-family:'JetBrains Mono',monospace;font-size:9px;color:#ff6b6b;margin-right:3px}
 .ros-chip-hint{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--npi-teal);background:rgba(0,229,192,.08);border:1px solid rgba(0,229,192,.25);border-radius:3px;padding:1px 5px;flex-shrink:0;white-space:nowrap}
-.ros-chip-remove{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--npi-txt4);background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.2);border-radius:3px;padding:0 5px;flex-shrink:0;line-height:1.4;transition:all .12s}
-.ros-chip-remove:hover{background:rgba(255,107,107,.22);color:#ff6b6b;border-color:rgba(255,107,107,.5)}
 
-/* Add custom symptom */
-.ros-add-custom{margin-top:2px}
-.ros-add-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;background:transparent;border:1px dashed rgba(0,229,192,.25);color:var(--npi-teal);transition:all .15s;opacity:.6}
-.ros-add-btn:hover{opacity:1;background:rgba(0,229,192,.06);border-color:rgba(0,229,192,.45)}
-.ros-add-input-row{display:flex;align-items:center;gap:6px}
-.ros-add-input{flex:1;background:rgba(14,37,68,.7);border:1px solid rgba(0,229,192,.3);border-radius:7px;padding:6px 10px;color:var(--npi-txt);font-family:'DM Sans',sans-serif;font-size:12px;outline:none;transition:border-color .15s}
-.ros-add-input:focus{border-color:var(--npi-teal)}
-.ros-add-input::placeholder{color:var(--npi-txt4)}
-.ros-add-confirm{background:rgba(0,229,192,.12);border:1px solid rgba(0,229,192,.3);border-radius:6px;padding:5px 11px;font-size:11px;font-weight:600;color:var(--npi-teal);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;white-space:nowrap}
-.ros-add-confirm:hover{background:rgba(0,229,192,.24)}
-.ros-add-cancel{background:transparent;border:1px solid var(--npi-bd);border-radius:6px;padding:5px 9px;font-size:11px;color:var(--npi-txt4);cursor:pointer;transition:all .15s;font-family:'JetBrains Mono',monospace}
-.ros-add-cancel:hover{border-color:rgba(255,107,107,.35);color:var(--npi-coral)}
-
+/* Positive findings summary */
 .ros-pos-strip{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:10px 14px;background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.18);border-radius:8px}
 .ros-pos-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:#ff6b6b;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0}
 .ros-pos-pill{font-family:'DM Sans',sans-serif;font-size:11px;color:#ff6b6b;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.25);border-radius:20px;padding:2px 9px;white-space:nowrap}
 
+/* Keyboard legend */
 .ros-kb-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:6px 16px;background:rgba(8,22,40,.95);border-top:1px solid rgba(26,53,85,.4);flex-shrink:0;opacity:.5;transition:opacity .25s,border-color .25s}
 .ros-kb-bar.ros-kb-on{opacity:1;border-top-color:rgba(0,229,192,.2)}
 .ros-kb-ico{font-size:11px;color:var(--npi-txt4);flex-shrink:0}

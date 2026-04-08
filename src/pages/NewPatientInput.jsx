@@ -47,9 +47,11 @@ const NAV_DATA = {
   ],
   close: [
     { section: "discharge",  icon: "🚪", label: "Discharge",         abbr: "Dc", dot: "empty"   },
-    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results" },
+    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results"     },
     { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty"   },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",        abbr: "Mr", dot: "empty"   },
+    { section: "calc",       icon: "🧮", label: "Calculators",       abbr: "Ca", dot: "empty", href: "/Calculators" },
+    { section: "hub",        icon: "🏥", label: "Clinical Hub",      abbr: "Hb", dot: "empty", href: "/hub"         },
   ],
 };
 
@@ -59,19 +61,6 @@ const GROUP_META = [
   { key: "note",     icon: "📄", label: "Note"      },
   { key: "orders",   icon: "📋", label: "Orders"    },
   { key: "close",    icon: "🚪", label: "Close"     },
-];
-
-const APP_ICONS = [
-  { icon: "🏠", label: "Home",     to: "/"                },
-  { icon: "📊", label: "Dash",     to: "/Dashboard"       },
-  { icon: "🆕", label: "New PT",   to: "/NewPatientInput", active: true },
-  { icon: "📝", label: "New Note", to: "/NewNote"         },
-  { icon: "👥", label: "Patients", to: "/PatientDashboard"},
-  { icon: "🔄", label: "Shift",    to: "/Shift"           },
-  "sep",
-  { icon: "💊", label: "Drugs",    to: "/DrugsBugs"       },
-  { icon: "🧮", label: "Calc",     to: "/Calculators"     },
-  { icon: "🏥", label: "Hub",      to: "/hub"             },
 ];
 
 const ALL_SECTIONS = Object.values(NAV_DATA).flat();
@@ -688,27 +677,6 @@ export default function NewPatientInput() {
     <>
       <style>{CSS}</style>
 
-      {/* ICON SIDEBAR */}
-      <aside className="npi-isb">
-        <div className="npi-isb-logo">
-          <div className="npi-isb-logo-box">{pageAbbr}</div>
-        </div>
-        <div className="npi-isb-scroll">
-          {APP_ICONS.map((b, i) =>
-            b === "sep" ? <div key={i} className="npi-isb-sep" /> : (
-              <Link key={i} to={b.to} className={`npi-isb-btn${b.active?" active":""}`} title={b.label}>
-                <span>{b.icon}</span><span className="npi-isb-lbl">{b.label}</span>
-              </Link>
-            )
-          )}
-        </div>
-        <div className="npi-isb-bottom">
-          <Link to="/AppSettings" className="npi-isb-btn" title="Settings">
-            <span>⚙️</span><span className="npi-isb-lbl">Settings</span>
-          </Link>
-        </div>
-      </aside>
-
       {/* TOP BAR */}
       <header className="npi-top-bar">
         <div className="npi-top-row-1">
@@ -722,6 +690,7 @@ export default function NewPatientInput() {
             <div className="npi-clock">{clock}</div>
             <div className="npi-ai-on"><div className="npi-ai-dot" /> AI ON</div>
             <button className="npi-new-pt" onClick={() => navigate("/NewPatientInput?tab=demo")}>+ New Patient</button>
+            <Link to="/AppSettings" className="npi-tb-settings" title="Settings">⚙️</Link>
           </div>
         </div>
         <div className="npi-top-row-2">
@@ -941,22 +910,13 @@ const CSS = `
   --npi-bd:#1a3555;--npi-bhi:#2a4f7a;--npi-blue:#3b9eff;--npi-teal:#00e5c0;
   --npi-gold:#f5c842;--npi-coral:#ff6b6b;--npi-orange:#ff9f43;--npi-purple:#9b6dff;
   --npi-txt:#ffffff;--npi-txt2:#d0e8ff;--npi-txt3:#a8c8e8;--npi-txt4:#7aa0c0;
-  --npi-isb:56px;--npi-wf:190px;--npi-top:88px;
+  --npi-wf:190px;--npi-top:88px;
 }
 
-.npi-isb{position:fixed;top:0;left:0;bottom:0;width:var(--npi-isb);background:#040d19;border-right:1px solid var(--npi-bd);display:flex;flex-direction:column;align-items:center;z-index:300}
-.npi-isb-logo{width:100%;height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--npi-bd)}
-.npi-isb-logo-box{width:30px;height:30px;background:var(--npi-blue);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:white;cursor:pointer;transition:filter .15s}
-.npi-isb-logo-box:hover{filter:brightness(1.2)}
-.npi-isb-scroll{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;overflow-y:auto}
-.npi-isb-btn{width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:6px;cursor:pointer;transition:all .15s;color:var(--npi-txt3);border:1px solid transparent;font-size:15px;text-decoration:none}
-.npi-isb-btn:hover{background:var(--npi-up);border-color:var(--npi-bd);color:var(--npi-txt2)}
-.npi-isb-btn.active{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.3);color:var(--npi-blue)}
-.npi-isb-lbl{font-size:8px;line-height:1;white-space:nowrap}
-.npi-isb-sep{width:30px;height:1px;background:var(--npi-bd);margin:4px 0;flex-shrink:0}
-.npi-isb-bottom{padding:8px 0;border-top:1px solid var(--npi-bd);display:flex;flex-direction:column;align-items:center;gap:2px}
+.npi-tb-settings{font-size:16px;color:var(--npi-txt4);text-decoration:none;padding:4px 6px;border-radius:6px;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.npi-tb-settings:hover{color:var(--npi-txt2);background:var(--npi-up)}
 
-.npi-top-bar{position:fixed;top:0;left:calc(var(--npi-isb) + var(--npi-wf));right:0;height:var(--npi-top);background:var(--npi-panel);border-bottom:1px solid var(--npi-bd);z-index:200;display:flex;flex-direction:column}
+.npi-top-bar{position:fixed;top:0;left:var(--npi-wf);right:0;height:var(--npi-top);background:var(--npi-panel);border-bottom:1px solid var(--npi-bd);z-index:200;display:flex;flex-direction:column}
 .npi-top-row-1{height:44px;flex-shrink:0;display:flex;align-items:center;padding:0 14px;gap:8px;border-bottom:1px solid rgba(26,53,85,.5)}
 .npi-welcome{font-size:12px;color:var(--npi-txt2);font-weight:500;white-space:nowrap}
 .npi-welcome strong{color:var(--npi-txt)}
@@ -999,11 +959,11 @@ const CSS = `
 .npi-status-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap}
 .npi-status-room{background:rgba(0,229,192,.1);color:var(--npi-teal);border:1px solid rgba(0,229,192,.3)}
 
-.npi-main-wrap{position:fixed;top:var(--npi-top);left:calc(var(--npi-isb) + var(--npi-wf));right:0;bottom:0;display:flex;background:var(--npi-bg)}
+.npi-main-wrap{position:fixed;top:var(--npi-top);left:var(--npi-wf);right:0;bottom:0;display:flex;background:var(--npi-bg)}
 .npi-content{flex:1;overflow-y:auto;padding:18px 28px 24px;display:flex;flex-direction:column;gap:18px;min-height:0}
 
 /* ── WORKFLOW RAIL (replaces bottom nav) ─────────────────────────────────── */
-.npi-wf-rail{position:fixed;top:0;left:var(--npi-isb);bottom:0;width:var(--npi-wf);background:var(--npi-panel);border-right:1px solid var(--npi-bd);z-index:250;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.npi-wf-rail{position:fixed;top:0;left:0;bottom:0;width:var(--npi-wf);background:var(--npi-panel);border-right:1px solid var(--npi-bd);z-index:250;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
 .npi-wf-rail::-webkit-scrollbar{width:3px}
 .npi-wf-rail::-webkit-scrollbar-thumb{background:var(--npi-bd);border-radius:2px}
 
@@ -1108,7 +1068,7 @@ const CSS = `
 .npi-n-send:hover{transform:scale(1.08)}
 .npi-n-send:disabled{opacity:.4;cursor:not-allowed;transform:none}
 
-.npi-sc-hint-fab{position:fixed;bottom:76px;left:66px;z-index:9990;width:26px;height:26px;border-radius:50%;background:var(--npi-up);border:1px solid var(--npi-bd);color:var(--npi-txt4);font-size:12px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.npi-sc-hint-fab{position:fixed;bottom:76px;left:10px;z-index:9990;width:26px;height:26px;border-radius:50%;background:var(--npi-up);border:1px solid var(--npi-bd);color:var(--npi-txt4);font-size:12px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
 .npi-sc-hint-fab:hover{border-color:var(--npi-bhi);color:var(--npi-txt2);background:var(--npi-card)}
 
 /* ── INLINE HPI TAB ─────────────────────────────────────────────────────── */

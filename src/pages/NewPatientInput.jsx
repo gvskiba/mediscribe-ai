@@ -26,11 +26,11 @@ const NAV_DATA = {
   intake: [
     { section: "chart",      icon: "📊", label: "Patient Chart",    abbr: "Pc", dot: "done"    },
     { section: "demo",       icon: "👤", label: "Demographics",      abbr: "Dm", dot: "partial" },
+    { section: "cc",         icon: "💬", label: "Chief Complaint",   abbr: "Cc", dot: "empty"   },
     { section: "vit",        icon: "📈", label: "Vitals",            abbr: "Vt", dot: "empty"   },
     { section: "meds",       icon: "💊", label: "Meds & PMH",        abbr: "Rx", dot: "empty"   },
   ],
   documentation: [
-    { section: "cc",         icon: "💬", label: "Chief Complaint",   abbr: "Cc", dot: "empty"   },
     { section: "hpi",        icon: "📝", label: "HPI",              abbr: "Hp", dot: "empty"   },
     { section: "ros",        icon: "🔍", label: "Review of Systems", abbr: "Rs", dot: "empty"   },
     { section: "pe",         icon: "🩺", label: "Physical Exam",     abbr: "Pe", dot: "empty"   },
@@ -118,7 +118,7 @@ function buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab) {
 //   0-9            — answer pain scale (scale type) or pick option 1-N (choice type)
 //   Backspace      — go back one row (when current row unanswered)
 //   Esc            — finish and build narrative
-function InlineHPITab({ cc, setCC }) {
+function InlineHPITab({ cc, setCC, onAdvance }) {
   const [phase, setPhase]     = useState("idle");   // idle | loading | scan | narrative
   const [symptoms, setSymptoms] = useState([]);
   const [answers, setAnswers]   = useState({});
@@ -391,17 +391,29 @@ Customize the symptom list to be clinically relevant for "${cc.text}". Keep 8-12
     <div className="hpi-narrative">
       <div className="hpi-narr-hdr">
         <span className="hpi-cc-val">{cc.text}</span>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button className="hpi-ghost-btn" onClick={() => setPhase("scan")}>&#8592; Edit Answers</button>
           <button className="hpi-ghost-btn" onClick={() => setPhase("idle")}>&#8635; Restart</button>
+          {onAdvance && (
+            <button className="hpi-done-btn" onClick={onAdvance}>
+              Continue to ROS &rarr;
+            </button>
+          )}
         </div>
       </div>
+      {onAdvance && (
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+          <kbd style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"var(--npi-blue)", background:"rgba(59,158,255,.1)", border:"1px solid rgba(59,158,255,.2)", borderRadius:4, padding:"1px 6px" }}>⌘ Enter</kbd>
+          <span style={{ fontSize:11, color:"var(--npi-txt4)", fontFamily:"'DM Sans',sans-serif" }}>Continue to ROS</span>
+        </div>
+      )}
       <div className="hpi-field-lbl" style={{ marginBottom: 8 }}>HPI Narrative — edit freely</div>
       <textarea
         className="hpi-ta"
         value={narrative}
         autoFocus
         onChange={e => { setNarrative(e.target.value); setCC(prev => ({ ...prev, hpi: e.target.value })); }}
+        onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); onAdvance?.(); } }}
         rows={7}
       />
       <div className="hpi-badge-row">
@@ -652,13 +664,13 @@ export default function NewPatientInput() {
 
   const renderContent = () => {
     switch (currentTab) {
-      case "demo":       return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} registration={registration} setRegistration={setRegistration} />;
-      case "cc":         return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} />;
-      case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} />;
-      case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} />;
-      case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} />;
-      case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} />;
-      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />;
+      case "demo":       return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} registration={registration} setRegistration={setRegistration} onAdvance={() => selectSection("cc")} />;
+      case "cc":         return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} onAdvance={() => selectSection("vit")} />;
+      case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} onAdvance={() => selectSection("meds")} />;
+      case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("hpi")} />;
+      case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
+      case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} />;
+      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("mdm")} />;
       case "mdm":        return <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} rosState={rosState} peState={peState} />;
       case "chart":      return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto"    }}><NotryaApp embedded patientName={patientName} demo={demo} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} /></div>;
       case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;

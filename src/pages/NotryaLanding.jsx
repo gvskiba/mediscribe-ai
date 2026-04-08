@@ -621,6 +621,9 @@ export default function NotryaLanding({ onBack }) {
         }}/>
         <FadeSection>
           <Eyebrow center>Emergency Medicine · Built by a Physician</Eyebrow>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:8, marginBottom:18, padding:"5px 16px", border:"1px solid rgba(59,158,255,0.28)", borderRadius:20, background:"rgba(59,158,255,0.07)" }}>
+            <span style={{ fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700, letterSpacing:2, color:T.blue, textTransform:"uppercase" }}>⌨ Powered by Keyboard-First Technology</span>
+          </div>
           <div className={`${PREFIX}-shim`} style={{
             fontFamily:"Playfair Display", fontWeight:900,
             fontSize:"clamp(36px,5.5vw,68px)", letterSpacing:-2, lineHeight:1.05,

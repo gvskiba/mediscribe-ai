@@ -1,0 +1,498 @@
+import { useState, useRef, useEffect, useCallback } from "react";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
+
+// ─── SECTION CONFIG ────────────────────────────────────────────────────────────
+const SECTIONS = [
+  { id: "ddx",     label: "01  Impression / DDx",          icon: "🎯", priority: true  },
+  { id: "mdm",     label: "02  Medical Decision Making",    icon: "⚖️", priority: true  },
+  { id: "plan",    label: "03  Disposition + Plan",         icon: "📋", priority: true  },
+  { id: "hpi",     label: "04  HPI",                        icon: "📝", priority: false },
+  { id: "ros",     label: "05  ROS",                        icon: "🔍", priority: false },
+  { id: "pe",      label: "06  Physical Exam",              icon: "🩺", priority: false },
+  { id: "results", label: "07  Results",                    icon: "🧪", priority: false },
+  { id: "meta",    label: "08  Encounter Metadata",         icon: "📊", priority: false },
+];
+
+const COMPLEXITY = [
+  { n: 1, label: "Straightforward",   color: "#00e5c0" },
+  { n: 2, label: "Low",               color: "#3b9eff" },
+  { n: 3, label: "Moderate",          color: "#ffd93d" },
+  { n: 4, label: "High",              color: "#ff9f43" },
+  { n: 5, label: "High — Critical",   color: "#ff6b6b" },
+];
+
+const DISP_OPTS = [
+  { id: "discharge", label: "Discharge",   icon: "🏠" },
+  { id: "admit",     label: "Admit",        icon: "🏥" },
+  { id: "obs",       label: "Observation",  icon: "👁️" },
+  { id: "transfer",  label: "Transfer",     icon: "🚑" },
+  { id: "lwbs",      label: "LWBS / AMA",   icon: "⚠️" },
+];
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function buildRosText(rosState) {
+  const pos = [], neg = [];
+  Object.entries(rosState || {}).forEach(([sys, val]) => {
+    if (val === "abnormal" || val === "reported") pos.push(sys.charAt(0).toUpperCase() + sys.slice(1));
+    else if (val === "normal") neg.push(sys.charAt(0).toUpperCase() + sys.slice(1));
+  });
+  if (!pos.length && !neg.length) return "";
+  const parts = [];
+  if (pos.length) parts.push(`Positive: ${pos.join(", ")}.`);
+  if (neg.length) parts.push(`Reviewed and negative: ${neg.join(", ")}.`);
+  return parts.join("  ");
+}
+
+function buildPeText(peState, peFindings) {
+  const abn = [], normal = [];
+  Object.entries(peState || {}).forEach(([sys, status]) => {
+    if (status === "abnormal" || status === "mixed") abn.push(sys);
+    else if (status === "normal") normal.push(sys);
+  });
+  if (!abn.length && !normal.length) return "";
+  const lines = [];
+  abn.forEach(sys => {
+    const findings = peFindings?.[sys];
+    const details = findings
+      ? Object.entries(findings.findings || {})
+          .filter(([, v]) => v === "abnormal")
+          .map(([k]) => k).join(", ")
+      : "";
+    lines.push(`${sys.charAt(0).toUpperCase() + sys.slice(1)}: ${details || "abnormal findings noted"}.`);
+  });
+  if (normal.length) lines.push(`Normal: ${normal.join(", ")}.`);
+  return lines.join("  ");
+}
+
+const FL = { fontSize: 10, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 5 };
+const TA = { width: "100%", padding: "10px 14px", boxSizing: "border-box", background: "rgba(255,255,255,.04)", border: "1px solid rgba(59,130,246,.18)", borderRadius: 8, color: "#e2e8f0", fontFamily: "'DM Sans',sans-serif", fontSize: 13, lineHeight: 1.65, resize: "vertical", outline: "none" };
+
+function KK({ ch }) {
+  return <kbd style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-blue)", background: "rgba(59,158,255,.12)", border: "1px solid rgba(59,158,255,.25)", borderRadius: 3, padding: "0 5px" }}>{ch}</kbd>;
+}
+
+function SectionHeader({ section, expanded, onToggle, complete, children }) {
+  return (
+    <div style={{ borderBottom: `1px solid ${expanded ? "rgba(59,130,246,.2)" : "transparent"}`, marginBottom: expanded ? 16 : 0 }}>
+      <div
+        onClick={onToggle}
+        style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", cursor: "pointer", userSelect: "none" }}
+      >
+        <span style={{ fontSize: 14 }}>{section.icon}</span>
+        <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, fontWeight: 600, color: section.priority ? "#fff" : "var(--npi-txt2)", flex: 1 }}>
+          {section.label}
+        </span>
+        {complete && !expanded && (
+          <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "var(--npi-teal)", background: "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.25)", borderRadius: 20, padding: "1px 8px" }}>✓</span>
+        )}
+        {children && !expanded && <span style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>}
+        <span style={{ color: "var(--npi-txt4)", fontSize: 12, flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
+export default function ClinicalNoteStudio({
+  demo, cc, vitals, medications, allergies,
+  pmhSelected, pmhExtra, surgHx, famHx, socHx,
+  rosState, peState, peFindings,
+  esiLevel, registration,
+  onSave,
+}) {
+  const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
+
+  // ── Section expand/collapse ─────────────────────────────────────────────
+  const [expanded, setExpanded] = useState({ ddx: true, mdm: true, plan: true, hpi: false, ros: false, pe: false, results: false, meta: false });
+  const toggle = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
+
+  // ── DDx state ───────────────────────────────────────────────────────────
+  const [primaryDx, setPrimaryDx]   = useState(cc.text || "");
+  const [icd10, setIcd10]           = useState("");
+  const [differential, setDiff]     = useState([]);
+  const [diffInput, setDiffInput]   = useState("");
+  const [icdLoading, setIcdLoading] = useState(false);
+
+  // ── MDM state ───────────────────────────────────────────────────────────
+  const [complexity, setComplexity] = useState(0);
+  const [mdmText, setMdmText]       = useState("");
+  const [mdmLoading, setMdmLoading] = useState(false);
+
+  // ── Plan state ──────────────────────────────────────────────────────────
+  const [dispType, setDispType]     = useState("");
+  const [planItems, setPlanItems]   = useState([]);
+  const [planInput, setPlanInput]   = useState("");
+  const [returnPrec, setReturnPrec] = useState("");
+  const [followUp, setFollowUp]     = useState("");
+  const [consults, setConsults]     = useState("");
+
+  // ── Supporting section content (auto + editable) ─────────────────────────
+  const [hpiText, setHpiText]         = useState(cc.hpi || "");
+  const [rosText, setRosText]         = useState(() => buildRosText(rosState));
+  const [peText, setPeText]           = useState(() => buildPeText(peState, peFindings));
+  const [resultsText, setResultsText] = useState("");
+
+  // ── Refs for keyboard scroll-to ─────────────────────────────────────────
+  const refs = { ddx: useRef(null), mdm: useRef(null), plan: useRef(null), hpi: useRef(null), ros: useRef(null), pe: useRef(null), results: useRef(null), meta: useRef(null) };
+  const scrollTo = useCallback((id) => {
+    setExpanded(p => ({ ...p, [id]: true }));
+    setTimeout(() => refs[id]?.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }, []);
+
+  // ── AI: MDM generation ────────────────────────────────────────────────────
+  const generateMDM = useCallback(async () => {
+    if (mdmLoading) return;
+    setMdmLoading(true);
+    const pmhList = Object.keys(pmhSelected||{}).filter(k => pmhSelected[k]).slice(0,5).join(", ") || "none";
+    const vStr = vitals.bp ? `BP ${vitals.bp} HR ${vitals.hr||"—"} SpO2 ${vitals.spo2||"—"} T ${vitals.temp||"—"}` : "not documented";
+    try {
+      const r = await base44.integrations.Core.InvokeLLM({
+        prompt: `Write an emergency medicine Medical Decision Making (MDM) paragraph for the following encounter. Use 3-5 sentences. Be explicit about complexity level (straightforward/low/moderate/high). Address: number and acuity of problems, data reviewed, risk.
+
+Patient: ${patientName}, ${demo.age||"?"}y ${demo.sex||""}
+CC: ${cc.text||"unspecified"}
+Primary DX: ${primaryDx||cc.text||"pending"}
+HPI: ${cc.hpi?.slice(0,200)||"not documented"}
+Vitals: ${vStr}
+PMH: ${pmhList}
+Meds: ${(medications||[]).slice(0,5).join(", ")||"none"}
+Allergies: ${(allergies||[]).join(", ")||"NKDA"}
+ROS pertinent: ${rosText?.slice(0,150)||"not documented"}
+PE pertinent: ${peText?.slice(0,150)||"not documented"}
+
+Return ONLY the MDM paragraph text. No labels, no preamble.`,
+      });
+      setMdmText(typeof r === "string" ? r : JSON.stringify(r));
+      toast.success("MDM generated");
+    } catch { toast.error("MDM generation failed."); }
+    setMdmLoading(false);
+  }, [mdmLoading, patientName, demo, cc, primaryDx, vitals, pmhSelected, medications, allergies, rosText, peText]);
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────
+  useEffect(() => {
+    const h = (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      if (e.key === "d") { e.preventDefault(); scrollTo("ddx"); }
+      if (e.key === "m") { e.preventDefault(); scrollTo("mdm"); }
+      if (e.key === "g") { e.preventDefault(); generateMDM(); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [scrollTo, generateMDM]);
+
+  const onMdmKeyDown = (e) => {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 5 && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
+      setComplexity(n);
+    }
+    if (e.metaKey && e.key === "Enter") { e.preventDefault(); generateMDM(); }
+  };
+
+  // ── AI: ICD-10 suggestion ────────────────────────────────────────────────
+  const suggestICD = async () => {
+    if (!primaryDx.trim()) return;
+    setIcdLoading(true);
+    try {
+      const r = await base44.integrations.Core.InvokeLLM({
+        prompt: `Return ONLY valid JSON. For the emergency medicine diagnosis: "${primaryDx}", provide the most specific ICD-10-CM code and 3 differential diagnoses relevant to an ED presentation. Format: {"icd10":"CODE description","differentials":["dx1","dx2","dx3"]}`,
+        response_json_schema: { type:"object", properties:{ icd10:{type:"string"}, differentials:{type:"array",items:{type:"string"}} } },
+      });
+      const parsed = typeof r === "object" ? r : JSON.parse(String(r).replace(/```json|```/g,"").trim());
+      if (parsed.icd10)        setIcd10(parsed.icd10);
+      if (parsed.differentials) setDiff(parsed.differentials);
+    } catch { toast.error("ICD-10 lookup failed."); }
+    setIcdLoading(false);
+  };
+
+  // ── Completion checks ────────────────────────────────────────────────────
+  const complete = {
+    ddx:     !!primaryDx,
+    mdm:     !!mdmText && complexity > 0,
+    plan:    !!dispType,
+    hpi:     !!hpiText,
+    ros:     !!rosText,
+    pe:      !!peText,
+    results: !!resultsText,
+    meta:    true,
+  };
+
+  const allDone = SECTIONS.slice(0,3).every(s => complete[s.id]);
+
+  const addPlanItem = () => {
+    const t = planInput.trim();
+    if (!t) return;
+    setPlanItems(p => [...p, t]);
+    setPlanInput("");
+  };
+
+  // ─── RENDER ───────────────────────────────────────────────────────────────
+  return (
+    <div style={{ display: "flex", gap: 20, fontFamily: "'DM Sans',sans-serif", maxWidth: 1100, minHeight: "60vh" }}>
+
+      {/* ── LEFT RAIL ──────────────────────────────────────────────────── */}
+      <div style={{ width: 200, flexShrink: 0 }}>
+        <div style={{ position: "sticky", top: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-txt4)", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>Note sections</div>
+          {SECTIONS.map(s => (
+            <button key={s.id} onClick={() => scrollTo(s.id)}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 7, background: expanded[s.id] ? "rgba(59,158,255,.1)" : "transparent", border: `1px solid ${expanded[s.id] ? "rgba(59,158,255,.25)" : "transparent"}`, cursor: "pointer", textAlign: "left", transition: "all .12s" }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: complete[s.id] ? "var(--npi-teal)" : "transparent", border: `1.5px solid ${complete[s.id] ? "var(--npi-teal)" : "var(--npi-bd)"}` }} />
+              <span style={{ fontSize: 11, color: expanded[s.id] ? "var(--npi-blue)" : "var(--npi-txt3)", fontWeight: s.priority ? 600 : 400, flex: 1, lineHeight: 1.3 }}>{s.label.replace(/^\d+ /, "")}</span>
+            </button>
+          ))}
+          <div style={{ marginTop: 12, borderTop: "1px solid var(--npi-bd)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 4 }}>Keyboard</div>
+            {[["⌘D","→ Impression"],["⌘M","→ MDM"],["⌘G","Generate MDM"],["1–5","Set complexity"]].map(([k,d]) => (
+              <div key={k} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--npi-txt4)" }}>
+                <KK ch={k} />{d}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── MAIN NOTE BODY ─────────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 0 }}>
+
+        {/* Patient header strip */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: "rgba(13,31,60,.7)", border: "1px solid rgba(59,130,246,.15)", borderRadius: 10, marginBottom: 16, flexWrap: "wrap" }}>
+          <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 16, fontWeight: 600, color: "#fff" }}>{patientName}</span>
+          {demo.age && <span style={{ fontSize: 12, color: "var(--npi-txt3)" }}>{demo.age}y · {demo.sex||"—"}</span>}
+          {cc.text && <span style={{ fontSize: 12, color: "var(--npi-teal)", background: "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.25)", borderRadius: 20, padding: "1px 10px" }}>CC: {cc.text}</span>}
+          {esiLevel && <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 6, padding: "1px 8px" }}>ESI {esiLevel}</span>}
+          {registration?.room && <span style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Room {registration.room}</span>}
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            {allDone && onSave && (
+              <button onClick={onSave} style={{ padding: "5px 16px", borderRadius: 7, background: "var(--npi-teal)", color: "#050f1e", border: "none", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                Sign & Save ⌘⇧S
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── 01 IMPRESSION / DDx ──────────────────────────────────────── */}
+        <div ref={refs.ddx} style={{ background: "rgba(13,31,60,.5)", border: `1px solid ${expanded.ddx ? "rgba(255,107,107,.25)" : "rgba(59,130,246,.12)"}`, borderRadius: 10, padding: "0 16px", marginBottom: 8, transition: "border-color .2s" }}>
+          <SectionHeader section={SECTIONS[0]} expanded={expanded.ddx} onToggle={() => toggle("ddx")} complete={complete.ddx}>
+            {primaryDx && `${primaryDx}${icd10 ? "  ·  " + icd10 : ""}`}
+          </SectionHeader>
+          {expanded.ddx && (
+            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={FL}>Primary diagnosis</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={primaryDx} onChange={e => setPrimaryDx(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); suggestICD(); } }} placeholder="Enter working diagnosis…" style={{ ...TA, flex: 1, resize: "none", padding: "9px 12px" }} />
+                  <button onClick={suggestICD} disabled={icdLoading || !primaryDx.trim()}
+                    style={{ padding: "9px 16px", borderRadius: 7, background: icdLoading || !primaryDx.trim() ? "rgba(255,255,255,.04)" : "rgba(59,158,255,.15)", border: "1px solid rgba(59,158,255,.3)", color: "var(--npi-blue)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    {icdLoading ? "⏳" : "✦ ICD-10"}
+                  </button>
+                </div>
+                {icd10 && <div style={{ marginTop: 5, fontSize: 11, color: "var(--npi-teal)", fontFamily: "'JetBrains Mono',monospace" }}>{icd10}</div>}
+              </div>
+              {differential.length > 0 && (
+                <div>
+                  <div style={FL}>Differential</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {differential.map((dx, i) => (
+                      <div key={dx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
+                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-txt4)", width: 16 }}>{i + 1}.</span>
+                        <span style={{ fontSize: 13, color: "var(--npi-txt2)" }}>{dx}</span>
+                        <button onClick={() => setPrimaryDx(dx)} style={{ marginLeft: "auto", fontSize: 10, color: "var(--npi-txt4)", background: "none", border: "none", cursor: "pointer" }}>↑ promote</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <div style={FL}>Add to differential</div>
+                <input value={diffInput} onChange={e => setDiffInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (diffInput.trim()) { setDiff(p => [...p, diffInput.trim()]); setDiffInput(""); } } }} placeholder="Add diagnosis to differential…" style={{ ...TA, resize: "none", padding: "9px 12px" }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 02 MDM ─────────────────────────────────────────────────────── */}
+        <div ref={refs.mdm} tabIndex={-1} onKeyDown={onMdmKeyDown} style={{ background: "rgba(13,31,60,.5)", border: `1px solid ${expanded.mdm ? "rgba(255,107,107,.25)" : "rgba(59,130,246,.12)"}`, borderRadius: 10, padding: "0 16px", marginBottom: 8, outline: "none", transition: "border-color .2s" }}>
+          <SectionHeader section={SECTIONS[1]} expanded={expanded.mdm} onToggle={() => toggle("mdm")} complete={complete.mdm}>
+            {complexity > 0 && `${COMPLEXITY[complexity-1].label} — E/M Level ${complexity}`}
+          </SectionHeader>
+          {expanded.mdm && (
+            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={FL}>E/M complexity <span style={{ textTransform: "none", letterSpacing: 0, color: "#64748b" }}>(press 1–5)</span></div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {COMPLEXITY.map(c => (
+                    <button key={c.n} onClick={() => setComplexity(prev => prev === c.n ? 0 : c.n)}
+                      style={{ flex: 1, padding: "8px 6px", borderRadius: 7, border: `1px solid ${complexity === c.n ? c.color : "rgba(255,255,255,.1)"}`, background: complexity === c.n ? c.color + "22" : "rgba(255,255,255,.04)", color: complexity === c.n ? c.color : "var(--npi-txt4)", fontFamily: "'DM Sans',sans-serif", fontSize: 11, cursor: "pointer", transition: "all .12s", textAlign: "center" }}>
+                      <div style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, fontSize: 14 }}>{c.n}</div>
+                      <div style={{ fontSize: 9, marginTop: 1, lineHeight: 1.2 }}>{c.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                  <div style={FL}>MDM narrative</div>
+                  <button onClick={generateMDM} disabled={mdmLoading}
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 6, background: mdmLoading ? "transparent" : "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.3)", color: "var(--npi-teal)", fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                    {mdmLoading ? "⏳ Generating…" : <><span>✦</span> AI Generate <KK ch="⌘G" /></>}
+                  </button>
+                </div>
+                <textarea value={mdmText} onChange={e => setMdmText(e.target.value)} placeholder="Document: problems addressed, data reviewed, risk, complexity rationale…" rows={5} style={TA} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 03 DISPOSITION + PLAN ─────────────────────────────────────── */}
+        <div ref={refs.plan} style={{ background: "rgba(13,31,60,.5)", border: `1px solid ${expanded.plan ? "rgba(0,229,192,.25)" : "rgba(59,130,246,.12)"}`, borderRadius: 10, padding: "0 16px", marginBottom: 8, transition: "border-color .2s" }}>
+          <SectionHeader section={SECTIONS[2]} expanded={expanded.plan} onToggle={() => toggle("plan")} complete={complete.plan}>
+            {dispType && DISP_OPTS.find(d => d.id === dispType)?.label}
+          </SectionHeader>
+          {expanded.plan && (
+            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={FL}>Disposition</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {DISP_OPTS.map(d => (
+                    <button key={d.id} onClick={() => setDispType(prev => prev === d.id ? "" : d.id)}
+                      style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${dispType === d.id ? "var(--npi-teal)" : "rgba(255,255,255,.1)"}`, background: dispType === d.id ? "rgba(0,229,192,.12)" : "rgba(255,255,255,.04)", color: dispType === d.id ? "var(--npi-teal)" : "var(--npi-txt3)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: dispType === d.id ? 600 : 400, cursor: "pointer" }}>
+                      {d.icon} {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={FL}>Plan items</div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+                  <input value={planInput} onChange={e => setPlanInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPlanItem(); } }} placeholder="Add plan item and press Enter…" style={{ ...TA, flex: 1, resize: "none", padding: "9px 12px" }} />
+                  <button onClick={addPlanItem} disabled={!planInput.trim()} style={{ padding: "9px 14px", borderRadius: 7, background: planInput.trim() ? "rgba(59,158,255,.15)" : "rgba(255,255,255,.04)", border: "1px solid rgba(59,158,255,.3)", color: "var(--npi-blue)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, cursor: "pointer" }}>+ Add</button>
+                </div>
+                {planItems.map((item, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)", marginBottom: 3 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-txt4)", width: 16 }}>{i+1}.</span>
+                    <span style={{ flex: 1, fontSize: 13, color: "var(--npi-txt2)" }}>{item}</span>
+                    <button onClick={() => setPlanItems(p => p.filter((_,j) => j!==i))} style={{ background: "none", border: "none", color: "var(--npi-txt4)", cursor: "pointer", fontSize: 13 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={FL}>Consults</div>
+                  <input value={consults} onChange={e => setConsults(e.target.value)} placeholder="Consulting services…" style={{ ...TA, resize: "none", padding: "9px 12px" }} />
+                </div>
+                <div>
+                  <div style={FL}>Follow-up</div>
+                  <input value={followUp} onChange={e => setFollowUp(e.target.value)} placeholder="With PCP in 3 days…" style={{ ...TA, resize: "none", padding: "9px 12px" }} />
+                </div>
+              </div>
+              <div>
+                <div style={FL}>Return precautions</div>
+                <textarea value={returnPrec} onChange={e => setReturnPrec(e.target.value)} placeholder="Return to ED for: worsening symptoms, fever >101°F, inability to tolerate PO…" rows={2} style={TA} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 04 HPI ───────────────────────────────────────────────────── */}
+        <div ref={refs.hpi} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[3]} expanded={expanded.hpi} onToggle={() => toggle("hpi")} complete={complete.hpi}>
+            {hpiText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.hpi && (
+            <div style={{ paddingBottom: 14 }}>
+              <textarea value={hpiText} onChange={e => setHpiText(e.target.value)} placeholder="History of present illness…" rows={5} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 05 ROS ───────────────────────────────────────────────────── */}
+        <div ref={refs.ros} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[4]} expanded={expanded.ros} onToggle={() => toggle("ros")} complete={complete.ros}>
+            {rosText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.ros && (
+            <div style={{ paddingBottom: 14 }}>
+              {!rosText && <div style={{ fontSize: 11, color: "var(--npi-txt4)", marginBottom: 8, fontStyle: "italic" }}>Auto-populated from ROS tab — pertinent findings only</div>}
+              <textarea value={rosText} onChange={e => setRosText(e.target.value)} placeholder="Complete ROS in the ROS tab first, or enter pertinent findings here…" rows={3} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 06 PE ────────────────────────────────────────────────────── */}
+        <div ref={refs.pe} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[5]} expanded={expanded.pe} onToggle={() => toggle("pe")} complete={complete.pe}>
+            {peText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.pe && (
+            <div style={{ paddingBottom: 14 }}>
+              {!peText && <div style={{ fontSize: 11, color: "var(--npi-txt4)", marginBottom: 8, fontStyle: "italic" }}>Auto-populated from PE tab — abnormals prominent, normals abbreviated</div>}
+              <textarea value={peText} onChange={e => setPeText(e.target.value)} placeholder="Complete PE in the Physical Exam tab first, or enter findings here…" rows={4} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 07 RESULTS ───────────────────────────────────────────────── */}
+        <div ref={refs.results} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[6]} expanded={expanded.results} onToggle={() => toggle("results")} complete={complete.results}>
+            {resultsText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.results && (
+            <div style={{ paddingBottom: 14 }}>
+              <div style={{ fontSize: 11, color: "var(--npi-txt4)", marginBottom: 8, fontStyle: "italic" }}>Reference labs and imaging by result name — do not paste raw values</div>
+              <textarea value={resultsText} onChange={e => setResultsText(e.target.value)} placeholder="ECG: NSR, no ischemic changes. Troponin ×2 negative. CXR: no acute cardiopulmonary process. BMP: Na 138, K 4.1, Cr 0.9…" rows={4} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 08 METADATA ──────────────────────────────────────────────── */}
+        <div ref={refs.meta} style={{ background: "rgba(13,31,60,.35)", border: "1px solid rgba(59,130,246,.08)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[7]} expanded={expanded.meta} onToggle={() => toggle("meta")} complete={complete.meta} />
+          {expanded.meta && (
+            <div style={{ paddingBottom: 14, display: "flex", flexWrap: "wrap", gap: 16 }}>
+              {[
+                ["Patient", patientName],
+                ["DOB", demo.dob || "—"],
+                ["MRN", registration?.mrn || "—"],
+                ["Room", registration?.room || "—"],
+                ["Allergies", allergies?.length ? allergies.join(", ") : "NKDA"],
+                ["Meds", medications?.length ? `${medications.length} listed` : "none"],
+                ["BP", vitals?.bp || "—"],
+                ["HR", vitals?.hr || "—"],
+                ["SpO₂", vitals?.spo2 ? vitals.spo2 + "%" : "—"],
+                ["Temp", vitals?.temp || "—"],
+                ["ESI", esiLevel || "—"],
+                ["Encounter", new Date().toLocaleDateString()],
+              ].map(([label, val]) => (
+                <div key={label} style={{ minWidth: 120 }}>
+                  <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 12, color: "var(--npi-txt2)", fontFamily: "'DM Sans',sans-serif" }}>{val}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Sign bar ─────────────────────────────────────────────────── */}
+        {onSave && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderTop: "1px solid rgba(59,130,246,.15)", marginTop: 4 }}>
+            <button onClick={onSave} style={{ padding: "9px 22px", borderRadius: 8, background: "var(--npi-teal)", color: "#050f1e", border: "none", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              Sign &amp; Save Chart
+            </button>
+            <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>
+              <KK ch="⌘⇧S" /> sign
+            </div>
+            <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {SECTIONS.slice(0,3).map(s => (
+                <span key={s.id} style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: complete[s.id] ? "var(--npi-teal)" : "var(--npi-coral)", background: complete[s.id] ? "rgba(0,229,192,.08)" : "rgba(255,107,107,.08)", border: `1px solid ${complete[s.id] ? "rgba(0,229,192,.25)" : "rgba(255,107,107,.25)"}`, borderRadius: 5, padding: "2px 8px" }}>
+                  {complete[s.id] ? "✓" : "○"} {s.label.replace(/^\d+ /, "")}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

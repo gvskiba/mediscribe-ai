@@ -359,9 +359,11 @@ export default function NewPatientInput() {
     setAiMsgs(m => [...m, { role:"user", text:text.trim() }]);
     setAiInput(""); setAiLoading(true);
     const ctx = buildPatientCtx(demo,cc,vitals,allergies,pmhSelected,currentTab);
-    setHistory(h => [...h, { role:"user", content: ctx+"\n\n"+text.trim() }]);
+    const newHistory = [...history, { role:"user", content: ctx+"\n\n"+text.trim() }];
+    setHistory(newHistory);
+    const historyContext = newHistory.slice(-6).map(m => `${m.role=="user"?"Physician":"AI"}: ${m.content}`).join("\n");
     try {
-      const res = await base44.integrations.Core.InvokeLLM({ prompt: SYSTEM_PROMPT+"\n\nPATIENT CONTEXT:\n"+ctx+"\n\nPHYSICIAN QUESTION:\n"+text.trim() });
+      const res = await base44.integrations.Core.InvokeLLM({ prompt: SYSTEM_PROMPT+"\n\nPATIENT CONTEXT:\n"+ctx+"\n\nCONVERSATION HISTORY:\n"+historyContext+"\n\nPHYSICIAN QUESTION:\n"+text.trim() });
       const reply = typeof res === "string" ? res : JSON.stringify(res);
       setHistory(h => [...h, { role:"assistant", content:reply }]);
       setAiMsgs(m => [...m, { role:"bot", text:reply }]);

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import ERxHub from "@/pages/ERx";
 import ClinicalNoteStudio from "@/components/npi/ClinicalNoteStudio";
 import ReassessmentTab from "@/components/npi/ReassessmentTab";
 import ClinicalTimeline from "@/components/npi/ClinicalTimeline";
+import VitalSignsChart  from "@/components/npi/VitalSignsChart";
 import InlineHPITab from "@/components/npi/InlineHPITab";
 import OrdersPanel from "@/components/npi/OrdersPanel";
 import { NPI_CSS } from "@/components/npi/npiStyles";
@@ -172,6 +173,7 @@ export default function NewPatientInput() {
   const [demo, setDemo]               = useState({ firstName:"", lastName:"", age:"", dob:"", sex:"", mrn:"", insurance:"", insuranceId:"", address:"", city:"", phone:"", email:"", emerg:"", height:"", weight:"", lang:"", notes:"", pronouns:"" });
   const [cc, setCC]                   = useState({ text:"", onset:"", duration:"", severity:"", quality:"", radiation:"", aggravate:"", relieve:"", assoc:"", hpi:"" });
   const [vitals, setVitals]           = useState({});
+  const [vitalsHistory, setVitalsHistory] = useState([]);
   const [medications, setMedications] = useState([]);
   const [allergies, setAllergies]     = useState([]);
   const [pmhSelected, setPmhSelected] = useState({});
@@ -195,6 +197,7 @@ export default function NewPatientInput() {
   const [esiLevel, setEsiLevel]       = useState("");
   const [registration, setRegistration] = useState({ mrn:"", room:"" });
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [cdsOpen,      setCdsOpen]      = useState(false);
   const [rosActiveSystem, setRosActiveSystem] = useState(0);
   const [peActiveSystem,  setPeActiveSystem]  = useState(0);
   const [reassessState,   setReassessState]   = useState({});
@@ -237,9 +240,9 @@ export default function NewPatientInput() {
   useEffect(() => { msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior:"smooth" }); }, [aiMsgs, aiLoading]);
   useEffect(() => { if (aiOpen) setTimeout(() => inputRef.current?.focus(), 280); }, [aiOpen]);
   useEffect(() => {
-    const h = e => { if (e.key === "Escape" && aiOpen) setAiOpen(false); };
+    const h = e => { if (e.key === "Escape" && aiOpen) setAiOpen(false); if (e.key === "Escape" && cdsOpen) setCdsOpen(false); };
     window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h);
-  }, [aiOpen]);
+  }, [aiOpen, cdsOpen]);
 
   useEffect(() => {
     setNavDots(prev => ({
@@ -307,6 +310,14 @@ export default function NewPatientInput() {
   };
 
   const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
+
+  // Append a timestamped vitals snapshot to history.
+  // Called by VitalsTab (triage) and by ReassessmentTab via onVitalsSnapshot.
+  const addVitalsSnapshot = useCallback((label, overrideVitals) => {
+    const v = overrideVitals || vitals;
+    if (!v || (!v.hr && !v.bp)) return;   // nothing to capture yet
+    setVitalsHistory(prev => [...prev, { t: Date.now(), label, ...v }]);
+  }, [vitals]);
 
   const handleSaveChart = useCallback(async () => {
     try {
@@ -390,14 +401,24 @@ export default function NewPatientInput() {
     switch (currentTab) {
       case "demo":       return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} registration={registration} setRegistration={setRegistration} onAdvance={() => selectSection("cc")} />;
       case "cc":         return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} onAdvance={() => selectSection("vit")} />;
-      case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} onAdvance={() => selectSection("meds")} />;
+      case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} onAdvance={() => { addVitalsSnapshot("Triage"); selectSection("meds"); }} />;
       case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("hpi")} />;
       case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
       case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />;
       case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("chart")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
       case "chart":      return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
-      case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState} onAdvance={() => selectSection("timeline")} />;
-      case "timeline":   return <ClinicalTimeline arrivalMs={arrivalTimeRef.current} onStateChange={setClinicalTimeline} />;
+      case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState}
+        onVitalsSnapshot={v => addVitalsSnapshot(
+          `Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`,
+          v
+        )}
+        onAdvance={() => selectSection("timeline")} />;
+      case "timeline":   return (
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          <VitalSignsChart vitalsHistory={vitalsHistory}/>
+          <ClinicalTimeline arrivalMs={arrivalTimeRef.current} onStateChange={setClinicalTimeline}/>
+        </div>
+      );
       case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
       case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
       case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} /></div>;
@@ -426,6 +447,12 @@ export default function NewPatientInput() {
           <div className="npi-vsep" />
           <button className="npi-tb-link" onClick={() => navigate("/EDTrackingBoard")}>🏥 Track Board</button>
           <div className="npi-top-right">
+            <button
+              className={`npi-cds-btn${cdsOpen?" open":""}${allergies.length>0?" cds-alert":medications.length>0?" cds-warn":""}`}
+              onClick={()=>setCdsOpen(o=>!o)} title="Clinical Decision Support">
+              <div className="npi-cds-dot"/>
+              CDS
+            </button>
             <button className={`npi-ai-btn${aiOpen?" open":""}`} onClick={toggleAI} title="Notrya AI">
               <div className="npi-ai-dot" /> AI
               {unread > 0 && <span className="npi-ai-badge">{unread > 9 ? "9+" : unread}</span>}
@@ -464,7 +491,7 @@ export default function NewPatientInput() {
 
       <div className="npi-main-wrap">
         <main className="npi-content">{renderContent()}</main>
-        <CDSAlertsSidebar medications={medications} allergies={allergies} vitals={vitals} pmhSelected={pmhSelected} age={demo.age} cc={cc.text} />
+
       </div>
 
       <div className={`npi-scrim${aiOpen?" open":""}`} onClick={toggleAI} />
@@ -499,6 +526,22 @@ export default function NewPatientInput() {
           />
           <button className="npi-n-send" onClick={() => sendMessage(aiInput)} disabled={aiLoading||!aiInput.trim()}>↑</button>
         </div>
+      </div>
+
+      {cdsOpen && (
+        <div className="npi-cds-scrim" onClick={()=>setCdsOpen(false)}/>
+      )}
+      <div className={`npi-cds-overlay${cdsOpen?" open":""}`}>
+        <div className="npi-cds-overlay-hdr">
+          <span className="npi-cds-overlay-title">Clinical Decision Support</span>
+          <button className="npi-cds-close" onClick={()=>setCdsOpen(false)}>✕</button>
+        </div>
+        <CDSAlertsSidebar medications={medications} allergies={allergies} vitals={vitals} pmhSelected={pmhSelected} age={demo.age} cc={cc.text}/>
+        {allergies.length === 0 && medications.length === 0 && (
+          <div style={{ padding:"24px 16px", textAlign:"center", color:"var(--npi-txt4)", fontSize:12, fontFamily:"'DM Sans',sans-serif" }}>
+            No alerts — add medications or allergies to enable checking.
+          </div>
+        )}
       </div>
 
       <button className="npi-sc-hint-fab" title="Keyboard shortcuts (?)" onClick={() => setShowShortcuts(s=>!s)}>?</button>

@@ -233,4 +233,22 @@ export const NPI_CSS = `
 .hpi-badge{display:flex;align-items:center;gap:7px;padding:4px 11px;border-radius:20px;border:1px solid;font-size:11px}
 .hpi-badge-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.07em;opacity:.7}
 .hpi-badge-val{font-weight:600;font-size:11px}
+
+/* ── CDS badge button ────────────────────────────────────────────── */
+.npi-cds-btn{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--npi-txt3);cursor:pointer;position:relative;transition:all .15s;font-family:'DM Sans',sans-serif}
+.npi-cds-btn:hover{background:rgba(255,255,255,.1);color:var(--npi-txt2)}
+.npi-cds-btn.open{background:rgba(245,200,66,.1);border-color:rgba(245,200,66,.35);color:var(--npi-gold)}
+.npi-cds-btn.cds-warn{border-color:rgba(255,159,67,.35);color:var(--npi-orange)}
+.npi-cds-btn.cds-alert{border-color:rgba(255,107,107,.4);color:var(--npi-coral)}
+.npi-cds-btn.cds-alert.open{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.45);color:var(--npi-coral)}
+.npi-cds-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;opacity:.7}
+.npi-cds-btn.cds-alert .npi-cds-dot{animation:npi-ai-pulse 2s ease-in-out infinite}
+/* ── CDS overlay ─────────────────────────────────────────────────── */
+.npi-cds-scrim{position:fixed;inset:0;z-index:498;background:rgba(3,8,16,.25)}
+.npi-cds-overlay{position:fixed;top:var(--npi-top);right:0;bottom:0;z-index:499;width:300px;background:var(--npi-panel);border-left:1px solid var(--npi-bd);display:flex;flex-direction:column;overflow:hidden;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.npi-cds-overlay.open{transform:translateX(0);pointer-events:auto}
+.npi-cds-overlay-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--npi-bd);flex-shrink:0}
+.npi-cds-overlay-title{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--npi-txt4)}
+.npi-cds-close{width:24px;height:24px;border-radius:5px;border:1px solid var(--npi-bd);background:var(--npi-up);color:var(--npi-txt4);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.npi-cds-close:hover{border-color:var(--npi-bhi);color:var(--npi-txt2)}
 `;

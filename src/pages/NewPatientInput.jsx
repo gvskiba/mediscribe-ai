@@ -51,7 +51,7 @@ const NAV_DATA = {
     { section: "reassess",   icon: "🔄", label: "Reassessment",       abbr: "Ra", dot: "empty"   },
     { section: "timeline",   icon: "⏱",  label: "Timeline",           abbr: "Tl", dot: "empty"   },
     { section: "discharge",  icon: "🚪", label: "Discharge",          abbr: "Dc", dot: "empty"   },
-    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results"     },
+    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty"   },
     { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty"   },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",        abbr: "Mr", dot: "empty"   },
     { section: "calc",       icon: "🧮", label: "Calculators",       abbr: "Ca", dot: "empty", href: "/Calculators" },

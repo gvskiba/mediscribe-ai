@@ -1014,7 +1014,7 @@ export default function NewPatientInput() {
                   ) : (
                     /* Standard groups: section buttons */
                     items.map(item => (
-                      <React.Fragment key={item.section}>
+                      <div key={item.section}>
                         <button
                           className={`npi-wf-item${item.section === currentTab ? " active" : ""}`}
                           onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}
@@ -1029,7 +1029,7 @@ export default function NewPatientInput() {
                         {/* ROS body systems — inline expansion */}
                         {item.section === "ros" && currentTab === "ros" && ROS_RAIL_SYSTEMS.map((sys, i) => (
                           <button key={sys.id} className={`npi-wf-sys-item${i === rosActiveSystem ? " active" : ""}`}
-                            onClick={() => { setRosActiveSystem(i); panelProps?.ref?.current?.focus?.(); }}>
+                            onClick={() => { setRosActiveSystem(i); }}>
                             <span className="npi-wf-sys-icon">{sys.icon}</span>
                             <span className="npi-wf-sys-label">{sys.label}</span>
                             <span className={`npi-wf-item-dot ${getRosSysDot(sys.id)}`} />
@@ -1044,7 +1044,7 @@ export default function NewPatientInput() {
                             <span className={`npi-wf-item-dot ${getPeSysDot(sys.id)}`} />
                           </button>
                         ))}
-                      </React.Fragment>
+                      </div>
                     ))
                   )}
                 </div>

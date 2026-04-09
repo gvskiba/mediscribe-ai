@@ -520,7 +520,7 @@ function RxBuilder({ drug, onSign, onCancel, patientWeight, patientAllergies, ac
     reason: "",
     pharmacy: "Patient's preferred pharmacy on file",
     notes: "",
-    pdmpChecked: drug.controlled,
+    pdmpChecked: false,
   });
   const set = k => v => setForm(p=>({...p,[k]:v}));
 

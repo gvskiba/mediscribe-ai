@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -311,9 +311,11 @@ export default function NewPatientInput() {
 
   const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
 
+  // Append a timestamped vitals snapshot to history.
+  // Called by VitalsTab (triage) and by ReassessmentTab via onVitalsSnapshot.
   const addVitalsSnapshot = useCallback((label, overrideVitals) => {
     const v = overrideVitals || vitals;
-    if (!v || (!v.hr && !v.bp)) return;
+    if (!v || (!v.hr && !v.bp)) return;   // nothing to capture yet
     setVitalsHistory(prev => [...prev, { t: Date.now(), label, ...v }]);
   }, [vitals]);
 
@@ -407,7 +409,7 @@ export default function NewPatientInput() {
       case "chart":      return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
       case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState}
         onVitalsSnapshot={v => addVitalsSnapshot(
-          `Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`,
+          `Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`,
           v
         )}
         onAdvance={() => selectSection("timeline")} />;
@@ -419,7 +421,7 @@ export default function NewPatientInput() {
       );
       case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
       case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
-      case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} /></div>;
+      case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} patientWeight={demo.weight||vitals.weight||""} /></div>;
       case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;
       case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
@@ -430,7 +432,7 @@ export default function NewPatientInput() {
   };
 
   return (
-    <div style={{ position:"relative", minHeight:"100vh" }}>
+    <>
       <style>{NPI_CSS}</style>
 
       <header className="npi-top-bar">
@@ -489,6 +491,7 @@ export default function NewPatientInput() {
 
       <div className="npi-main-wrap">
         <main className="npi-content">{renderContent()}</main>
+
       </div>
 
       <div className={`npi-scrim${aiOpen?" open":""}`} onClick={toggleAI} />
@@ -679,6 +682,6 @@ export default function NewPatientInput() {
           );
         })}
       </aside>
-    </div>
+    </>
   );
 }

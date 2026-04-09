@@ -1,213 +1,204 @@
-import { useState, useEffect, useRef } from "react";
-import { runCDSRules } from "@/lib/cdsRules";
+import { useMemo, useState } from 'react';
 
-const CSS_ID = "cds-sidebar-css";
+// ─── DRUG SETS ─────────────────────────────────────────────────────────────────
+const PENICILLIN_DRUGS  = ['amoxicillin','ampicillin','piperacillin','augmentin','amoxil','unasyn'];
+const SULFA_DRUGS       = ['sulfamethoxazole','trimethoprim','bactrim','septra','smx','tmp'];
+const NSAID_DRUGS       = ['ibuprofen','naproxen','ketorolac','meloxicam','celecoxib','indomethacin','toradol'];
+const ASPIRIN_DRUGS     = ['aspirin','asa'];
+const QT_DRUGS          = ['azithromycin','ciprofloxacin','haloperidol','ondansetron','methadone','amiodarone','sotalol','droperidol'];
+const BLEED_PAIRS       = [['warfarin','aspirin'],['warfarin','ibuprofen'],['warfarin','ketorolac'],['heparin','aspirin']];
+const BENZO_DRUGS       = ['lorazepam','diazepam','alprazolam','midazolam','clonazepam','ativan','valium'];
+const OPIOID_DRUGS      = ['morphine','fentanyl','oxycodone','hydromorphone','codeine','tramadol','dilaudid'];
 
-if (!document.getElementById(CSS_ID)) {
-  const s = document.createElement("style");
-  s.id = CSS_ID;
-  s.textContent = `
-.cds-sidebar{
-  width:220px;flex-shrink:0;
-  background:rgba(5,10,20,.96);
-  border-left:1px solid #1a3555;
-  display:flex;flex-direction:column;
-  overflow:hidden;
-  transition:width .25s ease;
-}
-.cds-sidebar.collapsed{width:32px;}
-.cds-sidebar-hdr{
-  padding:8px 8px 6px;
-  border-bottom:1px solid #1a3555;
-  display:flex;align-items:center;gap:6px;
-  flex-shrink:0;cursor:pointer;user-select:none;
-  min-height:36px;
-}
-.cds-sidebar-hdr:hover{background:rgba(14,37,68,.5);}
-.cds-hdr-icon{font-size:13px;flex-shrink:0;}
-.cds-hdr-label{
-  font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:#5a82a8;
-  flex:1;white-space:nowrap;overflow:hidden;
-}
-.cds-hdr-badge{
-  min-width:16px;height:16px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
-  padding:0 4px;flex-shrink:0;
-}
-.cds-hdr-badge.has-crit{background:rgba(255,68,68,.2);color:#ff4444;border:1px solid rgba(255,68,68,.35);animation:cds-pulse 2s ease-in-out infinite;}
-.cds-hdr-badge.has-warn{background:rgba(245,200,66,.15);color:#f5c842;border:1px solid rgba(245,200,66,.25);}
-.cds-hdr-badge.clear{background:rgba(0,229,192,.1);color:#00e5c0;border:1px solid rgba(0,229,192,.2);}
-@keyframes cds-pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.cds-toggle{
-  width:20px;height:20px;border-radius:4px;border:1px solid #1a3555;
-  background:#0e2544;color:#5a82a8;font-size:10px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  transition:all .13s;
-}
-.cds-toggle:hover{border-color:#2a4f7a;color:#b8d4f0;}
-.cds-body{flex:1;overflow-y:auto;padding:6px 6px 12px;display:flex;flex-direction:column;gap:4px;}
-.cds-body::-webkit-scrollbar{width:3px;}
-.cds-body::-webkit-scrollbar-thumb{background:#1a3555;border-radius:2px;}
-.cds-alert{
-  border-radius:6px;padding:7px 8px;cursor:pointer;
-  border-left:3px solid transparent;transition:all .13s;
-  border:1px solid transparent;
-}
-.cds-alert.critical{
-  background:rgba(255,68,68,.07);
-  border-color:rgba(255,68,68,.25);
-  border-left-color:#ff4444;
-}
-.cds-alert.critical:hover{background:rgba(255,68,68,.12);}
-.cds-alert.warning{
-  background:rgba(245,200,66,.05);
-  border-color:rgba(245,200,66,.2);
-  border-left-color:#f5c842;
-}
-.cds-alert.warning:hover{background:rgba(245,200,66,.1);}
-.cds-alert.info{
-  background:rgba(59,158,255,.05);
-  border-color:rgba(59,158,255,.15);
-  border-left-color:#3b9eff;
-}
-.cds-alert.info:hover{background:rgba(59,158,255,.1);}
-.cds-alert-cat{
-  font-family:'JetBrains Mono',monospace;font-size:7px;font-weight:700;
-  letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;
-  display:flex;align-items:center;gap:4px;
-}
-.cds-alert-cat.critical{color:#ff4444;}
-.cds-alert-cat.warning{color:#f5c842;}
-.cds-alert-cat.info{color:#3b9eff;}
-.cds-alert-title{
-  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;
-  color:#f2f7ff;line-height:1.3;margin-bottom:0;
-}
-.cds-alert-detail{
-  font-family:'DM Sans',sans-serif;font-size:10px;color:#82aece;
-  line-height:1.5;margin-top:4px;
-  display:none;
-}
-.cds-alert.expanded .cds-alert-detail{display:block;}
-.cds-alert-chevron{font-size:9px;color:#5a82a8;margin-left:auto;flex-shrink:0;}
-.cds-clear{
-  text-align:center;padding:24px 12px;
-  font-family:'DM Sans',sans-serif;font-size:11px;color:#2a4f7a;
-}
-.cds-clear-ico{font-size:22px;opacity:.4;margin-bottom:6px;}
-.cds-sep{height:1px;background:#1a3555;margin:2px 0;flex-shrink:0;}
-.cds-cat-group-lbl{
-  font-family:'JetBrains Mono',monospace;font-size:7px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:#2a4f7a;
-  padding:6px 2px 2px;
-}
-.cds-collapsed-badges{
-  flex:1;display:flex;flex-direction:column;align-items:center;
-  gap:4px;padding:8px 0;overflow:hidden;
-}
-.cds-micro-badge{
-  width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;
-  font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;
-}
-.cds-micro-badge.critical{background:rgba(255,68,68,.2);color:#ff4444;}
-.cds-micro-badge.warning{background:rgba(245,200,66,.15);color:#f5c842;}
-.cds-micro-badge.info{background:rgba(59,158,255,.12);color:#3b9eff;}
-`;
-  document.head.appendChild(s);
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const medMatch = (meds, drugList) =>
+  meds.some(m => drugList.some(d => m.toLowerCase().includes(d)));
+
+const allergyMatch = (allergies, terms) =>
+  allergies.some(a => terms.some(t => a.toLowerCase().includes(t)));
+
+// ─── ALERT COMPUTATION ────────────────────────────────────────────────────────
+function computeAlerts(medications, allergies, vitals, pmhSelected, age, cc) {
+  const meds   = (medications || []).map(String);
+  const allgs  = (allergies   || []).map(String);
+  const pmh    = pmhSelected  || {};
+  const ageN   = parseFloat(age) || 0;
+  const ccL    = (cc || '').toLowerCase();
+  const alerts = [];
+
+  const sbp    = parseFloat((vitals.bp || '').split('/')[0]);
+  const hr     = parseFloat(vitals.hr);
+  const spo2   = parseFloat(vitals.spo2);
+  const temp   = parseFloat(vitals.temp);
+  const rr     = parseFloat(vitals.rr);
+
+  // ── CRITICAL ──────────────────────────────────────────────────────────────
+  if (allergyMatch(allgs, ['penicillin','pcn','amoxicillin']) && medMatch(meds, PENICILLIN_DRUGS)) {
+    alerts.push({ tier: 'critical', id: 'pcn-allergy', icon: '⚠', title: 'Penicillin allergy + β-lactam', body: 'Patient has documented penicillin allergy. Current medication list contains a β-lactam agent.' });
+  }
+  if (allergyMatch(allgs, ['sulfa','sulfamethoxazole','sulfonamide']) && medMatch(meds, SULFA_DRUGS)) {
+    alerts.push({ tier: 'critical', id: 'sulfa-allergy', icon: '⚠', title: 'Sulfa allergy + sulfonamide', body: 'Documented sulfa allergy with a sulfonamide in the medication list.' });
+  }
+  if (allergyMatch(allgs, ['nsaid','ibuprofen','naproxen']) && medMatch(meds, NSAID_DRUGS)) {
+    alerts.push({ tier: 'critical', id: 'nsaid-allergy', icon: '⚠', title: 'NSAID allergy + NSAID ordered', body: 'NSAID allergy documented. An NSAID appears in the current medication list.' });
+  }
+  if (allergyMatch(allgs, ['aspirin','asa']) && medMatch(meds, ASPIRIN_DRUGS)) {
+    alerts.push({ tier: 'critical', id: 'asa-allergy', icon: '⚠', title: 'Aspirin allergy + ASA', body: 'Documented aspirin allergy with aspirin in the medication list.' });
+  }
+
+  if (!isNaN(sbp) && sbp < 90 && !isNaN(hr) && hr > 120) {
+    alerts.push({ tier: 'critical', id: 'shock', icon: '🔴', title: 'Hemodynamic instability', body: `SBP ${vitals.bp} with HR ${vitals.hr} — consider shock assessment. Ensure IV access, fluid challenge, and early consult.` });
+  }
+  if (!isNaN(spo2) && spo2 < 88) {
+    alerts.push({ tier: 'critical', id: 'hypoxia', icon: '🔴', title: 'Critical hypoxia', body: `SpO₂ ${vitals.spo2}% — below 88% threshold. Escalate oxygen delivery and consider airway intervention.` });
+  }
+  if (!isNaN(temp) && temp >= 40) {
+    alerts.push({ tier: 'critical', id: 'hyperpyrexia', icon: '🔴', title: 'Hyperpyrexia ≥40°C', body: `Temperature ${vitals.temp}°C. Workup for CNS infection, heat stroke, or malignant hyperthermia.` });
+  }
+
+  // ── HIGH ──────────────────────────────────────────────────────────────────
+  const infectionCC = /fever|infect|sepsis|pneumon|uti|cellul|abscess|chills/i.test(cc || '');
+  const sirs = [
+    (!isNaN(temp) && (temp > 38 || temp < 36)),
+    (!isNaN(hr)   && hr   > 90),
+    (!isNaN(rr)   && rr   > 20),
+  ].filter(Boolean).length;
+  if (infectionCC && sirs >= 2) {
+    alerts.push({ tier: 'high', id: 'sepsis', icon: '🟡', title: 'SIRS criteria met', body: `${sirs}/3 SIRS criteria present with infectious CC. Consider sepsis workup: lactate, blood cultures, early antibiotics per protocol.` });
+  }
+
+  BLEED_PAIRS.forEach(([a, b]) => {
+    const hasA = meds.some(m => m.toLowerCase().includes(a));
+    const hasB = meds.some(m => m.toLowerCase().includes(b));
+    if (hasA && hasB) {
+      alerts.push({ tier: 'high', id: `bleed-${a}-${b}`, icon: '🟡', title: `${a.charAt(0).toUpperCase()+a.slice(1)} + ${b} — bleeding risk`, body: `This combination increases bleeding risk. Verify indication and consider GI prophylaxis if not present.` });
+    }
+  });
+
+  const qtMeds = QT_DRUGS.filter(d => meds.some(m => m.toLowerCase().includes(d)));
+  if (qtMeds.length >= 2) {
+    alerts.push({ tier: 'high', id: 'qt-combo', icon: '🟡', title: 'Multiple QT-prolonging agents', body: `${qtMeds.slice(0,2).join(' + ')} — combination may prolong QTc. Consider baseline ECG.` });
+  }
+
+  if (pmh.asthma && meds.some(m => /metoprolol|atenolol|propranolol|carvedilol|labetalol/.test(m.toLowerCase()))) {
+    alerts.push({ tier: 'high', id: 'asthma-bb', icon: '🟡', title: 'β-blocker with asthma history', body: 'Non-selective beta-blockers may precipitate bronchospasm. Use cardioselective agent with caution or consider alternative.' });
+  }
+
+  if (medMatch(meds, BENZO_DRUGS) && medMatch(meds, OPIOID_DRUGS)) {
+    alerts.push({ tier: 'high', id: 'benzo-opioid', icon: '🟡', title: 'Benzodiazepine + opioid', body: 'FDA black-box warning: concurrent use increases risk of respiratory depression and death. Ensure monitoring.' });
+  }
+
+  // ── INFO ──────────────────────────────────────────────────────────────────
+  if (allgs.length === 0) {
+    alerts.push({ tier: 'info', id: 'no-allergies', icon: 'ℹ', title: 'Allergy status not documented', body: 'No allergies recorded. Document NKDA or specific allergies before prescribing.' });
+  }
+
+  if (ageN >= 65) {
+    if (medMatch(meds, BENZO_DRUGS)) {
+      alerts.push({ tier: 'info', id: 'beers-benzo', icon: 'ℹ', title: 'Beers: benzodiazepine in ≥65', body: 'Benzodiazepines increase fall and delirium risk in older adults. Consider alternative anxiolytic or tapering plan.' });
+    }
+    if (medMatch(meds, NSAID_DRUGS)) {
+      alerts.push({ tier: 'info', id: 'beers-nsaid', icon: 'ℹ', title: 'Beers: NSAID in ≥65', body: 'NSAIDs increase GI bleed and renal risk in older adults. Consider acetaminophen or short course with PPI.' });
+    }
+  }
+
+  if (/chest pain|cp|chest pressure/.test(ccL) && ageN >= 40) {
+    alerts.push({ tier: 'info', id: 'acs-reminder', icon: 'ℹ', title: 'Chest pain ≥40y — ACS workup', body: 'Consider 12-lead ECG within 10 minutes, serial troponins, and early risk stratification (HEART score or TIMI).' });
+  }
+
+  if (/stroke|tia|facial droop|arm weak|slurred speech|sudden headache/.test(ccL)) {
+    alerts.push({ tier: 'info', id: 'stroke-alert', icon: 'ℹ', title: 'Stroke symptoms — time-critical', body: 'LKW, NIHSS, and CT without contrast are time-sensitive. Activate stroke protocol if within window.' });
+  }
+
+  return alerts;
 }
 
-const SEV_ICON = { critical: "🚨", warning: "⚠️", info: "ℹ️" };
-
+// ─── COMPONENT ────────────────────────────────────────────────────────────────
 export default function CDSAlertsSidebar({ medications, allergies, vitals, pmhSelected, age, cc }) {
-  const [alerts,    setAlerts]    = useState([]);
-  const [expanded,  setExpanded]  = useState({});
-  const [collapsed, setCollapsed] = useState(true);
-  const debounceRef = useRef(null);
+  const [dismissed, setDismissed] = useState(new Set());
+  const [collapsed,  setCollapsed]  = useState(false);
 
-  // Re-run rules whenever inputs change, debounced 400ms
-  useEffect(() => {
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      const result = runCDSRules({ medications, allergies, vitals, pmhSelected, age, cc });
-      setAlerts(result);
-    }, 400);
-    return () => clearTimeout(debounceRef.current);
-  }, [
-    medications.length,
-    allergies.length,
-    vitals.hr, vitals.bp, vitals.spo2, vitals.rr, vitals.temp, vitals.gcs,
-    JSON.stringify(pmhSelected),
-    age,
-    cc,
-  ]); // eslint-disable-line react-hooks/exhaustive-deps
+  const allAlerts = useMemo(
+    () => computeAlerts(medications, allergies, vitals, pmhSelected, age, cc),
+    [medications, allergies, vitals, pmhSelected, age, cc]
+  );
 
-  const toggleAlert = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+  const visible  = allAlerts.filter(a => !dismissed.has(a.id));
+  const critical = visible.filter(a => a.tier === 'critical');
+  const high     = visible.filter(a => a.tier === 'high');
+  const info     = visible.filter(a => a.tier === 'info');
 
-  const critCount = alerts.filter(a => a.severity === "critical").length;
-  const warnCount = alerts.filter(a => a.severity === "warning").length;
-  const totalCount = alerts.length;
+  if (visible.length === 0) return null;
 
-  const badgeClass = critCount > 0 ? "has-crit" : warnCount > 0 ? "has-warn" : "clear";
-  const badgeText  = totalCount > 0 ? String(totalCount) : "✓";
-
-  // Group by category
-  const groups = {};
-  alerts.forEach(a => { (groups[a.category] = groups[a.category] || []).push(a); });
+  const dismiss = (id) => setDismissed(prev => new Set([...prev, id]));
 
   return (
-    <aside className={`cds-sidebar${collapsed ? " collapsed" : ""}`}>
+    <aside style={{
+      width: collapsed ? 36 : 220,
+      flexShrink: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      borderLeft: '1px solid var(--npi-bd)',
+      background: 'rgba(5,10,22,.6)',
+      transition: 'width .2s ease',
+      overflow: 'hidden',
+    }}>
       {/* Header */}
-      <div className="cds-sidebar-hdr" onClick={() => setCollapsed(c => !c)}>
-        <span className="cds-hdr-icon">🧠</span>
-        {!collapsed && <span className="cds-hdr-label">CDS Alerts</span>}
-        <span className={`cds-hdr-badge ${badgeClass}`}>{badgeText}</span>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '8px 10px', borderBottom: '1px solid var(--npi-bd)',
+        flexShrink: 0, cursor: 'pointer',
+      }} onClick={() => setCollapsed(c => !c)}>
+        {critical.length > 0 && (
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#ff6b6b', flexShrink: 0, boxShadow: '0 0 6px rgba(255,107,107,.6)' }} />
+        )}
+        {!collapsed && (
+          <>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: 'var(--npi-txt4)', textTransform: 'uppercase', letterSpacing: '.08em', flex: 1 }}>
+              CDS · {visible.length}
+            </span>
+            {critical.length > 0 && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, fontWeight: 700, color: '#ff6b6b' }}>{critical.length}!</span>}
+          </>
+        )}
+        <span style={{ fontSize: 10, color: 'var(--npi-txt4)', flexShrink: 0 }}>{collapsed ? '◂' : '▸'}</span>
       </div>
 
-      {/* Collapsed micro-view */}
-      {collapsed && (
-        <div className="cds-collapsed-badges">
-          {critCount > 0 && <div className="cds-micro-badge critical">{critCount}</div>}
-          {warnCount > 0 && <div className="cds-micro-badge warning">{warnCount}</div>}
-          {alerts.filter(a=>a.severity==="info").length > 0 && (
-            <div className="cds-micro-badge info">{alerts.filter(a=>a.severity==="info").length}</div>
-          )}
-        </div>
-      )}
-
-      {/* Expanded body */}
       {!collapsed && (
-        <div className="cds-body">
-          {alerts.length === 0 ? (
-            <div className="cds-clear">
-              <div className="cds-clear-ico">✅</div>
-              No active alerts
-            </div>
-          ) : (
-            Object.entries(groups).map(([cat, items]) => (
-              <div key={cat}>
-                <div className="cds-cat-group-lbl">{cat}</div>
-                {items.map(alert => (
-                  <div
-                    key={alert.id}
-                    className={`cds-alert ${alert.severity}${expanded[alert.id] ? " expanded" : ""}`}
-                    onClick={() => toggleAlert(alert.id)}
-                  >
-                    <div className={`cds-alert-cat ${alert.severity}`}>
-                      <span>{SEV_ICON[alert.severity]}</span>
-                      {alert.severity.toUpperCase()}
-                      <span className="cds-alert-chevron" style={{ marginLeft:"auto" }}>
-                        {expanded[alert.id] ? "▴" : "▾"}
-                      </span>
-                    </div>
-                    <div className="cds-alert-title">{alert.title}</div>
-                    <div className="cds-alert-detail">{alert.detail}</div>
-                  </div>
-                ))}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0', scrollbarWidth: 'none' }}>
+          {[
+            { list: critical, color: '#ff6b6b', bg: 'rgba(255,107,107,.06)', bd: 'rgba(255,107,107,.25)', label: 'Critical', dismissable: false },
+            { list: high,     color: '#ff9f43', bg: 'rgba(255,159,67,.06)',  bd: 'rgba(255,159,67,.25)',  label: 'High',     dismissable: true  },
+            { list: info,     color: '#3b9eff', bg: 'rgba(59,158,255,.06)',  bd: 'rgba(59,158,255,.2)',   label: 'Info',     dismissable: true  },
+          ].map(({ list, color, bg, bd, label, dismissable }) => list.length > 0 && (
+            <div key={label}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color, textTransform: 'uppercase', letterSpacing: '.1em', padding: '6px 10px 3px', opacity: .7 }}>
+                {label}
               </div>
-            ))
-          )}
+              {list.map(alert => (
+                <div key={alert.id} style={{
+                  margin: '3px 8px', padding: '8px 10px',
+                  background: bg, border: `1px solid ${bd}`,
+                  borderRadius: 7, position: 'relative',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5, marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, flexShrink: 0, lineHeight: 1.3 }}>{alert.icon}</span>
+                    <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: 600, color, lineHeight: 1.3, flex: 1 }}>
+                      {alert.title}
+                    </span>
+                    {dismissable && (
+                      <button onClick={() => dismiss(alert.id)} style={{
+                        background: 'none', border: 'none', color: 'var(--npi-txt4)',
+                        fontSize: 9, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1,
+                      }}>✕</button>
+                    )}
+                  </div>
+                  <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 9.5, color: 'var(--npi-txt3)', lineHeight: 1.5, margin: 0 }}>
+                    {alert.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       )}
     </aside>

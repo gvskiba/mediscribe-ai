@@ -1,687 +1,579 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
-import DemoTab from "@/components/npi/DemoTab";
-import CCTab from "@/components/npi/CCTab";
-import VitalsTab from "@/components/npi/VitalsTab";
-import MedsTab from "@/components/npi/MedsTab";
-import ROSTab from "@/components/npi/ROSTab";
-import PETab from "@/components/npi/PETab";
-import AutoCoderTab from "@/components/npi/AutoCoderTab";
-import DischargePlanning from "@/pages/DischargePlanning";
-import EDProcedureNotes from "@/pages/EDProcedureNotes";
-import MedicationReferencePage from "@/pages/MedicationReference";
-import ERPlanBuilder from "@/pages/ERPlanBuilder";
-import ResultsViewer from "@/pages/ResultsViewer";
-import CDSAlertsSidebar from "@/components/npi/CDSAlertsSidebar";
-import ERxHub from "@/pages/ERx";
-import ClinicalNoteStudio from "@/components/npi/ClinicalNoteStudio";
-import ReassessmentTab from "@/components/npi/ReassessmentTab";
-import ClinicalTimeline from "@/components/npi/ClinicalTimeline";
-import VitalSignsChart  from "@/components/npi/VitalSignsChart";
-import InlineHPITab from "@/components/npi/InlineHPITab";
-import OrdersPanel from "@/components/npi/OrdersPanel";
-import { NPI_CSS } from "@/components/npi/npiStyles";
+// ── Tier helpers ──────────────────────────────────────────────────────────────
+const TC = { STAT:"var(--npi-coral)", URGENT:"var(--npi-orange)", ROUTINE:"var(--npi-txt4)" };
+const TB = { STAT:"rgba(255,107,107,.12)", URGENT:"rgba(255,159,67,.12)", ROUTINE:"rgba(255,255,255,.05)" };
+const TD = { STAT:"rgba(255,107,107,.28)", URGENT:"rgba(255,159,67,.28)", ROUTINE:"rgba(255,255,255,.10)" };
+const TL = { STAT:"var(--npi-coral)", URGENT:"var(--npi-orange)", ROUTINE:"rgba(255,255,255,.15)" };
 
-// ─── NAV DATA ─────────────────────────────────────────────────────────────────
-const NAV_DATA = {
-  register: [
-    { section: "demo",       icon: "👤", label: "Demographics",      abbr: "Dm", dot: "empty" },
-    { section: "cc",         icon: "💬", label: "Chief Complaint",   abbr: "Cc", dot: "empty" },
-    { section: "vit",        icon: "📈", label: "Vitals",            abbr: "Vt", dot: "empty" },
-    { section: "meds",       icon: "💊", label: "Meds & PMH",        abbr: "Rx", dot: "empty" },
-  ],
-  assess: [
-    { section: "hpi",        icon: "📝", label: "HPI",               abbr: "Hp", dot: "empty" },
-    { section: "ros",        icon: "🔍", label: "Review of Systems", abbr: "Rs", dot: "empty" },
-    { section: "pe",         icon: "🩺", label: "Physical Exam",     abbr: "Pe", dot: "empty" },
-  ],
-  note: [
-    { section: "chart",      icon: "📄", label: "Clinical Note",     abbr: "Cn", dot: "empty" },
-  ],
-  orders: [
-    { section: "orders",     icon: "📋", label: "Orders",            abbr: "Or", dot: "empty" },
-    { section: "erx",        icon: "💉", label: "eRx",               abbr: "Ex", dot: "empty" },
-    { section: "erplan",     icon: "🗺️", label: "ER Plan Builder",   abbr: "Ep", dot: "empty" },
-    { section: "procedures", icon: "✂️", label: "Procedures",        abbr: "Pr", dot: "empty" },
-  ],
-  close: [
-    { section: "reassess",   icon: "🔄", label: "Reassessment",      abbr: "Ra", dot: "empty" },
-    { section: "timeline",   icon: "⏱",  label: "Timeline",          abbr: "Tl", dot: "empty" },
-    { section: "discharge",  icon: "🚪", label: "Discharge",         abbr: "Dc", dot: "empty" },
-    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results"     },
-    { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty" },
-    { section: "medref",     icon: "🧬", label: "ED Med Ref",        abbr: "Mr", dot: "empty" },
-    { section: "calc",       icon: "🧮", label: "Calculators",       abbr: "Ca", dot: "empty", href: "/Calculators" },
-    { section: "hub",        icon: "🏥", label: "Clinical Hub",      abbr: "Hb", dot: "empty", href: "/hub"         },
-  ],
-};
+// ── Category icons ────────────────────────────────────────────────────────────
+const CAT_ICON = { lab:"🧪", medication:"💊", iv:"💧", imaging:"🔬", procedure:"⚙️", consult:"👤", monitoring:"📡" };
 
-const GROUP_META = [
-  { key: "register", icon: "👤", label: "Register" },
-  { key: "assess",   icon: "🔍", label: "Assess"   },
-  { key: "note",     icon: "📄", label: "Note"      },
-  { key: "orders",   icon: "📋", label: "Orders"    },
-  { key: "close",    icon: "🚪", label: "Close"     },
-];
-
-const ALL_SECTIONS = Object.values(NAV_DATA).flat();
-
-const SHORTCUT_MAP = {
-  "1": "demo", "2": "cc",    "3": "vit",
-  "4": "meds", "5": "hpi",   "6": "ros",
-  "7": "pe",   "8": "chart", "9": "orders",
-  "0": "discharge",
-};
-const SECTION_SHORTCUT = Object.fromEntries(
-  Object.entries(SHORTCUT_MAP).map(([k, v]) => [v, k])
-);
-
-const QUICK_ACTIONS = [
-  { icon: "📋", label: "Summarise", prompt: "Summarise what I have entered so far."                  },
-  { icon: "🔍", label: "Check",     prompt: "What am I missing? Check my entries for completeness." },
-  { icon: "📝", label: "Draft Note",prompt: "Generate a draft note from the data entered."           },
-  { icon: "🧠", label: "DDx",       prompt: "Suggest differential diagnoses based on current data." },
-];
-
-const ROS_RAIL_SYSTEMS = [
-  { id: "const",   icon: "🌡️", label: "Constitutional"    },
-  { id: "heent",   icon: "👁️", label: "HEENT"             },
-  { id: "cv",      icon: "❤️", label: "Cardiovascular"    },
-  { id: "resp",    icon: "🫁", label: "Respiratory"       },
-  { id: "gi",      icon: "🫃", label: "GI / Abdomen"      },
-  { id: "gu",      icon: "🔵", label: "Genitourinary"     },
-  { id: "msk",     icon: "🦴", label: "MSK"               },
-  { id: "neuro",   icon: "🧠", label: "Neurological"      },
-  { id: "psych",   icon: "🧘", label: "Psychiatric"       },
-  { id: "skin",    icon: "🩹", label: "Skin"              },
-  { id: "endo",    icon: "⚗️", label: "Endocrine"         },
-  { id: "heme",    icon: "🩸", label: "Heme / Lymph"      },
-  { id: "allergy", icon: "🌿", label: "Allergic / Immuno" },
-];
-const PE_RAIL_SYSTEMS = [
-  { id: "gen",   icon: "🧍", label: "General"        },
-  { id: "heent", icon: "👁️", label: "HEENT"          },
-  { id: "neck",  icon: "🔵", label: "Neck"           },
-  { id: "cv",    icon: "❤️", label: "Cardiovascular" },
-  { id: "resp",  icon: "🫁", label: "Respiratory"    },
-  { id: "abd",   icon: "🫃", label: "Abdomen"        },
-  { id: "msk",   icon: "🦴", label: "MSK"            },
-  { id: "neuro", icon: "🧠", label: "Neurological"   },
-  { id: "skin",  icon: "🩹", label: "Skin"           },
-  { id: "psych", icon: "🧘", label: "Psychiatric"    },
-];
-
-const SYSTEM_PROMPT =
-  "You are Notrya AI — a helpful AI assistant embedded in an emergency medicine documentation platform. Respond in 2-4 concise, actionable sentences. Be direct. Never fabricate data.";
-
-// ─── PATIENT CONTEXT BUILDER ──────────────────────────────────────────────────
-function buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab) {
-  const name = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
-  const pmhList = Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]).join(", ") || "none";
-  return [
-    `Patient: ${name}, ${demo.age || "?"}${demo.sex ? " " + demo.sex : ""}.`,
-    cc.text     ? `CC: ${cc.text}.`                                                                   : null,
-    vitals.bp   ? `BP ${vitals.bp}  HR ${vitals.hr || "-"}  SpO2 ${vitals.spo2 || "-"}  T ${vitals.temp || "-"}.` : null,
-    allergies.length ? `Allergies: ${allergies.join(", ")}.`                                          : "Allergies: NKDA.",
-    pmhList !== "none" ? `PMH: ${pmhList}.`                                                           : null,
-    cc.hpi      ? `HPI summary: ${cc.hpi.slice(0, 200)}.`                                             : null,
-    `Active section: ${currentTab}.`,
-  ].filter(Boolean).join(" ");
+function TierBadge({ tier }) {
+  return (
+    <span style={{ display:"inline-flex", padding:"1px 7px", borderRadius:20, fontSize:9, fontWeight:700, letterSpacing:.5, whiteSpace:"nowrap", background:TB[tier]||TB.ROUTINE, color:TC[tier]||TC.ROUTINE, border:`1px solid ${TD[tier]||TD.ROUTINE}` }}>
+      {tier}
+    </span>
+  );
 }
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function NewPatientInput() {
-  const navigate = useNavigate();
-  const location = useLocation();
+// ── Clinical data ─────────────────────────────────────────────────────────────
+const LABS = {
+  "Chemistries": [
+    { name:"BMP",            detail:"Basic metabolic panel — Na, K, Cl, CO₂, BUN, Cr, glucose",             tier:"STAT"    },
+    { name:"CMP",            detail:"Comprehensive metabolic panel — includes LFTs",                         tier:"URGENT"  },
+    { name:"Lactic acid",    detail:"Venous lactate — sepsis/shock screening",                               tier:"STAT"    },
+    { name:"LFTs",           detail:"AST, ALT, ALP, total bilirubin, albumin",                              tier:"URGENT"  },
+    { name:"Lipase",         detail:"Serum lipase — pancreatitis workup",                                    tier:"URGENT"  },
+    { name:"Magnesium",      detail:"Serum magnesium level",                                                 tier:"URGENT"  },
+    { name:"Phosphorus",     detail:"Serum phosphorus level",                                                tier:"ROUTINE" },
+  ],
+  "Hematology": [
+    { name:"CBC w/ diff",    detail:"Complete blood count with differential",                                tier:"STAT"    },
+    { name:"Type & Screen",  detail:"ABO/Rh typing + antibody screen — before transfusion",                 tier:"URGENT"  },
+    { name:"Type & Cross",   detail:"Full crossmatch — active or imminent transfusion",                     tier:"STAT"    },
+    { name:"Coagulation",    detail:"PT, PTT, INR, fibrinogen",                                             tier:"URGENT"  },
+    { name:"D-Dimer",        detail:"Quantitative — PE/DVT workup",                                         tier:"URGENT"  },
+  ],
+  "Cardiac / Critical": [
+    { name:"Troponin (hsTnI)",  detail:"High-sensitivity, serial q3h (0h, 3h) or q1h protocol",            tier:"STAT"    },
+    { name:"BNP",               detail:"B-type natriuretic peptide — HF, dyspnea",                         tier:"URGENT"  },
+    { name:"NT-proBNP",         detail:"N-terminal proBNP — HF, dyspnea",                                  tier:"URGENT"  },
+    { name:"ABG",               detail:"Arterial blood gas — pH, pO₂, pCO₂, HCO₃",                        tier:"STAT"    },
+    { name:"VBG",               detail:"Venous blood gas — pH, pCO₂, HCO₃",                               tier:"URGENT"  },
+    { name:"Blood cultures",    detail:"x2 sets peripheral — before antibiotics if possible",               tier:"STAT"    },
+  ],
+  "Urine / Tox": [
+    { name:"UA w/ microscopy",  detail:"Urinalysis with microscopy and reflex culture",                     tier:"URGENT"  },
+    { name:"Urine culture",     detail:"Mid-stream clean catch — do not spin first",                        tier:"URGENT"  },
+    { name:"Urine drug screen", detail:"Qualitative immunoassay panel",                                     tier:"URGENT"  },
+    { name:"Urine hCG",         detail:"Qualitative pregnancy test",                                        tier:"STAT"    },
+    { name:"EtOH level",        detail:"Serum ethanol quantitative",                                        tier:"URGENT"  },
+    { name:"Acetaminophen",     detail:"Serum level — toxicology, overdose workup",                         tier:"URGENT"  },
+    { name:"Salicylate",        detail:"Serum salicylate level",                                            tier:"URGENT"  },
+  ],
+};
 
-  const [currentTab, setCurrentTab] = useState(
-    () => new URLSearchParams(window.location.search).get("tab") || "demo"
-  );
-  useEffect(() => {
-    const tab = new URLSearchParams(location.search).get("tab");
-    if (tab) setCurrentTab(tab);
-  }, [location.search]);
+const MEDS = {
+  "Pain / Sedation": [
+    { name:"Ketorolac",             detail:"30mg IV x1 (15mg if >65, renal impairment, weight <50kg)",       tier:"URGENT"  },
+    { name:"Morphine sulfate",      detail:"4mg IV q4h PRN moderate–severe pain",                            tier:"URGENT"  },
+    { name:"Hydromorphone",         detail:"0.5–1mg IV q4h PRN severe pain",                                 tier:"URGENT"  },
+    { name:"Fentanyl",              detail:"1 mcg/kg IV PRN procedural pain (titrate)",                      tier:"URGENT"  },
+    { name:"Acetaminophen",         detail:"1g IV/PO q8h (max 3g/day — 2g if hepatic risk)",                tier:"URGENT"  },
+    { name:"Ibuprofen",             detail:"600mg PO q8h with food",                                         tier:"ROUTINE" },
+    { name:"Ketamine (sub-diss.)",  detail:"0.3 mg/kg IV over 15 min — adjunct analgesia",                  tier:"URGENT"  },
+  ],
+  "Antiemetics": [
+    { name:"Ondansetron",           detail:"4mg IV/ODT q8h PRN nausea/vomiting",                            tier:"URGENT"  },
+    { name:"Metoclopramide",        detail:"10mg IV q8h PRN (also useful for migraine)",                     tier:"URGENT"  },
+    { name:"Prochlorperazine",      detail:"10mg IV/IM q6h PRN (Compazine — give diphenhydramine with IV)", tier:"URGENT"  },
+    { name:"Promethazine",          detail:"12.5–25mg IV/IM q6h PRN (black box: avoid IV push)",            tier:"ROUTINE" },
+    { name:"Droperidol",            detail:"1.25mg IV/IM q6h PRN — migraine, nausea (monitor QTc)",         tier:"URGENT"  },
+  ],
+  "Antibiotics": [
+    { name:"Ceftriaxone",           detail:"1g IV q24h (2g for meningitis, CNS infection)",                  tier:"STAT"    },
+    { name:"Azithromycin",          detail:"500mg IV/PO daily x5 days (CAP — atypical coverage)",           tier:"URGENT"  },
+    { name:"Piperacillin-tazo",     detail:"3.375g IV q8h — broad gram-neg/anaerobic (adjust for renal)",   tier:"STAT"    },
+    { name:"Vancomycin",            detail:"25 mg/kg IV load, then pharmacy dosing (MRSA, severe infections)",tier:"STAT"   },
+    { name:"Metronidazole",         detail:"500mg IV q8h (anaerobic coverage, C. diff PO 500mg TID x10d)",  tier:"URGENT"  },
+    { name:"Ciprofloxacin",         detail:"400mg IV q12h / 500mg PO q12h (GI, UTI — check local resistance)",tier:"URGENT"},
+    { name:"Cefazolin",             detail:"2g IV q8h (skin/soft tissue, surgical prophylaxis)",             tier:"URGENT"  },
+  ],
+  "Cardiac / ACS": [
+    { name:"Aspirin",               detail:"324–325mg PO — chew for suspected ACS",                         tier:"STAT"    },
+    { name:"Nitroglycerin SL",      detail:"0.4mg SL q5min x3 PRN chest pain/hypertensive urgency",         tier:"STAT"    },
+    { name:"Metoprolol tartrate",   detail:"5mg IV q5min x3 (rate control AF/flutter, ACS — avoid if HF)", tier:"URGENT"  },
+    { name:"Amiodarone",            detail:"150mg IV over 10 min, then 1mg/min x6h (refractory AF/VT)",     tier:"STAT"    },
+    { name:"Heparin unfractionated",detail:"80 units/kg IV bolus, then 18 units/kg/hr (ACS, PE — per protocol)",tier:"STAT"},
+    { name:"tPA (Alteplase)",       detail:"0.9 mg/kg IV max 90mg (ischemic stroke — per protocol, consent)", tier:"STAT"  },
+  ],
+  "Respiratory": [
+    { name:"Albuterol",             detail:"2.5mg/3mL neb q20 min x3, then q4h PRN (asthma/COPD)",          tier:"STAT"    },
+    { name:"Ipratropium",           detail:"0.5mg/2.5mL neb q6h — combine with albuterol in acute exacerbation",tier:"URGENT"},
+    { name:"Methylprednisolone",    detail:"125mg IV q6h (acute asthma, severe COPD exacerbation)",          tier:"URGENT"  },
+    { name:"Heliox",                detail:"70:30 helium-oxygen — severe upper airway obstruction",          tier:"URGENT"  },
+    { name:"Magnesium sulfate",     detail:"2g IV over 20 min (refractory asthma, pre-eclampsia)",           tier:"URGENT"  },
+    { name:"Epinephrine 1:1000 IM", detail:"0.3–0.5mg IM lateral thigh — anaphylaxis (1st line)",           tier:"STAT"    },
+  ],
+};
 
-  const [activeGroup, setActiveGroup] = useState(() => {
-    const tab = new URLSearchParams(window.location.search).get("tab") || "demo";
-    for (const [group, items] of Object.entries(NAV_DATA)) {
-      if (items.find(i => i.section === tab)) return group;
-    }
-    return "register";
-  });
+const IV_STRAT = {
+  "Crystalloids": [
+    { name:"NS 1L bolus",      detail:"Normal saline 1L IV over 30–60 min",          tier:"STAT"    },
+    { name:"LR 1L bolus",      detail:"Lactated Ringer's 1L IV over 30–60 min",      tier:"STAT"    },
+    { name:"NS @ 125 mL/hr",   detail:"Normal saline maintenance at 125 mL/hr",      tier:"URGENT"  },
+    { name:"LR @ 125 mL/hr",   detail:"Lactated Ringer's maintenance at 125 mL/hr",  tier:"URGENT"  },
+    { name:"D5W @ 75 mL/hr",   detail:"5% dextrose in water at 75 mL/hr",            tier:"ROUTINE" },
+    { name:"D5 1/2 NS",        detail:"Dextrose 5% in 0.45% NS at 100 mL/hr",        tier:"ROUTINE" },
+  ],
+  "Blood Products": [
+    { name:"pRBC 1 unit",       detail:"Packed red blood cells 1 unit IV over 2–4 hrs (type & screen/cross first)", tier:"URGENT" },
+    { name:"FFP 2 units",       detail:"Fresh frozen plasma — coagulopathy, warfarin reversal",                     tier:"URGENT" },
+    { name:"Platelets 1 pool",  detail:"Platelet pool IV over 30–60 min (plt <50k w/ active bleed, <10k prophy)",   tier:"URGENT" },
+    { name:"Cryoprecipitate",   detail:"10 units IV — fibrinogen <100 mg/dL or hypofibrinogenemia",                 tier:"URGENT" },
+    { name:"4-factor PCC",      detail:"25–50 units/kg IV — warfarin reversal + life-threatening bleed",            tier:"STAT"   },
+    { name:"TXA",               detail:"1g IV over 10 min — trauma within 3h, major hemorrhage",                    tier:"STAT"   },
+  ],
+  "Vasopressors / Inotropes": [
+    { name:"Norepinephrine",    detail:"0.01–0.5 mcg/kg/min IV — septic shock 1st line vasopressor",                tier:"STAT"   },
+    { name:"Epinephrine",       detail:"0.01–0.5 mcg/kg/min IV — cardiogenic shock, anaphylaxis, refractory sepsis",tier:"STAT"   },
+    { name:"Vasopressin",       detail:"0.03–0.04 units/min IV — add-on to norepinephrine in septic shock",         tier:"STAT"   },
+    { name:"Dopamine",          detail:"5–20 mcg/kg/min IV — cardiogenic/distributive, titratable",                 tier:"STAT"   },
+    { name:"Dobutamine",        detail:"2–20 mcg/kg/min IV — cardiogenic shock with low CO",                        tier:"STAT"   },
+    { name:"Phenylephrine",     detail:"100–180 mcg/min IV — neurogenic shock, pure vasopressor",                   tier:"URGENT" },
+    { name:"Push-dose epi",     detail:"10–20 mcg IV bolus q2–5 min — peri-arrest, procedural hypotension",        tier:"STAT"   },
+  ],
+};
 
-  const [navDots, setNavDots] = useState(() => {
-    const m = {}; ALL_SECTIONS.forEach(s => (m[s.section] = s.dot)); return m;
-  });
+const IMAGING_ORDERS = [
+  { name:"CXR PA/Lateral",      detail:"Chest x-ray PA and lateral views",                              tier:"URGENT",  category:"imaging" },
+  { name:"CXR portable",         detail:"Portable chest x-ray — unstable patient",                      tier:"STAT",    category:"imaging" },
+  { name:"CT head w/o contrast", detail:"Non-contrast CT — headache, AMS, trauma",                     tier:"STAT",    category:"imaging" },
+  { name:"CT head w/ contrast",  detail:"With contrast — abscess, tumor, AVM",                         tier:"URGENT",  category:"imaging" },
+  { name:"CT angio chest",       detail:"PE protocol — r/o pulmonary embolism",                        tier:"STAT",    category:"imaging" },
+  { name:"CT chest/abd/pelvis",  detail:"With contrast — trauma, abdominal pain, sepsis source",       tier:"STAT",    category:"imaging" },
+  { name:"CT abdomen/pelvis",    detail:"With contrast — abdominal pain, appendicitis, GI bleed",      tier:"URGENT",  category:"imaging" },
+  { name:"CT angio abdomen",     detail:"Aorta protocol — r/o AAA, aortic dissection",                 tier:"STAT",    category:"imaging" },
+  { name:"CT spine (C/T/L)",     detail:"Cervical/thoracic/lumbar — trauma, radiculopathy",            tier:"URGENT",  category:"imaging" },
+  { name:"MRI brain",            detail:"With and without contrast — stroke, MS, encephalitis",        tier:"URGENT",  category:"imaging" },
+  { name:"MRI spine",            detail:"Cervical/lumbar — cord compression, epidural abscess",        tier:"URGENT",  category:"imaging" },
+  { name:"US FAST exam",         detail:"Bedside ultrasound — trauma, free fluid assessment",          tier:"STAT",    category:"imaging" },
+  { name:"US abdomen",           detail:"Formal abdomen — RUQ, gallbladder, hepatic",                 tier:"URGENT",  category:"imaging" },
+  { name:"US pelvis",            detail:"Transabdominal and transvaginal — pelvic pain, ectopic",      tier:"URGENT",  category:"imaging" },
+  { name:"US vascular",          detail:"Lower extremity venous duplex — DVT evaluation",              tier:"URGENT",  category:"imaging" },
+  { name:"Echo bedside",         detail:"POCUS cardiac — effusion, function, tamponade",               tier:"URGENT",  category:"imaging" },
+];
 
-  const arrivalTimeRef = useRef(Date.now());
-  const [doorTime, setDoorTime] = useState("0m");
-  useEffect(() => {
-    const update = () => {
-      const mins = Math.floor((Date.now() - arrivalTimeRef.current) / 60000);
-      const h = Math.floor(mins / 60), m = mins % 60;
-      setDoorTime(h > 0 ? `${h}h ${m}m` : `${m}m`);
-    };
-    update();
-    const id = setInterval(update, 60000);
-    return () => clearInterval(id);
-  }, []);
+const CONSULTS = [
+  "Cardiology","Pulmonology","Gastroenterology","Nephrology","Neurology","Neurosurgery",
+  "General Surgery","Vascular Surgery","Orthopedics","Urology","OB/GYN","Ophthalmology",
+  "ENT","Plastics / Hand","Psychiatry","Social Work","Case Management","Pharmacy",
+  "Infectious Disease","Hematology / Oncology","Endocrinology","Palliative Care",
+];
 
-  const [demo, setDemo]               = useState({ firstName:"", lastName:"", age:"", dob:"", sex:"", mrn:"", insurance:"", insuranceId:"", address:"", city:"", phone:"", email:"", emerg:"", height:"", weight:"", lang:"", notes:"", pronouns:"" });
-  const [cc, setCC]                   = useState({ text:"", onset:"", duration:"", severity:"", quality:"", radiation:"", aggravate:"", relieve:"", assoc:"", hpi:"" });
-  const [vitals, setVitals]           = useState({});
-  const [vitalsHistory, setVitalsHistory] = useState([]);
-  const [medications, setMedications] = useState([]);
-  const [allergies, setAllergies]     = useState([]);
-  const [pmhSelected, setPmhSelected] = useState({});
-  const [pmhExtra, setPmhExtra]       = useState("");
-  const [surgHx, setSurgHx]           = useState("");
-  const [famHx, setFamHx]             = useState("");
-  const [socHx, setSocHx]             = useState("");
-  const [rosState, setRosState]       = useState({});
-  const [rosSymptoms, setRosSymptoms] = useState({});
-  const [rosNotes, setRosNotes]       = useState({});
-  const [peState, setPeState]         = useState({});
-  const [peFindings, setPeFindings]   = useState({});
-  const [selectedCC, setSelectedCC]   = useState(-1);
-  const [parseText, setParseText]     = useState("");
-  const [parsing, setParsing]         = useState(false);
-  const [pmhExpanded, setPmhExpanded] = useState({ cardio: true, endo: true });
-  const [avpu, setAvpu]               = useState("");
-  const [o2del, setO2del]             = useState("");
-  const [pain, setPain]               = useState("");
-  const [triage, setTriage]           = useState("");
-  const [esiLevel, setEsiLevel]       = useState("");
-  const [registration, setRegistration] = useState({ mrn:"", room:"" });
-  const [showShortcuts, setShowShortcuts] = useState(false);
-  const [cdsOpen,      setCdsOpen]      = useState(false);
-  const [rosActiveSystem, setRosActiveSystem] = useState(0);
-  const [peActiveSystem,  setPeActiveSystem]  = useState(0);
-  const [reassessState,   setReassessState]   = useState({});
-  const [clinicalTimeline, setClinicalTimeline] = useState({});
+const CATS = [
+  { id:"all",     label:"All",        icon:"⊕" },
+  { id:"labs",    label:"Labs",       icon:"🧪" },
+  { id:"meds",    label:"Meds",       icon:"💊" },
+  { id:"iv",      label:"IV Strategy",icon:"💧" },
+  { id:"imaging", label:"Imaging",    icon:"🔬" },
+  { id:"consult", label:"Consult",    icon:"👤" },
+];
 
-  const [providerName, setProviderName] = useState("Provider");
-  const [providerRole, setProviderRole] = useState("ED");
-  useEffect(() => {
-    (async () => {
-      try {
-        const me = await base44.auth?.me?.();
-        if (me) {
-          const full = [me.first_name, me.last_name].filter(Boolean).join(" ");
-          if (full) setProviderName(full);
-          if (me.role) setProviderRole(me.role);
-        }
-      } catch (_) {}
-    })();
-  }, []);
+// ── OrdersPanel ───────────────────────────────────────────────────────────────
+export default function OrdersPanel({ patientName, allergies, chiefComplaint, patientAge, patientSex }) {
+  const [bundle,   setBundle]   = useState(null);
+  const [checked,  setChecked]  = useState(new Set());
+  const [queue,    setQueue]    = useState([]);
+  const [signed,   setSigned]   = useState(false);
+  const [loading,  setLoading]  = useState(false);
+  const [busySign, setBusySign] = useState(false);
+  const [search,   setSearch]   = useState("");
+  const [cat,      setCat]      = useState("all");
 
-  const ASSESS_SECTIONS = ["hpi", "ros", "pe"];
-  const prevTabRef = useRef(null);
-  const [resumeSection, setResumeSection] = useState(null);
-  useEffect(() => {
-    const prev = prevTabRef.current;
-    if (prev && ASSESS_SECTIONS.includes(prev) && !ASSESS_SECTIONS.includes(currentTab)) setResumeSection(prev);
-    if (ASSESS_SECTIONS.includes(currentTab)) setResumeSection(null);
-    prevTabRef.current = currentTab;
-  }, [currentTab]); // eslint-disable-line
+  useEffect(() => { if (chiefComplaint) generateBundle(); }, []); // eslint-disable-line
 
-  const [aiOpen, setAiOpen]       = useState(false);
-  const [aiMsgs, setAiMsgs]       = useState([{ role:"sys", text:"Notrya AI ready — select a quick action or ask a clinical question." }]);
-  const [aiInput, setAiInput]     = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [unread, setUnread]       = useState(0);
-  const [history, setHistory]     = useState([]);
-  const msgsRef  = useRef(null);
-  const inputRef = useRef(null);
-
-  useEffect(() => { msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior:"smooth" }); }, [aiMsgs, aiLoading]);
-  useEffect(() => { if (aiOpen) setTimeout(() => inputRef.current?.focus(), 280); }, [aiOpen]);
-  useEffect(() => {
-    const h = e => { if (e.key === "Escape" && aiOpen) setAiOpen(false); if (e.key === "Escape" && cdsOpen) setCdsOpen(false); };
-    window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h);
-  }, [aiOpen, cdsOpen]);
-
-  useEffect(() => {
-    setNavDots(prev => ({
-      ...prev,
-      demo:     (demo.firstName || demo.lastName || demo.age) ? "done"    : "empty",
-      cc:       cc.text                                        ? "done"    : "empty",
-      vit:      (vitals.bp || vitals.hr)                       ? "done"    : "empty",
-      meds:     (medications.length || allergies.length)       ? "done"    : "empty",
-      hpi:      cc.hpi ? "done" : cc.text                      ? "partial" : "empty",
-      ros:      Object.keys(rosState).length > 3 ? "done" : Object.keys(rosState).length > 0 ? "partial" : "empty",
-      pe:       Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
-      reassess: reassessState.condition ? "done" : reassessState.note ? "partial" : "empty",
-      timeline: clinicalTimeline?.times?.departed ? "done" : clinicalTimeline?.times?.disposition ? "partial" : "empty",
-    }));
-  }, [
-    demo.firstName, demo.lastName, demo.age, cc.text, cc.hpi, vitals.bp, vitals.hr,
-    medications.length, allergies.length,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    Object.keys(rosState).length, Object.keys(peState).length,
-    reassessState.condition, reassessState.note,
-    clinicalTimeline?.times?.departed, clinicalTimeline?.times?.disposition,
-  ]);
-
-  const selectGroup = useCallback((group) => {
-    setActiveGroup(group);
-    const items = NAV_DATA[group];
-    if (items.length === 1) { navigate(`/NewPatientInput?tab=${items[0].section}`); return; }
-    const target = items.find(i => i.section === currentTab) ? currentTab : items[0].section;
-    navigate(`/NewPatientInput?tab=${target}`);
-  }, [currentTab, navigate]);
-
-  const selectSection = useCallback((sectionId) => {
-    navigate(`/NewPatientInput?tab=${sectionId}`);
-    for (const [group, items] of Object.entries(NAV_DATA)) {
-      if (items.find(i => i.section === sectionId)) { setActiveGroup(group); break; }
-    }
-  }, [navigate]);
-
-  const getGroupBadge = useCallback((groupKey) => {
-    const items = NAV_DATA[groupKey];
-    if (items.every(i => navDots[i.section] === "done")) return "done";
-    if (items.some(i => navDots[i.section] === "done" || navDots[i.section] === "partial")) return "partial";
-    return "empty";
-  }, [navDots]);
-
-  const vitalClass = (key, raw) => {
-    if (!raw || raw === "\u2014") return "";
-    const src = key === "bp" ? String(raw).split("/")[0] : raw;
-    const n = parseFloat(src); if (isNaN(n)) return "";
-    if (key === "hr")   return n > 110 || n < 50  ? " abn" : n > 90  || n < 55 ? " warn" : "";
-    if (key === "rr")   return n > 22  || n < 8   ? " abn" : n > 20  || n < 10 ? " warn" : "";
-    if (key === "spo2") return n < 90              ? " abn" : n < 94            ? " warn" : "";
-    if (key === "temp") return n > 39.5 || n < 35.5 ? " abn" : n > 38 || n < 36 ? " warn" : "";
-    if (key === "bp")   return n > 180 || n < 80  ? " abn" : n > 140 || n < 90 ? " warn" : "";
-    return "";
-  };
-
-  const getRosSysDot = (sysId) => {
-    const st = rosState[sysId]; if (!st) return "empty";
-    return st === "has-positives" ? "partial" : "done";
-  };
-  const getPeSysDot = (sysId) => {
-    const st = peState[sysId]; if (!st) return "empty";
-    return (st === "has-positives" || st === "abnormal" || st === "mixed") ? "partial" : "done";
-  };
-
-  const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
-
-  // Append a timestamped vitals snapshot to history.
-  // Called by VitalsTab (triage) and by ReassessmentTab via onVitalsSnapshot.
-  const addVitalsSnapshot = useCallback((label, overrideVitals) => {
-    const v = overrideVitals || vitals;
-    if (!v || (!v.hr && !v.bp)) return;   // nothing to capture yet
-    setVitalsHistory(prev => [...prev, { t: Date.now(), label, ...v }]);
-  }, [vitals]);
-
-  const handleSaveChart = useCallback(async () => {
-    try {
-      const payload = {
-        raw_note: parseText || `Patient ${[demo.firstName,demo.lastName].filter(Boolean).join(" ")||"New Patient"} presenting with ${cc.text||"unspecified complaint"}`,
-        patient_name:    [demo.firstName,demo.lastName].filter(Boolean).join(" ")||"New Patient",
-        patient_id:      registration.mrn||demo.mrn||"",
-        patient_age:     demo.age||"",
-        patient_gender:  demo.sex?.toLowerCase()==="male"?"male":demo.sex?.toLowerCase()==="female"?"female":"other",
-        date_of_birth:   demo.dob||"",
-        chief_complaint: cc.text||"",
-        history_of_present_illness: cc.hpi||"",
-        medications, allergies, status:"draft",
-        registration_mrn: registration.mrn||"", registration_room: registration.room||"",
-        triage_esi_level: esiLevel||"",
-      };
-      await base44.entities.ClinicalNote.create(payload);
-      toast.success("Chart signed and saved.");
-      navigate("/EDTrackingBoard");
-    } catch (e) { toast.error("Failed to save: " + e.message); }
-  }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,navigate]);
-
-  useEffect(() => {
-    const handler = e => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && SHORTCUT_MAP[e.key]) { e.preventDefault(); selectSection(SHORTCUT_MAP[e.key]); return; }
-      if (mod && e.shiftKey && e.key === "s") { e.preventDefault(); handleSaveChart(); return; }
-      if (mod && e.shiftKey && e.key === "n") { e.preventDefault(); navigate("/NewPatientInput?tab=demo"); return; }
-      if (e.key === "?" && !mod && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
-        e.preventDefault(); setShowShortcuts(s => !s);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [selectSection,navigate,handleSaveChart,demo,cc,vitals,medications,allergies,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration]);
-
-  const sendMessage = useCallback(async (text) => {
-    if (!text.trim() || aiLoading) return;
-    setAiMsgs(m => [...m, { role:"user", text:text.trim() }]);
-    setAiInput(""); setAiLoading(true);
-    const ctx = buildPatientCtx(demo,cc,vitals,allergies,pmhSelected,currentTab);
-    setHistory(h => [...h, { role:"user", content: ctx+"\n\n"+text.trim() }]);
-    try {
-      const res = await base44.integrations.Core.InvokeLLM({ prompt: SYSTEM_PROMPT+"\n\nPATIENT CONTEXT:\n"+ctx+"\n\nPHYSICIAN QUESTION:\n"+text.trim() });
-      const reply = typeof res === "string" ? res : JSON.stringify(res);
-      setHistory(h => [...h, { role:"assistant", content:reply }]);
-      setAiMsgs(m => [...m, { role:"bot", text:reply }]);
-      setAiOpen(open => { if (!open) setUnread(u => u+1); return open; });
-    } catch {
-      setAiMsgs(m => [...m, { role:"sys", text:"\u26a0 Connection error \u2014 please try again." }]);
-    } finally { setAiLoading(false); }
-  }, [aiLoading,history,currentTab,demo,cc,vitals,allergies,pmhSelected]);
-
-  const handleAIKey = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(aiInput); } };
-
-  const renderMsg = text =>
-    text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,'<strong style="color:#00e5c0">$1</strong>');
-
-  const smartParse = async () => {
-    if (!parseText.trim()) { toast.error("Please enter some text to parse."); return; }
-    setParsing(true);
+  const generateBundle = useCallback(async () => {
+    setLoading(true);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Extract structured patient data from the following text. Return ONLY valid JSON.\nText: ${parseText}`,
-        response_json_schema: { type:"object", properties:{ firstName:{type:"string"},lastName:{type:"string"},age:{type:"string"},sex:{type:"string"},dob:{type:"string"},cc:{type:"string"},onset:{type:"string"},duration:{type:"string"},severity:{type:"string"},quality:{type:"string"},bp:{type:"string"},hr:{type:"string"},rr:{type:"string"},spo2:{type:"string"},temp:{type:"string"},gcs:{type:"string"},medications:{type:"array",items:{type:"string"}},allergies:{type:"array",items:{type:"string"}},pmh:{type:"array",items:{type:"string"}} } },
+        prompt: `You are an emergency medicine clinical decision support AI.
+Patient: ${patientName||"Unknown"}, age ${patientAge||"?"}, sex ${patientSex||"?"}.
+Chief complaint: "${chiefComplaint||"not specified"}".
+Allergies: ${allergies?.length ? allergies.join(", ") : "NKDA"}.
+Generate an evidence-based ED order bundle. Return ONLY valid JSON:
+{"diagnosis":"Brief working dx","confidence":85,"suppressed":["reason for omitted items"],
+"orders":[{"id":"o1","name":"Order name","detail":"Brief dose/detail","tier":"STAT","category":"lab"}]}
+tier: STAT|URGENT|ROUTINE. category: lab|medication|iv|imaging|procedure|consult|monitoring.
+Include 8-12 orders covering labs, medications, imaging as appropriate. suppressed: explain any important omissions.`,
+        response_json_schema: {
+          type:"object",
+          properties:{
+            diagnosis:  {type:"string"}, confidence:{type:"number"},
+            suppressed: {type:"array",items:{type:"string"}},
+            orders:     {type:"array",items:{type:"object",properties:{
+              id:{type:"string"},name:{type:"string"},detail:{type:"string"},tier:{type:"string"},category:{type:"string"}
+            }}}
+          }
+        }
       });
-      setDemo(prev => ({ ...prev, firstName:result.firstName||prev.firstName, lastName:result.lastName||prev.lastName, age:result.age||prev.age, sex:result.sex||prev.sex, dob:result.dob||prev.dob }));
-      setCC(prev => ({ ...prev, text:result.cc||prev.text, onset:result.onset||prev.onset, duration:result.duration||prev.duration, severity:result.severity||prev.severity, quality:result.quality||prev.quality }));
-      setVitals(prev => ({ ...prev, bp:result.bp||prev.bp||"", hr:result.hr||prev.hr||"", rr:result.rr||prev.rr||"", spo2:result.spo2||prev.spo2||"", temp:result.temp||prev.temp||"", gcs:result.gcs||prev.gcs||"" }));
-      (result.medications||[]).forEach(m => { if (m) setMedications(p => p.includes(m)?p:[...p,m]); });
-      (result.allergies||[]).forEach(a => { if (a) setAllergies(p => p.includes(a)?p:[...p,a]); });
-      toast.success("Patient data extracted!");
-    } catch { toast.error("Could not parse automatically."); }
-    setParsing(false);
-  };
+      const parsed = typeof result === "object" ? result : JSON.parse(String(result).replace(/```json|```/g,"").trim());
+      setBundle(parsed);
+      setChecked(new Set((parsed.orders||[]).filter(o=>o.tier==="STAT").map(o=>o.id)));
+    } catch { toast.error("Could not generate order bundle."); }
+    finally { setLoading(false); }
+  }, [chiefComplaint, patientAge, patientSex, allergies, patientName]);
 
-  const patientName = [demo.firstName,demo.lastName].filter(Boolean).join(" ") || "New Patient";
+  const toggleCheck = useCallback((id) =>
+    setChecked(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; }), []);
 
-  const renderContent = () => {
-    switch (currentTab) {
-      case "demo":       return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} registration={registration} setRegistration={setRegistration} onAdvance={() => selectSection("cc")} />;
-      case "cc":         return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} onAdvance={() => selectSection("vit")} />;
-      case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} onAdvance={() => { addVitalsSnapshot("Triage"); selectSection("meds"); }} />;
-      case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("hpi")} />;
-      case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
-      case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />;
-      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("chart")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
-      case "chart":      return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
-      case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState}
-        onVitalsSnapshot={v => addVitalsSnapshot(
-          `Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`,
-          v
-        )}
-        onAdvance={() => selectSection("timeline")} />;
-      case "timeline":   return (
-        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-          <VitalSignsChart vitalsHistory={vitalsHistory}/>
-          <ClinicalTimeline arrivalMs={arrivalTimeRef.current} onStateChange={setClinicalTimeline}/>
-        </div>
-      );
-      case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
-      case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
-      case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} /></div>;
-      case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;
-      case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
-      case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
-      case "medref":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto"   }}><MedicationReferencePage embedded /></div>;
-      case "erplan":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><ERPlanBuilder embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} patientCC={cc.text} patientVitals={vitals} patientAllergies={allergies} patientMedications={medications} /></div>;
-      default:           return null;
-    }
-  };
+  const enqueue = useCallback((orders) => {
+    const toAdd = orders.filter(o => !queue.find(q=>q.id===o.id));
+    if (!toAdd.length) { toast.info("Already in queue."); return; }
+    setQueue(prev=>[...prev,...toAdd]);
+    setSigned(false);
+    toast.success(`${toAdd.length} order${toAdd.length!==1?"s":""} added.`);
+  }, [queue]);
 
-  return (
-    <>
-      <style>{NPI_CSS}</style>
+  const addChecked = useCallback(() => {
+    if (!bundle) return;
+    enqueue(bundle.orders.filter(o=>checked.has(o.id)));
+  }, [bundle, checked, enqueue]);
 
-      <header className="npi-top-bar">
-        <div className="npi-top-row-1">
-          <span className="npi-dr-label">
-            {providerName.split(" ").length > 1 ? `Dr. ${providerName.split(" ").slice(-1)[0]}` : providerName}
-            <span className="npi-dr-role">{providerRole}</span>
-          </span>
-          <div className="npi-vsep" />
-          <div className="npi-stat"><span className="npi-stat-val">0</span><span className="npi-stat-lbl">Active</span></div>
-          <div className="npi-stat"><span className="npi-stat-val alert">14</span><span className="npi-stat-lbl">Pending</span></div>
-          <div className="npi-vsep" />
-          <button className="npi-tb-link" onClick={() => navigate("/EDTrackingBoard")}>🏥 Track Board</button>
-          <div className="npi-top-right">
-            <button
-              className={`npi-cds-btn${cdsOpen?" open":""}${allergies.length>0?" cds-alert":medications.length>0?" cds-warn":""}`}
-              onClick={()=>setCdsOpen(o=>!o)} title="Clinical Decision Support">
-              <div className="npi-cds-dot"/>
-              CDS
-            </button>
-            <button className={`npi-ai-btn${aiOpen?" open":""}`} onClick={toggleAI} title="Notrya AI">
-              <div className="npi-ai-dot" /> AI
-              {unread > 0 && <span className="npi-ai-badge">{unread > 9 ? "9+" : unread}</span>}
-            </button>
-            <button className="npi-new-pt" onClick={() => navigate("/NewPatientInput?tab=demo")}>+ New Patient</button>
-            <Link to="/AppSettings" className="npi-tb-settings" title="Settings">⚙️</Link>
-          </div>
-        </div>
-        <div className="npi-top-row-2">
-          <span className={`npi-chart-badge${registration.mrn ? " registered" : ""}`}>{registration.mrn || "PT-NEW"}</span>
-          <span className="npi-pt-name">{patientName}</span>
-          {demo.dob && <span className="npi-pt-dob" title="Date of birth — second patient identifier">DOB {demo.dob}</span>}
-          <span className="npi-door-time" title="Time since intake started">⏱ {doorTime}</span>
-          <div className={`npi-allergy-wrap${allergies.length > 0 ? " has-allergies" : ""}`}
-               onClick={() => selectSection("meds")} title="Click to view/edit medications">
-            {allergies.length === 0
-              ? <span className="npi-allergy-nka">✓ NKA</span>
-              : <span className="npi-allergy-alert">⚠ {allergies.slice(0, 2).join(" · ")}{allergies.length > 2 ? ` +${allergies.length - 2}` : ""}</span>
-            }
-          </div>
-          {resumeSection && (
-            <button className="npi-resume-chip"
-              onClick={() => { selectSection(resumeSection); setResumeSection(null); }} title="Return to where you were">
-              ↩ Resume {ALL_SECTIONS.find(s => s.section === resumeSection)?.label || resumeSection}
-              <span className="npi-resume-dismiss" onClick={e => { e.stopPropagation(); setResumeSection(null); }}>✕</span>
-            </button>
-          )}
-          <div className="npi-top-acts">
-            <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>+ Order</button>
-            <button className="npi-btn-ghost" onClick={() => selectSection("orders")} title="Request consultation">👥 Consult</button>
-            <button className="npi-btn-coral" onClick={() => selectSection("discharge")}>🚪 Discharge</button>
-            <button className="npi-btn-primary" onClick={handleSaveChart}>✍ Sign &amp; Save</button>
-          </div>
-        </div>
-      </header>
+  const quickAdd = useCallback((name, detail, tier, category) => {
+    const id = `qa-${name.replace(/\s/g,"-").toLowerCase()}`;
+    enqueue([{id, name, detail, tier:tier||"URGENT", category:category||"lab"}]);
+  }, [enqueue]);
 
-      <div className="npi-main-wrap">
-        <main className="npi-content">{renderContent()}</main>
+  const signQueue = useCallback(() => {
+    setBusySign(true);
+    setTimeout(()=>{
+      setSigned(true); setBusySign(false);
+      toast.success(`${queue.length} order${queue.length!==1?"s":""} signed.`);
+    }, 500);
+  }, [queue.length]);
 
-      </div>
+  const removeFromQueue = useCallback((id) => {
+    setQueue(p=>p.filter(x=>x.id!==id));
+  }, []);
 
-      <div className={`npi-scrim${aiOpen?" open":""}`} onClick={toggleAI} />
-      <div className={`npi-overlay${aiOpen?" open":""}`}>
-        <div className="npi-n-hdr">
-          <div className="npi-n-hdr-top">
-            <div className="npi-n-avatar">🤖</div>
-            <div className="npi-n-hdr-info">
-              <div className="npi-n-hdr-name">Notrya AI</div>
-              <div className="npi-n-hdr-sub"><span className="dot" /> Clinical assistant · online</div>
+  const statN    = queue.filter(o=>o.tier==="STAT").length;
+  const urgentN  = queue.filter(o=>o.tier==="URGENT").length;
+  const routineN = queue.filter(o=>o.tier==="ROUTINE").length;
+
+  // ── Section renderers ─────────────────────────────────────────────────────
+  function SectionLabel({ children }) {
+    return <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"var(--npi-txt4)",margin:"12px 0 6px"}}>{children}</div>;
+  }
+
+  function QuickChip({ name, detail, tier, category, color }) {
+    return (
+      <button onClick={()=>quickAdd(name,detail,tier,category)}
+        style={{padding:"5px 11px",borderRadius:20,border:`1px solid rgba(255,255,255,.12)`,background:"rgba(255,255,255,.05)",color:color||"var(--npi-txt2)",fontFamily:"'DM Sans',sans-serif",fontWeight:500,fontSize:11.5,cursor:"pointer",textAlign:"left",transition:"all .12s",whiteSpace:"nowrap"}}
+        className="ord-chip">
+        {name}
+      </button>
+    );
+  }
+
+  function renderCategoryContent() {
+    if (cat === "all") {
+      const ALL_CHIPS = [
+        {n:"CBC w/ diff",c:"lab"},{n:"BMP",c:"lab"},{n:"CMP",c:"lab"},{n:"Coagulation",c:"lab"},
+        {n:"Troponin",c:"lab"},{n:"Lactate",c:"lab"},{n:"UA",c:"lab"},{n:"Blood cultures",c:"lab"},
+        {n:"CXR",c:"imaging"},{n:"CT head",c:"imaging"},{n:"US FAST",c:"imaging"},
+        {n:"Ondansetron 4mg IV",c:"medication"},{n:"Ketorolac 30mg IV",c:"medication"},
+        {n:"NS 1L bolus",c:"iv"},{n:"LR 1L bolus",c:"iv"},
+      ];
+      const chips = search ? ALL_CHIPS.filter(c=>c.n.toLowerCase().includes(search.toLowerCase())) : ALL_CHIPS;
+      return (
+        <>
+          <div>
+            <SectionLabel>Quick search</SectionLabel>
+            <div style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:9,padding:"8px 11px",marginBottom:8}}>
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="rgba(255,255,255,.3)" strokeWidth="1.3"/><line x1="8.8" y1="8.8" x2="12" y2="12" stroke="rgba(255,255,255,.3)" strokeWidth="1.3" strokeLinecap="round"/></svg>
+              <input value={search} onChange={e=>setSearch(e.target.value)}
+                placeholder="Search labs, meds, imaging, procedures…"
+                style={{background:"none",border:"none",outline:"none",color:"var(--npi-txt)",fontSize:12,flex:1,fontFamily:"'DM Sans',sans-serif"}}/>
+              {search && <button onClick={()=>setSearch("")} style={{background:"none",border:"none",color:"var(--npi-txt4)",cursor:"pointer",fontSize:13}}>✕</button>}
             </div>
-            <button className="npi-n-close" onClick={toggleAI}>✕</button>
-          </div>
-          <div className="npi-n-quick">
-            {QUICK_ACTIONS.map(q => (
-              <button key={q.label} className="npi-n-qbtn" onClick={() => sendMessage(q.prompt)} disabled={aiLoading}>
-                {q.icon} {q.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="npi-n-msgs" ref={msgsRef}>
-          {aiMsgs.map((m, i) => (
-            <div key={i} className={`npi-n-msg ${m.role}`} dangerouslySetInnerHTML={{ __html: renderMsg(m.text) }} />
-          ))}
-          {aiLoading && <div className="npi-n-dots"><span /><span /><span /></div>}
-        </div>
-        <div className="npi-n-input-bar">
-          <textarea ref={inputRef} className="npi-n-ta" rows={1} placeholder="Ask anything…" value={aiInput}
-            onChange={e => setAiInput(e.target.value)} onKeyDown={handleAIKey} disabled={aiLoading}
-            onInput={e => { e.target.style.height="auto"; e.target.style.height=Math.min(e.target.scrollHeight,90)+"px"; }}
-          />
-          <button className="npi-n-send" onClick={() => sendMessage(aiInput)} disabled={aiLoading||!aiInput.trim()}>↑</button>
-        </div>
-      </div>
-
-      {cdsOpen && (
-        <div className="npi-cds-scrim" onClick={()=>setCdsOpen(false)}/>
-      )}
-      <div className={`npi-cds-overlay${cdsOpen?" open":""}`}>
-        <div className="npi-cds-overlay-hdr">
-          <span className="npi-cds-overlay-title">Clinical Decision Support</span>
-          <button className="npi-cds-close" onClick={()=>setCdsOpen(false)}>✕</button>
-        </div>
-        <CDSAlertsSidebar medications={medications} allergies={allergies} vitals={vitals} pmhSelected={pmhSelected} age={demo.age} cc={cc.text}/>
-        {allergies.length === 0 && medications.length === 0 && (
-          <div style={{ padding:"24px 16px", textAlign:"center", color:"var(--npi-txt4)", fontSize:12, fontFamily:"'DM Sans',sans-serif" }}>
-            No alerts — add medications or allergies to enable checking.
-          </div>
-        )}
-      </div>
-
-      <button className="npi-sc-hint-fab" title="Keyboard shortcuts (?)" onClick={() => setShowShortcuts(s=>!s)}>?</button>
-
-      {showShortcuts && (
-        <div onClick={() => setShowShortcuts(false)} style={{ position:"fixed",inset:0,zIndex:99998,background:"rgba(3,8,16,.75)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background:"#081628",border:"1px solid #1a3555",borderRadius:16,padding:"24px 28px",width:520,maxWidth:"90vw",boxShadow:"0 24px 80px rgba(0,0,0,.6)" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
-              <span style={{ fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff" }}>Keyboard Shortcuts</span>
-              <button onClick={() => setShowShortcuts(false)} style={{ background:"#0e2544",border:"1px solid #1a3555",borderRadius:6,width:28,height:28,color:"#7aa0c0",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
-            </div>
-            {[
-              { section:"Navigate to section", rows:[["Cmd 1","Demographics"],["Cmd 2","Chief Complaint"],["Cmd 3","Vitals"],["Cmd 4","Meds & PMH"],["Cmd 5","HPI"],["Cmd 6","ROS"],["Cmd 7","Physical Exam"],["Cmd 8","Clinical Note"],["Cmd 9","Orders"],["Cmd 0","Discharge"]] },
-              { section:"HPI (scan mode)", rows:[["Y / Enter","Symptom present"],["N","Symptom absent"],["Space","Skip symptom"],["0-9","Pain scale or option #"],["Arrow Up/Down","Navigate rows"],["Backspace","Go back one row"],["Esc","Finish & build narrative"]] },
-              { section:"Actions", rows:[["Cmd Shift S","Save Chart"],["Cmd Shift N","New Patient"],["?","Toggle shortcuts"]] },
-            ].map(({ section, rows }) => (
-              <div key={section} style={{ marginBottom:16 }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#5a82a8",letterSpacing:2,textTransform:"uppercase",marginBottom:8 }}>{section}</div>
-                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 16px" }}>
-                  {rows.map(([key,desc]) => (
-                    <div key={key} style={{ display:"flex",alignItems:"center",gap:8 }}>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"#b8d4f0",background:"#0e2544",border:"1px solid #1a3555",borderRadius:4,padding:"1px 7px",flexShrink:0,whiteSpace:"nowrap" }}>{key}</span>
-                      <span style={{ fontSize:11,color:"#82aece" }}>{desc}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-            <div style={{ marginTop:8,paddingTop:12,borderTop:"1px solid #1a3555",fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#5a82a8",textAlign:"center" }}>press ? to dismiss</div>
-          </div>
-        </div>
-      )}
-
-      <aside className="npi-wf-rail">
-        <div className="npi-wf-pt">
-          <div className="npi-wf-pt-name">{patientName}</div>
-          <div className="npi-wf-pt-meta">
-            {demo.age && <span>{demo.age}y {demo.sex ? `· ${demo.sex}` : ""}</span>}
-            {cc.text && <span className="npi-wf-pt-cc">{cc.text}</span>}
-          </div>
-          <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:2 }}>
-            {esiLevel && (
-              <span className="npi-wf-esi" style={{
-                color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)",
-                borderColor: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.3)`,
-                background: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.08)`,
-              }}>ESI {esiLevel}</span>
-            )}
-            {registration.room && (
-              <span className="npi-wf-esi" style={{ color:"var(--npi-teal)", borderColor:"rgba(0,229,192,.3)", background:"rgba(0,229,192,.08)" }}>Rm {registration.room}</span>
-            )}
-          </div>
-          <div className="npi-wf-vitals">
-            {[
-              { key:"bp",   lbl:"BP",   val: vitals.bp   || "\u2014" },
-              { key:"hr",   lbl:"HR",   val: vitals.hr   || "\u2014" },
-              { key:"rr",   lbl:"RR",   val: vitals.rr   || "\u2014" },
-              { key:"spo2", lbl:"SpO\u2082", val: vitals.spo2 || "\u2014" },
-              { key:"temp", lbl:"T",    val: vitals.temp || "\u2014" },
-            ].map(v => (
-              <div key={v.key} className="npi-wf-v-row">
-                <span className="npi-wf-v-lbl">{v.lbl}</span>
-                <span className={`npi-wf-v-val${vitalClass(v.key, v.val)}`}>{v.val}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {GROUP_META.map(g => {
-          const isActive = g.key === activeGroup;
-          const items    = NAV_DATA[g.key] || [];
-          const badge    = getGroupBadge(g.key);
-          return (
-            <div key={g.key} className="npi-wf-group">
-              <button className={`npi-wf-gh${isActive ? " active" : ""}${g.key === "note" ? " note-grp" : ""}`} onClick={() => selectGroup(g.key)}>
-                <span className="npi-wf-gh-icon">{g.icon}</span>
-                <span className="npi-wf-gh-label">{g.label}</span>
-                <span className={`npi-wf-gh-badge ${badge}`} />
-              </button>
-              {isActive && (
-                <div className="npi-wf-items">
-                  {g.key === "note" ? (
-                    <>
-                      {[
-                        { id:"reg",  label:"Register",     done: !!(demo.firstName||demo.lastName) && !!cc.text && (!!vitals.bp||!!vitals.hr) },
-                        { id:"asmt", label:"Assessment",   done: !!(cc.hpi) && Object.keys(rosState).length > 0 && Object.keys(peState).length > 0 },
-                        { id:"note", label:"Clinical Note", active: true },
-                      ].map(chip => (
-                        <div key={chip.id}
-                          className={`npi-wf-chip${chip.active ? " active" : chip.done ? " done" : " todo"}`}
-                          onClick={() => !chip.active && selectGroup(chip.id === "reg" ? "register" : "assess")}
-                          style={{ cursor: chip.active ? "default" : "pointer" }}
-                        >
-                          <span className="npi-wf-chip-icon">{chip.active ? "📄" : chip.done ? "✓" : "○"}</span>
-                          <span>{chip.label}</span>
-                        </div>
-                      ))}
-                      <div className="npi-wf-note-kbd">
-                        {[["⌘D","Impression"],["⌘M","MDM"],["⌘G","Generate"]].map(([k,d]) => (
-                          <span key={k}><kbd>{k}</kbd>{d}</span>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    items.map(item => (
-                      <React.Fragment key={item.section}>
-                        <button className={`npi-wf-item${item.section === currentTab ? " active" : ""}`}
-                          onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}>
-                          <span className="npi-wf-item-icon">{item.icon}</span>
-                          <span className="npi-wf-item-label">{item.label}</span>
-                          <span className={`npi-wf-item-dot ${navDots[item.section]||"empty"}`} />
-                          {SECTION_SHORTCUT[item.section] && (
-                            <span className="npi-wf-item-sc">⌘{SECTION_SHORTCUT[item.section]}</span>
-                          )}
-                        </button>
-                        {item.section === "ros" && currentTab === "ros" && ROS_RAIL_SYSTEMS.map((sys, i) => (
-                          <button key={sys.id} className={`npi-wf-sys-item${i === rosActiveSystem ? " active" : ""}`}
-                            onClick={() => setRosActiveSystem(i)}>
-                            <span className="npi-wf-sys-icon">{sys.icon}</span>
-                            <span className="npi-wf-sys-label">{sys.label}</span>
-                            <span className={`npi-wf-item-dot ${getRosSysDot(sys.id)}`} />
-                          </button>
-                        ))}
-                        {item.section === "pe" && currentTab === "pe" && PE_RAIL_SYSTEMS.map((sys, i) => (
-                          <button key={sys.id} className={`npi-wf-sys-item${i === peActiveSystem ? " active" : ""}`}
-                            onClick={() => setPeActiveSystem(i)}>
-                            <span className="npi-wf-sys-icon">{sys.icon}</span>
-                            <span className="npi-wf-sys-label">{sys.label}</span>
-                            <span className={`npi-wf-item-dot ${getPeSysDot(sys.id)}`} />
-                          </button>
-                        ))}
-                      </React.Fragment>
-                    ))
-                  )}
-                </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+              {chips.map(c=>(
+                <QuickChip key={c.n} name={c.n} detail="Quick add — specify detail as needed" tier="URGENT" category={c.c}/>
+              ))}
+              {search && !chips.length && (
+                <button className="ord-chip" onClick={()=>{quickAdd(search,"Custom order","ROUTINE","procedure");setSearch("");}}>
+                  + Add "{search}"
+                </button>
               )}
             </div>
-          );
-        })}
-      </aside>
-    </>
+          </div>
+        </>
+      );
+    }
+
+    if (cat === "labs") {
+      return Object.entries(LABS).map(([group, items]) => (
+        <div key={group}>
+          <SectionLabel>{group}</SectionLabel>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {items.map(item=>(
+              <div key={item.name} className="ord-row" onClick={()=>quickAdd(item.name,item.detail,item.tier,"lab")}
+                style={{cursor:"pointer",padding:"8px 10px",borderRadius:7,display:"flex",alignItems:"flex-start",gap:8,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.07)",transition:"background .12s"}}>
+                <span style={{fontSize:13,flexShrink:0,marginTop:1}}>🧪</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--npi-txt)"}}>{item.name}</div>
+                  <div style={{fontSize:10,color:"var(--npi-txt4)",marginTop:1,lineHeight:1.4}}>{item.detail}</div>
+                </div>
+                <TierBadge tier={item.tier}/>
+              </div>
+            ))}
+          </div>
+        </div>
+      ));
+    }
+
+    if (cat === "meds") {
+      return Object.entries(MEDS).map(([group, items]) => (
+        <div key={group}>
+          <SectionLabel>{group}</SectionLabel>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {items.map(item=>(
+              <div key={item.name} className="ord-row" onClick={()=>quickAdd(item.name,item.detail,item.tier,"medication")}
+                style={{cursor:"pointer",padding:"8px 10px",borderRadius:7,display:"flex",alignItems:"flex-start",gap:8,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.07)",transition:"background .12s"}}>
+                <span style={{fontSize:13,flexShrink:0,marginTop:1}}>💊</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--npi-txt)"}}>{item.name}</div>
+                  <div style={{fontSize:10,color:"var(--npi-txt4)",marginTop:1,lineHeight:1.4}}>{item.detail}</div>
+                </div>
+                <TierBadge tier={item.tier}/>
+              </div>
+            ))}
+          </div>
+        </div>
+      ));
+    }
+
+    if (cat === "iv") {
+      return Object.entries(IV_STRAT).map(([group, items]) => (
+        <div key={group}>
+          <SectionLabel>{group}</SectionLabel>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {items.map(item=>(
+              <div key={item.name} className="ord-row" onClick={()=>quickAdd(item.name,item.detail,item.tier,"iv")}
+                style={{cursor:"pointer",padding:"8px 10px",borderRadius:7,display:"flex",alignItems:"flex-start",gap:8,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.07)",transition:"background .12s"}}>
+                <span style={{fontSize:13,flexShrink:0,marginTop:1}}>💧</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--npi-txt)"}}>{item.name}</div>
+                  <div style={{fontSize:10,color:"var(--npi-txt4)",marginTop:1,lineHeight:1.4}}>{item.detail}</div>
+                </div>
+                <TierBadge tier={item.tier}/>
+              </div>
+            ))}
+          </div>
+        </div>
+      ));
+    }
+
+    if (cat === "imaging") {
+      return (
+        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+          {IMAGING_ORDERS.map(item=>(
+            <div key={item.name} className="ord-row" onClick={()=>quickAdd(item.name,item.detail,item.tier,"imaging")}
+              style={{cursor:"pointer",padding:"8px 10px",borderRadius:7,display:"flex",alignItems:"flex-start",gap:8,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.07)",transition:"background .12s"}}>
+              <span style={{fontSize:13,flexShrink:0,marginTop:1}}>🔬</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12,fontWeight:600,color:"var(--npi-txt)"}}>{item.name}</div>
+                <div style={{fontSize:10,color:"var(--npi-txt4)",marginTop:1,lineHeight:1.4}}>{item.detail}</div>
+              </div>
+              <TierBadge tier={item.tier}/>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (cat === "consult") {
+      return (
+        <>
+          <SectionLabel>Consult services</SectionLabel>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+            {CONSULTS.map(svc=>(
+              <button key={svc} className="ord-chip" onClick={()=>quickAdd(`${svc} consult`,`Consult ${svc} — indication to be specified`,"URGENT","consult")}>
+                {svc}
+              </button>
+            ))}
+          </div>
+        </>
+      );
+    }
+
+    return null;
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  return (
+    <div style={{display:"grid",gridTemplateColumns:"56% 44%",height:"100%",background:"var(--npi-bg)"}}>
+
+      {/* LEFT ── Build orders */}
+      <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",borderRight:"1px solid var(--npi-bd)"}}>
+
+        {/* AI Bundle */}
+        <div style={{background:"rgba(0,229,192,.03)",border:"1px solid rgba(0,229,192,.22)",borderRadius:10,padding:14,flexShrink:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+            <span className="ord-ai-pill">✦ AI Bundle</span>
+            {bundle && <span style={{fontSize:20,fontWeight:800,color:"var(--npi-teal)",fontFamily:"'JetBrains Mono',monospace"}}>{bundle.confidence}%</span>}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:700,color:"var(--npi-txt)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {loading?"Analyzing…":bundle?.diagnosis||chiefComplaint||"Enter a chief complaint"}
+              </div>
+            </div>
+            <button onClick={addChecked} disabled={!bundle||loading||!checked.size} className="ord-btn-teal">
+              + Add ({checked.size})
+            </button>
+          </div>
+
+          {loading && (
+            <div style={{display:"flex",alignItems:"center",gap:9,padding:"6px 0",color:"var(--npi-txt4)",fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>
+              <div style={{width:7,height:7,borderRadius:"50%",background:"var(--npi-teal)",animation:"npi-ai-pulse 1.4s ease-in-out infinite"}}/>
+              Generating order bundle…
+            </div>
+          )}
+          {!loading && !bundle && (
+            <div style={{padding:"6px 0",color:"var(--npi-txt4)",fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>
+              {chiefComplaint
+                ? <button className="ord-btn-ghost" onClick={generateBundle}>✦ Generate bundle</button>
+                : "Enter a chief complaint to generate an AI order bundle."}
+            </div>
+          )}
+
+          {bundle && ["STAT","URGENT","ROUTINE"].map(tier=>{
+            const orders = bundle.orders.filter(o=>o.tier===tier);
+            if (!orders.length) return null;
+            return (
+              <div key={tier}>
+                <div style={{display:"flex",alignItems:"center",gap:8,margin:"8px 0 4px"}}>
+                  <span style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:TC[tier],fontFamily:"'JetBrains Mono',monospace"}}>{tier}</span>
+                  <div style={{flex:1,height:1,background:"rgba(255,255,255,.07)"}}/>
+                  <span style={{fontSize:9,color:TC[tier],opacity:.5,fontFamily:"'JetBrains Mono',monospace"}}>{orders.length}</span>
+                </div>
+                {orders.map(ord=>{
+                  const on=checked.has(ord.id);
+                  return (
+                    <div key={ord.id} className="ord-row" onClick={()=>toggleCheck(ord.id)}>
+                      <div className={`ord-chk${on?" on":""}`}>
+                        {on && <span style={{color:"var(--npi-bg)",fontSize:9,fontWeight:700,lineHeight:1}}>✓</span>}
+                      </div>
+                      <span style={{fontSize:11,marginTop:1,flexShrink:0}}>{CAT_ICON[ord.category]||"📋"}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:500,color:"var(--npi-txt)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ord.name}</div>
+                        <div style={{fontSize:10,color:"var(--npi-txt4)",marginTop:1}}>{ord.detail}</div>
+                      </div>
+                      <TierBadge tier={ord.tier}/>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+
+          {bundle?.suppressed?.length > 0 && (
+            <div style={{background:"rgba(245,200,66,.07)",border:"1px solid rgba(245,200,66,.18)",borderRadius:7,padding:"7px 10px",fontSize:10,color:"rgba(245,200,66,.82)",display:"flex",gap:6,alignItems:"flex-start",marginTop:8}}>
+              <span style={{flexShrink:0}}>⚑</span>
+              <span>{bundle.suppressed.join(" · ")}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Category tabs */}
+        <div style={{display:"flex",gap:2,borderBottom:"1px solid rgba(255,255,255,.08)",flexShrink:0,overflow:"auto"}}>
+          {CATS.map(c=>{
+            const active=c.id===cat;
+            return (
+              <button key={c.id} onClick={()=>setCat(c.id)}
+                style={{padding:"7px 10px",background:"none",border:"none",borderBottom:`2px solid ${active?"var(--npi-teal)":"transparent"}`,marginBottom:-1,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:active?600:400,color:active?"var(--npi-teal)":"var(--npi-txt3)",whiteSpace:"nowrap",transition:"all .13s"}}>
+                {c.icon} {c.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Category content */}
+        <div style={{flex:1}}>
+          {renderCategoryContent()}
+        </div>
+      </div>
+
+      {/* RIGHT ── Order queue */}
+      <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:2}}>
+          <div>
+            <div style={{fontSize:14,fontWeight:700,color:"var(--npi-txt)",fontFamily:"'Playfair Display',serif"}}>Order queue</div>
+            <div style={{fontSize:11,color:"var(--npi-txt4)",marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>
+              {queue.length===0 ? "No orders yet"
+                : signed ? `${queue.length} orders · all signed`
+                : `${queue.length} order${queue.length!==1?"s":""} · pending signature`}
+            </div>
+          </div>
+          {queue.length>0 && !signed && (
+            <button className="ord-btn-teal" onClick={signQueue} disabled={busySign}>
+              {busySign?"Signing…":`Sign all (${queue.length})`}
+            </button>
+          )}
+        </div>
+
+        {queue.length>0 && (
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
+            {[{n:statN,l:"STAT",c:"var(--npi-coral)"},{n:urgentN,l:"Urgent",c:"var(--npi-orange)"},{n:routineN,l:"Routine",c:"var(--npi-txt4)"}].map(s=>(
+              <div key={s.l} style={{background:"rgba(255,255,255,.04)",borderRadius:7,padding:"8px 10px",textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:700,color:s.c,fontFamily:"'JetBrains Mono',monospace"}}>{s.n}</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,.35)",marginTop:1,fontFamily:"'DM Sans',sans-serif"}}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {queue.length===0 && (
+          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,color:"var(--npi-txt4)",textAlign:"center",padding:32}}>
+            <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
+              <rect x="5" y="9" width="28" height="4" rx="2" fill="rgba(122,160,192,.15)"/>
+              <rect x="5" y="17" width="22" height="4" rx="2" fill="rgba(122,160,192,.15)"/>
+              <rect x="5" y="25" width="26" height="4" rx="2" fill="rgba(122,160,192,.15)"/>
+            </svg>
+            <div style={{fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>No orders in queue</div>
+            <div style={{fontSize:10,fontFamily:"'DM Sans',sans-serif",maxWidth:200}}>Check items in the AI bundle or browse by category</div>
+          </div>
+        )}
+
+        {queue.length>0 && (
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {queue.map(ord=>(
+              <div key={ord.id} style={{padding:"10px 12px",background:signed?"rgba(0,229,192,.04)":"rgba(255,255,255,.03)",border:`1px solid ${signed?"rgba(0,229,192,.15)":"rgba(255,255,255,.07)"}`,borderLeft:`3px solid ${TL[ord.tier]||TL.ROUTINE}`,borderRadius:"0 9px 9px 0"}}>
+                <div style={{display:"flex",alignItems:"center",gap:7}}>
+                  <span style={{fontSize:12,flexShrink:0}}>{CAT_ICON[ord.category]||"📋"}</span>
+                  <span style={{fontSize:12,fontWeight:600,color:"var(--npi-txt)",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ord.name}</span>
+                  <TierBadge tier={ord.tier}/>
+                  {!signed && (
+                    <button onClick={()=>removeFromQueue(ord.id)} style={{background:"none",border:"none",color:"var(--npi-txt4)",cursor:"pointer",fontSize:12,padding:2,lineHeight:1,flexShrink:0}}>✕</button>
+                  )}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:5,marginTop:5}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:signed?"var(--npi-teal)":"var(--npi-orange)",flexShrink:0}}/>
+                  <span style={{fontSize:10,color:signed?"rgba(0,229,192,.7)":"rgba(255,149,64,.7)",fontFamily:"'DM Sans',sans-serif"}}>
+                    {signed?`Signed · ${ord.detail||"Active"}`:"Awaiting signature"}
+                  </span>
+                </div>
+                {ord.detail && !signed && (
+                  <div style={{fontSize:10,color:"var(--npi-txt4)",marginTop:3,marginLeft:18,lineHeight:1.4}}>{ord.detail}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {queue.length>0 && !signed && (
+          <div style={{background:"rgba(0,229,192,.06)",border:"1px solid rgba(0,229,192,.2)",borderRadius:10,padding:14,textAlign:"center",marginTop:"auto"}}>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.45)",marginBottom:9,fontFamily:"'DM Sans',sans-serif"}}>
+              {queue.length} order{queue.length!==1?"s":""} awaiting signature
+            </div>
+            <button onClick={signQueue} disabled={busySign}
+              style={{width:"100%",background:"var(--npi-teal)",color:"var(--npi-bg)",border:"none",borderRadius:8,padding:9,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",opacity:busySign?.6:1}}>
+              {busySign?"Signing…":"Sign orders"}
+            </button>
+          </div>
+        )}
+
+        {signed && (
+          <div style={{background:"rgba(0,229,192,.06)",border:"1px solid rgba(0,229,192,.2)",borderRadius:10,padding:14,textAlign:"center",marginTop:"auto"}}>
+            <div style={{fontSize:12,color:"var(--npi-teal)",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>
+              ✓ {queue.length} orders signed — all active
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 
 // ── Font + CSS Injection (Base44 pattern) ──────────────────────────
 (() => {
@@ -282,8 +284,21 @@ function GuidelinesTicker() {
   );
 }
 
-// ── HubOverlay: FIX — "Open" button now calls onClose (nav wired externally) ──
+const HUB_ROUTES = {
+  sepsis:    "/sepsis-hub",
+  airway:    "/airway-hub",
+  erx:       "/erx",
+  knowledge: "/KnowledgeBaseV2",
+  calendar:  "/Calendar",
+};
+
 function HubOverlay({ hub, onClose }) {
+  const navigate = useNavigate();
+  const handleOpen = () => {
+    const route = HUB_ROUTES[hub.id];
+    if (route) { onClose(); navigate(route); }
+    else onClose();
+  };
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(3,8,20,0.82)", zIndex:400, backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center" }}>
       <div onClick={e => e.stopPropagation()} style={{ width:"92%", maxWidth:520, background:"rgba(8,16,30,0.97)", backdropFilter:"blur(32px)", border:`1px solid ${hub.color}44`, borderRadius:18, boxShadow:`0 32px 80px rgba(0,0,0,0.7),0 0 80px ${hub.color}12`, padding:"28px", animation:"nh-fadeInPop .18s ease" }}>
@@ -305,8 +320,8 @@ function HubOverlay({ hub, onClose }) {
           ))}
         </div>
         <div style={{ display:"flex", gap:10 }}>
-          <div onClick={onClose} style={{ flex:1, padding:"11px", borderRadius:10, background:hub.color, color:"#060d1a", fontWeight:700, fontSize:13, textAlign:"center", cursor:"pointer" }}>
-            Open {hub.title} →
+          <div onClick={handleOpen} style={{ flex:1, padding:"11px", borderRadius:10, background:hub.color, color:"#060d1a", fontWeight:700, fontSize:13, textAlign:"center", cursor: hub.locked ? "default" : "pointer", opacity: hub.locked ? .5 : 1 }}>
+            {hub.locked ? "Coming Soon" : `Open ${hub.title} →`}
           </div>
           <button onClick={onClose} style={{ padding:"11px 18px", borderRadius:10, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.04)", color:T.txt2, fontSize:12, cursor:"pointer", fontWeight:600, fontFamily:"inherit" }}>Close</button>
         </div>

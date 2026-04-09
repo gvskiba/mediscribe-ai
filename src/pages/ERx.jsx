@@ -411,7 +411,7 @@ export default function NewPatientInput() {
   };
 
   return (
-    <>
+    <div style={{ position:"relative", minHeight:"100vh" }}>
       <style>{NPI_CSS}</style>
 
       <header className="npi-top-bar">
@@ -639,6 +639,6 @@ export default function NewPatientInput() {
           );
         })}
       </aside>
-    </>
+    </div>
   );
 }

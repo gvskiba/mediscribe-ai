@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -432,7 +432,7 @@ export default function NewPatientInput() {
   };
 
   return (
-    <>
+    <div style={{ position:"relative", minHeight:"100vh" }}>
       <style>{NPI_CSS}</style>
 
       <header className="npi-top-bar">
@@ -682,6 +682,6 @@ export default function NewPatientInput() {
           );
         })}
       </aside>
-    </>
+    </div>
   );
 }

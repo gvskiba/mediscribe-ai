@@ -44,13 +44,7 @@ function elapsed(ms) {
   return r ? `${h}h ${r}m ago` : `${h}h ago`;
 }
 
-// Flat array of all searchable orders — searched on every keystroke
-const ALL_SEARCHABLE = [
-  ...Object.values(LABS || {}).flat().map(o=>({...o,category:"lab",    icon:"🧪"})),
-  ...Object.values(MEDS || {}).flat().map(o=>({...o,category:"medication",icon:"💊"})),
-  ...Object.values(IV_STRAT||{}).flat().map(o=>({...o,category:"iv",   icon:"💧"})),
-  ...(IMAGING_ORDERS||[]).map(o=>({...o,icon:"🔬"})),
-].filter(Boolean);
+// ALL_SEARCHABLE is initialized after LABS/MEDS/IV_STRAT/IMAGING_ORDERS are declared below
 
 function TierBadge({ tier }) {
   return (
@@ -284,6 +278,14 @@ const IMAGING_ORDERS=[
   {name:"Echo bedside",         detail:"POCUS cardiac — effusion, function, tamponade",                 tier:"URGENT", category:"imaging"},
   {name:"MRI brain",            detail:"Stroke, MS, encephalitis — with and without contrast",          tier:"URGENT", category:"imaging"},
 ];
+// Flat array of all searchable orders — searched on every keystroke
+const ALL_SEARCHABLE = [
+  ...Object.values(LABS).flat().map(o=>({...o,category:"lab",    icon:"🧪"})),
+  ...Object.values(MEDS).flat().map(o=>({...o,category:"medication",icon:"💊"})),
+  ...Object.values(IV_STRAT).flat().map(o=>({...o,category:"iv",   icon:"💧"})),
+  ...IMAGING_ORDERS.map(o=>({...o,icon:"🔬"})),
+].filter(Boolean);
+
 const CONSULTS=[
   "Cardiology","Pulmonology","Gastroenterology","Nephrology","Neurology","Neurosurgery",
   "General Surgery","Vascular Surgery","Orthopedics","Urology","OB/GYN","Ophthalmology",

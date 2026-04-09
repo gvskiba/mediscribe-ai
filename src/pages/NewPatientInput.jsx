@@ -17,7 +17,7 @@ import EDProcedureNotes from "@/pages/EDProcedureNotes";
 import EDOrders from "@/pages/EDOrders";
 import MedicationReferencePage from "@/pages/MedicationReference";
 import ERPlanBuilder from "@/pages/ERPlanBuilder";
-import ResultsHub from "@/pages/Results";
+import ResultsViewer from "@/pages/ResultsViewer";
 import CDSAlertsSidebar from "@/components/npi/CDSAlertsSidebar";
 import ERxHub from "@/pages/ERx";
 import ClinicalNoteStudio from "@/components/npi/ClinicalNoteStudio";
@@ -51,7 +51,7 @@ const NAV_DATA = {
     { section: "reassess",   icon: "🔄", label: "Reassessment",       abbr: "Ra", dot: "empty"   },
     { section: "timeline",   icon: "⏱",  label: "Timeline",           abbr: "Tl", dot: "empty"   },
     { section: "discharge",  icon: "🚪", label: "Discharge",          abbr: "Dc", dot: "empty"   },
-    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty"   },
+    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results"     },
     { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty"   },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",        abbr: "Mr", dot: "empty"   },
     { section: "calc",       icon: "🧮", label: "Calculators",       abbr: "Ca", dot: "empty", href: "/Calculators" },
@@ -684,10 +684,8 @@ export default function NewPatientInput() {
         triage_esi_level: esiLevel||"",
       };
       const created = await base44.entities.ClinicalNote.create(payload);
-      toast.success("Patient saved!");
-      navigate(`/ClinicalNoteStudio?noteId=${created.id}`, {
-        state: { patientData: { demo,cc,vitals,medications,allergies,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration } },
-      });
+      toast.success("Chart signed and saved.");
+      navigate("/EDTrackingBoard");
     } catch (e) { toast.error("Failed to save: " + e.message); }
   }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,navigate]);
 
@@ -696,11 +694,6 @@ export default function NewPatientInput() {
     const handler = e => {
       const mod = e.metaKey || e.ctrlKey;
       if (mod && SHORTCUT_MAP[e.key]) { e.preventDefault(); selectSection(SHORTCUT_MAP[e.key]); return; }
-      if (mod && e.shiftKey && e.key === "e") {
-        e.preventDefault();
-        navigate("/ClinicalNoteStudio", { state: { patientData: { demo,cc,vitals,medications,allergies,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration } } });
-        return;
-      }
       if (mod && e.shiftKey && e.key === "s") { e.preventDefault(); handleSaveChart(); return; }
       if (mod && e.shiftKey && e.key === "n") { e.preventDefault(); navigate("/NewPatientInput?tab=demo"); return; }
       if (e.key === "?" && !mod && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
@@ -766,15 +759,14 @@ export default function NewPatientInput() {
       case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("hpi")} />;
       case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
       case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />;
-      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("mdm")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
-      case "mdm":        return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
+      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("chart")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
       case "chart":      return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
       case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState} onAdvance={() => selectSection("timeline")} />;
       case "timeline":   return <ClinicalTimeline arrivalMs={arrivalTimeRef.current} onStateChange={setClinicalTimeline} />;
       case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
       case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
       case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><EDOrders embedded patientName={patientName} patientAllergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} /></div>;
-      case "results":    return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto" }}><ResultsHub /></div>;
+      case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;
       case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto"   }}><MedicationReferencePage embedded /></div>;
@@ -1014,7 +1006,7 @@ export default function NewPatientInput() {
                   ) : (
                     /* Standard groups: section buttons */
                     items.map(item => (
-                      <div key={item.section}>
+                      <React.Fragment key={item.section}>
                         <button
                           className={`npi-wf-item${item.section === currentTab ? " active" : ""}`}
                           onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}
@@ -1029,7 +1021,7 @@ export default function NewPatientInput() {
                         {/* ROS body systems — inline expansion */}
                         {item.section === "ros" && currentTab === "ros" && ROS_RAIL_SYSTEMS.map((sys, i) => (
                           <button key={sys.id} className={`npi-wf-sys-item${i === rosActiveSystem ? " active" : ""}`}
-                            onClick={() => { setRosActiveSystem(i); }}>
+                            onClick={() => { setRosActiveSystem(i); panelProps?.ref?.current?.focus?.(); }}>
                             <span className="npi-wf-sys-icon">{sys.icon}</span>
                             <span className="npi-wf-sys-label">{sys.label}</span>
                             <span className={`npi-wf-item-dot ${getRosSysDot(sys.id)}`} />
@@ -1044,7 +1036,7 @@ export default function NewPatientInput() {
                             <span className={`npi-wf-item-dot ${getPeSysDot(sys.id)}`} />
                           </button>
                         ))}
-                      </div>
+                      </React.Fragment>
                     ))
                   )}
                 </div>

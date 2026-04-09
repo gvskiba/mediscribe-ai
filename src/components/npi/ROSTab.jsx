@@ -217,6 +217,9 @@ function SysItem({ sys, isActive, status, onClick }) {
 function SymptomChip({ symptom, value, kbFocused, onClick }) {
   const isAbsent  = value === 'absent';
   const isPresent = value === 'present';
+function SymptomChip({ symptom, value, kbFocused, kbIndex, onClick }) {
+  const isAbsent  = value === 'absent';
+  const isPresent = value === 'present';
   const cls = ['ros-chip',
     isAbsent  ? 'ros-chip-a' : '',
     isPresent ? 'ros-chip-p' : '',
@@ -224,6 +227,9 @@ function SymptomChip({ symptom, value, kbFocused, onClick }) {
   ].filter(Boolean).join(' ');
   return (
     <button className={cls} onClick={onClick}>
+      {kbIndex != null && (
+        <span className="ros-chip-num">{kbIndex}</span>
+      )}
       <span className="ros-chip-ico">
         {isAbsent ? '✓' : isPresent ? '✕' : '○'}
       </span>
@@ -251,8 +257,8 @@ function StatusBadge({ status }) {
 function KbLegend({ isFocused }) {
   const keys = [
     ['↑↓', 'navigate'], ['←→', 'system'], ['letter', 'jump'],
-    ['Space', 'toggle'], ['↵', 'absent'], ['X', 'present'],
-    ['⌘↵', 'deny all'], ['⌘⇧N', 'deny all sys'], ['Esc', 'exit'],
+    ['1–9', 'quick pick'], ['Space', 'toggle'], ['↵', 'absent'], ['X', 'present'],
+    ['⌘↵', 'deny sys'], ['⌘⇧N', 'deny all'], ['⌘F', 'mode'], ['⌘R', 'rest neg'], ['Esc', 'exit'],
   ];
   return (
     <div className={`ros-kb-bar${isFocused ? ' ros-kb-on' : ''}`}>
@@ -360,17 +366,31 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
 
   const clearAll = useCallback(() => setRosData(initRosData()), []);
 
+  // ── Visible systems (focused mode filter) — must be computed before hook ──
+  const focusedIds  = getFocusedIds(chiefComplaint);
+  const visibleSys  = docMode === 'full' ? ROS_SYSTEMS : ROS_SYSTEMS.filter(s => focusedIds.includes(s.id));
+  const hiddenCount = ROS_SYSTEMS.length - visibleSys.length;
+
   // ── Keyboard hook ────────────────────────────────────────────────────────
   const {
     activeSystemIdx, setActiveSystemIdx,
     activeFindingIdx, setActiveFindingIdx,
-    isFocused, panelProps, goToSystem,
+    isFocused, panelProps, goToSystem, focus,
   } = useBodySystemKeyboard({
-    systems: ROS_SYSTEMS,
-    onFindingAction: handleFindingAction,
-    onSystemNormal:  markSystemNormal,
-    onAllNormal:     markAllNormal,
+    systems:          ROS_SYSTEMS,
+    visibleSystems:   visibleSys,   // computed below — pass after declaration
+    onFindingAction:  handleFindingAction,
+    onSystemNormal:   markSystemNormal,
+    onAllNormal:      markAllNormal,
+    onModeToggle:     () => setDocMode(m => m === 'focused' ? 'full' : 'focused'),
+    onRemainder:      () => setRemainderNeg(r => !r),
   });
+
+  // Auto-focus on mount — keyboard-first from the first render
+  useEffect(() => {
+    const t = setTimeout(focus, 60);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line
 
   const activeSys = ROS_SYSTEMS[activeSystemIdx];
   const sysData   = rosData[activeSys?.id] || { symptoms: {} };
@@ -411,9 +431,6 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
   }, [activeFindingIdx]);
 
   // ── Computed stats ───────────────────────────────────────────────────────
-  const focusedIds   = getFocusedIds(chiefComplaint);
-  const visibleSys   = docMode === 'full' ? ROS_SYSTEMS : ROS_SYSTEMS.filter(s => focusedIds.includes(s.id));
-  const hiddenCount  = ROS_SYSTEMS.length - visibleSys.length;
   const totalSystems    = ROS_SYSTEMS.length;
   const reviewedSystems = ROS_SYSTEMS.filter(s => getSysStatus(rosData[s.id]?.symptoms || {}) !== 'empty').length;
   const positiveSystems = ROS_SYSTEMS.filter(s => getSysStatus(rosData[s.id]?.symptoms || {}) === 'has-positives').length;
@@ -496,6 +513,7 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
                     symptom={sym}
                     value={sysData.symptoms[sym.id]}
                     kbFocused={isFocused && si === activeFindingIdx}
+                    kbIndex={isFocused && si < 9 ? si + 1 : null}
                     onClick={() => {
                       handleFindingAction('toggle', activeSys.id, sym.id);
                       setActiveFindingIdx(si);
@@ -633,6 +651,7 @@ const ROS_CSS = `
 .ros-denies{font-family:'JetBrains Mono',monospace;font-size:9px;color:#00e5c0;margin-right:3px}
 .ros-reports{font-family:'JetBrains Mono',monospace;font-size:9px;color:#ff6b6b;margin-right:3px}
 .ros-chip-hint{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--npi-teal);background:rgba(0,229,192,.08);border:1px solid rgba(0,229,192,.25);border-radius:3px;padding:1px 5px;flex-shrink:0;white-space:nowrap}
+.ros-chip-num{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--npi-txt4);background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:3px;padding:1px 5px;flex-shrink:0;min-width:16px;text-align:center}
 
 /* Positive findings summary */
 .ros-pos-strip{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:10px 14px;background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.18);border-radius:8px}

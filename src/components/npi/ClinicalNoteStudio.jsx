@@ -30,48 +30,115 @@ const DISP_OPTS = [
   { id: "lwbs",      label: "LWBS / AMA",   icon: "⚠️" },
 ];
 
+// ─── SYSTEM LABEL MAPS ────────────────────────────────────────────────────────
+// Mirror the IDs in ROSTab.jsx / PETab.jsx — used for prose note generation.
+const ROS_SYS_LABELS = {
+  const:   "Constitutional", heent:  "HEENT",          cv:    "Cardiovascular",
+  resp:    "Respiratory",    gi:     "GI/Abdomen",      gu:    "Genitourinary",
+  msk:     "MSK",            neuro:  "Neurological",    psych: "Psychiatric",
+  skin:    "Skin",           endo:   "Endocrine",       heme:  "Heme/Lymph",
+  allergy: "Allergic/Immunologic",
+};
+const PE_SYS_LABELS = {
+  gen:   "General",        heent: "HEENT",         neck: "Neck",
+  cv:    "Cardiovascular", resp:  "Respiratory",   abd:  "Abdomen",
+  msk:   "MSK",            neuro: "Neurological",  skin: "Skin",
+  psych: "Psychiatric",
+};
+const META_KEYS = ["_remainderNeg", "_remainderNormal", "_mode", "_visual"];
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function buildRosText(rosState) {
+  if (!rosState || !Object.keys(rosState).length) return "";
+
   const pos = [], neg = [];
-  Object.entries(rosState || {}).forEach(([sys, val]) => {
-    if (val === "abnormal" || val === "reported") pos.push(sys.charAt(0).toUpperCase() + sys.slice(1));
-    else if (val === "normal") neg.push(sys.charAt(0).toUpperCase() + sys.slice(1));
+  let remainderNeg = false;
+  Object.entries(rosState).forEach(([sys, val]) => {
+    if (sys === "_remainderNeg") { if (val) remainderNeg = true; return; }
+    if (META_KEYS.includes(sys)) return;
+    const label = ROS_SYS_LABELS[sys] || sys;
+    if (val === "has-positives") pos.push(label);
+    else if (val === "reviewed") neg.push(label);
   });
-  if (!pos.length && !neg.length) return "";
+
+  if (!pos.length && !neg.length && !remainderNeg) return "";
+
   const parts = [];
-  if (pos.length) parts.push(`Positive: ${pos.join(", ")}.`);
-  if (neg.length) parts.push(`Reviewed and negative: ${neg.join(", ")}.`);
-  return parts.join("  ");
+  if (pos.length) parts.push(`Positive for: ${pos.join(", ")}.`);
+
+  if (!pos.length && neg.length >= 5 && remainderNeg) {
+    // All systems reviewed negative — single aggregate sentence
+    parts.push("All systems reviewed and negative.");
+  } else if (!pos.length && neg.length >= 5) {
+    parts.push(`All ${neg.length} reviewed systems negative.`);
+  } else {
+    if (neg.length) parts.push(`Reviewed and negative: ${neg.join(", ")}.`);
+    if (remainderNeg) parts.push("All remaining systems reviewed and negative.");
+  }
+
+  return parts.join(" ");
 }
 
 function buildPeText(peState, peFindings) {
+  if (!peState || !Object.keys(peState).length) return "";
+
   const abn = [], normal = [];
-  Object.entries(peState || {}).forEach(([sys, status]) => {
-    if (status === "abnormal" || status === "mixed") abn.push(sys);
-    else if (status === "normal") normal.push(sys);
+  let remainderNormal = false;
+  let visualData = null;
+  Object.entries(peState).forEach(([sys, val]) => {
+    if (sys === "_remainderNormal") { if (val) remainderNormal = true; return; }
+    if (sys === "_visual") { visualData = val; return; }
+    if (META_KEYS.includes(sys)) return;
+    const label = PE_SYS_LABELS[sys] || sys;
+    if (val === "abnormal" || val === "mixed") abn.push({ id: sys, label });
+    else if (val === "normal") normal.push(label);
   });
-  if (!abn.length && !normal.length) return "";
+
+  if (!abn.length && !normal.length && !remainderNormal && !visualData) return "";
+
   const lines = [];
-  abn.forEach(sys => {
-    const findings = peFindings?.[sys];
-    const details = findings
-      ? Object.entries(findings.findings || {})
+
+  if (visualData) {
+    const vParts = [];
+    if (visualData.appearance) vParts.push(visualData.appearance);
+    if (visualData.notes) vParts.push(visualData.notes);
+    if (vParts.length) lines.push(vParts.join(". ") + ".");
+  }
+
+  abn.forEach(({ id, label }) => {
+    const sf = peFindings?.[id];
+    const findings = sf
+      ? Object.entries(sf.findings || {})
           .filter(([, v]) => v === "abnormal")
-          .map(([k]) => k).join(", ")
+          .map(([k]) => k.replace(/-/g, " "))
+          .join(", ")
       : "";
-    lines.push(`${sys.charAt(0).toUpperCase() + sys.slice(1)}: ${details || "abnormal findings noted"}.`);
+    const note = sf?.note?.trim();
+    let line = `${label}: ${findings || "abnormal findings noted"}`;
+    if (note) line += ` — ${note}`;
+    lines.push(line + ".");
   });
-  if (normal.length) lines.push(`Normal: ${normal.join(", ")}.`);
-  return lines.join("  ");
+
+  if (normal.length) {
+    if (!abn.length && normal.length >= 4 && remainderNormal) {
+      lines.push("Exam within normal limits.");
+    } else {
+      lines.push(`Normal: ${normal.join(", ")}.`);
+    }
+  }
+
+  if (remainderNormal && !(normal.length >= 4 && !abn.length)) {
+    lines.push("Remaining exam within normal limits.");
+  }
+
+  return lines.join(" ");
 }
 
 const FL = { fontSize: 10, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 5 };
 const TA = { width: "100%", padding: "10px 14px", boxSizing: "border-box", background: "rgba(255,255,255,.04)", border: "1px solid rgba(59,130,246,.18)", borderRadius: 8, color: "#e2e8f0", fontFamily: "'DM Sans',sans-serif", fontSize: 13, lineHeight: 1.65, resize: "vertical", outline: "none" };
-
 function KK({ ch }) {
   return <kbd style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-blue)", background: "rgba(59,158,255,.12)", border: "1px solid rgba(59,158,255,.25)", borderRadius: 3, padding: "0 5px" }}>{ch}</kbd>;
 }
-
 function SectionHeader({ section, expanded, onToggle, complete, children }) {
   return (
     <div style={{ borderBottom: `1px solid ${expanded ? "rgba(59,130,246,.2)" : "transparent"}`, marginBottom: expanded ? 16 : 0 }}>
@@ -120,18 +187,30 @@ export default function ClinicalNoteStudio({
   const [mdmLoading, setMdmLoading] = useState(false);
 
   // ── Plan state ──────────────────────────────────────────────────────────
-  const [dispType, setDispType]     = useState("");
-  const [planItems, setPlanItems]   = useState([]);
-  const [planInput, setPlanInput]   = useState("");
-  const [returnPrec, setReturnPrec] = useState("");
-  const [followUp, setFollowUp]     = useState("");
-  const [consults, setConsults]     = useState("");
+  const [dispType, setDispType]         = useState("");
+  const [planItems, setPlanItems]       = useState([]);
+  const [planInput, setPlanInput]       = useState("");
+  const [returnPrec, setReturnPrec]     = useState("");
+  const [followUp, setFollowUp]         = useState("");
+  const [consults, setConsults]         = useState("");
 
   // ── Supporting section content (auto + editable) ─────────────────────────
-  const [hpiText, setHpiText]         = useState(cc.hpi || "");
-  const [rosText, setRosText]         = useState(() => buildRosText(rosState));
-  const [peText, setPeText]           = useState(() => buildPeText(peState, peFindings));
-  const [resultsText, setResultsText] = useState("");
+  const [hpiText, setHpiText]           = useState(cc.hpi || "");
+  const [rosText, setRosText]           = useState(() => buildRosText(rosState));
+  const [peText, setPeText]             = useState(() => buildPeText(peState, peFindings));
+  const [resultsText, setResultsText]   = useState("");
+  // Dirty flags — prevent auto-sync from overwriting manual edits
+  const [rosDirty, setRosDirty] = useState(false);
+  const [peDirty,  setPeDirty]  = useState(false);
+
+  // Re-sync when source data changes (e.g. doctor goes back to ROS/PE tab)
+  // Only fires if the provider hasn't manually edited the text in the note.
+  useEffect(() => {
+    if (!rosDirty) setRosText(buildRosText(rosState));
+  }, [rosState]); // eslint-disable-line
+  useEffect(() => {
+    if (!peDirty) setPeText(buildPeText(peState, peFindings));
+  }, [peState, peFindings]); // eslint-disable-line
 
   // ── Refs for keyboard scroll-to ─────────────────────────────────────────
   const refs = { ddx: useRef(null), mdm: useRef(null), plan: useRef(null), hpi: useRef(null), ros: useRef(null), pe: useRef(null), results: useRef(null), meta: useRef(null) };
@@ -139,6 +218,44 @@ export default function ClinicalNoteStudio({
     setExpanded(p => ({ ...p, [id]: true }));
     setTimeout(() => refs[id]?.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   }, []);
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────
+  useEffect(() => {
+    const h = (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      if (e.key === "d") { e.preventDefault(); scrollTo("ddx"); }
+      if (e.key === "m") { e.preventDefault(); scrollTo("mdm"); }
+      if (e.key === "g") { e.preventDefault(); generateMDM(); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [scrollTo, mdmText]);
+
+  // 1–5 keys set complexity when MDM section is focused
+  const onMdmKeyDown = (e) => {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 5 && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
+      setComplexity(n);
+    }
+    if (e.metaKey && e.key === "Enter") { e.preventDefault(); generateMDM(); }
+  };
+
+  // ── AI: ICD-10 suggestion ────────────────────────────────────────────────
+  const suggestICD = async () => {
+    if (!primaryDx.trim()) return;
+    setIcdLoading(true);
+    try {
+      const r = await base44.integrations.Core.InvokeLLM({
+        prompt: `Return ONLY valid JSON. For the emergency medicine diagnosis: "${primaryDx}", provide the most specific ICD-10-CM code and 3 differential diagnoses relevant to an ED presentation. Format: {"icd10":"CODE description","differentials":["dx1","dx2","dx3"]}`,
+        response_json_schema: { type:"object", properties:{ icd10:{type:"string"}, differentials:{type:"array",items:{type:"string"}} } },
+      });
+      const parsed = typeof r === "object" ? r : JSON.parse(String(r).replace(/```json|```/g,"").trim());
+      if (parsed.icd10)       setIcd10(parsed.icd10);
+      if (parsed.differentials) setDiff(parsed.differentials);
+    } catch { toast.error("ICD-10 lookup failed."); }
+    setIcdLoading(false);
+  };
 
   // ── AI: MDM generation ────────────────────────────────────────────────────
   const generateMDM = useCallback(async () => {
@@ -169,43 +286,6 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
     setMdmLoading(false);
   }, [mdmLoading, patientName, demo, cc, primaryDx, vitals, pmhSelected, medications, allergies, rosText, peText]);
 
-  // ── Keyboard shortcuts ──────────────────────────────────────────────────
-  useEffect(() => {
-    const h = (e) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (!mod) return;
-      if (e.key === "d") { e.preventDefault(); scrollTo("ddx"); }
-      if (e.key === "m") { e.preventDefault(); scrollTo("mdm"); }
-      if (e.key === "g") { e.preventDefault(); generateMDM(); }
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [scrollTo, generateMDM]);
-
-  const onMdmKeyDown = (e) => {
-    const n = parseInt(e.key, 10);
-    if (n >= 1 && n <= 5 && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
-      setComplexity(n);
-    }
-    if (e.metaKey && e.key === "Enter") { e.preventDefault(); generateMDM(); }
-  };
-
-  // ── AI: ICD-10 suggestion ────────────────────────────────────────────────
-  const suggestICD = async () => {
-    if (!primaryDx.trim()) return;
-    setIcdLoading(true);
-    try {
-      const r = await base44.integrations.Core.InvokeLLM({
-        prompt: `Return ONLY valid JSON. For the emergency medicine diagnosis: "${primaryDx}", provide the most specific ICD-10-CM code and 3 differential diagnoses relevant to an ED presentation. Format: {"icd10":"CODE description","differentials":["dx1","dx2","dx3"]}`,
-        response_json_schema: { type:"object", properties:{ icd10:{type:"string"}, differentials:{type:"array",items:{type:"string"}} } },
-      });
-      const parsed = typeof r === "object" ? r : JSON.parse(String(r).replace(/```json|```/g,"").trim());
-      if (parsed.icd10)        setIcd10(parsed.icd10);
-      if (parsed.differentials) setDiff(parsed.differentials);
-    } catch { toast.error("ICD-10 lookup failed."); }
-    setIcdLoading(false);
-  };
-
   // ── Completion checks ────────────────────────────────────────────────────
   const complete = {
     ddx:     !!primaryDx,
@@ -218,6 +298,7 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
     meta:    true,
   };
 
+  // ── Section dots for left rail ───────────────────────────────────────────
   const allDone = SECTIONS.slice(0,3).every(s => complete[s.id]);
 
   const addPlanItem = () => {
@@ -262,7 +343,7 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
           {demo.age && <span style={{ fontSize: 12, color: "var(--npi-txt3)" }}>{demo.age}y · {demo.sex||"—"}</span>}
           {cc.text && <span style={{ fontSize: 12, color: "var(--npi-teal)", background: "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.25)", borderRadius: 20, padding: "1px 10px" }}>CC: {cc.text}</span>}
           {esiLevel && <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 6, padding: "1px 8px" }}>ESI {esiLevel}</span>}
-          {registration?.room && <span style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Room {registration.room}</span>}
+          {registration.room && <span style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Room {registration.room}</span>}
           <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
             {allDone && onSave && (
               <button onClick={onSave} style={{ padding: "5px 16px", borderRadius: 7, background: "var(--npi-teal)", color: "#050f1e", border: "none", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
@@ -306,7 +387,9 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
               )}
               <div>
                 <div style={FL}>Add to differential</div>
-                <input value={diffInput} onChange={e => setDiffInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (diffInput.trim()) { setDiff(p => [...p, diffInput.trim()]); setDiffInput(""); } } }} placeholder="Add diagnosis to differential…" style={{ ...TA, resize: "none", padding: "9px 12px" }} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={diffInput} onChange={e => setDiffInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (diffInput.trim()) { setDiff(p => [...p, diffInput.trim()]); setDiffInput(""); } } }} placeholder="Add diagnosis to differential…" style={{ ...TA, flex: 1, resize: "none", padding: "9px 12px" }} />
+                </div>
               </div>
             </div>
           )}
@@ -414,8 +497,20 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
           </SectionHeader>
           {expanded.ros && (
             <div style={{ paddingBottom: 14 }}>
-              {!rosText && <div style={{ fontSize: 11, color: "var(--npi-txt4)", marginBottom: 8, fontStyle: "italic" }}>Auto-populated from ROS tab — pertinent findings only</div>}
-              <textarea value={rosText} onChange={e => setRosText(e.target.value)} placeholder="Complete ROS in the ROS tab first, or enter pertinent findings here…" rows={3} style={TA} />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                {!rosText
+                  ? <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontStyle: "italic" }}>Auto-populated from ROS tab — pertinent findings only</div>
+                  : <div style={{ fontSize: 10, color: rosDirty ? "rgba(239,159,39,.7)" : "rgba(0,229,192,.5)", fontFamily: "'JetBrains Mono',monospace" }}>{rosDirty ? "✎ manually edited" : "✓ auto-generated"}</div>
+                }
+                {rosDirty && (
+                  <button onClick={() => { setRosText(buildRosText(rosState)); setRosDirty(false); }}
+                    style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "transparent", border: "1px solid var(--npi-bd)", color: "var(--npi-txt4)", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
+                    ↺ Reset
+                  </button>
+                )}
+              </div>
+              <textarea value={rosText} onChange={e => { setRosText(e.target.value); setRosDirty(true); }}
+                placeholder="Complete ROS in the ROS tab first, or enter pertinent findings here…" rows={3} style={TA} />
             </div>
           )}
         </div>
@@ -427,8 +522,20 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
           </SectionHeader>
           {expanded.pe && (
             <div style={{ paddingBottom: 14 }}>
-              {!peText && <div style={{ fontSize: 11, color: "var(--npi-txt4)", marginBottom: 8, fontStyle: "italic" }}>Auto-populated from PE tab — abnormals prominent, normals abbreviated</div>}
-              <textarea value={peText} onChange={e => setPeText(e.target.value)} placeholder="Complete PE in the Physical Exam tab first, or enter findings here…" rows={4} style={TA} />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                {!peText
+                  ? <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontStyle: "italic" }}>Auto-populated from PE tab — abnormals prominent, normals abbreviated</div>
+                  : <div style={{ fontSize: 10, color: peDirty ? "rgba(239,159,39,.7)" : "rgba(0,229,192,.5)", fontFamily: "'JetBrains Mono',monospace" }}>{peDirty ? "✎ manually edited" : "✓ auto-generated"}</div>
+                }
+                {peDirty && (
+                  <button onClick={() => { setPeText(buildPeText(peState, peFindings)); setPeDirty(false); }}
+                    style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "transparent", border: "1px solid var(--npi-bd)", color: "var(--npi-txt4)", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
+                    ↺ Reset
+                  </button>
+                )}
+              </div>
+              <textarea value={peText} onChange={e => { setPeText(e.target.value); setPeDirty(true); }}
+                placeholder="Complete PE in the Physical Exam tab first, or enter findings here…" rows={4} style={TA} />
             </div>
           )}
         </div>
@@ -454,14 +561,14 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
               {[
                 ["Patient", patientName],
                 ["DOB", demo.dob || "—"],
-                ["MRN", registration?.mrn || "—"],
-                ["Room", registration?.room || "—"],
-                ["Allergies", allergies?.length ? allergies.join(", ") : "NKDA"],
-                ["Meds", medications?.length ? `${medications.length} listed` : "none"],
-                ["BP", vitals?.bp || "—"],
-                ["HR", vitals?.hr || "—"],
-                ["SpO₂", vitals?.spo2 ? vitals.spo2 + "%" : "—"],
-                ["Temp", vitals?.temp || "—"],
+                ["MRN", registration.mrn || "—"],
+                ["Room", registration.room || "—"],
+                ["Allergies", allergies.length ? allergies.join(", ") : "NKDA"],
+                ["Meds", medications.length ? `${medications.length} listed` : "none"],
+                ["BP", vitals.bp || "—"],
+                ["HR", vitals.hr || "—"],
+                ["SpO₂", vitals.spo2 ? vitals.spo2 + "%" : "—"],
+                ["Temp", vitals.temp || "—"],
                 ["ESI", esiLevel || "—"],
                 ["Encounter", new Date().toLocaleDateString()],
               ].map(([label, val]) => (

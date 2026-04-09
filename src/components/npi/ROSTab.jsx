@@ -214,9 +214,6 @@ function SysItem({ sys, isActive, status, onClick }) {
   );
 }
 
-function SymptomChip({ symptom, value, kbFocused, onClick }) {
-  const isAbsent  = value === 'absent';
-  const isPresent = value === 'present';
 function SymptomChip({ symptom, value, kbFocused, kbIndex, onClick }) {
   const isAbsent  = value === 'absent';
   const isPresent = value === 'present';

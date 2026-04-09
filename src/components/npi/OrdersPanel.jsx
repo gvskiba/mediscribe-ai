@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
@@ -8,6 +8,49 @@ const TB = { STAT:"rgba(255,107,107,.12)", URGENT:"rgba(255,159,67,.12)", ROUTIN
 const TD = { STAT:"rgba(255,107,107,.28)", URGENT:"rgba(255,159,67,.28)", ROUTINE:"rgba(255,255,255,.10)" };
 const TL = { STAT:"var(--npi-coral)", URGENT:"var(--npi-orange)", ROUTINE:"rgba(255,255,255,.15)" };
 const CAT_ICON = { lab:"🧪", medication:"💊", iv:"💧", imaging:"🔬", procedure:"⚙️", consult:"👤", monitoring:"📡" };
+
+
+// ── Allergy cross-check — checked at point of ordering ───────────────────────
+const ALLERGY_MAP = {
+  penicillin:   ["amoxicillin","ampicillin","augmentin","pip-tazo","piperacillin","oxacillin","nafcillin","amoxicillin-clavulanate"],
+  cephalosporin:["ceftriaxone","cefazolin","cephalexin","cefdinir","cefepime","cefuroxime","cefpodoxime"],
+  sulfa:        ["bactrim","sulfamethoxazole","trimethoprim-sulfa","smx-tmp"],
+  nsaid:        ["ibuprofen","ketorolac","naproxen","indomethacin","celecoxib","diclofenac"],
+  aspirin:      ["aspirin 325mg","aspirin"],
+  contrast:     ["ct angio","ct abd/pelvis w/ contrast","ct chest/abd/pelvis","mri brain","mri spine"],
+  morphine:     ["morphine sulfate","codeine","hydrocodone","oxycodone"],
+  fluoroquinolone:["ciprofloxacin","levofloxacin","moxifloxacin"],
+};
+
+function getAllergyWarning(orderName, allergies) {
+  if (!allergies?.length) return null;
+  const name = orderName.toLowerCase();
+  for (const allergy of allergies) {
+    const a = allergy.toLowerCase();
+    const mapped = ALLERGY_MAP[a] || [];
+    if (mapped.some(m => name.includes(m)) || name.includes(a)) {
+      return `⚠ ${allergy} allergy on file`;
+    }
+  }
+  return null;
+}
+
+function elapsed(ms) {
+  if (!ms) return null;
+  const m = Math.round((Date.now() - ms) / 60000);
+  if (m < 1)  return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60), r = m % 60;
+  return r ? `${h}h ${r}m ago` : `${h}h ago`;
+}
+
+// Flat array of all searchable orders — searched on every keystroke
+const ALL_SEARCHABLE = [
+  ...Object.values(LABS || {}).flat().map(o=>({...o,category:"lab",    icon:"🧪"})),
+  ...Object.values(MEDS || {}).flat().map(o=>({...o,category:"medication",icon:"💊"})),
+  ...Object.values(IV_STRAT||{}).flat().map(o=>({...o,category:"iv",   icon:"💧"})),
+  ...(IMAGING_ORDERS||[]).map(o=>({...o,icon:"🔬"})),
+].filter(Boolean);
 
 function TierBadge({ tier }) {
   return (
@@ -249,32 +292,145 @@ const CONSULTS=[
 ];
 const CATS=[{id:"sets",label:"Order Sets",icon:"⊞"},{id:"all",label:"Add-ons",icon:"⊕"},{id:"labs",label:"Labs",icon:"🧪"},{id:"meds",label:"Meds",icon:"💊"},{id:"iv",label:"IV",icon:"💧"},{id:"imaging",label:"Imaging",icon:"🔬"},{id:"consult",label:"Consult",icon:"👤"}];
 
-// ── OrdersPanel ───────────────────────────────────────────────────────────────
-export default function OrdersPanel({ patientName, allergies, chiefComplaint, patientAge, patientSex }) {
-  const [bundle,   setBundle]   = useState(null);
-  const [checked,  setChecked]  = useState(new Set());
-  const [queue,    setQueue]    = useState([]);
-  const [signed,   setSigned]   = useState(false);
-  const [loading,  setLoading]  = useState(false);
-  const [busySign, setBusySign] = useState(false);
-  const [search,   setSearch]   = useState("");
-  const [cat,      setCat]      = useState("sets");
-  const [loadedSet,setLoadedSet]= useState(null);
+// ── Weight-based dosing ───────────────────────────────────────────────────────
+// ISMP: weight-based dosing errors are among the most common preventable
+// medication errors. Calculate at the point of ordering, not after.
+const WEIGHT_DRUGS = {
+  "fentanyl":             { dose:1,    unit:"mcg/kg", max:100,   label:"Fentanyl"              },
+  "ketamine (sub-diss.)":{  dose:0.3,  unit:"mg/kg",  max:35,    label:"Ketamine (sub-dissoc.)" },
+  "ketamine":             { dose:1.5,  unit:"mg/kg",  max:200,   label:"Ketamine (procedural)"  },
+  "vancomycin":           { dose:25,   unit:"mg/kg",  max:3000,  label:"Vancomycin"             },
+  "heparin unfractionated":{ dose:80,  unit:"units/kg",max:10000,label:"Heparin UFH"            },
+  "tpa (alteplase)":      { dose:0.9,  unit:"mg/kg",  max:90,    label:"tPA (Alteplase)"        },
+  "methylprednisolone":   { dose:1,    unit:"mg/kg",  max:125,   label:"Methylprednisolone"     },
+  "lorazepam":            { dose:0.05, unit:"mg/kg",  max:4,     label:"Lorazepam"              },
+  "magnesium sulfate":    { dose:50,   unit:"mg/kg",  max:2000,  label:"Magnesium sulfate"      },
+  "succinylcholine":      { dose:1.5,  unit:"mg/kg",  max:200,   label:"Succinylcholine"        },
+  "rocuronium":           { dose:1.2,  unit:"mg/kg",  max:200,   label:"Rocuronium"             },
+  "etomidate":            { dose:0.3,  unit:"mg/kg",  max:30,    label:"Etomidate"              },
+  "propofol":             { dose:1.5,  unit:"mg/kg",  max:200,   label:"Propofol"               },
+};
 
+// ── Renal dose adjustment ─────────────────────────────────────────────────────
+// ASHP/KDIGO guidelines. eGFR thresholds below which warnings trigger.
+const RENAL_DRUGS = {
+  "ketorolac":      { gfr:30,  sev:"high",   warn:"Avoid if eGFR <30 — significant risk of AKI"                          },
+  "ibuprofen":      { gfr:30,  sev:"high",   warn:"Avoid NSAIDs if eGFR <30 — AKI, fluid retention, hyperkalemia"         },
+  "nitrofurantoin": { gfr:45,  sev:"high",   warn:"Avoid if eGFR <45 — inadequate urinary concentration, peripheral neuropathy"},
+  "pip-tazo":       { gfr:40,  sev:"mod",    warn:"Reduce to 2.25g IV q8h if eGFR 20–40; 2.25g q12h if eGFR <20"         },
+  "vancomycin":     { gfr:60,  sev:"mod",    warn:"Extended interval dosing required — pharmacy to dose by AUC/MIC levels" },
+  "metronidazole":  { gfr:10,  sev:"low",    warn:"Caution in severe renal failure — hydroxy metabolite accumulates"       },
+  "ciprofloxacin":  { gfr:30,  sev:"mod",    warn:"Reduce to 250–500mg q24h if eGFR <30"                                  },
+  "cephalexin":     { gfr:30,  sev:"low",    warn:"Reduce frequency if eGFR <30 (q12h vs q6h)"                            },
+  "enoxaparin":     { gfr:30,  sev:"high",   warn:"Reduce to once-daily dosing if eGFR <30; avoid if eGFR <15"            },
+  "morphine sulfate":{ gfr:30, sev:"high",   warn:"M6G metabolite accumulates in CKD — use hydromorphone instead"         },
+  "hydromorphone":  { gfr:30,  sev:"mod",    warn:"Caution — active metabolite accumulates in CKD; reduce dose/frequency"  },
+  "gabapentin":     { gfr:60,  sev:"mod",    warn:"Dose reduction required at all eGFR levels below 60"                   },
+  "metformin":      { gfr:30,  sev:"high",   warn:"Contraindicated if eGFR <30 — lactic acidosis risk"                    },
+  "spironolactone": { gfr:30,  sev:"high",   warn:"Avoid if eGFR <30 — hyperkalemia risk"                                 },
+};
+const RENAL_SEV_COLOR = { high:"var(--npi-coral)", mod:"var(--npi-orange)", low:"var(--npi-gold)" };
+
+function calcWeightDose(name, weightKg) {
+  if (!weightKg || isNaN(weightKg)) return null;
+  const key = Object.keys(WEIGHT_DRUGS).find(k => name.toLowerCase().includes(k));
+  if (!key) return null;
+  const cfg = WEIGHT_DRUGS[key];
+  const calc = Math.min(cfg.dose * weightKg, cfg.max).toFixed(0);
+  return `${cfg.label} ${weightKg}kg → ${calc} ${cfg.unit.split("/")[0]} (${cfg.dose} ${cfg.unit}, max ${cfg.max})`;
+}
+
+// Cockcroft-Gault simplified (uses standard 70kg body weight denominator —
+// provider can enter actual weight in creatinine calculator for precision)
+function eGFRcalc(age, sex, cr) {
+  const crNum = parseFloat(cr);
+  if (!age || !crNum || isNaN(crNum) || crNum <= 0) return null;
+  const raw = ((140 - Number(age)) * 70) / (72 * crNum);
+  const adj = (String(sex).toLowerCase().includes("f")) ? raw * 0.85 : raw;
+  return Math.round(Math.max(1, adj));
+}
+
+function ckdStage(gfr) {
+  if (!gfr) return null;
+  if (gfr >= 90) return { label:"G1 (Normal)", color:"var(--npi-teal)"   };
+  if (gfr >= 60) return { label:"G2 (Mild)",   color:"var(--npi-teal)"   };
+  if (gfr >= 45) return { label:"G3a",          color:"var(--npi-gold)"   };
+  if (gfr >= 30) return { label:"G3b",          color:"var(--npi-orange)" };
+  if (gfr >= 15) return { label:"G4 (Severe)",  color:"var(--npi-coral)"  };
+  return                 { label:"G5/ESRD",      color:"var(--npi-coral)"  };
+}
+
+function getRenalWarn(name, gfr) {
+  if (!gfr || gfr >= 90) return null;
+  const key = Object.keys(RENAL_DRUGS).find(k => name.toLowerCase().includes(k));
+  if (!key) return null;
+  const cfg = RENAL_DRUGS[key];
+  return gfr < cfg.gfr ? { warn: cfg.warn, color: RENAL_SEV_COLOR[cfg.sev] || RENAL_SEV_COLOR.mod } : null;
+}
+
+// ── Status display helpers ────────────────────────────────────────────────────
+const STATUS_CFG = {
+  unsigned:  { dot:"var(--npi-orange)", label:"Awaiting signature",    pulse:false },
+  sent:      { dot:"var(--npi-blue)",   label:"Sent — pending result", pulse:false },
+  resulted:  { dot:"var(--npi-teal)",   label:"Resulted",              pulse:false },
+  critical:  { dot:"var(--npi-coral)",  label:"CRITICAL — review now", pulse:true  },
+};
+
+// ── OrdersPanel ───────────────────────────────────────────────────────────────
+export default function OrdersPanel({ patientName, allergies, chiefComplaint, patientAge, patientSex, patientWeight }) {
+  const [bundle,        setBundle]        = useState(null);
+  const [checked,       setChecked]       = useState(new Set());
+  const [queue,         setQueue]         = useState([]);
+  const [signed,        setSigned]        = useState(false);
+  const [loading,       setLoading]       = useState(false);
+  const [busySign,      setBusySign]      = useState(false);
+  const [search,        setSearch]        = useState("");
+  const [cat,           setCat]           = useState("sets");
+  const [loadedSet,     setLoadedSet]     = useState(null);
+  const searchRef   = useRef(null);
+  const [editingId,     setEditingId]     = useState(null);
+  const [editDraft,     setEditDraft]     = useState({});
+  const [ackdWarn,      setAckdWarn]      = useState(new Set());
+  const [customName,    setCustomName]    = useState("");
+  const [customTier,    setCustomTier]    = useState("URGENT");
+  // Remaining recommendations state
+  const [creatinine,    setCreatinine]    = useState("");
+  const [orderStatuses, setOrderStatuses] = useState({});   // { [orderId]: 'sent'|'resulted'|'critical' }
+  const [recentlySigned,setRecentlySigned]= useState([]);   // repeat-order prevention [{name, id, signedAt}]
+
+  // Derived clinical values
+  const workingWeight = parseFloat(patientWeight) || null;
+  const eGFR          = useMemo(() => eGFRcalc(patientAge, patientSex, creatinine), [patientAge, patientSex, creatinine]);
+  const ckd           = useMemo(() => ckdStage(eGFR), [eGFR]);
+
+  // ── Effects ───────────────────────────────────────────────────────────────
   useEffect(() => { if (chiefComplaint) generateBundle(); }, []); // eslint-disable-line
 
+  useEffect(() => {
+    const h = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCat("all");
+        setTimeout(() => searchRef.current?.focus(), 40);
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
+
+  // ── Callbacks ─────────────────────────────────────────────────────────────
   const generateBundle = useCallback(async () => {
     setLoading(true);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
         prompt:`You are an ED clinical decision support AI.
-Patient: ${patientName||"Unknown"}, age ${patientAge||"?"}, sex ${patientSex||"?"}.
+Patient: ${patientName||"Unknown"}, age ${patientAge||"?"}, sex ${patientSex||"?"}.${workingWeight ? ` Weight: ${workingWeight}kg.` : ""}${eGFR ? ` eGFR: ~${eGFR} mL/min.` : ""}
 Chief complaint: "${chiefComplaint||"not specified"}". Allergies: ${allergies?.length?allergies.join(", "):"NKDA"}.
 Generate an evidence-based ED order bundle. Return ONLY valid JSON:
 {"diagnosis":"Brief working dx","confidence":85,"suppressed":["reason for omitted items"],
 "orders":[{"id":"o1","name":"Order name","detail":"Dose/detail","tier":"STAT","category":"lab"}]}
 tier: STAT|URGENT|ROUTINE. category: lab|medication|iv|imaging|procedure|consult|monitoring.
-Include 8-12 orders across relevant categories.`,
+Include 8-12 orders across relevant categories.${workingWeight ? " Include weight-based doses where applicable." : ""}${eGFR && eGFR < 60 ? ` Patient has reduced renal function (eGFR ~${eGFR}) — adjust medication doses accordingly.` : ""}`,
         response_json_schema:{type:"object",properties:{
           diagnosis:{type:"string"},confidence:{type:"number"},
           suppressed:{type:"array",items:{type:"string"}},
@@ -285,79 +441,180 @@ Include 8-12 orders across relevant categories.`,
       });
       const parsed = typeof result==="object" ? result : JSON.parse(String(result).replace(/```json|```/g,"").trim());
       setBundle(parsed);
-      // Default: ALL orders pre-checked — "confirm and remove" pattern (Kawamoto 2005)
       setChecked(new Set((parsed.orders||[]).map(o=>o.id)));
     } catch { toast.error("Could not generate order bundle."); }
     finally { setLoading(false); }
-  }, [chiefComplaint, patientAge, patientSex, allergies, patientName]);
+  }, [chiefComplaint, patientAge, patientSex, allergies, patientName, workingWeight, eGFR]);
 
   const toggleCheck = useCallback((id) =>
     setChecked(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; }), []);
 
   const enqueue = useCallback((orders) => {
-    const toAdd = orders.filter(o=>!queue.find(q=>q.id===o.id));
-    if (!toAdd.length) { toast.info("All orders already in queue."); return; }
-    setQueue(prev=>[...prev,...toAdd]);
+    const now = Date.now();
+    const toAdd = orders
+      .filter(o => !queue.find(q => q.id === o.id))
+      .map(o => ({ ...o, t: o.t || now }));
+    if (!toAdd.length) { toast.info("All orders already in queue."); return 0; }
+    // Repeat-order prevention (Ash 2007: order duplication is a top CPOE error)
+    const TWO_HRS = 7200000;
+    toAdd.forEach(o => {
+      const prev = recentlySigned.find(r =>
+        r.name.toLowerCase() === o.name.toLowerCase() && (now - r.signedAt) < TWO_HRS
+      );
+      if (prev) toast.warning(`${o.name} was already signed ${elapsed(prev.signedAt)} this session`, { duration:5000 });
+    });
+    setQueue(p => [...p, ...toAdd]);
     setSigned(false);
     return toAdd.length;
-  }, [queue]);
+  }, [queue, recentlySigned]);
 
-  // One-click order set load — entire set goes straight to queue, no selection step
   const loadOrderSet = useCallback((set) => {
     const n = enqueue(set.orders);
     if (n > 0) {
       setLoadedSet(set.id);
-      toast.success(`${set.name} — ${n} orders added. Review queue and remove anything not indicated.`);
+      toast.success(`${set.name} — ${n} orders added. Review and remove anything not indicated.`);
     }
   }, [enqueue]);
 
   const acceptChecked = useCallback(() => {
     if (!bundle) return;
-    const n = enqueue(bundle.orders.filter(o=>checked.has(o.id)));
+    const n = enqueue(bundle.orders.filter(o => checked.has(o.id)));
     if (n > 0) toast.success(`${n} orders added to queue.`);
   }, [bundle, checked, enqueue]);
 
-  const quickAdd = useCallback((name,detail,tier,category) => {
-    const id=`qa-${name.replace(/\s/g,"-").toLowerCase()}`;
-    enqueue([{id,name,detail,tier:tier||"URGENT",category:category||"lab"}]);
-  }, [enqueue]);
+  const quickAdd = useCallback((name, detail, tier, category) => {
+    const id = `qa-${name.replace(/\s/g,"-").toLowerCase()}`;
+    const warn = getAllergyWarning(name, allergies);
+    if (warn) toast.warning(`${name} — ${warn}`, { duration:6000 });
+    enqueue([{ id, name, detail, tier:tier||"URGENT", category:category||"lab", allergyWarn:!!warn }]);
+  }, [enqueue, allergies]);
 
   const signQueue = useCallback(() => {
     setBusySign(true);
-    setTimeout(()=>{
+    setTimeout(() => {
       setSigned(true); setBusySign(false);
-      toast.success(`${queue.length} order${queue.length!==1?"s":""} signed.`);
+      // Initialize all orders with 'sent' status
+      const statuses = {};
+      queue.forEach(o => { statuses[o.id] = "sent"; });
+      setOrderStatuses(statuses);
+      // Track for repeat-order prevention
+      setRecentlySigned(prev => [
+        ...prev,
+        ...queue.map(o => ({ name:o.name, id:o.id, signedAt:Date.now() }))
+      ]);
+      toast.success(`${queue.length} order${queue.length!==1?"s":""} signed and transmitted.`);
     }, 500);
-  }, [queue.length]);
+  }, [queue]);
 
-  const removeFromQueue = useCallback((id) => {
-    setQueue(p=>p.filter(x=>x.id!==id));
-    setSigned(false);
-  }, []);
+  const removeFromQueue   = useCallback((id) => { setQueue(p=>p.filter(x=>x.id!==id)); setSigned(false); }, []);
+  const startEdit         = useCallback((ord) => { setEditingId(ord.id); setEditDraft({ detail:ord.detail||"", tier:ord.tier, category:ord.category }); }, []);
+  const saveEdit          = useCallback((id)  => { setQueue(p=>p.map(o=>o.id===id?{...o,...editDraft}:o)); setEditingId(null); setSigned(false); }, [editDraft]);
+  const acknowledgeWarning= useCallback((id)  => setAckdWarn(p=>new Set([...p,id])), []);
+  const setOrderStatus    = useCallback((id, status) => setOrderStatuses(p=>({...p,[id]:status})), []);
+  const addCustomOrder    = useCallback(() => {
+    if (!customName.trim()) return;
+    quickAdd(customName.trim(), "Custom order — specify details", customTier, "procedure");
+    setCustomName("");
+  }, [customName, customTier, quickAdd]);
 
-  const statN=queue.filter(o=>o.tier==="STAT").length;
-  const urgentN=queue.filter(o=>o.tier==="URGENT").length;
-  const routineN=queue.filter(o=>o.tier==="ROUTINE").length;
+  // Derived
+  const sortedQueue = useMemo(() => {
+    const order = { STAT:0, URGENT:1, ROUTINE:2 };
+    return [...queue].sort((a,b) => (order[a.tier]??3) - (order[b.tier]??3));
+  }, [queue]);
+  const queuedIds = useMemo(() => new Set(queue.map(o=>o.id)), [queue]);
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q || cat !== "all") return [];
+    return ALL_SEARCHABLE
+      .filter(o => o.name.toLowerCase().includes(q) || o.detail.toLowerCase().includes(q))
+      .slice(0, 10);
+  }, [search, cat]);
+  const statN    = queue.filter(o=>o.tier==="STAT").length;
+  const urgentN  = queue.filter(o=>o.tier==="URGENT").length;
+  const routineN = queue.filter(o=>o.tier==="ROUTINE").length;
 
-  // ── Shared sub-components ─────────────────────────────────────────────────
-  function SecLabel({children}) {
+  // ── Sub-components (closures — access weight/eGFR/queuedIds) ─────────────
+  function SecLabel({ children }) {
     return <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"var(--npi-txt4)",margin:"12px 0 6px"}}>{children}</div>;
   }
-  function OrderRow({item,catIcon,onClick}) {
+
+  function OrderRow({ item, catIcon, onClick }) {
+    const inQueue    = queuedIds.has(`qa-${item.name.replace(/\s/g,"-").toLowerCase()}`);
+    const allergyW   = getAllergyWarning(item.name, allergies);
+    const weightDose = workingWeight ? calcWeightDose(item.name, workingWeight) : null;
+    const renalW     = eGFR ? getRenalWarn(item.name, eGFR) : null;
     return (
-      <div className="ord-row" onClick={onClick}
-        style={{cursor:"pointer",padding:"8px 10px",borderRadius:7,display:"flex",alignItems:"flex-start",gap:8,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.07)",transition:"background .12s",marginBottom:4}}>
-        <span style={{fontSize:12,flexShrink:0,marginTop:1}}>{catIcon}</span>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:12,fontWeight:600,color:"var(--npi-txt)"}}>{item.name}</div>
-          <div style={{fontSize:10,color:"var(--npi-txt4)",marginTop:1,lineHeight:1.4}}>{item.detail}</div>
+      <div className="ord-row" onClick={!inQueue ? onClick : undefined}
+        style={{cursor:inQueue?"default":"pointer",padding:"8px 10px",borderRadius:7,display:"flex",flexDirection:"column",gap:3,background:inQueue?"rgba(0,229,192,.05)":allergyW?"rgba(255,107,107,.05)":renalW?"rgba(255,107,107,.04)":"rgba(255,255,255,.03)",border:`1px solid ${inQueue?"rgba(0,229,192,.2)":allergyW||renalW?"rgba(255,107,107,.25)":"rgba(255,255,255,.07)"}`,transition:"all .12s",marginBottom:4,opacity:inQueue?.7:1}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <span style={{fontSize:12,flexShrink:0}}>{catIcon}</span>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:inQueue?"var(--npi-teal)":allergyW?"var(--npi-coral)":"var(--npi-txt)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
+            <div style={{fontSize:10,color:"var(--npi-txt4)",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{allergyW||item.detail}</div>
+          </div>
+          {inQueue ? <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--npi-teal)",flexShrink:0}}>✓ queued</span> : <TierBadge tier={item.tier}/>}
         </div>
-        <TierBadge tier={item.tier}/>
+        {weightDose && !inQueue && (
+          <div style={{display:"flex",alignItems:"flex-start",gap:5,padding:"4px 7px",borderRadius:5,background:"rgba(59,158,255,.08)",border:"1px solid rgba(59,158,255,.2)",marginLeft:19}}>
+            <span style={{fontSize:9,color:"var(--npi-blue)"}}>⚖</span>
+            <span style={{fontSize:10,color:"var(--npi-blue)",fontFamily:"'JetBrains Mono',monospace",lineHeight:1.4}}>{weightDose}</span>
+          </div>
+        )}
+        {renalW && !inQueue && (
+          <div style={{display:"flex",alignItems:"flex-start",gap:5,padding:"4px 7px",borderRadius:5,background:`${renalW.color}0d`,border:`1px solid ${renalW.color}30`,marginLeft:19}}>
+            <span style={{fontSize:9,color:renalW.color}}>🫘</span>
+            <span style={{fontSize:10,color:renalW.color,lineHeight:1.4}}>{renalW.warn}</span>
+          </div>
+        )}
       </div>
     );
   }
 
-  // ── Category content ──────────────────────────────────────────────────────
+  // ── Clinical context bar ──────────────────────────────────────────────────
+  function renderContextBar() {
+    const hasData = workingWeight || eGFR || allergies?.length;
+    if (!hasData && !creatinine) return null;
+    return (
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,background:"rgba(8,22,40,.7)",border:"1px solid rgba(26,53,85,.5)",flexWrap:"wrap",flexShrink:0}}>
+        {workingWeight && (
+          <div style={{display:"flex",alignItems:"center",gap:4}}>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--npi-txt4)",letterSpacing:1,textTransform:"uppercase"}}>Wt</span>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:"var(--npi-blue)"}}>{workingWeight} kg</span>
+          </div>
+        )}
+        {workingWeight && <div style={{width:1,height:12,background:"rgba(42,77,114,.5)"}}/>}
+        <div style={{display:"flex",alignItems:"center",gap:5}}>
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--npi-txt4)",letterSpacing:1,textTransform:"uppercase"}}>Cr</span>
+          <input value={creatinine} onChange={e=>setCreatinine(e.target.value)} placeholder="—" type="number" step="0.1" min="0" max="20"
+            style={{width:40,background:"transparent",border:"none",borderBottom:"1px solid rgba(42,77,114,.5)",outline:"none",color:"var(--npi-txt)",fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,textAlign:"center",padding:"1px 2px"}}/>
+          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,color:"var(--npi-txt4)"}}>mg/dL</span>
+        </div>
+        {eGFR && (
+          <>
+            <div style={{width:1,height:12,background:"rgba(42,77,114,.5)"}}/>
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--npi-txt4)",letterSpacing:1,textTransform:"uppercase"}}>eGFR</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:ckd?.color}}>{eGFR}</span>
+              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,color:"var(--npi-txt4)"}}>mL/min</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:ckd?.color,background:`${ckd?.color}18`,border:`1px solid ${ckd?.color}30`,borderRadius:4,padding:"1px 5px"}}>{ckd?.label}</span>
+            </div>
+          </>
+        )}
+        {allergies?.length > 0 && (
+          <>
+            <div style={{flex:1}}/>
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{fontSize:9}}>⚠️</span>
+              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,fontWeight:600,color:"var(--npi-coral)"}}>{allergies.join(", ")}</span>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // ── renderCategoryContent ─────────────────────────────────────────────────
   function renderCategoryContent() {
     if (cat==="sets") {
       return (
@@ -367,11 +624,10 @@ Include 8-12 orders across relevant categories.`,
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {ORDER_SETS.map(set=>{
-              const loaded=loadedSet===set.id;
               const alreadyIn=set.orders.every(o=>queue.find(q=>q.id===o.id));
               return (
                 <div key={set.id}
-                  style={{borderRadius:9,border:`1px solid ${set.bd}`,background:set.color,padding:"10px 12px",cursor:alreadyIn?"default":"pointer",transition:"opacity .13s",opacity:alreadyIn?.6:1}}
+                  style={{borderRadius:9,border:`1px solid ${set.bd}`,background:set.color,padding:"10px 12px",cursor:alreadyIn?"default":"pointer",opacity:alreadyIn?.6:1}}
                   onClick={()=>!alreadyIn&&loadOrderSet(set)}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <span style={{fontSize:16}}>{set.icon}</span>
@@ -381,9 +637,8 @@ Include 8-12 orders across relevant categories.`,
                         {set.orders.length} orders · {set.orders.filter(o=>o.tier==="STAT").length} STAT · {set.orders.filter(o=>o.tier==="URGENT").length} URGENT
                       </div>
                     </div>
-                    {alreadyIn
-                      ? <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--npi-teal)"}}>✓ loaded</span>
-                      : <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--npi-txt3)"}}>+ Load all →</span>}
+                    {alreadyIn ? <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--npi-teal)"}}>✓ loaded</span>
+                               : <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--npi-txt3)"}}>+ Load all →</span>}
                   </div>
                 </div>
               );
@@ -392,51 +647,97 @@ Include 8-12 orders across relevant categories.`,
         </div>
       );
     }
+
+    const ALL_CHIPS=[
+      {n:"CBC w/ diff",c:"lab"},{n:"BMP",c:"lab"},{n:"Troponin",c:"lab"},{n:"Lactate",c:"lab"},
+      {n:"Blood cultures",c:"lab"},{n:"UA",c:"lab"},{n:"CXR",c:"imaging"},{n:"CT head",c:"imaging"},
+      {n:"US FAST",c:"imaging"},{n:"Ondansetron 4mg IV",c:"medication"},{n:"Ketorolac 30mg IV",c:"medication"},
+      {n:"NS 1L bolus",c:"iv"},{n:"LR 1L bolus",c:"iv"},{n:"Norepinephrine",c:"iv"},
+    ];
+
     if (cat==="all") {
-      const ALL=[
-        {n:"CBC w/ diff",c:"lab"},{n:"BMP",c:"lab"},{n:"Troponin",c:"lab"},{n:"Lactate",c:"lab"},
-        {n:"Blood cultures",c:"lab"},{n:"UA",c:"lab"},{n:"CXR",c:"imaging"},{n:"CT head",c:"imaging"},
-        {n:"US FAST",c:"imaging"},{n:"Ondansetron 4mg IV",c:"medication"},{n:"Ketorolac 30mg IV",c:"medication"},
-        {n:"NS 1L bolus",c:"iv"},{n:"LR 1L bolus",c:"iv"},{n:"Norepinephrine",c:"iv"},
-      ];
-      const chips=search?ALL.filter(c=>c.n.toLowerCase().includes(search.toLowerCase())):ALL;
+      const chips=search?ALL_CHIPS.filter(c=>c.n.toLowerCase().includes(search.toLowerCase())):ALL_CHIPS;
       return (
         <>
           <div style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:9,padding:"8px 11px",marginBottom:8}}>
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="rgba(255,255,255,.3)" strokeWidth="1.3"/><line x1="8.8" y1="8.8" x2="12" y2="12" stroke="rgba(255,255,255,.3)" strokeWidth="1.3" strokeLinecap="round"/></svg>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search all orders…"
+            <input ref={searchRef} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search all orders… (⌘K)"
+              onKeyDown={e=>{
+                if (e.key==="Escape"){ setSearch(""); searchRef.current?.blur(); }
+                if (e.key==="Enter" && search.trim()){
+                  const match=ALL_CHIPS.find(c=>c.n.toLowerCase().includes(search.toLowerCase()));
+                  quickAdd(match?match.n:search, match?"Quick add — verify dose/detail":"Custom order","URGENT",match?match.c:"procedure");
+                  setSearch("");
+                }
+              }}
               style={{background:"none",border:"none",outline:"none",color:"var(--npi-txt)",fontSize:12,flex:1,fontFamily:"'DM Sans',sans-serif"}}/>
             {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",color:"var(--npi-txt4)",cursor:"pointer",fontSize:13}}>✕</button>}
           </div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-            {chips.map(c=>(
-              <button key={c.n} className="ord-chip" onClick={()=>quickAdd(c.n,"Quick add — verify dose/detail",c.c==="lab"?"URGENT":"URGENT",c.c)}>
-                {c.n}
+          {searchResults.length > 0 ? (
+            <div style={{display:"flex",flexDirection:"column",gap:3,marginTop:4}}>
+              {searchResults.map(item=>{
+                const inQ=queuedIds.has(`qa-${item.name.replace(/\s/g,"-").toLowerCase()}`);
+                const wDose=workingWeight?calcWeightDose(item.name,workingWeight):null;
+                const rWarn=eGFR?getRenalWarn(item.name,eGFR):null;
+                return (
+                  <div key={item.name} className="ord-row" onClick={!inQ?()=>quickAdd(item.name,item.detail,item.tier,item.category):undefined}
+                    style={{cursor:inQ?"default":"pointer",padding:"7px 10px",borderRadius:7,display:"flex",flexDirection:"column",gap:3,background:inQ?"rgba(0,229,192,.04)":"rgba(255,255,255,.03)",border:`1px solid ${inQ?"rgba(0,229,192,.18)":rWarn?"rgba(255,107,107,.2)":"rgba(255,255,255,.08)"}`,transition:"all .12s"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7}}>
+                      <span style={{fontSize:12,flexShrink:0}}>{item.icon}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:600,color:inQ?"var(--npi-teal)":"var(--npi-txt)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
+                        <div style={{fontSize:10,color:"var(--npi-txt4)",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.detail}</div>
+                      </div>
+                      {inQ?<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--npi-teal)"}}>✓</span>:<TierBadge tier={item.tier}/>}
+                    </div>
+                    {wDose&&!inQ&&<div style={{fontSize:9,color:"var(--npi-blue)",marginLeft:19,fontFamily:"'JetBrains Mono',monospace"}}>⚖ {wDose}</div>}
+                    {rWarn&&!inQ&&<div style={{fontSize:9,color:rWarn.color,marginLeft:19}}>🫘 {rWarn.warn}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+              {chips.map(c=>(<button key={c.n} className="ord-chip" onClick={()=>quickAdd(c.n,"Quick add — verify dose/detail","URGENT",c.c)}>{c.n}</button>))}
+              {search&&!chips.length&&(<button className="ord-chip" onClick={()=>{quickAdd(search,"Custom order","ROUTINE","procedure");setSearch("");}}>+ Add "{search}"</button>)}
+            </div>
+          )}
+          <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid rgba(255,255,255,.07)"}}>
+            <SecLabel>Custom order</SecLabel>
+            <div style={{display:"flex",gap:6}}>
+              <input value={customName} onChange={e=>setCustomName(e.target.value)} placeholder="Order name / instruction…"
+                onKeyDown={e=>{ if(e.key==="Enter") addCustomOrder(); }}
+                style={{flex:1,background:"rgba(14,37,68,.7)",border:"1px solid rgba(26,53,85,.55)",borderRadius:8,padding:"7px 10px",color:"var(--npi-txt)",fontFamily:"'DM Sans',sans-serif",fontSize:12,outline:"none"}}/>
+              <select value={customTier} onChange={e=>setCustomTier(e.target.value)}
+                style={{background:"rgba(14,37,68,.7)",border:"1px solid rgba(26,53,85,.55)",borderRadius:8,padding:"7px 8px",color:"var(--npi-txt2)",fontFamily:"'JetBrains Mono',monospace",fontSize:10,outline:"none",cursor:"pointer"}}>
+                <option value="STAT">STAT</option><option value="URGENT">URGENT</option><option value="ROUTINE">ROUTINE</option>
+              </select>
+              <button onClick={addCustomOrder} disabled={!customName.trim()}
+                style={{padding:"7px 12px",borderRadius:8,background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.28)",color:"var(--npi-teal)",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:12,cursor:customName.trim()?"pointer":"not-allowed",opacity:customName.trim()?1:.5}}>
+                Add
               </button>
-            ))}
-            {search&&!chips.length&&(
-              <button className="ord-chip" onClick={()=>{quickAdd(search,"Custom order","ROUTINE","procedure");setSearch("");}}>
-                + Add "{search}"
-              </button>
-            )}
+            </div>
           </div>
         </>
       );
     }
-    if (cat==="labs") return Object.entries(LABS).map(([g,items])=>(<div key={g}><SecLabel>{g}</SecLabel>{items.map(item=>(<OrderRow key={item.name} item={item} catIcon="🧪" onClick={()=>quickAdd(item.name,item.detail,item.tier,"lab")}/>))}</div>));
-    if (cat==="meds") return Object.entries(MEDS).map(([g,items])=>(<div key={g}><SecLabel>{g}</SecLabel>{items.map(item=>(<OrderRow key={item.name} item={item} catIcon="💊" onClick={()=>quickAdd(item.name,item.detail,item.tier,"medication")}/>))}</div>));
-    if (cat==="iv")   return Object.entries(IV_STRAT).map(([g,items])=>(<div key={g}><SecLabel>{g}</SecLabel>{items.map(item=>(<OrderRow key={item.name} item={item} catIcon="💧" onClick={()=>quickAdd(item.name,item.detail,item.tier,"iv")}/>))}</div>));
+
+    if (cat==="labs")    return Object.entries(LABS).map(([g,items])=>(<div key={g}><SecLabel>{g}</SecLabel>{items.map(item=>(<OrderRow key={item.name} item={item} catIcon="🧪" onClick={()=>quickAdd(item.name,item.detail,item.tier,"lab")}/>))}</div>));
+    if (cat==="meds")    return Object.entries(MEDS).map(([g,items])=>(<div key={g}><SecLabel>{g}</SecLabel>{items.map(item=>(<OrderRow key={item.name} item={item} catIcon="💊" onClick={()=>quickAdd(item.name,item.detail,item.tier,"medication")}/>))}</div>));
+    if (cat==="iv")      return Object.entries(IV_STRAT).map(([g,items])=>(<div key={g}><SecLabel>{g}</SecLabel>{items.map(item=>(<OrderRow key={item.name} item={item} catIcon="💧" onClick={()=>quickAdd(item.name,item.detail,item.tier,"iv")}/>))}</div>));
     if (cat==="imaging") return (<div>{IMAGING_ORDERS.map(item=>(<OrderRow key={item.name} item={item} catIcon="🔬" onClick={()=>quickAdd(item.name,item.detail,item.tier,"imaging")}/>))}</div>);
     if (cat==="consult") return (<><SecLabel>Consult services</SecLabel><div style={{display:"flex",flexWrap:"wrap",gap:5}}>{CONSULTS.map(s=>(<button key={s} className="ord-chip" onClick={()=>quickAdd(`${s} consult`,`Consult ${s} — indication to be specified`,"URGENT","consult")}>{s}</button>))}</div></>);
     return null;
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div style={{display:"grid",gridTemplateColumns:"56% 44%",height:"100%",background:"var(--npi-bg)"}}>
 
-      {/* LEFT ── Build */}
-      <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",borderRight:"1px solid var(--npi-bd)"}}>
+      {/* LEFT */}
+      <div style={{padding:"12px 14px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",borderRight:"1px solid var(--npi-bd)"}}>
+
+        {renderContextBar()}
 
         {/* AI Bundle */}
         <div style={{background:"rgba(0,229,192,.03)",border:"1px solid rgba(0,229,192,.22)",borderRadius:10,padding:14,flexShrink:0}}>
@@ -450,25 +751,16 @@ Include 8-12 orders across relevant categories.`,
             </div>
             {bundle&&(
               <div style={{display:"flex",gap:5}}>
-                <button onClick={()=>setChecked(new Set(bundle.orders.map(o=>o.id)))}
-                  style={{padding:"3px 8px",borderRadius:5,background:"transparent",border:"1px solid rgba(255,255,255,.15)",color:"var(--npi-txt4)",fontFamily:"'DM Sans',sans-serif",fontSize:10,cursor:"pointer"}}>
-                  All
-                </button>
-                <button onClick={()=>setChecked(new Set())}
-                  style={{padding:"3px 8px",borderRadius:5,background:"transparent",border:"1px solid rgba(255,255,255,.15)",color:"var(--npi-txt4)",fontFamily:"'DM Sans',sans-serif",fontSize:10,cursor:"pointer"}}>
-                  None
-                </button>
-                <button onClick={acceptChecked} disabled={!checked.size} className="ord-btn-teal">
-                  Accept ({checked.size})
-                </button>
+                <button onClick={()=>setChecked(new Set(bundle.orders.map(o=>o.id)))} style={{padding:"3px 8px",borderRadius:5,background:"transparent",border:"1px solid rgba(255,255,255,.15)",color:"var(--npi-txt4)",fontFamily:"'DM Sans',sans-serif",fontSize:10,cursor:"pointer"}}>All</button>
+                <button onClick={()=>setChecked(new Set())} style={{padding:"3px 8px",borderRadius:5,background:"transparent",border:"1px solid rgba(255,255,255,.15)",color:"var(--npi-txt4)",fontFamily:"'DM Sans',sans-serif",fontSize:10,cursor:"pointer"}}>None</button>
+                <button onClick={acceptChecked} disabled={!checked.size} className="ord-btn-teal">Accept ({checked.size})</button>
               </div>
             )}
           </div>
-
           {loading&&(
             <div style={{display:"flex",alignItems:"center",gap:9,padding:"6px 0",color:"var(--npi-txt4)",fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>
               <div style={{width:7,height:7,borderRadius:"50%",background:"var(--npi-teal)",animation:"npi-ai-pulse 1.4s ease-in-out infinite"}}/>
-              Generating order bundle…
+              Generating order bundle{workingWeight?` (${workingWeight}kg`:""}{ eGFR?`, eGFR ${eGFR}`:""}{(workingWeight||eGFR)?")":""}…
             </div>
           )}
           {!loading&&!bundle&&(
@@ -476,7 +768,6 @@ Include 8-12 orders across relevant categories.`,
               {chiefComplaint?<button className="ord-btn-ghost" onClick={generateBundle}>✦ Generate bundle</button>:"Enter a chief complaint to generate an AI order bundle."}
             </div>
           )}
-
           {bundle&&["STAT","URGENT","ROUTINE"].map(tier=>{
             const orders=bundle.orders.filter(o=>o.tier===tier);
             if (!orders.length) return null;
@@ -489,8 +780,11 @@ Include 8-12 orders across relevant categories.`,
                 </div>
                 {orders.map(ord=>{
                   const on=checked.has(ord.id);
+                  const wDose=workingWeight?calcWeightDose(ord.name,workingWeight):null;
+                  const rWarn=eGFR?getRenalWarn(ord.name,eGFR):null;
                   return (
-                    <div key={ord.id} className="ord-row" onClick={()=>toggleCheck(ord.id)}>
+                    <div key={ord.id} className="ord-row" onClick={()=>toggleCheck(ord.id)}
+                      style={{borderColor:rWarn?`${rWarn.color}25`:undefined}}>
                       <div className={`ord-chk${on?" on":""}`}>
                         {on&&<span style={{color:"var(--npi-bg)",fontSize:9,fontWeight:700,lineHeight:1}}>✓</span>}
                       </div>
@@ -498,6 +792,8 @@ Include 8-12 orders across relevant categories.`,
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:12,fontWeight:500,color:"var(--npi-txt)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ord.name}</div>
                         <div style={{fontSize:10,color:"var(--npi-txt4)",marginTop:1}}>{ord.detail}</div>
+                        {wDose&&<div style={{fontSize:9,color:"var(--npi-blue)",fontFamily:"'JetBrains Mono',monospace",marginTop:1}}>⚖ {wDose}</div>}
+                        {rWarn&&<div style={{fontSize:9,color:rWarn.color,marginTop:1}}>🫘 {rWarn.warn}</div>}
                       </div>
                       <TierBadge tier={ord.tier}/>
                     </div>
@@ -506,9 +802,8 @@ Include 8-12 orders across relevant categories.`,
               </div>
             );
           })}
-
           {bundle?.suppressed?.length>0&&(
-            <div style={{background:"rgba(245,200,66,.07)",border:"1px solid rgba(245,200,66,.18)",borderRadius:7,padding:"7px 10px",fontSize:10,color:"rgba(245,200,66,.82)",display:"flex",gap:6,alignItems:"flex-start",marginTop:8}}>
+            <div style={{background:"rgba(245,200,66,.07)",border:"1px solid rgba(245,200,66,.18)",borderRadius:7,padding:"7px 10px",fontSize:10,color:"rgba(245,200,66,.82)",display:"flex",gap:6,marginTop:8}}>
               <span style={{flexShrink:0}}>⚑</span><span>{bundle.suppressed.join(" · ")}</span>
             </div>
           )}
@@ -526,17 +821,16 @@ Include 8-12 orders across relevant categories.`,
             );
           })}
         </div>
-
         <div style={{flex:1}}>{renderCategoryContent()}</div>
       </div>
 
-      {/* RIGHT ── Queue */}
+      {/* RIGHT — Queue */}
       <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto"}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:2}}>
           <div>
             <div style={{fontSize:14,fontWeight:700,color:"var(--npi-txt)",fontFamily:"'Playfair Display',serif"}}>Order queue</div>
             <div style={{fontSize:11,color:"var(--npi-txt4)",marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>
-              {queue.length===0?"No orders yet":signed?`${queue.length} orders · all signed`:`${queue.length} order${queue.length!==1?"s":""} · pending signature`}
+              {queue.length===0?"No orders yet":signed?`${queue.length} orders · transmitted`:`${queue.length} order${queue.length!==1?"s":""} · pending signature`}
             </div>
           </div>
           {queue.length>0&&!signed&&(
@@ -559,11 +853,7 @@ Include 8-12 orders across relevant categories.`,
 
         {queue.length===0&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,color:"var(--npi-txt4)",textAlign:"center",padding:32}}>
-            <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
-              <rect x="5" y="9" width="28" height="4" rx="2" fill="rgba(122,160,192,.15)"/>
-              <rect x="5" y="17" width="22" height="4" rx="2" fill="rgba(122,160,192,.15)"/>
-              <rect x="5" y="25" width="26" height="4" rx="2" fill="rgba(122,160,192,.15)"/>
-            </svg>
+            <svg width="38" height="38" viewBox="0 0 38 38" fill="none"><rect x="5" y="9" width="28" height="4" rx="2" fill="rgba(122,160,192,.15)"/><rect x="5" y="17" width="22" height="4" rx="2" fill="rgba(122,160,192,.15)"/><rect x="5" y="25" width="26" height="4" rx="2" fill="rgba(122,160,192,.15)"/></svg>
             <div style={{fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>No orders in queue</div>
             <div style={{fontSize:10,fontFamily:"'DM Sans',sans-serif",maxWidth:200}}>Load an order set or check items in the AI bundle</div>
           </div>
@@ -571,25 +861,89 @@ Include 8-12 orders across relevant categories.`,
 
         {queue.length>0&&(
           <div style={{display:"flex",flexDirection:"column",gap:5}}>
-            {queue.map(ord=>(
-              <div key={ord.id} style={{padding:"10px 12px",background:signed?"rgba(0,229,192,.04)":"rgba(255,255,255,.03)",border:`1px solid ${signed?"rgba(0,229,192,.15)":"rgba(255,255,255,.07)"}`,borderLeft:`3px solid ${TL[ord.tier]||TL.ROUTINE}`,borderRadius:"0 9px 9px 0"}}>
-                <div style={{display:"flex",alignItems:"center",gap:7}}>
-                  <span style={{fontSize:12,flexShrink:0}}>{CAT_ICON[ord.category]||"📋"}</span>
-                  <span style={{fontSize:12,fontWeight:600,color:"var(--npi-txt)",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ord.name}</span>
-                  <TierBadge tier={ord.tier}/>
-                  {!signed&&<button onClick={()=>removeFromQueue(ord.id)} style={{background:"none",border:"none",color:"var(--npi-txt4)",cursor:"pointer",fontSize:12,padding:2,lineHeight:1,flexShrink:0}}>✕</button>}
+            {sortedQueue.map(ord=>{
+              const status   = signed ? (orderStatuses[ord.id] || "sent") : "unsigned";
+              const scfg     = STATUS_CFG[status] || STATUS_CFG.unsigned;
+              const isEditing= editingId === ord.id;
+              return (
+                <div key={ord.id} style={{background:"rgba(255,255,255,.03)",border:`1px solid ${ord.allergyWarn&&!ackdWarn.has(ord.id)?"rgba(255,107,107,.3)":status==="critical"?"rgba(255,107,107,.4)":status==="resulted"?"rgba(0,229,192,.18)":"rgba(255,255,255,.07)"}`,borderLeft:`3px solid ${TL[ord.tier]||TL.ROUTINE}`,borderRadius:"0 9px 9px 0",overflow:"hidden"}}>
+                  {/* Header */}
+                  <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 12px"}}>
+                    <span style={{fontSize:12,flexShrink:0}}>{CAT_ICON[ord.category]||"📋"}</span>
+                    <span style={{fontSize:12,fontWeight:600,color:status==="resulted"?"var(--npi-teal)":status==="critical"?"var(--npi-coral)":"var(--npi-txt)",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ord.name}</span>
+                    <TierBadge tier={ord.tier}/>
+                    {!signed&&!isEditing&&(
+                      <>
+                        <button onClick={()=>startEdit(ord)} style={{background:"none",border:"none",color:"var(--npi-txt4)",cursor:"pointer",fontSize:10,padding:"1px 4px",fontFamily:"'DM Sans',sans-serif"}}>Edit</button>
+                        <button onClick={()=>removeFromQueue(ord.id)} style={{background:"none",border:"none",color:"var(--npi-txt4)",cursor:"pointer",fontSize:12,padding:2,lineHeight:1,flexShrink:0}}>✕</button>
+                      </>
+                    )}
+                  </div>
+                  {/* Inline edit form */}
+                  {isEditing&&!signed&&(
+                    <div style={{padding:"0 12px 10px",display:"flex",flexDirection:"column",gap:6}}>
+                      <textarea value={editDraft.detail} onChange={e=>setEditDraft(d=>({...d,detail:e.target.value}))} rows={2}
+                        style={{width:"100%",background:"rgba(14,37,68,.8)",border:"1px solid rgba(59,158,255,.4)",borderRadius:7,padding:"6px 9px",color:"var(--npi-txt)",fontFamily:"'DM Sans',sans-serif",fontSize:11.5,outline:"none",resize:"none",boxSizing:"border-box"}}/>
+                      <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                        <select value={editDraft.tier} onChange={e=>setEditDraft(d=>({...d,tier:e.target.value}))}
+                          style={{background:"rgba(14,37,68,.8)",border:"1px solid rgba(26,53,85,.5)",borderRadius:6,padding:"4px 7px",color:"var(--npi-txt2)",fontFamily:"'JetBrains Mono',monospace",fontSize:10,outline:"none",cursor:"pointer"}}>
+                          <option value="STAT">STAT</option><option value="URGENT">URGENT</option><option value="ROUTINE">ROUTINE</option>
+                        </select>
+                        <div style={{flex:1}}/>
+                        <button onClick={()=>setEditingId(null)} style={{padding:"4px 10px",borderRadius:6,background:"transparent",border:"1px solid rgba(255,255,255,.12)",color:"var(--npi-txt4)",fontFamily:"'DM Sans',sans-serif",fontSize:11,cursor:"pointer"}}>Cancel</button>
+                        <button onClick={()=>saveEdit(ord.id)} style={{padding:"4px 10px",borderRadius:6,background:"rgba(0,229,192,.12)",border:"1px solid rgba(0,229,192,.3)",color:"var(--npi-teal)",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,cursor:"pointer"}}>Save</button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Detail + status (when not editing) */}
+                  {!isEditing&&(
+                    <div style={{padding:"0 12px 9px"}}>
+                      {/* Allergy override */}
+                      {ord.allergyWarn&&!ackdWarn.has(ord.id)&&(
+                        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.2)"}}>
+                          <span style={{fontSize:10,color:"var(--npi-coral)",fontWeight:600,flex:1}}>⚠ Allergy flag — verify before signing</span>
+                          <button onClick={()=>acknowledgeWarning(ord.id)} style={{padding:"2px 8px",borderRadius:5,background:"rgba(255,107,107,.15)",border:"1px solid rgba(255,107,107,.35)",color:"var(--npi-coral)",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>Override →</button>
+                        </div>
+                      )}
+                      {ord.allergyWarn&&ackdWarn.has(ord.id)&&(
+                        <div style={{fontSize:10,color:"var(--npi-txt4)",marginBottom:4}}>⚠ Allergy override acknowledged</div>
+                      )}
+                      {/* Detail string */}
+                      {ord.detail&&(
+                        <div style={{fontSize:10,color:"var(--npi-txt4)",lineHeight:1.45,marginBottom:5}}>{ord.detail}</div>
+                      )}
+                      {/* Status row */}
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <div style={{width:6,height:6,borderRadius:"50%",background:scfg.dot,flexShrink:0,animation:scfg.pulse?"npi-ai-pulse 1.2s ease-in-out infinite":undefined}}/>
+                        <span style={{fontSize:10,color:status==="critical"?"var(--npi-coral)":status==="resulted"?"rgba(0,229,192,.8)":"rgba(255,149,64,.7)",fontFamily:"'DM Sans',sans-serif",flex:1,fontWeight:status==="critical"?700:400}}>
+                          {scfg.label}
+                        </span>
+                        {!signed&&ord.t&&<span style={{fontSize:9,color:"var(--npi-txt4)",fontFamily:"'JetBrains Mono',monospace"}}>{elapsed(ord.t)}</span>}
+                        {/* Result status actions */}
+                        {signed&&status==="sent"&&(
+                          <div style={{display:"flex",gap:4}}>
+                            <button onClick={()=>setOrderStatus(ord.id,"resulted")}
+                              style={{padding:"2px 7px",borderRadius:5,background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.3)",color:"var(--npi-teal)",fontFamily:"'DM Sans',sans-serif",fontSize:9,fontWeight:600,cursor:"pointer"}}>
+                              Resulted
+                            </button>
+                            <button onClick={()=>setOrderStatus(ord.id,"critical")}
+                              style={{padding:"2px 7px",borderRadius:5,background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"var(--npi-coral)",fontFamily:"'DM Sans',sans-serif",fontSize:9,fontWeight:600,cursor:"pointer"}}>
+                              Critical
+                            </button>
+                          </div>
+                        )}
+                        {signed&&status==="resulted"&&(
+                          <button onClick={()=>setOrderStatus(ord.id,"critical")}
+                            style={{padding:"2px 7px",borderRadius:5,background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.2)",color:"var(--npi-coral)",fontFamily:"'DM Sans',sans-serif",fontSize:9,cursor:"pointer"}}>
+                            Flag critical
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {ord.detail&&(
-                  <div style={{fontSize:10,color:"var(--npi-txt4)",marginTop:3,marginLeft:19,lineHeight:1.4}}>{ord.detail}</div>
-                )}
-                <div style={{display:"flex",alignItems:"center",gap:5,marginTop:4}}>
-                  <div style={{width:5,height:5,borderRadius:"50%",background:signed?"var(--npi-teal)":"var(--npi-orange)",flexShrink:0}}/>
-                  <span style={{fontSize:10,color:signed?"rgba(0,229,192,.7)":"rgba(255,149,64,.7)",fontFamily:"'DM Sans',sans-serif"}}>
-                    {signed?"Signed — active":"Awaiting signature"}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -597,6 +951,7 @@ Include 8-12 orders across relevant categories.`,
           <div style={{background:"rgba(0,229,192,.06)",border:"1px solid rgba(0,229,192,.2)",borderRadius:10,padding:14,textAlign:"center",marginTop:"auto"}}>
             <div style={{fontSize:11,color:"rgba(255,255,255,.45)",marginBottom:9,fontFamily:"'DM Sans',sans-serif"}}>
               {queue.length} order{queue.length!==1?"s":""} awaiting signature
+              {recentlySigned.length>0 && <span style={{color:"var(--npi-gold)",marginLeft:6}}>· repeat check active</span>}
             </div>
             <button onClick={signQueue} disabled={busySign}
               style={{width:"100%",background:"var(--npi-teal)",color:"var(--npi-bg)",border:"none",borderRadius:8,padding:9,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",opacity:busySign?.6:1}}>
@@ -606,9 +961,18 @@ Include 8-12 orders across relevant categories.`,
         )}
 
         {signed&&(
-          <div style={{background:"rgba(0,229,192,.06)",border:"1px solid rgba(0,229,192,.2)",borderRadius:10,padding:14,textAlign:"center",marginTop:"auto"}}>
-            <div style={{fontSize:12,color:"var(--npi-teal)",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>
-              ✓ {queue.length} orders signed — all active
+          <div style={{background:"rgba(0,229,192,.06)",border:"1px solid rgba(0,229,192,.2)",borderRadius:10,padding:"12px 14px",marginTop:"auto"}}>
+            <div style={{fontSize:12,color:"var(--npi-teal)",fontWeight:700,fontFamily:"'DM Sans',sans-serif",marginBottom:6}}>
+              ✓ {queue.length} orders signed and transmitted
+            </div>
+            {Object.values(orderStatuses).some(s=>s==="critical")&&(
+              <div style={{fontSize:11,color:"var(--npi-coral)",fontWeight:600,fontFamily:"'DM Sans',sans-serif",animation:"npi-ai-pulse 1.5s ease-in-out infinite"}}>
+                ⚠ Critical result flagged — review immediately
+              </div>
+            )}
+            <div style={{fontSize:10,color:"var(--npi-txt4)",marginTop:6,fontFamily:"'DM Sans',sans-serif"}}>
+              Mark individual orders as Resulted or Critical as results return.
+              {/* Integration point: in production, statuses update via EHR webhook */}
             </div>
           </div>
         )}

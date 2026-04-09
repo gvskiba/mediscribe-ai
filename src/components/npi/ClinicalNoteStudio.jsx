@@ -344,7 +344,13 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
           {cc.text && <span style={{ fontSize: 12, color: "var(--npi-teal)", background: "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.25)", borderRadius: 20, padding: "1px 10px" }}>CC: {cc.text}</span>}
           {esiLevel && <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 6, padding: "1px 8px" }}>ESI {esiLevel}</span>}
           {registration.room && <span style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Room {registration.room}</span>}
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+            {onSave && (
+              <button onClick={onSave}
+                style={{ padding: "5px 14px", borderRadius: 7, background: "rgba(59,158,255,.12)", color: "var(--npi-blue)", border: "1px solid rgba(59,158,255,.3)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+                Open Full Studio →
+              </button>
+            )}
             {allDone && onSave && (
               <button onClick={onSave} style={{ padding: "5px 16px", borderRadius: 7, background: "var(--npi-teal)", color: "#050f1e", border: "none", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 Sign & Save ⌘⇧S
@@ -590,6 +596,10 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
             <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>
               <KK ch="⌘⇧S" /> sign
             </div>
+            <button onClick={onSave}
+              style={{ padding: "7px 16px", borderRadius: 7, background: "rgba(59,158,255,.12)", color: "var(--npi-blue)", border: "1px solid rgba(59,158,255,.3)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              Open Full Studio →
+            </button>
             <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
               {SECTIONS.slice(0,3).map(s => (
                 <span key={s.id} style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: complete[s.id] ? "var(--npi-teal)" : "var(--npi-coral)", background: complete[s.id] ? "rgba(0,229,192,.08)" : "rgba(255,107,107,.08)", border: `1px solid ${complete[s.id] ? "rgba(0,229,192,.25)" : "rgba(255,107,107,.25)"}`, borderRadius: 5, padding: "2px 8px" }}>

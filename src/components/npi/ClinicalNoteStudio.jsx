@@ -14,12 +14,12 @@ const SECTIONS = [
   { id: "meta",    label: "08  Encounter Metadata",         icon: "📊", priority: false },
 ];
 
+// AMA 2023 MDM complexity levels — matches CPT E/M table exactly (4 levels, not 5)
 const COMPLEXITY = [
-  { n: 1, label: "Straightforward",   color: "#00e5c0" },
-  { n: 2, label: "Low",               color: "#3b9eff" },
-  { n: 3, label: "Moderate",          color: "#ffd93d" },
-  { n: 4, label: "High",              color: "#ff9f43" },
-  { n: 5, label: "High — Critical",   color: "#ff6b6b" },
+  { n: 1, label: "Straightforward", sub: "Self-limited / minor",               color: "#00e5c0" },
+  { n: 2, label: "Low",             sub: "Stable chronic / uncomplicated acute",color: "#3b9eff" },
+  { n: 3, label: "Moderate",        sub: "Exacerbation / systemic symptoms",    color: "#ffd93d" },
+  { n: 4, label: "High",            sub: "Threat to life / severe exacerbation",color: "#ff6b6b" },
 ];
 
 const DISP_OPTS = [
@@ -181,10 +181,13 @@ export default function ClinicalNoteStudio({
   const [diffInput, setDiffInput]   = useState("");
   const [icdLoading, setIcdLoading] = useState(false);
 
-  // ── MDM state ───────────────────────────────────────────────────────────
-  const [complexity, setComplexity] = useState(0);
-  const [mdmText, setMdmText]       = useState("");
-  const [mdmLoading, setMdmLoading] = useState(false);
+  // ── MDM state — AMA 2023 three domains ──────────────────────────────────────
+  // AMA requires documentation of 2 of 3 domains to support the selected level.
+  const [complexity,  setComplexity]  = useState(0);
+  const [mdmProblems, setMdmProblems] = useState(""); // Domain 1: Number & complexity of problems
+  const [mdmData,     setMdmData]     = useState(""); // Domain 2: Amount/complexity of data reviewed
+  const [mdmRisk,     setMdmRisk]     = useState(""); // Domain 3: Risk of complications / management
+  const [mdmLoading,  setMdmLoading]  = useState(false);
 
   // ── Plan state ──────────────────────────────────────────────────────────
   const [dispType, setDispType]         = useState("");
@@ -230,12 +233,12 @@ export default function ClinicalNoteStudio({
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, [scrollTo, mdmText]);
+  }, [scrollTo]);
 
-  // 1–5 keys set complexity when MDM section is focused
+  // 1–4 keys set complexity when MDM section is focused
   const onMdmKeyDown = (e) => {
     const n = parseInt(e.key, 10);
-    if (n >= 1 && n <= 5 && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
+    if (n >= 1 && n <= 4 && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
       setComplexity(n);
     }
     if (e.metaKey && e.key === "Enter") { e.preventDefault(); generateMDM(); }
@@ -257,15 +260,16 @@ export default function ClinicalNoteStudio({
     setIcdLoading(false);
   };
 
-  // ── AI: MDM generation ────────────────────────────────────────────────────
+  // ── AI: MDM generation — three AMA 2023 domains ──────────────────────────────
   const generateMDM = useCallback(async () => {
     if (mdmLoading) return;
     setMdmLoading(true);
     const pmhList = Object.keys(pmhSelected||{}).filter(k => pmhSelected[k]).slice(0,5).join(", ") || "none";
     const vStr = vitals.bp ? `BP ${vitals.bp} HR ${vitals.hr||"—"} SpO2 ${vitals.spo2||"—"} T ${vitals.temp||"—"}` : "not documented";
+    const rosSnippet = [mdmProblems, mdmData, mdmRisk].filter(Boolean).join(" ").slice(0, 100);
     try {
       const r = await base44.integrations.Core.InvokeLLM({
-        prompt: `Write an emergency medicine Medical Decision Making (MDM) paragraph for the following encounter. Use 3-5 sentences. Be explicit about complexity level (straightforward/low/moderate/high). Address: number and acuity of problems, data reviewed, risk.
+        prompt: `Generate AMA 2023 MDM documentation for an ED encounter. Return ONLY valid JSON with exactly three fields.
 
 Patient: ${patientName}, ${demo.age||"?"}y ${demo.sex||""}
 CC: ${cc.text||"unspecified"}
@@ -275,21 +279,29 @@ Vitals: ${vStr}
 PMH: ${pmhList}
 Meds: ${(medications||[]).slice(0,5).join(", ")||"none"}
 Allergies: ${(allergies||[]).join(", ")||"NKDA"}
-ROS pertinent: ${rosText?.slice(0,150)||"not documented"}
-PE pertinent: ${peText?.slice(0,150)||"not documented"}
 
-Return ONLY the MDM paragraph text. No labels, no preamble.`,
+Return: {"problems":"...","data":"...","risk":"..."}
+- problems (1-2 sentences): Number and complexity of problems addressed. State whether acute vs chronic, stable vs exacerbation.
+- data (1-2 sentences): Data reviewed and ordered — labs, imaging, ECG, external records. State what was interpreted independently.
+- risk (1-2 sentences): Complexity of management and risk of complications, morbidity, or mortality. Name specific interventions and their risk level.`,
+        response_json_schema: {
+          type: "object",
+          properties: { problems:{type:"string"}, data:{type:"string"}, risk:{type:"string"} },
+        },
       });
-      setMdmText(typeof r === "string" ? r : JSON.stringify(r));
-      toast.success("MDM generated");
+      const parsed = typeof r === "object" ? r : JSON.parse(String(r).replace(/```json|```/g,"").trim());
+      if (parsed.problems) setMdmProblems(parsed.problems);
+      if (parsed.data)     setMdmData(parsed.data);
+      if (parsed.risk)     setMdmRisk(parsed.risk);
+      toast.success("MDM domains generated");
     } catch { toast.error("MDM generation failed."); }
     setMdmLoading(false);
-  }, [mdmLoading, patientName, demo, cc, primaryDx, vitals, pmhSelected, medications, allergies, rosText, peText]);
+  }, [mdmLoading, patientName, demo, cc, primaryDx, vitals, pmhSelected, medications, allergies]);
 
   // ── Completion checks ────────────────────────────────────────────────────
   const complete = {
     ddx:     !!primaryDx,
-    mdm:     !!mdmText && complexity > 0,
+    mdm:     complexity > 0 && [mdmProblems, mdmData, mdmRisk].filter(Boolean).length >= 2,
     plan:    !!dispType,
     hpi:     !!hpiText,
     ros:     !!rosText,
@@ -325,7 +337,7 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
           ))}
           <div style={{ marginTop: 12, borderTop: "1px solid var(--npi-bd)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 4 }}>Keyboard</div>
-            {[["⌘D","→ Impression"],["⌘M","→ MDM"],["⌘G","Generate MDM"],["1–5","Set complexity"]].map(([k,d]) => (
+            {[["⌘D","→ Impression"],["⌘M","→ MDM"],["⌘G","Generate MDM"],["1–4","Set complexity"]].map(([k,d]) => (
               <div key={k} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--npi-txt4)" }}>
                 <KK ch={k} />{d}
               </div>
@@ -344,13 +356,7 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
           {cc.text && <span style={{ fontSize: 12, color: "var(--npi-teal)", background: "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.25)", borderRadius: 20, padding: "1px 10px" }}>CC: {cc.text}</span>}
           {esiLevel && <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 6, padding: "1px 8px" }}>ESI {esiLevel}</span>}
           {registration.room && <span style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Room {registration.room}</span>}
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-            {onSave && (
-              <button onClick={onSave}
-                style={{ padding: "5px 14px", borderRadius: 7, background: "rgba(59,158,255,.12)", color: "var(--npi-blue)", border: "1px solid rgba(59,158,255,.3)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-                Open Full Studio →
-              </button>
-            )}
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
             {allDone && onSave && (
               <button onClick={onSave} style={{ padding: "5px 16px", borderRadius: 7, background: "var(--npi-teal)", color: "#050f1e", border: "none", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 Sign & Save ⌘⇧S
@@ -404,31 +410,77 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
         {/* ── 02 MDM ─────────────────────────────────────────────────────── */}
         <div ref={refs.mdm} tabIndex={-1} onKeyDown={onMdmKeyDown} style={{ background: "rgba(13,31,60,.5)", border: `1px solid ${expanded.mdm ? "rgba(255,107,107,.25)" : "rgba(59,130,246,.12)"}`, borderRadius: 10, padding: "0 16px", marginBottom: 8, outline: "none", transition: "border-color .2s" }}>
           <SectionHeader section={SECTIONS[1]} expanded={expanded.mdm} onToggle={() => toggle("mdm")} complete={complete.mdm}>
-            {complexity > 0 && `${COMPLEXITY[complexity-1].label} — E/M Level ${complexity}`}
+            {complexity > 0 && `${COMPLEXITY[complexity-1].label} — ${[mdmProblems, mdmData, mdmRisk].filter(Boolean).length}/3 domains`}
           </SectionHeader>
           {expanded.mdm && (
-            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+
+              {/* Complexity level */}
               <div>
-                <div style={FL}>E/M complexity <span style={{ textTransform: "none", letterSpacing: 0, color: "#64748b" }}>(press 1–5)</span></div>
+                <div style={FL}>
+                  MDM complexity level
+                  <span style={{ textTransform: "none", letterSpacing: 0, color: "#64748b", marginLeft: 6 }}>
+                    (press 1–4 · AMA 2023 Table)
+                  </span>
+                </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   {COMPLEXITY.map(c => (
                     <button key={c.n} onClick={() => setComplexity(prev => prev === c.n ? 0 : c.n)}
                       style={{ flex: 1, padding: "8px 6px", borderRadius: 7, border: `1px solid ${complexity === c.n ? c.color : "rgba(255,255,255,.1)"}`, background: complexity === c.n ? c.color + "22" : "rgba(255,255,255,.04)", color: complexity === c.n ? c.color : "var(--npi-txt4)", fontFamily: "'DM Sans',sans-serif", fontSize: 11, cursor: "pointer", transition: "all .12s", textAlign: "center" }}>
-                      <div style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, fontSize: 14 }}>{c.n}</div>
-                      <div style={{ fontSize: 9, marginTop: 1, lineHeight: 1.2 }}>{c.label}</div>
+                      <div style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, fontSize: 13 }}>{c.label}</div>
+                      <div style={{ fontSize: 9, marginTop: 2, lineHeight: 1.25, opacity: .75 }}>{c.sub}</div>
                     </button>
                   ))}
                 </div>
+                {complexity > 0 && (
+                  <div style={{ marginTop: 5, fontSize: 10, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>
+                    To bill this level, document 2 of the 3 domains below.
+                    {" "}<span style={{ color: [mdmProblems, mdmData, mdmRisk].filter(Boolean).length >= 2 ? "var(--npi-teal)" : "var(--npi-orange)" }}>
+                      {[mdmProblems, mdmData, mdmRisk].filter(Boolean).length}/3 documented
+                    </span>
+                  </div>
+                )}
               </div>
+
+              {/* AI generate row */}
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={generateMDM} disabled={mdmLoading}
+                  style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 6, background: mdmLoading ? "transparent" : "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.3)", color: "var(--npi-teal)", fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  {mdmLoading ? "⏳ Generating…" : <><span>✦</span> AI Generate All 3 Domains <KK ch="⌘G" /></>}
+                </button>
+              </div>
+
+              {/* Domain 1 — Problems */}
               <div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                  <div style={FL}>MDM narrative</div>
-                  <button onClick={generateMDM} disabled={mdmLoading}
-                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 6, background: mdmLoading ? "transparent" : "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.3)", color: "var(--npi-teal)", fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                    {mdmLoading ? "⏳ Generating…" : <><span>✦</span> AI Generate <KK ch="⌘G" /></>}
-                  </button>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                  <div style={FL}>Domain 1 — Problems</div>
+                  <span style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Number and complexity of problems addressed</span>
                 </div>
-                <textarea value={mdmText} onChange={e => setMdmText(e.target.value)} placeholder="Document: problems addressed, data reviewed, risk, complexity rationale…" rows={5} style={TA} />
+                <textarea value={mdmProblems} onChange={e => setMdmProblems(e.target.value)}
+                  placeholder="e.g., One acute problem with systemic symptoms — new-onset chest pain, dyspnea on exertion, hemodynamically stable. No prior cardiac history."
+                  rows={2} style={TA} />
+              </div>
+
+              {/* Domain 2 — Data */}
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                  <div style={FL}>Domain 2 — Data</div>
+                  <span style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Data reviewed, ordered, and independently interpreted</span>
+                </div>
+                <textarea value={mdmData} onChange={e => setMdmData(e.target.value)}
+                  placeholder="e.g., ECG reviewed and interpreted by this provider — NSR, no ischemic changes. Troponin and BMP ordered and reviewed. CXR interpreted — no acute cardiopulmonary process."
+                  rows={2} style={TA} />
+              </div>
+
+              {/* Domain 3 — Risk */}
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                  <div style={FL}>Domain 3 — Risk</div>
+                  <span style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Complexity of management, risk of complications or mortality</span>
+                </div>
+                <textarea value={mdmRisk} onChange={e => setMdmRisk(e.target.value)}
+                  placeholder="e.g., Moderate risk — prescription drug therapy (anticoagulation), hospital admission for further evaluation and monitoring. Risk of major adverse cardiac event without timely intervention."
+                  rows={2} style={TA} />
               </div>
             </div>
           )}
@@ -596,10 +648,6 @@ Return ONLY the MDM paragraph text. No labels, no preamble.`,
             <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>
               <KK ch="⌘⇧S" /> sign
             </div>
-            <button onClick={onSave}
-              style={{ padding: "7px 16px", borderRadius: 7, background: "rgba(59,158,255,.12)", color: "var(--npi-blue)", border: "1px solid rgba(59,158,255,.3)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              Open Full Studio →
-            </button>
             <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
               {SECTIONS.slice(0,3).map(s => (
                 <span key={s.id} style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: complete[s.id] ? "var(--npi-teal)" : "var(--npi-coral)", background: complete[s.id] ? "rgba(0,229,192,.08)" : "rgba(255,107,107,.08)", border: `1px solid ${complete[s.id] ? "rgba(0,229,192,.25)" : "rgba(255,107,107,.25)"}`, borderRadius: 5, padding: "2px 8px" }}>

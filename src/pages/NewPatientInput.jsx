@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -21,6 +21,8 @@ import ResultsViewer from "@/pages/ResultsViewer";
 import CDSAlertsSidebar from "@/components/npi/CDSAlertsSidebar";
 import ERxHub from "@/pages/ERx";
 import ClinicalNoteStudio from "@/components/npi/ClinicalNoteStudio";
+import ReassessmentTab from "@/components/npi/ReassessmentTab";
+import ClinicalTimeline from "@/components/npi/ClinicalTimeline";
 
 // ─── NAV DATA — 5-stage clinical workflow ─────────────────────────────────────
 // register → assess → note (destination) → orders → close
@@ -46,7 +48,9 @@ const NAV_DATA = {
     { section: "procedures", icon: "✂️", label: "Procedures",        abbr: "Pr", dot: "empty"   },
   ],
   close: [
-    { section: "discharge",  icon: "🚪", label: "Discharge",         abbr: "Dc", dot: "empty"   },
+    { section: "reassess",   icon: "🔄", label: "Reassessment",       abbr: "Ra", dot: "empty"   },
+    { section: "timeline",   icon: "⏱",  label: "Timeline",           abbr: "Tl", dot: "empty"   },
+    { section: "discharge",  icon: "🚪", label: "Discharge",          abbr: "Dc", dot: "empty"   },
     { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results"     },
     { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty"   },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",        abbr: "Mr", dot: "empty"   },
@@ -522,6 +526,42 @@ export default function NewPatientInput() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [rosActiveSystem, setRosActiveSystem] = useState(0);
   const [peActiveSystem,  setPeActiveSystem]  = useState(0);
+  const [reassessState,   setReassessState]   = useState({});
+  const [clinicalTimeline, setClinicalTimeline] = useState({});
+
+  // ── Provider identity ─────────────────────────────────────────────────────
+  // Resolved from Base44 auth; falls back to "Provider" if unavailable.
+  const [providerName, setProviderName] = useState("Provider");
+  const [providerRole, setProviderRole] = useState("ED");
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await base44.auth?.me?.();
+        if (me) {
+          const full = [me.first_name, me.last_name].filter(Boolean).join(" ");
+          if (full) setProviderName(full);
+          if (me.role) setProviderRole(me.role);
+        }
+      } catch (_) { /* no auth API available — keep defaults */ }
+    })();
+  }, []);
+
+  // ── Interruption-recovery tracking ───────────────────────────────────────
+  // Tracks the last assess-group section visited so the chip can surface it
+  // when the provider navigates away mid-chart.
+  const ASSESS_SECTIONS = ["hpi", "ros", "pe"];
+  const prevTabRef         = useRef(null);
+  const [resumeSection, setResumeSection] = useState(null);
+  useEffect(() => {
+    const prev = prevTabRef.current;
+    if (prev && ASSESS_SECTIONS.includes(prev) && !ASSESS_SECTIONS.includes(currentTab)) {
+      setResumeSection(prev);
+    }
+    if (ASSESS_SECTIONS.includes(currentTab)) {
+      setResumeSection(null); // clear when provider returns
+    }
+    prevTabRef.current = currentTab;
+  }, [currentTab]); // eslint-disable-line
 
   // ── AI state ─────────────────────────────────────────────────────────────
   const [aiOpen, setAiOpen]       = useState(false);
@@ -551,13 +591,15 @@ export default function NewPatientInput() {
   useEffect(() => {
     setNavDots(prev => ({
       ...prev,
-      demo:  (demo.firstName || demo.lastName || demo.age) ? "done"    : "empty",
-      cc:    cc.text                                        ? "done"    : "empty",
-      vit:   (vitals.bp || vitals.hr)                       ? "done"    : "empty",
-      meds:  (medications.length || allergies.length)       ? "done"    : "empty",
-      hpi:   cc.hpi ? "done" : cc.text                      ? "partial" : "empty",
-      ros:   Object.keys(rosState).length > 3 ? "done" : Object.keys(rosState).length > 0 ? "partial" : "empty",
-      pe:    Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
+      demo:     (demo.firstName || demo.lastName || demo.age) ? "done"    : "empty",
+      cc:       cc.text                                        ? "done"    : "empty",
+      vit:      (vitals.bp || vitals.hr)                       ? "done"    : "empty",
+      meds:     (medications.length || allergies.length)       ? "done"    : "empty",
+      hpi:      cc.hpi ? "done" : cc.text                      ? "partial" : "empty",
+      ros:      Object.keys(rosState).length > 3 ? "done" : Object.keys(rosState).length > 0 ? "partial" : "empty",
+      pe:       Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
+      reassess: reassessState.condition                         ? "done"    : reassessState.note ? "partial" : "empty",
+      timeline: clinicalTimeline?.times?.departed               ? "done"    : clinicalTimeline?.times?.disposition ? "partial" : "empty",
     }));
   }, [
     demo.firstName, demo.lastName, demo.age,
@@ -565,6 +607,8 @@ export default function NewPatientInput() {
     medications.length, allergies.length,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     Object.keys(rosState).length, Object.keys(peState).length,
+    reassessState.condition, reassessState.note,
+    clinicalTimeline?.times?.departed, clinicalTimeline?.times?.disposition,
   ]);
 
   // ── Navigation ────────────────────────────────────────────────────────────
@@ -725,6 +769,8 @@ export default function NewPatientInput() {
       case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("mdm")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
       case "mdm":        return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
       case "chart":      return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
+      case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState} onAdvance={() => selectSection("timeline")} />;
+      case "timeline":   return <ClinicalTimeline arrivalMs={arrivalTimeRef.current} onStateChange={setClinicalTimeline} />;
       case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
       case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
       case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><EDOrders embedded patientName={patientName} patientAllergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} /></div>;
@@ -744,7 +790,10 @@ export default function NewPatientInput() {
       {/* TOP BAR */}
       <header className="npi-top-bar">
         <div className="npi-top-row-1">
-          <span className="npi-dr-label">Dr. Skiba <span className="npi-dr-role">ED</span></span>
+          <span className="npi-dr-label">
+            {providerName.split(" ").length > 1 ? `Dr. ${providerName.split(" ").slice(-1)[0]}` : providerName}
+            <span className="npi-dr-role">{providerRole}</span>
+          </span>
           <div className="npi-vsep" />
           <div className="npi-stat"><span className="npi-stat-val">0</span><span className="npi-stat-lbl">Active</span></div>
           <div className="npi-stat"><span className="npi-stat-val alert">14</span><span className="npi-stat-lbl">Pending</span></div>
@@ -766,6 +815,12 @@ export default function NewPatientInput() {
           </span>
           {/* Patient name — dominant safety identifier */}
           <span className="npi-pt-name">{patientName}</span>
+          {/* DOB — second patient identifier (TJC/IHI two-identifier standard) */}
+          {demo.dob && (
+            <span className="npi-pt-dob" title="Date of birth — second patient identifier">
+              DOB {demo.dob}
+            </span>
+          )}
           {/* Door-to-present timer */}
           <span className="npi-door-time" title="Time since intake started">⏱ {doorTime}</span>
           {/* Allergy — two distinct visual states */}
@@ -778,6 +833,17 @@ export default function NewPatientInput() {
                 </span>
             }
           </div>
+          {/* Interruption-recovery chip — surfaces when provider left an assess section */}
+          {resumeSection && (
+            <button
+              className="npi-resume-chip"
+              onClick={() => { selectSection(resumeSection); setResumeSection(null); }}
+              title="Return to where you were"
+            >
+              ↩ Resume {ALL_SECTIONS.find(s => s.section === resumeSection)?.label || resumeSection}
+              <span className="npi-resume-dismiss" onClick={e => { e.stopPropagation(); setResumeSection(null); }}>✕</span>
+            </button>
+          )}
           {/* Action buttons */}
           <div className="npi-top-acts">
             <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>+ Order</button>
@@ -1032,6 +1098,12 @@ const CSS = `
 .npi-chart-badge{font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(255,159,67,.08);border:1px solid rgba(255,159,67,.3);border-radius:20px;padding:1px 8px;color:var(--npi-orange);white-space:nowrap;flex-shrink:0}
 .npi-chart-badge.registered{background:rgba(59,158,255,.08);border-color:rgba(59,158,255,.3);color:var(--npi-blue)}
 .npi-pt-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--npi-txt);white-space:nowrap;flex-shrink:0;letter-spacing:-.01em}
+.npi-pt-dob{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--npi-txt4);background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:4px;padding:2px 7px;white-space:nowrap;flex-shrink:0;letter-spacing:.02em}
+.npi-resume-chip{display:flex;align-items:center;gap:6px;padding:3px 10px 3px 8px;background:rgba(186,117,23,.1);border:1px solid rgba(186,117,23,.3);border-radius:20px;font-size:11px;font-weight:500;color:#ef9f27;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;animation:npi-resume-in .2s ease}
+.npi-resume-chip:hover{background:rgba(186,117,23,.18);border-color:rgba(186,117,23,.5)}
+.npi-resume-dismiss{font-size:9px;color:rgba(239,159,39,.6);transition:color .12s;line-height:1;padding:0 2px}
+.npi-resume-dismiss:hover{color:#ef9f27}
+@keyframes npi-resume-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 .npi-door-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--npi-txt4);white-space:nowrap;flex-shrink:0;letter-spacing:.02em}
 .npi-allergy-wrap{display:flex;align-items:center;cursor:pointer;flex-shrink:0;transition:opacity .15s}
 .npi-allergy-wrap:hover{opacity:.85}

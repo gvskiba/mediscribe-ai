@@ -25,16 +25,20 @@ import { toast } from "sonner";
   background:var(--bg); font-family:'DM Sans',sans-serif; color:var(--t); }
 .cns2.emb { position:relative; inset:auto; height:100%; }
 
-.cns2-top { height:54px; flex-shrink:0; background:var(--panel); border-bottom:1px solid var(--bd);
-  display:flex; align-items:center; padding:0 16px; gap:10px; z-index:20; overflow:hidden; }
+/* ── Full standalone top bar ─────────────────────────────────── */
+.cns2-top { height:54px; flex-shrink:0; background:var(--panel);
+  border-bottom:1px solid var(--bd);
+  display:flex; align-items:center; padding:0 16px; gap:10px; z-index:20;
+  overflow-x:auto; overflow-y:hidden; }
+.cns2-top::-webkit-scrollbar { height:2px; }
 .cns2-badge { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px;
   background:rgba(0,229,192,.08); border:1px solid rgba(0,229,192,.3);
   color:var(--teal); border-radius:20px; padding:2px 10px; white-space:nowrap; flex-shrink:0; }
 .cns2-ptname { font-family:'Playfair Display',serif; font-size:16px; font-weight:700;
-  color:var(--t); white-space:nowrap; }
-.cns2-meta { font-size:11px; color:var(--t3); white-space:nowrap; }
+  color:var(--t); white-space:nowrap; flex-shrink:0; }
+.cns2-meta { font-size:11px; color:var(--t3); white-space:nowrap; flex-shrink:0; }
 .cns2-cc { font-size:11px; color:var(--orange); font-weight:600; white-space:nowrap;
-  font-family:'JetBrains Mono',monospace; }
+  font-family:'JetBrains Mono',monospace; flex-shrink:0; }
 .cns2-esi { font-size:10px; font-family:'JetBrains Mono',monospace; font-weight:700;
   padding:2px 9px; border-radius:4px; flex-shrink:0;
   background:rgba(255,107,107,.1); color:var(--coral); border:1px solid rgba(255,107,107,.3); }
@@ -44,12 +48,22 @@ import { toast } from "sonner";
 .cns2-timer.over { background:rgba(255,107,107,.1); color:var(--coral); border-color:rgba(255,107,107,.3); }
 .cns2-acts { margin-left:auto; display:flex; gap:5px; align-items:center; flex-shrink:0; }
 .cns2-prog-wrap { display:flex; align-items:center; gap:6px; flex-shrink:0; }
-.cns2-prog-dots { display:flex; gap:3px; }
-.cns2-prog-dot { width:8px; height:8px; border-radius:50%; background:var(--up);
-  border:1px solid var(--bd); transition:all .3s; }
-.cns2-prog-dot.done { background:var(--teal); border-color:var(--teal); }
-.cns2-prog-dot.draft { background:var(--orange); border-color:var(--orange); }
+.cns2-prog-bar { width:72px; height:5px; background:var(--up); border-radius:3px; overflow:hidden; flex-shrink:0; }
+.cns2-prog-bar-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--blue));
+  border-radius:3px; transition:width .4s ease; }
+.cns2-prog-count { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--t4); white-space:nowrap; }
 
+/* ── Slim embedded top bar ───────────────────────────────────── */
+.cns2-emb-top { height:44px; flex-shrink:0;
+  background:rgba(8,22,40,.95); border-bottom:1px solid var(--bd);
+  border-top:2px solid rgba(0,229,192,.2);
+  display:flex; align-items:center; padding:0 14px; gap:8px; z-index:20; }
+.cns2-emb-prog-wrap { flex:1; display:flex; align-items:center; gap:7px; min-width:0; }
+.cns2-emb-prog-bar { flex:1; height:4px; background:var(--up); border-radius:2px; overflow:hidden; }
+.cns2-emb-prog-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--blue));
+  border-radius:2px; transition:width .4s ease; }
+
+/* ── Shared button styles ────────────────────────────────────── */
 .cns2 .btn { padding:5px 12px; border-radius:7px; font-size:11px; font-weight:600; cursor:pointer;
   display:inline-flex; align-items:center; gap:5px; font-family:'DM Sans',sans-serif;
   transition:all .15s; white-space:nowrap; border:none; }
@@ -60,9 +74,12 @@ import { toast } from "sonner";
 .cns2 .btn-teal:hover { filter:brightness(1.1); }
 .cns2 .btn-gold { background:rgba(245,200,66,.1); color:var(--gold); border:1px solid rgba(245,200,66,.3) !important; }
 .cns2 .btn-gold:hover { background:rgba(245,200,66,.2); }
+.cns2 .btn-sm { padding:4px 9px; font-size:10px; }
 
+/* ── Body layout ─────────────────────────────────────────────── */
 .cns2-body { flex:1; display:flex; min-height:0; }
 
+/* ── Left sidebar ────────────────────────────────────────────── */
 .cns2-sb { width:210px; flex-shrink:0; background:var(--panel);
   border-right:1px solid var(--bd); display:flex; flex-direction:column; }
 .cns2-sb-head { padding:14px 14px 10px; flex-shrink:0; border-bottom:1px solid rgba(26,53,85,.5); }
@@ -85,16 +102,27 @@ import { toast } from "sonner";
 .cns2-sb-key { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t4);
   background:var(--up); border:1px solid var(--bd); border-radius:3px; padding:1px 4px; flex-shrink:0; }
 .cns2-sb-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; transition:all .3s; }
-.cns2-sb-dot.empty  { background:var(--t4); opacity:.35; }
-.cns2-sb-dot.draft  { background:var(--orange); box-shadow:0 0 5px rgba(255,159,67,.5); }
-.cns2-sb-dot.complete { background:var(--teal); box-shadow:0 0 5px rgba(0,229,192,.5); }
-.cns2-sb-dot.locked { background:var(--blue); box-shadow:0 0 5px rgba(59,158,255,.5); }
-.cns2-sb-legend { padding:10px 14px 14px; border-top:1px solid rgba(26,53,85,.4); flex-shrink:0; }
+.cns2-sb-dot.empty    { background:var(--t4); opacity:.35; }
+.cns2-sb-dot.draft    { background:var(--orange); box-shadow:0 0 5px rgba(255,159,67,.5); }
+.cns2-sb-dot.complete { background:var(--teal);   box-shadow:0 0 5px rgba(0,229,192,.5); }
+.cns2-sb-dot.locked   { background:var(--blue);   box-shadow:0 0 5px rgba(59,158,255,.5); }
+
+/* Collapsible shortcut legend */
+.cns2-sc-toggle { width:100%; padding:8px 14px; background:none; border:none;
+  border-top:1px solid rgba(26,53,85,.4); cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between;
+  font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--t4);
+  text-align:left; transition:color .15s; flex-shrink:0; }
+.cns2-sc-toggle:hover { color:var(--t3); }
+.cns2-sc-toggle-chev { font-size:9px; transition:transform .2s; }
+.cns2-sc-toggle-chev.open { transform:rotate(90deg); }
+.cns2-sb-legend { padding:8px 14px 12px; border-top:none; flex-shrink:0; }
 .cns2-sc-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
 .cns2-sc-k { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t2);
   background:var(--up); border:1px solid var(--bd); border-radius:3px; padding:1px 5px; flex-shrink:0; }
 .cns2-sc-d { font-size:10px; color:var(--t4); }
 
+/* ── Main note area ───────────────────────────────────────────── */
 .cns2-area { flex:1; overflow-y:auto; padding:14px 18px 40px; display:flex; flex-direction:column; gap:8px; }
 
 .cns2-sec { background:rgba(8,22,40,.82); border:1px solid rgba(26,53,85,.5);
@@ -134,6 +162,18 @@ import { toast } from "sonner";
 .cns2-chevron { font-size:11px; color:var(--t4); transition:transform .2s; flex-shrink:0; }
 .cns2-sec.collapsed .cns2-chevron { transform:rotate(-90deg); }
 
+/* ── Builder disclosure toggle ───────────────────────────────── */
+.cns2-builder-toggle {
+  display:flex; align-items:center; gap:8px; padding:9px 14px;
+  cursor:pointer; font-size:12px; font-weight:600; color:var(--t3);
+  border-bottom:1px solid rgba(26,53,85,.25); transition:color .15s;
+  user-select:none; font-family:'DM Sans',sans-serif; }
+.cns2-builder-toggle:hover { color:var(--t2); }
+.cns2-builder-icon { font-size:13px; }
+.cns2-toggle-chev { font-size:10px; color:var(--t4); transition:transform .2s; margin-left:auto; }
+.cns2-toggle-chev.open { transform:rotate(90deg); }
+
+/* ── Macro bar ───────────────────────────────────────────────── */
 .cns2-macro-bar { display:flex; gap:5px; flex-wrap:wrap; padding:7px 14px 6px;
   border-bottom:1px solid rgba(26,53,85,.25); width:100%; }
 .macro-pill { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500;
@@ -144,6 +184,7 @@ import { toast } from "sonner";
 .macro-pill.teal { background:rgba(0,229,192,.06); border-color:rgba(0,229,192,.2); color:var(--teal); }
 .macro-pill.teal:hover { background:rgba(0,229,192,.14); }
 
+/* ── Textarea ─────────────────────────────────────────────────── */
 .cns2-sec-body { padding:2px 0 0; }
 .cns2-ta { width:100%; padding:12px 14px; background:rgba(14,37,68,.4); border:none;
   border-top:1px solid rgba(26,53,85,.5);
@@ -162,6 +203,7 @@ import { toast } from "sonner";
   text-transform:uppercase; transition:opacity .15s; }
 .cns2-done-link:hover { opacity:.7; }
 
+/* ── MDM Builder ─────────────────────────────────────────────── */
 .mdm-builder { padding:12px 14px 10px; display:flex; flex-direction:column; gap:10px; }
 .mdm-row { display:flex; flex-direction:column; gap:4px; }
 .mdm-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t4);
@@ -183,7 +225,7 @@ import { toast } from "sonner";
 .mdm-data-grid { display:flex; gap:6px; flex-wrap:wrap; }
 .data-chip { font-size:10px; font-family:'DM Sans',sans-serif; padding:4px 10px; border-radius:6px;
   cursor:pointer; border:1px solid rgba(59,158,255,.2); background:rgba(59,158,255,.05);
-  color:var(--t3); transition:all .12s; user-select:none; }
+  color:var(--t3); transition:all .12px; user-select:none; }
 .data-chip.sel { background:rgba(59,158,255,.15); border-color:var(--blue); color:var(--t2); }
 .mdm-plan-list { display:flex; flex-direction:column; gap:4px; }
 .mdm-plan-row { display:flex; align-items:center; gap:7px; }
@@ -200,6 +242,7 @@ import { toast } from "sonner";
   cursor:pointer; font-family:'DM Sans',sans-serif; transition:filter .15s; }
 .mdm-build-btn:hover, .dispo-build-btn:hover { filter:brightness(1.1); }
 
+/* ── Dispo Builder ───────────────────────────────────────────── */
 .dispo-builder { padding:12px 14px 10px; display:flex; flex-direction:column; gap:10px; }
 .dispo-big-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
 .dispo-big { padding:12px 8px; border-radius:9px; cursor:pointer; text-align:center;
@@ -222,19 +265,23 @@ import { toast } from "sonner";
   background:rgba(255,159,67,.05); border:1px solid rgba(255,159,67,.2); color:var(--t3); }
 .precaution.sel { background:rgba(255,159,67,.15); border-color:var(--orange); color:var(--t2); }
 
+/* ── Signature block ─────────────────────────────────────────── */
 .cns2-sig { background:rgba(8,22,40,.6); border:1px solid rgba(26,53,85,.4);
   border-radius:12px; padding:14px 16px; font-family:'JetBrains Mono',monospace;
   font-size:11px; color:var(--t3); }
 .cns2-sig-lbl { font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--t4); margin-bottom:7px; }
 
+/* ── Loading bar ─────────────────────────────────────────────── */
 .cns2-load { height:2px; flex-shrink:0;
   background:linear-gradient(90deg,var(--teal),var(--blue),var(--teal));
   background-size:200% auto; animation:cns2-sweep 1.4s linear infinite; }
 @keyframes cns2-sweep { to { background-position:200% center; } }
 
+/* ── Print ───────────────────────────────────────────────────── */
 @media print {
   .cns2-sb, .cns2-acts, .cns2-sec-acts, .cns2-sec-foot,
-  .cns2-macro-bar, .mdm-builder, .dispo-builder, .btn, .ibtn { display:none !important; }
+  .cns2-macro-bar, .cns2-builder-toggle, .mdm-builder, .dispo-builder,
+  .btn, .ibtn, .cns2-emb-top { display:none !important; }
   .cns2 { position:static; background:white; color:black; }
   .cns2-top { background:white; border-bottom:1px solid #ccc; }
   .cns2-sec { background:white; border:1px solid #ddd; page-break-inside:avoid; }
@@ -243,7 +290,7 @@ import { toast } from "sonner";
   document.head.appendChild(s);
 })();
 
-// Maps each note section → the corresponding NPI tab query param
+// ─── TAB MAP ──────────────────────────────────────────────────────────────────
 const TAB_MAP = {
   header: "demo",
   cc:     "cc",
@@ -252,10 +299,11 @@ const TAB_MAP = {
   ros:    "ros",
   vitals: "vit",
   pe:     "pe",
-  mdm:    "mdm",
+  mdm:    null,
   dispo:  "discharge",
 };
 
+// ─── SECTIONS ─────────────────────────────────────────────────────────────────
 const SECTIONS = [
   { id:"header", title:"Patient Header",             icon:"👤", key:"1" },
   { id:"cc",     title:"Chief Complaint",             icon:"💬", key:"2" },
@@ -268,13 +316,14 @@ const SECTIONS = [
   { id:"dispo",  title:"Disposition",                  icon:"🚪", key:"9" },
 ];
 
+// ─── MACROS ───────────────────────────────────────────────────────────────────
 const MACROS = {
   ros: [
-    { label:"All sys neg",    cls:"teal", text:"REVIEW OF SYSTEMS:\nAll systems reviewed and negative except as noted in HPI." },
-    { label:"Pertinent neg",  cls:"",     text:"Pertinent negatives: denies fever, chills, nausea, vomiting, diarrhea, headache, vision changes, chest pain, shortness of breath, palpitations, dysuria, rash." },
-    { label:"Neg CV/Resp",    cls:"",     text:"  (−) Palpitations  (−) Orthopnea  (−) PND  (−) Leg swelling\n  (−) Cough  (−) Hemoptysis  (−) Wheezing" },
-    { label:"Neg GI/GU",      cls:"",     text:"  (−) Nausea  (−) Vomiting  (−) Diarrhea  (−) Constipation  (−) Melena\n  (−) Hematochezia  (−) Dysuria  (−) Hematuria  (−) Frequency" },
-    { label:"Neg Neuro",      cls:"",     text:"  (−) Headache  (−) Vision changes  (−) Weakness  (−) Numbness  (−) Tingling  (−) Syncope" },
+    { label:"All sys neg",   cls:"teal", text:"REVIEW OF SYSTEMS:\nAll systems reviewed and negative except as noted in HPI." },
+    { label:"Pertinent neg", cls:"",     text:"Pertinent negatives: denies fever, chills, nausea, vomiting, diarrhea, headache, vision changes, chest pain, shortness of breath, palpitations, dysuria, rash." },
+    { label:"Neg CV/Resp",   cls:"",     text:"  (−) Palpitations  (−) Orthopnea  (−) PND  (−) Leg swelling\n  (−) Cough  (−) Hemoptysis  (−) Wheezing" },
+    { label:"Neg GI/GU",     cls:"",     text:"  (−) Nausea  (−) Vomiting  (−) Diarrhea  (−) Constipation  (−) Melena\n  (−) Hematochezia  (−) Dysuria  (−) Hematuria  (−) Frequency" },
+    { label:"Neg Neuro",     cls:"",     text:"  (−) Headache  (−) Vision changes  (−) Weakness  (−) Numbness  (−) Tingling  (−) Syncope" },
   ],
   pe: [
     { label:"Normal adult exam", cls:"teal", text:"PHYSICAL EXAMINATION:\n  Gen:    Alert, oriented x3, well-appearing, no acute distress\n  HEENT:  Normocephalic/atraumatic. PERRL. EOMI. Oropharynx clear.\n  Neck:   Supple. No lymphadenopathy. No JVD. No meningismus.\n  CV:     Regular rate and rhythm. S1/S2 normal. No murmurs/rubs/gallops.\n  Lungs:  Clear to auscultation bilaterally. No wheezes/rales/rhonchi.\n  Abd:    Soft, non-tender, non-distended. Normoactive bowel sounds. No guarding or rigidity.\n  Ext:    No cyanosis, clubbing, or edema. Pulses 2+ bilaterally.\n  Neuro:  Alert and oriented x3. CN II-XII grossly intact. No focal neurological deficits." },
@@ -286,9 +335,11 @@ const MACROS = {
   ],
 };
 
-const DATA_OPTS = ["Labs ordered","Imaging ordered","ECG","External records reviewed","Specialist consulted","New Rx / Rx changed"];
-const PRECAUTIONS = ["Worsening symptoms","Fever >101°F","Chest pain","Difficulty breathing","New or worsening pain","Unable to tolerate PO","Falls or altered mental status"];
+const DATA_OPTS       = ["Labs ordered","Imaging ordered","ECG","External records reviewed","Specialist consulted","New Rx / Rx changed"];
+const PRECAUTIONS     = ["Worsening symptoms","Fever >101°F","Chest pain","Difficulty breathing","New or worsening pain","Unable to tolerate PO","Falls or altered mental status"];
+const TIMER_WARN_SECS = 1200; // 20 minutes before timer turns red
 
+// ─── ASSEMBLE SECTION ─────────────────────────────────────────────────────────
 function assembleSection(id, d = {}) {
   const {
     demo = {}, cc = {}, vitals = {}, medications = [], allergies = [],
@@ -346,48 +397,39 @@ function assembleSection(id, d = {}) {
       ].filter(Boolean).join("\n");
     }
     case "ros": {
-      // ROSTab stores: { sysId: { symptomName: { status: 'pos'|'neg'|'unreviewed', detail } } }
-      // Detect which format we have
       const firstVal = rosState ? Object.values(rosState)[0] : null;
-      const isNested = firstVal && typeof firstVal === 'object' && !Array.isArray(firstVal) &&
+      const isNested = firstVal && typeof firstVal === "object" && !Array.isArray(firstVal) &&
         Object.values(firstVal)[0]?.status !== undefined;
 
       if (isNested) {
-        const ROS_SYSTEMS_ORDER = [
-          'constitutional','eyes','ent','cardiovascular','respiratory',
-          'gi','gu','msk','skin','neuro','psych','endo','heme','allergic'
-        ];
-        const negSystems = [];
-        const posSystems = [];
-        ROS_SYSTEMS_ORDER.forEach(sysId => {
+        const ORDER = ["constitutional","eyes","ent","cardiovascular","respiratory","gi","gu","msk","skin","neuro","psych","endo","heme","allergic"];
+        const negSystems = [], posSystems = [];
+        ORDER.forEach(sysId => {
           const syms = rosState[sysId];
           if (!syms) return;
           const vals = Object.values(syms);
-          if (!vals.some(s => s.status !== 'unreviewed')) return;
+          if (!vals.some(s => s.status !== "unreviewed")) return;
           const posItems = Object.entries(syms)
-            .filter(([, v]) => v.status === 'pos')
-            .map(([sym, v]) => sym.toLowerCase() + (v.detail ? ` (${v.detail})` : ''));
+            .filter(([, v]) => v.status === "pos")
+            .map(([sym, v]) => sym.toLowerCase() + (v.detail ? ` (${v.detail})` : ""));
           const negItems = Object.entries(syms)
-            .filter(([, v]) => v.status === 'neg')
+            .filter(([, v]) => v.status === "neg")
             .map(([sym]) => sym.toLowerCase());
           const sysName = sysId.charAt(0).toUpperCase() + sysId.slice(1);
-          if (posItems.length) {
-            posSystems.push({ name: sysName, posItems, negItems });
-          } else if (negItems.length) {
-            negSystems.push(sysName);
-          }
+          if (posItems.length) posSystems.push({ name: sysName, posItems, negItems });
+          else if (negItems.length) negSystems.push(sysName);
         });
         if (!negSystems.length && !posSystems.length) return "";
         const lines = ["REVIEW OF SYSTEMS:"];
-        if (negSystems.length) lines.push(`\nNegative: ${negSystems.join(', ')}.`);
+        if (negSystems.length) lines.push(`\nNegative: ${negSystems.join(", ")}.`);
         posSystems.forEach(ps => {
-          lines.push(`\n${ps.name}: Positive for ${ps.posItems.join(', ')}.` +
-            (ps.negItems.length ? ` Denies ${ps.negItems.join(', ')}.` : ''));
+          lines.push(`\n${ps.name}: Positive for ${ps.posItems.join(", ")}.` +
+            (ps.negItems.length ? ` Denies ${ps.negItems.join(", ")}.` : ""));
         });
-        return lines.join('');
+        return lines.join("");
       }
 
-      // Legacy flat format fallback
+      // Legacy flat format
       const sk = Object.keys(rosState), sym = Object.keys(rosSymptoms);
       if (!sk.length && !sym.length) return "";
       const pos    = sk.filter(s => rosState[s] === "positive" || rosState[s] === true);
@@ -404,11 +446,15 @@ function assembleSection(id, d = {}) {
     }
     case "vitals": {
       const entries = [
-        ["BP", vitals.bp], ["HR", vitals.hr], ["RR", vitals.rr], ["SpO₂", vitals.spo2],
-        ["Temp", vitals.temp], ["GCS", vitals.gcs],
-        ["Wt",     vitals.weight ? vitals.weight + " kg" : null],
-        ["O₂ del", vitals.o2del || null],
-        ["Pain",   vitals.pain  ? vitals.pain + "/10"  : null],
+        ["BP",    vitals.bp],
+        ["HR",    vitals.hr],
+        ["RR",    vitals.rr],
+        ["SpO₂",  vitals.spo2],
+        ["Temp",  vitals.temp],
+        ["GCS",   vitals.gcs],
+        ["Wt",    vitals.weight ? vitals.weight + " kg" : null],
+        ["O₂ del",vitals.o2del || null],
+        ["Pain",  vitals.pain  ? vitals.pain + "/10"  : null],
       ].filter(([, v]) => v);
       if (!entries.length) return "";
       return "VITAL SIGNS:\n" + entries.map(([k, v]) => `  ${k.padEnd(8)}: ${v}`).join("\n");
@@ -437,6 +483,7 @@ function buildInitialSections(patientData) {
   return m;
 }
 
+// ─── MDM BUILDER ──────────────────────────────────────────────────────────────
 function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, onApply }) {
   const toggleData = useCallback(
     item => setData(d => d.includes(item) ? d.filter(x => x !== item) : [...d, item]),
@@ -444,7 +491,7 @@ function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, on
   );
 
   const build = useCallback(() => {
-    const dxList = dx.filter(Boolean);
+    const dxList   = dx.filter(Boolean);
     const planList = plan.filter(Boolean);
     if (!dxList.length && !risk && !data.length && !planList.length) {
       toast.error("Fill in at least one field before applying.");
@@ -482,7 +529,7 @@ function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, on
       <div className="mdm-row">
         <div className="mdm-lbl">Risk Stratification</div>
         <div className="risk-row">
-          {[["low", "Low"], ["mod", "Moderate"], ["high", "High"]].map(([v, label]) => (
+          {[["low","Low"],["mod","Moderate"],["high","High"]].map(([v, label]) => (
             <button key={v} className={`risk-btn ${v}${risk === v ? " sel" : ""}`}
               onClick={() => setRisk(r => r === v ? "" : v)}>{label}</button>
           ))}
@@ -518,6 +565,7 @@ function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, on
   );
 }
 
+// ─── DISPO BUILDER ────────────────────────────────────────────────────────────
 function DispoBuilder({ mode, setMode, service, setService, followup, setFollowup, fwTime, setFwTime, prec, setPrec, onApply }) {
   const togglePrec = useCallback(
     item => setPrec(d => d.includes(item) ? d.filter(x => x !== item) : [...d, item]),
@@ -527,10 +575,10 @@ function DispoBuilder({ mode, setMode, service, setService, followup, setFollowu
   const build = useCallback(() => {
     if (!mode) { toast.error("Select a disposition first."); return; }
     const lines = ["DISPOSITION:", ""];
-    if (mode === "discharge")      lines.push("Patient discharged home in stable condition.");
-    else if (mode === "admit")     lines.push(`Admitted to hospital${service ? ". Service: " + service : "."}`);
-    else if (mode === "obs")       lines.push("Patient placed in observation status for further monitoring and evaluation.");
-    else if (mode === "transfer")  lines.push(`Patient transferred to ${service || "receiving facility"} for higher level of care.`);
+    if (mode === "discharge")     lines.push("Patient discharged home in stable condition.");
+    else if (mode === "admit")    lines.push(`Admitted to hospital${service ? ". Service: " + service : "."}`);
+    else if (mode === "obs")      lines.push("Patient placed in observation status for further monitoring and evaluation.");
+    else if (mode === "transfer") lines.push(`Patient transferred to ${service || "receiving facility"} for higher level of care.`);
     lines.push("");
     if (mode === "discharge") {
       lines.push("Discharge instructions provided: Yes");
@@ -598,20 +646,30 @@ function DispoBuilder({ mode, setMode, service, setService, followup, setFollowu
   );
 }
 
-export default function ClinicalNoteStudio({ patientData: propData, embedded = false, onBack }) {
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+export default function ClinicalNoteStudio({
+  patientData: propData,
+  embedded   = false,
+  onBack,
+  onSave:     onExternalSave,   // optional: called after a successful internal save
+}) {
   const navigate       = useNavigate();
   const location       = useLocation();
   const [searchParams] = useSearchParams();
   const urlNoteId      = searchParams.get("noteId");
 
+  // Accept patientData as a single prop object (the correct pattern),
+  // falling back to location.state for standalone/deep-link use.
   const patientData = useMemo(
     () => propData || location.state?.patientData || {},
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [propData, location.key]
   );
+
   const { demo = {}, cc = {}, medications = [], allergies = [], registration = {}, esiLevel = "" } = patientData;
   const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
 
+  // ── Core state ──────────────────────────────────────────────────────────────
   const [sections,  setSections]  = useState(() => buildInitialSections(patientData));
   const [focused,   setFocused]   = useState("header");
   const [loading,   setLoading]   = useState({});
@@ -619,16 +677,20 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
   const [saved,     setSaved]     = useState(false);
   const [startTime] = useState(() => Date.now());
   const [elapsed,   setElapsed]   = useState(0);
+  const [scOpen,    setScOpen]    = useState(false);   // shortcut legend toggle
 
-  const [mdmDx,         setMdmDx]         = useState(["", "", ""]);
-  const [mdmRisk,       setMdmRisk]       = useState("");
-  const [mdmData,       setMdmData]       = useState([]);
-  const [mdmPlan,       setMdmPlan]       = useState(["", "", ""]);
-  const [dispoMode,     setDispoMode]     = useState("");
-  const [dispoService,  setDispoService]  = useState("");
-  const [dispoFollowup, setDispoFollowup] = useState("");
-  const [dispoFwTime,   setDispoFwTime]   = useState("");
-  const [dispoPrec,     setDispoPrec]     = useState([]);
+  // ── Builder state (MDM & Dispo) ─────────────────────────────────────────────
+  const [mdmBuilderOpen,   setMdmBuilderOpen]   = useState(false);
+  const [dispoBuilderOpen, setDispoBuilderOpen] = useState(false);
+  const [mdmDx,            setMdmDx]            = useState(["", "", ""]);
+  const [mdmRisk,          setMdmRisk]          = useState("");
+  const [mdmData,          setMdmData]          = useState([]);
+  const [mdmPlan,          setMdmPlan]          = useState(["", "", ""]);
+  const [dispoMode,        setDispoMode]        = useState("");
+  const [dispoService,     setDispoService]     = useState("");
+  const [dispoFollowup,    setDispoFollowup]    = useState("");
+  const [dispoFwTime,      setDispoFwTime]      = useState("");
+  const [dispoPrec,        setDispoPrec]        = useState([]);
 
   const sectionsRef    = useRef(sections);
   const sectionDivRefs = useRef({});
@@ -637,6 +699,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
 
   useEffect(() => { sectionsRef.current = sections; }, [sections]);
 
+  // ── Timer ───────────────────────────────────────────────────────────────────
   useEffect(() => {
     const id = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);
     return () => clearInterval(id);
@@ -648,6 +711,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
     return `${m}:${String(s).padStart(2, "0")}`;
   }, [elapsed]);
 
+  // ── Load existing note by URL noteId ────────────────────────────────────────
   useEffect(() => {
     if (!urlNoteId || propData) return;
     base44.entities.ClinicalNote.get(urlNoteId)
@@ -664,6 +728,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
       .catch(() => {});
   }, [urlNoteId, propData]);
 
+  // ── Auto-resize textareas ────────────────────────────────────────────────────
   useEffect(() => {
     Object.keys(sections).forEach(id => {
       const ta = textareaRefs.current[id];
@@ -677,6 +742,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
     SECTIONS.filter(s => ["complete", "locked"].includes(sections[s.id]?.status)).length,
   [sections]);
 
+  // ── Section operations ──────────────────────────────────────────────────────
   const updateSection = useCallback((id, content) => {
     setSections(prev => ({ ...prev, [id]: { ...prev[id], content, status: content ? "draft" : "empty" } }));
     setSaved(false);
@@ -684,7 +750,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
 
   const markComplete = useCallback((id) => {
     setSections(prev => {
-      const cur = prev[id];
+      const cur       = prev[id];
       const newStatus = cur.status === "complete" ? "draft" : "complete";
       return { ...prev, [id]: { ...cur, status: newStatus, collapsed: newStatus === "complete" } };
     });
@@ -717,14 +783,17 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
 
   const applyMDM = useCallback((text) => {
     updateSection("mdm", text);
+    setMdmBuilderOpen(false);
     toast.success("MDM applied.");
   }, [updateSection]);
 
   const applyDispo = useCallback((text) => {
     updateSection("dispo", text);
+    setDispoBuilderOpen(false);
     toast.success("Disposition applied.");
   }, [updateSection]);
 
+  // ── AI generation ───────────────────────────────────────────────────────────
   const generateSection = useCallback(async (id) => {
     const sec = SECTIONS.find(s => s.id === id);
     if (!sec || sectionsRef.current[id]?.locked) return;
@@ -778,6 +847,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
 
   const printNote = useCallback(() => window.print(), []);
 
+  // ── Save — CNS owns persistence; calls onExternalSave as callback if provided
   const saveNote = useCallback(async () => {
     const full = SECTIONS.map(s => sectionsRef.current[s.id]?.content).filter(Boolean).join("\n\n");
     try {
@@ -785,142 +855,202 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
         await base44.entities.ClinicalNote.update(savedNoteIdRef.current, { raw_note: full, status: "draft" });
       } else {
         const created = await base44.entities.ClinicalNote.create({
-          raw_note: full, patient_name: patientName,
-          patient_id: registration.mrn || demo.mrn || "",
-          patient_age: demo.age || "", patient_gender: demo.sex || "",
-          chief_complaint: cc.text || "", medications, allergies, status: "draft",
+          raw_note:        full,
+          patient_name:    patientName,
+          patient_id:      registration.mrn || demo.mrn || "",
+          patient_age:     demo.age    || "",
+          patient_gender:  demo.sex    || "",
+          chief_complaint: cc.text     || "",
+          medications,
+          allergies,
+          status: "draft",
         });
         savedNoteIdRef.current = created.id;
       }
       setSaved(true);
       toast.success("Note saved.");
+      onExternalSave?.();           // notify parent if hooked in
     } catch (e) { toast.error("Save failed: " + (e?.message || "error")); }
-  }, [patientName, demo, registration, cc, medications, allergies]);
+  }, [patientName, demo, registration, cc, medications, allergies, onExternalSave]);
 
+  // ── Helper: focus + scroll to a section ─────────────────────────────────────
+  const jumpTo = useCallback((id) => {
+    setFocused(id);
+    setSections(prev => ({ ...prev, [id]: { ...prev[id], collapsed: false } }));
+    setTimeout(() => sectionDivRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }, []);
+
+  // ── Keyboard shortcuts ───────────────────────────────────────────────────────
+  // In embedded mode: ⌘1-9 are owned by NPI for workflow navigation, so we skip
+  // those but keep all other CNS shortcuts (⌘G, ⌘S, ⌘P, ⌘R, ⌘⇧C, ⌘⇧G).
   useEffect(() => {
     const handler = (e) => {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
-      const sIdx = parseInt(e.key, 10) - 1;
-      if (!Number.isNaN(sIdx) && sIdx >= 0 && sIdx < SECTIONS.length) {
-        e.preventDefault();
-        const target = SECTIONS[sIdx].id;
-        setFocused(target);
-        setSections(prev => ({ ...prev, [target]: { ...prev[target], collapsed: false } }));
-        setTimeout(() => sectionDivRefs.current[target]?.scrollIntoView({ behavior:"smooth", block:"start" }), 50);
-        return;
+
+      // Section jump shortcuts — standalone mode only (embedded: NPI owns ⌘1-9)
+      if (!embedded) {
+        const sIdx = parseInt(e.key, 10) - 1;
+        if (!Number.isNaN(sIdx) && sIdx >= 0 && sIdx < SECTIONS.length) {
+          e.preventDefault();
+          jumpTo(SECTIONS[sIdx].id);
+          return;
+        }
       }
+
       switch (true) {
         case e.key === "g" && !e.shiftKey: e.preventDefault(); generateSection(focused); break;
         case e.key === "g" &&  e.shiftKey: e.preventDefault(); generateAll();            break;
-        case e.key === "s":                e.preventDefault(); saveNote();               break;
+        case e.key === "s" && !e.shiftKey: e.preventDefault(); saveNote();               break;
         case e.key === "p":                e.preventDefault(); printNote();              break;
         case e.key === "c" &&  e.shiftKey: e.preventDefault(); copyAll();               break;
-        case e.key === "r":                e.preventDefault(); rebuildAll();             break;
+        case e.key === "r" && !e.shiftKey: e.preventDefault(); rebuildAll();             break;
         default: break;
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [focused, generateSection, generateAll, saveNote, printNote, copyAll, rebuildAll]);
+  }, [embedded, focused, generateSection, generateAll, saveNote, printNote, copyAll, rebuildAll, jumpTo]);
 
+  // ── Shared progress indicators ───────────────────────────────────────────────
+  const progressPct = (completedCount / SECTIONS.length) * 100;
+
+  const ProgressBar = ({ className, fillClass }) => (
+    <div className={className}>
+      <div className={fillClass} style={{ width: `${progressPct}%` }} />
+    </div>
+  );
+
+  // ── Action buttons (shared between both top bars) ────────────────────────────
+  const ActionButtons = () => (
+    <div className="cns2-acts">
+      <button className="btn btn-ghost" onClick={rebuildAll}                   title="⌘R">↺ Rebuild</button>
+      <button className="btn btn-gold"  onClick={generateAll} disabled={anyBusy} title="⌘⇧G">
+        {anyBusy ? "⟳ Generating…" : "✦ Generate All"}
+      </button>
+      <button className="btn btn-ghost" onClick={copyAll}    title="⌘⇧C">⎘ Copy</button>
+      <button className="btn btn-ghost" onClick={printNote}  title="⌘P">⎙ Print</button>
+      <button className="btn btn-teal"  onClick={saveNote}   title="⌘S">{saved ? "✓ Saved" : "💾 Save"}</button>
+    </div>
+  );
+
+  // ────────────────────────────────────────────────────────────────────────────
   return (
     <div className={`cns2${embedded ? " emb" : ""}`}>
       {anyBusy && <div className="cns2-load" />}
 
-      <div className="cns2-top">
-        <button className="btn btn-ghost" style={{ flexShrink:0 }}
-          onClick={() => onBack ? onBack() : navigate(-1)}>← Back</button>
-        <div className="cns2-badge">NOTE STUDIO</div>
-        <span className="cns2-ptname">{patientName}</span>
-        {(demo.age || demo.sex) && (
-          <span className="cns2-meta">{[demo.age ? demo.age + "y" : "", demo.sex].filter(Boolean).join(" · ")}</span>
-        )}
-        {cc.text && <span className="cns2-cc">CC: {cc.text}</span>}
-        {esiLevel && <span className="cns2-esi">ESI {esiLevel}</span>}
-        <div className="cns2-prog-wrap">
-          <div className="cns2-prog-dots">
-            {SECTIONS.map(s => {
-              const st = sections[s.id]?.status || "empty";
-              return (
-                <div key={s.id} title={s.title}
-                  className={`cns2-prog-dot${["complete","locked"].includes(st) ? " done" : st === "draft" ? " draft" : ""}`} />
-              );
-            })}
+      {/* ── Slim embedded header — no redundant patient info (NPI already shows it) */}
+      {embedded ? (
+        <div className="cns2-emb-top">
+          <div className="cns2-badge">NOTE STUDIO</div>
+          <div className="cns2-emb-prog-wrap">
+            <ProgressBar className="cns2-emb-prog-bar" fillClass="cns2-emb-prog-fill" />
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--t4)", whiteSpace:"nowrap" }}>
+              {completedCount}/{SECTIONS.length} signed off
+            </span>
           </div>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--t4)" }}>
-            {completedCount}/{SECTIONS.length}
-          </span>
+          <div className={`cns2-timer${elapsed > TIMER_WARN_SECS ? " over" : ""}`} title="Time since note opened">
+            {timerStr}
+          </div>
+          <ActionButtons />
         </div>
-        <div className={`cns2-timer${elapsed > 300 ? " over" : ""}`} title="Time since note opened">{timerStr}</div>
-        <div className="cns2-acts">
-          <button className="btn btn-ghost" onClick={rebuildAll} title="⌘R">↺ Rebuild</button>
-          <button className="btn btn-gold" onClick={generateAll} disabled={anyBusy} title="⌘⇧G">
-            {anyBusy ? "⟳ Generating…" : "✦ Generate All"}
-          </button>
-          <button className="btn btn-ghost" onClick={copyAll}   title="⌘⇧C">⎘ Copy</button>
-          <button className="btn btn-ghost" onClick={printNote} title="⌘P">⎙ Print</button>
-          <button className="btn btn-teal"  onClick={saveNote}  title="⌘S">{saved ? "✓ Saved" : "💾 Save"}</button>
+      ) : (
+        /* ── Full standalone header */
+        <div className="cns2-top">
+          <button className="btn btn-ghost" style={{ flexShrink:0 }}
+            onClick={() => onBack ? onBack() : navigate(-1)}>← Back</button>
+          <div className="cns2-badge">NOTE STUDIO</div>
+          <span className="cns2-ptname">{patientName}</span>
+          {(demo.age || demo.sex) && (
+            <span className="cns2-meta">{[demo.age ? demo.age + "y" : "", demo.sex].filter(Boolean).join(" · ")}</span>
+          )}
+          {cc.text   && <span className="cns2-cc">CC: {cc.text}</span>}
+          {esiLevel  && <span className="cns2-esi">ESI {esiLevel}</span>}
+          <div className="cns2-prog-wrap">
+            <ProgressBar className="cns2-prog-bar" fillClass="cns2-prog-bar-fill" />
+            <span className="cns2-prog-count">{completedCount}/{SECTIONS.length}</span>
+          </div>
+          <div className={`cns2-timer${elapsed > TIMER_WARN_SECS ? " over" : ""}`} title="Time since note opened">
+            {timerStr}
+          </div>
+          <ActionButtons />
         </div>
-      </div>
+      )}
 
       <div className="cns2-body">
+        {/* ── Left sidebar ──────────────────────────────────────────────────── */}
         <div className="cns2-sb">
           <div className="cns2-sb-head">
             <div className="cns2-sb-label">Sections</div>
             <div className="cns2-sb-bar">
-              <div className="cns2-sb-fill" style={{ width:`${(completedCount / SECTIONS.length) * 100}%` }} />
+              <div className="cns2-sb-fill" style={{ width:`${progressPct}%` }} />
             </div>
             <div className="cns2-sb-sub">{completedCount} of {SECTIONS.length} signed off</div>
           </div>
+
           <div className="cns2-sb-list">
             {SECTIONS.map(s => {
               const st = sections[s.id]?.status || "empty";
               return (
                 <div key={s.id}
                   className={`cns2-sb-item${focused === s.id ? " on" : ""}`}
-                  onClick={() => {
-                    setFocused(s.id);
-                    setSections(prev => ({ ...prev, [s.id]: { ...prev[s.id], collapsed: false } }));
-                    setTimeout(() => sectionDivRefs.current[s.id]?.scrollIntoView({ behavior:"smooth", block:"start" }), 50);
-                  }}
-                >
+                  onClick={() => jumpTo(s.id)}>
                   <span className="cns2-sb-ico">{s.icon}</span>
                   <div className="cns2-sb-txt"><div className="cns2-sb-name">{s.title}</div></div>
-                  <span className="cns2-sb-key">⌘{s.key}</span>
+                  {/* Hide ⌘1-9 hint in embedded mode since NPI owns those shortcuts */}
+                  {!embedded && <span className="cns2-sb-key">⌘{s.key}</span>}
                   <div className={`cns2-sb-dot ${st}`} />
                 </div>
               );
             })}
           </div>
-          <div className="cns2-sb-legend">
-            {[["⌘ 1–9","Jump section"],["⌘ G","AI generate"],["⌘ R","Rebuild"],["⌘ S","Save"],["⌘ P","Print"]].map(([k, d]) => (
-              <div key={k} className="cns2-sc-row">
-                <span className="cns2-sc-k">{k}</span>
-                <span className="cns2-sc-d">{d}</span>
-              </div>
-            ))}
-          </div>
+
+          {/* Collapsible shortcut legend */}
+          <button className="cns2-sc-toggle" onClick={() => setScOpen(o => !o)}>
+            <span>⌨ Shortcuts</span>
+            <span className={`cns2-sc-toggle-chev${scOpen ? " open" : ""}`}>›</span>
+          </button>
+          {scOpen && (
+            <div className="cns2-sb-legend">
+              {[
+                !embedded && ["⌘ 1–9","Jump section"],
+                ["⌘ G",    "AI generate"],
+                ["⌘ ⇧G",   "Generate all"],
+                ["⌘ R",    "Rebuild"],
+                ["⌘ S",    "Save"],
+                ["⌘ P",    "Print"],
+                ["⌘ ⇧C",   "Copy all"],
+              ].filter(Boolean).map(([k, d]) => (
+                <div key={k} className="cns2-sc-row">
+                  <span className="cns2-sc-k">{k}</span>
+                  <span className="cns2-sc-d">{d}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
+        {/* ── Main note area ─────────────────────────────────────────────────── */}
         <div className="cns2-area">
           {SECTIONS.map(s => {
-            const sec  = sections[s.id] || {};
-            const st   = sec.status    || "empty";
-            const lk   = sec.locked    || false;
-            const txt  = sec.content   || "";
-            const coll = sec.collapsed || false;
-            const busy = loading[s.id] || false;
+            const sec      = sections[s.id] || {};
+            const st       = sec.status    || "empty";
+            const lk       = sec.locked    || false;
+            const txt      = sec.content   || "";
+            const coll     = sec.collapsed || false;
+            const busy     = loading[s.id] || false;
             const hasMacros = !!MACROS[s.id]?.length;
-            const isMDM   = s.id === "mdm";
-            const isDispo = s.id === "dispo";
+            const isMDM    = s.id === "mdm";
+            const isDispo  = s.id === "dispo";
+            const srcTab   = TAB_MAP[s.id];
 
             return (
               <div key={s.id}
                 ref={el => { sectionDivRefs.current[s.id] = el; }}
                 className={`cns2-sec${focused === s.id ? " focused" : ""}${coll ? " collapsed" : ""}`}
-                onClick={() => { if (coll) toggleCollapse(s.id); else setFocused(s.id); }}
-              >
+                onClick={() => { if (coll) toggleCollapse(s.id); else setFocused(s.id); }}>
+
+                {/* Section header */}
                 <div className="cns2-sec-hdr"
                   onClick={e => { e.stopPropagation(); toggleCollapse(s.id); setFocused(s.id); }}>
                   <span className="cns2-sec-num">{s.key}</span>
@@ -931,22 +1061,21 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                       <div className="cns2-sec-preview">{txt.split("\n").find(l => l.trim()) || ""}</div>
                     )}
                   </div>
-                  <span className="cns2-sec-short">⌘{s.key}</span>
+                  {!embedded && <span className="cns2-sec-short">⌘{s.key}</span>}
                   <div className="cns2-sec-acts" onClick={e => e.stopPropagation()}>
-                    {TAB_MAP[s.id] && (
-                      <button
-                        className="ibtn"
-                        title={`Open in Patient Chart (${TAB_MAP[s.id]} tab)`}
-                        onClick={() => navigate(`/NewPatientInput?tab=${TAB_MAP[s.id]}`)}
-                        style={{ fontSize:11 }}
-                      >📋</button>
+                    {/* "Edit source data" — navigates to the originating NPI tab */}
+                    {srcTab && (
+                      <button className="ibtn"
+                        title={`Edit source data → ${srcTab} tab`}
+                        onClick={() => navigate(`/NewPatientInput?tab=${srcTab}`)}
+                        style={{ fontSize:10 }}>↩</button>
                     )}
                     <span className={`cns2-status st-${st}`}>{st === "locked" ? "🔒 locked" : st}</span>
                     <button className={`ibtn${busy ? " spin" : ""}`} title="AI Generate (⌘G)"
                       disabled={lk || busy} onClick={() => generateSection(s.id)}>
                       {busy ? "⟳" : "✦"}
                     </button>
-                    <button className="ibtn" title={lk ? "Unlock" : "Lock"}
+                    <button className="ibtn" title={lk ? "Unlock" : "Lock section"}
                       onClick={() => toggleLock(s.id)}
                       style={{ color: lk ? "var(--blue)" : undefined }}>
                       {lk ? "🔒" : "🔓"}
@@ -955,6 +1084,7 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                   <span className="cns2-chevron">›</span>
                 </div>
 
+                {/* Macro bar */}
                 {!coll && hasMacros && !lk && (
                   <div className="cns2-macro-bar" onClick={e => e.stopPropagation()}>
                     {MACROS[s.id].map(m => (
@@ -964,31 +1094,50 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                   </div>
                 )}
 
+                {/* MDM builder — collapsed by default, disclosure toggle */}
                 {!coll && isMDM && !lk && (
                   <div onClick={e => e.stopPropagation()}>
-                    <MDMBuilder
-                      dx={mdmDx}      setDx={setMdmDx}
-                      risk={mdmRisk}  setRisk={setMdmRisk}
-                      data={mdmData}  setData={setMdmData}
-                      plan={mdmPlan}  setPlan={setMdmPlan}
-                      onApply={applyMDM}
-                    />
+                    <div className="cns2-builder-toggle"
+                      onClick={() => setMdmBuilderOpen(o => !o)}>
+                      <span className="cns2-builder-icon">⊕</span>
+                      <span>Open Assessment &amp; Plan Builder</span>
+                      <span className={`cns2-toggle-chev${mdmBuilderOpen ? " open" : ""}`}>›</span>
+                    </div>
+                    {mdmBuilderOpen && (
+                      <MDMBuilder
+                        dx={mdmDx}      setDx={setMdmDx}
+                        risk={mdmRisk}  setRisk={setMdmRisk}
+                        data={mdmData}  setData={setMdmData}
+                        plan={mdmPlan}  setPlan={setMdmPlan}
+                        onApply={applyMDM}
+                      />
+                    )}
                   </div>
                 )}
 
+                {/* Dispo builder — collapsed by default, disclosure toggle */}
                 {!coll && isDispo && !lk && (
                   <div onClick={e => e.stopPropagation()}>
-                    <DispoBuilder
-                      mode={dispoMode}         setMode={setDispoMode}
-                      service={dispoService}   setService={setDispoService}
-                      followup={dispoFollowup} setFollowup={setDispoFollowup}
-                      fwTime={dispoFwTime}     setFwTime={setDispoFwTime}
-                      prec={dispoPrec}         setPrec={setDispoPrec}
-                      onApply={applyDispo}
-                    />
+                    <div className="cns2-builder-toggle"
+                      onClick={() => setDispoBuilderOpen(o => !o)}>
+                      <span className="cns2-builder-icon">⊕</span>
+                      <span>Open Disposition Builder</span>
+                      <span className={`cns2-toggle-chev${dispoBuilderOpen ? " open" : ""}`}>›</span>
+                    </div>
+                    {dispoBuilderOpen && (
+                      <DispoBuilder
+                        mode={dispoMode}         setMode={setDispoMode}
+                        service={dispoService}   setService={setDispoService}
+                        followup={dispoFollowup} setFollowup={setDispoFollowup}
+                        fwTime={dispoFwTime}     setFwTime={setDispoFwTime}
+                        prec={dispoPrec}         setPrec={setDispoPrec}
+                        onApply={applyDispo}
+                      />
+                    )}
                   </div>
                 )}
 
+                {/* Textarea */}
                 {!coll && (
                   <div className="cns2-sec-body" onClick={e => e.stopPropagation()}>
                     <textarea
@@ -996,7 +1145,11 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                       className={`cns2-ta${lk ? " locked" : ""}`}
                       value={txt}
                       disabled={lk}
-                      placeholder={isMDM || isDispo ? "Use the builder above, or type directly here…" : `${s.title}…`}
+                      placeholder={
+                        isMDM || isDispo
+                          ? "Use the builder above, or type directly here…"
+                          : `${s.title}…`
+                      }
                       onChange={e => updateSection(s.id, e.target.value)}
                       onFocus={() => setFocused(s.id)}
                       onInput={e => {
@@ -1007,9 +1160,12 @@ export default function ClinicalNoteStudio({ patientData: propData, embedded = f
                   </div>
                 )}
 
+                {/* Footer */}
                 {!coll && (
                   <div className="cns2-sec-foot" onClick={e => e.stopPropagation()}>
-                    <span className="cns2-chars">{txt.length} chars · {txt ? txt.split("\n").length : 0} lines</span>
+                    <span className="cns2-chars">
+                      {txt.length} chars · {txt ? txt.split("\n").length : 0} lines
+                    </span>
                     {!lk && (
                       <span className="cns2-done-link" onClick={() => markComplete(s.id)}>
                         {st === "complete" ? "✓ done — expand" : "Mark complete ✓"}

@@ -1,1192 +1,840 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
-(() => {
-  if (document.getElementById("cns2-css")) return;
-  const s = document.createElement("style");
-  s.id = "cns2-css";
-  s.textContent = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+import DemoTab from "@/components/npi/DemoTab";
+import CCTab from "@/components/npi/CCTab";
+import VitalsTab from "@/components/npi/VitalsTab";
+import MedsTab from "@/components/npi/MedsTab";
+import ROSTab from "@/components/npi/ROSTab";
+import PETab from "@/components/npi/PETab";
+import AutoCoderTab from "@/components/npi/AutoCoderTab";
+import DischargePlanning from "@/pages/DischargePlanning";
+import EDProcedureNotes from "@/pages/EDProcedureNotes";
+import MedicationReferencePage from "@/pages/MedicationReference";
+import ERPlanBuilder from "@/pages/ERPlanBuilder";
+import ResultsViewer from "@/pages/ResultsViewer";
+import CDSAlertsSidebar from "@/components/npi/CDSAlertsSidebar";
+import ERxHub from "@/pages/ERx";
+import ClinicalNoteStudio from "@/components/npi/ClinicalNoteStudio";
+import ReassessmentTab from "@/components/npi/ReassessmentTab";
+import ClinicalTimeline from "@/components/npi/ClinicalTimeline";
+import VitalSignsChart  from "@/components/npi/VitalSignsChart";
+import InlineHPITab from "@/components/npi/InlineHPITab";
+import OrdersPanel from "@/components/npi/OrdersPanel";
+import { NPI_CSS } from "@/components/npi/npiStyles";
 
-.cns2 {
-  --bg:#050f1e; --panel:#081628; --card:#0b1e36; --up:#0e2544;
-  --bd:#1a3555; --bhi:#2a4f7a;
-  --teal:#00e5c0; --gold:#f5c842; --coral:#ff6b6b; --blue:#3b9eff;
-  --orange:#ff9f43; --purple:#9b6dff; --green:#3dffa0; --red:#ff4444;
-  --t:#f2f7ff; --t2:#b8d4f0; --t3:#82aece; --t4:#5a82a8;
-}
-.cns2 * { box-sizing: border-box; }
-.cns2 ::-webkit-scrollbar { width: 3px; height: 3px; }
-.cns2 ::-webkit-scrollbar-thumb { background: var(--bhi); border-radius: 2px; }
-
-.cns2 { position:fixed; inset:0; display:flex; flex-direction:column;
-  background:var(--bg); font-family:'DM Sans',sans-serif; color:var(--t); }
-.cns2.emb { position:relative; inset:auto; height:100%; }
-
-/* ── Full standalone top bar ─────────────────────────────────── */
-.cns2-top { height:54px; flex-shrink:0; background:var(--panel);
-  border-bottom:1px solid var(--bd);
-  display:flex; align-items:center; padding:0 16px; gap:10px; z-index:20;
-  overflow-x:auto; overflow-y:hidden; }
-.cns2-top::-webkit-scrollbar { height:2px; }
-.cns2-badge { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px;
-  background:rgba(0,229,192,.08); border:1px solid rgba(0,229,192,.3);
-  color:var(--teal); border-radius:20px; padding:2px 10px; white-space:nowrap; flex-shrink:0; }
-.cns2-ptname { font-family:'Playfair Display',serif; font-size:16px; font-weight:700;
-  color:var(--t); white-space:nowrap; flex-shrink:0; }
-.cns2-meta { font-size:11px; color:var(--t3); white-space:nowrap; flex-shrink:0; }
-.cns2-cc { font-size:11px; color:var(--orange); font-weight:600; white-space:nowrap;
-  font-family:'JetBrains Mono',monospace; flex-shrink:0; }
-.cns2-esi { font-size:10px; font-family:'JetBrains Mono',monospace; font-weight:700;
-  padding:2px 9px; border-radius:4px; flex-shrink:0;
-  background:rgba(255,107,107,.1); color:var(--coral); border:1px solid rgba(255,107,107,.3); }
-.cns2-timer { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;
-  padding:3px 10px; border-radius:6px; flex-shrink:0; letter-spacing:1px;
-  background:rgba(245,200,66,.08); color:var(--gold); border:1px solid rgba(245,200,66,.25); }
-.cns2-timer.over { background:rgba(255,107,107,.1); color:var(--coral); border-color:rgba(255,107,107,.3); }
-.cns2-acts { margin-left:auto; display:flex; gap:5px; align-items:center; flex-shrink:0; }
-.cns2-prog-wrap { display:flex; align-items:center; gap:6px; flex-shrink:0; }
-.cns2-prog-bar { width:72px; height:5px; background:var(--up); border-radius:3px; overflow:hidden; flex-shrink:0; }
-.cns2-prog-bar-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--blue));
-  border-radius:3px; transition:width .4s ease; }
-.cns2-prog-count { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--t4); white-space:nowrap; }
-
-/* ── Slim embedded top bar ───────────────────────────────────── */
-.cns2-emb-top { height:44px; flex-shrink:0;
-  background:rgba(8,22,40,.95); border-bottom:1px solid var(--bd);
-  border-top:2px solid rgba(0,229,192,.2);
-  display:flex; align-items:center; padding:0 14px; gap:8px; z-index:20; }
-.cns2-emb-prog-wrap { flex:1; display:flex; align-items:center; gap:7px; min-width:0; }
-.cns2-emb-prog-bar { flex:1; height:4px; background:var(--up); border-radius:2px; overflow:hidden; }
-.cns2-emb-prog-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--blue));
-  border-radius:2px; transition:width .4s ease; }
-
-/* ── Shared button styles ────────────────────────────────────── */
-.cns2 .btn { padding:5px 12px; border-radius:7px; font-size:11px; font-weight:600; cursor:pointer;
-  display:inline-flex; align-items:center; gap:5px; font-family:'DM Sans',sans-serif;
-  transition:all .15s; white-space:nowrap; border:none; }
-.cns2 .btn:disabled { opacity:.4; cursor:not-allowed; }
-.cns2 .btn-ghost { background:var(--up); border:1px solid var(--bd) !important; color:var(--t2); }
-.cns2 .btn-ghost:hover { border-color:var(--bhi) !important; color:var(--t); }
-.cns2 .btn-teal { background:var(--teal); color:var(--bg); }
-.cns2 .btn-teal:hover { filter:brightness(1.1); }
-.cns2 .btn-gold { background:rgba(245,200,66,.1); color:var(--gold); border:1px solid rgba(245,200,66,.3) !important; }
-.cns2 .btn-gold:hover { background:rgba(245,200,66,.2); }
-.cns2 .btn-sm { padding:4px 9px; font-size:10px; }
-
-/* ── Body layout ─────────────────────────────────────────────── */
-.cns2-body { flex:1; display:flex; min-height:0; }
-
-/* ── Left sidebar ────────────────────────────────────────────── */
-.cns2-sb { width:210px; flex-shrink:0; background:var(--panel);
-  border-right:1px solid var(--bd); display:flex; flex-direction:column; }
-.cns2-sb-head { padding:14px 14px 10px; flex-shrink:0; border-bottom:1px solid rgba(26,53,85,.5); }
-.cns2-sb-label { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t4);
-  letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
-.cns2-sb-bar { height:3px; background:var(--up); border-radius:2px; overflow:hidden; margin-bottom:5px; }
-.cns2-sb-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--blue));
-  border-radius:2px; transition:width .5s ease; }
-.cns2-sb-sub { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--t3); }
-.cns2-sb-list { padding:6px; flex:1; display:flex; flex-direction:column; gap:1px; overflow-y:auto; }
-.cns2-sb-item { display:flex; align-items:center; gap:7px; padding:6px 8px; border-radius:8px;
-  cursor:pointer; transition:all .15s; border:1px solid transparent; }
-.cns2-sb-item:hover { background:rgba(59,158,255,.06); border-color:rgba(59,158,255,.2); }
-.cns2-sb-item.on { background:rgba(59,158,255,.1); border-color:rgba(59,158,255,.35); }
-.cns2-sb-ico { font-size:13px; flex-shrink:0; }
-.cns2-sb-txt { flex:1; min-width:0; }
-.cns2-sb-name { font-size:11px; font-weight:500; color:var(--t2);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cns2-sb-item.on .cns2-sb-name { color:var(--t); font-weight:600; }
-.cns2-sb-key { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t4);
-  background:var(--up); border:1px solid var(--bd); border-radius:3px; padding:1px 4px; flex-shrink:0; }
-.cns2-sb-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; transition:all .3s; }
-.cns2-sb-dot.empty    { background:var(--t4); opacity:.35; }
-.cns2-sb-dot.draft    { background:var(--orange); box-shadow:0 0 5px rgba(255,159,67,.5); }
-.cns2-sb-dot.complete { background:var(--teal);   box-shadow:0 0 5px rgba(0,229,192,.5); }
-.cns2-sb-dot.locked   { background:var(--blue);   box-shadow:0 0 5px rgba(59,158,255,.5); }
-
-/* Collapsible shortcut legend */
-.cns2-sc-toggle { width:100%; padding:8px 14px; background:none; border:none;
-  border-top:1px solid rgba(26,53,85,.4); cursor:pointer;
-  display:flex; align-items:center; justify-content:space-between;
-  font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--t4);
-  text-align:left; transition:color .15s; flex-shrink:0; }
-.cns2-sc-toggle:hover { color:var(--t3); }
-.cns2-sc-toggle-chev { font-size:9px; transition:transform .2s; }
-.cns2-sc-toggle-chev.open { transform:rotate(90deg); }
-.cns2-sb-legend { padding:8px 14px 12px; border-top:none; flex-shrink:0; }
-.cns2-sc-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
-.cns2-sc-k { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t2);
-  background:var(--up); border:1px solid var(--bd); border-radius:3px; padding:1px 5px; flex-shrink:0; }
-.cns2-sc-d { font-size:10px; color:var(--t4); }
-
-/* ── Main note area ───────────────────────────────────────────── */
-.cns2-area { flex:1; overflow-y:auto; padding:14px 18px 40px; display:flex; flex-direction:column; gap:8px; }
-
-.cns2-sec { background:rgba(8,22,40,.82); border:1px solid rgba(26,53,85,.5);
-  border-radius:12px; transition:border-color .2s, box-shadow .2s; }
-.cns2-sec:focus-within { border-color:var(--bhi); }
-.cns2-sec.focused { border-color:rgba(59,158,255,.45);
-  box-shadow:0 0 0 1px rgba(59,158,255,.12), 0 4px 20px rgba(0,0,0,.3); }
-.cns2-sec-hdr { display:flex; align-items:center; gap:9px; padding:10px 14px;
-  background:rgba(11,30,54,.6); border-bottom:1px solid rgba(26,53,85,.4);
-  cursor:pointer; user-select:none; transition:background .15s; }
-.cns2-sec.collapsed .cns2-sec-hdr { border-bottom:none; }
-.cns2-sec-hdr:hover { background:rgba(14,37,68,.7); }
-.cns2-sec-num { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700;
-  color:var(--t4); flex-shrink:0; width:16px; text-align:center; }
-.cns2-sec-icon { font-size:15px; flex-shrink:0; }
-.cns2-sec-info { flex:1; min-width:0; }
-.cns2-sec-title { font-size:13px; font-weight:600; color:var(--t); letter-spacing:.01em; }
-.cns2-sec-preview { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--t4);
-  margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:360px; }
-.cns2-sec-short { font-family:'JetBrains Mono',monospace; font-size:8px;
-  color:var(--t4); background:var(--up); border:1px solid var(--bd);
-  border-radius:3px; padding:1px 5px; flex-shrink:0; }
-.cns2-sec-acts { display:flex; gap:4px; align-items:center; }
-.cns2-status { font-family:'JetBrains Mono',monospace; font-size:8px; font-weight:700;
-  padding:2px 8px; border-radius:20px; white-space:nowrap; }
-.st-empty    { background:rgba(90,130,168,.1);  color:var(--t4);     border:1px solid rgba(90,130,168,.2); }
-.st-draft    { background:rgba(255,159,67,.1);  color:var(--orange); border:1px solid rgba(255,159,67,.3); }
-.st-complete { background:rgba(0,229,192,.1);   color:var(--teal);   border:1px solid rgba(0,229,192,.3); }
-.st-locked   { background:rgba(59,158,255,.1);  color:var(--blue);   border:1px solid rgba(59,158,255,.3); }
-.cns2 .ibtn { width:26px; height:26px; border-radius:6px; border:1px solid var(--bd);
-  background:var(--up); color:var(--t3); font-size:12px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center; transition:all .15s; flex-shrink:0; }
-.cns2 .ibtn:hover { border-color:var(--bhi); color:var(--t2); }
-.cns2 .ibtn:disabled { opacity:.35; cursor:not-allowed; }
-.cns2 .ibtn.spin { animation:cns2-spin .8s linear infinite; }
-@keyframes cns2-spin { to { transform:rotate(360deg); } }
-.cns2-chevron { font-size:11px; color:var(--t4); transition:transform .2s; flex-shrink:0; }
-.cns2-sec.collapsed .cns2-chevron { transform:rotate(-90deg); }
-
-/* ── Builder disclosure toggle ───────────────────────────────── */
-.cns2-builder-toggle {
-  display:flex; align-items:center; gap:8px; padding:9px 14px;
-  cursor:pointer; font-size:12px; font-weight:600; color:var(--t3);
-  border-bottom:1px solid rgba(26,53,85,.25); transition:color .15s;
-  user-select:none; font-family:'DM Sans',sans-serif; }
-.cns2-builder-toggle:hover { color:var(--t2); }
-.cns2-builder-icon { font-size:13px; }
-.cns2-toggle-chev { font-size:10px; color:var(--t4); transition:transform .2s; margin-left:auto; }
-.cns2-toggle-chev.open { transform:rotate(90deg); }
-
-/* ── Macro bar ───────────────────────────────────────────────── */
-.cns2-macro-bar { display:flex; gap:5px; flex-wrap:wrap; padding:7px 14px 6px;
-  border-bottom:1px solid rgba(26,53,85,.25); width:100%; }
-.macro-pill { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500;
-  padding:3px 9px; border-radius:20px; cursor:pointer; white-space:nowrap;
-  background:rgba(59,158,255,.06); border:1px solid rgba(59,158,255,.2);
-  color:var(--t3); transition:all .12s; }
-.macro-pill:hover { background:rgba(59,158,255,.14); color:var(--t2); border-color:rgba(59,158,255,.4); }
-.macro-pill.teal { background:rgba(0,229,192,.06); border-color:rgba(0,229,192,.2); color:var(--teal); }
-.macro-pill.teal:hover { background:rgba(0,229,192,.14); }
-
-/* ── Textarea ─────────────────────────────────────────────────── */
-.cns2-sec-body { padding:2px 0 0; }
-.cns2-ta { width:100%; padding:12px 14px; background:rgba(14,37,68,.4); border:none;
-  border-top:1px solid rgba(26,53,85,.5);
-  color:var(--t); font-family:'JetBrains Mono',monospace; font-size:12px;
-  line-height:1.8; resize:vertical; outline:none; min-height:100px; display:block; box-sizing:border-box;
-  transition:background .15s; }
-.cns2-ta:focus { background:rgba(14,37,68,.65); border-top-color:rgba(59,158,255,.3); }
-.cns2-ta:hover:not(:disabled) { background:rgba(14,37,68,.55); }
-.cns2-ta::placeholder { color:var(--t4); font-style:italic; font-size:11px; }
-.cns2-ta:disabled { opacity:.45; cursor:default; }
-.cns2-ta.locked { background:rgba(59,158,255,.03); color:var(--t2); }
-.cns2-sec-foot { display:flex; align-items:center; padding:4px 14px 8px; gap:10px; }
-.cns2-chars { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--t4); }
-.cns2-done-link { margin-left:auto; font-size:9px; font-weight:600; cursor:pointer;
-  color:var(--teal); font-family:'JetBrains Mono',monospace; letter-spacing:.5px;
-  text-transform:uppercase; transition:opacity .15s; }
-.cns2-done-link:hover { opacity:.7; }
-
-/* ── MDM Builder ─────────────────────────────────────────────── */
-.mdm-builder { padding:12px 14px 10px; display:flex; flex-direction:column; gap:10px; }
-.mdm-row { display:flex; flex-direction:column; gap:4px; }
-.mdm-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--t4);
-  letter-spacing:1.5px; text-transform:uppercase; }
-.mdm-inp { background:var(--up); border:1px solid var(--bd); border-radius:7px;
-  padding:7px 11px; font-family:'JetBrains Mono',monospace; font-size:12px;
-  color:var(--t); outline:none; width:100%; transition:border-color .15s; }
-.mdm-inp:focus { border-color:var(--bhi); }
-.mdm-inp::placeholder { color:var(--t4); font-style:italic; }
-.risk-row { display:flex; gap:6px; }
-.risk-btn { flex:1; padding:8px 6px; border-radius:8px; font-size:11px; font-weight:600;
-  cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .15s; text-align:center; border:2px solid transparent; }
-.risk-btn.low  { background:rgba(61,255,160,.08); color:var(--green); border-color:rgba(61,255,160,.2); }
-.risk-btn.low.sel  { background:rgba(61,255,160,.18); border-color:var(--green); box-shadow:0 0 10px rgba(61,255,160,.2); }
-.risk-btn.mod  { background:rgba(245,200,66,.08); color:var(--gold); border-color:rgba(245,200,66,.2); }
-.risk-btn.mod.sel  { background:rgba(245,200,66,.18); border-color:var(--gold); box-shadow:0 0 10px rgba(245,200,66,.2); }
-.risk-btn.high { background:rgba(255,68,68,.08); color:var(--red); border-color:rgba(255,68,68,.2); }
-.risk-btn.high.sel { background:rgba(255,68,68,.18); border-color:var(--red); box-shadow:0 0 10px rgba(255,68,68,.2); }
-.mdm-data-grid { display:flex; gap:6px; flex-wrap:wrap; }
-.data-chip { font-size:10px; font-family:'DM Sans',sans-serif; padding:4px 10px; border-radius:6px;
-  cursor:pointer; border:1px solid rgba(59,158,255,.2); background:rgba(59,158,255,.05);
-  color:var(--t3); transition:all .12px; user-select:none; }
-.data-chip.sel { background:rgba(59,158,255,.15); border-color:var(--blue); color:var(--t2); }
-.mdm-plan-list { display:flex; flex-direction:column; gap:4px; }
-.mdm-plan-row { display:flex; align-items:center; gap:7px; }
-.mdm-plan-num { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--t4); flex-shrink:0; width:16px; }
-.mdm-plan-inp { flex:1; background:var(--up); border:1px solid var(--bd); border-radius:6px;
-  padding:6px 10px; font-family:'JetBrains Mono',monospace; font-size:11px;
-  color:var(--t); outline:none; transition:border-color .15s; }
-.mdm-plan-inp:focus { border-color:var(--bhi); }
-.mdm-plan-inp::placeholder { color:var(--t4); font-style:italic; }
-.mdm-add-btn { font-size:10px; color:var(--teal); background:none; border:none;
-  cursor:pointer; font-family:'JetBrains Mono',monospace; padding:2px 0; text-align:left; }
-.mdm-build-btn, .dispo-build-btn { align-self:flex-end; background:var(--teal); color:var(--bg);
-  border:none; border-radius:7px; padding:7px 16px; font-size:11px; font-weight:700;
-  cursor:pointer; font-family:'DM Sans',sans-serif; transition:filter .15s; }
-.mdm-build-btn:hover, .dispo-build-btn:hover { filter:brightness(1.1); }
-
-/* ── Dispo Builder ───────────────────────────────────────────── */
-.dispo-builder { padding:12px 14px 10px; display:flex; flex-direction:column; gap:10px; }
-.dispo-big-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-.dispo-big { padding:12px 8px; border-radius:9px; cursor:pointer; text-align:center;
-  font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif;
-  transition:all .15s; border:2px solid transparent; }
-.dispo-big.discharge { background:rgba(0,229,192,.08); color:var(--teal); border-color:rgba(0,229,192,.2); }
-.dispo-big.discharge.sel { background:rgba(0,229,192,.18); border-color:var(--teal); box-shadow:0 0 12px rgba(0,229,192,.2); }
-.dispo-big.admit { background:rgba(255,107,107,.08); color:var(--coral); border-color:rgba(255,107,107,.2); }
-.dispo-big.admit.sel { background:rgba(255,107,107,.18); border-color:var(--coral); box-shadow:0 0 12px rgba(255,107,107,.2); }
-.dispo-big.obs { background:rgba(245,200,66,.08); color:var(--gold); border-color:rgba(245,200,66,.2); }
-.dispo-big.obs.sel { background:rgba(245,200,66,.18); border-color:var(--gold); box-shadow:0 0 12px rgba(245,200,66,.2); }
-.dispo-big.transfer { background:rgba(155,109,255,.08); color:var(--purple); border-color:rgba(155,109,255,.2); }
-.dispo-big.transfer.sel { background:rgba(155,109,255,.18); border-color:var(--purple); box-shadow:0 0 12px rgba(155,109,255,.2); }
-.dispo-big-icon { font-size:18px; margin-bottom:4px; }
-.dispo-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.dispo-field { display:flex; flex-direction:column; gap:3px; }
-.dispo-precautions { display:flex; gap:5px; flex-wrap:wrap; }
-.precaution { font-size:10px; font-family:'DM Sans',sans-serif; padding:4px 9px; border-radius:6px;
-  cursor:pointer; user-select:none; transition:all .12s;
-  background:rgba(255,159,67,.05); border:1px solid rgba(255,159,67,.2); color:var(--t3); }
-.precaution.sel { background:rgba(255,159,67,.15); border-color:var(--orange); color:var(--t2); }
-
-/* ── Signature block ─────────────────────────────────────────── */
-.cns2-sig { background:rgba(8,22,40,.6); border:1px solid rgba(26,53,85,.4);
-  border-radius:12px; padding:14px 16px; font-family:'JetBrains Mono',monospace;
-  font-size:11px; color:var(--t3); }
-.cns2-sig-lbl { font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--t4); margin-bottom:7px; }
-
-/* ── Loading bar ─────────────────────────────────────────────── */
-.cns2-load { height:2px; flex-shrink:0;
-  background:linear-gradient(90deg,var(--teal),var(--blue),var(--teal));
-  background-size:200% auto; animation:cns2-sweep 1.4s linear infinite; }
-@keyframes cns2-sweep { to { background-position:200% center; } }
-
-/* ── Print ───────────────────────────────────────────────────── */
-@media print {
-  .cns2-sb, .cns2-acts, .cns2-sec-acts, .cns2-sec-foot,
-  .cns2-macro-bar, .cns2-builder-toggle, .mdm-builder, .dispo-builder,
-  .btn, .ibtn, .cns2-emb-top { display:none !important; }
-  .cns2 { position:static; background:white; color:black; }
-  .cns2-top { background:white; border-bottom:1px solid #ccc; }
-  .cns2-sec { background:white; border:1px solid #ddd; page-break-inside:avoid; }
-  .cns2-ta { color:black; font-size:11px; }
-}`;
-  document.head.appendChild(s);
-})();
-
-// ─── TAB MAP ──────────────────────────────────────────────────────────────────
-const TAB_MAP = {
-  header: "demo",
-  cc:     "cc",
-  hpi:    "cc",
-  pmh:    "meds",
-  ros:    "ros",
-  vitals: "vit",
-  pe:     "pe",
-  mdm:    null,
-  dispo:  "discharge",
+// ─── NAV DATA ─────────────────────────────────────────────────────────────────
+const NAV_DATA = {
+  intake: [
+    { section: "triage",     icon: "🏷️", label: "Triage",           abbr: "Tr", dot: "empty" },
+    { section: "demo",       icon: "👤", label: "Demographics",      abbr: "Dm", dot: "empty" },
+    { section: "cc",         icon: "💬", label: "Chief Complaint",   abbr: "Cc", dot: "empty" },
+    { section: "vit",        icon: "📈", label: "Vitals",            abbr: "Vt", dot: "empty" },
+    { section: "meds",       icon: "💊", label: "Meds & PMH",        abbr: "Rx", dot: "empty" },
+  ],
+  assess: [
+    { section: "hpi",        icon: "📝", label: "HPI",               abbr: "Hp", dot: "empty" },
+    { section: "ros",        icon: "🔍", label: "Review of Systems", abbr: "Rs", dot: "empty" },
+    { section: "pe",         icon: "🩺", label: "Physical Exam",     abbr: "Pe", dot: "empty" },
+    { section: "erplan",     icon: "🗺️", label: "ER Plan Builder",   abbr: "Ep", dot: "empty" },
+  ],
+  orders: [
+    { section: "orders",     icon: "📋", label: "Orders",            abbr: "Or", dot: "empty" },
+    { section: "erx",        icon: "💉", label: "eRx",               abbr: "Ex", dot: "empty" },
+    { section: "procedures", icon: "✂️", label: "Procedures",        abbr: "Pr", dot: "empty" },
+    { section: "consult",    icon: "👥", label: "Consults",          abbr: "Co", dot: "empty" },
+  ],
+  close: [
+    { section: "chart",      icon: "📄", label: "Clinical Note",     abbr: "Cn", dot: "empty" },
+    { section: "reassess",   icon: "🔄", label: "Reassessment",      abbr: "Ra", dot: "empty" },
+    { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty" },
+    { section: "timeline",   icon: "⏱",  label: "Timeline",          abbr: "Tl", dot: "empty" },
+    { section: "discharge",  icon: "🚪", label: "Discharge",         abbr: "Dc", dot: "empty" },
+  ],
+  tools: [
+    { section: "sepsis",     icon: "🦠", label: "Sepsis Protocol",   abbr: "Sp", dot: "empty", href: "/SepsisHub"           },
+    { section: "ecg",        icon: "❤️", label: "ECG Review",        abbr: "Eg", dot: "empty", href: "/ECGHub"              },
+    { section: "psych",      icon: "🧠", label: "Psych Assessment",  abbr: "Px", dot: "empty", href: "/PsychHub"            },
+    { section: "resus",      icon: "🫀", label: "Resus Hub",         abbr: "Rh", dot: "empty", href: "/ResusHub"            },
+    { section: "labsint",    icon: "🔬", label: "Labs Interpreter",  abbr: "Li", dot: "empty", href: "/LabsInterpreter"     },
+    { section: "knowledge",  icon: "📚", label: "Knowledge Base",    abbr: "Kb", dot: "empty", href: "/KnowledgeBaseV2"     },
+    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results"             },
+    { section: "medref",     icon: "🧬", label: "ED Med Ref",        abbr: "Mr", dot: "empty", href: "/MedicationReference" },
+    { section: "calc",       icon: "🧮", label: "Calculators",       abbr: "Ca", dot: "empty", href: "/Calculators"         },
+    { section: "hub",        icon: "🏥", label: "Clinical Hub",      abbr: "Hb", dot: "empty", href: "/hub"                 },
+  ],
 };
 
-// ─── SECTIONS ─────────────────────────────────────────────────────────────────
-const SECTIONS = [
-  { id:"header", title:"Patient Header",             icon:"👤", key:"1" },
-  { id:"cc",     title:"Chief Complaint",             icon:"💬", key:"2" },
-  { id:"hpi",    title:"History of Present Illness",  icon:"📝", key:"3" },
-  { id:"pmh",    title:"PMH / Meds / Allergies",      icon:"💊", key:"4" },
-  { id:"ros",    title:"Review of Systems",            icon:"🔍", key:"5" },
-  { id:"vitals", title:"Vital Signs",                  icon:"📈", key:"6" },
-  { id:"pe",     title:"Physical Examination",         icon:"🩺", key:"7" },
-  { id:"mdm",    title:"Assessment & Plan",            icon:"⚖️", key:"8" },
-  { id:"dispo",  title:"Disposition",                  icon:"🚪", key:"9" },
+const GROUP_META = [
+  { key: "intake",  icon: "📋", label: "Intake"  },
+  { key: "assess",  icon: "🔍", label: "Assess"  },
+  { key: "orders",  icon: "📋", label: "Orders"  },
+  { key: "close",   icon: "📝", label: "Close"   },
+  { key: "tools",   icon: "🔧", label: "Tools"   },
 ];
 
-// ─── MACROS ───────────────────────────────────────────────────────────────────
-const MACROS = {
-  ros: [
-    { label:"All sys neg",   cls:"teal", text:"REVIEW OF SYSTEMS:\nAll systems reviewed and negative except as noted in HPI." },
-    { label:"Pertinent neg", cls:"",     text:"Pertinent negatives: denies fever, chills, nausea, vomiting, diarrhea, headache, vision changes, chest pain, shortness of breath, palpitations, dysuria, rash." },
-    { label:"Neg CV/Resp",   cls:"",     text:"  (−) Palpitations  (−) Orthopnea  (−) PND  (−) Leg swelling\n  (−) Cough  (−) Hemoptysis  (−) Wheezing" },
-    { label:"Neg GI/GU",     cls:"",     text:"  (−) Nausea  (−) Vomiting  (−) Diarrhea  (−) Constipation  (−) Melena\n  (−) Hematochezia  (−) Dysuria  (−) Hematuria  (−) Frequency" },
-    { label:"Neg Neuro",     cls:"",     text:"  (−) Headache  (−) Vision changes  (−) Weakness  (−) Numbness  (−) Tingling  (−) Syncope" },
-  ],
-  pe: [
-    { label:"Normal adult exam", cls:"teal", text:"PHYSICAL EXAMINATION:\n  Gen:    Alert, oriented x3, well-appearing, no acute distress\n  HEENT:  Normocephalic/atraumatic. PERRL. EOMI. Oropharynx clear.\n  Neck:   Supple. No lymphadenopathy. No JVD. No meningismus.\n  CV:     Regular rate and rhythm. S1/S2 normal. No murmurs/rubs/gallops.\n  Lungs:  Clear to auscultation bilaterally. No wheezes/rales/rhonchi.\n  Abd:    Soft, non-tender, non-distended. Normoactive bowel sounds. No guarding or rigidity.\n  Ext:    No cyanosis, clubbing, or edema. Pulses 2+ bilaterally.\n  Neuro:  Alert and oriented x3. CN II-XII grossly intact. No focal neurological deficits." },
-    { label:"Gen: WNL",    cls:"", text:"  Gen:    Alert, oriented x3, well-appearing, no acute distress" },
-    { label:"CV: WNL",     cls:"", text:"  CV:     Regular rate and rhythm. S1/S2 normal. No murmurs/rubs/gallops." },
-    { label:"Lungs: WNL",  cls:"", text:"  Lungs:  Clear to auscultation bilaterally. No wheezes/rales/rhonchi." },
-    { label:"Abd: WNL",    cls:"", text:"  Abd:    Soft, non-tender, non-distended. Normoactive bowel sounds. No guarding or rigidity." },
-    { label:"Neuro: WNL",  cls:"", text:"  Neuro:  Alert and oriented x3. No focal neurological deficits." },
-  ],
+const ALL_SECTIONS = Object.values(NAV_DATA).flat();
+
+const SHORTCUT_MAP = {
+  "1": "triage", "2": "demo",  "3": "cc",
+  "4": "vit",    "5": "meds",  "6": "hpi",
+  "7": "ros",    "8": "pe",    "9": "orders",
+  "0": "discharge",
 };
+const SECTION_SHORTCUT = Object.fromEntries(
+  Object.entries(SHORTCUT_MAP).map(([k, v]) => [v, k])
+);
 
-const DATA_OPTS       = ["Labs ordered","Imaging ordered","ECG","External records reviewed","Specialist consulted","New Rx / Rx changed"];
-const PRECAUTIONS     = ["Worsening symptoms","Fever >101°F","Chest pain","Difficulty breathing","New or worsening pain","Unable to tolerate PO","Falls or altered mental status"];
-const TIMER_WARN_SECS = 1200; // 20 minutes before timer turns red
+const QUICK_ACTIONS = [
+  { icon: "📋", label: "Summarise", prompt: "Summarise what I have entered so far."                  },
+  { icon: "🔍", label: "Check",     prompt: "What am I missing? Check my entries for completeness." },
+  { icon: "📝", label: "Draft Note",prompt: "Generate a draft note from the data entered."           },
+  { icon: "🧠", label: "DDx",       prompt: "Suggest differential diagnoses based on current data." },
+];
 
-// ─── ASSEMBLE SECTION ─────────────────────────────────────────────────────────
-function assembleSection(id, d = {}) {
-  const {
-    demo = {}, cc = {}, vitals = {}, medications = [], allergies = [],
-    pmhSelected = {}, pmhExtra = "", surgHx = "", famHx = "", socHx = "",
-    rosState = {}, rosNotes = {}, rosSymptoms = {},
-    peState = {}, peFindings = {},
-    esiLevel = "", registration = {},
-  } = d;
-  const dateStr = new Date().toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
-  const timeStr = new Date().toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit" });
-  const name = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "Unknown Patient";
-  const ln = "─".repeat(58);
+const ROS_RAIL_SYSTEMS = [
+  { id: "const",   icon: "🌡️", label: "Constitutional"    },
+  { id: "heent",   icon: "👁️", label: "HEENT"             },
+  { id: "cv",      icon: "❤️", label: "Cardiovascular"    },
+  { id: "resp",    icon: "🫁", label: "Respiratory"       },
+  { id: "gi",      icon: "🫃", label: "GI / Abdomen"      },
+  { id: "gu",      icon: "🔵", label: "Genitourinary"     },
+  { id: "msk",     icon: "🦴", label: "MSK"               },
+  { id: "neuro",   icon: "🧠", label: "Neurological"      },
+  { id: "psych",   icon: "🧘", label: "Psychiatric"       },
+  { id: "skin",    icon: "🩹", label: "Skin"              },
+  { id: "endo",    icon: "⚗️", label: "Endocrine"         },
+  { id: "heme",    icon: "🩸", label: "Heme / Lymph"      },
+  { id: "allergy", icon: "🌿", label: "Allergic / Immuno" },
+];
+const PE_RAIL_SYSTEMS = [
+  { id: "gen",   icon: "🧍", label: "General"        },
+  { id: "heent", icon: "👁️", label: "HEENT"          },
+  { id: "neck",  icon: "🔵", label: "Neck"           },
+  { id: "cv",    icon: "❤️", label: "Cardiovascular" },
+  { id: "resp",  icon: "🫁", label: "Respiratory"    },
+  { id: "abd",   icon: "🫃", label: "Abdomen"        },
+  { id: "msk",   icon: "🦴", label: "MSK"            },
+  { id: "neuro", icon: "🧠", label: "Neurological"   },
+  { id: "skin",  icon: "🩹", label: "Skin"           },
+  { id: "psych", icon: "🧘", label: "Psychiatric"    },
+];
 
-  switch (id) {
-    case "header":
-      return [
-        "EMERGENCY DEPARTMENT NOTE", ln,
-        `Patient:    ${name}`,
-        (demo.age || demo.sex) && `Age / Sex:  ${[demo.age ? demo.age + "y" : "", demo.sex].filter(Boolean).join(" · ")}`,
-        demo.dob && `DOB:        ${demo.dob}`,
-        (registration.mrn || demo.mrn) && `MRN:        ${registration.mrn || demo.mrn}`,
-        registration.room && `Room:       ${registration.room}`,
-        esiLevel && `ESI Level:  ${esiLevel}`,
-        `Date / Time: ${dateStr}  ${timeStr}`,
-        allergies.length && `${ln}\nALLERGIES:  ⚠  ${allergies.join(" · ")}`,
-      ].filter(Boolean).join("\n");
-    case "cc":
-      return cc.text ? `Chief Complaint:\n${cc.text}` : "";
-    case "hpi":
-      if (cc.hpi) return cc.hpi;
-      if (!cc.text) return "";
-      return [
-        `Patient presents with ${cc.text}.`,
-        cc.onset     && `Onset ${cc.onset}.`,
-        cc.duration  && `Duration ${cc.duration}.`,
-        cc.quality   && `Quality described as ${cc.quality}.`,
-        cc.severity  && `Severity rated ${cc.severity}/10.`,
-        cc.radiation && `Radiation to ${cc.radiation}.`,
-        cc.aggravate && `Aggravated by ${cc.aggravate}.`,
-        cc.relieve   && `Relieved by ${cc.relieve}.`,
-        cc.assoc     && `Associated symptoms: ${cc.assoc}.`,
-      ].filter(Boolean).join(" ");
-    case "pmh": {
-      const pmhList = Object.entries(pmhSelected).filter(([, v]) => v).map(([k]) => k);
-      const pmhStr = pmhList.length
-        ? pmhList.join(", ") + (pmhExtra ? ", " + pmhExtra : "")
-        : pmhExtra || "None documented.";
-      return [
-        "PAST MEDICAL HISTORY:", pmhStr,
-        surgHx && `\nSURGICAL HISTORY:\n${surgHx}`,
-        famHx  && `\nFAMILY HISTORY:\n${famHx}`,
-        socHx  && `\nSOCIAL HISTORY:\n${socHx}`,
-        `\nMEDICATIONS:\n${medications.length ? medications.join("\n") : "None documented."}`,
-        `\nALLERGIES:\n${allergies.length ? allergies.join(", ") : "NKDA"}`,
-      ].filter(Boolean).join("\n");
-    }
-    case "ros": {
-      const firstVal = rosState ? Object.values(rosState)[0] : null;
-      const isNested = firstVal && typeof firstVal === "object" && !Array.isArray(firstVal) &&
-        Object.values(firstVal)[0]?.status !== undefined;
+const SYSTEM_PROMPT =
+  "You are Notrya AI — a helpful AI assistant embedded in an emergency medicine documentation platform. Respond in 2-4 concise, actionable sentences. Be direct. Never fabricate data.";
 
-      if (isNested) {
-        const ORDER = ["constitutional","eyes","ent","cardiovascular","respiratory","gi","gu","msk","skin","neuro","psych","endo","heme","allergic"];
-        const negSystems = [], posSystems = [];
-        ORDER.forEach(sysId => {
-          const syms = rosState[sysId];
-          if (!syms) return;
-          const vals = Object.values(syms);
-          if (!vals.some(s => s.status !== "unreviewed")) return;
-          const posItems = Object.entries(syms)
-            .filter(([, v]) => v.status === "pos")
-            .map(([sym, v]) => sym.toLowerCase() + (v.detail ? ` (${v.detail})` : ""));
-          const negItems = Object.entries(syms)
-            .filter(([, v]) => v.status === "neg")
-            .map(([sym]) => sym.toLowerCase());
-          const sysName = sysId.charAt(0).toUpperCase() + sysId.slice(1);
-          if (posItems.length) posSystems.push({ name: sysName, posItems, negItems });
-          else if (negItems.length) negSystems.push(sysName);
-        });
-        if (!negSystems.length && !posSystems.length) return "";
-        const lines = ["REVIEW OF SYSTEMS:"];
-        if (negSystems.length) lines.push(`\nNegative: ${negSystems.join(", ")}.`);
-        posSystems.forEach(ps => {
-          lines.push(`\n${ps.name}: Positive for ${ps.posItems.join(", ")}.` +
-            (ps.negItems.length ? ` Denies ${ps.negItems.join(", ")}.` : ""));
-        });
-        return lines.join("");
-      }
-
-      // Legacy flat format
-      const sk = Object.keys(rosState), sym = Object.keys(rosSymptoms);
-      if (!sk.length && !sym.length) return "";
-      const pos    = sk.filter(s => rosState[s] === "positive" || rosState[s] === true);
-      const neg    = sk.filter(s => rosState[s] === "negative" || rosState[s] === false);
-      const symPos = sym.filter(s => rosSymptoms[s] === true);
-      const allPos = [...new Set([...pos, ...symPos])];
-      if (!allPos.length && !neg.length) return "";
-      return ["REVIEW OF SYSTEMS:",
-        allPos.length && "\nPOSITIVE:",
-        ...allPos.map(s => `  (+) ${s}${rosNotes?.[s] ? " — " + rosNotes[s] : ""}`),
-        neg.length    && "\nNEGATIVE (pertinent):",
-        ...neg.map(s => `  (−) ${s}`),
-      ].filter(Boolean).join("\n");
-    }
-    case "vitals": {
-      const entries = [
-        ["BP",    vitals.bp],
-        ["HR",    vitals.hr],
-        ["RR",    vitals.rr],
-        ["SpO₂",  vitals.spo2],
-        ["Temp",  vitals.temp],
-        ["GCS",   vitals.gcs],
-        ["Wt",    vitals.weight ? vitals.weight + " kg" : null],
-        ["O₂ del",vitals.o2del || null],
-        ["Pain",  vitals.pain  ? vitals.pain + "/10"  : null],
-      ].filter(([, v]) => v);
-      if (!entries.length) return "";
-      return "VITAL SIGNS:\n" + entries.map(([k, v]) => `  ${k.padEnd(8)}: ${v}`).join("\n");
-    }
-    case "pe": {
-      const sys = Object.keys(peState);
-      if (!sys.length) return "";
-      return ["PHYSICAL EXAMINATION:",
-        ...sys.map(s => { const f = peFindings?.[s] || peState[s]; return f ? `  ${s}: ${f}` : null; }).filter(Boolean),
-      ].join("\n");
-    }
-    case "mdm":
-    case "dispo":
-      return "";
-    default:
-      return "";
-  }
-}
-
-function buildInitialSections(patientData) {
-  const m = {};
-  SECTIONS.forEach(s => {
-    const auto = assembleSection(s.id, patientData);
-    m[s.id] = { content: auto, status: auto ? "draft" : "empty", locked: false, collapsed: false };
-  });
-  return m;
-}
-
-// ─── MDM BUILDER ──────────────────────────────────────────────────────────────
-function MDMBuilder({ dx, setDx, risk, setRisk, data, setData, plan, setPlan, onApply }) {
-  const toggleData = useCallback(
-    item => setData(d => d.includes(item) ? d.filter(x => x !== item) : [...d, item]),
-    [setData]
-  );
-
-  const build = useCallback(() => {
-    const dxList   = dx.filter(Boolean);
-    const planList = plan.filter(Boolean);
-    if (!dxList.length && !risk && !data.length && !planList.length) {
-      toast.error("Fill in at least one field before applying.");
-      return;
-    }
-    const lines = ["MEDICAL DECISION MAKING:", ""];
-    if (dxList.length) {
-      lines.push("Impression:");
-      dxList.forEach((d, i) => lines.push(`  ${i + 1}. ${d}`));
-      lines.push("");
-    }
-    if (risk) { lines.push(`Risk Stratification: ${risk.toUpperCase()}`); lines.push(""); }
-    if (data.length) {
-      lines.push("Data reviewed / ordered:");
-      data.forEach(d => lines.push(`  · ${d}`));
-      lines.push("");
-    }
-    if (planList.length) {
-      lines.push("Plan:");
-      planList.forEach((p, i) => lines.push(`  ${i + 1}. ${p}`));
-    }
-    onApply(lines.join("\n"));
-  }, [dx, risk, data, plan, onApply]);
-
-  return (
-    <div className="mdm-builder">
-      <div className="mdm-row">
-        <div className="mdm-lbl">Impression / Diagnosis</div>
-        {dx.map((v, i) => (
-          <input key={i} className="mdm-inp" value={v}
-            placeholder={`Diagnosis ${i + 1}...`}
-            onChange={e => { const n = [...dx]; n[i] = e.target.value; setDx(n); }} />
-        ))}
-      </div>
-      <div className="mdm-row">
-        <div className="mdm-lbl">Risk Stratification</div>
-        <div className="risk-row">
-          {[["low","Low"],["mod","Moderate"],["high","High"]].map(([v, label]) => (
-            <button key={v} className={`risk-btn ${v}${risk === v ? " sel" : ""}`}
-              onClick={() => setRisk(r => r === v ? "" : v)}>{label}</button>
-          ))}
-        </div>
-      </div>
-      <div className="mdm-row">
-        <div className="mdm-lbl">Data / Complexity</div>
-        <div className="mdm-data-grid">
-          {DATA_OPTS.map(opt => (
-            <div key={opt} className={`data-chip${data.includes(opt) ? " sel" : ""}`}
-              onClick={() => toggleData(opt)}>{opt}</div>
-          ))}
-        </div>
-      </div>
-      <div className="mdm-row">
-        <div className="mdm-lbl">Plan</div>
-        <div className="mdm-plan-list">
-          {plan.map((v, i) => (
-            <div key={i} className="mdm-plan-row">
-              <span className="mdm-plan-num">{i + 1}.</span>
-              <input className="mdm-plan-inp" value={v}
-                placeholder={`Plan item ${i + 1}...`}
-                onChange={e => { const n = [...plan]; n[i] = e.target.value; setPlan(n); }} />
-            </div>
-          ))}
-          {plan.length < 6 && (
-            <button className="mdm-add-btn" onClick={() => setPlan(p => [...p, ""])}>+ add item</button>
-          )}
-        </div>
-      </div>
-      <button className="mdm-build-btn" onClick={build}>Apply to Note →</button>
-    </div>
-  );
-}
-
-// ─── DISPO BUILDER ────────────────────────────────────────────────────────────
-function DispoBuilder({ mode, setMode, service, setService, followup, setFollowup, fwTime, setFwTime, prec, setPrec, onApply }) {
-  const togglePrec = useCallback(
-    item => setPrec(d => d.includes(item) ? d.filter(x => x !== item) : [...d, item]),
-    [setPrec]
-  );
-
-  const build = useCallback(() => {
-    if (!mode) { toast.error("Select a disposition first."); return; }
-    const lines = ["DISPOSITION:", ""];
-    if (mode === "discharge")     lines.push("Patient discharged home in stable condition.");
-    else if (mode === "admit")    lines.push(`Admitted to hospital${service ? ". Service: " + service : "."}`);
-    else if (mode === "obs")      lines.push("Patient placed in observation status for further monitoring and evaluation.");
-    else if (mode === "transfer") lines.push(`Patient transferred to ${service || "receiving facility"} for higher level of care.`);
-    lines.push("");
-    if (mode === "discharge") {
-      lines.push("Discharge instructions provided: Yes");
-      if (prec.length) { lines.push("Return precautions discussed:"); prec.forEach(p => lines.push(`  · ${p}`)); }
-    }
-    if (followup) lines.push(`\nFollow-up: ${followup}${fwTime ? " in " + fwTime : ""}`);
-    lines.push("\nAttending Physician: ___________   Time: ___________");
-    onApply(lines.join("\n"));
-  }, [mode, service, prec, followup, fwTime, onApply]);
-
-  return (
-    <div className="dispo-builder">
-      <div className="mdm-row">
-        <div className="mdm-lbl">Disposition</div>
-        <div className="dispo-big-row">
-          {[
-            { v:"discharge", label:"Discharge Home", icon:"🏠", cls:"discharge" },
-            { v:"admit",     label:"Admit",           icon:"🏥", cls:"admit"     },
-            { v:"obs",       label:"Observation",     icon:"⏱",  cls:"obs"       },
-            { v:"transfer",  label:"Transfer",        icon:"🚑", cls:"transfer"  },
-          ].map(({ v, label, icon, cls }) => (
-            <div key={v} className={`dispo-big ${cls}${mode === v ? " sel" : ""}`}
-              onClick={() => setMode(m => m === v ? "" : v)}>
-              <div className="dispo-big-icon">{icon}</div>
-              {label}
-            </div>
-          ))}
-        </div>
-      </div>
-      {(mode === "admit" || mode === "transfer") && (
-        <div className="dispo-fields">
-          <div className="dispo-field">
-            <div className="mdm-lbl">{mode === "admit" ? "Admitting Service" : "Receiving Facility"}</div>
-            <input className="mdm-inp" value={service}
-              placeholder={mode === "admit" ? "e.g. Internal Medicine..." : "e.g. UCSF Medical Center..."}
-              onChange={e => setService(e.target.value)} />
-          </div>
-        </div>
-      )}
-      {mode === "discharge" && (
-        <div className="mdm-row">
-          <div className="mdm-lbl">Return Precautions</div>
-          <div className="dispo-precautions">
-            {PRECAUTIONS.map(p => (
-              <div key={p} className={`precaution${prec.includes(p) ? " sel" : ""}`}
-                onClick={() => togglePrec(p)}>{p}</div>
-            ))}
-          </div>
-        </div>
-      )}
-      <div className="dispo-fields">
-        <div className="dispo-field">
-          <div className="mdm-lbl">Follow-up with</div>
-          <input className="mdm-inp" value={followup} placeholder="e.g. PCP, Cardiologist..."
-            onChange={e => setFollowup(e.target.value)} />
-        </div>
-        <div className="dispo-field">
-          <div className="mdm-lbl">Timeframe</div>
-          <input className="mdm-inp" value={fwTime} placeholder="e.g. 5–7 days..."
-            onChange={e => setFwTime(e.target.value)} />
-        </div>
-      </div>
-      <button className="dispo-build-btn" onClick={build}>Apply to Note →</button>
-    </div>
-  );
+// ─── PATIENT CONTEXT BUILDER ──────────────────────────────────────────────────
+function buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab) {
+  const name = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
+  const pmhList = Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]).join(", ") || "none";
+  return [
+    `Patient: ${name}, ${demo.age || "?"}${demo.sex ? " " + demo.sex : ""}.`,
+    cc.text     ? `CC: ${cc.text}.`                                                                   : null,
+    vitals.bp   ? `BP ${vitals.bp}  HR ${vitals.hr || "-"}  SpO2 ${vitals.spo2 || "-"}  T ${vitals.temp || "-"}.` : null,
+    allergies.length ? `Allergies: ${allergies.join(", ")}.`                                          : "Allergies: NKDA.",
+    pmhList !== "none" ? `PMH: ${pmhList}.`                                                           : null,
+    cc.hpi      ? `HPI summary: ${cc.hpi.slice(0, 200)}.`                                             : null,
+    `Active section: ${currentTab}.`,
+  ].filter(Boolean).join(" ");
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function ClinicalNoteStudio({
-  patientData: propData,
-  embedded   = false,
-  onBack,
-  onSave:     onExternalSave,   // optional: called after a successful internal save
-}) {
-  const navigate       = useNavigate();
-  const location       = useLocation();
-  const [searchParams] = useSearchParams();
-  const urlNoteId      = searchParams.get("noteId");
+export default function NewPatientInput() {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Accept patientData as a single prop object (the correct pattern),
-  // falling back to location.state for standalone/deep-link use.
-  const patientData = useMemo(
-    () => propData || location.state?.patientData || {},
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [propData, location.key]
+  const [currentTab, setCurrentTab] = useState(
+    () => new URLSearchParams(window.location.search).get("tab") || "demo"
   );
-
-  const { demo = {}, cc = {}, medications = [], allergies = [], registration = {}, esiLevel = "" } = patientData;
-  const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
-
-  // ── Core state ──────────────────────────────────────────────────────────────
-  const [sections,  setSections]  = useState(() => buildInitialSections(patientData));
-  const [focused,   setFocused]   = useState("header");
-  const [loading,   setLoading]   = useState({});
-  const [anyBusy,   setAnyBusy]   = useState(false);
-  const [saved,     setSaved]     = useState(false);
-  const [startTime] = useState(() => Date.now());
-  const [elapsed,   setElapsed]   = useState(0);
-  const [scOpen,    setScOpen]    = useState(false);   // shortcut legend toggle
-
-  // ── Builder state (MDM & Dispo) ─────────────────────────────────────────────
-  const [mdmBuilderOpen,   setMdmBuilderOpen]   = useState(false);
-  const [dispoBuilderOpen, setDispoBuilderOpen] = useState(false);
-  const [mdmDx,            setMdmDx]            = useState(["", "", ""]);
-  const [mdmRisk,          setMdmRisk]          = useState("");
-  const [mdmData,          setMdmData]          = useState([]);
-  const [mdmPlan,          setMdmPlan]          = useState(["", "", ""]);
-  const [dispoMode,        setDispoMode]        = useState("");
-  const [dispoService,     setDispoService]     = useState("");
-  const [dispoFollowup,    setDispoFollowup]    = useState("");
-  const [dispoFwTime,      setDispoFwTime]      = useState("");
-  const [dispoPrec,        setDispoPrec]        = useState([]);
-
-  const sectionsRef    = useRef(sections);
-  const sectionDivRefs = useRef({});
-  const textareaRefs   = useRef({});
-  const savedNoteIdRef = useRef(urlNoteId || null);
-
-  useEffect(() => { sectionsRef.current = sections; }, [sections]);
-
-  // ── Timer ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);
-    return () => clearInterval(id);
-  }, [startTime]);
+    const tab = new URLSearchParams(location.search).get("tab");
+    if (tab) setCurrentTab(tab);
+  }, [location.search]);
 
-  const timerStr = useMemo(() => {
-    const m = Math.floor(elapsed / 60);
-    const s = elapsed % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
-  }, [elapsed]);
-
-  // ── Load existing note by URL noteId ────────────────────────────────────────
-  useEffect(() => {
-    if (!urlNoteId || propData) return;
-    base44.entities.ClinicalNote.get(urlNoteId)
-      .then(note => {
-        savedNoteIdRef.current = urlNoteId;
-        if (note?.raw_note) {
-          setSections(prev => ({
-            ...prev,
-            mdm: { content: note.raw_note, status: "draft", locked: false, collapsed: false },
-          }));
-        }
-        toast.info("Note loaded.");
-      })
-      .catch(() => {});
-  }, [urlNoteId, propData]);
-
-  // ── Auto-resize textareas ────────────────────────────────────────────────────
-  useEffect(() => {
-    Object.keys(sections).forEach(id => {
-      const ta = textareaRefs.current[id];
-      if (!ta) return;
-      ta.style.height = "auto";
-      ta.style.height = ta.scrollHeight + "px";
-    });
-  }, [sections]);
-
-  const completedCount = useMemo(() =>
-    SECTIONS.filter(s => ["complete", "locked"].includes(sections[s.id]?.status)).length,
-  [sections]);
-
-  // ── Section operations ──────────────────────────────────────────────────────
-  const updateSection = useCallback((id, content) => {
-    setSections(prev => ({ ...prev, [id]: { ...prev[id], content, status: content ? "draft" : "empty" } }));
-    setSaved(false);
-  }, []);
-
-  const markComplete = useCallback((id) => {
-    setSections(prev => {
-      const cur       = prev[id];
-      const newStatus = cur.status === "complete" ? "draft" : "complete";
-      return { ...prev, [id]: { ...cur, status: newStatus, collapsed: newStatus === "complete" } };
-    });
-  }, []);
-
-  const toggleCollapse = useCallback((id) => {
-    const wasCollapsed = !!sectionsRef.current[id]?.collapsed;
-    if (wasCollapsed) setFocused(id);
-    setSections(prev => ({ ...prev, [id]: { ...prev[id], collapsed: !wasCollapsed } }));
-  }, []);
-
-  const toggleLock = useCallback((id) => {
-    setSections(prev => ({
-      ...prev,
-      [id]: { ...prev[id], locked: !prev[id].locked, status: !prev[id].locked ? "locked" : "complete" },
-    }));
-  }, []);
-
-  const applyMacro = useCallback((id, text) => {
-    setSections(prev => {
-      const cur = prev[id]?.content || "";
-      return { ...prev, [id]: { ...prev[id], content: cur ? cur + "\n" + text : text, status: "draft" } };
-    });
-    setSaved(false);
-    setTimeout(() => {
-      const ta = textareaRefs.current[id];
-      if (ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }
-    }, 50);
-  }, []);
-
-  const applyMDM = useCallback((text) => {
-    updateSection("mdm", text);
-    setMdmBuilderOpen(false);
-    toast.success("MDM applied.");
-  }, [updateSection]);
-
-  const applyDispo = useCallback((text) => {
-    updateSection("dispo", text);
-    setDispoBuilderOpen(false);
-    toast.success("Disposition applied.");
-  }, [updateSection]);
-
-  // ── AI generation ───────────────────────────────────────────────────────────
-  const generateSection = useCallback(async (id) => {
-    const sec = SECTIONS.find(s => s.id === id);
-    if (!sec || sectionsRef.current[id]?.locked) return;
-    setLoading(l => ({ ...l, [id]: true }));
-    setAnyBusy(true);
-    const prompt = [
-      "You are a clinical documentation assistant in an emergency medicine platform.",
-      `Generate ONLY the "${sec.title}" section of an ED note in standard EP documentation style.`,
-      "Be concise. Return ONLY the section text — no labels, no preamble.",
-      `Patient: ${patientName}.  CC: ${cc.text || "not documented"}.`,
-      `Current content: ${sectionsRef.current[id]?.content || "(empty)"}`,
-    ].join("\n");
-    try {
-      const res  = await base44.integrations.Core.InvokeLLM({ prompt });
-      const text = typeof res === "string" ? res : JSON.stringify(res);
-      setSections(prev => ({ ...prev, [id]: { ...prev[id], content: text, status: "draft" } }));
-      setSaved(false);
-    } catch { toast.error("AI generation failed."); }
-    finally {
-      setLoading(prev => {
-        const next = { ...prev, [id]: false };
-        setAnyBusy(Object.values(next).some(Boolean));
-        return next;
-      });
+  const [activeGroup, setActiveGroup] = useState(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab") || "demo";
+    for (const [group, items] of Object.entries(NAV_DATA)) {
+      if (items.find(i => i.section === tab)) return group;
     }
-  }, [patientName, cc.text]);
+    return "intake";
+  });
 
-  const generateAll = useCallback(async () => {
-    const empty = SECTIONS.filter(s => {
-      const sec = sectionsRef.current[s.id];
-      return !sec?.content || sec.status === "empty";
-    });
-    if (!empty.length) { toast.info("All sections have content."); return; }
-    toast.info(`Generating ${empty.length} sections…`);
-    for (const s of empty) await generateSection(s.id);
-    toast.success("Done.");
-  }, [generateSection]);
+  const [navDots, setNavDots] = useState(() => {
+    const m = {}; ALL_SECTIONS.forEach(s => (m[s.section] = s.dot)); return m;
+  });
 
-  const rebuildAll = useCallback(() => {
-    setSections(buildInitialSections(patientData));
-    setSaved(false);
-    toast.success("Note rebuilt from patient data.");
-  }, [patientData]);
-
-  const copyAll = useCallback(async () => {
-    const divider = "\n\n" + "─".repeat(58) + "\n\n";
-    const full = SECTIONS.map(s => sectionsRef.current[s.id]?.content).filter(Boolean).join(divider);
-    try { await navigator.clipboard.writeText(full); toast.success("Note copied."); }
-    catch { toast.error("Clipboard access denied."); }
-  }, []);
-
-  const printNote = useCallback(() => window.print(), []);
-
-  // ── Save — CNS owns persistence; calls onExternalSave as callback if provided
-  const saveNote = useCallback(async () => {
-    const full = SECTIONS.map(s => sectionsRef.current[s.id]?.content).filter(Boolean).join("\n\n");
-    try {
-      if (savedNoteIdRef.current) {
-        await base44.entities.ClinicalNote.update(savedNoteIdRef.current, { raw_note: full, status: "draft" });
-      } else {
-        const created = await base44.entities.ClinicalNote.create({
-          raw_note:        full,
-          patient_name:    patientName,
-          patient_id:      registration.mrn || demo.mrn || "",
-          patient_age:     demo.age    || "",
-          patient_gender:  demo.sex    || "",
-          chief_complaint: cc.text     || "",
-          medications,
-          allergies,
-          status: "draft",
-        });
-        savedNoteIdRef.current = created.id;
-      }
-      setSaved(true);
-      toast.success("Note saved.");
-      onExternalSave?.();           // notify parent if hooked in
-    } catch (e) { toast.error("Save failed: " + (e?.message || "error")); }
-  }, [patientName, demo, registration, cc, medications, allergies, onExternalSave]);
-
-  // ── Helper: focus + scroll to a section ─────────────────────────────────────
-  const jumpTo = useCallback((id) => {
-    setFocused(id);
-    setSections(prev => ({ ...prev, [id]: { ...prev[id], collapsed: false } }));
-    setTimeout(() => sectionDivRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-  }, []);
-
-  // ── Keyboard shortcuts ───────────────────────────────────────────────────────
-  // In embedded mode: ⌘1-9 are owned by NPI for workflow navigation, so we skip
-  // those but keep all other CNS shortcuts (⌘G, ⌘S, ⌘P, ⌘R, ⌘⇧C, ⌘⇧G).
+  const arrivalTimeRef = useRef(Date.now());
+  const [doorTime, setDoorTime] = useState("0m");
   useEffect(() => {
-    const handler = (e) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (!mod) return;
+    const update = () => {
+      const mins = Math.floor((Date.now() - arrivalTimeRef.current) / 60000);
+      const h = Math.floor(mins / 60), m = mins % 60;
+      setDoorTime(h > 0 ? `${h}h ${m}m` : `${m}m`);
+    };
+    update();
+    const id = setInterval(update, 60000);
+    return () => clearInterval(id);
+  }, []);
 
-      // Section jump shortcuts — standalone mode only (embedded: NPI owns ⌘1-9)
-      if (!embedded) {
-        const sIdx = parseInt(e.key, 10) - 1;
-        if (!Number.isNaN(sIdx) && sIdx >= 0 && sIdx < SECTIONS.length) {
-          e.preventDefault();
-          jumpTo(SECTIONS[sIdx].id);
-          return;
+  const [demo, setDemo]               = useState({ firstName:"", lastName:"", age:"", dob:"", sex:"", mrn:"", insurance:"", insuranceId:"", address:"", city:"", phone:"", email:"", emerg:"", height:"", weight:"", lang:"", notes:"", pronouns:"" });
+  const [cc, setCC]                   = useState({ text:"", onset:"", duration:"", severity:"", quality:"", radiation:"", aggravate:"", relieve:"", assoc:"", hpi:"" });
+  const [vitals, setVitals]           = useState({});
+  const [vitalsHistory, setVitalsHistory] = useState([]);
+  const [medications, setMedications] = useState([]);
+  const [allergies, setAllergies]     = useState([]);
+  const [pmhSelected, setPmhSelected] = useState({});
+  const [pmhExtra, setPmhExtra]       = useState("");
+  const [surgHx, setSurgHx]           = useState("");
+  const [famHx, setFamHx]             = useState("");
+  const [socHx, setSocHx]             = useState("");
+  const [rosState, setRosState]       = useState({});
+  const [rosSymptoms, setRosSymptoms] = useState({});
+  const [rosNotes, setRosNotes]       = useState({});
+  const [peState, setPeState]         = useState({});
+  const [peFindings, setPeFindings]   = useState({});
+  const [selectedCC, setSelectedCC]   = useState(-1);
+  const [parseText, setParseText]     = useState("");
+  const [parsing, setParsing]         = useState(false);
+  const [pmhExpanded, setPmhExpanded] = useState({ cardio: true, endo: true });
+  const [avpu, setAvpu]               = useState("");
+  const [o2del, setO2del]             = useState("");
+  const [pain, setPain]               = useState("");
+  const [triage, setTriage]           = useState("");
+  const [esiLevel, setEsiLevel]       = useState("");
+  const [consults, setConsults]       = useState([]);
+  const [svcIn,    setSvcIn]           = useState("");
+  const [qIn,      setQIn]             = useState("");
+  const [respIn,   setRespIn]          = useState({});
+  const [registration, setRegistration] = useState({ mrn:"", room:"" });
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [cdsOpen,      setCdsOpen]      = useState(false);
+  const [rosActiveSystem, setRosActiveSystem] = useState(0);
+  const [peActiveSystem,  setPeActiveSystem]  = useState(0);
+  const [reassessState,   setReassessState]   = useState({});
+  const [clinicalTimeline, setClinicalTimeline] = useState({});
+
+  const [providerName, setProviderName] = useState("Provider");
+  const [providerRole, setProviderRole] = useState("ED");
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await base44.auth?.me?.();
+        if (me) {
+          const full = [me.first_name, me.last_name].filter(Boolean).join(" ");
+          if (full) setProviderName(full);
+          if (me.role) setProviderRole(me.role);
         }
-      }
+      } catch (_) {}
+    })();
+  }, []);
 
-      switch (true) {
-        case e.key === "g" && !e.shiftKey: e.preventDefault(); generateSection(focused); break;
-        case e.key === "g" &&  e.shiftKey: e.preventDefault(); generateAll();            break;
-        case e.key === "s" && !e.shiftKey: e.preventDefault(); saveNote();               break;
-        case e.key === "p":                e.preventDefault(); printNote();              break;
-        case e.key === "c" &&  e.shiftKey: e.preventDefault(); copyAll();               break;
-        case e.key === "r" && !e.shiftKey: e.preventDefault(); rebuildAll();             break;
-        default: break;
+  const ASSESS_SECTIONS = ["hpi", "ros", "pe"];
+  const prevTabRef = useRef(null);
+  const [resumeSection, setResumeSection] = useState(null);
+  useEffect(() => {
+    const prev = prevTabRef.current;
+    if (prev && ASSESS_SECTIONS.includes(prev) && !ASSESS_SECTIONS.includes(currentTab)) setResumeSection(prev);
+    if (ASSESS_SECTIONS.includes(currentTab)) setResumeSection(null);
+    prevTabRef.current = currentTab;
+  }, [currentTab]); // eslint-disable-line
+
+  const [aiOpen, setAiOpen]       = useState(false);
+  const [aiMsgs, setAiMsgs]       = useState([{ role:"sys", text:"Notrya AI ready — select a quick action or ask a clinical question." }]);
+  const [aiInput, setAiInput]     = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [unread, setUnread]       = useState(0);
+  const [history, setHistory]     = useState([]);
+  const msgsRef  = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => { msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior:"smooth" }); }, [aiMsgs, aiLoading]);
+  useEffect(() => { if (aiOpen) setTimeout(() => inputRef.current?.focus(), 280); }, [aiOpen]);
+  useEffect(() => {
+    const h = e => { if (e.key === "Escape" && aiOpen) setAiOpen(false); if (e.key === "Escape" && cdsOpen) setCdsOpen(false); };
+    window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h);
+  }, [aiOpen, cdsOpen]);
+
+  useEffect(() => {
+    setNavDots(prev => ({
+      ...prev,
+      demo:     (demo.firstName || demo.lastName || demo.age) ? "done"    : "empty",
+      cc:       cc.text                                        ? "done"    : "empty",
+      vit:      (vitals.bp || vitals.hr)                       ? "done"    : "empty",
+      meds:     (medications.length || allergies.length)       ? "done"    : "empty",
+      hpi:      cc.hpi ? "done" : cc.text                      ? "partial" : "empty",
+      ros:      Object.keys(rosState).length > 3 ? "done" : Object.keys(rosState).length > 0 ? "partial" : "empty",
+      pe:       Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
+      triage:   esiLevel                        ? "done"    : "empty",
+      consult:  consults.length > 0               ? "done"    : "empty",
+      reassess: reassessState.condition ? "done" : reassessState.note ? "partial" : "empty",
+      timeline: clinicalTimeline?.times?.departed ? "done" : clinicalTimeline?.times?.disposition ? "partial" : "empty",
+    }));
+  }, [
+    demo.firstName, demo.lastName, demo.age, cc.text, cc.hpi, vitals.bp, vitals.hr,
+    medications.length, allergies.length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    Object.keys(rosState).length, Object.keys(peState).length,
+    esiLevel, consults.length,
+    reassessState.condition, reassessState.note,
+    clinicalTimeline?.times?.departed, clinicalTimeline?.times?.disposition,
+  ]);
+
+  const selectGroup = useCallback((group) => {
+    setActiveGroup(group);
+    const items = NAV_DATA[group];
+    if (items.every(i => i.href)) return;
+    if (items.length === 1) { navigate(`/NewPatientInput?tab=${items[0].section}`); return; }
+    const target = items.find(i => i.section === currentTab) ? currentTab : items[0].section;
+    navigate(`/NewPatientInput?tab=${target}`);
+  }, [currentTab, navigate]);
+
+  const selectSection = useCallback((sectionId) => {
+    navigate(`/NewPatientInput?tab=${sectionId}`);
+    for (const [group, items] of Object.entries(NAV_DATA)) {
+      if (items.find(i => i.section === sectionId)) { setActiveGroup(group); break; }
+    }
+  }, [navigate]);
+
+  const getGroupBadge = useCallback((groupKey) => {
+    const items = NAV_DATA[groupKey];
+    if (items.every(i => navDots[i.section] === "done")) return "done";
+    if (items.some(i => navDots[i.section] === "done" || navDots[i.section] === "partial")) return "partial";
+    return "empty";
+  }, [navDots]);
+
+  const vitalClass = (key, raw) => {
+    if (!raw || raw === "\u2014") return "";
+    const src = key === "bp" ? String(raw).split("/")[0] : raw;
+    const n = parseFloat(src); if (isNaN(n)) return "";
+    if (key === "hr")   return n > 110 || n < 50  ? " abn" : n > 90  || n < 55 ? " warn" : "";
+    if (key === "rr")   return n > 22  || n < 8   ? " abn" : n > 20  || n < 10 ? " warn" : "";
+    if (key === "spo2") return n < 90              ? " abn" : n < 94            ? " warn" : "";
+    if (key === "temp") return n > 39.5 || n < 35.5 ? " abn" : n > 38 || n < 36 ? " warn" : "";
+    if (key === "bp")   return n > 180 || n < 80  ? " abn" : n > 140 || n < 90 ? " warn" : "";
+    return "";
+  };
+
+  const getRosSysDot = (sysId) => {
+    const st = rosState[sysId]; if (!st) return "empty";
+    return st === "has-positives" ? "partial" : "done";
+  };
+  const getPeSysDot = (sysId) => {
+    const st = peState[sysId]; if (!st) return "empty";
+    return (st === "has-positives" || st === "abnormal" || st === "mixed") ? "partial" : "done";
+  };
+
+  const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
+
+  const addVitalsSnapshot = useCallback((label, overrideVitals) => {
+    const v = overrideVitals || vitals;
+    if (!v || (!v.hr && !v.bp)) return;
+    setVitalsHistory(prev => [...prev, { t: Date.now(), label, ...v }]);
+  }, [vitals]);
+
+  const handleSaveChart = useCallback(async () => {
+    try {
+      const payload = {
+        raw_note: parseText || `Patient ${[demo.firstName,demo.lastName].filter(Boolean).join(" ")||"New Patient"} presenting with ${cc.text||"unspecified complaint"}`,
+        patient_name:    [demo.firstName,demo.lastName].filter(Boolean).join(" ")||"New Patient",
+        patient_id:      registration.mrn||demo.mrn||"",
+        patient_age:     demo.age||"",
+        patient_gender:  demo.sex?.toLowerCase()==="male"?"male":demo.sex?.toLowerCase()==="female"?"female":"other",
+        date_of_birth:   demo.dob||"",
+        chief_complaint: cc.text||"",
+        history_of_present_illness: cc.hpi||"",
+        medications, allergies, status:"draft",
+        registration_mrn: registration.mrn||"", registration_room: registration.room||"",
+        triage_esi_level: esiLevel||"",
+      };
+      await base44.entities.ClinicalNote.create(payload);
+      toast.success("Chart signed and saved.");
+      navigate("/EDTrackingBoard");
+    } catch (e) { toast.error("Failed to save: " + e.message); }
+  }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,navigate]);
+
+  useEffect(() => {
+    const handler = e => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && SHORTCUT_MAP[e.key]) { e.preventDefault(); selectSection(SHORTCUT_MAP[e.key]); return; }
+      if (mod && e.shiftKey && e.key === "s") { e.preventDefault(); handleSaveChart(); return; }
+      if (mod && e.shiftKey && e.key === "n") { e.preventDefault(); navigate("/NewPatientInput?tab=demo"); return; }
+      if (e.key === "?" && !mod && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
+        e.preventDefault(); setShowShortcuts(s => !s);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [embedded, focused, generateSection, generateAll, saveNote, printNote, copyAll, rebuildAll, jumpTo]);
+  }, [selectSection,navigate,handleSaveChart,demo,cc,vitals,medications,allergies,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration]);
 
-  // ── Shared progress indicators ───────────────────────────────────────────────
-  const progressPct = (completedCount / SECTIONS.length) * 100;
+  const sendMessage = useCallback(async (text) => {
+    if (!text.trim() || aiLoading) return;
+    setAiMsgs(m => [...m, { role:"user", text:text.trim() }]);
+    setAiInput(""); setAiLoading(true);
+    const ctx = buildPatientCtx(demo,cc,vitals,allergies,pmhSelected,currentTab);
+    setHistory(h => [...h, { role:"user", content: ctx+"\n\n"+text.trim() }]);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({ prompt: SYSTEM_PROMPT+"\n\nPATIENT CONTEXT:\n"+ctx+"\n\nPHYSICIAN QUESTION:\n"+text.trim() });
+      const reply = typeof res === "string" ? res : JSON.stringify(res);
+      setHistory(h => [...h, { role:"assistant", content:reply }]);
+      setAiMsgs(m => [...m, { role:"bot", text:reply }]);
+      setAiOpen(open => { if (!open) setUnread(u => u+1); return open; });
+    } catch {
+      setAiMsgs(m => [...m, { role:"sys", text:"\u26a0 Connection error \u2014 please try again." }]);
+    } finally { setAiLoading(false); }
+  }, [aiLoading,history,currentTab,demo,cc,vitals,allergies,pmhSelected]);
 
-  const ProgressBar = ({ className, fillClass }) => (
-    <div className={className}>
-      <div className={fillClass} style={{ width: `${progressPct}%` }} />
-    </div>
-  );
+  const handleAIKey = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(aiInput); } };
 
-  // ── Action buttons (shared between both top bars) ────────────────────────────
-  const ActionButtons = () => (
-    <div className="cns2-acts">
-      <button className="btn btn-ghost" onClick={rebuildAll}                   title="⌘R">↺ Rebuild</button>
-      <button className="btn btn-gold"  onClick={generateAll} disabled={anyBusy} title="⌘⇧G">
-        {anyBusy ? "⟳ Generating…" : "✦ Generate All"}
-      </button>
-      <button className="btn btn-ghost" onClick={copyAll}    title="⌘⇧C">⎘ Copy</button>
-      <button className="btn btn-ghost" onClick={printNote}  title="⌘P">⎙ Print</button>
-      <button className="btn btn-teal"  onClick={saveNote}   title="⌘S">{saved ? "✓ Saved" : "💾 Save"}</button>
-    </div>
-  );
+  const renderMsg = text =>
+    text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,'<strong style="color:#00e5c0">$1</strong>');
 
-  // ────────────────────────────────────────────────────────────────────────────
-  return (
-    <div className={`cns2${embedded ? " emb" : ""}`}>
-      {anyBusy && <div className="cns2-load" />}
+  const smartParse = async () => {
+    if (!parseText.trim()) { toast.error("Please enter some text to parse."); return; }
+    setParsing(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Extract structured patient data from the following text. Return ONLY valid JSON.\nText: ${parseText}`,
+        response_json_schema: { type:"object", properties:{ firstName:{type:"string"},lastName:{type:"string"},age:{type:"string"},sex:{type:"string"},dob:{type:"string"},cc:{type:"string"},onset:{type:"string"},duration:{type:"string"},severity:{type:"string"},quality:{type:"string"},bp:{type:"string"},hr:{type:"string"},rr:{type:"string"},spo2:{type:"string"},temp:{type:"string"},gcs:{type:"string"},medications:{type:"array",items:{type:"string"}},allergies:{type:"array",items:{type:"string"}},pmh:{type:"array",items:{type:"string"}} } },
+      });
+      setDemo(prev => ({ ...prev, firstName:result.firstName||prev.firstName, lastName:result.lastName||prev.lastName, age:result.age||prev.age, sex:result.sex||prev.sex, dob:result.dob||prev.dob }));
+      setCC(prev => ({ ...prev, text:result.cc||prev.text, onset:result.onset||prev.onset, duration:result.duration||prev.duration, severity:result.severity||prev.severity, quality:result.quality||prev.quality }));
+      setVitals(prev => ({ ...prev, bp:result.bp||prev.bp||"", hr:result.hr||prev.hr||"", rr:result.rr||prev.rr||"", spo2:result.spo2||prev.spo2||"", temp:result.temp||prev.temp||"", gcs:result.gcs||prev.gcs||"" }));
+      (result.medications||[]).forEach(m => { if (m) setMedications(p => p.includes(m)?p:[...p,m]); });
+      (result.allergies||[]).forEach(a => { if (a) setAllergies(p => p.includes(a)?p:[...p,a]); });
+      toast.success("Patient data extracted!");
+    } catch { toast.error("Could not parse automatically."); }
+    setParsing(false);
+  };
 
-      {/* ── Slim embedded header — no redundant patient info (NPI already shows it) */}
-      {embedded ? (
-        <div className="cns2-emb-top">
-          <div className="cns2-badge">NOTE STUDIO</div>
-          <div className="cns2-emb-prog-wrap">
-            <ProgressBar className="cns2-emb-prog-bar" fillClass="cns2-emb-prog-fill" />
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--t4)", whiteSpace:"nowrap" }}>
-              {completedCount}/{SECTIONS.length} signed off
-            </span>
+  const patientName = [demo.firstName,demo.lastName].filter(Boolean).join(" ") || "New Patient";
+
+  // ── Build the patientData bundle once so CNS always gets a consistent object
+  const patientDataBundle = {
+    demo,
+    cc,
+    vitals,
+    medications,
+    allergies,
+    pmhSelected,
+    pmhExtra,
+    surgHx,
+    famHx,
+    socHx,
+    rosState,
+    rosNotes,
+    rosSymptoms,
+    peState,
+    peFindings,
+    esiLevel,
+    registration,
+  };
+
+  const renderContent = () => {
+    switch (currentTab) {
+      case "triage": {
+        const ESI_CFG = [
+          { level:1, label:"Immediate",   color:"#ff6b6b", desc:"Life-threatening"      },
+          { level:2, label:"Emergent",    color:"#ff9f43", desc:"High-risk / unstable"  },
+          { level:3, label:"Urgent",      color:"#f5c842", desc:"Stable, 2+ resources"  },
+          { level:4, label:"Less Urgent", color:"#00e5c0", desc:"1 resource expected"   },
+          { level:5, label:"Non-urgent",  color:"#8892a4", desc:"No resources needed"   },
+        ];
+        return (
+          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:10 }}>ESI Level — Emergency Severity Index</div>
+              <div style={{ display:"flex", gap:8 }}>
+                {ESI_CFG.map(({ level, label, color, desc }) => (
+                  <button key={level} onClick={() => setEsiLevel(String(level))}
+                    style={{ flex:1, padding:"12px 6px", borderRadius:10, cursor:"pointer", transition:"all .14s",
+                      border:`2px solid ${esiLevel===String(level)?color:"rgba(42,77,114,0.4)"}`,
+                      background:esiLevel===String(level)?`${color}18`:"rgba(14,37,68,0.5)" }}>
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:24, fontWeight:700, color:esiLevel===String(level)?color:"var(--npi-txt3)" }}>{level}</div>
+                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, color:esiLevel===String(level)?color:"var(--npi-txt3)", marginTop:2 }}>{label}</div>
+                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--npi-txt4)", marginTop:3 }}>{desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Triage Assessment Note</div>
+              <textarea value={triage} onChange={e=>setTriage(e.target.value)}
+                placeholder="Document presenting complaint, initial appearance, chief concern..." rows={4}
+                style={{ width:"100%", background:"rgba(14,37,68,0.8)", border:"1px solid rgba(26,53,85,0.55)", borderTop:"2px solid rgba(0,229,192,0.3)", borderRadius:9, padding:"9px 12px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none", resize:"none", boxSizing:"border-box" }} />
+            </div>
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Mental Status — AVPU</div>
+              <div style={{ display:"flex", gap:8 }}>
+                {["Alert","Verbal","Pain","Unresponsive"].map(v => (
+                  <button key={v} onClick={() => setAvpu(v)}
+                    style={{ flex:1, padding:"9px 4px", borderRadius:8, cursor:"pointer",
+                      border:`1px solid ${avpu===v?"rgba(59,158,255,0.5)":"rgba(42,77,114,0.4)"}`,
+                      background:avpu===v?"rgba(59,158,255,0.1)":"transparent",
+                      color:avpu===v?"#3b9eff":"var(--npi-txt3)",
+                      fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:avpu===v?600:400 }}>
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Pain Score (0–10)</div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {Array.from({length:11},(_,i)=>i).map(i => {
+                  const col = i<=3?"#00e5c0":i<=6?"#f5c842":"#ff6b6b";
+                  return (
+                    <button key={i} onClick={()=>setPain(String(i))}
+                      style={{ width:38, height:38, borderRadius:8, cursor:"pointer",
+                        border:`1px solid ${pain===String(i)?col+"88":"rgba(42,77,114,0.35)"}`,
+                        background:pain===String(i)?col+"18":"transparent",
+                        color:pain===String(i)?col:"var(--npi-txt3)",
+                        fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:pain===String(i)?700:400 }}>
+                      {i}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {(esiLevel||triage||avpu) && (
+              <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(0,229,192,0.05)", border:"1px solid rgba(0,229,192,0.2)", fontFamily:"'DM Sans',sans-serif", fontSize:12, display:"flex", gap:12, flexWrap:"wrap" }}>
+                {esiLevel && <span><span style={{ color:"var(--npi-teal)", fontWeight:700 }}>ESI {esiLevel}</span></span>}
+                {avpu     && <span style={{ color:"var(--npi-txt3)" }}>AVPU: {avpu}</span>}
+                {pain     && <span style={{ color:"var(--npi-txt3)" }}>Pain: {pain}/10</span>}
+              </div>
+            )}
           </div>
-          <div className={`cns2-timer${elapsed > TIMER_WARN_SECS ? " over" : ""}`} title="Time since note opened">
-            {timerStr}
-          </div>
-          <ActionButtons />
+        );
+      }
+      case "demo":       return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} registration={registration} setRegistration={setRegistration} onAdvance={() => selectSection("cc")} />;
+      case "cc":         return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} onAdvance={() => selectSection("vit")} />;
+      case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} onAdvance={() => { addVitalsSnapshot("Triage"); selectSection("meds"); }} />;
+      case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("hpi")} />;
+      case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
+      case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />;
+      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("chart")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
+
+      // ── FIX: pass a single patientData object, embedded flag, and correct callbacks
+      case "chart": return (
+        <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}>
+          <ClinicalNoteStudio
+            patientData={patientDataBundle}
+            embedded={true}
+            onBack={() => selectSection("pe")}
+            onSave={handleSaveChart}
+          />
         </div>
-      ) : (
-        /* ── Full standalone header */
-        <div className="cns2-top">
-          <button className="btn btn-ghost" style={{ flexShrink:0 }}
-            onClick={() => onBack ? onBack() : navigate(-1)}>← Back</button>
-          <div className="cns2-badge">NOTE STUDIO</div>
-          <span className="cns2-ptname">{patientName}</span>
-          {(demo.age || demo.sex) && (
-            <span className="cns2-meta">{[demo.age ? demo.age + "y" : "", demo.sex].filter(Boolean).join(" · ")}</span>
+      );
+
+      case "consult": {
+        const elapsed = ts => { const m=Math.floor((Date.now()-ts)/60000); return m<60?`${m}m`:`${Math.floor(m/60)}h ${m%60}m`; };
+        const addConsult = (svc, q) => {
+          if (!svc.trim()) return;
+          setConsults(prev=>[...prev,{ id:Date.now(), service:svc.trim(), question:q.trim(), requestedAt:Date.now(), status:"pending", response:"" }]);
+        };
+        const markReceived = (id, resp) => setConsults(prev=>prev.map(c=>c.id===id?{...c,status:"completed",response:resp}:c));
+
+        return (
+          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+            <div style={{ padding:"14px 16px", borderRadius:10, background:"rgba(14,37,68,0.7)", border:"1px solid rgba(26,53,85,0.55)", borderTop:"2px solid rgba(0,229,192,0.35)" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>Request New Consult</div>
+              <input value={svcIn} onChange={e=>setSvcIn(e.target.value)} placeholder="Consulting service (e.g. Cardiology, Surgery, Neurology)"
+                style={{ width:"100%", background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)", borderRadius:7, padding:"7px 10px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none", marginBottom:8, boxSizing:"border-box" }} />
+              <textarea value={qIn} onChange={e=>setQIn(e.target.value)} placeholder="Clinical question / reason for consult..." rows={2}
+                style={{ width:"100%", background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)", borderRadius:7, padding:"7px 10px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none", resize:"none", marginBottom:10, boxSizing:"border-box" }} />
+              <button onClick={()=>{ addConsult(svcIn,qIn); setSvcIn(""); setQIn(""); }}
+                style={{ padding:"7px 18px", borderRadius:7, border:"1px solid rgba(0,229,192,0.4)", background:"rgba(0,229,192,0.1)", color:"var(--npi-teal)", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                + Add Consult
+              </button>
+            </div>
+            {consults.length>0 ? (
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase" }}>Active Consults ({consults.length})</div>
+                {consults.map(c=>(
+                  <div key={c.id} style={{ padding:"12px 14px", borderRadius:10, background:"rgba(14,37,68,0.7)", border:`1px solid ${c.status==="completed"?"rgba(0,229,192,0.25)":"rgba(245,200,66,0.25)"}` }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"var(--npi-txt)" }}>{c.service}</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"var(--npi-txt4)" }}>{elapsed(c.requestedAt)} ago</span>
+                    </div>
+                    {c.question&&<div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt3)", marginBottom:8 }}>{c.question}</div>}
+                    {c.status==="pending"?(
+                      <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                        <input value={respIn[c.id]||""} onChange={e=>setRespIn(p=>({...p,[c.id]:e.target.value}))}
+                          placeholder="Consultant response / recommendations..."
+                          style={{ flex:1, background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)", borderRadius:6, padding:"5px 9px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none" }} />
+                        <button onClick={()=>{ markReceived(c.id,respIn[c.id]||""); setRespIn(p=>({...p,[c.id]:""})); }}
+                          style={{ padding:"5px 12px", borderRadius:6, border:"1px solid rgba(0,229,192,0.4)", background:"rgba(0,229,192,0.08)", color:"var(--npi-teal)", fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
+                          Mark Received
+                        </button>
+                      </div>
+                    ):(
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <span style={{ color:"var(--npi-teal)", fontSize:11 }}>✓ Received</span>
+                        {c.response&&<span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt3)" }}>{c.response}</span>}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ):(
+              <div style={{ textAlign:"center", color:"var(--npi-txt4)", fontFamily:"'DM Sans',sans-serif", fontSize:13, padding:"28px 0" }}>No consults requested yet</div>
+            )}
+          </div>
+        );
+      }
+      case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState}
+        onVitalsSnapshot={v => addVitalsSnapshot(
+          `Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`,
+          v
+        )}
+        onAdvance={() => selectSection("timeline")} />;
+      case "timeline":   return (
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          <VitalSignsChart vitalsHistory={vitalsHistory}/>
+          <ClinicalTimeline arrivalMs={arrivalTimeRef.current} onStateChange={setClinicalTimeline}/>
+        </div>
+      );
+      case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
+      case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
+      case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} patientWeight={demo.weight||vitals.weight||""} /></div>;
+      case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;
+      case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
+      case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
+      case "medref":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto"   }}><MedicationReferencePage embedded /></div>;
+      case "erplan":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><ERPlanBuilder embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} patientCC={cc.text} patientVitals={vitals} patientAllergies={allergies} patientMedications={medications} /></div>;
+      default:           return null;
+    }
+  };
+
+  return (
+    <div>
+      <style>{NPI_CSS}</style>
+
+      <header className="npi-top-bar">
+        <div className="npi-top-row-1">
+          <span className="npi-dr-label">
+            {providerName.split(" ").length > 1 ? `Dr. ${providerName.split(" ").slice(-1)[0]}` : providerName}
+            <span className="npi-dr-role">{providerRole}</span>
+          </span>
+          <div className="npi-vsep" />
+          <div className="npi-stat"><span className="npi-stat-val">0</span><span className="npi-stat-lbl">Active</span></div>
+          <div className="npi-stat"><span className="npi-stat-val alert">14</span><span className="npi-stat-lbl">Pending</span></div>
+          <div className="npi-vsep" />
+          <button className="npi-tb-link" onClick={() => navigate("/EDTrackingBoard")}>🏥 Track Board</button>
+          <div className="npi-top-right">
+            <button
+              className={`npi-cds-btn${cdsOpen?" open":""}${allergies.length>0?" cds-alert":medications.length>0?" cds-warn":""}`}
+              onClick={()=>setCdsOpen(o=>!o)} title="Clinical Decision Support">
+              <div className="npi-cds-dot"/>
+              CDS
+            </button>
+            <button className={`npi-ai-btn${aiOpen?" open":""}`} onClick={toggleAI} title="Notrya AI">
+              <div className="npi-ai-dot" /> AI
+              {unread > 0 && <span className="npi-ai-badge">{unread > 9 ? "9+" : unread}</span>}
+            </button>
+            <button className="npi-new-pt" onClick={() => navigate("/NewPatientInput?tab=demo")}>+ New Patient</button>
+            <Link to="/AppSettings" className="npi-tb-settings" title="Settings">⚙️</Link>
+          </div>
+        </div>
+        <div className="npi-top-row-2">
+          <span className={`npi-chart-badge${registration.mrn ? " registered" : ""}`}>{registration.mrn || "PT-NEW"}</span>
+          <span className="npi-pt-name">{patientName}</span>
+          {demo.dob && <span className="npi-pt-dob" title="Date of birth — second patient identifier">DOB {demo.dob}</span>}
+          <span className="npi-door-time" title="Time since intake started">⏱ {doorTime}</span>
+          <div className={`npi-allergy-wrap${allergies.length > 0 ? " has-allergies" : ""}`}
+               onClick={() => selectSection("meds")} title="Click to view/edit medications">
+            {allergies.length === 0
+              ? <span className="npi-allergy-nka">✓ NKA</span>
+              : <span className="npi-allergy-alert">⚠ {allergies.slice(0, 2).join(" · ")}{allergies.length > 2 ? ` +${allergies.length - 2}` : ""}</span>
+            }
+          </div>
+          {resumeSection && (
+            <button className="npi-resume-chip"
+              onClick={() => { selectSection(resumeSection); setResumeSection(null); }} title="Return to where you were">
+              ↩ Resume {ALL_SECTIONS.find(s => s.section === resumeSection)?.label || resumeSection}
+              <span className="npi-resume-dismiss" onClick={e => { e.stopPropagation(); setResumeSection(null); }}>✕</span>
+            </button>
           )}
-          {cc.text   && <span className="cns2-cc">CC: {cc.text}</span>}
-          {esiLevel  && <span className="cns2-esi">ESI {esiLevel}</span>}
-          <div className="cns2-prog-wrap">
-            <ProgressBar className="cns2-prog-bar" fillClass="cns2-prog-bar-fill" />
-            <span className="cns2-prog-count">{completedCount}/{SECTIONS.length}</span>
+          <div className="npi-top-acts">
+            <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>+ Order</button>
+            <button className="npi-btn-ghost" onClick={() => selectSection("orders")} title="Request consultation">👥 Consult</button>
+            <button className="npi-btn-coral" onClick={() => selectSection("discharge")}>🚪 Discharge</button>
+            <button className="npi-btn-primary" onClick={handleSaveChart}>✍ Sign &amp; Save</button>
           </div>
-          <div className={`cns2-timer${elapsed > TIMER_WARN_SECS ? " over" : ""}`} title="Time since note opened">
-            {timerStr}
+        </div>
+      </header>
+
+      <div className="npi-main-wrap">
+        <main className="npi-content">{renderContent()}</main>
+      </div>
+
+      <div className={`npi-scrim${aiOpen?" open":""}`} onClick={toggleAI} />
+      <div className={`npi-overlay${aiOpen?" open":""}`}>
+        <div className="npi-n-hdr">
+          <div className="npi-n-hdr-top">
+            <div className="npi-n-avatar">🤖</div>
+            <div className="npi-n-hdr-info">
+              <div className="npi-n-hdr-name">Notrya AI</div>
+              <div className="npi-n-hdr-sub"><span className="dot" /> Clinical assistant · online</div>
+            </div>
+            <button className="npi-n-close" onClick={toggleAI}>✕</button>
           </div>
-          <ActionButtons />
+          <div className="npi-n-quick">
+            {QUICK_ACTIONS.map(q => (
+              <button key={q.label} className="npi-n-qbtn" onClick={() => sendMessage(q.prompt)} disabled={aiLoading}>
+                {q.icon} {q.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="npi-n-msgs" ref={msgsRef}>
+          {aiMsgs.map((m, i) => (
+            <div key={i} className={`npi-n-msg ${m.role}`} dangerouslySetInnerHTML={{ __html: renderMsg(m.text) }} />
+          ))}
+          {aiLoading && <div className="npi-n-dots"><span /><span /><span /></div>}
+        </div>
+        <div className="npi-n-input-bar">
+          <textarea ref={inputRef} className="npi-n-ta" rows={1} placeholder="Ask anything…" value={aiInput}
+            onChange={e => setAiInput(e.target.value)} onKeyDown={handleAIKey} disabled={aiLoading}
+            onInput={e => { e.target.style.height="auto"; e.target.style.height=Math.min(e.target.scrollHeight,90)+"px"; }}
+          />
+          <button className="npi-n-send" onClick={() => sendMessage(aiInput)} disabled={aiLoading||!aiInput.trim()}>↑</button>
+        </div>
+      </div>
+
+      {cdsOpen && (
+        <div className="npi-cds-scrim" onClick={()=>setCdsOpen(false)}/>
+      )}
+      <div className={`npi-cds-overlay${cdsOpen?" open":""}`}>
+        <div className="npi-cds-overlay-hdr">
+          <span className="npi-cds-overlay-title">Clinical Decision Support</span>
+          <button className="npi-cds-close" onClick={()=>setCdsOpen(false)}>✕</button>
+        </div>
+        <CDSAlertsSidebar medications={medications} allergies={allergies} vitals={vitals} pmhSelected={pmhSelected} age={demo.age} cc={cc.text}/>
+        {allergies.length === 0 && medications.length === 0 && (
+          <div style={{ padding:"24px 16px", textAlign:"center", color:"var(--npi-txt4)", fontSize:12, fontFamily:"'DM Sans',sans-serif" }}>
+            No alerts — add medications or allergies to enable checking.
+          </div>
+        )}
+      </div>
+
+      <button className="npi-sc-hint-fab" title="Keyboard shortcuts (?)" onClick={() => setShowShortcuts(s=>!s)}>?</button>
+
+      {showShortcuts && (
+        <div onClick={() => setShowShortcuts(false)} style={{ position:"fixed",inset:0,zIndex:99998,background:"rgba(3,8,16,.75)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#081628",border:"1px solid #1a3555",borderRadius:16,padding:"24px 28px",width:520,maxWidth:"90vw",boxShadow:"0 24px 80px rgba(0,0,0,.6)" }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
+              <span style={{ fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff" }}>Keyboard Shortcuts</span>
+              <button onClick={() => setShowShortcuts(false)} style={{ background:"#0e2544",border:"1px solid #1a3555",borderRadius:6,width:28,height:28,color:"#7aa0c0",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
+            </div>
+            {[
+              { section:"Navigate to section", rows:[["Cmd 1","Triage"],["Cmd 2","Demographics"],["Cmd 3","Chief Complaint"],["Cmd 4","Vitals"],["Cmd 5","Meds & PMH"],["Cmd 6","HPI"],["Cmd 7","ROS"],["Cmd 8","Physical Exam"],["Cmd 9","Orders"],["Cmd 0","Discharge"]] },
+              { section:"HPI (scan mode)", rows:[["Y / Enter","Symptom present"],["N","Symptom absent"],["Space","Skip symptom"],["0-9","Pain scale or option #"],["Arrow Up/Down","Navigate rows"],["Backspace","Go back one row"],["Esc","Finish & build narrative"]] },
+              { section:"Actions", rows:[["Cmd Shift S","Save Chart"],["Cmd Shift N","New Patient"],["?","Toggle shortcuts"]] },
+              { section:"Note Studio (when in Clinical Note tab)", rows:[["Cmd G","AI generate focused section"],["Cmd Shift G","Generate all empty sections"],["Cmd R","Rebuild from patient data"],["Cmd S","Save note"],["Cmd P","Print note"],["Cmd Shift C","Copy full note"]] },
+            ].map(({ section, rows }) => (
+              <div key={section} style={{ marginBottom:16 }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#5a82a8",letterSpacing:2,textTransform:"uppercase",marginBottom:8 }}>{section}</div>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 16px" }}>
+                  {rows.map(([key,desc]) => (
+                    <div key={key} style={{ display:"flex",alignItems:"center",gap:8 }}>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"#b8d4f0",background:"#0e2544",border:"1px solid #1a3555",borderRadius:4,padding:"1px 7px",flexShrink:0,whiteSpace:"nowrap" }}>{key}</span>
+                      <span style={{ fontSize:11,color:"#82aece" }}>{desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div style={{ marginTop:8,paddingTop:12,borderTop:"1px solid #1a3555",fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#5a82a8",textAlign:"center" }}>press ? to dismiss</div>
+          </div>
         </div>
       )}
 
-      <div className="cns2-body">
-        {/* ── Left sidebar ──────────────────────────────────────────────────── */}
-        <div className="cns2-sb">
-          <div className="cns2-sb-head">
-            <div className="cns2-sb-label">Sections</div>
-            <div className="cns2-sb-bar">
-              <div className="cns2-sb-fill" style={{ width:`${progressPct}%` }} />
-            </div>
-            <div className="cns2-sb-sub">{completedCount} of {SECTIONS.length} signed off</div>
+      <aside className="npi-wf-rail">
+        <div className="npi-wf-pt">
+          <div className="npi-wf-pt-name">{patientName}</div>
+          <div className="npi-wf-pt-meta">
+            {demo.age && <span>{demo.age}y {demo.sex ? `· ${demo.sex}` : ""}</span>}
+            {cc.text && <span className="npi-wf-pt-cc">{cc.text}</span>}
           </div>
-
-          <div className="cns2-sb-list">
-            {SECTIONS.map(s => {
-              const st = sections[s.id]?.status || "empty";
-              return (
-                <div key={s.id}
-                  className={`cns2-sb-item${focused === s.id ? " on" : ""}`}
-                  onClick={() => jumpTo(s.id)}>
-                  <span className="cns2-sb-ico">{s.icon}</span>
-                  <div className="cns2-sb-txt"><div className="cns2-sb-name">{s.title}</div></div>
-                  {/* Hide ⌘1-9 hint in embedded mode since NPI owns those shortcuts */}
-                  {!embedded && <span className="cns2-sb-key">⌘{s.key}</span>}
-                  <div className={`cns2-sb-dot ${st}`} />
-                </div>
-              );
-            })}
+          <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:2 }}>
+            {esiLevel && (
+              <span className="npi-wf-esi" style={{
+                color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)",
+                borderColor: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.3)`,
+                background: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.08)`,
+              }}>ESI {esiLevel}</span>
+            )}
+            {registration.room && (
+              <span className="npi-wf-esi" style={{ color:"var(--npi-teal)", borderColor:"rgba(0,229,192,.3)", background:"rgba(0,229,192,.08)" }}>Rm {registration.room}</span>
+            )}
           </div>
-
-          {/* Collapsible shortcut legend */}
-          <button className="cns2-sc-toggle" onClick={() => setScOpen(o => !o)}>
-            <span>⌨ Shortcuts</span>
-            <span className={`cns2-sc-toggle-chev${scOpen ? " open" : ""}`}>›</span>
-          </button>
-          {scOpen && (
-            <div className="cns2-sb-legend">
-              {[
-                !embedded && ["⌘ 1–9","Jump section"],
-                ["⌘ G",    "AI generate"],
-                ["⌘ ⇧G",   "Generate all"],
-                ["⌘ R",    "Rebuild"],
-                ["⌘ S",    "Save"],
-                ["⌘ P",    "Print"],
-                ["⌘ ⇧C",   "Copy all"],
-              ].filter(Boolean).map(([k, d]) => (
-                <div key={k} className="cns2-sc-row">
-                  <span className="cns2-sc-k">{k}</span>
-                  <span className="cns2-sc-d">{d}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── Main note area ─────────────────────────────────────────────────── */}
-        <div className="cns2-area">
-          {SECTIONS.map(s => {
-            const sec      = sections[s.id] || {};
-            const st       = sec.status    || "empty";
-            const lk       = sec.locked    || false;
-            const txt      = sec.content   || "";
-            const coll     = sec.collapsed || false;
-            const busy     = loading[s.id] || false;
-            const hasMacros = !!MACROS[s.id]?.length;
-            const isMDM    = s.id === "mdm";
-            const isDispo  = s.id === "dispo";
-            const srcTab   = TAB_MAP[s.id];
-
-            return (
-              <div key={s.id}
-                ref={el => { sectionDivRefs.current[s.id] = el; }}
-                className={`cns2-sec${focused === s.id ? " focused" : ""}${coll ? " collapsed" : ""}`}
-                onClick={() => { if (coll) toggleCollapse(s.id); else setFocused(s.id); }}>
-
-                {/* Section header */}
-                <div className="cns2-sec-hdr"
-                  onClick={e => { e.stopPropagation(); toggleCollapse(s.id); setFocused(s.id); }}>
-                  <span className="cns2-sec-num">{s.key}</span>
-                  <span className="cns2-sec-icon">{s.icon}</span>
-                  <div className="cns2-sec-info">
-                    <div className="cns2-sec-title">{s.title}</div>
-                    {coll && txt && (
-                      <div className="cns2-sec-preview">{txt.split("\n").find(l => l.trim()) || ""}</div>
-                    )}
-                  </div>
-                  {!embedded && <span className="cns2-sec-short">⌘{s.key}</span>}
-                  <div className="cns2-sec-acts" onClick={e => e.stopPropagation()}>
-                    {/* "Edit source data" — navigates to the originating NPI tab */}
-                    {srcTab && (
-                      <button className="ibtn"
-                        title={`Edit source data → ${srcTab} tab`}
-                        onClick={() => navigate(`/NewPatientInput?tab=${srcTab}`)}
-                        style={{ fontSize:10 }}>↩</button>
-                    )}
-                    <span className={`cns2-status st-${st}`}>{st === "locked" ? "🔒 locked" : st}</span>
-                    <button className={`ibtn${busy ? " spin" : ""}`} title="AI Generate (⌘G)"
-                      disabled={lk || busy} onClick={() => generateSection(s.id)}>
-                      {busy ? "⟳" : "✦"}
-                    </button>
-                    <button className="ibtn" title={lk ? "Unlock" : "Lock section"}
-                      onClick={() => toggleLock(s.id)}
-                      style={{ color: lk ? "var(--blue)" : undefined }}>
-                      {lk ? "🔒" : "🔓"}
-                    </button>
-                  </div>
-                  <span className="cns2-chevron">›</span>
-                </div>
-
-                {/* Macro bar */}
-                {!coll && hasMacros && !lk && (
-                  <div className="cns2-macro-bar" onClick={e => e.stopPropagation()}>
-                    {MACROS[s.id].map(m => (
-                      <button key={m.label} className={`macro-pill ${m.cls || ""}`}
-                        onClick={() => applyMacro(s.id, m.text)}>{m.label}</button>
-                    ))}
-                  </div>
-                )}
-
-                {/* MDM builder — collapsed by default, disclosure toggle */}
-                {!coll && isMDM && !lk && (
-                  <div onClick={e => e.stopPropagation()}>
-                    <div className="cns2-builder-toggle"
-                      onClick={() => setMdmBuilderOpen(o => !o)}>
-                      <span className="cns2-builder-icon">⊕</span>
-                      <span>Open Assessment &amp; Plan Builder</span>
-                      <span className={`cns2-toggle-chev${mdmBuilderOpen ? " open" : ""}`}>›</span>
-                    </div>
-                    {mdmBuilderOpen && (
-                      <MDMBuilder
-                        dx={mdmDx}      setDx={setMdmDx}
-                        risk={mdmRisk}  setRisk={setMdmRisk}
-                        data={mdmData}  setData={setMdmData}
-                        plan={mdmPlan}  setPlan={setMdmPlan}
-                        onApply={applyMDM}
-                      />
-                    )}
-                  </div>
-                )}
-
-                {/* Dispo builder — collapsed by default, disclosure toggle */}
-                {!coll && isDispo && !lk && (
-                  <div onClick={e => e.stopPropagation()}>
-                    <div className="cns2-builder-toggle"
-                      onClick={() => setDispoBuilderOpen(o => !o)}>
-                      <span className="cns2-builder-icon">⊕</span>
-                      <span>Open Disposition Builder</span>
-                      <span className={`cns2-toggle-chev${dispoBuilderOpen ? " open" : ""}`}>›</span>
-                    </div>
-                    {dispoBuilderOpen && (
-                      <DispoBuilder
-                        mode={dispoMode}         setMode={setDispoMode}
-                        service={dispoService}   setService={setDispoService}
-                        followup={dispoFollowup} setFollowup={setDispoFollowup}
-                        fwTime={dispoFwTime}     setFwTime={setDispoFwTime}
-                        prec={dispoPrec}         setPrec={setDispoPrec}
-                        onApply={applyDispo}
-                      />
-                    )}
-                  </div>
-                )}
-
-                {/* Textarea */}
-                {!coll && (
-                  <div className="cns2-sec-body" onClick={e => e.stopPropagation()}>
-                    <textarea
-                      ref={el => { textareaRefs.current[s.id] = el; }}
-                      className={`cns2-ta${lk ? " locked" : ""}`}
-                      value={txt}
-                      disabled={lk}
-                      placeholder={
-                        isMDM || isDispo
-                          ? "Use the builder above, or type directly here…"
-                          : `${s.title}…`
-                      }
-                      onChange={e => updateSection(s.id, e.target.value)}
-                      onFocus={() => setFocused(s.id)}
-                      onInput={e => {
-                        e.target.style.height = "auto";
-                        e.target.style.height = e.target.scrollHeight + "px";
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* Footer */}
-                {!coll && (
-                  <div className="cns2-sec-foot" onClick={e => e.stopPropagation()}>
-                    <span className="cns2-chars">
-                      {txt.length} chars · {txt ? txt.split("\n").length : 0} lines
-                    </span>
-                    {!lk && (
-                      <span className="cns2-done-link" onClick={() => markComplete(s.id)}>
-                        {st === "complete" ? "✓ done — expand" : "Mark complete ✓"}
-                      </span>
-                    )}
-                  </div>
-                )}
+          <div className="npi-wf-vitals">
+            {[
+              { key:"bp",   lbl:"BP",   val: vitals.bp   || "\u2014" },
+              { key:"hr",   lbl:"HR",   val: vitals.hr   || "\u2014" },
+              { key:"rr",   lbl:"RR",   val: vitals.rr   || "\u2014" },
+              { key:"spo2", lbl:"SpO\u2082", val: vitals.spo2 || "\u2014" },
+              { key:"temp", lbl:"T",    val: vitals.temp || "\u2014" },
+            ].map(v => (
+              <div key={v.key} className="npi-wf-v-row">
+                <span className="npi-wf-v-lbl">{v.lbl}</span>
+                <span className={`npi-wf-v-val${vitalClass(v.key, v.val)}`}>{v.val}</span>
               </div>
-            );
-          })}
-
-          <div className="cns2-sig">
-            <div className="cns2-sig-lbl">Electronic Signature</div>
-            <div>Attending Physician: ___________________________  Date: ______________</div>
-            <div style={{ marginTop:6, fontSize:10, color:"var(--t4)" }}>
-              I have personally seen and evaluated this patient and agree with the above documentation.
-              Notrya is a clinical decision support tool — verify all clinical decisions independently.
-            </div>
+            ))}
           </div>
         </div>
-      </div>
+
+        {GROUP_META.map(g => {
+          const isActive = g.key === activeGroup;
+          const items    = NAV_DATA[g.key] || [];
+          const badge    = getGroupBadge(g.key);
+          return (
+            <div key={g.key} className="npi-wf-group">
+              <button className={`npi-wf-gh${isActive ? " active" : ""}`} onClick={() => selectGroup(g.key)}>
+                <span className="npi-wf-gh-icon">{g.icon}</span>
+                <span className="npi-wf-gh-label">{g.label}</span>
+                <span className={`npi-wf-gh-badge ${badge}`} />
+              </button>
+              {isActive && (
+                <div className="npi-wf-items">
+                  {items.map(item => (
+                      <div key={item.section} style={{display:"contents"}}>
+                        <button className={`npi-wf-item${item.section === currentTab ? " active" : ""}`}
+                          onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}>
+                          <span className="npi-wf-item-icon">{item.icon}</span>
+                          <span className="npi-wf-item-label">{item.label}</span>
+                          <span className={`npi-wf-item-dot ${navDots[item.section]||"empty"}`} />
+                          {SECTION_SHORTCUT[item.section] && (
+                            <span className="npi-wf-item-sc">⌘{SECTION_SHORTCUT[item.section]}</span>
+                          )}
+                        </button>
+                        {item.section === "ros" && currentTab === "ros" && ROS_RAIL_SYSTEMS.map((sys, i) => (
+                          <button key={sys.id} className={`npi-wf-sys-item${i === rosActiveSystem ? " active" : ""}`}
+                            onClick={() => setRosActiveSystem(i)}>
+                            <span className="npi-wf-sys-icon">{sys.icon}</span>
+                            <span className="npi-wf-sys-label">{sys.label}</span>
+                            <span className={`npi-wf-item-dot ${getRosSysDot(sys.id)}`} />
+                          </button>
+                        ))}
+                        {item.section === "pe" && currentTab === "pe" && PE_RAIL_SYSTEMS.map((sys, i) => (
+                          <button key={sys.id} className={`npi-wf-sys-item${i === peActiveSystem ? " active" : ""}`}
+                            onClick={() => setPeActiveSystem(i)}>
+                            <span className="npi-wf-sys-icon">{sys.icon}</span>
+                            <span className="npi-wf-sys-label">{sys.label}</span>
+                            <span className={`npi-wf-item-dot ${getPeSysDot(sys.id)}`} />
+                          </button>
+                        ))}
+                      </div>
+                  ))}
+                  </div>
+              )}
+            </div>
+          );
+        })}
+      </aside>
     </div>
   );
 }

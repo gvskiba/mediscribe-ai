@@ -162,12 +162,25 @@ function SectionHeader({ section, expanded, onToggle, complete, children }) {
 
 // ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function ClinicalNoteStudio({
-  demo, cc, vitals, medications, allergies,
-  pmhSelected, pmhExtra, surgHx, famHx, socHx,
-  rosState, peState, peFindings,
-  esiLevel, registration,
+  patientData,
+  demo: demoProp, cc: ccProp, vitals: vitalsProp, medications: medicationsProp, allergies: allergiesProp,
+  pmhSelected: pmhSelectedProp, pmhExtra: pmhExtraProp, surgHx: surgHxProp, famHx: famHxProp, socHx: socHxProp,
+  rosState: rosStateProp, peState: peStateProp, peFindings: peFindingsProp,
+  esiLevel: esiLevelProp, registration: registrationProp,
   onSave,
 }) {
+  // Support both patientData bundle (from NewPatientInput) and individual props (legacy)
+  const demo        = patientData?.demo        ?? demoProp        ?? {};
+  const cc          = patientData?.cc          ?? ccProp          ?? {};
+  const vitals      = patientData?.vitals      ?? vitalsProp      ?? {};
+  const medications = patientData?.medications ?? medicationsProp ?? [];
+  const allergies   = patientData?.allergies   ?? allergiesProp   ?? [];
+  const pmhSelected = patientData?.pmhSelected ?? pmhSelectedProp ?? {};
+  const rosState    = patientData?.rosState    ?? rosStateProp    ?? {};
+  const peState     = patientData?.peState     ?? peStateProp     ?? {};
+  const peFindings  = patientData?.peFindings  ?? peFindingsProp  ?? {};
+  const esiLevel    = patientData?.esiLevel    ?? esiLevelProp    ?? "";
+  const registration = patientData?.registration ?? registrationProp ?? {};
   const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
 
   // ── Section expand/collapse ─────────────────────────────────────────────

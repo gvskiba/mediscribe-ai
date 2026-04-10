@@ -204,6 +204,9 @@ export default function NewPatientInput() {
   const [triage, setTriage]           = useState("");
   const [esiLevel, setEsiLevel]       = useState("");
   const [consults, setConsults]       = useState([]);
+  const [svcIn,    setSvcIn]           = useState("");
+  const [qIn,      setQIn]             = useState("");
+  const [respIn,   setRespIn]          = useState({});
   const [registration, setRegistration] = useState({ mrn:"", room:"" });
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [cdsOpen,      setCdsOpen]      = useState(false);
@@ -501,9 +504,7 @@ export default function NewPatientInput() {
           setConsults(prev=>[...prev,{ id:Date.now(), service:svc.trim(), question:q.trim(), requestedAt:Date.now(), status:"pending", response:"" }]);
         };
         const markReceived = (id, resp) => setConsults(prev=>prev.map(c=>c.id===id?{...c,status:"completed",response:resp}:c));
-        const [svcIn,  setSvcIn]   = React.useState("");
-        const [qIn,    setQIn]     = React.useState("");
-        const [respIn, setRespIn]  = React.useState({});
+
         return (
           <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
             <div style={{ padding:"14px 16px", borderRadius:10, background:"rgba(14,37,68,0.7)", border:"1px solid rgba(26,53,85,0.55)", borderTop:"2px solid rgba(0,229,192,0.35)" }}>

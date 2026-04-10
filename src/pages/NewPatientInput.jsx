@@ -327,11 +327,9 @@ export default function NewPatientInput() {
 
   const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
 
-  // Append a timestamped vitals snapshot to history.
-  // Called by VitalsTab (triage) and by ReassessmentTab via onVitalsSnapshot.
   const addVitalsSnapshot = useCallback((label, overrideVitals) => {
     const v = overrideVitals || vitals;
-    if (!v || (!v.hr && !v.bp)) return;   // nothing to capture yet
+    if (!v || (!v.hr && !v.bp)) return;
     setVitalsHistory(prev => [...prev, { t: Date.now(), label, ...v }]);
   }, [vitals]);
 
@@ -412,6 +410,27 @@ export default function NewPatientInput() {
   };
 
   const patientName = [demo.firstName,demo.lastName].filter(Boolean).join(" ") || "New Patient";
+
+  // ── Build the patientData bundle once so CNS always gets a consistent object
+  const patientDataBundle = {
+    demo,
+    cc,
+    vitals,
+    medications,
+    allergies,
+    pmhSelected,
+    pmhExtra,
+    surgHx,
+    famHx,
+    socHx,
+    rosState,
+    rosNotes,
+    rosSymptoms,
+    peState,
+    peFindings,
+    esiLevel,
+    registration,
+  };
 
   const renderContent = () => {
     switch (currentTab) {
@@ -496,7 +515,19 @@ export default function NewPatientInput() {
       case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
       case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />;
       case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("chart")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
-      case "chart":      return <ClinicalNoteStudio demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} onSave={handleSaveChart} />;
+
+      // ── FIX: pass a single patientData object, embedded flag, and correct callbacks
+      case "chart": return (
+        <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}>
+          <ClinicalNoteStudio
+            patientData={patientDataBundle}
+            embedded={true}
+            onBack={() => selectSection("pe")}
+            onSave={handleSaveChart}
+          />
+        </div>
+      );
+
       case "consult": {
         const elapsed = ts => { const m=Math.floor((Date.now()-ts)/60000); return m<60?`${m}m`:`${Math.floor(m/60)}h ${m%60}m`; };
         const addConsult = (svc, q) => {
@@ -555,7 +586,7 @@ export default function NewPatientInput() {
       }
       case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState}
         onVitalsSnapshot={v => addVitalsSnapshot(
-          `Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`,
+          `Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`,
           v
         )}
         onAdvance={() => selectSection("timeline")} />;
@@ -637,7 +668,6 @@ export default function NewPatientInput() {
 
       <div className="npi-main-wrap">
         <main className="npi-content">{renderContent()}</main>
-
       </div>
 
       <div className={`npi-scrim${aiOpen?" open":""}`} onClick={toggleAI} />
@@ -703,6 +733,7 @@ export default function NewPatientInput() {
               { section:"Navigate to section", rows:[["Cmd 1","Triage"],["Cmd 2","Demographics"],["Cmd 3","Chief Complaint"],["Cmd 4","Vitals"],["Cmd 5","Meds & PMH"],["Cmd 6","HPI"],["Cmd 7","ROS"],["Cmd 8","Physical Exam"],["Cmd 9","Orders"],["Cmd 0","Discharge"]] },
               { section:"HPI (scan mode)", rows:[["Y / Enter","Symptom present"],["N","Symptom absent"],["Space","Skip symptom"],["0-9","Pain scale or option #"],["Arrow Up/Down","Navigate rows"],["Backspace","Go back one row"],["Esc","Finish & build narrative"]] },
               { section:"Actions", rows:[["Cmd Shift S","Save Chart"],["Cmd Shift N","New Patient"],["?","Toggle shortcuts"]] },
+              { section:"Note Studio (when in Clinical Note tab)", rows:[["Cmd G","AI generate focused section"],["Cmd Shift G","Generate all empty sections"],["Cmd R","Rebuild from patient data"],["Cmd S","Save note"],["Cmd P","Print note"],["Cmd Shift C","Copy full note"]] },
             ].map(({ section, rows }) => (
               <div key={section} style={{ marginBottom:16 }}>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#5a82a8",letterSpacing:2,textTransform:"uppercase",marginBottom:8 }}>{section}</div>

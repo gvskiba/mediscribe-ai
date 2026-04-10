@@ -1518,25 +1518,6 @@ export default function ClinicalNoteStudio({
         <div className="cns2-area">
           {noteElements}
 
-          <div style={{padding:"10px 14px",borderRadius:10,background:"rgba(8,22,40,.5)",
-            border:"1px solid rgba(26,53,85,.3)",fontSize:10,fontFamily:"'DM Sans',sans-serif",
-            color:"var(--t4)",display:"flex",alignItems:"flex-start",gap:10}}>
-            <span style={{color:"var(--teal)",flexShrink:0}}>ⓘ</span>
-            <span>
-              <strong style={{color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1}}>
-                DOCUMENTATION BASIS
-              </strong>
-              {" "}— APSO: Rosenbloom et al. JAMIA 2010 (30–60% faster time-to-critical-information).
-              Dx confidence: Singh et al. BMJ 2013.
-              E&M estimation + Risk Calculators + "Not Ordered" credit + Comorbidity-MDM impact + SDOH:
-              ACEP CNAC 2023 CPT Documentation Guidelines FAQ (70 items).
-              SDOH mandatory reporting: CMS G0136 eff. Jan 2024.
-              Critical care time: CPT 99291/99292.
-              NQS: PDQI-9, Wrenn et al. AJEM 2010.
-              SBAR Handoff: I-PASS Study NEJM 2014.
-              History and exam: "medically appropriate" standard — APSO format is fully CPT 2023 compliant.
-            </span>
-          </div>
 
           <div className="cns2-sig">
             <div className="cns2-sig-lbl">Electronic Signature</div>

@@ -247,6 +247,28 @@ export default function NotryaNewTechnology() {
           </p>
         </div>
 
+        {/* ── Documentation Basis ── */}
+        <div style={{ background: T.panel, border: `1px solid ${T.bd}`, borderRadius: 14, padding: "20px 24px", marginBottom: 32 }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.txt4, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Documentation Basis</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {[
+              ["APSO Note Format", "Rosenbloom et al. JAMIA 2010 — 30–60% faster time-to-critical-information vs. SOAP"],
+              ["Dx Confidence Labels", "Singh et al. BMJ 2013 — explicit uncertainty documentation reduces downstream diagnostic error"],
+              ["E&M Estimation, Risk Calculators, 'Not Ordered' Credit, Comorbidity-MDM Impact, SDOH", "ACEP CNAC 2023 CPT Documentation Guidelines FAQ (70 items)"],
+              ["SDOH Mandatory Reporting", "CMS G0136 effective January 2024 — referral + incorporation into MDM required"],
+              ["Critical Care Time", "CPT 99291 (first 30–74 min) / 99292 (each additional 30 min) — time must be documented in note"],
+              ["Note Quality Score (NQS)", "PDQI-9 instrument — Wrenn et al. AJEM 2010 (validated for ED notes)"],
+              ["SBAR Handoff Generator", "I-PASS Study — NEJM 2014 — 30% reduction in medical errors via structured handoff"],
+              ["History & Exam Standard", "\"Medically appropriate\" standard — APSO format is fully CPT 2023 compliant"],
+            ].map(([title, ref]) => (
+              <div key={title} style={{ display: "flex", gap: 12, padding: "8px 0", borderBottom: `1px solid rgba(26,53,85,.4)` }}>
+                <div style={{ width: 220, flexShrink: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, color: T.teal }}>{title}</div>
+                <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.55 }}>{ref}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* ── CTA ── */}
         <div style={{ textAlign: "center", padding: "48px 32px", background: T.panel, border: `1px solid ${T.bd}`, borderRadius: 20 }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>🚀</div>

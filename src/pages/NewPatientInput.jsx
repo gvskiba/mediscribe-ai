@@ -577,7 +577,7 @@ export default function NewPatientInput() {
   };
 
   return (
-    <>
+    <div>
       <style>{NPI_CSS}</style>
 
       <header className="npi-top-bar">
@@ -769,7 +769,7 @@ export default function NewPatientInput() {
               {isActive && (
                 <div className="npi-wf-items">
                   {items.map(item => (
-                      <React.Fragment key={item.section}>
+                      <div key={item.section} style={{display:"contents"}}>
                         <button className={`npi-wf-item${item.section === currentTab ? " active" : ""}`}
                           onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}>
                           <span className="npi-wf-item-icon">{item.icon}</span>
@@ -795,14 +795,14 @@ export default function NewPatientInput() {
                             <span className={`npi-wf-item-dot ${getPeSysDot(sys.id)}`} />
                           </button>
                         ))}
-                      </React.Fragment>
-                  )}
-                </div>
+                      </div>
+                  ))}
+                  </div>
               )}
             </div>
           );
         })}
       </aside>
-    </>
+    </div>
   );
 }

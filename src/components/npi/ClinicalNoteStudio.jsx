@@ -217,6 +217,20 @@ import { toast } from "sonner";
 .cns2-ta.locked{background:rgba(59,158,255,.03);color:var(--t2);}
 .cns2-sec.grp-A .cns2-ta{min-height:140px;}
 .cns2-sec.grp-P .cns2-ta{min-height:110px;}
+/* Keyboard focus rings — visible for all tabbable elements */
+.cns2-sec-hdr:focus-visible{outline:2px solid var(--blue);outline-offset:-2px;border-radius:11px;}
+.cns2 .ibtn:focus-visible{outline:2px solid var(--blue);outline-offset:1px;}
+.cns2 .btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+.macro-pill:focus-visible{outline:2px solid var(--teal);outline-offset:1px;}
+.cns2-done-link:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:3px;}
+.cns2-builder-toggle:focus-visible{outline:2px solid var(--blue);outline-offset:-2px;}
+.data-chip:focus-visible{outline:2px solid var(--blue);outline-offset:1px;}
+.dispo-big:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
+.precaution:focus-visible{outline:2px solid var(--orange);outline-offset:1px;}
+.cns2-sb-item:focus-visible{outline:2px solid var(--blue);outline-offset:-1px;}
+.cns2 .mdm-inp:focus,.cns2 .dx-conf-inp:focus,.cns2 .dx-conf-sel:focus,
+.cns2 .mdm-plan-inp:focus,.cns2 .mdm-inp:focus-visible{
+  outline:none;border-color:var(--bhi);}
 .cns2-sec-foot{display:flex;align-items:center;padding:4px 14px 8px;gap:10px;}
 .cns2-chars{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t4);}
 .cns2-done-link{margin-left:auto;font-size:9px;font-weight:600;cursor:pointer;
@@ -767,7 +781,9 @@ function MDMBuilder({dx,setDx,dxConf,setDxConf,risk,setRisk,data,setData,plan,se
         <div className="mdm-data-grid">
           {SDOH_OPTS.map(o=>(
             <div key={o.z} className={`data-chip${sdoh.includes(o.label)?" sel":""}`}
+              role="checkbox" aria-checked={sdoh.includes(o.label)} tabIndex={0}
               onClick={()=>toggleSdoh(o.label)}
+              onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggleSdoh(o.label);}}}
               title={`ICD-10 ${o.z}`}
               style={sdoh.includes(o.label)?{borderColor:"#f5c842",color:"#f5c842",background:"rgba(245,200,66,.12)"}:{}}>
               {o.label}
@@ -785,7 +801,9 @@ function MDMBuilder({dx,setDx,dxConf,setDxConf,risk,setRisk,data,setData,plan,se
         <div className="mdm-data-grid">
           {ED_CALCS.map(c=>(
             <div key={c} className={`data-chip${calcs.includes(c)?" sel":""}`}
+              role="checkbox" aria-checked={calcs.includes(c)} tabIndex={0}
               onClick={()=>toggleCalc(c)}
+              onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggleCalc(c);}}}
               style={calcs.includes(c)?{borderColor:"#9b6dff",color:"#9b6dff",background:"rgba(155,109,255,.12)"}:{}}>
               {c}
             </div>
@@ -799,7 +817,14 @@ function MDMBuilder({dx,setDx,dxConf,setDxConf,risk,setRisk,data,setData,plan,se
       <div className="mdm-row">
         <div className="mdm-lbl">Data / Complexity</div>
         <div className="mdm-data-grid">
-          {DATA_OPTS.map(o=><div key={o} className={`data-chip${data.includes(o)?" sel":""}`} onClick={()=>toggleData(o)}>{o}</div>)}
+          {DATA_OPTS.map(o=>(
+            <div key={o} className={`data-chip${data.includes(o)?" sel":""}`}
+              role="checkbox" aria-checked={data.includes(o)} tabIndex={0}
+              onClick={()=>toggleData(o)}
+              onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggleData(o);}}}>
+              {o}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -888,7 +913,10 @@ function DispoBuilder({mode,setMode,service,setService,followup,setFollowup,fwTi
         <div className="dispo-big-row">
           {[{v:"discharge",l:"Discharge Home",i:"🏠",c:"discharge"},{v:"admit",l:"Admit",i:"🏥",c:"admit"},
             {v:"obs",l:"Observation",i:"⏱",c:"obs"},{v:"transfer",l:"Transfer",i:"🚑",c:"transfer"}].map(({v,l,i,c})=>(
-            <div key={v} className={`dispo-big ${c}${mode===v?" sel":""}`} onClick={()=>setMode(m=>m===v?"":v)}>
+            <div key={v} className={`dispo-big ${c}${mode===v?" sel":""}`}
+              role="radio" aria-checked={mode===v} tabIndex={0}
+              onClick={()=>setMode(m=>m===v?"":v)}
+              onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();setMode(m=>m===v?"":v);}}}>
               <div className="dispo-big-icon">{i}</div>{l}
             </div>
           ))}
@@ -906,7 +934,14 @@ function DispoBuilder({mode,setMode,service,setService,followup,setFollowup,fwTi
         <div className="mdm-row">
           <div className="mdm-lbl">Return Precautions</div>
           <div className="dispo-precautions">
-            {PRECAUTIONS.map(p=><div key={p} className={`precaution${prec.includes(p)?" sel":""}`} onClick={()=>togglePrec(p)}>{p}</div>)}
+            {PRECAUTIONS.map(p=>(
+              <div key={p} className={`precaution${prec.includes(p)?" sel":""}`}
+                role="checkbox" aria-checked={prec.includes(p)} tabIndex={0}
+                onClick={()=>togglePrec(p)}
+                onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();togglePrec(p);}}}>
+                {p}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -931,6 +966,14 @@ function DispoBuilder({mode,setMode,service,setService,followup,setFollowup,fwTi
 function SBARModal({sections, patientName, cc, onClose}){
   const init = useMemo(()=>buildSBAR(sections, patientName, cc),[]);
   const [sbar, setSbar] = useState(init);
+  const firstTaRef = useRef(null);
+  // Escape closes modal; autoFocus first textarea on mount
+  useEffect(()=>{
+    const h=e=>{if(e.key==="Escape")onClose();};
+    window.addEventListener("keydown",h);
+    setTimeout(()=>firstTaRef.current?.focus(),80);
+    return()=>window.removeEventListener("keydown",h);
+  },[onClose]);
   const copy = async () => {
     const text = `SITUATION:\n${sbar.S}\n\nBACKGROUND:\n${sbar.B}\n\nASSESSMENT:\n${sbar.A}\n\nRECOMMENDATION:\n${sbar.R}`;
     try{await navigator.clipboard.writeText(text);toast.success("SBAR copied to clipboard.");}
@@ -962,6 +1005,7 @@ function SBARModal({sections, patientName, cc, onClose}){
                 <span className="sbar-section-name">{label}</span>
               </div>
               <textarea className="sbar-ta" rows={rows} value={sbar[key]}
+                ref={key==="S"?firstTaRef:null}
                 onChange={e=>setSbar(p=>({...p,[key]:e.target.value}))}/>
             </div>
           ))}
@@ -1171,29 +1215,90 @@ export default function ClinicalNoteStudio({
   const jumpTo=useCallback(id=>{
     setFocused(id);
     setSections(prev=>({...prev,[id]:{...prev[id],collapsed:false}}));
-    setTimeout(()=>secDivRefs.current[id]?.scrollIntoView({behavior:"smooth",block:"start"}),50);
+    setTimeout(()=>{
+      secDivRefs.current[id]?.scrollIntoView({behavior:"smooth",block:"start"});
+      // autoFocus the textarea so the physician can type immediately
+      taRefs.current[id]?.focus();
+    },60);
   },[]);
+
+  // Next / previous section by APSO order
+  const focusAdjacentSection=useCallback((dir)=>{
+    const idx=SECTIONS.findIndex(s=>s.id===focused);
+    const next=SECTIONS[idx+dir];
+    if(next) jumpTo(next.id);
+  },[focused,jumpTo]);
+
+  useEffect(()=>{
+    // autoFocus assessment textarea on mount (keyboard-first entry point)
+    setTimeout(()=>{
+      taRefs.current["assessment"]?.focus();
+    },120);
+  },[]); // eslint-disable-line
 
   useEffect(()=>{
     const handler=e=>{
-      const mod=e.metaKey||e.ctrlKey;if(!mod)return;
-      if(!embedded){
+      const mod=e.metaKey||e.ctrlKey;
+      const inInput=["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName);
+
+      // Section jumps via ⌘1-0 — standalone only
+      if(mod&&!embedded){
         const k=e.key;const idx=k==="0"?9:parseInt(k,10)-1;
         if(!Number.isNaN(idx)&&idx>=0&&idx<SECTIONS.length){e.preventDefault();jumpTo(SECTIONS[idx].id);return;}
       }
+
+      // ⌘↓ / ⌘↑ — next/previous section (works from anywhere, inc. textareas)
+      if(mod&&e.key==="ArrowDown"){e.preventDefault();focusAdjacentSection(1);return;}
+      if(mod&&e.key==="ArrowUp")  {e.preventDefault();focusAdjacentSection(-1);return;}
+
+      // Escape — collapse focused section / close NQS panel
+      if(e.key==="Escape"&&!inInput){
+        e.preventDefault();
+        setSections(prev=>({...prev,[focused]:{...prev[focused],collapsed:true}}));
+        return;
+      }
+      // Escape from textarea — blur + collapse section, return focus to section header
+      if(e.key==="Escape"&&inInput){
+        e.preventDefault();
+        (e.target).blur();
+        setSections(prev=>({...prev,[focused]:{...prev[focused],collapsed:true}}));
+        return;
+      }
+
+      // Enter on non-input = expand/collapse focused section
+      if(e.key==="Enter"&&!inInput){
+        e.preventDefault();
+        const isCollapsed = !!sectionsRef.current[focused]?.collapsed;
+        setSections(prev=>({...prev,[focused]:{...prev[focused],collapsed:!isCollapsed}}));
+        // if it was collapsed and we're opening it, focus the textarea
+        if(isCollapsed) setTimeout(()=>taRefs.current[focused]?.focus(),60);
+        return;
+      }
+
+      if(!mod) return;
+
       switch(true){
-        case e.key==="g"&&!e.shiftKey:e.preventDefault();generateSection(focused);break;
-        case e.key==="g"&&e.shiftKey:e.preventDefault();generateAll();break;
-        case e.key==="s"&&!e.shiftKey:e.preventDefault();saveNote();break;
-        case e.key==="p"&&!e.shiftKey:e.preventDefault();printNote();break;
-        case e.key==="c"&&e.shiftKey:e.preventDefault();copyAll();break;
-        case e.key==="r"&&!e.shiftKey:e.preventDefault();rebuildAll();break;
+        case e.key==="g"&&!e.shiftKey: e.preventDefault();generateSection(focused);break;
+        case e.key==="g"&&e.shiftKey:  e.preventDefault();generateAll();break;
+        case e.key==="s"&&!e.shiftKey: e.preventDefault();saveNote();break;
+        case e.key==="p"&&!e.shiftKey: e.preventDefault();printNote();break;
+        case e.key==="c"&&e.shiftKey:  e.preventDefault();copyAll();break;
+        case e.key==="r"&&!e.shiftKey: e.preventDefault();rebuildAll();break;
+        // ⌘K — mark focused section complete / reopen
+        case e.key==="k":              e.preventDefault();markComplete(focused);break;
+        // ⌘E — collapse/expand focused section
+        case e.key==="e":              e.preventDefault();toggleCollapse(focused);break;
+        // ⌘M — toggle MDM builder (when assessment is focused)
+        case e.key==="m":              e.preventDefault();if(focused==="assessment")setMdmOpen(o=>!o);break;
+        // ⌘D — toggle Dispo builder (when dispo is focused)
+        case e.key==="d":              e.preventDefault();if(focused==="dispo")setDispoOpen(o=>!o);break;
         default:break;
       }
     };
     window.addEventListener("keydown",handler);
     return()=>window.removeEventListener("keydown",handler);
-  },[embedded,focused,generateSection,generateAll,saveNote,printNote,copyAll,rebuildAll,jumpTo]);
+  },[embedded,focused,generateSection,generateAll,saveNote,printNote,copyAll,
+     rebuildAll,jumpTo,focusAdjacentSection,markComplete,toggleCollapse]);
 
   const pct=(completedCount/SECTIONS.length)*100;
 
@@ -1280,7 +1385,16 @@ export default function ClinicalNoteStudio({
           onClick={()=>{if(coll)toggleCollapse(s.id);else setFocused(s.id);}}>
 
           <div className="cns2-sec-hdr"
-            onClick={e=>{e.stopPropagation();toggleCollapse(s.id);setFocused(s.id);}}>
+            role="button" tabIndex={0}
+            aria-expanded={!coll} aria-label={`${s.title} — ${st}`}
+            onClick={e=>{e.stopPropagation();toggleCollapse(s.id);setFocused(s.id);}}
+            onKeyDown={e=>{
+              if(e.key==="Enter"||e.key===" "){
+                e.preventDefault();e.stopPropagation();
+                toggleCollapse(s.id);setFocused(s.id);
+                if(coll) setTimeout(()=>taRefs.current[s.id]?.focus(),60);
+              }
+            }}>
             <span className="cns2-sec-num">{s.key}</span>
             <span className="cns2-sec-icon">{s.icon}</span>
             <div className="cns2-sec-info">
@@ -1310,14 +1424,20 @@ export default function ClinicalNoteStudio({
             <div className="cns2-macro-bar" onClick={e=>e.stopPropagation()}>
               {MACROS[s.id].map(m=>(
                 <button key={m.label} className={`macro-pill ${m.cls||""}`}
-                  onClick={()=>applyMacro(s.id,m.text)}>{m.label}</button>
+                  tabIndex={0}
+                  onClick={()=>applyMacro(s.id,m.text)}
+                  onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();applyMacro(s.id,m.text);}}}
+                >{m.label}</button>
               ))}
             </div>
           )}
 
           {!coll&&isAssess&&!lk&&(
             <div onClick={e=>e.stopPropagation()}>
-              <div className="cns2-builder-toggle" onClick={()=>setMdmOpen(o=>!o)}>
+              <div className="cns2-builder-toggle"
+                role="button" tabIndex={0}
+                onClick={()=>setMdmOpen(o=>!o)}
+                onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setMdmOpen(o=>!o);}}}>
                 <span style={{fontSize:13}}>⊕</span>
                 <span>Assessment Builder — MDM + E&M Estimator</span>
                 <span className={`cns2-toggle-chev${mdmOpen?" open":""}`}>›</span>
@@ -1338,7 +1458,10 @@ export default function ClinicalNoteStudio({
 
           {!coll&&isDispo&&!lk&&(
             <div onClick={e=>e.stopPropagation()}>
-              <div className="cns2-builder-toggle" onClick={()=>setDispoOpen(o=>!o)}>
+              <div className="cns2-builder-toggle"
+                role="button" tabIndex={0}
+                onClick={()=>setDispoOpen(o=>!o)}
+                onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setDispoOpen(o=>!o);}}}>
                 <span style={{fontSize:13}}>⊕</span>
                 <span>Disposition Builder</span>
                 <span className={`cns2-toggle-chev${dispoOpen?" open":""}`}>›</span>
@@ -1363,6 +1486,19 @@ export default function ClinicalNoteStudio({
                 }
                 onChange={e=>updateSection(s.id,e.target.value)}
                 onFocus={()=>setFocused(s.id)}
+                onKeyDown={e=>{
+                  // Tab from textarea moves to next section (⌘↓ also works)
+                  if(e.key==="Tab"&&!e.shiftKey&&!e.metaKey&&!e.ctrlKey){
+                    const idx=SECTIONS.findIndex(x=>x.id===s.id);
+                    const next=SECTIONS[idx+1];
+                    if(next){e.preventDefault();jumpTo(next.id);}
+                  }
+                  if(e.key==="Tab"&&e.shiftKey&&!e.metaKey&&!e.ctrlKey){
+                    const idx=SECTIONS.findIndex(x=>x.id===s.id);
+                    const prev=SECTIONS[idx-1];
+                    if(prev){e.preventDefault();jumpTo(prev.id);}
+                  }
+                }}
                 onInput={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
               />
             </div>
@@ -1372,7 +1508,10 @@ export default function ClinicalNoteStudio({
             <div className="cns2-sec-foot" onClick={e=>e.stopPropagation()}>
               <span className="cns2-chars">{txt.length} chars · {txt?txt.split("\n").length:0} lines</span>
               {!lk&&(
-                <span className="cns2-done-link" onClick={()=>markComplete(s.id)}>
+                <span className="cns2-done-link"
+                  role="button" tabIndex={0}
+                  onClick={()=>markComplete(s.id)}
+                  onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();markComplete(s.id);}}}>
                   {st==="complete"?"✓ done — expand":"Mark complete ✓"}
                 </span>
               )}
@@ -1485,7 +1624,9 @@ export default function ClinicalNoteStudio({
               const st=sections[item.id]?.status||"empty";
               return(
                 <div key={item.id} className={`cns2-sb-item${focused===item.id?" on":""}`}
-                  onClick={()=>jumpTo(item.id)}>
+                  role="button" tabIndex={0}
+                  onClick={()=>jumpTo(item.id)}
+                  onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();jumpTo(item.id);}}}>
                   <span className="cns2-sb-ico">{item.icon}</span>
                   <div className="cns2-sb-txt"><div className="cns2-sb-name">{item.title}</div></div>
                   {!embedded&&<span className="cns2-sb-key">⌘{item.key}</span>}
@@ -1501,9 +1642,21 @@ export default function ClinicalNoteStudio({
           {scOpen&&(
             <div className="cns2-sb-legend">
               {[
-                !embedded&&["⌘ 1–9, 0","Jump to section"],
-                ["⌘ G","Generate focused"],["⌘ ⇧G","Generate all"],
-                ["⌘ R","Rebuild"],["⌘ S","Save"],["⌘ P","Print"],["⌘ ⇧C","Copy"],
+                !embedded&&["⌘ 1–9, 0", "Jump to section"],
+                ["⌘ ↓ / ↑",  "Next / prev section"],
+                ["Tab",       "Advance section"],
+                ["Enter",     "Expand / collapse"],
+                ["Esc",       "Collapse section"],
+                ["⌘ G",       "Generate focused"],
+                ["⌘ ⇧G",      "Generate all"],
+                ["⌘ K",       "Mark complete"],
+                ["⌘ E",       "Collapse / expand"],
+                ["⌘ M",       "Toggle MDM builder"],
+                ["⌘ D",       "Toggle Dispo builder"],
+                ["⌘ R",       "Rebuild from data"],
+                ["⌘ S",       "Save"],
+                ["⌘ P",       "Print"],
+                ["⌘ ⇧C",      "Copy note"],
               ].filter(Boolean).map(([k,d])=>(
                 <div key={k} className="cns2-sc-row">
                   <span className="cns2-sc-k">{k}</span>
@@ -1518,6 +1671,25 @@ export default function ClinicalNoteStudio({
         <div className="cns2-area">
           {noteElements}
 
+          <div style={{padding:"10px 14px",borderRadius:10,background:"rgba(8,22,40,.5)",
+            border:"1px solid rgba(26,53,85,.3)",fontSize:10,fontFamily:"'DM Sans',sans-serif",
+            color:"var(--t4)",display:"flex",alignItems:"flex-start",gap:10}}>
+            <span style={{color:"var(--teal)",flexShrink:0}}>ⓘ</span>
+            <span>
+              <strong style={{color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1}}>
+                DOCUMENTATION BASIS
+              </strong>
+              {" "}— APSO: Rosenbloom et al. JAMIA 2010 (30–60% faster time-to-critical-information).
+              Dx confidence: Singh et al. BMJ 2013.
+              E&M estimation + Risk Calculators + "Not Ordered" credit + Comorbidity-MDM impact + SDOH:
+              ACEP CNAC 2023 CPT Documentation Guidelines FAQ (70 items).
+              SDOH mandatory reporting: CMS G0136 eff. Jan 2024.
+              Critical care time: CPT 99291/99292.
+              NQS: PDQI-9, Wrenn et al. AJEM 2010.
+              SBAR Handoff: I-PASS Study NEJM 2014.
+              History and exam: "medically appropriate" standard — APSO format is fully CPT 2023 compliant.
+            </span>
+          </div>
 
           <div className="cns2-sig">
             <div className="cns2-sig-lbl">Electronic Signature</div>

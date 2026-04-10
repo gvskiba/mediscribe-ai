@@ -454,6 +454,23 @@ const MACROS = {
 };
 
 const DATA_OPTS   = ["Labs ordered","Imaging ordered","ECG","External records reviewed","Specialist consulted","New Rx / Rx changed"];
+
+// ACEP 2023 MDM FAQ: documenting use of a validated risk calculator counts as
+// Data Category 1 complexity — same credit as ordering the test.
+const ED_CALCS = [
+  "HEART Score","Wells PE","Wells DVT","PSI / PORT","Canadian CT Head",
+  "NIHSS","CURB-65","PECARN","Glasgow Coma Scale","TIMI","GRACE","Ottawa Ankle",
+];
+
+// CMS 2023/2024: SDOH = mandatory screening; homelessness/food insecurity = Moderate MDM risk.
+// G0136 code effective 2024 — must document referral and incorporation into MDM.
+const SDOH_OPTS = [
+  {label:"Housing instability",   z:"Z59"},
+  {label:"Food insecurity",       z:"Z59.4"},
+  {label:"Transportation barrier",z:"Z59.8"},
+  {label:"Utility insecurity",    z:"Z59.62"},
+  {label:"Interpersonal safety",  z:"Z63.8"},
+];
 const PRECAUTIONS = ["Worsening symptoms","Fever >101°F","Chest pain","Difficulty breathing","New or worsening pain","Unable to tolerate PO","Falls or altered mental status"];
 const TIMER_WARN  = 1200;
 const DX_CONF_OPTS = [
@@ -650,12 +667,18 @@ function buildInitialSections(pd) {
 // ─── MDM BUILDER with Diagnostic Confidence ───────────────────────────────────
 // Dx confidence feature: Singh et al. BMJ 2013 & Graber et al. BMJ Qual Saf 2012.
 // Explicit uncertainty documentation reduces downstream diagnostic error.
-function MDMBuilder({dx,setDx,dxConf,setDxConf,risk,setRisk,data,setData,plan,setPlan,onApply,emResult}){
-  const toggleData=useCallback(i=>setData(d=>d.includes(i)?d.filter(x=>x!==i):[...d,i]),[setData]);
-  const updateConf=(i,v)=>setDxConf(c=>{const n=[...c];n[i]=v;return n;});
+function MDMBuilder({dx,setDx,dxConf,setDxConf,risk,setRisk,data,setData,plan,setPlan,
+  calcs,setCalcs,sdoh,setSdoh,notOrdered,setNotOrdered,comorb,setComorb,ccTime,setCCTime,
+  onApply,emResult}){
+  const toggleData =useCallback(i=>setData(d=>d.includes(i)?d.filter(x=>x!==i):[...d,i]),[setData]);
+  const toggleCalc =useCallback(i=>setCalcs(c=>c.includes(i)?c.filter(x=>x!==i):[...c,i]),[setCalcs]);
+  const toggleSdoh =useCallback(i=>setSdoh(s=>s.includes(i)?s.filter(x=>x!==i):[...s,i]),[setSdoh]);
+  const updateConf =(i,v)=>setDxConf(c=>{const n=[...c];n[i]=v;return n;});
   const build=useCallback(()=>{
     const dl=dx.filter(Boolean),pl=plan.filter(Boolean);
-    if(!dl.length&&!risk&&!data.length&&!pl.length){toast.error("Fill in at least one field.");return;}
+    if(!dl.length&&!risk&&!data.length&&!pl.length&&!calcs.length&&!sdoh.length&&!notOrdered&&!comorb){
+      toast.error("Fill in at least one field.");return;
+    }
     const lines=["ASSESSMENT:",""];
     if(dl.length){
       lines.push("Impression:");
@@ -666,11 +689,29 @@ function MDMBuilder({dx,setDx,dxConf,setDxConf,risk,setRisk,data,setData,plan,se
       });
       lines.push("");
     }
-    if(risk){lines.push(`Risk Stratification: ${risk.toUpperCase()}`);lines.push("");}
+    if(risk){
+      const sdohNote=sdoh.length?` (SDOH: ${sdoh.join(", ")})`:""
+      lines.push(`Risk Stratification: ${risk.toUpperCase()}${sdohNote}`);lines.push("");
+    }
+    if(calcs.length){
+      lines.push("Risk Calculators Used (ACEP MDM Data Category 1):");
+      calcs.forEach(c=>lines.push(`  · ${c}`));lines.push("");
+    }
     if(data.length){lines.push("Data reviewed / ordered:");data.forEach(d=>lines.push(`  · ${d}`));lines.push("");}
-    if(pl.length){lines.push("Clinical Reasoning:");pl.forEach((p,i)=>lines.push(`  ${i+1}. ${p}`));}
+    if(notOrdered?.trim()){
+      lines.push("Tests / treatments considered but NOT ordered:");
+      lines.push(`  ${notOrdered.trim()}`);lines.push("");
+    }
+    if(comorb?.trim()){
+      lines.push("How comorbidities impacted MDM (CPT requirement):");
+      lines.push(`  ${comorb.trim()}`);lines.push("");
+    }
+    if(pl.length){lines.push("Clinical Reasoning:");pl.forEach((p,i)=>lines.push(`  ${i+1}. ${p}`));lines.push("");}
+    if(risk==="high"&&ccTime){
+      lines.push(`Critical Care Time: ${ccTime} minutes (CPT 99291/99292)`);
+    }
     onApply(lines.join("\n"));
-  },[dx,dxConf,risk,data,plan,onApply]);
+  },[dx,dxConf,risk,sdoh,data,calcs,notOrdered,comorb,ccTime,plan,onApply]);
 
   return(
     <div className="mdm-builder">
@@ -719,12 +760,68 @@ function MDMBuilder({dx,setDx,dxConf,setDxConf,risk,setRisk,data,setData,plan,se
           ))}
         </div>
       </div>
+
+      {/* SDOH — CMS 2024 mandatory; homelessness/food = Moderate MDM risk per ACEP CNAC */}
+      <div className="mdm-row">
+        <div className="mdm-lbl">Social Determinants of Health (CMS G0136 · Moderate Risk)</div>
+        <div className="mdm-data-grid">
+          {SDOH_OPTS.map(o=>(
+            <div key={o.z} className={`data-chip${sdoh.includes(o.label)?" sel":""}`}
+              onClick={()=>toggleSdoh(o.label)}
+              title={`ICD-10 ${o.z}`}
+              style={sdoh.includes(o.label)?{borderColor:"#f5c842",color:"#f5c842",background:"rgba(245,200,66,.12)"}:{}}>
+              {o.label}
+            </div>
+          ))}
+        </div>
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--t4)",marginTop:2}}>
+          Document referral + incorporation into MDM (required 2024) · counts as Moderate Risk MDM element
+        </span>
+      </div>
+
+      {/* Risk Calculators — ACEP FAQ: using a validated calculator = Data Category 1 complexity */}
+      <div className="mdm-row">
+        <div className="mdm-lbl">Risk Calculators Used (ACEP: Data Category 1 credit)</div>
+        <div className="mdm-data-grid">
+          {ED_CALCS.map(c=>(
+            <div key={c} className={`data-chip${calcs.includes(c)?" sel":""}`}
+              onClick={()=>toggleCalc(c)}
+              style={calcs.includes(c)?{borderColor:"#9b6dff",color:"#9b6dff",background:"rgba(155,109,255,.12)"}:{}}>
+              {c}
+            </div>
+          ))}
+        </div>
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--t4)",marginTop:2}}>
+          Per ACEP CNAC FAQ: same MDM credit whether test was ordered or ruled out by calculator
+        </span>
+      </div>
+
       <div className="mdm-row">
         <div className="mdm-lbl">Data / Complexity</div>
         <div className="mdm-data-grid">
           {DATA_OPTS.map(o=><div key={o} className={`data-chip${data.includes(o)?" sel":""}`} onClick={()=>toggleData(o)}>{o}</div>)}
         </div>
       </div>
+
+      {/* "Considered but not ordered" — ACEP/CPT 2023: same billing credit as ordering */}
+      <div className="mdm-row">
+        <div className="mdm-lbl">Tests / Treatments Considered But NOT Ordered (CPT 2023 credit)</div>
+        <input className="mdm-inp" value={notOrdered}
+          placeholder="e.g. Head CT deferred — Canadian CT Head rule negative; LP deferred — low pre-test probability..."
+          onChange={e=>setNotOrdered(e.target.value)}/>
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--t4)",marginTop:2}}>
+          Per CPT 2023: "Ordering a test may include those considered but not selected" — billable complexity
+        </span>
+      </div>
+
+      {/* Comorbidity-MDM impact — ACEP CNAC: listing PMH is NOT enough, must document impact */}
+      <div className="mdm-row">
+        <div className="mdm-lbl">How Comorbidities Impacted MDM (CPT requirement — listing PMH alone is insufficient)</div>
+        <input className="mdm-inp" value={comorb}
+          placeholder="e.g. DM2 complicated wound healing, raising infection risk and influencing antibiotic selection..."
+          onChange={e=>setComorb(e.target.value)}/>
+      </div>
+
       <div className="mdm-row">
         <div className="mdm-lbl">Clinical Reasoning</div>
         <div className="mdm-plan-list">
@@ -738,6 +835,28 @@ function MDMBuilder({dx,setDx,dxConf,setDxConf,risk,setRisk,data,setData,plan,se
           {plan.length<6&&<button className="mdm-add-btn" onClick={()=>setPlan(p=>[...p,""])}>+ add item</button>}
         </div>
       </div>
+
+      {/* Critical care time — CPT 99291/99292 requires documented time beyond 74 min */}
+      {risk==="high"&&(
+        <div className="mdm-row">
+          <div className="mdm-lbl" style={{color:"var(--coral)"}}>
+            Critical Care Time — CPT 99291/99292 (Required for High-Risk / Critical Patients)
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <input className="mdm-inp" style={{flex:1}} value={ccTime}
+              placeholder="Total minutes of direct critical care time..."
+              onChange={e=>setCCTime(e.target.value)}/>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"var(--coral)",
+              background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",
+              borderRadius:6,padding:"4px 10px",flexShrink:0,whiteSpace:"nowrap"}}>
+              {ccTime>=75?"99291 + 99292":"99291"}
+            </span>
+          </div>
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--t4)",marginTop:2}}>
+            ≥30 min = 99291 · each additional 30 min = 99292 · document time clearly in note
+          </span>
+        </div>
+      )}
       <button className="mdm-build-btn" onClick={build}>Apply to Assessment →</button>
     </div>
   );
@@ -892,6 +1011,12 @@ export default function ClinicalNoteStudio({
   const [mdmRisk,setMdmRisk]   =useState("");
   const [mdmData,setMdmData]   =useState([]);
   const [mdmPlan,setMdmPlan]   =useState(["",""]);
+  // ACEP 2023 new fields
+  const [mdmCalcs,setMdmCalcs]           =useState([]);
+  const [mdmSdoh,setMdmSdoh]             =useState([]);
+  const [mdmNotOrdered,setMdmNotOrdered] =useState("");
+  const [mdmComorb,setMdmComorb]         =useState("");
+  const [mdmCCTime,setMdmCCTime]         =useState("");
 
   // Dispo builder
   const [dispoMode,setDispoMode]=useState("");
@@ -937,10 +1062,11 @@ export default function ClinicalNoteStudio({
     SECTIONS.filter(s=>["complete","locked"].includes(sections[s.id]?.status)).length,
   [sections]);
 
-  // Live E&M estimation — CMS 2023 MDM-based
-  const emResult=useMemo(()=>
-    computeEM(mdmRisk,mdmDx.filter(Boolean).length,mdmData.length),
-  [mdmRisk,mdmDx,mdmData]);
+  // Live E&M estimation — CMS 2023 MDM-based; SDOH auto-elevates to at least Moderate (ACEP CNAC)
+  const emResult=useMemo(()=>{
+    const effectiveRisk = (mdmSdoh.length>0 && !mdmRisk) ? "mod" : mdmRisk;
+    return computeEM(effectiveRisk,mdmDx.filter(Boolean).length,mdmData.length+mdmCalcs.length);
+  },[mdmRisk,mdmSdoh,mdmDx,mdmData,mdmCalcs]);
 
   // Note Quality Score — PDQI-9 based
   const nqs=useMemo(()=>computeNQS(sections),[sections]);
@@ -1201,6 +1327,11 @@ export default function ClinicalNoteStudio({
                 risk={mdmRisk} setRisk={setMdmRisk}
                 data={mdmData} setData={setMdmData}
                 plan={mdmPlan} setPlan={setMdmPlan}
+                calcs={mdmCalcs} setCalcs={setMdmCalcs}
+                sdoh={mdmSdoh} setSdoh={setMdmSdoh}
+                notOrdered={mdmNotOrdered} setNotOrdered={setMdmNotOrdered}
+                comorb={mdmComorb} setComorb={setMdmComorb}
+                ccTime={mdmCCTime} setCCTime={setMdmCCTime}
                 onApply={applyMDM} emResult={emResult}/>}
             </div>
           )}
@@ -1253,7 +1384,9 @@ export default function ClinicalNoteStudio({
     return els;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[sections,focused,loading,embedded,mdmOpen,dispoOpen,
-     mdmDx,mdmDxConf,mdmRisk,mdmData,mdmPlan,dispoMode,dispoSvc,dispoFw,dispoFwT,dispoPrec,emResult]);
+     mdmDx,mdmDxConf,mdmRisk,mdmData,mdmPlan,
+     mdmCalcs,mdmSdoh,mdmNotOrdered,mdmComorb,mdmCCTime,
+     dispoMode,dispoSvc,dispoFw,dispoFwT,dispoPrec,emResult]);
 
   return(
     <div className={`cns2${embedded?" emb":""}`} style={{position:"relative"}}>
@@ -1391,12 +1524,17 @@ export default function ClinicalNoteStudio({
             <span style={{color:"var(--teal)",flexShrink:0}}>ⓘ</span>
             <span>
               <strong style={{color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1}}>
-                APSO FORMAT
+                DOCUMENTATION BASIS
               </strong>
-              {" "}— Assessment and Plan appear first per Rosenbloom et al. (JAMIA 2010). Reduces
-              time-to-critical-information 30–60%. Dx confidence labels per Singh et al. (BMJ 2013).
-              E&M estimation per CMS 2023 MDM guidelines. NQS per PDQI-9 (Wrenn et al., AJEM 2010).
-              SBAR handoff per I-PASS study (NEJM 2014).
+              {" "}— APSO: Rosenbloom et al. JAMIA 2010 (30–60% faster time-to-critical-information).
+              Dx confidence: Singh et al. BMJ 2013.
+              E&M estimation + Risk Calculators + "Not Ordered" credit + Comorbidity-MDM impact + SDOH:
+              ACEP CNAC 2023 CPT Documentation Guidelines FAQ (70 items).
+              SDOH mandatory reporting: CMS G0136 eff. Jan 2024.
+              Critical care time: CPT 99291/99292.
+              NQS: PDQI-9, Wrenn et al. AJEM 2010.
+              SBAR Handoff: I-PASS Study NEJM 2014.
+              History and exam: "medically appropriate" standard — APSO format is fully CPT 2023 compliant.
             </span>
           </div>
 

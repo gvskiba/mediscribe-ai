@@ -384,9 +384,7 @@ export default function MedsTab({
   }, [setAllergies]);
 
   const handleTogglePMH = useCallback((cond) => {
-    setPmhSelected(prev =>
-      prev.includes(cond) ? prev.filter(c => c !== cond) : [...prev, cond]
-    );
+    setPmhSelected(prev => ({ ...prev, [cond]: !prev[cond] }));
   }, [setPmhSelected]);
 
   const handlePasteParse = useCallback(() => {
@@ -435,7 +433,7 @@ export default function MedsTab({
         {[
           { label:`${medications.length} Meds`, color:T.teal,   show:true },
           { label:`${allergies.length} Allergies`, color:T.coral, show:true },
-          { label:`${pmhSelected.length} PMH`, color:T.blue,   show:true },
+          { label:`${Object.values(pmhSelected).filter(Boolean).length} PMH`, color:T.blue,   show:true },
           { label:`${beersCount} Beers`, color:T.gold,   show:beersCount>0 },
           { label:`${allergyFlagCount} DDI/Allergy`, color:T.orange, show:allergyFlagCount>0 },
         ].filter(s => s.show).map(s=>(
@@ -674,7 +672,7 @@ export default function MedsTab({
         {/* PAST MEDICAL HISTORY */}
         {/* ═══════════════════════════════════════════════════════ */}
         <div style={{ ...glass({borderRadius:14}),overflow:"hidden" }}>
-          <SectionHeader icon="📋" title="Past Medical History" count={pmhSelected.length} color={T.blue}
+          <SectionHeader icon="📋" title="Past Medical History" count={Object.values(pmhSelected).filter(Boolean).length} color={T.blue}
             expanded={pmhExpanded} onToggle={()=>setPmhExpanded(v=>!v)}
           />
           {pmhExpanded && (
@@ -692,7 +690,7 @@ export default function MedsTab({
               {/* Condition checkboxes */}
               <div className="mt-in" style={{ display:"flex",flexWrap:"wrap",gap:6,marginBottom:12 }}>
                 {PMH_CATS[activePmhCat].items.map(cond => {
-                  const selected = pmhSelected.includes(cond);
+                  const selected = !!pmhSelected[cond];
                   const cat = PMH_CATS[activePmhCat];
                   return (
                     <button key={cond} onClick={()=>handleTogglePMH(cond)}
@@ -705,11 +703,11 @@ export default function MedsTab({
               </div>
 
               {/* Selected PMH summary */}
-              {pmhSelected.length > 0 && (
+              {Object.keys(pmhSelected).filter(k=>pmhSelected[k]).length > 0 && (
                 <div style={{ padding:"10px 13px",background:"rgba(59,158,255,0.06)",border:"1px solid rgba(59,158,255,0.2)",borderRadius:9,marginBottom:10 }}>
                   <div style={{ fontFamily:"JetBrains Mono",fontSize:9,color:T.blue,textTransform:"uppercase",letterSpacing:1,marginBottom:6 }}>Selected Conditions</div>
                   <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
-                    {pmhSelected.map(c=>(
+                  {Object.keys(pmhSelected).filter(k=>pmhSelected[k]).map(c=>(
                       <span key={c} style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:20,background:"rgba(59,158,255,0.12)",border:"1px solid rgba(59,158,255,0.3)",fontFamily:"DM Sans",fontSize:11.5,color:T.blue }}>
                         {c}
                         <button onClick={()=>handleTogglePMH(c)} style={{ background:"transparent",border:"none",color:T.txt4,cursor:"pointer",fontSize:10,padding:"0",lineHeight:1 }}>✕</button>

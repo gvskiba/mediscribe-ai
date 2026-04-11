@@ -33,6 +33,7 @@ const NAV_DATA = {
     { section: "cc",         icon: "💬", label: "Chief Complaint",   abbr: "Cc", dot: "empty" },
     { section: "vit",        icon: "📈", label: "Vitals",            abbr: "Vt", dot: "empty" },
     { section: "meds",       icon: "💊", label: "Meds & PMH",        abbr: "Rx", dot: "empty" },
+    { section: "sdoh",       icon: "🏘️", label: "SDOH Screening",    abbr: "Sd", dot: "empty" },
   ],
   assess: [
     { section: "hpi",        icon: "📝", label: "HPI",               abbr: "Hp", dot: "empty" },
@@ -92,6 +93,7 @@ const QUICK_ACTIONS = [
   { icon: "🔍", label: "Check",     prompt: "What am I missing? Check my entries for completeness." },
   { icon: "📝", label: "Draft Note",prompt: "Generate a draft note from the data entered."           },
   { icon: "🧠", label: "DDx",       prompt: "Suggest differential diagnoses based on current data." },
+  { icon: "⚖️",  label: "MDM",      prompt: "Draft a compliant AMA/CPT 2023 Medical Decision Making paragraph. Include: (1) Number & complexity of problems addressed (COPA), (2) Amount & complexity of data reviewed, (3) Risk level (Minimal/Low/Moderate/High) with specific table-of-risk elements. Note any diagnoses considered but not ordered, and any social risk factors (housing, food, transportation) that affect management." },
 ];
 
 const ROS_RAIL_SYSTEMS = [
@@ -138,6 +140,357 @@ function buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab) {
     cc.hpi      ? `HPI summary: ${cc.hpi.slice(0, 200)}.`                                             : null,
     `Active section: ${currentTab}.`,
   ].filter(Boolean).join(" ");
+}
+
+// ─── BEERS CRITERIA (AGE ≥ 65 DRUG SAFETY) ───────────────────────────────────
+const BEERS_DRUGS = [
+  "alprazolam","diazepam","lorazepam","clonazepam","temazepam","triazolam","oxazepam","chlordiazepoxide",
+  "cyclobenzaprine","carisoprodol","methocarbamol","chlorzoxazone","orphenadrine",
+  "diphenhydramine","hydroxyzine","promethazine","doxylamine","meclizine",
+  "zolpidem","zaleplon","eszopiclone",
+  "amitriptyline","imipramine","doxepin","nortriptyline",
+  "indomethacin","ketorolac","piroxicam",
+  "meperidine","pentazocine","butorphanol",
+];
+
+// ─── CC-TRIGGERED RISK SCORE HINTS ───────────────────────────────────────────
+function getCCRiskHints(ccText) {
+  const t = (ccText || "").toLowerCase();
+  const h = [];
+  if (/chest.?pain|cp\b|angina|acs|troponin/.test(t))
+    h.push({ tier:"advisory", score:"HEART Pathway", use:"ACS risk stratification", action:"Score \u22643 \u2192 low risk (MACE <2%), consider discharge" });
+  if (/short.?ness|sob\b|dyspnea|breath/.test(t))
+    h.push({ tier:"advisory", score:"PERC Rule", use:"Rule out PE if pre-test probability <15%", action:"All 8 criteria negative \u2192 no workup needed" });
+  if (/syncope|faint|passed.?out|black.?out/.test(t))
+    h.push({ tier:"advisory", score:"SF Syncope Rule", use:"Short-term serious outcome prediction", action:"Any CHESS criterion positive \u2192 high risk" });
+  if (/head|trauma|fall|collision|mvc|blow/.test(t))
+    h.push({ tier:"info", score:"PECARN (age <18)", use:"Clinically important TBI, minimize CT", action:"Age-stratified algorithm \u2192 select imaging" });
+  if (/ankle|knee/.test(t))
+    h.push({ tier:"info", score:"Ottawa Rules", use:"Reduce unnecessary radiographs", action:"Bony-landmark tenderness \u2192 X-ray indicated" });
+  if (/pneumonia|pna|cough.*fever|fever.*cough/.test(t))
+    h.push({ tier:"info", score:"PSI / PORT Score", use:"CAP severity \u2014 discharge vs. admit", action:"Class I\u2013II \u2192 low-risk outpatient candidate" });
+  if (/back.?pain|neck.?pain|c-spine|c.?spine/.test(t))
+    h.push({ tier:"info", score:"Canadian C-Spine Rule", use:"Cervical spine imaging decision", action:"Low-risk criteria + range of motion \u2192 no CT" });
+  return h;
+}
+
+// ─── SDOH WIDGET ──────────────────────────────────────────────────────────────
+const SDOH_DOMAINS = [
+  { key:"housing",   icon:"🏠", label:"Housing",     q:"Is housing stable?",         opts:["Stable","Unstable","Homeless / at risk"]      },
+  { key:"food",      icon:"🍎", label:"Food",         q:"Food access adequate?",      opts:["Adequate","Inconsistent","Insecure / hungry"]  },
+  { key:"transport", icon:"🚗", label:"Transport",    q:"Can get to appointments?",   opts:["No barrier","Occasional barrier","Major barrier"] },
+  { key:"utilities", icon:"💡", label:"Utilities",    q:"Heat / water stable?",       opts:["Stable","At risk","Shut off / absent"]         },
+  { key:"isolation", icon:"👥", label:"Social",       q:"Social support adequate?",   opts:["Connected","Limited","Isolated"]               },
+  { key:"safety",    icon:"🛡️", label:"Safety",       q:"Feels safe at home?",        opts:["Safe","Unsure","Unsafe / IPV concern"]         },
+];
+
+const TIER_COLORS = { "0":"#00e5c0", "1":"#f5c842", "2":"#ff6b6b" };
+
+function SDOHWidget({ sdoh, setSdoh }) {
+  const positiveCount  = Object.values(sdoh).filter(v => v === "2").length;
+  const concernCount   = Object.values(sdoh).filter(v => v === "1").length;
+  const screenedCount  = Object.values(sdoh).filter(Boolean).length;
+  const g0136Eligible  = screenedCount >= 4;
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
+        <div>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:"var(--npi-txt)" }}>
+            SDOH Screening
+          </div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--npi-txt4)", marginTop:2 }}>
+            Social Determinants of Health — CMS Gravity Protocol
+          </div>
+        </div>
+        {g0136Eligible && (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1.5, textTransform:"uppercase",
+            padding:"4px 10px", borderRadius:6, background:"rgba(0,229,192,0.1)",
+            border:"1px solid rgba(0,229,192,0.35)", color:"var(--npi-teal)" }}>
+            G0136 Billable
+          </span>
+        )}
+      </div>
+
+      {/* Positive summary strip */}
+      {positiveCount > 0 && (
+        <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(255,107,107,0.07)",
+          border:"1px solid rgba(255,107,107,0.3)", fontFamily:"'DM Sans',sans-serif", fontSize:12,
+          color:"#ff8a8a", display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:14 }}>⚠</span>
+          <span><strong>{positiveCount}</strong> positive screen{positiveCount>1?"s":""} — document social risk in MDM (counts as Moderate Risk, AMA CPT 2023)</span>
+        </div>
+      )}
+
+      {/* Domain grid */}
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        {SDOH_DOMAINS.map(d => (
+          <div key={d.key} style={{ padding:"10px 12px", borderRadius:9,
+            background:"rgba(14,37,68,0.6)", border:`1px solid ${
+              sdoh[d.key]==="2"?"rgba(255,107,107,0.35)":sdoh[d.key]==="1"?"rgba(245,200,66,0.3)":"rgba(26,53,85,0.5)"}` }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:"var(--npi-txt)", display:"flex", alignItems:"center", gap:6 }}>
+                {d.icon} {d.label}
+              </span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)" }}>{d.q}</span>
+            </div>
+            <div style={{ display:"flex", gap:6 }}>
+              {d.opts.map((opt, i) => {
+                const active = sdoh[d.key] === String(i);
+                const col = TIER_COLORS[String(i)];
+                return (
+                  <button key={i} onClick={() => setSdoh(p => ({ ...p, [d.key]: active ? "" : String(i) }))}
+                    style={{ flex:1, padding:"6px 4px", borderRadius:7, cursor:"pointer", fontSize:11,
+                      fontFamily:"'DM Sans',sans-serif", fontWeight: active ? 600 : 400,
+                      border:`1px solid ${active ? col+"88" : "rgba(42,77,114,0.35)"}`,
+                      background: active ? col+"18" : "transparent",
+                      color: active ? col : "var(--npi-txt4)", transition:"all .12s" }}>
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Progress summary */}
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1,
+        display:"flex", gap:16, paddingTop:4 }}>
+        <span>{screenedCount}/6 domains screened</span>
+        {concernCount > 0 && <span style={{ color:"#f5c842" }}>{concernCount} at-risk</span>}
+        {positiveCount > 0 && <span style={{ color:"#ff8a8a" }}>{positiveCount} positive</span>}
+        {!g0136Eligible && screenedCount > 0 && <span>Screen {4-screenedCount} more for G0136</span>}
+      </div>
+    </div>
+  );
+}
+
+// ─── TRIAGE TAB ───────────────────────────────────────────────────────────────
+const ESI_CFG = [
+  { level:1, label:"Immediate",   color:"#ff6b6b", desc:"Life-threatening"     },
+  { level:2, label:"Emergent",    color:"#ff9f43", desc:"High-risk / unstable" },
+  { level:3, label:"Urgent",      color:"#f5c842", desc:"Stable, 2+ resources" },
+  { level:4, label:"Less Urgent", color:"#00e5c0", desc:"1 resource expected"  },
+  { level:5, label:"Non-urgent",  color:"#8892a4", desc:"No resources needed"  },
+];
+
+function TriageTab({ esiLevel, setEsiLevel, triage, setTriage, avpu, setAvpu, pain, setPain }) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+
+      {/* ESI Level */}
+      <div>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:10 }}>
+          ESI Level — Emergency Severity Index
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          {ESI_CFG.map(({ level, label, color, desc }) => {
+            const active = esiLevel === String(level);
+            return (
+              <button key={level} onClick={() => setEsiLevel(String(level))}
+                style={{ flex:1, padding:"12px 6px", borderRadius:10, cursor:"pointer", transition:"all .14s",
+                  border:`2px solid ${active ? color : "rgba(42,77,114,0.4)"}`,
+                  background: active ? `${color}18` : "rgba(14,37,68,0.5)" }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:24, fontWeight:700,
+                  color: active ? color : "var(--npi-txt3)" }}>{level}</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, marginTop:2,
+                  color: active ? color : "var(--npi-txt3)" }}>{label}</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--npi-txt4)", marginTop:3 }}>{desc}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Triage note */}
+      <div>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
+          Triage Assessment Note
+        </div>
+        <textarea value={triage} onChange={e => setTriage(e.target.value)} rows={4}
+          placeholder="Document presenting complaint, initial appearance, chief concern..."
+          style={{ width:"100%", background:"rgba(14,37,68,0.8)",
+            border:"1px solid rgba(26,53,85,0.55)", borderTop:"2px solid rgba(0,229,192,0.3)",
+            borderRadius:9, padding:"9px 12px", color:"var(--npi-txt)",
+            fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none",
+            resize:"none", boxSizing:"border-box" }} />
+      </div>
+
+      {/* AVPU */}
+      <div>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
+          Mental Status — AVPU
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          {["Alert","Verbal","Pain","Unresponsive"].map(v => {
+            const active = avpu === v;
+            return (
+              <button key={v} onClick={() => setAvpu(v)}
+                style={{ flex:1, padding:"9px 4px", borderRadius:8, cursor:"pointer",
+                  border:`1px solid ${active ? "rgba(59,158,255,0.5)" : "rgba(42,77,114,0.4)"}`,
+                  background: active ? "rgba(59,158,255,0.1)" : "transparent",
+                  color: active ? "#3b9eff" : "var(--npi-txt3)",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight: active ? 600 : 400 }}>
+                {v}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Pain scale */}
+      <div>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
+          Pain Score (0\u201310)
+        </div>
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+          {Array.from({ length:11 }, (_, i) => i).map(i => {
+            const col   = i <= 3 ? "#00e5c0" : i <= 6 ? "#f5c842" : "#ff6b6b";
+            const active = pain === String(i);
+            return (
+              <button key={i} onClick={() => setPain(String(i))}
+                style={{ width:38, height:38, borderRadius:8, cursor:"pointer",
+                  border:`1px solid ${active ? col+"88" : "rgba(42,77,114,0.35)"}`,
+                  background: active ? col+"18" : "transparent",
+                  color: active ? col : "var(--npi-txt3)",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight: active ? 700 : 400 }}>
+                {i}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Summary strip */}
+      {(esiLevel || triage || avpu) && (
+        <div style={{ padding:"10px 14px", borderRadius:9,
+          background:"rgba(0,229,192,0.05)", border:"1px solid rgba(0,229,192,0.2)",
+          fontFamily:"'DM Sans',sans-serif", fontSize:12, display:"flex", gap:12, flexWrap:"wrap" }}>
+          {esiLevel && <span><span style={{ color:"var(--npi-teal)", fontWeight:700 }}>ESI {esiLevel}</span></span>}
+          {avpu     && <span style={{ color:"var(--npi-txt3)" }}>AVPU: {avpu}</span>}
+          {pain     && <span style={{ color:"var(--npi-txt3)" }}>Pain: {pain}/10</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── CONSULT TAB ──────────────────────────────────────────────────────────────
+function ConsultTab({ consults, setConsults }) {
+  const [svcIn,  setSvcIn]  = useState("");
+  const [qIn,    setQIn]    = useState("");
+  const [respIn, setRespIn] = useState({});
+
+  const elapsed = ts => {
+    const m = Math.floor((Date.now() - ts) / 60000);
+    return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
+  };
+
+  function addConsult(svc, q) {
+    if (!svc.trim()) return;
+    setConsults(prev => [...prev, {
+      id: Date.now(), service: svc.trim(), question: q.trim(),
+      requestedAt: Date.now(), status: "pending", response: "",
+    }]);
+    setSvcIn(""); setQIn("");
+  }
+
+  function markReceived(id, resp) {
+    setConsults(prev => prev.map(c => c.id === id ? { ...c, status:"completed", response:resp } : c));
+    setRespIn(p => { const n = { ...p }; delete n[id]; return n; });
+  }
+
+  const inputBase = {
+    background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)",
+    borderRadius:7, padding:"7px 10px", color:"var(--npi-txt)",
+    fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none",
+    width:"100%", boxSizing:"border-box",
+  };
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+
+      {/* Add consult */}
+      <div style={{ padding:"14px 16px", borderRadius:10, background:"rgba(14,37,68,0.7)",
+        border:"1px solid rgba(26,53,85,0.55)", borderTop:"2px solid rgba(0,229,192,0.35)" }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>
+          Request New Consult
+        </div>
+        <input value={svcIn} onChange={e => setSvcIn(e.target.value)}
+          placeholder="Consulting service (e.g. Cardiology, Surgery, Neurology)"
+          style={{ ...inputBase, marginBottom:8 }} />
+        <textarea value={qIn} onChange={e => setQIn(e.target.value)}
+          placeholder="Clinical question / reason for consult..." rows={2}
+          style={{ ...inputBase, resize:"none", marginBottom:10 }} />
+        <button onClick={() => addConsult(svcIn, qIn)}
+          style={{ padding:"7px 18px", borderRadius:7, border:"1px solid rgba(0,229,192,0.4)",
+            background:"rgba(0,229,192,0.1)", color:"var(--npi-teal)",
+            fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, cursor:"pointer" }}>
+          + Add Consult
+        </button>
+      </div>
+
+      {/* Active consults list */}
+      {consults.length > 0 ? (
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase" }}>
+            Active Consults ({consults.length})
+          </div>
+          {consults.map(c => (
+            <div key={c.id} style={{ padding:"12px 14px", borderRadius:10,
+              background:"rgba(14,37,68,0.7)",
+              border:`1px solid ${c.status === "completed" ? "rgba(0,229,192,0.25)" : "rgba(245,200,66,0.25)"}` }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"var(--npi-txt)" }}>
+                  {c.service}
+                </span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"var(--npi-txt4)" }}>
+                  {elapsed(c.requestedAt)} ago
+                </span>
+              </div>
+              {c.question && (
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt3)", marginBottom:8 }}>
+                  {c.question}
+                </div>
+              )}
+              {c.status === "pending" ? (
+                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                  <input value={respIn[c.id] || ""} onChange={e => setRespIn(p => ({ ...p, [c.id]:e.target.value }))}
+                    placeholder="Consultant response / recommendations..."
+                    style={{ flex:1, background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)",
+                      borderRadius:6, padding:"5px 9px", color:"var(--npi-txt)",
+                      fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none" }} />
+                  <button onClick={() => markReceived(c.id, respIn[c.id] || "")}
+                    style={{ padding:"5px 12px", borderRadius:6, border:"1px solid rgba(0,229,192,0.4)",
+                      background:"rgba(0,229,192,0.08)", color:"var(--npi-teal)",
+                      fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+                      cursor:"pointer", whiteSpace:"nowrap" }}>
+                    Mark Received
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ color:"var(--npi-teal)", fontSize:11 }}>\u2713 Received</span>
+                  {c.response && (
+                    <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt3)" }}>
+                      {c.response}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ textAlign:"center", color:"var(--npi-txt4)", fontFamily:"'DM Sans',sans-serif", fontSize:13, padding:"28px 0" }}>
+          No consults requested yet
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
@@ -204,9 +557,7 @@ export default function NewPatientInput() {
   const [triage, setTriage]           = useState("");
   const [esiLevel, setEsiLevel]       = useState("");
   const [consults, setConsults]       = useState([]);
-  const [svcIn,    setSvcIn]           = useState("");
-  const [qIn,      setQIn]             = useState("");
-  const [respIn,   setRespIn]          = useState({});
+  const [sdoh, setSdoh]               = useState({ housing:"", food:"", transport:"", utilities:"", isolation:"", safety:"" });
   const [registration, setRegistration] = useState({ mrn:"", room:"" });
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [cdsOpen,      setCdsOpen]      = useState(false);
@@ -268,6 +619,8 @@ export default function NewPatientInput() {
       pe:       Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
       triage:   esiLevel                        ? "done"    : "empty",
       consult:  consults.length > 0               ? "done"    : "empty",
+      sdoh:     Object.values(sdoh).filter(v => v === "2").length > 0 ? "partial"
+                  : Object.values(sdoh).some(Boolean) ? "done" : "empty",
       reassess: reassessState.condition ? "done" : reassessState.note ? "partial" : "empty",
       timeline: clinicalTimeline?.times?.departed ? "done" : clinicalTimeline?.times?.disposition ? "partial" : "empty",
     }));
@@ -277,6 +630,8 @@ export default function NewPatientInput() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     Object.keys(rosState).length, Object.keys(peState).length,
     esiLevel, consults.length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    Object.values(sdoh).join(","),
     reassessState.condition, reassessState.note,
     clinicalTimeline?.times?.departed, clinicalTimeline?.times?.disposition,
   ]);
@@ -430,88 +785,24 @@ export default function NewPatientInput() {
     peFindings,
     esiLevel,
     registration,
+    sdoh,
   };
 
   const renderContent = () => {
     switch (currentTab) {
-      case "triage": {
-        const ESI_CFG = [
-          { level:1, label:"Immediate",   color:"#ff6b6b", desc:"Life-threatening"      },
-          { level:2, label:"Emergent",    color:"#ff9f43", desc:"High-risk / unstable"  },
-          { level:3, label:"Urgent",      color:"#f5c842", desc:"Stable, 2+ resources"  },
-          { level:4, label:"Less Urgent", color:"#00e5c0", desc:"1 resource expected"   },
-          { level:5, label:"Non-urgent",  color:"#8892a4", desc:"No resources needed"   },
-        ];
-        return (
-          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:10 }}>ESI Level — Emergency Severity Index</div>
-              <div style={{ display:"flex", gap:8 }}>
-                {ESI_CFG.map(({ level, label, color, desc }) => (
-                  <button key={level} onClick={() => setEsiLevel(String(level))}
-                    style={{ flex:1, padding:"12px 6px", borderRadius:10, cursor:"pointer", transition:"all .14s",
-                      border:`2px solid ${esiLevel===String(level)?color:"rgba(42,77,114,0.4)"}`,
-                      background:esiLevel===String(level)?`${color}18`:"rgba(14,37,68,0.5)" }}>
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:24, fontWeight:700, color:esiLevel===String(level)?color:"var(--npi-txt3)" }}>{level}</div>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, color:esiLevel===String(level)?color:"var(--npi-txt3)", marginTop:2 }}>{label}</div>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--npi-txt4)", marginTop:3 }}>{desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Triage Assessment Note</div>
-              <textarea value={triage} onChange={e=>setTriage(e.target.value)}
-                placeholder="Document presenting complaint, initial appearance, chief concern..." rows={4}
-                style={{ width:"100%", background:"rgba(14,37,68,0.8)", border:"1px solid rgba(26,53,85,0.55)", borderTop:"2px solid rgba(0,229,192,0.3)", borderRadius:9, padding:"9px 12px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none", resize:"none", boxSizing:"border-box" }} />
-            </div>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Mental Status — AVPU</div>
-              <div style={{ display:"flex", gap:8 }}>
-                {["Alert","Verbal","Pain","Unresponsive"].map(v => (
-                  <button key={v} onClick={() => setAvpu(v)}
-                    style={{ flex:1, padding:"9px 4px", borderRadius:8, cursor:"pointer",
-                      border:`1px solid ${avpu===v?"rgba(59,158,255,0.5)":"rgba(42,77,114,0.4)"}`,
-                      background:avpu===v?"rgba(59,158,255,0.1)":"transparent",
-                      color:avpu===v?"#3b9eff":"var(--npi-txt3)",
-                      fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:avpu===v?600:400 }}>
-                    {v}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Pain Score (0–10)</div>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {Array.from({length:11},(_,i)=>i).map(i => {
-                  const col = i<=3?"#00e5c0":i<=6?"#f5c842":"#ff6b6b";
-                  return (
-                    <button key={i} onClick={()=>setPain(String(i))}
-                      style={{ width:38, height:38, borderRadius:8, cursor:"pointer",
-                        border:`1px solid ${pain===String(i)?col+"88":"rgba(42,77,114,0.35)"}`,
-                        background:pain===String(i)?col+"18":"transparent",
-                        color:pain===String(i)?col:"var(--npi-txt3)",
-                        fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:pain===String(i)?700:400 }}>
-                      {i}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {(esiLevel||triage||avpu) && (
-              <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(0,229,192,0.05)", border:"1px solid rgba(0,229,192,0.2)", fontFamily:"'DM Sans',sans-serif", fontSize:12, display:"flex", gap:12, flexWrap:"wrap" }}>
-                {esiLevel && <span><span style={{ color:"var(--npi-teal)", fontWeight:700 }}>ESI {esiLevel}</span></span>}
-                {avpu     && <span style={{ color:"var(--npi-txt3)" }}>AVPU: {avpu}</span>}
-                {pain     && <span style={{ color:"var(--npi-txt3)" }}>Pain: {pain}/10</span>}
-              </div>
-            )}
-          </div>
-        );
-      }
+      case "triage": return (
+        <TriageTab
+          esiLevel={esiLevel}   setEsiLevel={setEsiLevel}
+          triage={triage}       setTriage={setTriage}
+          avpu={avpu}           setAvpu={setAvpu}
+          pain={pain}           setPain={setPain}
+        />
+      );
       case "demo":       return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} registration={registration} setRegistration={setRegistration} onAdvance={() => selectSection("cc")} />;
       case "cc":         return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} onAdvance={() => selectSection("vit")} />;
       case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} onAdvance={() => { addVitalsSnapshot("Triage"); selectSection("meds"); }} />;
-      case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("hpi")} />;
+      case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("sdoh")} />;
+      case "sdoh":       return <SDOHWidget sdoh={sdoh} setSdoh={setSdoh} />;
       case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
       case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />;
       case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("chart")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
@@ -528,62 +819,7 @@ export default function NewPatientInput() {
         </div>
       );
 
-      case "consult": {
-        const elapsed = ts => { const m=Math.floor((Date.now()-ts)/60000); return m<60?`${m}m`:`${Math.floor(m/60)}h ${m%60}m`; };
-        const addConsult = (svc, q) => {
-          if (!svc.trim()) return;
-          setConsults(prev=>[...prev,{ id:Date.now(), service:svc.trim(), question:q.trim(), requestedAt:Date.now(), status:"pending", response:"" }]);
-        };
-        const markReceived = (id, resp) => setConsults(prev=>prev.map(c=>c.id===id?{...c,status:"completed",response:resp}:c));
-
-        return (
-          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-            <div style={{ padding:"14px 16px", borderRadius:10, background:"rgba(14,37,68,0.7)", border:"1px solid rgba(26,53,85,0.55)", borderTop:"2px solid rgba(0,229,192,0.35)" }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>Request New Consult</div>
-              <input value={svcIn} onChange={e=>setSvcIn(e.target.value)} placeholder="Consulting service (e.g. Cardiology, Surgery, Neurology)"
-                style={{ width:"100%", background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)", borderRadius:7, padding:"7px 10px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none", marginBottom:8, boxSizing:"border-box" }} />
-              <textarea value={qIn} onChange={e=>setQIn(e.target.value)} placeholder="Clinical question / reason for consult..." rows={2}
-                style={{ width:"100%", background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)", borderRadius:7, padding:"7px 10px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none", resize:"none", marginBottom:10, boxSizing:"border-box" }} />
-              <button onClick={()=>{ addConsult(svcIn,qIn); setSvcIn(""); setQIn(""); }}
-                style={{ padding:"7px 18px", borderRadius:7, border:"1px solid rgba(0,229,192,0.4)", background:"rgba(0,229,192,0.1)", color:"var(--npi-teal)", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, cursor:"pointer" }}>
-                + Add Consult
-              </button>
-            </div>
-            {consults.length>0 ? (
-              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase" }}>Active Consults ({consults.length})</div>
-                {consults.map(c=>(
-                  <div key={c.id} style={{ padding:"12px 14px", borderRadius:10, background:"rgba(14,37,68,0.7)", border:`1px solid ${c.status==="completed"?"rgba(0,229,192,0.25)":"rgba(245,200,66,0.25)"}` }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"var(--npi-txt)" }}>{c.service}</span>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"var(--npi-txt4)" }}>{elapsed(c.requestedAt)} ago</span>
-                    </div>
-                    {c.question&&<div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt3)", marginBottom:8 }}>{c.question}</div>}
-                    {c.status==="pending"?(
-                      <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                        <input value={respIn[c.id]||""} onChange={e=>setRespIn(p=>({...p,[c.id]:e.target.value}))}
-                          placeholder="Consultant response / recommendations..."
-                          style={{ flex:1, background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)", borderRadius:6, padding:"5px 9px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none" }} />
-                        <button onClick={()=>{ markReceived(c.id,respIn[c.id]||""); setRespIn(p=>({...p,[c.id]:""})); }}
-                          style={{ padding:"5px 12px", borderRadius:6, border:"1px solid rgba(0,229,192,0.4)", background:"rgba(0,229,192,0.08)", color:"var(--npi-teal)", fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
-                          Mark Received
-                        </button>
-                      </div>
-                    ):(
-                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                        <span style={{ color:"var(--npi-teal)", fontSize:11 }}>✓ Received</span>
-                        {c.response&&<span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt3)" }}>{c.response}</span>}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ):(
-              <div style={{ textAlign:"center", color:"var(--npi-txt4)", fontFamily:"'DM Sans',sans-serif", fontSize:13, padding:"28px 0" }}>No consults requested yet</div>
-            )}
-          </div>
-        );
-      }
+      case "consult": return <ConsultTab consults={consults} setConsults={setConsults} />;
       case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState}
         onVitalsSnapshot={v => addVitalsSnapshot(
           `Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`,
@@ -712,12 +948,117 @@ export default function NewPatientInput() {
           <span className="npi-cds-overlay-title">Clinical Decision Support</span>
           <button className="npi-cds-close" onClick={()=>setCdsOpen(false)}>✕</button>
         </div>
-        <CDSAlertsSidebar medications={medications} allergies={allergies} vitals={vitals} pmhSelected={pmhSelected} age={demo.age} cc={cc.text}/>
-        {allergies.length === 0 && medications.length === 0 && (
-          <div style={{ padding:"24px 16px", textAlign:"center", color:"var(--npi-txt4)", fontSize:12, fontFamily:"'DM Sans',sans-serif" }}>
-            No alerts — add medications or allergies to enable checking.
-          </div>
-        )}
+
+        <div style={{ overflowY:"auto", flex:1, padding:"0 0 16px" }}>
+
+          {/* ── TIER 1: CRITICAL — Beers Criteria (age ≥65) ── */}
+          {parseInt(demo.age) >= 65 && (() => {
+            const age = parseInt(demo.age);
+            const hits = medications.filter(m => BEERS_DRUGS.some(b => m.toLowerCase().includes(b)));
+            if (!hits.length) return null;
+            return (
+              <div style={{ margin:"12px 12px 0", padding:"12px 14px", borderRadius:10,
+                background:"rgba(255,107,107,0.09)", border:"1px solid rgba(255,107,107,0.45)",
+                borderLeft:"3px solid #ff6b6b" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  <span style={{ fontSize:14 }}>🚨</span>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1.5, textTransform:"uppercase", color:"#ff8a8a" }}>Critical — Beers Criteria (Age {age})</span>
+                </div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#ffb3b3", marginBottom:8 }}>
+                  Potentially Inappropriate Medications for adults \u226565 (AGS 2023 Beers List):
+                </div>
+                {hits.map(m => (
+                  <div key={m} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                    <span style={{ color:"#ff6b6b", fontSize:11 }}>⚠</span>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt)", fontWeight:600 }}>{m}</span>
+                  </div>
+                ))}
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"#ff8a8a", marginTop:8, borderTop:"1px solid rgba(255,107,107,0.2)", paddingTop:8 }}>
+                  Review for: benzodiazepines, muscle relaxants, anticholinergics, Z-drugs. Consider dose reduction or safer alternative. Document rationale if continuing.
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── TIER 2: ADVISORY — CC-triggered risk scores ── */}
+          {(() => {
+            const hints = getCCRiskHints(cc.text);
+            if (!hints.length) return null;
+            return (
+              <div style={{ margin:"12px 12px 0" }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8, paddingLeft:2 }}>
+                  Risk Scores — Based on CC
+                </div>
+                {hints.map((h, i) => {
+                  const isAdvisory = h.tier === "advisory";
+                  const col = isAdvisory ? "#f5c842" : "var(--npi-teal)";
+                  const bg  = isAdvisory ? "rgba(245,200,66,0.07)" : "rgba(0,229,192,0.05)";
+                  const bd  = isAdvisory ? "rgba(245,200,66,0.3)"  : "rgba(0,229,192,0.2)";
+                  const bl  = isAdvisory ? "rgba(245,200,66,0.7)"  : "rgba(0,229,192,0.5)";
+                  return (
+                    <div key={i} style={{ padding:"10px 12px", borderRadius:9, background:bg,
+                      border:`1px solid ${bd}`, borderLeft:`3px solid ${bl}`, marginBottom:8 }}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
+                        <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700, color:col }}>{h.score}</span>
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--npi-txt4)", letterSpacing:1, textTransform:"uppercase" }}>{h.tier}</span>
+                      </div>
+                      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--npi-txt3)", marginBottom:4 }}>{h.use}</div>
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:col }}>\u2192 {h.action}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* ── TIER 3: INFO — MDM documentation nudge ── */}
+          {(cc.text || esiLevel) && (
+            <div style={{ margin:"12px 12px 0", padding:"10px 12px", borderRadius:9,
+              background:"rgba(59,158,255,0.06)", border:"1px solid rgba(59,158,255,0.2)",
+              borderLeft:"3px solid rgba(59,158,255,0.5)" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"#3b9eff", letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>
+                MDM Documentation — AMA/CPT 2023
+              </div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--npi-txt3)", lineHeight:1.6 }}>
+                {["Document complexity of problems addressed (COPA).",
+                  "List data reviewed: labs, imaging, external records.",
+                  "State risk level with table-of-risk element.",
+                  "Note diagnoses considered but NOT ordered.",
+                  parseInt(demo.age) >= 65 ? "Age \u226565: document any Beers-listed med rationale." : null,
+                  Object.values(sdoh).some(v => v === "2") ? "Positive SDOH screen = Moderate Risk — document in MDM." : null,
+                ].filter(Boolean).map((tip, i) => (
+                  <div key={i} style={{ display:"flex", gap:8, marginBottom:3 }}>
+                    <span style={{ color:"#3b9eff", flexShrink:0 }}>{i+1}.</span>
+                    <span>{tip}</span>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => { setAiInput(""); sendMessage(QUICK_ACTIONS[4].prompt); setAiOpen(true); setCdsOpen(false); }}
+                style={{ marginTop:8, padding:"5px 12px", borderRadius:6, border:"1px solid rgba(59,158,255,0.4)",
+                  background:"rgba(59,158,255,0.1)", color:"#3b9eff",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, cursor:"pointer" }}>
+                \u2728 Draft MDM with AI
+              </button>
+            </div>
+          )}
+
+          {/* ── Drug / Allergy interactions (CDSAlertsSidebar) ── */}
+          {(medications.length > 0 || allergies.length > 0) && (
+            <div style={{ margin:"12px 12px 0" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8, paddingLeft:2 }}>
+                Drug / Allergy Interactions
+              </div>
+              <CDSAlertsSidebar medications={medications} allergies={allergies} vitals={vitals} pmhSelected={pmhSelected} age={demo.age} cc={cc.text}/>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!cc.text && !demo.age && allergies.length === 0 && medications.length === 0 && (
+            <div style={{ padding:"28px 16px", textAlign:"center", color:"var(--npi-txt4)", fontSize:12, fontFamily:"'DM Sans',sans-serif" }}>
+              Enter chief complaint, patient age, or medications to activate clinical decision support.
+            </div>
+          )}
+        </div>
       </div>
 
       <button className="npi-sc-hint-fab" title="Keyboard shortcuts (?)" onClick={() => setShowShortcuts(s=>!s)}>?</button>
@@ -769,6 +1110,9 @@ export default function NewPatientInput() {
             )}
             {registration.room && (
               <span className="npi-wf-esi" style={{ color:"var(--npi-teal)", borderColor:"rgba(0,229,192,.3)", background:"rgba(0,229,192,.08)" }}>Rm {registration.room}</span>
+            )}
+            {parseInt(demo.age) >= 65 && (
+              <span className="npi-wf-esi" title="Geriatric patient — Beers Criteria active" style={{ color:"#f5c842", borderColor:"rgba(245,200,66,.3)", background:"rgba(245,200,66,.08)" }}>65+</span>
             )}
           </div>
           <div className="npi-wf-vitals">

@@ -1,26 +1,23 @@
+// useNPIState.js — extracted state & logic hook for NewPatientInput
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import {
-  NAV_DATA, ALL_SECTIONS, SHORTCUT_MAP,
-  SYSTEM_PROMPT, buildPatientCtx,
-  getTemplateForCC, ROS_RAIL_SYSTEMS, PE_RAIL_SYSTEMS,
+  NAV_DATA, ALL_SECTIONS, SHORTCUT_MAP, SYSTEM_PROMPT,
+  getTemplateForCC, buildPatientCtx, QUICK_ACTIONS,
 } from "@/components/npi/npiData";
+
+const ASSESS_SECTIONS = ["hpi", "ros", "pe"];
 
 export function useNPIState() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ── Tab / nav routing ────────────────────────────────────────────────────────
+  // ── Tab / group navigation ──────────────────────────────────────────────────
   const [currentTab, setCurrentTab] = useState(
     () => new URLSearchParams(window.location.search).get("tab") || "demo"
   );
-  useEffect(() => {
-    const tab = new URLSearchParams(location.search).get("tab");
-    if (tab) setCurrentTab(tab);
-  }, [location.search]);
-
   const [activeGroup, setActiveGroup] = useState(() => {
     const tab = new URLSearchParams(window.location.search).get("tab") || "demo";
     for (const [group, items] of Object.entries(NAV_DATA)) {
@@ -29,11 +26,17 @@ export function useNPIState() {
     return "intake";
   });
 
+  useEffect(() => {
+    const tab = new URLSearchParams(location.search).get("tab");
+    if (tab) setCurrentTab(tab);
+  }, [location.search]);
+
+  // ── Nav dots ────────────────────────────────────────────────────────────────
   const [navDots, setNavDots] = useState(() => {
     const m = {}; ALL_SECTIONS.forEach(s => (m[s.section] = s.dot)); return m;
   });
 
-  // ── Door timer ───────────────────────────────────────────────────────────────
+  // ── Arrival timer ───────────────────────────────────────────────────────────
   const arrivalTimeRef = useRef(Date.now());
   const [doorTime, setDoorTime] = useState("0m");
   useEffect(() => {
@@ -47,63 +50,55 @@ export function useNPIState() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Clinical data state ───────────────────────────────────────────────────────
-  const [demo, setDemo] = useState({ firstName:"", lastName:"", age:"", dob:"", sex:"", mrn:"", insurance:"", insuranceId:"", address:"", city:"", phone:"", email:"", emerg:"", height:"", weight:"", lang:"", notes:"", pronouns:"" });
-  const [cc, setCC]                       = useState({ text:"", onset:"", duration:"", severity:"", quality:"", radiation:"", aggravate:"", relieve:"", assoc:"", hpi:"" });
-  const [vitals, setVitals]               = useState({});
+  // ── Patient data ────────────────────────────────────────────────────────────
+  const [demo, setDemo]               = useState({ firstName:"", lastName:"", age:"", dob:"", sex:"", mrn:"", insurance:"", insuranceId:"", address:"", city:"", phone:"", email:"", emerg:"", height:"", weight:"", lang:"", notes:"", pronouns:"" });
+  const [cc, setCC]                   = useState({ text:"", onset:"", duration:"", severity:"", quality:"", radiation:"", aggravate:"", relieve:"", assoc:"", hpi:"" });
+  const [vitals, setVitals]           = useState({});
   const [vitalsHistory, setVitalsHistory] = useState([]);
-  const [medications, setMedications]     = useState([]);
-  const [allergies, setAllergies]         = useState([]);
-  const [pmhSelected, setPmhSelected]     = useState({});
-  const [pmhExtra, setPmhExtra]           = useState("");
-  const [surgHx, setSurgHx]               = useState("");
-  const [famHx, setFamHx]                 = useState("");
-  const [socHx, setSocHx]                 = useState("");
-  const [rosState, setRosState]           = useState({});
-  const [rosSymptoms, setRosSymptoms]     = useState({});
-  const [rosNotes, setRosNotes]           = useState({});
-  const [peState, setPeState]             = useState({});
-  const [peFindings, setPeFindings]       = useState({});
-  const [selectedCC, setSelectedCC]       = useState(-1);
-  const [parseText, setParseText]         = useState("");
-  const [parsing, setParsing]             = useState(false);
-  const [pmhExpanded, setPmhExpanded]     = useState({ cardio: true, endo: true });
-  const [avpu, setAvpu]                   = useState("");
-  const [o2del, setO2del]                 = useState("");
-  const [pain, setPain]                   = useState("");
-  const [triage, setTriage]               = useState("");
-  const [esiLevel, setEsiLevel]           = useState("");
-  const [consults, setConsults]           = useState([]);
-  const [sdoh, setSdoh]                   = useState({ housing:"", food:"", transport:"", utilities:"", isolation:"", safety:"" });
-  const [disposition, setDisposition]     = useState("");
-  const [dispReason, setDispReason]       = useState("");
-  const [dispTime, setDispTime]           = useState("");
-  const [registration, setRegistration]   = useState({ mrn:"", room:"" });
+  const [medications, setMedications] = useState([]);
+  const [allergies, setAllergies]     = useState([]);
+  const [pmhSelected, setPmhSelected] = useState({});
+  const [pmhExtra, setPmhExtra]       = useState("");
+  const [surgHx, setSurgHx]           = useState("");
+  const [famHx, setFamHx]             = useState("");
+  const [socHx, setSocHx]             = useState("");
+  const [rosState, setRosState]       = useState({});
+  const [rosSymptoms, setRosSymptoms] = useState({});
+  const [rosNotes, setRosNotes]       = useState({});
+  const [peState, setPeState]         = useState({});
+  const [peFindings, setPeFindings]   = useState({});
+  const [selectedCC, setSelectedCC]   = useState(-1);
+  const [parseText, setParseText]     = useState("");
+  const [parsing, setParsing]         = useState(false);
+  const [pmhExpanded, setPmhExpanded] = useState({ cardio: true, endo: true });
+  const [avpu, setAvpu]               = useState("");
+  const [o2del, setO2del]             = useState("");
+  const [pain, setPain]               = useState("");
+  const [triage, setTriage]           = useState("");
+  const [esiLevel, setEsiLevel]       = useState("");
+  const [consults, setConsults]       = useState([]);
+  const [sdoh, setSdoh]               = useState({ housing:"", food:"", transport:"", utilities:"", isolation:"", safety:"" });
+  const [disposition, setDisposition] = useState("");
+  const [dispReason, setDispReason]   = useState("");
+  const [dispTime, setDispTime]       = useState("");
+  const [registration, setRegistration] = useState({ mrn:"", room:"" });
+  const [railCompact, setRailCompact] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [cdsOpen, setCdsOpen]         = useState(false);
   const [rosActiveSystem, setRosActiveSystem] = useState(0);
-  const [peActiveSystem,  setPeActiveSystem]  = useState(0);
-  const [reassessState,   setReassessState]   = useState({});
+  const [peActiveSystem, setPeActiveSystem]   = useState(0);
+  const [reassessState, setReassessState]     = useState({});
   const [clinicalTimeline, setClinicalTimeline] = useState({});
-
-  // ── UI state ─────────────────────────────────────────────────────────────────
-  const [railCompact, setRailCompact]       = useState(false);
-  const [showShortcuts, setShowShortcuts]   = useState(false);
-  const [cdsOpen, setCdsOpen]               = useState(false);
-  const [resumeSection, setResumeSection]   = useState(null);
-
-  // ── CC Smart Template state ───────────────────────────────────────────────────
-  const [appliedTemplate,   setAppliedTemplate]   = useState(null);
   const [templateDismissed, setTemplateDismissed] = useState({ ros:false, pe:false });
-  const templateFiredRef = useRef({ ros:false, pe:false });
-  const prevCCRef        = useRef("");
 
-  // ── Panel state ──────────────────────────────────────────────────────────────
-  const [nursingOpen,          setNursingOpen]          = useState(false);
+  // ── Nursing & Media panels ───────────────────────────────────────────────────
+  const [nursingOpen, setNursingOpen]                   = useState(false);
   const [nursingInterventions, setNursingInterventions] = useState([]);
-  const [nursingNotes,         setNursingNotes]         = useState([]);
-  const [mediaOpen,            setMediaOpen]            = useState(false);
-  const [attachments,          setAttachments]          = useState([]);
+  const [nursingNotes, setNursingNotes]                 = useState([]);
+  const [mediaOpen, setMediaOpen]                       = useState(false);
+  const [attachments, setAttachments]                   = useState([]);
 
-  // ── Provider ─────────────────────────────────────────────────────────────────
+  // ── Provider identity ────────────────────────────────────────────────────────
   const [providerName, setProviderName] = useState("Provider");
   const [providerRole, setProviderRole] = useState("ED");
   useEffect(() => {
@@ -119,7 +114,17 @@ export function useNPIState() {
     })();
   }, []);
 
-  // ── AI overlay state ─────────────────────────────────────────────────────────
+  // ── Resume section tracking ──────────────────────────────────────────────────
+  const prevTabRef = useRef(null);
+  const [resumeSection, setResumeSection] = useState(null);
+  useEffect(() => {
+    const prev = prevTabRef.current;
+    if (prev && ASSESS_SECTIONS.includes(prev) && !ASSESS_SECTIONS.includes(currentTab)) setResumeSection(prev);
+    if (ASSESS_SECTIONS.includes(currentTab)) setResumeSection(null);
+    prevTabRef.current = currentTab;
+  }, [currentTab]); // eslint-disable-line
+
+  // ── AI state ─────────────────────────────────────────────────────────────────
   const [aiOpen, setAiOpen]       = useState(false);
   const [aiMsgs, setAiMsgs]       = useState([{ role:"sys", text:"Notrya AI ready — select a quick action or ask a clinical question." }]);
   const [aiInput, setAiInput]     = useState("");
@@ -129,32 +134,17 @@ export function useNPIState() {
   const msgsRef  = useRef(null);
   const inputRef = useRef(null);
 
-  // ── Resume section tracker ────────────────────────────────────────────────────
-  const ASSESS_SECTIONS = ["hpi", "ros", "pe"];
-  const prevTabRef = useRef(null);
-  useEffect(() => {
-    const prev = prevTabRef.current;
-    if (prev && ASSESS_SECTIONS.includes(prev) && !ASSESS_SECTIONS.includes(currentTab)) setResumeSection(prev);
-    if (ASSESS_SECTIONS.includes(currentTab)) setResumeSection(null);
-    prevTabRef.current = currentTab;
-  }, [currentTab]); // eslint-disable-line
-
-  // ── AI overlay effects ────────────────────────────────────────────────────────
   useEffect(() => { msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior:"smooth" }); }, [aiMsgs, aiLoading]);
   useEffect(() => { if (aiOpen) setTimeout(() => inputRef.current?.focus(), 280); }, [aiOpen]);
-
-  // ── Escape key ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    const h = e => {
-      if (e.key === "Escape" && aiOpen)      setAiOpen(false);
-      if (e.key === "Escape" && cdsOpen)     setCdsOpen(false);
-      if (e.key === "Escape" && nursingOpen) setNursingOpen(false);
-      if (e.key === "Escape" && mediaOpen)   setMediaOpen(false);
-    };
+    const h = e => { if (e.key === "Escape" && aiOpen) setAiOpen(false); if (e.key === "Escape" && cdsOpen) setCdsOpen(false); };
     window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h);
-  }, [aiOpen, cdsOpen, nursingOpen, mediaOpen]);
+  }, [aiOpen, cdsOpen]);
 
-  // ── Nav dot computation ────────────────────────────────────────────────────────
+  // ── Applied CC template ──────────────────────────────────────────────────────
+  const appliedTemplate = getTemplateForCC(cc.text);
+
+  // ── Nav dots update ──────────────────────────────────────────────────────────
   useEffect(() => {
     setNavDots(prev => ({
       ...prev,
@@ -165,7 +155,7 @@ export function useNPIState() {
       hpi:      cc.hpi ? "done" : cc.text                      ? "partial" : "empty",
       ros:      Object.keys(rosState).length > 3 ? "done" : Object.keys(rosState).length > 0 ? "partial" : "empty",
       pe:       Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
-      triage:   esiLevel                          ? "done"    : "empty",
+      triage:   esiLevel                        ? "done"    : "empty",
       consult:  consults.length > 0               ? "done"    : "empty",
       closeout: disposition                        ? "done"    : "empty",
       sdoh:     Object.values(sdoh).filter(v => v === "2").length > 0 ? "partial"
@@ -187,29 +177,7 @@ export function useNPIState() {
     clinicalTimeline?.times?.departed, clinicalTimeline?.times?.disposition,
   ]);
 
-  // ── CC Template auto-apply ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (cc.text !== prevCCRef.current) {
-      templateFiredRef.current = { ros:false, pe:false };
-      setTemplateDismissed({ ros:false, pe:false });
-      prevCCRef.current = cc.text;
-    }
-    const tpl = getTemplateForCC(cc.text);
-    setAppliedTemplate(tpl || null);
-    if (!tpl) return;
-    if (currentTab === "ros" && !templateFiredRef.current.ros) {
-      templateFiredRef.current.ros = true;
-      const idx = ROS_RAIL_SYSTEMS.findIndex(s => s.id === tpl.rosPriority[0]);
-      if (idx >= 0) setRosActiveSystem(idx);
-    }
-    if (currentTab === "pe" && !templateFiredRef.current.pe) {
-      templateFiredRef.current.pe = true;
-      const idx = PE_RAIL_SYSTEMS.findIndex(s => s.id === tpl.pePriority[0]);
-      if (idx >= 0) setPeActiveSystem(idx);
-    }
-  }, [cc.text, currentTab]); // eslint-disable-line
-
-  // ── Navigation callbacks ─────────────────────────────────────────────────────
+  // ── Navigation helpers ───────────────────────────────────────────────────────
   const selectSection = useCallback((sectionId) => {
     navigate(`/NewPatientInput?tab=${sectionId}`);
     for (const [group, items] of Object.entries(NAV_DATA)) {
@@ -234,16 +202,16 @@ export function useNPIState() {
     return "empty";
   }, [navDots]);
 
-  // ── Vital helpers ─────────────────────────────────────────────────────────────
+  // ── Vital utilities ──────────────────────────────────────────────────────────
   const vitalClass = (key, raw) => {
     if (!raw || raw === "\u2014") return "";
     const src = key === "bp" ? String(raw).split("/")[0] : raw;
     const n = parseFloat(src); if (isNaN(n)) return "";
-    if (key === "hr")   return n > 110 || n < 50   ? " abn" : n > 90  || n < 55 ? " warn" : "";
-    if (key === "rr")   return n > 22  || n < 8    ? " abn" : n > 20  || n < 10 ? " warn" : "";
-    if (key === "spo2") return n < 90               ? " abn" : n < 94            ? " warn" : "";
+    if (key === "hr")   return n > 110 || n < 50  ? " abn" : n > 90  || n < 55 ? " warn" : "";
+    if (key === "rr")   return n > 22  || n < 8   ? " abn" : n > 20  || n < 10 ? " warn" : "";
+    if (key === "spo2") return n < 90              ? " abn" : n < 94            ? " warn" : "";
     if (key === "temp") return n > 39.5 || n < 35.5 ? " abn" : n > 38 || n < 36 ? " warn" : "";
-    if (key === "bp")   return n > 180 || n < 80   ? " abn" : n > 140 || n < 90 ? " warn" : "";
+    if (key === "bp")   return n > 180 || n < 80  ? " abn" : n > 140 || n < 90 ? " warn" : "";
     return "";
   };
 
@@ -251,11 +219,13 @@ export function useNPIState() {
     const st = rosState[sysId]; if (!st) return "empty";
     return st === "has-positives" ? "partial" : "done";
   };
-
   const getPeSysDot = (sysId) => {
     const st = peState[sysId]; if (!st) return "empty";
     return (st === "has-positives" || st === "abnormal" || st === "mixed") ? "partial" : "done";
   };
+
+  // ── Actions ──────────────────────────────────────────────────────────────────
+  const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
 
   const addVitalsSnapshot = useCallback((label, overrideVitals) => {
     const v = overrideVitals || vitals;
@@ -263,7 +233,6 @@ export function useNPIState() {
     setVitalsHistory(prev => [...prev, { t: Date.now(), label, ...v }]);
   }, [vitals]);
 
-  // ── Chart save ────────────────────────────────────────────────────────────────
   const handleSaveChart = useCallback(async () => {
     try {
       const payload = {
@@ -276,26 +245,20 @@ export function useNPIState() {
         chief_complaint: cc.text||"",
         history_of_present_illness: cc.hpi||"",
         medications, allergies, status:"draft",
-        registration_mrn: registration.mrn||"", registration_room: registration.room||"",
-        triage_esi_level: esiLevel||"",
-        sdoh_housing: sdoh.housing||"", sdoh_food: sdoh.food||"",
-        sdoh_transport: sdoh.transport||"", sdoh_isolation: sdoh.isolation||"",
-        sdoh_safety: sdoh.safety||"",
         disposition: disposition||"", disposition_reason: dispReason||"",
         consult_count: consults.length,
         consult_services: consults.map(c => c.service).join(", ")||"",
         ros_summary: Object.keys(rosState).filter(k => rosState[k]).join(", ")||"",
         pe_summary:  Object.keys(peState).filter(k => peState[k]).join(", ")||"",
       };
-      if (!disposition) toast.warning("Disposition not set \u2014 chart saved as draft without close-out.");
+      if (!disposition) toast.warning("Disposition not set — chart saved as draft without close-out.");
       await base44.entities.ClinicalNote.create(payload);
       toast.success("Chart signed and saved.");
       navigate("/EDTrackingBoard");
     } catch (e) { toast.error("Failed to save: " + e.message); }
-  }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,sdoh,consults,disposition,dispReason,navigate]);
+  }, [demo,cc,vitals,medications,allergies,parseText,rosState,peState,registration,disposition,dispReason,consults,navigate]);
 
-  // ── Smart parse ───────────────────────────────────────────────────────────────
-  const smartParse = async () => {
+  const smartParse = useCallback(async () => {
     if (!parseText.trim()) { toast.error("Please enter some text to parse."); return; }
     setParsing(true);
     try {
@@ -311,16 +274,14 @@ export function useNPIState() {
       toast.success("Patient data extracted!");
     } catch { toast.error("Could not parse automatically."); }
     setParsing(false);
-  };
+  }, [parseText]);
 
-  // ── AI message handler ────────────────────────────────────────────────────────
-  const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
-
+  // ── AI messaging ─────────────────────────────────────────────────────────────
   const sendMessage = useCallback(async (text) => {
     if (!text.trim() || aiLoading) return;
     setAiMsgs(m => [...m, { role:"user", text:text.trim() }]);
     setAiInput(""); setAiLoading(true);
-    const ctx = buildPatientCtx(demo,cc,vitals,allergies,pmhSelected,currentTab);
+    const ctx = buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab);
     setHistory(h => [...h, { role:"user", content: ctx+"\n\n"+text.trim() }]);
     try {
       const res = await base44.integrations.Core.InvokeLLM({ prompt: SYSTEM_PROMPT+"\n\nPATIENT CONTEXT:\n"+ctx+"\n\nPHYSICIAN QUESTION:\n"+text.trim() });
@@ -331,15 +292,15 @@ export function useNPIState() {
     } catch {
       setAiMsgs(m => [...m, { role:"sys", text:"\u26a0 Connection error \u2014 please try again." }]);
     } finally { setAiLoading(false); }
-  }, [aiLoading,history,currentTab,demo,cc,vitals,allergies,pmhSelected]);
+  }, [aiLoading, currentTab, demo, cc, vitals, allergies, pmhSelected]);
 
-  const handleAIKey = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(aiInput); } };
+  const handleAIKey = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(aiInput); } };
 
   const renderMsg = text =>
     text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
       .replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,'<strong style="color:#00e5c0">$1</strong>');
 
-  // ── Global keyboard shortcuts — defined last so handleSaveChart is in scope ──
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────────
   useEffect(() => {
     const handler = e => {
       const mod = e.metaKey || e.ctrlKey;
@@ -352,25 +313,24 @@ export function useNPIState() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectSection, navigate, handleSaveChart]); // eslint-disable-line
+  }, [selectSection, navigate, handleSaveChart]);
 
   // ── Derived values ────────────────────────────────────────────────────────────
-  const patientName = [demo.firstName,demo.lastName].filter(Boolean).join(" ") || "New Patient";
+  const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
 
   const patientDataBundle = {
     demo, cc, vitals, medications, allergies,
     pmhSelected, pmhExtra, surgHx, famHx, socHx,
-    rosState, rosNotes, rosSymptoms,
-    peState, peFindings,
-    esiLevel, registration, sdoh, attachments,
+    rosState, rosNotes, rosSymptoms, peState, peFindings,
+    esiLevel, registration, sdoh,
   };
 
   return {
-    navigate, currentTab, activeGroup, setActiveGroup,
-    navDots, setNavDots, selectGroup, selectSection, getGroupBadge,
+    navigate, currentTab, activeGroup,
+    navDots, selectGroup, selectSection, getGroupBadge,
     arrivalTimeRef, doorTime,
     demo, setDemo, cc, setCC,
-    vitals, setVitals, vitalsHistory, setVitalsHistory,
+    vitals, setVitals, vitalsHistory,
     medications, setMedications, allergies, setAllergies,
     pmhSelected, setPmhSelected, pmhExtra, setPmhExtra,
     surgHx, setSurgHx, famHx, setFamHx, socHx, setSocHx,
@@ -384,7 +344,8 @@ export function useNPIState() {
     consults, setConsults, sdoh, setSdoh,
     disposition, setDisposition, dispReason, setDispReason, dispTime, setDispTime,
     registration, setRegistration,
-    railCompact, setRailCompact, showShortcuts, setShowShortcuts, cdsOpen, setCdsOpen,
+    railCompact, setRailCompact, showShortcuts, setShowShortcuts,
+    cdsOpen, setCdsOpen,
     rosActiveSystem, setRosActiveSystem, peActiveSystem, setPeActiveSystem,
     reassessState, setReassessState, clinicalTimeline, setClinicalTimeline,
     appliedTemplate, templateDismissed, setTemplateDismissed,
@@ -392,8 +353,7 @@ export function useNPIState() {
     nursingNotes, setNursingNotes,
     mediaOpen, setMediaOpen, attachments, setAttachments,
     providerName, providerRole,
-    aiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread,
-    msgsRef, inputRef,
+    aiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread, msgsRef, inputRef,
     resumeSection, setResumeSection,
     patientName, patientDataBundle,
     vitalClass, getRosSysDot, getPeSysDot,

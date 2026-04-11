@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useNPIState } from "@/components/npi/useNPIState";
+import { useNPIState } from "@/components/npi/Usenpistate";
 import { NPI_CSS } from "@/components/npi/npiStyles";
 import {
   NAV_DATA, GROUP_META, ALL_SECTIONS, SECTION_SHORTCUT, QUICK_ACTIONS,

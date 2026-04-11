@@ -94,7 +94,7 @@ export default function ConsultTab({ consults, setConsults, onAdvance }) {
                 </div>
               ) : (
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ color:"var(--npi-teal)", fontSize:11 }}>\u2713 Received</span>
+                  <span style={{ color:"var(--npi-teal)", fontSize:11 }}>✓ Received</span>
                   {c.response && (
                     <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt3)" }}>
                       {c.response}

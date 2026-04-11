@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 // ─── INLINE HPI TAB ───────────────────────────────────────────────────────────
 // Keyboard-first AI-driven symptom checklist that builds an HPI narrative.
+// Phase flow: idle → loading → scan → narrative (with auto-DDx on entry)
 //
 // Keyboard contract (scan phase):
 //   Arrow Up/Down  — navigate symptom rows
@@ -13,14 +14,92 @@ import { toast } from "sonner";
 //   0-9            — answer pain scale (scale type) or pick option 1-N (choice type)
 //   Backspace      — go back one row (when current row unanswered)
 //   Esc            — finish and build narrative
-export default function InlineHPITab({ cc, setCC, onAdvance }) {
+//
+// DDx integration:
+//   Auto-fires on scan completion using positives/negatives + patient context.
+//   Uses response_json_schema for structured output; degrades gracefully.
+
+// ─── DDx HELPERS ─────────────────────────────────────────────────────────────
+
+function likelyCol(likelihood) {
+  if (!likelihood) return "var(--npi-txt4)";
+  const l = likelihood.toLowerCase();
+  if (l === "high")     return "#ff6b6b";
+  if (l === "moderate") return "#f5c842";
+  return "#00e5c0";
+}
+
+function buildDdxPrompt(cc, answers, symptoms, patientAge, patientSex, vitals, medications, allergies, pmhSelected) {
+  const positives = symptoms
+    .filter(s => answers[s.id] && !["skip","no"].includes(answers[s.id]))
+    .map(s => `${s.label}: ${answers[s.id] === "yes" ? (s.hint || "present") : answers[s.id]}`);
+  const negatives = symptoms
+    .filter(s => answers[s.id] === "no")
+    .map(s => s.hint || s.label.toLowerCase());
+  const pmhList = Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]).slice(0, 6).join(", ");
+  return [
+    "You are an emergency physician generating a ranked differential diagnosis list.",
+    "Return ONLY valid JSON: { \"differentials\": [ { rank, diagnosis, likelihood (\"High\"|\"Moderate\"|\"Low\"), supporting: string[], against: string[], workup: string[], note: string } ] }",
+    "Generate exactly 4-5 differentials, ranked by clinical probability. Be specific — not generic.",
+    "",
+    `Chief complaint: ${cc.text || "unspecified"}.`,
+    patientAge    ? `Patient: ${patientAge}y ${patientSex || ""}.`                         : "",
+    vitals?.bp    ? `Vitals: BP ${vitals.bp} HR ${vitals.hr||"-"} SpO2 ${vitals.spo2||"-"} T ${vitals.temp||"-"}.` : "",
+    medications?.length ? `Medications: ${medications.slice(0,6).join("; ")}.`             : "",
+    allergies?.length   ? `Allergies: ${allergies.join(", ")}.`                            : "",
+    pmhList             ? `PMH: ${pmhList}.`                                               : "",
+    positives.length    ? `Positive findings from HPI scan: ${positives.join("; ")}.`      : "No specific positive HPI findings documented.",
+    negatives.length    ? `Negative findings (patient denies): ${negatives.join(", ")}.`   : "",
+    "",
+    "Rules:",
+    "- supporting and against arrays MUST reference the actual findings listed above (keep each item ≤5 words)",
+    "- workup: 2-4 practical next steps ordered by priority",
+    "- note: one clinical pearl sentence relevant to ED management of this diagnosis",
+  ].filter(Boolean).join("\n");
+}
+
+const DDX_SCHEMA = {
+  type: "object",
+  properties: {
+    differentials: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          rank:       { type: "number"  },
+          diagnosis:  { type: "string"  },
+          likelihood: { type: "string"  },
+          supporting: { type: "array", items: { type: "string" } },
+          against:    { type: "array", items: { type: "string" } },
+          workup:     { type: "array", items: { type: "string" } },
+          note:       { type: "string"  },
+        },
+      },
+    },
+  },
+};
+
+// ─── COMPONENT ────────────────────────────────────────────────────────────────
+export default function InlineHPITab({
+  cc, setCC, onAdvance,
+  // Context props for DDx (optional — degrades gracefully if absent)
+  patientAge, patientSex, vitals, medications, allergies, pmhSelected,
+}) {
   const [phase, setPhase]         = useState("idle");
   const [symptoms, setSymptoms]   = useState([]);
   const [answers, setAnswers]     = useState({});
   const [focusIdx, setFocusIdx]   = useState(0);
   const [narrative, setNarrative] = useState(cc.hpi || "");
+
+  // ── DDx state ──────────────────────────────────────────────────────────────
+  const [ddx,        setDdx]        = useState(null);
+  const [ddxLoading, setDdxLoading] = useState(false);
+  const [ddxError,   setDdxError]   = useState(false);
+  const [ddxOpen,    setDdxOpen]    = useState(true);
+
   const panelRef = useRef(null);
 
+  // ── Answer display helpers ─────────────────────────────────────────────────
   const answerColor = (ans) => {
     if (!ans || ans === "skip") return "var(--npi-txt4)";
     if (ans === "yes")  return "var(--npi-coral)";
@@ -35,6 +114,7 @@ export default function InlineHPITab({ cc, setCC, onAdvance }) {
     return ans;
   };
 
+  // ── Narrative builder ──────────────────────────────────────────────────────
   const buildNarrative = useCallback((ans) => {
     const yes     = symptoms.filter(s => ans[s.id] === "yes").map(s => (s.hint || s.label).toLowerCase());
     const no      = symptoms.filter(s => ans[s.id] === "no").map(s => (s.hint || s.label).toLowerCase());
@@ -48,11 +128,13 @@ export default function InlineHPITab({ cc, setCC, onAdvance }) {
     return text;
   }, [symptoms, cc.text]);
 
+  // ── Scan completion ────────────────────────────────────────────────────────
   const finishScan = useCallback((ans) => {
     const text = buildNarrative(ans);
     setNarrative(text);
     setCC(prev => ({ ...prev, hpi: text }));
     setPhase("narrative");
+    // DDx triggered by useEffect on phase change
   }, [buildNarrative, setCC]);
 
   const advance = useCallback((newAnswers, idx) => {
@@ -60,9 +142,64 @@ export default function InlineHPITab({ cc, setCC, onAdvance }) {
     else { setFocusIdx(idx + 1); }
   }, [symptoms.length, finishScan]);
 
+  // ── DDx auto-trigger ───────────────────────────────────────────────────────
+  // Fires once when entering narrative phase; re-fires only on manual redo.
+  useEffect(() => {
+    if (phase === "narrative" && symptoms.length > 0 && !ddx && !ddxLoading) {
+      runDDx();
+    }
+  }, [phase]); // eslint-disable-line
+
+  // ── DDx generation ─────────────────────────────────────────────────────────
+  async function runDDx() {
+    if (ddxLoading) return;
+    setDdxLoading(true);
+    setDdxError(false);
+    setDdx(null);
+    try {
+      const prompt = buildDdxPrompt(
+        cc, answers, symptoms,
+        patientAge, patientSex, vitals, medications, allergies, pmhSelected,
+      );
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: DDX_SCHEMA,
+      });
+      const parsed = typeof res === "object"
+        ? res
+        : JSON.parse(String(res).replace(/```json|```/g, "").trim());
+      setDdx(parsed.differentials || []);
+    } catch(_) {
+      setDdxError(true);
+    } finally {
+      setDdxLoading(false);
+    }
+  }
+
+  // ── Append DDx summary to HPI narrative ────────────────────────────────────
+  function appendDdxToHpi() {
+    if (!ddx || !ddx.length) return;
+    const summary = ddx
+      .map((d, i) => {
+        const sup = (d.supporting || []).slice(0, 2).join(", ");
+        return `(${i+1}) ${d.diagnosis} [${d.likelihood}]${sup ? ` \u2014 ${sup}` : ""}`;
+      })
+      .join("; ");
+    const appended = narrative + `\n\nDifferential diagnoses considered: ${summary}.`;
+    setNarrative(appended);
+    setCC(prev => ({ ...prev, hpi: appended }));
+    toast.success("DDx appended to HPI narrative");
+  }
+
+  // ── Restart helpers (clears DDx state) ─────────────────────────────────────
+  function goToIdle()  { setPhase("idle");  setDdx(null); setDdxError(false); }
+  function goToScan()  { setPhase("scan");  setDdx(null); setDdxError(false); }
+
+  // ── Symptom generation ─────────────────────────────────────────────────────
   const generateSymptoms = async () => {
     if (!cc.text.trim()) { toast.error("Enter a chief complaint first (Cmd+2)."); return; }
     setPhase("loading");
+    setDdx(null); setDdxError(false);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `You are a clinical documentation assistant for emergency medicine.
@@ -100,7 +237,9 @@ Customize the symptom list to be clinically relevant for "${cc.text}". Keep 8-12
           },
         },
       });
-      const parsed = typeof result === "object" ? result : JSON.parse(String(result).replace(/```json|```/g, "").trim());
+      const parsed = typeof result === "object"
+        ? result
+        : JSON.parse(String(result).replace(/```json|```/g, "").trim());
       setSymptoms(parsed.symptoms || []);
       setAnswers({});
       setFocusIdx(0);
@@ -115,6 +254,7 @@ Customize the symptom list to be clinically relevant for "${cc.text}". Keep 8-12
     if (phase === "scan") setTimeout(() => panelRef.current?.focus(), 60);
   }, [phase]);
 
+  // ── Keyboard handler ───────────────────────────────────────────────────────
   const handleKey = useCallback((e) => {
     if (phase !== "scan") return;
     const sym = symptoms[focusIdx];
@@ -147,7 +287,7 @@ Customize the symptom list to be clinically relevant for "${cc.text}". Keep 8-12
     }
   }, [phase, symptoms, focusIdx, answers, advance, finishScan]);
 
-  // ── idle / loading ──────────────────────────────────────────────────────────
+  // ── IDLE / LOADING ─────────────────────────────────────────────────────────
   if (phase === "idle" || phase === "loading") {
     return (
       <div className="hpi-idle">
@@ -160,8 +300,8 @@ Customize the symptom list to be clinically relevant for "${cc.text}". Keep 8-12
         {cc.text && (
           <button className="hpi-gen-btn" onClick={generateSymptoms} disabled={phase === "loading"}>
             {phase === "loading"
-              ? <><span className="hpi-spinner">⏳</span> Generating symptom checklist…</>
-              : <><span>✦</span> Generate AI Symptom Template</>}
+              ? <><span className="hpi-spinner">&#x23F3;</span> Generating symptom checklist&hellip;</>
+              : <><span>&#10022;</span> Generate AI Symptom Template</>}
           </button>
         )}
         {cc.hpi && (
@@ -173,7 +313,7 @@ Customize the symptom list to be clinically relevant for "${cc.text}". Keep 8-12
           </div>
         )}
         <div className="hpi-kbd-legend">
-          <span className="hpi-kbd-item"><kbd>↑↓</kbd> Navigate</span>
+          <span className="hpi-kbd-item"><kbd>&#x2191;&#x2193;</kbd> Navigate</span>
           <span className="hpi-kbd-item"><kbd>Y</kbd> Present</span>
           <span className="hpi-kbd-item"><kbd>N</kbd> Absent</span>
           <span className="hpi-kbd-item"><kbd>Space</kbd> Skip</span>
@@ -184,7 +324,7 @@ Customize the symptom list to be clinically relevant for "${cc.text}". Keep 8-12
     );
   }
 
-  // ── scan phase ──────────────────────────────────────────────────────────────
+  // ── SCAN PHASE ─────────────────────────────────────────────────────────────
   if (phase === "scan") {
     const done = Object.keys(answers).filter(k => answers[k] !== "skip").length;
     const pct  = symptoms.length ? Math.round((Object.keys(answers).length / symptoms.length) * 100) : 0;
@@ -197,8 +337,8 @@ Customize the symptom list to be clinically relevant for "${cc.text}". Keep 8-12
           </div>
           <div className="hpi-scan-bar-wrap"><div className="hpi-scan-bar" style={{ width: pct + "%" }} /></div>
           <div className="hpi-hint-strip">
-            <kbd>↑↓</kbd> nav &nbsp;·&nbsp; <kbd>Y</kbd> yes &nbsp;·&nbsp; <kbd>N</kbd> no &nbsp;·&nbsp;
-            <kbd>Space</kbd> skip &nbsp;·&nbsp; <kbd>0-9</kbd> scale/option &nbsp;·&nbsp; <kbd>Esc</kbd> done
+            <kbd>&#x2191;&#x2193;</kbd> nav &nbsp;&middot;&nbsp; <kbd>Y</kbd> yes &nbsp;&middot;&nbsp; <kbd>N</kbd> no &nbsp;&middot;&nbsp;
+            <kbd>Space</kbd> skip &nbsp;&middot;&nbsp; <kbd>0-9</kbd> scale/option &nbsp;&middot;&nbsp; <kbd>Esc</kbd> done
           </div>
         </div>
         <div className="hpi-sym-list">
@@ -252,44 +392,264 @@ Customize the symptom list to be clinically relevant for "${cc.text}". Keep 8-12
           <button className="hpi-done-btn" onClick={() => finishScan(answers)}>
             Build Narrative ({done} answered) &rarr;
           </button>
-          <button className="hpi-ghost-btn" onClick={() => setPhase("idle")}>&#8635; Restart</button>
+          <button className="hpi-ghost-btn" onClick={goToIdle}>&#8635; Restart</button>
         </div>
       </div>
     );
   }
 
-  // ── narrative phase ─────────────────────────────────────────────────────────
+  // ── NARRATIVE PHASE ────────────────────────────────────────────────────────
+  const answeredCount = Object.keys(answers).filter(k => answers[k] && answers[k] !== "skip").length;
+
   return (
     <div className="hpi-narrative">
+      {/* Header row — unchanged */}
       <div className="hpi-narr-hdr">
         <span className="hpi-cc-val">{cc.text}</span>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="hpi-ghost-btn" onClick={() => setPhase("scan")}>&#8592; Edit Answers</button>
-          <button className="hpi-ghost-btn" onClick={() => setPhase("idle")}>&#8635; Restart</button>
+          <button className="hpi-ghost-btn" onClick={goToScan}>&#8592; Edit Answers</button>
+          <button className="hpi-ghost-btn" onClick={goToIdle}>&#8635; Restart</button>
           {onAdvance && (
             <button className="hpi-done-btn" onClick={onAdvance}>Continue to ROS &rarr;</button>
           )}
         </div>
       </div>
+
+      {/* ⌘+Enter hint */}
       {onAdvance && (
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-          <kbd style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"var(--npi-blue)", background:"rgba(59,158,255,.1)", border:"1px solid rgba(59,158,255,.2)", borderRadius:4, padding:"1px 6px" }}>⌘ Enter</kbd>
+          <kbd style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"var(--npi-blue)", background:"rgba(59,158,255,.1)", border:"1px solid rgba(59,158,255,.2)", borderRadius:4, padding:"1px 6px" }}>&#8984; Enter</kbd>
           <span style={{ fontSize:11, color:"var(--npi-txt4)", fontFamily:"'DM Sans',sans-serif" }}>Continue to ROS</span>
         </div>
       )}
-      <div className="hpi-field-lbl" style={{ marginBottom: 8 }}>HPI Narrative — edit freely</div>
-      <textarea className="hpi-ta" value={narrative} autoFocus rows={7}
-        onChange={e => { setNarrative(e.target.value); setCC(prev => ({ ...prev, hpi: e.target.value })); }}
-        onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); onAdvance?.(); } }}
-      />
-      <div className="hpi-badge-row">
-        {symptoms.filter(s => answers[s.id] && answers[s.id] !== "skip").map(sym => (
-          <div key={sym.id} className="hpi-badge"
-            style={{ borderColor: answerColor(answers[sym.id]) + "44", color: answerColor(answers[sym.id]) }}>
-            <span className="hpi-badge-label">{sym.label}</span>
-            <span className="hpi-badge-val">{answerLabel(sym, answers[sym.id])}</span>
+
+      {/* ── Two-column layout: narrative left, DDx right ── */}
+      <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
+
+        {/* ── Left: narrative + badges ── */}
+        <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:8 }}>
+          <div className="hpi-field-lbl" style={{ marginBottom: 0 }}>HPI Narrative — edit freely</div>
+          <textarea className="hpi-ta" value={narrative} autoFocus rows={7}
+            onChange={e => { setNarrative(e.target.value); setCC(prev => ({ ...prev, hpi: e.target.value })); }}
+            onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); onAdvance?.(); } }}
+          />
+          <div className="hpi-badge-row">
+            {symptoms.filter(s => answers[s.id] && answers[s.id] !== "skip").map(sym => (
+              <div key={sym.id} className="hpi-badge"
+                style={{ borderColor: answerColor(answers[sym.id]) + "44", color: answerColor(answers[sym.id]) }}>
+                <span className="hpi-badge-label">{sym.label}</span>
+                <span className="hpi-badge-val">{answerLabel(sym, answers[sym.id])}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* ── Right: DDx panel ── */}
+        <div style={{ width:330, flexShrink:0 }}>
+          <div style={{ border:"1px solid rgba(26,53,85,0.6)",
+            borderTop:"2px solid rgba(163,146,254,0.55)",
+            borderRadius:11, overflow:"hidden",
+            background:"rgba(10,20,40,0.75)" }}>
+
+            {/* DDx panel header */}
+            <div style={{ padding:"10px 14px 9px",
+              borderBottom:"1px solid rgba(26,53,85,0.45)",
+              background:"rgba(5,12,28,0.7)",
+              display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                <span style={{ fontSize:14 }}>&#x1F9E0;</span>
+                <div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    color:"#a29bfe", letterSpacing:1.5, textTransform:"uppercase" }}>
+                    Differential Diagnoses
+                  </div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                    color:"var(--npi-txt4)", marginTop:1 }}>
+                    {ddxLoading
+                      ? "Generating from scan data\u2026"
+                      : ddx
+                      ? `${ddx.length} diagnoses \xb7 ${answeredCount} findings used`
+                      : `Based on ${answeredCount} answered symptoms`}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+                {(ddx || ddxError) && !ddxLoading && (
+                  <button onClick={runDDx}
+                    style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, letterSpacing:1,
+                      textTransform:"uppercase", padding:"3px 8px", borderRadius:4, cursor:"pointer",
+                      border:"1px solid rgba(163,146,254,0.35)", background:"transparent",
+                      color:"#a29bfe" }}>
+                    &#x21BA; Redo
+                  </button>
+                )}
+                <button onClick={() => setDdxOpen(o => !o)}
+                  style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, padding:"3px 7px",
+                    borderRadius:4, cursor:"pointer", border:"1px solid rgba(42,77,114,0.4)",
+                    background:"transparent", color:"var(--npi-txt4)" }}>
+                  {ddxOpen ? "\u2212" : "\u002B"}
+                </button>
+              </div>
+            </div>
+
+            {ddxOpen && (
+              <div style={{ padding:"10px 12px", display:"flex", flexDirection:"column", gap:9 }}>
+
+                {/* Loading skeleton */}
+                {ddxLoading && (
+                  <>
+                    <style>{`@keyframes ddx-pulse{0%,100%{opacity:.35}50%{opacity:.8}}`}</style>
+                    {[1,2,3,4].map(i => (
+                      <div key={i} style={{ padding:"10px 11px", borderRadius:8,
+                        background:"rgba(14,37,68,0.5)",
+                        border:"1px solid rgba(26,53,85,0.3)" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                          <div style={{ height:9, width:120, borderRadius:4,
+                            background:"rgba(163,146,254,0.2)",
+                            animation:`ddx-pulse 1.4s ${i*0.12}s ease-in-out infinite` }} />
+                          <div style={{ height:9, width:44, borderRadius:10,
+                            background:"rgba(163,146,254,0.15)",
+                            animation:`ddx-pulse 1.4s ${i*0.12+0.2}s ease-in-out infinite` }} />
+                        </div>
+                        {[65,45].map((w,j) => (
+                          <div key={j} style={{ height:7, width:`${w}%`, borderRadius:3, marginBottom:5,
+                            background:"rgba(42,77,114,0.2)",
+                            animation:`ddx-pulse 1.4s ${i*0.12+j*0.1}s ease-in-out infinite` }} />
+                        ))}
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Error state */}
+                {ddxError && !ddxLoading && (
+                  <div style={{ padding:"12px", borderRadius:8,
+                    background:"rgba(255,107,107,0.07)", border:"1px solid rgba(255,107,107,0.25)",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"#ff8a8a",
+                    display:"flex", flexDirection:"column", gap:8 }}>
+                    <span>&#x26A0; DDx generation failed</span>
+                    <button onClick={runDDx}
+                      style={{ padding:"5px 12px", borderRadius:6, cursor:"pointer",
+                        border:"1px solid rgba(255,107,107,0.35)", background:"transparent",
+                        color:"#ff8a8a", fontFamily:"'DM Sans',sans-serif", fontSize:11 }}>
+                      Try again
+                    </button>
+                  </div>
+                )}
+
+                {/* Empty — before first generation */}
+                {!ddx && !ddxLoading && !ddxError && (
+                  <div style={{ padding:"16px 10px", textAlign:"center",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    color:"var(--npi-txt4)", fontStyle:"italic" }}>
+                    Generating differentials from your scan data&hellip;
+                  </div>
+                )}
+
+                {/* DDx cards */}
+                {ddx && !ddxLoading && ddx.map((d, i) => {
+                  const col = likelyCol(d.likelihood);
+                  return (
+                    <div key={i} style={{ padding:"10px 11px", borderRadius:9,
+                      background:"rgba(14,37,68,0.65)",
+                      border:`1px solid ${col}18`,
+                      borderLeft:`3px solid ${col}` }}>
+
+                      {/* Rank + diagnosis + likelihood */}
+                      <div style={{ display:"flex", alignItems:"center",
+                        justifyContent:"space-between", marginBottom:7, gap:6 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                            color:"var(--npi-txt4)", letterSpacing:.5 }}>
+                            {String(i+1).padStart(2,"0")}
+                          </span>
+                          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                            fontWeight:700, color:"var(--npi-txt)", lineHeight:1.2 }}>
+                            {d.diagnosis}
+                          </span>
+                        </div>
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                          padding:"2px 7px", borderRadius:10, letterSpacing:.5,
+                          background:`${col}18`, border:`1px solid ${col}44`, color:col,
+                          whiteSpace:"nowrap", flexShrink:0 }}>
+                          {d.likelihood || "Unknown"}
+                        </span>
+                      </div>
+
+                      {/* Supporting findings */}
+                      {d.supporting && d.supporting.length > 0 && (
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:5 }}>
+                          {d.supporting.map(s => (
+                            <span key={s} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                              padding:"2px 7px", borderRadius:3,
+                              background:"rgba(255,107,107,0.1)",
+                              border:"1px solid rgba(255,107,107,0.22)",
+                              color:"#ff8a8a", display:"flex", alignItems:"center", gap:3 }}>
+                              <span style={{ fontSize:8 }}>&#x2713;</span>{s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Against findings */}
+                      {d.against && d.against.length > 0 && (
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:5 }}>
+                          {d.against.map(s => (
+                            <span key={s} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                              padding:"2px 7px", borderRadius:3,
+                              background:"rgba(0,229,192,0.06)",
+                              border:"1px solid rgba(0,229,192,0.2)",
+                              color:"var(--npi-teal)", display:"flex", alignItems:"center", gap:3 }}>
+                              <span style={{ fontSize:8 }}>&#x2717;</span>{s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Workup */}
+                      {d.workup && d.workup.length > 0 && (
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
+                          {d.workup.map(w => (
+                            <span key={w} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                              padding:"2px 7px", borderRadius:3,
+                              background:"rgba(59,158,255,0.08)",
+                              border:"1px solid rgba(59,158,255,0.22)",
+                              color:"#3b9eff" }}>
+                              {w}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Clinical pearl */}
+                      {d.note && (
+                        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                          color:"var(--npi-txt4)", fontStyle:"italic",
+                          lineHeight:1.5, paddingTop:4,
+                          borderTop:"1px solid rgba(26,53,85,0.3)" }}>
+                          &#x26A1; {d.note}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Append DDx to HPI button */}
+                {ddx && !ddxLoading && (
+                  <button onClick={appendDdxToHpi}
+                    style={{ padding:"8px 14px", borderRadius:8, cursor:"pointer",
+                      border:"1px solid rgba(163,146,254,0.35)",
+                      background:"rgba(163,146,254,0.08)",
+                      color:"#a29bfe", fontFamily:"'DM Sans',sans-serif",
+                      fontSize:11, fontWeight:600,
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                    &#x2B07; Append DDx Summary to HPI
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

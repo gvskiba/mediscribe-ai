@@ -240,4 +240,4 @@ export default function PatientSummaryTab({ demo, cc, vitals, vitalsHistory, med
       </div>
     </div>
   );
-}
+  }

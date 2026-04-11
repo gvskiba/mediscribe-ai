@@ -1647,7 +1647,6 @@ export default function NewPatientInput() {
         />
       );
       case "handoff":    return <HandoffTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} sdoh={sdoh} consults={consults} disposition={disposition} dispReason={dispReason} onAdvance={() => selectSection("discharge")} />;
-      );
       case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
       case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} patientWeight={demo.weight||vitals.weight||""} /></div>;
       case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;

@@ -52,6 +52,7 @@ const NAV_DATA = {
     { section: "reassess",   icon: "🔄", label: "Reassessment",      abbr: "Ra", dot: "empty" },
     { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty" },
     { section: "timeline",   icon: "⏱",  label: "Timeline",          abbr: "Tl", dot: "empty" },
+    { section: "closeout",   icon: "✅", label: "Close-out",         abbr: "Cl", dot: "empty" },
     { section: "discharge",  icon: "🚪", label: "Discharge",         abbr: "Dc", dot: "empty" },
   ],
   tools: [
@@ -186,7 +187,7 @@ const SDOH_DOMAINS = [
 
 const TIER_COLORS = { "0":"#00e5c0", "1":"#f5c842", "2":"#ff6b6b" };
 
-function SDOHWidget({ sdoh, setSdoh }) {
+function SDOHWidget({ sdoh, setSdoh, onAdvance }) {
   const positiveCount  = Object.values(sdoh).filter(v => v === "2").length;
   const concernCount   = Object.values(sdoh).filter(v => v === "1").length;
   const screenedCount  = Object.values(sdoh).filter(Boolean).length;
@@ -264,6 +265,17 @@ function SDOHWidget({ sdoh, setSdoh }) {
         {positiveCount > 0 && <span style={{ color:"#ff8a8a" }}>{positiveCount} positive</span>}
         {!g0136Eligible && screenedCount > 0 && <span>Screen {4-screenedCount} more for G0136</span>}
       </div>
+
+      {onAdvance && (
+        <div style={{ display:"flex", justifyContent:"flex-end", marginTop:8 }}>
+          <button onClick={onAdvance}
+            style={{ padding:"9px 22px", borderRadius:9, background:"linear-gradient(135deg,#00e5c0,#00b4d8)",
+              border:"none", color:"#050f1e", fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+              fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            Continue to HPI &#9654;
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -277,7 +289,7 @@ const ESI_CFG = [
   { level:5, label:"Non-urgent",  color:"#8892a4", desc:"No resources needed"  },
 ];
 
-function TriageTab({ esiLevel, setEsiLevel, triage, setTriage, avpu, setAvpu, pain, setPain }) {
+function TriageTab({ esiLevel, setEsiLevel, triage, setTriage, avpu, setAvpu, pain, setPain, onAdvance }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
@@ -374,12 +386,23 @@ function TriageTab({ esiLevel, setEsiLevel, triage, setTriage, avpu, setAvpu, pa
           {pain     && <span style={{ color:"var(--npi-txt3)" }}>Pain: {pain}/10</span>}
         </div>
       )}
+
+      {onAdvance && (
+        <div style={{ display:"flex", justifyContent:"flex-end", marginTop:8 }}>
+          <button onClick={onAdvance}
+            style={{ padding:"9px 22px", borderRadius:9, background:"linear-gradient(135deg,#00e5c0,#00b4d8)",
+              border:"none", color:"#050f1e", fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+              fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            Continue to Demographics &#9654;
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── CONSULT TAB ──────────────────────────────────────────────────────────────
-function ConsultTab({ consults, setConsults }) {
+function ConsultTab({ consults, setConsults, onAdvance }) {
   const [svcIn,  setSvcIn]  = useState("");
   const [qIn,    setQIn]    = useState("");
   const [respIn, setRespIn] = useState({});
@@ -489,6 +512,236 @@ function ConsultTab({ consults, setConsults }) {
           No consults requested yet
         </div>
       )}
+
+      {onAdvance && (
+        <div style={{ display:"flex", justifyContent:"flex-end", marginTop:8 }}>
+          <button onClick={onAdvance}
+            style={{ padding:"9px 22px", borderRadius:9, background:"linear-gradient(135deg,#00e5c0,#00b4d8)",
+              border:"none", color:"#050f1e", fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+              fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            Continue to Clinical Note &#9654;
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── PARSE FAB ────────────────────────────────────────────────────────────────
+function ParseFab({ parseText, setParseText, parsing, onParse, tabLabel }) {
+  const [open, setOpen] = useState(false);
+  const taRef = useRef(null);
+  useEffect(() => { if (open) setTimeout(() => taRef.current?.focus(), 120); }, [open]);
+  return (
+    <div style={{ position:"fixed", bottom:72, right:18, zIndex:9990 }}>
+      {open && (
+        <div style={{ position:"absolute", bottom:56, right:0, width:318,
+          background:"#081628", border:"1px solid #1a3555", borderRadius:12,
+          padding:"14px 16px", boxShadow:"0 16px 56px rgba(0,0,0,.65)" }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)",
+            letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
+            Paste & Parse \u2192 {tabLabel}
+          </div>
+          <textarea ref={taRef} value={parseText} onChange={e => setParseText(e.target.value)} rows={5}
+            placeholder="Paste triage note, EMS report, nursing note, or any clinical text..."
+            style={{ width:"100%", background:"rgba(8,24,48,0.85)",
+              border:"1px solid rgba(26,53,85,0.65)", borderRadius:8,
+              padding:"8px 10px", color:"var(--npi-txt)",
+              fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none",
+              resize:"none", boxSizing:"border-box", marginBottom:10 }} />
+          <div style={{ display:"flex", justifyContent:"flex-end", gap:8 }}>
+            <button onClick={() => setOpen(false)}
+              style={{ padding:"6px 12px", borderRadius:7,
+                border:"1px solid rgba(42,77,114,0.5)", background:"transparent",
+                color:"var(--npi-txt4)", fontFamily:"'DM Sans',sans-serif",
+                fontSize:11, cursor:"pointer" }}>Cancel</button>
+            <button onClick={() => { onParse(); setOpen(false); }}
+              disabled={parsing || !parseText.trim()}
+              style={{ padding:"6px 14px", borderRadius:7,
+                border:"1px solid rgba(0,229,192,0.4)",
+                background: parsing ? "transparent" : "rgba(0,229,192,0.1)",
+                color: parsing ? "var(--npi-txt4)" : "var(--npi-teal)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+                cursor: parsing ? "default" : "pointer" }}>
+              {parsing ? "Parsing..." : "\u2728 Parse"}
+            </button>
+          </div>
+        </div>
+      )}
+      <button onClick={() => setOpen(o => !o)}
+        title="Paste & Parse clinical text into current section"
+        style={{ width:44, height:44, borderRadius:22,
+          border:`1px solid ${open ? "rgba(0,229,192,0.6)" : "rgba(0,229,192,0.35)"}`,
+          background: open ? "rgba(0,229,192,0.18)" : "rgba(8,22,46,0.95)",
+          color:"var(--npi-teal)", fontSize:17, cursor:"pointer",
+          boxShadow:"0 4px 20px rgba(0,0,0,.5)", display:"flex",
+          alignItems:"center", justifyContent:"center",
+          backdropFilter:"blur(8px)" }}>
+        {open ? "\u2715" : "\uD83D\uDCCB"}
+      </button>
+    </div>
+  );
+}
+
+// ─── DISPOSITION / CLOSE-OUT TAB ──────────────────────────────────────────────
+const DISPOSITION_OPTS = [
+  { val:"discharge",   icon:"\uD83D\uDEAA", label:"Discharge",    color:"#00e5c0", desc:"Home or follow-up care"       },
+  { val:"admit",       icon:"\uD83C\uDFE5", label:"Admit",         color:"#3b9eff", desc:"Inpatient admission"           },
+  { val:"observation", icon:"\uD83D\uDD0D", label:"Observation",   color:"#f5c842", desc:"Outpatient obs status"         },
+  { val:"transfer",    icon:"\uD83D\uDE91", label:"Transfer",       color:"#ff9f43", desc:"Transfer to another facility" },
+  { val:"ama",         icon:"\u26A0\uFE0F", label:"AMA",            color:"#ff6b6b", desc:"Against medical advice"       },
+  { val:"expired",     icon:"\u2020",       label:"Expired",        color:"#8892a4", desc:"Patient expired in ED"        },
+];
+
+function DispositionTab({ disposition, setDisposition, dispReason, setDispReason, dispTime, setDispTime, onAdvance }) {
+  const sel = DISPOSITION_OPTS.find(o => o.val === disposition);
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+
+      {/* Selector grid */}
+      <div>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)",
+          letterSpacing:1.5, textTransform:"uppercase", marginBottom:10 }}>
+          Disposition Decision — Required Before Sign &amp; Save
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+          {DISPOSITION_OPTS.map(({ val, icon, label, color, desc }) => {
+            const active = disposition === val;
+            return (
+              <button key={val} onClick={() => setDisposition(active ? "" : val)}
+                style={{ padding:"12px 8px", borderRadius:10, cursor:"pointer", textAlign:"center",
+                  border:`2px solid ${active ? color : "rgba(42,77,114,0.4)"}`,
+                  background: active ? `${color}18` : "rgba(14,37,68,0.5)",
+                  transition:"all .14s" }}>
+                <div style={{ fontSize:22, marginBottom:4 }}>{icon}</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+                  color: active ? color : "var(--npi-txt3)" }}>{label}</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                  color:"var(--npi-txt4)", marginTop:2 }}>{desc}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Reason + time — shown once a disposition is chosen */}
+      {disposition && (
+        <>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)",
+              letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
+              Disposition Reason / Instructions
+            </div>
+            <textarea value={dispReason} onChange={e => setDispReason(e.target.value)} rows={3}
+              placeholder={`Document reason for ${disposition}, follow-up plan, return precautions...`}
+              style={{ width:"100%", background:"rgba(14,37,68,0.8)",
+                border:"1px solid rgba(26,53,85,0.55)", borderTop:"2px solid rgba(0,229,192,0.3)",
+                borderRadius:9, padding:"9px 12px", color:"var(--npi-txt)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none",
+                resize:"none", boxSizing:"border-box" }} />
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)",
+                letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>Departure Time</div>
+              <input type="time" value={dispTime} onChange={e => setDispTime(e.target.value)}
+                style={{ background:"rgba(14,37,68,0.8)", border:"1px solid rgba(26,53,85,0.55)",
+                  borderRadius:8, padding:"7px 10px", color:"var(--npi-txt)",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:13, outline:"none" }} />
+            </div>
+            <div style={{ flex:1, padding:"10px 14px", borderRadius:9,
+              background:"rgba(0,229,192,0.05)", border:"1px solid rgba(0,229,192,0.2)",
+              fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-teal)",
+              display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:18 }}>{sel?.icon}</span>
+              <span><strong>{sel?.label}</strong>{dispTime ? ` \u2014 ${dispTime}` : ""}</span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {onAdvance && (
+        <div style={{ display:"flex", justifyContent:"flex-end", marginTop:8 }}>
+          <button onClick={onAdvance}
+            style={{ padding:"9px 22px", borderRadius:9, background:"linear-gradient(135deg,#00e5c0,#00b4d8)",
+              border:"none", color:"#050f1e", fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+              fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            Proceed to Discharge &#9654;
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SYSTEM PROGRESS HEADER (ROS + PE) ───────────────────────────────────────
+// Replaces the per-system rail sub-items with a compact in-content header.
+// Literature basis: NIST progressive disclosure + NCSU cascading-dialog preference.
+function SystemProgressHeader({ systems, activeIdx, onSelect, getDot }) {
+  const sys    = systems[activeIdx];
+  const atStart = activeIdx === 0;
+  const atEnd   = activeIdx === systems.length - 1;
+
+  const btnBase = {
+    display:"flex", alignItems:"center", justifyContent:"center",
+    width:30, height:30, borderRadius:7, border:"none", cursor:"pointer",
+    fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:14,
+    transition:"all .15s", flexShrink:0,
+  };
+
+  return (
+    <div style={{ flexShrink:0, borderBottom:"1px solid rgba(26,53,85,0.45)",
+      background:"rgba(5,15,30,0.55)", padding:"10px 16px 8px",
+      display:"flex", flexDirection:"column", gap:7 }}>
+
+      {/* Prev / System label / Next */}
+      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <button onClick={() => onSelect(activeIdx - 1)} disabled={atStart}
+          style={{ ...btnBase,
+            background: atStart ? "transparent" : "rgba(0,229,192,0.08)",
+            color: atStart ? "rgba(42,77,114,0.4)" : "var(--npi-teal)",
+            cursor: atStart ? "default" : "pointer" }}>
+          &#9664;
+        </button>
+        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center",
+          gap:6, padding:"4px 0" }}>
+          <span style={{ fontSize:16 }}>{sys.icon}</span>
+          <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+            fontSize:13, color:"var(--npi-txt)" }}>
+            {sys.label}
+          </span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+            color:"var(--npi-txt4)", letterSpacing:1 }}>
+            {activeIdx + 1}/{systems.length}
+          </span>
+        </div>
+        <button onClick={() => onSelect(activeIdx + 1)} disabled={atEnd}
+          style={{ ...btnBase,
+            background: atEnd ? "transparent" : "rgba(0,229,192,0.08)",
+            color: atEnd ? "rgba(42,77,114,0.4)" : "var(--npi-teal)",
+            cursor: atEnd ? "default" : "pointer" }}>
+          &#9654;
+        </button>
+      </div>
+
+      {/* Dot progress strip — click any dot to jump */}
+      <div style={{ display:"flex", gap:4, justifyContent:"center", alignItems:"center" }}>
+        {systems.map((s, i) => {
+          const dot     = getDot(s.id);
+          const isActive = i === activeIdx;
+          const bg = isActive
+            ? "var(--npi-teal)"
+            : dot === "done"    ? "rgba(0,229,192,0.45)"
+            : dot === "partial" ? "rgba(245,200,66,0.6)"
+            : "rgba(42,77,114,0.45)";
+          return (
+            <button key={s.id} onClick={() => onSelect(i)} title={s.label}
+              style={{ height:7, width: isActive ? 22 : 7, borderRadius:4,
+                border:"none", background:bg, cursor:"pointer", padding:0,
+                transition:"all .18s ease", flexShrink:0 }} />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -558,6 +811,10 @@ export default function NewPatientInput() {
   const [esiLevel, setEsiLevel]       = useState("");
   const [consults, setConsults]       = useState([]);
   const [sdoh, setSdoh]               = useState({ housing:"", food:"", transport:"", utilities:"", isolation:"", safety:"" });
+  const [disposition, setDisposition] = useState("");
+  const [dispReason, setDispReason]   = useState("");
+  const [dispTime, setDispTime]       = useState("");
+  const [railCompact, setRailCompact] = useState(false);
   const [registration, setRegistration] = useState({ mrn:"", room:"" });
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [cdsOpen,      setCdsOpen]      = useState(false);
@@ -619,6 +876,7 @@ export default function NewPatientInput() {
       pe:       Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
       triage:   esiLevel                        ? "done"    : "empty",
       consult:  consults.length > 0               ? "done"    : "empty",
+      closeout: disposition                        ? "done"    : "empty",
       sdoh:     Object.values(sdoh).filter(v => v === "2").length > 0 ? "partial"
                   : Object.values(sdoh).some(Boolean) ? "done" : "empty",
       reassess: reassessState.condition ? "done" : reassessState.note ? "partial" : "empty",
@@ -630,6 +888,7 @@ export default function NewPatientInput() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     Object.keys(rosState).length, Object.keys(peState).length,
     esiLevel, consults.length,
+    disposition,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     Object.values(sdoh).join(","),
     reassessState.condition, reassessState.note,
@@ -637,13 +896,15 @@ export default function NewPatientInput() {
   ]);
 
   const selectGroup = useCallback((group) => {
+    // If already in this group, just keep it open — don't navigate away from current tab
+    if (group === activeGroup) return;
     setActiveGroup(group);
     const items = NAV_DATA[group];
     if (items.every(i => i.href)) return;
     if (items.length === 1) { navigate(`/NewPatientInput?tab=${items[0].section}`); return; }
     const target = items.find(i => i.section === currentTab) ? currentTab : items[0].section;
     navigate(`/NewPatientInput?tab=${target}`);
-  }, [currentTab, navigate]);
+  }, [currentTab, activeGroup, navigate]);
 
   const selectSection = useCallback((sectionId) => {
     navigate(`/NewPatientInput?tab=${sectionId}`);
@@ -702,12 +963,21 @@ export default function NewPatientInput() {
         medications, allergies, status:"draft",
         registration_mrn: registration.mrn||"", registration_room: registration.room||"",
         triage_esi_level: esiLevel||"",
+        sdoh_housing: sdoh.housing||"", sdoh_food: sdoh.food||"",
+        sdoh_transport: sdoh.transport||"", sdoh_isolation: sdoh.isolation||"",
+        sdoh_safety: sdoh.safety||"",
+        disposition: disposition||"", disposition_reason: dispReason||"",
+        consult_count: consults.length,
+        consult_services: consults.map(c => c.service).join(", ")||"",
+        ros_summary: Object.keys(rosState).filter(k => rosState[k]).join(", ")||"",
+        pe_summary:  Object.keys(peState).filter(k => peState[k]).join(", ")||"",
       };
+      if (!disposition) toast.warning("Disposition not set \u2014 chart saved as draft without close-out.");
       await base44.entities.ClinicalNote.create(payload);
       toast.success("Chart signed and saved.");
       navigate("/EDTrackingBoard");
     } catch (e) { toast.error("Failed to save: " + e.message); }
-  }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,navigate]);
+  }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,sdoh,consults,disposition,dispReason,navigate]);
 
   useEffect(() => {
     const handler = e => {
@@ -796,16 +1066,37 @@ export default function NewPatientInput() {
           triage={triage}       setTriage={setTriage}
           avpu={avpu}           setAvpu={setAvpu}
           pain={pain}           setPain={setPain}
+          onAdvance={() => selectSection("demo")}
         />
       );
       case "demo":       return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} registration={registration} setRegistration={setRegistration} onAdvance={() => selectSection("cc")} />;
       case "cc":         return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} onAdvance={() => selectSection("vit")} />;
       case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} onAdvance={() => { addVitalsSnapshot("Triage"); selectSection("meds"); }} />;
       case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("sdoh")} />;
-      case "sdoh":       return <SDOHWidget sdoh={sdoh} setSdoh={setSdoh} />;
+      case "sdoh":       return <SDOHWidget sdoh={sdoh} setSdoh={setSdoh} onAdvance={() => selectSection("hpi")} />;
       case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
-      case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />;
-      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("chart")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
+      case "ros": return (
+        <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+          <SystemProgressHeader
+            systems={ROS_RAIL_SYSTEMS}
+            activeIdx={rosActiveSystem}
+            onSelect={setRosActiveSystem}
+            getDot={getRosSysDot}
+          />
+          <ROSTab onStateChange={setRosState} onSymptomsChange={setRosSymptoms} onNotesChange={setRosNotes} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />
+        </div>
+      );
+      case "pe": return (
+        <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+          <SystemProgressHeader
+            systems={PE_RAIL_SYSTEMS}
+            activeIdx={peActiveSystem}
+            onSelect={setPeActiveSystem}
+            getDot={getPeSysDot}
+          />
+          <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("chart")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />
+        </div>
+      );
 
       // ── FIX: pass a single patientData object, embedded flag, and correct callbacks
       case "chart": return (
@@ -815,11 +1106,12 @@ export default function NewPatientInput() {
             embedded={true}
             onBack={() => selectSection("pe")}
             onSave={handleSaveChart}
+            onAdvance={() => selectSection("reassess")}
           />
         </div>
       );
 
-      case "consult": return <ConsultTab consults={consults} setConsults={setConsults} />;
+      case "consult": return <ConsultTab consults={consults} setConsults={setConsults} onAdvance={() => selectSection("chart")} />;
       case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState}
         onVitalsSnapshot={v => addVitalsSnapshot(
           `Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`,
@@ -830,13 +1122,29 @@ export default function NewPatientInput() {
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
           <VitalSignsChart vitalsHistory={vitalsHistory}/>
           <ClinicalTimeline arrivalMs={arrivalTimeRef.current} onStateChange={setClinicalTimeline}/>
+          <div style={{ display:"flex", justifyContent:"flex-end" }}>
+            <button onClick={() => selectSection("closeout")}
+              style={{ padding:"9px 22px", borderRadius:9, background:"linear-gradient(135deg,#00e5c0,#00b4d8)",
+                border:"none", color:"#050f1e", fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+                fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+              Continue to Close-out &#9654;
+            </button>
+          </div>
         </div>
       );
       case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
+      case "closeout":   return (
+        <DispositionTab
+          disposition={disposition}   setDisposition={setDisposition}
+          dispReason={dispReason}     setDispReason={setDispReason}
+          dispTime={dispTime}         setDispTime={setDispTime}
+          onAdvance={() => selectSection("discharge")}
+        />
+      );
       case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
       case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} patientWeight={demo.weight||vitals.weight||""} /></div>;
       case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;
-      case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
+      case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} onAdvance={() => selectSection("timeline")} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto"   }}><MedicationReferencePage embedded /></div>;
       case "erplan":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><ERPlanBuilder embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} patientCC={cc.text} patientVitals={vitals} patientAllergies={allergies} patientMedications={medications} /></div>;
@@ -1063,6 +1371,16 @@ export default function NewPatientInput() {
 
       <button className="npi-sc-hint-fab" title="Keyboard shortcuts (?)" onClick={() => setShowShortcuts(s=>!s)}>?</button>
 
+      <ParseFab
+        parseText={parseText} setParseText={setParseText}
+        parsing={parsing} onParse={smartParse}
+        tabLabel={ALL_SECTIONS.find(s => s.section === currentTab)?.label || currentTab}
+      />
+
+      {railCompact && (
+        <style>{".npi-wf-gh-label,.npi-wf-item-label,.npi-wf-item-sc,.npi-wf-pt-meta,.npi-wf-vitals,.npi-wf-pt-cc{display:none!important}.npi-wf-rail{width:54px!important}.npi-wf-pt-name{font-size:9px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"}</style>
+      )}
+
       {showShortcuts && (
         <div onClick={() => setShowShortcuts(false)} style={{ position:"fixed",inset:0,zIndex:99998,background:"rgba(3,8,16,.75)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center" }}>
           <div onClick={e => e.stopPropagation()} style={{ background:"#081628",border:"1px solid #1a3555",borderRadius:16,padding:"24px 28px",width:520,maxWidth:"90vw",boxShadow:"0 24px 80px rgba(0,0,0,.6)" }}>
@@ -1094,6 +1412,17 @@ export default function NewPatientInput() {
       )}
 
       <aside className="npi-wf-rail">
+        <button onClick={() => setRailCompact(c => !c)}
+          title={railCompact ? "Expand sidebar" : "Collapse sidebar"}
+          style={{ position:"absolute", top:8, right:railCompact?8:6, zIndex:10,
+            width:22, height:22, borderRadius:11,
+            border:"1px solid rgba(42,77,114,0.5)",
+            background:"rgba(8,22,46,0.9)", color:"var(--npi-txt4)",
+            fontSize:10, cursor:"pointer", display:"flex",
+            alignItems:"center", justifyContent:"center",
+            lineHeight:1 }}>
+          {railCompact ? "\u203A" : "\u2039"}
+        </button>
         <div className="npi-wf-pt">
           <div className="npi-wf-pt-name">{patientName}</div>
           <div className="npi-wf-pt-meta">
@@ -1152,25 +1481,9 @@ export default function NewPatientInput() {
                           <span className="npi-wf-item-label">{item.label}</span>
                           <span className={`npi-wf-item-dot ${navDots[item.section]||"empty"}`} />
                           {SECTION_SHORTCUT[item.section] && (
-                            <span className="npi-wf-item-sc">⌘{SECTION_SHORTCUT[item.section]}</span>
+                            <span className="npi-wf-item-sc">&#8984;{SECTION_SHORTCUT[item.section]}</span>
                           )}
                         </button>
-                        {item.section === "ros" && currentTab === "ros" && ROS_RAIL_SYSTEMS.map((sys, i) => (
-                          <button key={sys.id} className={`npi-wf-sys-item${i === rosActiveSystem ? " active" : ""}`}
-                            onClick={() => setRosActiveSystem(i)}>
-                            <span className="npi-wf-sys-icon">{sys.icon}</span>
-                            <span className="npi-wf-sys-label">{sys.label}</span>
-                            <span className={`npi-wf-item-dot ${getRosSysDot(sys.id)}`} />
-                          </button>
-                        ))}
-                        {item.section === "pe" && currentTab === "pe" && PE_RAIL_SYSTEMS.map((sys, i) => (
-                          <button key={sys.id} className={`npi-wf-sys-item${i === peActiveSystem ? " active" : ""}`}
-                            onClick={() => setPeActiveSystem(i)}>
-                            <span className="npi-wf-sys-icon">{sys.icon}</span>
-                            <span className="npi-wf-sys-label">{sys.label}</span>
-                            <span className={`npi-wf-item-dot ${getPeSysDot(sys.id)}`} />
-                          </button>
-                        ))}
                       </div>
                   ))}
                   </div>

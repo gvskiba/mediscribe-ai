@@ -108,7 +108,6 @@ export default function NursingPanel({
         background:"#060f20", borderLeft:"1px solid rgba(26,53,85,0.7)",
         display:"flex", flexDirection:"column", boxShadow:"-10px 0 44px rgba(0,0,0,0.65)" }}>
 
-        {/* ── Header ── */}
         <div style={{ padding:"12px 16px 10px", borderBottom:"1px solid rgba(26,53,85,0.5)",
           background:"rgba(5,14,28,0.95)", flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
@@ -126,11 +125,10 @@ export default function NursingPanel({
               style={{ width:26, height:26, borderRadius:13, border:"1px solid rgba(42,77,114,0.5)",
                 background:"rgba(14,37,68,0.7)", color:"var(--npi-txt4)", fontSize:12,
                 cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              \u2715
+              &#x2715;
             </button>
           </div>
 
-          {/* Role selector + name */}
           <div style={{ display:"flex", gap:6, alignItems:"center" }}>
             <div style={{ display:"flex", background:"rgba(8,22,46,0.9)",
               border:"1px solid rgba(26,53,85,0.5)", borderRadius:7, overflow:"hidden", flexShrink:0 }}>
@@ -153,7 +151,6 @@ export default function NursingPanel({
           </div>
         </div>
 
-        {/* ── Sub-tab bar ── */}
         <div style={{ display:"flex", borderBottom:"1px solid rgba(26,53,85,0.45)",
           background:"rgba(5,12,24,0.7)", flexShrink:0 }}>
           {TABS.map(t => (
@@ -180,25 +177,22 @@ export default function NursingPanel({
           ))}
         </div>
 
-        {/* ── Tab content ── */}
         <div style={{ flex:1, overflowY:"auto", padding:"14px 16px" }}>
 
-          {/* ──── VITALS ──── */}
           {activeTab === "vitals" && (
             <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase" }}>
                 Vital Signs
               </div>
-
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                 {[
-                  { k:"bp",   lbl:"BP (sys/dia)",   ph:"120/80" },
-                  { k:"hr",   lbl:"HR (bpm)",        ph:"72"     },
-                  { k:"rr",   lbl:"RR (/min)",       ph:"16"     },
-                  { k:"spo2", lbl:"SpO\u2082 (%)",   ph:"98"     },
-                  { k:"temp", lbl:"Temp (\xb0C/\xb0F)", ph:"98.6" },
-                  { k:"o2del",lbl:"O\u2082 Delivery", ph:"RA / NC 2L" },
+                  { k:"bp",   lbl:"BP (sys/dia)",      ph:"120/80"  },
+                  { k:"hr",   lbl:"HR (bpm)",           ph:"72"      },
+                  { k:"rr",   lbl:"RR (/min)",          ph:"16"      },
+                  { k:"spo2", lbl:"SpO\u2082 (%)",      ph:"98"      },
+                  { k:"temp", lbl:"Temp (\xb0C/\xb0F)", ph:"98.6"    },
+                  { k:"o2del",lbl:"O\u2082 Delivery",   ph:"RA / NC 2L" },
                 ].map(f => (
                   <div key={f.k}>
                     <div style={labelBase}>{f.lbl}</div>
@@ -207,8 +201,6 @@ export default function NursingPanel({
                   </div>
                 ))}
               </div>
-
-              {/* AVPU */}
               <div>
                 <div style={labelBase}>AVPU</div>
                 <div style={{ display:"flex", gap:5 }}>
@@ -227,10 +219,8 @@ export default function NursingPanel({
                   })}
                 </div>
               </div>
-
-              {/* Pain */}
               <div>
-                <div style={labelBase}>Pain Score (0\u201310)</div>
+                <div style={labelBase}>Pain Score (0&#x2013;10)</div>
                 <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
                   {Array.from({length:11},(_,i)=>i).map(i => {
                     const col = i<=3?"#00e5c0":i<=6?"#f5c842":"#ff6b6b";
@@ -248,8 +238,6 @@ export default function NursingPanel({
                   })}
                 </div>
               </div>
-
-              {/* ESI */}
               <div>
                 <div style={labelBase}>ESI Level</div>
                 <div style={{ display:"flex", gap:5 }}>
@@ -269,34 +257,29 @@ export default function NursingPanel({
                   })}
                 </div>
               </div>
-
-              {/* Triage note */}
               <div>
                 <div style={labelBase}>Triage Note (appends to chart)</div>
                 <textarea value={triageNote} onChange={e => setTriageNote(e.target.value)} rows={3}
                   placeholder="Presenting complaint, initial appearance, concerns..."
                   style={{ ...fieldBase, width:"100%", resize:"none", lineHeight:1.55 }} />
               </div>
-
               <button onClick={logVitals}
                 style={{ padding:"10px 18px", borderRadius:9,
                   background:"linear-gradient(135deg,#00e5c0,#00b4d8)", border:"none",
                   color:"#050f1e", fontFamily:"'DM Sans',sans-serif",
                   fontWeight:700, fontSize:13, cursor:"pointer",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
-                \u2713 Log Vitals to Chart
+                &#x2713; Log Vitals to Chart
               </button>
             </div>
           )}
 
-          {/* ──── INTERVENTIONS ──── */}
           {activeTab === "interventions" && (
             <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase" }}>
                 Select Interventions Performed
               </div>
-
               {NURSING_IVX.map(cat => (
                 <div key={cat.cat}>
                   <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
@@ -322,14 +305,12 @@ export default function NursingPanel({
                   </div>
                 </div>
               ))}
-
               <div>
                 <div style={labelBase}>Custom / Medication Given</div>
                 <input value={customIvx} onChange={e => setCustomIvx(e.target.value)}
                   placeholder="e.g. Morphine 4mg IV, Zofran 4mg IV given"
                   style={{ ...fieldBase, width:"100%" }} />
               </div>
-
               {(selIvx.size > 0 || customIvx.trim()) && (
                 <div style={{ padding:"7px 12px", borderRadius:7,
                   background:"rgba(0,229,192,0.06)", border:"1px solid rgba(0,229,192,0.2)",
@@ -337,7 +318,6 @@ export default function NursingPanel({
                   {selIvx.size + (customIvx.trim() ? 1 : 0)} item{(selIvx.size+(customIvx.trim()?1:0)) > 1 ? "s" : ""} selected
                 </div>
               )}
-
               <button onClick={logInterventions}
                 disabled={selIvx.size === 0 && !customIvx.trim()}
                 style={{ padding:"10px 18px", borderRadius:9,
@@ -347,12 +327,11 @@ export default function NursingPanel({
                   fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:13,
                   cursor: (selIvx.size > 0 || customIvx.trim()) ? "pointer" : "default",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
-                \u2713 Log Interventions
+                &#x2713; Log Interventions
               </button>
             </div>
           )}
 
-          {/* ──── NOTES ──── */}
           {activeTab === "notes" && (
             <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
@@ -369,7 +348,7 @@ export default function NursingPanel({
                   color: noteText.trim() ? "#050f1e" : "var(--npi-txt4)",
                   fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:13,
                   cursor: noteText.trim() ? "pointer" : "default" }}>
-                \u2713 Add Note to Chart
+                &#x2713; Add Note to Chart
               </button>
               {nursingNotes.length > 0 && (
                 <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:4 }}>
@@ -392,7 +371,6 @@ export default function NursingPanel({
             </div>
           )}
 
-          {/* ──── LOG ──── */}
           {activeTab === "log" && (
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,

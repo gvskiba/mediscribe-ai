@@ -187,7 +187,7 @@ export default function DischargeInstructionsTab({
           background:"rgba(255,107,107,0.07)", border:"1px solid rgba(255,107,107,0.3)",
           borderLeft:"3px solid #ff6b6b", fontFamily:"'DM Sans',sans-serif", fontSize:12,
           color:"#ff8a8a", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
-          <span>\u26a0 AI generation failed \u2014 try again or fill sections manually.</span>
+          <span>&#x26a0; AI generation failed \u2014 try again or fill sections manually.</span>
           <button onClick={() => setGenState("idle")} style={{ ...btnGhost, color:"var(--npi-txt4)", padding:"4px 10px" }}>Dismiss</button>
         </div>
       )}
@@ -209,7 +209,7 @@ export default function DischargeInstructionsTab({
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--npi-gold)", padding:"6px 12px", borderRadius:6,
               background:"rgba(245,200,66,0.08)", border:"1px solid rgba(245,200,66,0.25)" }}>
-              \u26a0 No chief complaint set \u2014 add one in the CC tab for better results
+              &#x26a0; No chief complaint set \u2014 add one in the CC tab for better results
             </div>
           )}
           <div style={{ display:"flex", gap:10, marginTop:4 }}>
@@ -220,7 +220,7 @@ export default function DischargeInstructionsTab({
                   background: lang===val ? "rgba(0,229,192,0.1)" : "rgba(14,37,68,0.6)",
                   color: lang===val ? "var(--npi-teal)" : "var(--npi-txt3)",
                   fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600 }}>
-                \u2728 {lbl}
+                &#x2728; {lbl}
               </button>
             ))}
           </div>
@@ -331,7 +331,7 @@ export default function DischargeInstructionsTab({
                   ) : isEmpty ? (
                     <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
                       color:"var(--npi-txt4)", fontStyle:"italic" }}>
-                      {sec.hint} \u2014 click \u2728 Generate to fill this section
+                      {sec.hint} \u2014 click &#x2728; Generate to fill this section
                     </div>
                   ) : (
                     <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13,
@@ -359,10 +359,10 @@ export default function DischargeInstructionsTab({
               <button onClick={copyAll} style={{ ...btnGhost,
                 color: copied ? "var(--npi-teal)" : "var(--npi-txt4)",
                 borderColor: copied ? "rgba(0,229,192,0.4)" : undefined }}>
-                {copied ? "\u2713 Copied" : "\uD83D\uDCCB Copy All"}
+                {copied ? "\u2713 Copied" : "&#x1F4CB; Copy All"}
               </button>
               <button onClick={printInstructions} style={{ ...btnGhost, color:"var(--npi-txt4)" }}>
-                \uD83D\uDDA8 Print
+                &#x1F5A8; Print
               </button>
             </div>
           </div>

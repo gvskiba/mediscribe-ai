@@ -1,10 +1,10 @@
-// ParseFab.jsx
 import { useState, useRef, useEffect } from "react";
 
 export default function ParseFab({ parseText, setParseText, parsing, onParse, tabLabel }) {
   const [open, setOpen] = useState(false);
   const taRef = useRef(null);
   useEffect(() => { if (open) setTimeout(() => taRef.current?.focus(), 120); }, [open]);
+
   return (
     <div style={{ position:"fixed", bottom:72, right:18, zIndex:9990 }}>
       {open && (
@@ -13,7 +13,7 @@ export default function ParseFab({ parseText, setParseText, parsing, onParse, ta
           padding:"14px 16px", boxShadow:"0 16px 56px rgba(0,0,0,.65)" }}>
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)",
             letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
-            Paste & Parse &#x2192; {tabLabel}
+            Paste & Parse → {tabLabel}
           </div>
           <textarea ref={taRef} value={parseText} onChange={e => setParseText(e.target.value)} rows={5}
             placeholder="Paste triage note, EMS report, nursing note, or any clinical text..."
@@ -37,7 +37,7 @@ export default function ParseFab({ parseText, setParseText, parsing, onParse, ta
                 color: parsing ? "var(--npi-txt4)" : "var(--npi-teal)",
                 fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
                 cursor: parsing ? "default" : "pointer" }}>
-              {parsing ? "Parsing..." : "\u2728 Parse"}
+              {parsing ? "Parsing..." : "✨ Parse"}
             </button>
           </div>
         </div>
@@ -51,7 +51,7 @@ export default function ParseFab({ parseText, setParseText, parsing, onParse, ta
           boxShadow:"0 4px 20px rgba(0,0,0,.5)", display:"flex",
           alignItems:"center", justifyContent:"center",
           backdropFilter:"blur(8px)" }}>
-        {open ? "\u2715" : "&#x1F4CB;"}
+        {open ? "✕" : "📋"}
       </button>
     </div>
   );

@@ -79,7 +79,7 @@ export default function PatientSummaryTab({ demo, cc, vitals, vitalsHistory, med
           {allergies.length > 0 && (
             <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5,
               color:"var(--npi-coral)", fontWeight:700 }}>
-              \u26A0 {allergies.join(", ")}
+              &#x26A0; {allergies.join(", ")}
             </span>
           )}
         </div>
@@ -110,9 +110,9 @@ export default function PatientSummaryTab({ demo, cc, vitals, vitalsHistory, med
           <Card title="Medications & Allergies" color="var(--npi-coral)">
             {allergies.length===0
               ? <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-                  color:"var(--npi-green)", fontWeight:600 }}>\u2713 NKDA</div>
+                  color:"var(--npi-green)", fontWeight:600 }}>&#x2713; NKDA</div>
               : allergies.map((a,i) => <div key={i} style={{ fontFamily:"'DM Sans',sans-serif",
-                  fontSize:12, color:"var(--npi-coral)" }}>\u26A0 {a}</div>)
+                  fontSize:12, color:"var(--npi-coral)" }}>&#x26A0; {a}</div>)
             }
             {medications.length > 0 && (
               <div style={{ marginTop:6, borderTop:"1px solid rgba(26,53,85,0.3)", paddingTop:6 }}>
@@ -147,7 +147,7 @@ export default function PatientSummaryTab({ demo, cc, vitals, vitalsHistory, med
               </div>
             )}
           </Card>
-          <Card title="ROS \u2014 Positives" color="var(--npi-gold)">
+          <Card title="ROS — Positives" color="var(--npi-gold)">
             {rosPos.length===0
               ? <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
                   color:"var(--npi-txt4)", fontStyle:"italic" }}>No positives</span>
@@ -162,7 +162,7 @@ export default function PatientSummaryTab({ demo, cc, vitals, vitalsHistory, med
               </div>
             )}
           </Card>
-          <Card title="PE \u2014 Abnormal Findings" color="var(--npi-orange)">
+          <Card title="PE — Abnormal Findings" color="var(--npi-orange)">
             {pePos.length===0
               ? <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
                   color:"var(--npi-txt4)", fontStyle:"italic" }}>No abnormals</span>
@@ -176,7 +176,7 @@ export default function PatientSummaryTab({ demo, cc, vitals, vitalsHistory, med
         {(sdohPos.length > 0 || consults.length > 0) && (
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
             {sdohPos.length > 0 && (
-              <Card title="SDOH \u2014 Positive Screens" color="var(--npi-coral)">
+              <Card title="SDOH — Positive Screens" color="var(--npi-coral)">
                 <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
                   {sdohPos.map(d=><Chip key={d} label={d} color="var(--npi-coral)" />)}
                 </div>
@@ -240,4 +240,4 @@ export default function PatientSummaryTab({ demo, cc, vitals, vitalsHistory, med
       </div>
     </div>
   );
-  }
+}

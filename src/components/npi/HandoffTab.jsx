@@ -96,7 +96,7 @@ export default function HandoffTab({ demo, cc, vitals, medications, allergies, p
           <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
             color:"var(--npi-green)", background:"rgba(61,255,160,0.1)",
             padding:"4px 10px", borderRadius:6, border:"1px solid rgba(61,255,160,0.3)" }}>
-            \u2713 HANDOFF COMPLETE
+            &#x2713; HANDOFF COMPLETE
           </span>
         )}
       </div>
@@ -148,7 +148,7 @@ export default function HandoffTab({ demo, cc, vitals, medications, allergies, p
               <div key={c.id} style={{ display:"flex", alignItems:"center", gap:8,
                 padding:"6px 10px", borderRadius:7,
                 background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.2)" }}>
-                <span style={{ color:"var(--npi-gold)", fontSize:11 }}>\u23f3</span>
+                <span style={{ color:"var(--npi-gold)", fontSize:11 }}>&#x23f3;</span>
                 <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12.5,
                   color:"var(--npi-txt2)", flex:1 }}>
                   Awaiting {c.service} consult{c.question?`: ${c.question.slice(0,60)}`:""}
@@ -170,7 +170,7 @@ export default function HandoffTab({ demo, cc, vitals, medications, allergies, p
                   textDecoration:a.done?"line-through":"none" }}>{a.text}</span>
                 <button onClick={()=>removeAction(a.id)}
                   style={{ background:"transparent", border:"none",
-                    color:"var(--npi-txt4)", cursor:"pointer", fontSize:11 }}>\u2715</button>
+                    color:"var(--npi-txt4)", cursor:"pointer", fontSize:11 }}>&#x2715;</button>
               </div>
             ))}
             {actions.length===0 && consults.filter(c=>c.status==="pending").length===0 && (

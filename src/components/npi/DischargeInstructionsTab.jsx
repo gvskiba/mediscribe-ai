@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { DC_SECTIONS, buildDCPrompt, buildSectionPrompt, DISPOSITION_OPTS } from "@/components/npi/npiData";
+import { toast } from "sonner";
+import { DC_SECTIONS, buildDCPrompt, buildSectionPrompt, DISPOSITION_OPTS, FOLLOW_UP_METHODS } from "@/components/npi/npiData";
 
 export default function DischargeInstructionsTab({
   demo, cc, vitals, medications, allergies, pmhSelected,
@@ -12,14 +13,31 @@ export default function DischargeInstructionsTab({
   const [lang,       setLang]       = useState("standard");
   const [copied,     setCopied]     = useState(false);
   const [editingKey, setEditingKey] = useState(null);
+  const [teachback,  setTeachback]  = useState(false);
+
+  // Structured follow-up (CEDR 2025 discharge coordination measure)
+  const [followUpProvider,  setFollowUpProvider]  = useState("");
+  const [followUpSpecialty, setFollowUpSpecialty] = useState("");
+  const [followUpDate,      setFollowUpDate]      = useState("");
+  const [followUpMethod,    setFollowUpMethod]    = useState("");
 
   const patientName     = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "Patient";
   const hasContent      = DC_SECTIONS.some(s => content[s.key]);
   const isGeneratingAll = genState === "all";
   const anyGenerating   = genState === "all" || genState.startsWith("section:");
   const transportRisk   = sdoh?.transport === "2";
+  const phq2Score       = parseInt(sdoh?.phq2q1||"0") + parseInt(sdoh?.phq2q2||"0");
+  const phq2Positive    = Boolean(sdoh?.phq2q1 && sdoh?.phq2q2 && phq2Score >= 3);
+  const auditcScore     = parseInt(sdoh?.auditcq1||"0") + parseInt(sdoh?.auditcq2||"0") + parseInt(sdoh?.auditcq3||"0");
+  const auditcSexLower  = (demo?.sex||"").toLowerCase();
+  const auditcThresh    = auditcSexLower === "female" || auditcSexLower === "f" ? 3 : 4;
+  const auditcPositive  = Boolean(sdoh?.auditcq1 && sdoh?.auditcq2 && sdoh?.auditcq3 && auditcScore >= auditcThresh);
   const dispOpt         = DISPOSITION_OPTS.find(o => o.val === disposition);
   const isGeneratingSec = key => genState === `section:${key}`;
+
+  const followUp = followUpProvider
+    ? { provider: followUpProvider, specialty: followUpSpecialty, date: followUpDate, method: followUpMethod }
+    : null;
 
   async function generateAll(overrideLang) {
     const useLang = overrideLang || lang;
@@ -27,7 +45,7 @@ export default function DischargeInstructionsTab({
     setEditingKey(null);
     try {
       const prompt = buildDCPrompt(demo, cc, vitals, medications, allergies, pmhSelected,
-        disposition, dispReason, consults, useLang);
+        disposition, dispReason, consults, useLang, followUp);
       const schema = {
         type: "object",
         properties: Object.fromEntries(DC_SECTIONS.map(s => [s.key, { type:"string" }])),
@@ -52,20 +70,31 @@ export default function DischargeInstructionsTab({
     } catch(_) { setGenState("done"); }
   }
 
+  function buildFollowUpSummary() {
+    if (!followUpProvider) return "";
+    const parts = [followUpProvider];
+    if (followUpSpecialty) parts.push(`(${followUpSpecialty})`);
+    if (followUpDate) parts.push(`on ${followUpDate}`);
+    if (followUpMethod) parts.push(`— ${followUpMethod}`);
+    return parts.join(" ");
+  }
+
   function buildFullText() {
     const date = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
+    const fuLine = buildFollowUpSummary();
     return [
       "DISCHARGE INSTRUCTIONS",
       `Patient: ${patientName}${demo.age ? ", " + demo.age + "y" : ""}${demo.sex ? " " + demo.sex : ""}`,
       cc.text ? `Visit reason: ${cc.text}` : "",
       `Date: ${date}`,
       `Prepared by: ${providerName || "ED Provider"}`,
+      fuLine ? `Follow-up: ${fuLine}` : "",
       "",
       ...DC_SECTIONS
         .filter(s => content[s.key])
         .flatMap(s => [s.label.toUpperCase(), content[s.key], ""]),
       "If you have questions or your condition worsens, call your primary care provider or return to the Emergency Department.",
-    ].filter(l => l !== undefined).join("\n");
+    ].filter(l => l !== undefined && l !== "").join("\n");
   }
 
   async function copyAll() {
@@ -80,13 +109,15 @@ export default function DischargeInstructionsTab({
     const win = window.open("", "_blank", "width=720,height=920");
     if (!win) return;
     const date = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
+    const fuLine = buildFollowUpSummary();
+    const fuHTML = fuLine ? `<div class="fu-block"><strong>Follow-up appointment:</strong> ${fuLine.replace(/</g,"&lt;")}</div>` : "";
     const sectionsHTML = DC_SECTIONS
       .filter(s => content[s.key])
       .map(s => `<section><h2>${s.icon} ${s.label}</h2><p>${(content[s.key] || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</p></section>`)
       .join("");
     win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Discharge Instructions \u2014 ${patientName}</title>
-      <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;font-size:13.5px;color:#111;background:#fff;max-width:660px;margin:40px auto;padding:0 28px}header{border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:24px}h1{font-size:20px;font-weight:700;margin-bottom:6px}.meta{font-size:12px;color:#444;line-height:1.7}section{margin-bottom:22px}h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#111;border-left:3px solid #333;padding-left:9px;margin-bottom:7px}p{line-height:1.72;white-space:pre-wrap}footer{margin-top:32px;padding-top:12px;border-top:1px solid #ccc;font-size:11px;color:#555;line-height:1.6}@media print{body{margin:20px 28px}}</style></head><body>
-      <header><h1>Discharge Instructions</h1><div class="meta"><strong>${patientName}</strong>${demo.age ? " &bull; " + demo.age + "y" : ""}${demo.sex ? " &bull; " + demo.sex : ""}${registration.mrn ? " &bull; MRN " + registration.mrn : ""}<br>${cc.text ? "Visit reason: " + cc.text.replace(/</g,"&lt;") + "<br>" : ""}Date: ${date} &bull; Prepared by: ${(providerName || "ED Provider").replace(/</g,"&lt;")}</div></header>
+      <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;font-size:13.5px;color:#111;background:#fff;max-width:660px;margin:40px auto;padding:0 28px}header{border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:24px}h1{font-size:20px;font-weight:700;margin-bottom:6px}.meta{font-size:12px;color:#444;line-height:1.7}.fu-block{margin-top:8px;padding:7px 10px;background:#f0f8f0;border-left:3px solid #2a7d4f;font-size:12px;color:#1a4d31}section{margin-bottom:22px}h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#111;border-left:3px solid #333;padding-left:9px;margin-bottom:7px}p{line-height:1.72;white-space:pre-wrap}footer{margin-top:32px;padding-top:12px;border-top:1px solid #ccc;font-size:11px;color:#555;line-height:1.6}@media print{body{margin:20px 28px}}</style></head><body>
+      <header><h1>Discharge Instructions</h1><div class="meta"><strong>${patientName}</strong>${demo.age ? " &bull; " + demo.age + "y" : ""}${demo.sex ? " &bull; " + demo.sex : ""}${registration.mrn ? " &bull; MRN " + registration.mrn : ""}<br>${cc.text ? "Visit reason: " + cc.text.replace(/</g,"&lt;") + "<br>" : ""}Date: ${date} &bull; Prepared by: ${(providerName || "ED Provider").replace(/</g,"&lt;")}</div>${fuHTML}</header>
       ${sectionsHTML}
       <footer>If you have questions or your condition worsens, call your primary care provider or return to the Emergency Department. Keep this document for your records.</footer>
       </body></html>`);
@@ -182,12 +213,116 @@ export default function DischargeInstructionsTab({
         </div>
       )}
 
+      {phq2Positive && (
+        <div style={{ margin:"14px 20px 0", padding:"10px 14px", borderRadius:9,
+          background:"rgba(155,109,255,0.07)", border:"1px solid rgba(155,109,255,0.3)",
+          borderLeft:"3px solid #9b6dff",
+          fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"#c4a0ff",
+          display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:15 }}>&#x1F9E0;</span>
+          <span>
+            <strong>PHQ-2 positive (score {phq2Score}/6)</strong> \u2014 document behavioral health follow-up or referral in discharge instructions. Consider safety assessment before discharge and ensure outpatient mental health linkage is addressed in the follow-up plan.
+          </span>
+        </div>
+      )}
+
+      {auditcPositive && (
+        <div style={{ margin:"14px 20px 0", padding:"10px 14px", borderRadius:9,
+          background:"rgba(255,159,67,0.07)", border:"1px solid rgba(255,159,67,0.3)",
+          borderLeft:"3px solid #ff9f43",
+          fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"#ffb870",
+          display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:15 }}>&#x1F37A;</span>
+          <span>
+            <strong>AUDIT-C positive (score {auditcScore}/12, threshold \u2265{auditcThresh})</strong> \u2014 document brief alcohol counseling or referral in discharge instructions to satisfy MIPS #431. Note follow-up resources and any referral to addiction medicine or primary care.
+          </span>
+        </div>
+      )}
+
+      {/* ── Structured Follow-up Coordination (CEDR 2025) ─────────────────── */}
+      <div style={{ margin:"14px 20px 0", padding:"13px 16px", borderRadius:10,
+        background:"rgba(14,37,68,0.7)",
+        border:"1px solid rgba(0,229,192,0.18)", borderTop:"2px solid rgba(0,229,192,0.45)" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:11, flexWrap:"wrap", gap:6 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1.5,
+              textTransform:"uppercase", color:"var(--npi-teal)" }}>
+              Follow-up Coordination
+            </span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, letterSpacing:1,
+              padding:"2px 7px", borderRadius:4, background:"rgba(0,229,192,0.08)",
+              border:"1px solid rgba(0,229,192,0.25)", color:"var(--npi-teal)" }}>
+              CEDR 2025
+            </span>
+          </div>
+          {followUpProvider && (
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+              color:"var(--npi-teal)", letterSpacing:.5 }}>
+              \u2713 Documented
+            </span>
+          )}
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--npi-txt4)",
+              letterSpacing:1, textTransform:"uppercase", marginBottom:4 }}>Provider / Clinic</div>
+            <input value={followUpProvider} onChange={e => setFollowUpProvider(e.target.value)}
+              placeholder="Dr. Smith or Primary Care Clinic"
+              style={{ width:"100%", background:"rgba(8,24,48,0.7)",
+                border:"1px solid rgba(26,53,85,0.6)", borderRadius:7,
+                padding:"6px 9px", color:"var(--npi-txt)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none",
+                boxSizing:"border-box" }} />
+          </div>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--npi-txt4)",
+              letterSpacing:1, textTransform:"uppercase", marginBottom:4 }}>Specialty</div>
+            <input value={followUpSpecialty} onChange={e => setFollowUpSpecialty(e.target.value)}
+              placeholder="e.g. Cardiology, PCP, Orthopedics"
+              style={{ width:"100%", background:"rgba(8,24,48,0.7)",
+                border:"1px solid rgba(26,53,85,0.6)", borderRadius:7,
+                padding:"6px 9px", color:"var(--npi-txt)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none",
+                boxSizing:"border-box" }} />
+          </div>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--npi-txt4)",
+              letterSpacing:1, textTransform:"uppercase", marginBottom:4 }}>Date / Timeframe</div>
+            <input value={followUpDate} onChange={e => setFollowUpDate(e.target.value)}
+              placeholder="e.g. 05/20/2025 or within 1 week"
+              style={{ width:"100%", background:"rgba(8,24,48,0.7)",
+                border:"1px solid rgba(26,53,85,0.6)", borderRadius:7,
+                padding:"6px 9px", color:"var(--npi-txt)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none",
+                boxSizing:"border-box" }} />
+          </div>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--npi-txt4)",
+              letterSpacing:1, textTransform:"uppercase", marginBottom:4 }}>Method</div>
+            <select value={followUpMethod} onChange={e => setFollowUpMethod(e.target.value)}
+              style={{ width:"100%", background:"rgba(8,24,48,0.7)",
+                border:"1px solid rgba(26,53,85,0.6)", borderRadius:7,
+                padding:"6px 9px", color: followUpMethod ? "var(--npi-txt)" : "var(--npi-txt4)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none",
+                boxSizing:"border-box", appearance:"none" }}>
+              <option value="">Select method...</option>
+              {FOLLOW_UP_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+        </div>
+        {!followUpProvider && (
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--npi-txt4)", lineHeight:1.5 }}>
+            CEDR requires a provider name, date, and communication method for the discharge coordination measure. Fill these fields before generating instructions.
+          </div>
+        )}
+      </div>
+
       {genState === "error" && (
         <div style={{ margin:"14px 20px 0", padding:"10px 14px", borderRadius:9,
           background:"rgba(255,107,107,0.07)", border:"1px solid rgba(255,107,107,0.3)",
           borderLeft:"3px solid #ff6b6b", fontFamily:"'DM Sans',sans-serif", fontSize:12,
           color:"#ff8a8a", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
-          <span>&#x26a0; AI generation failed \u2014 try again or fill sections manually.</span>
+          <span>\u26a0 AI generation failed \u2014 try again or fill sections manually.</span>
           <button onClick={() => setGenState("idle")} style={{ ...btnGhost, color:"var(--npi-txt4)", padding:"4px 10px" }}>Dismiss</button>
         </div>
       )}
@@ -209,7 +344,7 @@ export default function DischargeInstructionsTab({
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--npi-gold)", padding:"6px 12px", borderRadius:6,
               background:"rgba(245,200,66,0.08)", border:"1px solid rgba(245,200,66,0.25)" }}>
-              &#x26a0; No chief complaint set \u2014 add one in the CC tab for better results
+              \u26a0 No chief complaint set \u2014 add one in the CC tab for better results
             </div>
           )}
           <div style={{ display:"flex", gap:10, marginTop:4 }}>
@@ -220,7 +355,7 @@ export default function DischargeInstructionsTab({
                   background: lang===val ? "rgba(0,229,192,0.1)" : "rgba(14,37,68,0.6)",
                   color: lang===val ? "var(--npi-teal)" : "var(--npi-txt3)",
                   fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600 }}>
-                &#x2728; {lbl}
+                \u2728 {lbl}
               </button>
             ))}
           </div>
@@ -331,7 +466,7 @@ export default function DischargeInstructionsTab({
                   ) : isEmpty ? (
                     <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
                       color:"var(--npi-txt4)", fontStyle:"italic" }}>
-                      {sec.hint} \u2014 click &#x2728; Generate to fill this section
+                      {sec.hint} \u2014 click \u2728 Generate to fill this section
                     </div>
                   ) : (
                     <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13,
@@ -359,13 +494,44 @@ export default function DischargeInstructionsTab({
               <button onClick={copyAll} style={{ ...btnGhost,
                 color: copied ? "var(--npi-teal)" : "var(--npi-txt4)",
                 borderColor: copied ? "rgba(0,229,192,0.4)" : undefined }}>
-                {copied ? "\u2713 Copied" : "&#x1F4CB; Copy All"}
+                {copied ? "\u2713 Copied" : "\uD83D\uDCCB Copy All"}
               </button>
               <button onClick={printInstructions} style={{ ...btnGhost, color:"var(--npi-txt4)" }}>
-                &#x1F5A8; Print
+                \uD83D\uDDA8 Print
               </button>
             </div>
           </div>
+
+          {/* ── Teach-back confirmation (Joint Commission EP.5) ── */}
+          <button onClick={() => setTeachback(t => !t)}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px",
+              borderRadius:9, cursor:"pointer", textAlign:"left", width:"100%",
+              background: teachback ? "rgba(0,229,192,0.07)" : "rgba(8,18,36,0.45)",
+              border:`1px solid ${teachback ? "rgba(0,229,192,0.3)" : "rgba(26,53,85,0.35)"}`,
+              transition:"all .15s" }}>
+            <div style={{ width:16, height:16, borderRadius:4, flexShrink:0,
+              background: teachback ? "var(--npi-teal)" : "transparent",
+              border:`1.5px solid ${teachback ? "var(--npi-teal)" : "rgba(42,77,114,0.55)"}`,
+              display:"flex", alignItems:"center", justifyContent:"center" }}>
+              {teachback && <span style={{ color:"#050f1e", fontSize:11, fontWeight:900, lineHeight:1 }}>&#x2713;</span>}
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+                color: teachback ? "var(--npi-teal)" : "var(--npi-txt3)" }}>
+                Teach-back confirmed
+              </div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--npi-txt4)", marginTop:1 }}>
+                Patient verbalized understanding of key instructions \u2014 Joint Commission EP.5 &middot; CMS discharge education standard
+              </div>
+            </div>
+            {teachback && (
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, letterSpacing:1,
+                padding:"2px 7px", borderRadius:4, background:"rgba(0,229,192,0.1)",
+                border:"1px solid rgba(0,229,192,0.3)", color:"var(--npi-teal)", flexShrink:0 }}>
+                Documented
+              </span>
+            )}
+          </button>
         </div>
       )}
     </div>

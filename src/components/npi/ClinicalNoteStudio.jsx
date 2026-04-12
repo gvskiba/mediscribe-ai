@@ -1,1710 +1,815 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
-import { toast } from "sonner";
+import { useState, useRef, useEffect, useCallback } from "react";
 
-// ─── STYLES ───────────────────────────────────────────────────────────────────
-(() => {
-  if (document.getElementById("cns2-css")) return;
-  const s = document.createElement("style");
-  s.id = "cns2-css";
-  s.textContent = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600;700&display=swap');
-.cns2{--bg:#050f1e;--panel:#081628;--card:#0b1e36;--up:#0e2544;--bd:#1a3555;--bhi:#2a4f7a;
-  --teal:#00e5c0;--gold:#f5c842;--coral:#ff6b6b;--blue:#3b9eff;--orange:#ff9f43;
-  --purple:#9b6dff;--green:#3dffa0;--red:#ff4444;
-  --t:#f2f7ff;--t2:#b8d4f0;--t3:#82aece;--t4:#5a82a8;
-  --apso-a:#ff6b6b;--apso-p:#00e5c0;--apso-s:#3b9eff;--apso-o:#f5c842;}
-.cns2*{box-sizing:border-box;}
-.cns2 ::-webkit-scrollbar{width:3px;height:3px;}
-.cns2 ::-webkit-scrollbar-thumb{background:var(--bhi);border-radius:2px;}
-.cns2{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);
-  font-family:'DM Sans',sans-serif;color:var(--t);}
-.cns2.emb{position:relative;inset:auto;height:100%;}
-.cns2-top{height:54px;flex-shrink:0;background:var(--panel);border-bottom:1px solid var(--bd);
-  display:flex;align-items:center;padding:0 16px;gap:10px;z-index:20;overflow-x:auto;overflow-y:hidden;}
-.cns2-top::-webkit-scrollbar{height:2px;}
-.cns2-emb-top{height:44px;flex-shrink:0;background:rgba(8,22,40,.95);border-bottom:1px solid var(--bd);
-  border-top:2px solid rgba(0,229,192,.2);display:flex;align-items:center;padding:0 14px;gap:8px;z-index:20;}
-.cns2-badge{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;
-  background:rgba(0,229,192,.08);border:1px solid rgba(0,229,192,.3);color:var(--teal);
-  border-radius:20px;padding:2px 10px;white-space:nowrap;flex-shrink:0;}
-.cns2-ptname{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--t);
-  white-space:nowrap;flex-shrink:0;}
-.cns2-meta{font-size:11px;color:var(--t3);white-space:nowrap;flex-shrink:0;}
-.cns2-cc{font-size:11px;color:var(--orange);font-weight:600;white-space:nowrap;
-  font-family:'JetBrains Mono',monospace;flex-shrink:0;}
-.cns2-esi{font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:700;
-  padding:2px 9px;border-radius:4px;flex-shrink:0;
-  background:rgba(255,107,107,.1);color:var(--coral);border:1px solid rgba(255,107,107,.3);}
-.cns2-timer{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
-  padding:3px 10px;border-radius:6px;flex-shrink:0;letter-spacing:1px;
-  background:rgba(245,200,66,.08);color:var(--gold);border:1px solid rgba(245,200,66,.25);}
-.cns2-timer.over{background:rgba(255,107,107,.1);color:var(--coral);border-color:rgba(255,107,107,.3);}
-.cns2-acts{margin-left:auto;display:flex;gap:5px;align-items:center;flex-shrink:0;}
-.cns2-prog-bar{width:72px;height:5px;background:var(--up);border-radius:3px;flex-shrink:0;}
-.cns2-prog-bar-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));
-  border-radius:3px;transition:width .4s ease;}
-.cns2-prog-count{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t4);white-space:nowrap;}
-.cns2-emb-prog-bar{flex:1;height:4px;background:var(--up);border-radius:2px;}
-.cns2-emb-prog-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));
-  border-radius:2px;transition:width .4s ease;}
-
-/* APSO chips */
-.cns2-apso-ind{display:flex;gap:3px;align-items:center;flex-shrink:0;}
-.cns2-apso-chip{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:900;
-  width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;
-  border:1px solid var(--bd);background:var(--up);color:var(--t4);transition:all .35s;}
-.cns2-apso-chip.partial{background:rgba(59,158,255,.06);color:var(--t3);border-color:rgba(59,158,255,.2);}
-.cns2-apso-chip.done{border-color:currentColor;}
-
-/* NQS badge */
-.cns2-nqs{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
-  padding:3px 10px;border-radius:6px;flex-shrink:0;letter-spacing:.5px;white-space:nowrap;
-  transition:all .4s;cursor:pointer;}
-.cns2-nqs.low {background:rgba(255,107,107,.1);color:var(--coral);border:1px solid rgba(255,107,107,.3);}
-.cns2-nqs.mid {background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.3);}
-.cns2-nqs.good{background:rgba(0,229,192,.1);color:var(--teal);border:1px solid rgba(0,229,192,.3);}
-
-/* E&M badge inside assessment section */
-.cns2-em-badge{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
-  padding:3px 10px;border-radius:6px;white-space:nowrap;letter-spacing:.5px;
-  background:rgba(155,109,255,.1);color:var(--purple);border:1px solid rgba(155,109,255,.3);}
-.cns2-em-badge.high{background:rgba(255,107,107,.1);color:var(--coral);border-color:rgba(255,107,107,.3);}
-
-/* Buttons */
-.cns2 .btn{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;
-  display:inline-flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;
-  transition:all .15s;white-space:nowrap;border:none;}
-.cns2 .btn:disabled{opacity:.4;cursor:not-allowed;}
-.cns2 .btn-ghost{background:var(--up);border:1px solid var(--bd) !important;color:var(--t2);}
-.cns2 .btn-ghost:hover{border-color:var(--bhi) !important;color:var(--t);}
-.cns2 .btn-teal{background:var(--teal);color:var(--bg);}
-.cns2 .btn-teal:hover{filter:brightness(1.1);}
-.cns2 .btn-gold{background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.3) !important;}
-.cns2 .btn-gold:hover{background:rgba(245,200,66,.2);}
-.cns2 .btn-purple{background:rgba(155,109,255,.1);color:var(--purple);border:1px solid rgba(155,109,255,.3) !important;}
-.cns2 .btn-purple:hover{background:rgba(155,109,255,.2);}
-.cns2 .ibtn{width:26px;height:26px;border-radius:6px;border:1px solid var(--bd);
-  background:var(--up);color:var(--t3);font-size:12px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
-.cns2 .ibtn:hover{border-color:var(--bhi);color:var(--t2);}
-.cns2 .ibtn:disabled{opacity:.35;cursor:not-allowed;}
-.cns2 .ibtn.spin{animation:cns2-spin .8s linear infinite;}
-@keyframes cns2-spin{to{transform:rotate(360deg);}}
-.cns2-body{flex:1;display:flex;min-height:0;}
-
-/* Sidebar */
-.cns2-sb{width:214px;flex-shrink:0;background:var(--panel);
-  border-right:1px solid var(--bd);display:flex;flex-direction:column;}
-.cns2-sb-head{padding:14px 14px 10px;flex-shrink:0;border-bottom:1px solid rgba(26,53,85,.5);}
-.cns2-sb-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t4);
-  letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
-.cns2-sb-bar{height:3px;background:var(--up);border-radius:2px;overflow:hidden;margin-bottom:5px;}
-.cns2-sb-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));
-  border-radius:2px;transition:width .5s;}
-.cns2-sb-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);}
-.cns2-sb-list{padding:6px;flex:1;display:flex;flex-direction:column;gap:1px;overflow-y:auto;}
-.cns2-sb-grp{display:flex;align-items:center;gap:5px;padding:7px 8px 3px;margin-top:4px;}
-.cns2-sb-grp-pill{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:900;
-  padding:1px 7px;border-radius:4px;letter-spacing:1px;flex-shrink:0;}
-.cns2-sb-grp-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:1.5px;
-  text-transform:uppercase;opacity:.8;}
-.cns2-sb-grp-line{flex:1;height:1px;background:currentColor;opacity:.15;}
-.cns2-sb-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:8px;
-  cursor:pointer;transition:all .15s;border:1px solid transparent;}
-.cns2-sb-item:hover{background:rgba(59,158,255,.06);border-color:rgba(59,158,255,.2);}
-.cns2-sb-item.on{background:rgba(59,158,255,.1);border-color:rgba(59,158,255,.35);}
-.cns2-sb-ico{font-size:13px;flex-shrink:0;}
-.cns2-sb-txt{flex:1;min-width:0;}
-.cns2-sb-name{font-size:11px;font-weight:500;color:var(--t2);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cns2-sb-item.on .cns2-sb-name{color:var(--t);font-weight:600;}
-.cns2-sb-key{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t4);
-  background:var(--up);border:1px solid var(--bd);border-radius:3px;padding:1px 4px;flex-shrink:0;}
-.cns2-sb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:all .3s;}
-.cns2-sb-dot.empty{background:var(--t4);opacity:.35;}
-.cns2-sb-dot.draft{background:var(--orange);box-shadow:0 0 5px rgba(255,159,67,.5);}
-.cns2-sb-dot.complete{background:var(--teal);box-shadow:0 0 5px rgba(0,229,192,.5);}
-.cns2-sb-dot.locked{background:var(--blue);box-shadow:0 0 5px rgba(59,158,255,.5);}
-.cns2-sc-toggle{width:100%;padding:8px 14px;background:none;border:none;
-  border-top:1px solid rgba(26,53,85,.4);cursor:pointer;
-  display:flex;align-items:center;justify-content:space-between;
-  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t4);
-  text-align:left;transition:color .15s;flex-shrink:0;}
-.cns2-sc-toggle:hover{color:var(--t3);}
-.cns2-sc-chev{font-size:9px;transition:transform .2s;}
-.cns2-sc-chev.open{transform:rotate(90deg);}
-.cns2-sb-legend{padding:8px 14px 12px;flex-shrink:0;}
-.cns2-sc-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
-.cns2-sc-k{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t2);
-  background:var(--up);border:1px solid var(--bd);border-radius:3px;padding:1px 5px;flex-shrink:0;}
-.cns2-sc-d{font-size:10px;color:var(--t4);}
-
-/* Note area */
-.cns2-area{flex:1;overflow-y:auto;padding:14px 18px 40px;display:flex;flex-direction:column;gap:8px;}
-.cns2-grp-div{display:flex;align-items:center;gap:10px;margin:10px 0 4px;}
-.cns2-grp-line{flex:1;height:1px;opacity:.18;background:currentColor;}
-.cns2-grp-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
-  letter-spacing:2.5px;text-transform:uppercase;padding:3px 12px;border-radius:20px;white-space:nowrap;}
-.cns2-grp-sub{font-family:'DM Sans',sans-serif;font-size:10px;color:var(--t4);
-  white-space:nowrap;font-style:italic;}
-
-/* Section card */
-.cns2-sec{background:rgba(8,22,40,.82);border:1px solid rgba(26,53,85,.5);
-  border-radius:12px;transition:border-color .2s,box-shadow .2s;}
-.cns2-sec.focused{border-color:rgba(59,158,255,.45);
-  box-shadow:0 0 0 1px rgba(59,158,255,.12),0 4px 20px rgba(0,0,0,.3);}
-.cns2-sec.grp-A{border-left:2px solid rgba(255,107,107,.3);}
-.cns2-sec.grp-A.focused{border-left-color:var(--apso-a);}
-.cns2-sec.grp-P{border-left:2px solid rgba(0,229,192,.3);}
-.cns2-sec.grp-P.focused{border-left-color:var(--apso-p);}
-.cns2-sec.grp-S{border-left:2px solid rgba(59,158,255,.3);}
-.cns2-sec.grp-S.focused{border-left-color:var(--apso-s);}
-.cns2-sec.grp-O{border-left:2px solid rgba(245,200,66,.3);}
-.cns2-sec.grp-O.focused{border-left-color:var(--apso-o);}
-.cns2-sec.collapsed .cns2-sec-hdr{border-bottom:none;}
-.cns2-sec-hdr{display:flex;align-items:center;gap:9px;padding:10px 14px;
-  background:rgba(11,30,54,.6);border-bottom:1px solid rgba(26,53,85,.4);
-  cursor:pointer;user-select:none;transition:background .15s;border-radius:11px 11px 0 0;}
-.cns2-sec.collapsed .cns2-sec-hdr{border-radius:11px;}
-.cns2-sec-hdr:hover{background:rgba(14,37,68,.7);}
-.cns2-sec-num{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
-  color:var(--t4);flex-shrink:0;width:16px;text-align:center;}
-.cns2-sec-icon{font-size:15px;flex-shrink:0;}
-.cns2-sec-info{flex:1;min-width:0;}
-.cns2-sec-title{font-size:13px;font-weight:600;color:var(--t);}
-.cns2-sec-preview{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t4);
-  margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px;}
-.cns2-sec-short{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t4);
-  background:var(--up);border:1px solid var(--bd);border-radius:3px;padding:1px 5px;flex-shrink:0;}
-.cns2-sec-acts{display:flex;gap:4px;align-items:center;}
-.cns2-status{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;
-  padding:2px 8px;border-radius:20px;white-space:nowrap;}
-.st-empty{background:rgba(90,130,168,.1);color:var(--t4);border:1px solid rgba(90,130,168,.2);}
-.st-draft{background:rgba(255,159,67,.1);color:var(--orange);border:1px solid rgba(255,159,67,.3);}
-.st-complete{background:rgba(0,229,192,.1);color:var(--teal);border:1px solid rgba(0,229,192,.3);}
-.st-locked{background:rgba(59,158,255,.1);color:var(--blue);border:1px solid rgba(59,158,255,.3);}
-.cns2-chevron{font-size:11px;color:var(--t4);transition:transform .2s;flex-shrink:0;}
-.cns2-sec.collapsed .cns2-chevron{transform:rotate(-90deg);}
-.cns2-macro-bar{display:flex;gap:5px;flex-wrap:wrap;padding:7px 14px 6px;
-  border-bottom:1px solid rgba(26,53,85,.25);}
-.macro-pill{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;
-  padding:3px 9px;border-radius:20px;cursor:pointer;white-space:nowrap;
-  background:rgba(59,158,255,.06);border:1px solid rgba(59,158,255,.2);color:var(--t3);transition:all .12s;}
-.macro-pill:hover{background:rgba(59,158,255,.14);color:var(--t2);border-color:rgba(59,158,255,.4);}
-.macro-pill.teal{background:rgba(0,229,192,.06);border-color:rgba(0,229,192,.2);color:var(--teal);}
-.macro-pill.teal:hover{background:rgba(0,229,192,.14);}
-.macro-pill.coral{background:rgba(255,107,107,.06);border-color:rgba(255,107,107,.2);color:var(--coral);}
-.macro-pill.coral:hover{background:rgba(255,107,107,.14);}
-.cns2-builder-toggle{display:flex;align-items:center;gap:8px;padding:9px 14px;
-  cursor:pointer;font-size:12px;font-weight:600;color:var(--t3);
-  border-bottom:1px solid rgba(26,53,85,.25);transition:color .15s;
-  user-select:none;font-family:'DM Sans',sans-serif;}
-.cns2-builder-toggle:hover{color:var(--t2);}
-.cns2-toggle-chev{font-size:10px;color:var(--t4);transition:transform .2s;margin-left:auto;}
-.cns2-toggle-chev.open{transform:rotate(90deg);}
-.cns2-sec-body{padding:2px 0 0;}
-.cns2-ta{width:100%;padding:12px 14px;background:rgba(14,37,68,.4);border:none;
-  border-top:1px solid rgba(26,53,85,.5);color:var(--t);
-  font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;
-  resize:vertical;outline:none;min-height:100px;display:block;
-  box-sizing:border-box;transition:background .15s;}
-.cns2-ta:focus{background:rgba(14,37,68,.65);border-top-color:rgba(59,158,255,.3);}
-.cns2-ta:hover:not(:disabled){background:rgba(14,37,68,.55);}
-.cns2-ta::placeholder{color:var(--t4);font-style:italic;font-size:11px;}
-.cns2-ta:disabled{opacity:.45;cursor:default;}
-.cns2-ta.locked{background:rgba(59,158,255,.03);color:var(--t2);}
-.cns2-sec.grp-A .cns2-ta{min-height:140px;}
-.cns2-sec.grp-P .cns2-ta{min-height:110px;}
-/* Keyboard focus rings — visible for all tabbable elements */
-.cns2-sec-hdr:focus-visible{outline:2px solid var(--blue);outline-offset:-2px;border-radius:11px;}
-.cns2 .ibtn:focus-visible{outline:2px solid var(--blue);outline-offset:1px;}
-.cns2 .btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
-.macro-pill:focus-visible{outline:2px solid var(--teal);outline-offset:1px;}
-.cns2-done-link:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:3px;}
-.cns2-builder-toggle:focus-visible{outline:2px solid var(--blue);outline-offset:-2px;}
-.data-chip:focus-visible{outline:2px solid var(--blue);outline-offset:1px;}
-.dispo-big:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
-.precaution:focus-visible{outline:2px solid var(--orange);outline-offset:1px;}
-.cns2-sb-item:focus-visible{outline:2px solid var(--blue);outline-offset:-1px;}
-.cns2 .mdm-inp:focus,.cns2 .dx-conf-inp:focus,.cns2 .dx-conf-sel:focus,
-.cns2 .mdm-plan-inp:focus,.cns2 .mdm-inp:focus-visible{
-  outline:none;border-color:var(--bhi);}
-.cns2-sec-foot{display:flex;align-items:center;padding:4px 14px 8px;gap:10px;}
-.cns2-chars{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t4);}
-.cns2-done-link{margin-left:auto;font-size:9px;font-weight:600;cursor:pointer;
-  color:var(--teal);font-family:'JetBrains Mono',monospace;letter-spacing:.5px;
-  text-transform:uppercase;transition:opacity .15s;}
-.cns2-done-link:hover{opacity:.7;}
-
-/* MDM/Dispo builders */
-.mdm-builder,.dispo-builder{padding:12px 14px 10px;display:flex;flex-direction:column;gap:10px;}
-.mdm-row{display:flex;flex-direction:column;gap:4px;}
-.mdm-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t4);
-  letter-spacing:1.5px;text-transform:uppercase;}
-.mdm-inp{background:var(--up);border:1px solid var(--bd);border-radius:7px;
-  padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:12px;
-  color:var(--t);outline:none;width:100%;transition:border-color .15s;}
-.mdm-inp:focus{border-color:var(--bhi);}
-.mdm-inp::placeholder{color:var(--t4);font-style:italic;}
-
-/* Dx confidence row */
-.dx-conf-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
-.dx-conf-inp{flex:1;background:var(--up);border:1px solid var(--bd);border-radius:7px;
-  padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:12px;
-  color:var(--t);outline:none;transition:border-color .15s;}
-.dx-conf-inp:focus{border-color:var(--bhi);}
-.dx-conf-inp::placeholder{color:var(--t4);font-style:italic;}
-.dx-conf-sel{background:var(--up);border:1px solid var(--bd);border-radius:7px;
-  padding:5px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;
-  color:var(--t3);outline:none;cursor:pointer;transition:border-color .15s;flex-shrink:0;}
-.dx-conf-sel:focus{border-color:var(--bhi);}
-.dx-conf-sel.confirmed{color:var(--coral);border-color:rgba(255,107,107,.4);}
-.dx-conf-sel.likely{color:var(--orange);border-color:rgba(255,159,67,.4);}
-.dx-conf-sel.possible{color:var(--gold);border-color:rgba(245,200,66,.4);}
-.dx-conf-sel.ruleout{color:var(--t4);border-color:rgba(90,130,168,.4);}
-
-.risk-row{display:flex;gap:6px;}
-.risk-btn{flex:1;padding:8px 6px;border-radius:8px;font-size:11px;font-weight:600;
-  cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center;border:2px solid transparent;}
-.risk-btn.low{background:rgba(61,255,160,.08);color:var(--green);border-color:rgba(61,255,160,.2);}
-.risk-btn.low.sel{background:rgba(61,255,160,.18);border-color:var(--green);}
-.risk-btn.mod{background:rgba(245,200,66,.08);color:var(--gold);border-color:rgba(245,200,66,.2);}
-.risk-btn.mod.sel{background:rgba(245,200,66,.18);border-color:var(--gold);}
-.risk-btn.high{background:rgba(255,68,68,.08);color:var(--red);border-color:rgba(255,68,68,.2);}
-.risk-btn.high.sel{background:rgba(255,68,68,.18);border-color:var(--red);}
-.mdm-data-grid{display:flex;gap:6px;flex-wrap:wrap;}
-.data-chip{font-size:10px;font-family:'DM Sans',sans-serif;padding:4px 10px;border-radius:6px;
-  cursor:pointer;border:1px solid rgba(59,158,255,.2);background:rgba(59,158,255,.05);
-  color:var(--t3);transition:all .12s;user-select:none;}
-.data-chip.sel{background:rgba(59,158,255,.15);border-color:var(--blue);color:var(--t2);}
-.mdm-plan-list{display:flex;flex-direction:column;gap:4px;}
-.mdm-plan-row{display:flex;align-items:center;gap:7px;}
-.mdm-plan-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t4);flex-shrink:0;width:16px;}
-.mdm-plan-inp{flex:1;background:var(--up);border:1px solid var(--bd);border-radius:6px;
-  padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;
-  color:var(--t);outline:none;transition:border-color .15s;}
-.mdm-plan-inp:focus{border-color:var(--bhi);}
-.mdm-plan-inp::placeholder{color:var(--t4);font-style:italic;}
-.mdm-add-btn{font-size:10px;color:var(--teal);background:none;border:none;
-  cursor:pointer;font-family:'JetBrains Mono',monospace;padding:2px 0;}
-.mdm-build-btn,.dispo-build-btn{align-self:flex-end;background:var(--teal);color:var(--bg);
-  border:none;border-radius:7px;padding:7px 16px;font-size:11px;font-weight:700;
-  cursor:pointer;font-family:'DM Sans',sans-serif;transition:filter .15s;}
-.mdm-build-btn:hover,.dispo-build-btn:hover{filter:brightness(1.1);}
-
-/* E&M estimator strip */
-.em-strip{display:flex;align-items:center;gap:8px;padding:8px 14px;
-  background:rgba(155,109,255,.04);border-bottom:1px solid rgba(155,109,255,.15);}
-.em-strip-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t4);
-  letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0;}
-.em-code{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:900;
-  color:var(--purple);flex-shrink:0;}
-.em-desc{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--t3);flex:1;}
-.em-mdm{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
-  padding:2px 8px;border-radius:4px;flex-shrink:0;}
-.em-mdm.sl{background:rgba(61,255,160,.1);color:var(--green);border:1px solid rgba(61,255,160,.25);}
-.em-mdm.low{background:rgba(59,158,255,.1);color:var(--blue);border:1px solid rgba(59,158,255,.25);}
-.em-mdm.mod{background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.25);}
-.em-mdm.high{background:rgba(255,107,107,.1);color:var(--coral);border:1px solid rgba(255,107,107,.25);}
-.em-progress{display:flex;gap:3px;align-items:center;}
-.em-pip{width:12px;height:4px;border-radius:2px;background:var(--up);transition:background .3s;}
-.em-pip.on{background:var(--purple);}
-
-/* NQS panel */
-.nqs-panel{position:absolute;right:14px;top:54px;z-index:50;width:260px;
-  background:var(--panel);border:1px solid var(--bd);border-radius:12px;
-  box-shadow:0 12px 40px rgba(0,0,0,.6);padding:14px 16px;}
-.cns2.emb .nqs-panel{top:44px;}
-.nqs-title{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t4);
-  letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
-.nqs-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-.nqs-row-label{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--t3);flex:1;}
-.nqs-row-bar{width:80px;height:4px;background:var(--up);border-radius:2px;overflow:hidden;flex-shrink:0;}
-.nqs-row-fill{height:100%;border-radius:2px;transition:width .5s;}
-.nqs-row-pts{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t4);
-  width:28px;text-align:right;flex-shrink:0;}
-.nqs-total{display:flex;align-items:baseline;gap:6px;margin-top:10px;padding-top:10px;
-  border-top:1px solid rgba(26,53,85,.4);}
-.nqs-total-num{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;}
-.nqs-total-max{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--t4);}
-.nqs-total-label{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--t3);margin-left:auto;}
-
-/* Dispo large buttons */
-.dispo-big-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-.dispo-big{padding:12px 8px;border-radius:9px;cursor:pointer;text-align:center;
-  font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;transition:all .15s;border:2px solid transparent;}
-.dispo-big.discharge{background:rgba(0,229,192,.08);color:var(--teal);border-color:rgba(0,229,192,.2);}
-.dispo-big.discharge.sel{background:rgba(0,229,192,.18);border-color:var(--teal);}
-.dispo-big.admit{background:rgba(255,107,107,.08);color:var(--coral);border-color:rgba(255,107,107,.2);}
-.dispo-big.admit.sel{background:rgba(255,107,107,.18);border-color:var(--coral);}
-.dispo-big.obs{background:rgba(245,200,66,.08);color:var(--gold);border-color:rgba(245,200,66,.2);}
-.dispo-big.obs.sel{background:rgba(245,200,66,.18);border-color:var(--gold);}
-.dispo-big.transfer{background:rgba(155,109,255,.08);color:var(--purple);border-color:rgba(155,109,255,.2);}
-.dispo-big.transfer.sel{background:rgba(155,109,255,.18);border-color:var(--purple);}
-.dispo-big-icon{font-size:18px;margin-bottom:4px;}
-.dispo-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.dispo-field{display:flex;flex-direction:column;gap:3px;}
-.dispo-precautions{display:flex;gap:5px;flex-wrap:wrap;}
-.precaution{font-size:10px;font-family:'DM Sans',sans-serif;padding:4px 9px;border-radius:6px;
-  cursor:pointer;user-select:none;transition:all .12s;
-  background:rgba(255,159,67,.05);border:1px solid rgba(255,159,67,.2);color:var(--t3);}
-.precaution.sel{background:rgba(255,159,67,.15);border-color:var(--orange);color:var(--t2);}
-
-/* SBAR modal */
-.sbar-overlay{position:fixed;inset:0;z-index:200;background:rgba(3,8,16,.8);
-  backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;}
-.sbar-modal{background:var(--panel);border:1px solid var(--bd);border-radius:16px;
-  width:600px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;
-  box-shadow:0 24px 80px rgba(0,0,0,.6);}
-.sbar-modal-hdr{padding:16px 20px 12px;border-bottom:1px solid var(--bd);
-  display:flex;align-items:center;gap:10px;}
-.sbar-modal-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--t);flex:1;}
-.sbar-modal-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t4);
-  letter-spacing:1.5px;text-transform:uppercase;}
-.sbar-modal-body{flex:1;overflow-y:auto;padding:16px 20px;}
-.sbar-section{margin-bottom:14px;}
-.sbar-section-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-.sbar-letter{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:900;
-  width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;}
-.sbar-section-name{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t4);
-  letter-spacing:1.5px;text-transform:uppercase;}
-.sbar-ta{width:100%;background:rgba(14,37,68,.6);border:1px solid var(--bd);border-radius:8px;
-  padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t);
-  line-height:1.7;resize:none;outline:none;box-sizing:border-box;}
-.sbar-ta:focus{border-color:var(--bhi);}
-.sbar-modal-foot{padding:12px 20px;border-top:1px solid var(--bd);
-  display:flex;gap:8px;justify-content:flex-end;}
-
-/* Sig */
-.cns2-sig{background:rgba(8,22,40,.6);border:1px solid rgba(26,53,85,.4);
-  border-radius:12px;padding:14px 16px;font-family:'JetBrains Mono',monospace;
-  font-size:11px;color:var(--t3);}
-.cns2-sig-lbl{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--t4);margin-bottom:7px;}
-
-.cns2-load{height:2px;flex-shrink:0;
-  background:linear-gradient(90deg,var(--teal),var(--blue),var(--teal));
-  background-size:200% auto;animation:cns2-sweep 1.4s linear infinite;}
-@keyframes cns2-sweep{to{background-position:200% center;}}
-
-@media print{
-  .cns2-sb,.cns2-acts,.cns2-sec-acts,.cns2-sec-foot,.cns2-macro-bar,.cns2-builder-toggle,
-  .mdm-builder,.dispo-builder,.btn,.ibtn,.cns2-emb-top,.cns2-grp-sub,.em-strip,.nqs-panel,
-  .sbar-overlay{display:none !important;}
-  .cns2{position:static;background:white;color:black;}
-  .cns2-top{background:white;border-bottom:1px solid #ccc;}
-  .cns2-sec{background:white;border:1px solid #ddd;page-break-inside:avoid;
-    border-left:3px solid #ccc !important;}
-  .cns2-ta{color:black;font-size:11px;}
-  .cns2-grp-label{background:#f0f0f0 !important;color:black !important;}
-}`;
-  document.head.appendChild(s);
-})();
-
-// ─── APSO CONFIG ──────────────────────────────────────────────────────────────
-const APSO_GROUPS = {
-  header: { label:null,          sublabel:null,                          color:null,      letter:null  },
-  A:      { label:"Assessment",  sublabel:"Clinical impression first",   color:"#ff6b6b", letter:"A"   },
-  P:      { label:"Plan",        sublabel:"Active management decisions", color:"#00e5c0", letter:"P"   },
-  S:      { label:"Subjective",  sublabel:"Patient-reported history",    color:"#3b9eff", letter:"S"   },
-  O:      { label:"Objective",   sublabel:"Measured data",               color:"#f5c842", letter:"O"   },
-};
-
+// ─── SECTION CONFIG ────────────────────────────────────────────────────────────
 const SECTIONS = [
-  { id:"header",     title:"Patient Header",             icon:"👤", key:"1", group:"header" },
-  { id:"assessment", title:"Assessment & MDM",           icon:"⚖️", key:"2", group:"A"      },
-  { id:"plan",       title:"Plan & Orders",              icon:"📋", key:"3", group:"P"      },
-  { id:"dispo",      title:"Disposition",                icon:"🚪", key:"4", group:"P"      },
-  { id:"cc",         title:"Chief Complaint",             icon:"💬", key:"5", group:"S"      },
-  { id:"hpi",        title:"History of Present Illness",  icon:"📝", key:"6", group:"S"      },
-  { id:"pmh",        title:"PMH / Meds / Allergies",      icon:"💊", key:"7", group:"S"      },
-  { id:"ros",        title:"Review of Systems",            icon:"🔍", key:"8", group:"S"      },
-  { id:"vitals",     title:"Vital Signs",                  icon:"📈", key:"9", group:"O"      },
-  { id:"pe",         title:"Physical Examination",         icon:"🩺", key:"0", group:"O"      },
+  { id: "ddx",     label: "01  Impression / DDx",          icon: "🎯", priority: true  },
+  { id: "mdm",     label: "02  Medical Decision Making",    icon: "⚖️", priority: true  },
+  { id: "plan",    label: "03  Disposition + Plan",         icon: "📋", priority: true  },
+  { id: "hpi",     label: "04  HPI",                        icon: "📝", priority: false },
+  { id: "ros",     label: "05  ROS",                        icon: "🔍", priority: false },
+  { id: "pe",      label: "06  Physical Exam",              icon: "🩺", priority: false },
+  { id: "results", label: "07  Results",                    icon: "🧪", priority: false },
+  { id: "meta",    label: "08  Encounter Metadata",         icon: "📊", priority: false },
 ];
 
-const TAB_MAP = {
-  header:null, assessment:null, plan:"orders", dispo:"discharge",
-  cc:"cc", hpi:"cc", pmh:"meds", ros:"ros", vitals:"vit", pe:"pe",
+// AMA 2023 MDM complexity levels — matches CPT E/M table exactly (4 levels, not 5)
+const COMPLEXITY = [
+  { n: 1, label: "Straightforward", sub: "Self-limited / minor",               color: "#00e5c0" },
+  { n: 2, label: "Low",             sub: "Stable chronic / uncomplicated acute",color: "#3b9eff" },
+  { n: 3, label: "Moderate",        sub: "Exacerbation / systemic symptoms",    color: "#ffd93d" },
+  { n: 4, label: "High",            sub: "Threat to life / severe exacerbation",color: "#ff6b6b" },
+];
+
+const DISP_OPTS = [
+  { id: "discharge", label: "Discharge",   icon: "🏠" },
+  { id: "admit",     label: "Admit",        icon: "🏥" },
+  { id: "obs",       label: "Observation",  icon: "👁️" },
+  { id: "transfer",  label: "Transfer",     icon: "🚑" },
+  { id: "lwbs",      label: "LWBS / AMA",   icon: "⚠️" },
+];
+
+// ─── SYSTEM LABEL MAPS ────────────────────────────────────────────────────────
+// Mirror the IDs in ROSTab.jsx / PETab.jsx — used for prose note generation.
+const ROS_SYS_LABELS = {
+  const:   "Constitutional", heent:  "HEENT",          cv:    "Cardiovascular",
+  resp:    "Respiratory",    gi:     "GI/Abdomen",      gu:    "Genitourinary",
+  msk:     "MSK",            neuro:  "Neurological",    psych: "Psychiatric",
+  skin:    "Skin",           endo:   "Endocrine",       heme:  "Heme/Lymph",
+  allergy: "Allergic/Immunologic",
 };
-
-const MACROS = {
-  assessment:[
-    {label:"Working Dx",cls:"coral",text:"ASSESSMENT:\n1. \n\nDIFFERENTIAL:\n1. \n2. \n3. "},
-    {label:"DDx only",cls:"",text:"DIFFERENTIAL DIAGNOSIS:\n1. \n2. \n3. "},
-    {label:"MDM: Low",cls:"teal",text:"MDM COMPLEXITY: STRAIGHTFORWARD\n  Problems: Self-limited or minor\n  Data: Minimal or none\n  Risk: Minimal"},
-    {label:"MDM: Mod",cls:"",text:"MDM COMPLEXITY: MODERATE\n  Problems: One or more chronic illness with exacerbation\n  Data: Limited\n  Risk: Prescription drug management"},
-    {label:"MDM: High",cls:"",text:"MDM COMPLEXITY: HIGH\n  Problems: Severe exacerbation / threat to life\n  Data: Extensive\n  Risk: Drug therapy requiring intensive monitoring"},
-    {label:"Risk: Low",cls:"",text:"RISK STRATIFICATION: LOW — "},
-    {label:"Risk: Mod",cls:"",text:"RISK STRATIFICATION: MODERATE — "},
-    {label:"Risk: High",cls:"",text:"RISK STRATIFICATION: HIGH — "},
-  ],
-  plan:[
-    {label:"IV + Fluids",cls:"teal",text:"ACTIVE MANAGEMENT:\n  · IV access established\n  · IV fluid resuscitation initiated"},
-    {label:"Monitoring",cls:"",text:"  · Continuous cardiac monitoring\n  · Pulse oximetry\n  · Serial vital signs"},
-    {label:"O₂ therapy",cls:"",text:"  · Supplemental O₂ titrated to SpO₂ ≥94%"},
-    {label:"Analgesia",cls:"",text:"  · Analgesia administered — see eRx"},
-    {label:"NPO",cls:"",text:"  · Patient maintained NPO"},
-    {label:"Labs + Imaging",cls:"",text:"  · Diagnostic workup initiated — see Orders"},
-    {label:"Consult",cls:"",text:"  · Specialty consultation placed — see Consults"},
-  ],
-  ros:[
-    {label:"All sys neg",cls:"teal",text:"REVIEW OF SYSTEMS:\nAll systems reviewed and negative except as noted in HPI."},
-    {label:"Pertinent neg",cls:"",text:"Pertinent negatives: denies fever, chills, nausea, vomiting, diarrhea, headache, vision changes, chest pain, shortness of breath, palpitations, dysuria, rash."},
-    {label:"Neg CV/Resp",cls:"",text:"  (−) Palpitations  (−) Orthopnea  (−) PND  (−) Leg swelling\n  (−) Cough  (−) Hemoptysis  (−) Wheezing"},
-    {label:"Neg GI/GU",cls:"",text:"  (−) Nausea  (−) Vomiting  (−) Diarrhea  (−) Constipation\n  (−) Hematochezia  (−) Dysuria  (−) Hematuria"},
-    {label:"Neg Neuro",cls:"",text:"  (−) Headache  (−) Vision changes  (−) Weakness  (−) Numbness  (−) Syncope"},
-  ],
-  pe:[
-    {label:"Normal adult exam",cls:"teal",text:"PHYSICAL EXAMINATION:\n  Gen:    Alert, oriented x3, well-appearing, no acute distress\n  HEENT:  Normocephalic/atraumatic. PERRL. EOMI. Oropharynx clear.\n  Neck:   Supple. No lymphadenopathy. No JVD. No meningismus.\n  CV:     Regular rate and rhythm. S1/S2 normal. No murmurs/rubs/gallops.\n  Lungs:  Clear to auscultation bilaterally. No wheezes/rales/rhonchi.\n  Abd:    Soft, non-tender, non-distended. Normoactive bowel sounds. No guarding or rigidity.\n  Ext:    No cyanosis, clubbing, or edema. Pulses 2+ bilaterally.\n  Neuro:  Alert and oriented x3. CN II-XII grossly intact. No focal neurological deficits."},
-    {label:"Gen: WNL",cls:"",text:"  Gen:    Alert, oriented x3, well-appearing, no acute distress"},
-    {label:"CV: WNL",cls:"",text:"  CV:     Regular rate and rhythm. S1/S2 normal. No murmurs/rubs/gallops."},
-    {label:"Lungs: WNL",cls:"",text:"  Lungs:  Clear to auscultation bilaterally. No wheezes/rales/rhonchi."},
-    {label:"Abd: WNL",cls:"",text:"  Abd:    Soft, non-tender, non-distended. Normoactive bowel sounds. No guarding or rigidity."},
-    {label:"Neuro: WNL",cls:"",text:"  Neuro:  Alert and oriented x3. No focal neurological deficits."},
-  ],
+const PE_SYS_LABELS = {
+  gen:   "General",        heent: "HEENT",         neck: "Neck",
+  cv:    "Cardiovascular", resp:  "Respiratory",   abd:  "Abdomen",
+  msk:   "MSK",            neuro: "Neurological",  skin: "Skin",
+  psych: "Psychiatric",
 };
+const META_KEYS = ["_remainderNeg", "_remainderNormal", "_mode", "_visual"];
 
-const DATA_OPTS   = ["Labs ordered","Imaging ordered","ECG","External records reviewed","Specialist consulted","New Rx / Rx changed"];
+// ─── TOAST HELPER ────────────────────────────────────────────────────────────
+// Module-scope so it can be used inside useCallback without re-render issues.
+// Components call: showToast(setToasts, "msg", "success"|"error")
+function showToast(setter, msg, type) {
+  const id = Date.now();
+  setter(p => [...p, { id, msg, type }]);
+  setTimeout(() => setter(p => p.filter(t => t.id !== id)), 3000);
+}
 
-// ACEP 2023 MDM FAQ: documenting use of a validated risk calculator counts as
-// Data Category 1 complexity — same credit as ordering the test.
-const ED_CALCS = [
-  "HEART Score","Wells PE","Wells DVT","PSI / PORT","Canadian CT Head",
-  "NIHSS","CURB-65","PECARN","Glasgow Coma Scale","TIMI","GRACE","Ottawa Ankle",
-];
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function buildRosText(rosState) {
+  if (!rosState || !Object.keys(rosState).length) return "";
 
-// CMS 2023/2024: SDOH = mandatory screening; homelessness/food insecurity = Moderate MDM risk.
-// G0136 code effective 2024 — must document referral and incorporation into MDM.
-const SDOH_OPTS = [
-  {label:"Housing instability",   z:"Z59"},
-  {label:"Food insecurity",       z:"Z59.4"},
-  {label:"Transportation barrier",z:"Z59.8"},
-  {label:"Utility insecurity",    z:"Z59.62"},
-  {label:"Interpersonal safety",  z:"Z63.8"},
-];
-const PRECAUTIONS = ["Worsening symptoms","Fever >101°F","Chest pain","Difficulty breathing","New or worsening pain","Unable to tolerate PO","Falls or altered mental status"];
-const TIMER_WARN  = 1200;
-const DX_CONF_OPTS = [
-  {value:"confirmed", label:"Confirmed"},
-  {value:"likely",    label:"Likely"},
-  {value:"possible",  label:"Possible"},
-  {value:"ruleout",   label:"Rule-out"},
-];
+  const pos = [], neg = [];
+  let remainderNeg = false;
+  Object.entries(rosState).forEach(([sys, val]) => {
+    if (sys === "_remainderNeg") { if (val) remainderNeg = true; return; }
+    if (META_KEYS.includes(sys)) return;
+    const label = ROS_SYS_LABELS[sys] || sys;
+    if (val === "has-positives") pos.push(label);
+    else if (val === "reviewed") neg.push(label);
+  });
 
-// ─── CMS 2023 ED E&M ESTIMATOR ─────────────────────────────────────────────────
-// Based on AMA/CMS 2023 guidelines: E&M determined by MDM complexity.
-// No EHR currently provides live estimation during note authoring.
-const EM_RULES = [
-  { code:"99285", mdm:"High",           mdmKey:"high", desc:"High complexity MDM",           pips:4 },
-  { code:"99284", mdm:"Moderate-High",  mdmKey:"mod",  desc:"Moderate-high complexity MDM",  pips:3 },
-  { code:"99283", mdm:"Moderate",       mdmKey:"mod",  desc:"Moderate complexity MDM",        pips:3 },
-  { code:"99282", mdm:"Low",            mdmKey:"low",  desc:"Low complexity MDM",             pips:2 },
-  { code:"99281", mdm:"Straightforward",mdmKey:"sl",   desc:"Minimal/straightforward MDM",   pips:1 },
-];
+  if (!pos.length && !neg.length && !remainderNeg) return "";
 
-function computeEM(risk, dxCount, dataCount) {
-  if (risk === "high")  return EM_RULES[0];
-  if (risk === "mod") {
-    if (dxCount >= 2 || dataCount >= 3) return EM_RULES[1];
-    return EM_RULES[2];
+  const parts = [];
+  if (pos.length) parts.push(`Positive for: ${pos.join(", ")}.`);
+
+  if (!pos.length && neg.length >= 5 && remainderNeg) {
+    // All systems reviewed negative — single aggregate sentence
+    parts.push("All systems reviewed and negative.");
+  } else if (!pos.length && neg.length >= 5) {
+    parts.push(`All ${neg.length} reviewed systems negative.`);
+  } else {
+    if (neg.length) parts.push(`Reviewed and negative: ${neg.join(", ")}.`);
+    if (remainderNeg) parts.push("All remaining systems reviewed and negative.");
   }
-  if (risk === "low")   return EM_RULES[3];
-  return EM_RULES[4];
+
+  return parts.join(" ");
 }
 
-// ─── NOTE QUALITY SCORE ───────────────────────────────────────────────────────
-// Based on PDQI-9 instrument (Physician Documentation Quality Instrument).
-// Wrenn et al. AJEM 2010 — validated for ED notes.
-function computeNQS(sections) {
-  // 1. Section coverage (40 pts — 4 pts per completed section)
-  const groupCoverage = ["A","P","S","O"].reduce((acc, g) => {
-    const gs = SECTIONS.filter(s => s.group === g);
-    const done = gs.filter(s => sections[s.id]?.status === "complete" || sections[s.id]?.status === "locked").length;
-    return acc + Math.round((done / gs.length) * 10);
-  }, 0); // 0–40
+function buildPeText(peState, peFindings) {
+  if (!peState || !Object.keys(peState).length) return "";
 
-  // 2. MDM specificity — assessment has meaningful content (0–20)
-  const aContent = sections.assessment?.content || "";
-  const aWords = aContent.trim().split(/\s+/).filter(Boolean).length;
-  const mdmSpec = Math.min(20, Math.round((aWords / 60) * 20));
+  const abn = [], normal = [];
+  let remainderNormal = false;
+  let visualData = null;
+  Object.entries(peState).forEach(([sys, val]) => {
+    if (sys === "_remainderNormal") { if (val) remainderNormal = true; return; }
+    if (sys === "_visual") { visualData = val; return; }
+    if (META_KEYS.includes(sys)) return;
+    const label = PE_SYS_LABELS[sys] || sys;
+    if (val === "abnormal" || val === "mixed") abn.push({ id: sys, label });
+    else if (val === "normal") normal.push(label);
+  });
 
-  // 3. Plan-assessment coherence — both A and P have content (0–20)
-  const pContent = sections.plan?.content || "";
-  const pWords = pContent.trim().split(/\s+/).filter(Boolean).length;
-  const coherence = (aWords > 10 && pWords > 5) ? 20 : (aWords > 5 || pWords > 5) ? 10 : 0;
+  if (!abn.length && !normal.length && !remainderNormal && !visualData) return "";
 
-  // 4. Conciseness — penalize extremely long sections (bloat detection) (0–20)
-  const allWords = SECTIONS.reduce((acc, s) => acc + (sections[s.id]?.content || "").split(/\s+/).length, 0);
-  const conciseness = allWords > 1500 ? 5 : allWords > 800 ? 12 : 20;
+  const lines = [];
 
-  const total = Math.min(100, groupCoverage + mdmSpec + coherence + conciseness);
-  const breakdown = [
-    { label:"Section coverage", pts:groupCoverage, max:40, color:"#3b9eff" },
-    { label:"MDM specificity",  pts:mdmSpec,        max:20, color:"#ff6b6b" },
-    { label:"Plan coherence",   pts:coherence,      max:20, color:"#00e5c0" },
-    { label:"Conciseness",      pts:conciseness,    max:20, color:"#f5c842" },
-  ];
-  return { total, breakdown };
-}
-
-// ─── SBAR GENERATOR ───────────────────────────────────────────────────────────
-function buildSBAR(sections, patientName, cc) {
-  const a = sections.assessment?.content || "";
-  const p = sections.plan?.content || "";
-  const d = sections.dispo?.content || "";
-  const h = sections.hpi?.content || "";
-  const v = sections.vitals?.content || "";
-  const firstDx = a.split("\n").find(l => /^\s*1\./.test(l))?.replace(/^\s*1\.\s*/,"") || "see assessment";
-
-  return {
-    S: `Patient: ${patientName}\nCC: ${cc || "see note"}\n${h.split("\n").slice(0,3).join("\n")}`,
-    B: `${v ? v.split("\n").slice(0,5).join("\n") : "Vitals: see note"}\n\nPMH / Meds: see Subjective section`,
-    A: `Primary impression: ${firstDx}\n\n${a.slice(0, 400)}`,
-    R: `${p.slice(0, 300)}\n\n${d ? "Disposition: " + d.split("\n").find(l => l.trim()) : ""}`.trim(),
-  };
-}
-
-// ─── SECTION TEXT ASSEMBLER ───────────────────────────────────────────────────
-function assembleSection(id, d = {}) {
-  const {
-    demo={}, cc={}, vitals={}, medications=[], allergies=[],
-    pmhSelected={}, pmhExtra="", surgHx="", famHx="", socHx="",
-    rosState={}, rosNotes={}, rosSymptoms={},
-    peState={}, peFindings={},
-    esiLevel="", registration={},
-  } = d;
-  const dateStr = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-  const timeStr = new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
-  const name = [demo.firstName,demo.lastName].filter(Boolean).join(" ") || "Unknown Patient";
-  const ln = "─".repeat(58);
-
-  switch (id) {
-    case "header":
-      return [
-        "EMERGENCY DEPARTMENT NOTE", ln,
-        `Patient:    ${name}`,
-        (demo.age||demo.sex)&&`Age / Sex:  ${[demo.age?demo.age+"y":"",demo.sex].filter(Boolean).join(" · ")}`,
-        demo.dob&&`DOB:        ${demo.dob}`,
-        (registration.mrn||demo.mrn)&&`MRN:        ${registration.mrn||demo.mrn}`,
-        registration.room&&`Room:       ${registration.room}`,
-        esiLevel&&`ESI Level:  ${esiLevel}`,
-        `Date / Time: ${dateStr}  ${timeStr}`,
-        allergies.length&&`${ln}\nALLERGIES:  ⚠  ${allergies.join(" · ")}`,
-      ].filter(Boolean).join("\n");
-    // A, P, Dispo: intentionally empty — physician synthesis must not be pre-populated
-    case "assessment": return "";
-    case "plan":       return "";
-    case "dispo":      return "";
-    case "cc": return cc.text ? `Chief Complaint:\n${cc.text}` : "";
-    case "hpi":
-      if (cc.hpi) return cc.hpi;
-      if (!cc.text) return "";
-      return [
-        `Patient presents with ${cc.text}.`,
-        cc.onset&&`Onset ${cc.onset}.`,cc.duration&&`Duration ${cc.duration}.`,
-        cc.quality&&`Quality described as ${cc.quality}.`,cc.severity&&`Severity rated ${cc.severity}/10.`,
-        cc.radiation&&`Radiation to ${cc.radiation}.`,cc.aggravate&&`Aggravated by ${cc.aggravate}.`,
-        cc.relieve&&`Relieved by ${cc.relieve}.`,cc.assoc&&`Associated symptoms: ${cc.assoc}.`,
-      ].filter(Boolean).join(" ");
-    case "pmh": {
-      const list=Object.entries(pmhSelected).filter(([,v])=>v).map(([k])=>k);
-      const str=list.length?list.join(", ")+(pmhExtra?", "+pmhExtra:""):pmhExtra||"None documented.";
-      return ["PAST MEDICAL HISTORY:",str,
-        surgHx&&`\nSURGICAL HISTORY:\n${surgHx}`,famHx&&`\nFAMILY HISTORY:\n${famHx}`,
-        socHx&&`\nSOCIAL HISTORY:\n${socHx}`,
-        `\nMEDICATIONS:\n${medications.length?medications.join("\n"):"None documented."}`,
-        `\nALLERGIES:\n${allergies.length?allergies.join(", "):"NKDA"}`,
-      ].filter(Boolean).join("\n");
-    }
-    case "ros": {
-      const fv=rosState?Object.values(rosState)[0]:null;
-      const nested=fv&&typeof fv==="object"&&!Array.isArray(fv)&&Object.values(fv)[0]?.status!==undefined;
-      if (nested) {
-        const ORD=["constitutional","eyes","ent","cardiovascular","respiratory","gi","gu","msk","skin","neuro","psych","endo","heme","allergic"];
-        const neg=[],pos=[];
-        ORD.forEach(sid=>{
-          const sy=rosState[sid];if(!sy)return;
-          if(!Object.values(sy).some(s=>s.status!=="unreviewed"))return;
-          const pi=Object.entries(sy).filter(([,v])=>v.status==="pos").map(([s,v])=>s.toLowerCase()+(v.detail?` (${v.detail})`:""));
-          const ni=Object.entries(sy).filter(([,v])=>v.status==="neg").map(([s])=>s.toLowerCase());
-          const n=sid.charAt(0).toUpperCase()+sid.slice(1);
-          if(pi.length)pos.push({name:n,pi,ni});else if(ni.length)neg.push(n);
-        });
-        if(!neg.length&&!pos.length)return "";
-        const lines=["REVIEW OF SYSTEMS:"];
-        if(neg.length)lines.push(`\nNegative: ${neg.join(", ")}.`);
-        pos.forEach(p=>lines.push(`\n${p.name}: Positive for ${p.pi.join(", ")}.`+(p.ni.length?` Denies ${p.ni.join(", ")}.`:"")));
-        return lines.join("");
-      }
-      const sk=Object.keys(rosState),sym=Object.keys(rosSymptoms);
-      if(!sk.length&&!sym.length)return "";
-      const p=sk.filter(s=>rosState[s]==="positive"||rosState[s]===true);
-      const n=sk.filter(s=>rosState[s]==="negative"||rosState[s]===false);
-      const sp=sym.filter(s=>rosSymptoms[s]===true);
-      const ap=[...new Set([...p,...sp])];
-      if(!ap.length&&!n.length)return "";
-      return ["REVIEW OF SYSTEMS:",
-        ap.length&&"\nPOSITIVE:",...ap.map(s=>`  (+) ${s}${rosNotes?.[s]?" — "+rosNotes[s]:""}`),
-        n.length&&"\nNEGATIVE (pertinent):",...n.map(s=>`  (−) ${s}`),
-      ].filter(Boolean).join("\n");
-    }
-    case "vitals": {
-      const e=[
-        ["BP",vitals.bp],["HR",vitals.hr],["RR",vitals.rr],["SpO₂",vitals.spo2],
-        ["Temp",vitals.temp],["GCS",vitals.gcs],
-        ["Wt",vitals.weight?vitals.weight+" kg":null],
-        ["O₂ del",vitals.o2del||null],
-        ["Pain",vitals.pain?vitals.pain+"/10":null],
-      ].filter(([,v])=>v);
-      if(!e.length)return "";
-      return "VITAL SIGNS:\n"+e.map(([k,v])=>`  ${k.padEnd(8)}: ${v}`).join("\n");
-    }
-    case "pe": {
-      const sys=Object.keys(peState);if(!sys.length)return "";
-      return ["PHYSICAL EXAMINATION:",
-        ...sys.map(s=>{const f=peFindings?.[s]||peState[s];return f?`  ${s}: ${f}`:null;}).filter(Boolean),
-      ].join("\n");
-    }
-    default: return "";
+  if (visualData) {
+    const vParts = [];
+    if (visualData.appearance) vParts.push(visualData.appearance);
+    if (visualData.notes) vParts.push(visualData.notes);
+    if (vParts.length) lines.push(vParts.join(". ") + ".");
   }
+
+  abn.forEach(({ id, label }) => {
+    const sf = peFindings?.[id];
+    const findings = sf
+      ? Object.entries(sf.findings || {})
+          .filter(([, v]) => v === "abnormal")
+          .map(([k]) => k.replace(/-/g, " "))
+          .join(", ")
+      : "";
+    const note = sf?.note?.trim();
+    let line = `${label}: ${findings || "abnormal findings noted"}`;
+    if (note) line += ` — ${note}`;
+    lines.push(line + ".");
+  });
+
+  if (normal.length) {
+    if (!abn.length && normal.length >= 4 && remainderNormal) {
+      lines.push("Exam within normal limits.");
+    } else {
+      lines.push(`Normal: ${normal.join(", ")}.`);
+    }
+  }
+
+  if (remainderNormal && !(normal.length >= 4 && !abn.length)) {
+    lines.push("Remaining exam within normal limits.");
+  }
+
+  return lines.join(" ");
 }
 
-function buildInitialSections(pd) {
-  const m={};
-  SECTIONS.forEach(s=>{const a=assembleSection(s.id,pd);m[s.id]={content:a,status:a?"draft":"empty",locked:false,collapsed:false};});
-  return m;
+const FL = { fontSize: 10, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 5 };
+const TA = { width: "100%", padding: "10px 14px", boxSizing: "border-box", background: "rgba(255,255,255,.04)", border: "1px solid rgba(59,130,246,.18)", borderRadius: 8, color: "#e2e8f0", fontFamily: "'DM Sans',sans-serif", fontSize: 13, lineHeight: 1.65, resize: "vertical", outline: "none" };
+function KK({ ch }) {
+  return <kbd style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-blue)", background: "rgba(59,158,255,.12)", border: "1px solid rgba(59,158,255,.25)", borderRadius: 3, padding: "0 5px" }}>{ch}</kbd>;
 }
-
-// ─── MDM BUILDER with Diagnostic Confidence ───────────────────────────────────
-// Dx confidence feature: Singh et al. BMJ 2013 & Graber et al. BMJ Qual Saf 2012.
-// Explicit uncertainty documentation reduces downstream diagnostic error.
-function MDMBuilder({dx,setDx,dxConf,setDxConf,risk,setRisk,data,setData,plan,setPlan,
-  calcs,setCalcs,sdoh,setSdoh,notOrdered,setNotOrdered,comorb,setComorb,ccTime,setCCTime,
-  onApply,emResult}){
-  const toggleData =useCallback(i=>setData(d=>d.includes(i)?d.filter(x=>x!==i):[...d,i]),[setData]);
-  const toggleCalc =useCallback(i=>setCalcs(c=>c.includes(i)?c.filter(x=>x!==i):[...c,i]),[setCalcs]);
-  const toggleSdoh =useCallback(i=>setSdoh(s=>s.includes(i)?s.filter(x=>x!==i):[...s,i]),[setSdoh]);
-  const updateConf =(i,v)=>setDxConf(c=>{const n=[...c];n[i]=v;return n;});
-  const build=useCallback(()=>{
-    const dl=dx.filter(Boolean),pl=plan.filter(Boolean);
-    if(!dl.length&&!risk&&!data.length&&!pl.length&&!calcs.length&&!sdoh.length&&!notOrdered&&!comorb){
-      toast.error("Fill in at least one field.");return;
-    }
-    const lines=["ASSESSMENT:",""];
-    if(dl.length){
-      lines.push("Impression:");
-      dl.forEach((d,i)=>{
-        const conf=dxConf[i]||"confirmed";
-        const confLabel={confirmed:"[CONFIRMED]",likely:"[LIKELY]",possible:"[POSSIBLE]",ruleout:"[R/O]"};
-        lines.push(`  ${i+1}. ${d} ${confLabel[conf]}`);
-      });
-      lines.push("");
-    }
-    if(risk){
-      const sdohNote=sdoh.length?` (SDOH: ${sdoh.join(", ")})`:""
-      lines.push(`Risk Stratification: ${risk.toUpperCase()}${sdohNote}`);lines.push("");
-    }
-    if(calcs.length){
-      lines.push("Risk Calculators Used (ACEP MDM Data Category 1):");
-      calcs.forEach(c=>lines.push(`  · ${c}`));lines.push("");
-    }
-    if(data.length){lines.push("Data reviewed / ordered:");data.forEach(d=>lines.push(`  · ${d}`));lines.push("");}
-    if(notOrdered?.trim()){
-      lines.push("Tests / treatments considered but NOT ordered:");
-      lines.push(`  ${notOrdered.trim()}`);lines.push("");
-    }
-    if(comorb?.trim()){
-      lines.push("How comorbidities impacted MDM (CPT requirement):");
-      lines.push(`  ${comorb.trim()}`);lines.push("");
-    }
-    if(pl.length){lines.push("Clinical Reasoning:");pl.forEach((p,i)=>lines.push(`  ${i+1}. ${p}`));lines.push("");}
-    if(risk==="high"&&ccTime){
-      lines.push(`Critical Care Time: ${ccTime} minutes (CPT 99291/99292)`);
-    }
-    onApply(lines.join("\n"));
-  },[dx,dxConf,risk,sdoh,data,calcs,notOrdered,comorb,ccTime,plan,onApply]);
-
-  return(
-    <div className="mdm-builder">
-      {/* Live E&M estimator strip — CMS 2023 MDM-based */}
-      {emResult&&(
-        <div className="em-strip">
-          <span className="em-strip-label">E&M estimate</span>
-          <span className="em-code">{emResult.code}</span>
-          <span className="em-desc">{emResult.desc}</span>
-          <span className={`em-mdm ${emResult.mdmKey}`}>{emResult.mdm}</span>
-          <div className="em-progress">
-            {[1,2,3,4].map(i=>(
-              <div key={i} className={`em-pip${i<=emResult.pips?" on":""}`}
-                style={i<=emResult.pips?{background:emResult.mdmKey==="high"?"#ff6b6b":emResult.mdmKey==="mod"?"#f5c842":"#3b9eff"}:{}}/>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Diagnoses with confidence labels — novel vs Epic/Oracle */}
-      <div className="mdm-row">
-        <div className="mdm-lbl">Impression / Diagnosis · Confidence</div>
-        {dx.map((v,i)=>(
-          <div key={i} className="dx-conf-row">
-            <input className="dx-conf-inp" value={v}
-              placeholder={`Diagnosis ${i+1}...`}
-              onChange={e=>{const n=[...dx];n[i]=e.target.value;setDx(n);}}/>
-            <select className={`dx-conf-sel ${dxConf[i]||"confirmed"}`}
-              value={dxConf[i]||"confirmed"}
-              onChange={e=>updateConf(i,e.target.value)}>
-              {DX_CONF_OPTS.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
-        ))}
-        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--t4)",marginTop:2}}>
-          Per Singh et al. BMJ 2013 — explicit uncertainty reduces diagnostic error
+function SectionHeader({ section, expanded, onToggle, complete, children }) {
+  return (
+    <div style={{ borderBottom: `1px solid ${expanded ? "rgba(59,130,246,.2)" : "transparent"}`, marginBottom: expanded ? 16 : 0 }}>
+      <div
+        onClick={onToggle}
+        style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", cursor: "pointer", userSelect: "none" }}
+      >
+        <span style={{ fontSize: 14 }}>{section.icon}</span>
+        <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, fontWeight: 600, color: section.priority ? "#fff" : "var(--npi-txt2)", flex: 1 }}>
+          {section.label}
         </span>
-      </div>
-
-      <div className="mdm-row">
-        <div className="mdm-lbl">Risk Stratification</div>
-        <div className="risk-row">
-          {[["low","Low"],["mod","Moderate"],["high","High"]].map(([v,l])=>(
-            <button key={v} className={`risk-btn ${v}${risk===v?" sel":""}`}
-              onClick={()=>setRisk(r=>r===v?"":v)}>{l}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* SDOH — CMS 2024 mandatory; homelessness/food = Moderate MDM risk per ACEP CNAC */}
-      <div className="mdm-row">
-        <div className="mdm-lbl">Social Determinants of Health (CMS G0136 · Moderate Risk)</div>
-        <div className="mdm-data-grid">
-          {SDOH_OPTS.map(o=>(
-            <div key={o.z} className={`data-chip${sdoh.includes(o.label)?" sel":""}`}
-              role="checkbox" aria-checked={sdoh.includes(o.label)} tabIndex={0}
-              onClick={()=>toggleSdoh(o.label)}
-              onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggleSdoh(o.label);}}}
-              title={`ICD-10 ${o.z}`}
-              style={sdoh.includes(o.label)?{borderColor:"#f5c842",color:"#f5c842",background:"rgba(245,200,66,.12)"}:{}}>
-              {o.label}
-            </div>
-          ))}
-        </div>
-        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--t4)",marginTop:2}}>
-          Document referral + incorporation into MDM (required 2024) · counts as Moderate Risk MDM element
-        </span>
-      </div>
-
-      {/* Risk Calculators — ACEP FAQ: using a validated calculator = Data Category 1 complexity */}
-      <div className="mdm-row">
-        <div className="mdm-lbl">Risk Calculators Used (ACEP: Data Category 1 credit)</div>
-        <div className="mdm-data-grid">
-          {ED_CALCS.map(c=>(
-            <div key={c} className={`data-chip${calcs.includes(c)?" sel":""}`}
-              role="checkbox" aria-checked={calcs.includes(c)} tabIndex={0}
-              onClick={()=>toggleCalc(c)}
-              onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggleCalc(c);}}}
-              style={calcs.includes(c)?{borderColor:"#9b6dff",color:"#9b6dff",background:"rgba(155,109,255,.12)"}:{}}>
-              {c}
-            </div>
-          ))}
-        </div>
-        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--t4)",marginTop:2}}>
-          Per ACEP CNAC FAQ: same MDM credit whether test was ordered or ruled out by calculator
-        </span>
-      </div>
-
-      <div className="mdm-row">
-        <div className="mdm-lbl">Data / Complexity</div>
-        <div className="mdm-data-grid">
-          {DATA_OPTS.map(o=>(
-            <div key={o} className={`data-chip${data.includes(o)?" sel":""}`}
-              role="checkbox" aria-checked={data.includes(o)} tabIndex={0}
-              onClick={()=>toggleData(o)}
-              onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggleData(o);}}}>
-              {o}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* "Considered but not ordered" — ACEP/CPT 2023: same billing credit as ordering */}
-      <div className="mdm-row">
-        <div className="mdm-lbl">Tests / Treatments Considered But NOT Ordered (CPT 2023 credit)</div>
-        <input className="mdm-inp" value={notOrdered}
-          placeholder="e.g. Head CT deferred — Canadian CT Head rule negative; LP deferred — low pre-test probability..."
-          onChange={e=>setNotOrdered(e.target.value)}/>
-        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--t4)",marginTop:2}}>
-          Per CPT 2023: "Ordering a test may include those considered but not selected" — billable complexity
-        </span>
-      </div>
-
-      {/* Comorbidity-MDM impact — ACEP CNAC: listing PMH is NOT enough, must document impact */}
-      <div className="mdm-row">
-        <div className="mdm-lbl">How Comorbidities Impacted MDM (CPT requirement — listing PMH alone is insufficient)</div>
-        <input className="mdm-inp" value={comorb}
-          placeholder="e.g. DM2 complicated wound healing, raising infection risk and influencing antibiotic selection..."
-          onChange={e=>setComorb(e.target.value)}/>
-      </div>
-
-      <div className="mdm-row">
-        <div className="mdm-lbl">Clinical Reasoning</div>
-        <div className="mdm-plan-list">
-          {plan.map((v,i)=>(
-            <div key={i} className="mdm-plan-row">
-              <span className="mdm-plan-num">{i+1}.</span>
-              <input className="mdm-plan-inp" value={v} placeholder={`Reasoning ${i+1}...`}
-                onChange={e=>{const n=[...plan];n[i]=e.target.value;setPlan(n);}}/>
-            </div>
-          ))}
-          {plan.length<6&&<button className="mdm-add-btn" onClick={()=>setPlan(p=>[...p,""])}>+ add item</button>}
-        </div>
-      </div>
-
-      {/* Critical care time — CPT 99291/99292 requires documented time beyond 74 min */}
-      {risk==="high"&&(
-        <div className="mdm-row">
-          <div className="mdm-lbl" style={{color:"var(--coral)"}}>
-            Critical Care Time — CPT 99291/99292 (Required for High-Risk / Critical Patients)
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <input className="mdm-inp" style={{flex:1}} value={ccTime}
-              placeholder="Total minutes of direct critical care time..."
-              onChange={e=>setCCTime(e.target.value)}/>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"var(--coral)",
-              background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",
-              borderRadius:6,padding:"4px 10px",flexShrink:0,whiteSpace:"nowrap"}}>
-              {ccTime>=75?"99291 + 99292":"99291"}
-            </span>
-          </div>
-          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--t4)",marginTop:2}}>
-            ≥30 min = 99291 · each additional 30 min = 99292 · document time clearly in note
-          </span>
-        </div>
-      )}
-      <button className="mdm-build-btn" onClick={build}>Apply to Assessment →</button>
-    </div>
-  );
-}
-
-// ─── DISPO BUILDER ────────────────────────────────────────────────────────────
-function DispoBuilder({mode,setMode,service,setService,followup,setFollowup,fwTime,setFwTime,prec,setPrec,onApply}){
-  const togglePrec=useCallback(i=>setPrec(d=>d.includes(i)?d.filter(x=>x!==i):[...d,i]),[setPrec]);
-  const build=useCallback(()=>{
-    if(!mode){toast.error("Select a disposition first.");return;}
-    const lines=["DISPOSITION:",""];
-    if(mode==="discharge")lines.push("Patient discharged home in stable condition.");
-    else if(mode==="admit")lines.push(`Admitted to hospital${service?". Service: "+service:"."}`);
-    else if(mode==="obs")lines.push("Patient placed in observation status for further monitoring and evaluation.");
-    else if(mode==="transfer")lines.push(`Patient transferred to ${service||"receiving facility"} for higher level of care.`);
-    lines.push("");
-    if(mode==="discharge"){
-      lines.push("Discharge instructions provided: Yes");
-      if(prec.length){lines.push("Return precautions discussed:");prec.forEach(p=>lines.push(`  · ${p}`));}
-    }
-    if(followup)lines.push(`\nFollow-up: ${followup}${fwTime?" in "+fwTime:""}`);
-    lines.push("\nAttending Physician: ___________   Time: ___________");
-    onApply(lines.join("\n"));
-  },[mode,service,prec,followup,fwTime,onApply]);
-  return(
-    <div className="dispo-builder">
-      <div className="mdm-row">
-        <div className="mdm-lbl">Disposition</div>
-        <div className="dispo-big-row">
-          {[{v:"discharge",l:"Discharge Home",i:"🏠",c:"discharge"},{v:"admit",l:"Admit",i:"🏥",c:"admit"},
-            {v:"obs",l:"Observation",i:"⏱",c:"obs"},{v:"transfer",l:"Transfer",i:"🚑",c:"transfer"}].map(({v,l,i,c})=>(
-            <div key={v} className={`dispo-big ${c}${mode===v?" sel":""}`}
-              role="radio" aria-checked={mode===v} tabIndex={0}
-              onClick={()=>setMode(m=>m===v?"":v)}
-              onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();setMode(m=>m===v?"":v);}}}>
-              <div className="dispo-big-icon">{i}</div>{l}
-            </div>
-          ))}
-        </div>
-      </div>
-      {(mode==="admit"||mode==="transfer")&&(
-        <div className="dispo-fields"><div className="dispo-field">
-          <div className="mdm-lbl">{mode==="admit"?"Admitting Service":"Receiving Facility"}</div>
-          <input className="mdm-inp" value={service}
-            placeholder={mode==="admit"?"e.g. Internal Medicine...":"e.g. UCSF Medical Center..."}
-            onChange={e=>setService(e.target.value)}/>
-        </div></div>
-      )}
-      {mode==="discharge"&&(
-        <div className="mdm-row">
-          <div className="mdm-lbl">Return Precautions</div>
-          <div className="dispo-precautions">
-            {PRECAUTIONS.map(p=>(
-              <div key={p} className={`precaution${prec.includes(p)?" sel":""}`}
-                role="checkbox" aria-checked={prec.includes(p)} tabIndex={0}
-                onClick={()=>togglePrec(p)}
-                onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();togglePrec(p);}}}>
-                {p}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      <div className="dispo-fields">
-        <div className="dispo-field">
-          <div className="mdm-lbl">Follow-up with</div>
-          <input className="mdm-inp" value={followup} placeholder="e.g. PCP, Cardiologist..." onChange={e=>setFollowup(e.target.value)}/>
-        </div>
-        <div className="dispo-field">
-          <div className="mdm-lbl">Timeframe</div>
-          <input className="mdm-inp" value={fwTime} placeholder="e.g. 5–7 days..." onChange={e=>setFwTime(e.target.value)}/>
-        </div>
-      </div>
-      <button className="dispo-build-btn" onClick={build}>Apply to Disposition →</button>
-    </div>
-  );
-}
-
-// ─── SBAR HANDOFF MODAL ───────────────────────────────────────────────────────
-// Based on I-PASS study (NEJM 2014) — 30% reduction in medical errors
-// via structured handoff. No current EHR auto-generates from in-progress note.
-function SBARModal({sections, patientName, cc, onClose}){
-  const init = useMemo(()=>buildSBAR(sections, patientName, cc),[]);
-  const [sbar, setSbar] = useState(init);
-  const firstTaRef = useRef(null);
-  // Escape closes modal; autoFocus first textarea on mount
-  useEffect(()=>{
-    const h=e=>{if(e.key==="Escape")onClose();};
-    window.addEventListener("keydown",h);
-    setTimeout(()=>firstTaRef.current?.focus(),80);
-    return()=>window.removeEventListener("keydown",h);
-  },[onClose]);
-  const copy = async () => {
-    const text = `SITUATION:\n${sbar.S}\n\nBACKGROUND:\n${sbar.B}\n\nASSESSMENT:\n${sbar.A}\n\nRECOMMENDATION:\n${sbar.R}`;
-    try{await navigator.clipboard.writeText(text);toast.success("SBAR copied to clipboard.");}
-    catch{toast.error("Clipboard access denied.");}
-  };
-  const PARTS = [
-    {key:"S",label:"Situation",    color:"#ff6b6b", rows:4},
-    {key:"B",label:"Background",   color:"#f5c842", rows:5},
-    {key:"A",label:"Assessment",   color:"#3b9eff", rows:6},
-    {key:"R",label:"Recommendation",color:"#00e5c0",rows:4},
-  ];
-  return(
-    <div className="sbar-overlay" onClick={onClose}>
-      <div className="sbar-modal" onClick={e=>e.stopPropagation()}>
-        <div className="sbar-modal-hdr">
-          <div>
-            <div className="sbar-modal-title">SBAR Handoff</div>
-            <div className="sbar-modal-sub">I-PASS · NEJM 2014 · Auto-generated from note</div>
-          </div>
-          <button className="ibtn" onClick={onClose} style={{marginLeft:"auto"}}>✕</button>
-        </div>
-        <div className="sbar-modal-body">
-          {PARTS.map(({key,label,color,rows})=>(
-            <div key={key} className="sbar-section">
-              <div className="sbar-section-hdr">
-                <div className="sbar-letter" style={{background:`${color}18`,border:`1px solid ${color}40`,color}}>
-                  {key}
-                </div>
-                <span className="sbar-section-name">{label}</span>
-              </div>
-              <textarea className="sbar-ta" rows={rows} value={sbar[key]}
-                ref={key==="S"?firstTaRef:null}
-                onChange={e=>setSbar(p=>({...p,[key]:e.target.value}))}/>
-            </div>
-          ))}
-        </div>
-        <div className="sbar-modal-foot">
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-teal" onClick={copy}>⎘ Copy SBAR</button>
-        </div>
+        {complete && !expanded && (
+          <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "var(--npi-teal)", background: "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.25)", borderRadius: 20, padding: "1px 8px" }}>✓</span>
+        )}
+        {children && !expanded && <span style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>}
+        <span style={{ color: "var(--npi-txt4)", fontSize: 12, flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>
       </div>
     </div>
   );
 }
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+// ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function ClinicalNoteStudio({
-  patientData:propData, embedded=false, onBack, onSave:onExternalSave,
-}){
-  const navigate=useNavigate();
-  const location=useLocation();
-  const [searchParams]=useSearchParams();
-  const urlNoteId=searchParams.get("noteId");
+  demo, cc, vitals, medications, allergies,
+  pmhSelected, pmhExtra, surgHx, famHx, socHx,
+  rosState, peState, peFindings,
+  esiLevel, registration, sdoh,
+  consultsProp,
+  onSave,
+}) {
+  const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
 
-  const patientData=useMemo(
-    ()=>propData||location.state?.patientData||{},
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [propData,location.key]
-  );
-  const {demo={},cc={},medications=[],allergies=[],registration={},esiLevel=""}=patientData;
-  const patientName=[demo.firstName,demo.lastName].filter(Boolean).join(" ")||"New Patient";
+  // ── Section expand/collapse ─────────────────────────────────────────────
+  const [expanded, setExpanded] = useState({ ddx: true, mdm: true, plan: true, hpi: false, ros: false, pe: false, results: false, meta: false });
+  const toggle = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
 
-  const [sections,setSections]  =useState(()=>buildInitialSections(patientData));
-  const [focused,setFocused]    =useState("assessment");
-  const [loading,setLoading]    =useState({});
-  const [anyBusy,setAnyBusy]    =useState(false);
-  const [saved,setSaved]        =useState(false);
-  const [startTime]             =useState(()=>Date.now());
-  const [elapsed,setElapsed]    =useState(0);
-  const [scOpen,setScOpen]      =useState(false);
-  const [nqsOpen,setNqsOpen]    =useState(false);
-  const [sbarOpen,setSbarOpen]  =useState(false);
-  const [mdmOpen,setMdmOpen]    =useState(true);
-  const [dispoOpen,setDispoOpen]=useState(false);
+  // ── DDx state ───────────────────────────────────────────────────────────
+  const [primaryDx, setPrimaryDx]   = useState(cc.text || "");
+  const [icd10, setIcd10]           = useState("");
+  const [differential, setDiff]     = useState([]);
+  const [diffInput, setDiffInput]   = useState("");
+  const [icdLoading, setIcdLoading] = useState(false);
+  const [toasts,     setToasts]     = useState([]);
 
-  // MDM / Assessment builder
-  const [mdmDx,setMdmDx]       =useState(["","",""]);
-  const [mdmDxConf,setMdmDxConf]=useState(["confirmed","confirmed","confirmed"]);
-  const [mdmRisk,setMdmRisk]   =useState("");
-  const [mdmData,setMdmData]   =useState([]);
-  const [mdmPlan,setMdmPlan]   =useState(["",""]);
-  // ACEP 2023 new fields
-  const [mdmCalcs,setMdmCalcs]           =useState([]);
-  const [mdmSdoh,setMdmSdoh]             =useState([]);
-  const [mdmNotOrdered,setMdmNotOrdered] =useState("");
-  const [mdmComorb,setMdmComorb]         =useState("");
-  const [mdmCCTime,setMdmCCTime]         =useState("");
+  // ── MDM state — AMA 2023 three domains ──────────────────────────────────────
+  // AMA requires documentation of 2 of 3 domains to support the selected level.
+  const [complexity,  setComplexity]  = useState(0);
+  const [mdmProblems, setMdmProblems] = useState(""); // Domain 1: Number & complexity of problems
+  const [mdmData,     setMdmData]     = useState(""); // Domain 2: Amount/complexity of data reviewed
+  const [mdmRisk,     setMdmRisk]     = useState(""); // Domain 3: Risk of complications / management
+  const [mdmLoading,  setMdmLoading]  = useState(false);
 
-  // Dispo builder
-  const [dispoMode,setDispoMode]=useState("");
-  const [dispoSvc,setDispoSvc] =useState("");
-  const [dispoFw,setDispoFw]   =useState("");
-  const [dispoFwT,setDispoFwT] =useState("");
-  const [dispoPrec,setDispoPrec]=useState([]);
+  // ── Plan state ──────────────────────────────────────────────────────────
+  const [dispType, setDispType]         = useState("");
+  const [planItems, setPlanItems]       = useState([]);
+  const [planInput, setPlanInput]       = useState("");
+  const [returnPrec, setReturnPrec]     = useState("");
+  const [followUp, setFollowUp]         = useState("");
+  const [consults, setConsults]         = useState(() => {
+    if (!consultsProp || !consultsProp.length) return "";
+    return consultsProp.filter(c => c.service).map(c =>
+      `${c.service}${c.question ? " — " + c.question.slice(0, 80) : ""}`
+    ).join("\n");
+  });
+  const [consultsDirty, setConsultsDirty] = useState(false);
 
-  const sectionsRef=useRef(sections);
-  const secDivRefs =useRef({});
-  const taRefs     =useRef({});
-  const savedIdRef =useRef(urlNoteId||null);
+  // Re-sync consults when new consults are added upstream, unless manually edited
+  useEffect(() => {
+    if (consultsDirty || !consultsProp || !consultsProp.length) return;
+    setConsults(consultsProp.filter(c => c.service).map(c =>
+      `${c.service}${c.question ? " — " + c.question.slice(0, 80) : ""}`
+    ).join("\n"));
+  }, [consultsProp]); // eslint-disable-line
 
-  useEffect(()=>{sectionsRef.current=sections;},[sections]);
+  // ── Supporting section content (auto + editable) ─────────────────────────
+  const [hpiText, setHpiText]           = useState(cc.hpi || "");
+  const [listening,  setListening]      = useState(false);
+  const speechRef                       = useRef(null);
+  const [rosText, setRosText]           = useState(() => buildRosText(rosState));
+  const [peText, setPeText]             = useState(() => buildPeText(peState, peFindings));
+  const [resultsText, setResultsText]   = useState("");
+  // Dirty flags — prevent auto-sync from overwriting manual edits
+  const [rosDirty, setRosDirty] = useState(false);
+  const [peDirty,  setPeDirty]  = useState(false);
 
-  useEffect(()=>{
-    const id=setInterval(()=>setElapsed(Math.floor((Date.now()-startTime)/1000)),1000);
-    return()=>clearInterval(id);
-  },[startTime]);
+  // Re-sync when source data changes (e.g. doctor goes back to ROS/PE tab)
+  // Only fires if the provider hasn't manually edited the text in the note.
+  useEffect(() => {
+    if (!rosDirty) setRosText(buildRosText(rosState));
+  }, [rosState]); // eslint-disable-line
+  useEffect(() => {
+    if (!peDirty) setPeText(buildPeText(peState, peFindings));
+  }, [peState, peFindings]); // eslint-disable-line
 
-  const timerStr=useMemo(()=>{
-    const m=Math.floor(elapsed/60),s=elapsed%60;
-    return`${m}:${String(s).padStart(2,"0")}`;
-  },[elapsed]);
+  // ── Refs for keyboard scroll-to ─────────────────────────────────────────
+  const refs = { ddx: useRef(null), mdm: useRef(null), plan: useRef(null), hpi: useRef(null), ros: useRef(null), pe: useRef(null), results: useRef(null), meta: useRef(null) };
+  const scrollTo = useCallback((id) => {
+    setExpanded(p => ({ ...p, [id]: true }));
+    setTimeout(() => refs[id]?.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }, []);
 
-  useEffect(()=>{
-    if(!urlNoteId||propData)return;
-    base44.entities.ClinicalNote.get(urlNoteId).then(note=>{
-      savedIdRef.current=urlNoteId;
-      if(note?.raw_note)setSections(prev=>({...prev,assessment:{content:note.raw_note,status:"draft",locked:false,collapsed:false}}));
-      toast.info("Note loaded.");
-    }).catch(()=>{});
-  },[urlNoteId,propData]);
-
-  useEffect(()=>{
-    Object.keys(sections).forEach(id=>{
-      const ta=taRefs.current[id];if(!ta)return;
-      ta.style.height="auto";ta.style.height=ta.scrollHeight+"px";
-    });
-  },[sections]);
-
-  const completedCount=useMemo(()=>
-    SECTIONS.filter(s=>["complete","locked"].includes(sections[s.id]?.status)).length,
-  [sections]);
-
-  // Live E&M estimation — CMS 2023 MDM-based; SDOH auto-elevates to at least Moderate (ACEP CNAC)
-  const emResult=useMemo(()=>{
-    const effectiveRisk = (mdmSdoh.length>0 && !mdmRisk) ? "mod" : mdmRisk;
-    return computeEM(effectiveRisk,mdmDx.filter(Boolean).length,mdmData.length+mdmCalcs.length);
-  },[mdmRisk,mdmSdoh,mdmDx,mdmData,mdmCalcs]);
-
-  // Note Quality Score — PDQI-9 based
-  const nqs=useMemo(()=>computeNQS(sections),[sections]);
-  const nqsCls=nqs.total>=75?"good":nqs.total>=45?"mid":"low";
-
-  const getGroupStatus=useCallback(g=>{
-    const gs=SECTIONS.filter(s=>s.group===g);
-    if(!gs.length)return"empty";
-    if(gs.every(s=>["complete","locked"].includes(sections[s.id]?.status)))return"done";
-    if(gs.some(s=>["complete","locked","draft"].includes(sections[s.id]?.status)))return"partial";
-    return"empty";
-  },[sections]);
-
-  const updateSection=useCallback((id,content)=>{
-    setSections(prev=>({...prev,[id]:{...prev[id],content,status:content?"draft":"empty"}}));
-    setSaved(false);
-  },[]);
-
-  const markComplete=useCallback(id=>{
-    setSections(prev=>{
-      const cur=prev[id];const ns=cur.status==="complete"?"draft":"complete";
-      return{...prev,[id]:{...cur,status:ns,collapsed:ns==="complete"}};
-    });
-  },[]);
-
-  const toggleCollapse=useCallback(id=>{
-    const was=!!sectionsRef.current[id]?.collapsed;
-    if(was)setFocused(id);
-    setSections(prev=>({...prev,[id]:{...prev[id],collapsed:!was}}));
-  },[]);
-
-  const toggleLock=useCallback(id=>{
-    setSections(prev=>({...prev,[id]:{...prev[id],locked:!prev[id].locked,status:!prev[id].locked?"locked":"complete"}}));
-  },[]);
-
-  const applyMacro=useCallback((id,text)=>{
-    setSections(prev=>{const cur=prev[id]?.content||"";return{...prev,[id]:{...prev[id],content:cur?cur+"\n"+text:text,status:"draft"}};});
-    setSaved(false);
-    setTimeout(()=>{const ta=taRefs.current[id];if(ta){ta.style.height="auto";ta.style.height=ta.scrollHeight+"px";}},50);
-  },[]);
-
-  const applyMDM=useCallback(text=>{updateSection("assessment",text);setMdmOpen(false);toast.success("Assessment applied.");},[updateSection]);
-  const applyDispo=useCallback(text=>{updateSection("dispo",text);setDispoOpen(false);toast.success("Disposition applied.");},[updateSection]);
-
-  const generateSection=useCallback(async id=>{
-    const sec=SECTIONS.find(s=>s.id===id);
-    if(!sec||sectionsRef.current[id]?.locked)return;
-    setLoading(l=>({...l,[id]:true}));setAnyBusy(true);
-    try{
-      const res=await base44.integrations.Core.InvokeLLM({
-        prompt:["You are a clinical documentation assistant in an emergency medicine platform.",
-          `Generate ONLY the "${sec.title}" section of an ED note in standard EP documentation style.`,
-          "Be concise. Return ONLY the section text.",
-          `Patient: ${patientName}.  CC: ${cc.text||"not documented"}.`,
-          `Current content: ${sectionsRef.current[id]?.content||"(empty)"}`,
-        ].join("\n")
-      });
-      const text=typeof res==="string"?res:JSON.stringify(res);
-      setSections(prev=>({...prev,[id]:{...prev[id],content:text,status:"draft"}}));
-      setSaved(false);
-    }catch{toast.error("AI generation failed.");}
-    finally{setLoading(prev=>{const n={...prev,[id]:false};setAnyBusy(Object.values(n).some(Boolean));return n;});}
-  },[patientName,cc.text]);
-
-  const generateAll=useCallback(async()=>{
-    const empty=SECTIONS.filter(s=>{const sec=sectionsRef.current[s.id];return!sec?.content||sec.status==="empty";});
-    if(!empty.length){toast.info("All sections have content.");return;}
-    toast.info(`Generating ${empty.length} sections…`);
-    for(const s of empty)await generateSection(s.id);
-    toast.success("Done.");
-  },[generateSection]);
-
-  const rebuildAll=useCallback(()=>{setSections(buildInitialSections(patientData));setSaved(false);toast.success("Note rebuilt.");},[patientData]);
-
-  const copyAll=useCallback(async()=>{
-    const div="\n\n"+"─".repeat(58)+"\n\n";
-    const full=SECTIONS.map(s=>sectionsRef.current[s.id]?.content).filter(Boolean).join(div);
-    try{await navigator.clipboard.writeText(full);toast.success("Note copied.");}
-    catch{toast.error("Clipboard access denied.");}
-  },[]);
-
-  const printNote=useCallback(()=>window.print(),[]);
-
-  const saveNote=useCallback(async()=>{
-    const full=SECTIONS.map(s=>sectionsRef.current[s.id]?.content).filter(Boolean).join("\n\n");
-    try{
-      if(savedIdRef.current){
-        await base44.entities.ClinicalNote.update(savedIdRef.current,{raw_note:full,status:"draft"});
-      }else{
-        const c=await base44.entities.ClinicalNote.create({
-          raw_note:full,patient_name:patientName,
-          patient_id:registration.mrn||demo.mrn||"",
-          patient_age:demo.age||"",patient_gender:demo.sex||"",
-          chief_complaint:cc.text||"",medications,allergies,status:"draft",
-        });
-        savedIdRef.current=c.id;
-      }
-      setSaved(true);toast.success("Note saved.");onExternalSave?.();
-    }catch(e){toast.error("Save failed: "+(e?.message||"error"));}
-  },[patientName,demo,registration,cc,medications,allergies,onExternalSave]);
-
-  const jumpTo=useCallback(id=>{
-    setFocused(id);
-    setSections(prev=>({...prev,[id]:{...prev[id],collapsed:false}}));
-    setTimeout(()=>{
-      secDivRefs.current[id]?.scrollIntoView({behavior:"smooth",block:"start"});
-      // autoFocus the textarea so the physician can type immediately
-      taRefs.current[id]?.focus();
-    },60);
-  },[]);
-
-  // Next / previous section by APSO order
-  const focusAdjacentSection=useCallback((dir)=>{
-    const idx=SECTIONS.findIndex(s=>s.id===focused);
-    const next=SECTIONS[idx+dir];
-    if(next) jumpTo(next.id);
-  },[focused,jumpTo]);
-
-  useEffect(()=>{
-    // autoFocus assessment textarea on mount (keyboard-first entry point)
-    setTimeout(()=>{
-      taRefs.current["assessment"]?.focus();
-    },120);
-  },[]); // eslint-disable-line
-
-  useEffect(()=>{
-    const handler=e=>{
-      const mod=e.metaKey||e.ctrlKey;
-      const inInput=["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName);
-
-      // Section jumps via ⌘1-0 — standalone only
-      if(mod&&!embedded){
-        const k=e.key;const idx=k==="0"?9:parseInt(k,10)-1;
-        if(!Number.isNaN(idx)&&idx>=0&&idx<SECTIONS.length){e.preventDefault();jumpTo(SECTIONS[idx].id);return;}
-      }
-
-      // ⌘↓ / ⌘↑ — next/previous section (works from anywhere, inc. textareas)
-      if(mod&&e.key==="ArrowDown"){e.preventDefault();focusAdjacentSection(1);return;}
-      if(mod&&e.key==="ArrowUp")  {e.preventDefault();focusAdjacentSection(-1);return;}
-
-      // Escape — collapse focused section / close NQS panel
-      if(e.key==="Escape"&&!inInput){
-        e.preventDefault();
-        setSections(prev=>({...prev,[focused]:{...prev[focused],collapsed:true}}));
-        return;
-      }
-      // Escape from textarea — blur + collapse section, return focus to section header
-      if(e.key==="Escape"&&inInput){
-        e.preventDefault();
-        (e.target).blur();
-        setSections(prev=>({...prev,[focused]:{...prev[focused],collapsed:true}}));
-        return;
-      }
-
-      // Enter on non-input = expand/collapse focused section
-      if(e.key==="Enter"&&!inInput){
-        e.preventDefault();
-        const isCollapsed = !!sectionsRef.current[focused]?.collapsed;
-        setSections(prev=>({...prev,[focused]:{...prev[focused],collapsed:!isCollapsed}}));
-        // if it was collapsed and we're opening it, focus the textarea
-        if(isCollapsed) setTimeout(()=>taRefs.current[focused]?.focus(),60);
-        return;
-      }
-
-      if(!mod) return;
-
-      switch(true){
-        case e.key==="g"&&!e.shiftKey: e.preventDefault();generateSection(focused);break;
-        case e.key==="g"&&e.shiftKey:  e.preventDefault();generateAll();break;
-        case e.key==="s"&&!e.shiftKey: e.preventDefault();saveNote();break;
-        case e.key==="p"&&!e.shiftKey: e.preventDefault();printNote();break;
-        case e.key==="c"&&e.shiftKey:  e.preventDefault();copyAll();break;
-        case e.key==="r"&&!e.shiftKey: e.preventDefault();rebuildAll();break;
-        // ⌘K — mark focused section complete / reopen
-        case e.key==="k":              e.preventDefault();markComplete(focused);break;
-        // ⌘E — collapse/expand focused section
-        case e.key==="e":              e.preventDefault();toggleCollapse(focused);break;
-        // ⌘M — toggle MDM builder (when assessment is focused)
-        case e.key==="m":              e.preventDefault();if(focused==="assessment")setMdmOpen(o=>!o);break;
-        // ⌘D — toggle Dispo builder (when dispo is focused)
-        case e.key==="d":              e.preventDefault();if(focused==="dispo")setDispoOpen(o=>!o);break;
-        default:break;
-      }
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────
+  useEffect(() => {
+    const h = (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      if (e.key === "d") { e.preventDefault(); scrollTo("ddx"); }
+      if (e.key === "m") { e.preventDefault(); scrollTo("mdm"); }
+      if (e.key === "g") { e.preventDefault(); generateMDM(); }
     };
-    window.addEventListener("keydown",handler);
-    return()=>window.removeEventListener("keydown",handler);
-  },[embedded,focused,generateSection,generateAll,saveNote,printNote,copyAll,
-     rebuildAll,jumpTo,focusAdjacentSection,markComplete,toggleCollapse]);
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [scrollTo]);
 
-  const pct=(completedCount/SECTIONS.length)*100;
+  // 1–4 keys set complexity when MDM section is focused
+  const onMdmKeyDown = (e) => {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4 && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
+      setComplexity(n);
+    }
+    if (e.metaKey && e.key === "Enter") { e.preventDefault(); generateMDM(); }
+  };
 
-  const APSOChips=()=>(
-    <div className="cns2-apso-ind">
-      {["A","P","S","O"].map(g=>{
-        const st=getGroupStatus(g);const col=APSO_GROUPS[g].color;
-        return<span key={g} className={`cns2-apso-chip ${st}`}
-          title={`${APSO_GROUPS[g].label} — ${st}`}
-          style={st!=="empty"?{color:col,borderColor:`${col}60`}:{}}>{g}</span>;
-      })}
-    </div>
-  );
+  // ── AI: ICD-10 suggestion ────────────────────────────────────────────────
+  const suggestICD = async () => {
+    if (!primaryDx.trim()) return;
+    setIcdLoading(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 600,
+          system: `You are an emergency medicine clinical documentation expert. Return ONLY valid JSON, no markdown.
+For the given ED diagnosis, provide:
+- icd10: most specific ICD-10-CM code with description (e.g. "I21.9 Acute MI, unspecified")
+- differentials: array of 3 ED-relevant differential diagnoses
+- mdm_problem: 1 sentence for AMA 2023 MDM Domain 1 (number/complexity of problems)
+- plan_items: array of 3-4 key ED management steps
+- return_precautions: 1 sentence listing condition-specific return-to-ED warning signs
+Format: {"icd10":"...","differentials":["..."],"mdm_problem":"...","plan_items":["..."],"return_precautions":"..."}`,
+          messages: [{ role: "user", content: `ED Diagnosis: ${primaryDx}\nPatient: ${demo.age||"?"}y ${demo.sex||""}, CC: ${cc.text||primaryDx}` }],
+        }),
+      });
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(raw);
+      if (parsed.icd10)        setIcd10(parsed.icd10);
+      if (parsed.differentials) setDiff(parsed.differentials);
+      // Downstream population — only pre-fill if field is currently empty
+      if (parsed.mdm_problem && !mdmProblems) setMdmProblems(parsed.mdm_problem);
+      if (parsed.plan_items?.length && planItems.length === 0) setPlanItems(parsed.plan_items);
+      if (parsed.return_precautions && !returnPrec) setReturnPrec(parsed.return_precautions);
+      showToast(setToasts, "Diagnosis applied — ICD-10, MDM, plan, and return precautions populated.", "success");
+    } catch { showToast(setToasts, "ICD-10 lookup failed.", "error"); }
+    finally  { setIcdLoading(false); }
+  };
 
-  const ActionBtns=()=>(
-    <div className="cns2-acts">
-      {/* NQS badge — novel: no EHR shows real-time note quality */}
-      <button className={`cns2-nqs ${nqsCls}`} onClick={()=>setNqsOpen(o=>!o)}
-        title="Note Quality Score (PDQI-9 based) — click for breakdown">
-        NQS {nqs.total}
-      </button>
-      {/* E&M badge — live during authoring */}
-      {mdmRisk&&(
-        <span className={`cns2-em-badge${mdmRisk==="high"?" high":""}`} title="CMS 2023 E&M estimate">
-          {emResult.code}
-        </span>
-      )}
-      <button className="btn btn-ghost" onClick={rebuildAll} title="⌘R">↺</button>
-      <button className="btn btn-gold" onClick={generateAll} disabled={anyBusy} title="⌘⇧G">
-        {anyBusy?"⟳":"✦ Generate All"}
-      </button>
-      <button className="btn btn-ghost" onClick={copyAll} title="⌘⇧C">⎘ Copy</button>
-      {/* SBAR Handoff — I-PASS NEJM 2014 */}
-      <button className="btn btn-purple" onClick={()=>setSbarOpen(true)} title="Generate I-PASS/SBAR handoff">
-        ↗ Handoff
-      </button>
-      <button className="btn btn-ghost" onClick={printNote} title="⌘P">⎙</button>
-      <button className="btn btn-teal" onClick={saveNote} title="⌘S">{saved?"✓ Saved":"💾 Save"}</button>
-    </div>
-  );
+  // ── AI: MDM generation — three AMA 2023 domains ──────────────────────────────
+  const generateMDM = useCallback(async () => {
+    if (mdmLoading) return;
+    setMdmLoading(true);
+    const pmhList = Object.keys(pmhSelected||{}).filter(k => pmhSelected[k]).slice(0,5).join(", ") || "none";
+    const vStr = vitals.bp ? `BP ${vitals.bp} HR ${vitals.hr||"—"} SpO2 ${vitals.spo2||"—"} T ${vitals.temp||"—"}` : "not documented";
+    // ROS positives — relevant to Domain 1 (problem complexity)
+    const META_SKIP = ["_remainderNeg","_remainderNormal","_mode","_visual"];
+    const rosPos = Object.entries(rosState||{})
+      .filter(([k,v])=>!META_SKIP.includes(k)&&v==="has-positives")
+      .map(([k])=>k).join(", ") || "none documented";
+    // PE abnormals with finding text — relevant to Domain 1 and 2
+    const peAbnLines = Object.entries(peState||{})
+      .filter(([k,v])=>!META_SKIP.includes(k)&&(v==="abnormal"||v==="mixed"))
+      .map(([k]) => {
+        const sf = peFindings?.[k];
+        const findings = sf ? Object.entries(sf.findings||{}).filter(([,v])=>v==="abnormal").map(([f])=>f.replace(/-/g," ")).join(", ") : "";
+        const note = sf?.note?.trim() || "";
+        return `${k}: ${findings||"abnormal"}${note?" ("+note+")":""}`;
+      }).join("; ") || "none documented";
+    // SDOH complexity factors — can elevate MDM risk domain
+    const sdohFlags = Object.entries(sdoh||{}).filter(([,v])=>v&&v!=="unknown"&&v!==false).map(([k])=>k).join(", ");
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 800,
+          system: `Generate AMA 2023 MDM documentation for an ED encounter. Return ONLY valid JSON with exactly three fields: {"problems":"...","data":"...","risk":"..."}
+- problems (1-2 sentences): Number and complexity of problems addressed. Reference specific ROS positives and PE abnormals. State acute vs chronic, stable vs exacerbation.
+- data (1-2 sentences): Data reviewed and ordered — labs, imaging, ECG, external records. State what was interpreted independently by this provider.
+- risk (1-2 sentences): Complexity of management and risk of complications, morbidity, or mortality. Name specific interventions and their risk level. Include SDOH factors that elevate complexity if present.`,
+          messages: [{ role: "user", content:
+`Patient: ${patientName}, ${demo.age||"?"}y ${demo.sex||""}
+CC: ${cc.text||"unspecified"}
+Primary DX: ${primaryDx||cc.text||"pending"}
+HPI: ${cc.hpi?.slice(0,200)||"not documented"}
+Vitals: ${vStr}
+PMH: ${pmhList}
+Surgical Hx: ${surgHx||"none"}
+Meds: ${(medications||[]).slice(0,5).join(", ")||"none"}
+Allergies: ${(allergies||[]).join(", ")||"NKDA"}
+ROS positives: ${rosPos}
+PE abnormals: ${peAbnLines}${sdohFlags ? "\nSDOH factors: " + sdohFlags : ""}` }],
+        }),
+      });
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(raw);
+      if (parsed.problems) setMdmProblems(parsed.problems);
+      if (parsed.data)     setMdmData(parsed.data);
+      if (parsed.risk)     setMdmRisk(parsed.risk);
+      showToast(setToasts, "MDM domains generated", "success");
+    } catch { showToast(setToasts, "MDM generation failed.", "error"); }
+    finally  { setMdmLoading(false); }
+  }, [mdmLoading, patientName, demo, cc, primaryDx, vitals, pmhSelected, medications, allergies, rosState, peState, peFindings, surgHx, sdoh]);
 
-  // Sidebar items
-  const sidebarItems=useMemo(()=>{
-    const items=[];let last=null;
-    SECTIONS.forEach(s=>{
-      if(s.group!==last){last=s.group;const g=APSO_GROUPS[s.group];
-        if(g?.label)items.push({type:"group",group:s.group,label:g.label,color:g.color});}
-      items.push({type:"section",...s});
-    });
-    return items;
-  },[]);
+  // ── Completion checks ────────────────────────────────────────────────────
+  const complete = {
+    ddx:     !!primaryDx,
+    mdm:     complexity > 0 && [mdmProblems, mdmData, mdmRisk].filter(Boolean).length >= 2,
+    plan:    !!dispType,
+    hpi:     !!hpiText,
+    ros:     !!rosText,
+    pe:      !!peText,
+    results: !!resultsText,
+    meta:    true,
+  };
 
-  // Note area elements
-  const noteElements=useMemo(()=>{
-    const els=[];let last=null;
-    SECTIONS.forEach(s=>{
-      const g=APSO_GROUPS[s.group];
-      if(s.group!==last&&s.group!=="header"){
-        last=s.group;
-        els.push(
-          <div key={`div-${s.group}`} className="cns2-grp-div" style={{color:g.color}}>
-            <div className="cns2-grp-line"/>
-            <span className="cns2-grp-label"
-              style={{background:`${g.color}18`,border:`1px solid ${g.color}35`,color:g.color}}>
-              {g.letter} · {g.label}
-            </span>
-            <span className="cns2-grp-sub">{g.sublabel}</span>
-            <div className="cns2-grp-line"/>
-          </div>
-        );
-      }else if(s.group==="header"){last="header";}
+  // ── Section dots for left rail ───────────────────────────────────────────
+  const allDone = SECTIONS.slice(0,3).every(s => complete[s.id]);
 
-      const sec=sections[s.id]||{};
-      const st=sec.status||"empty",lk=sec.locked||false,txt=sec.content||"",
-            coll=sec.collapsed||false,busy=loading[s.id]||false;
-      const hasMacros=!!MACROS[s.id]?.length;
-      const isAssess=s.id==="assessment",isDispo=s.id==="dispo";
-      const srcTab=TAB_MAP[s.id];
+  const addPlanItem = () => {
+    const t = planInput.trim();
+    if (!t) return;
+    setPlanItems(p => [...p, t]);
+    setPlanInput("");
+  };
 
-      els.push(
-        <div key={s.id}
-          ref={el=>{secDivRefs.current[s.id]=el;}}
-          className={`cns2-sec grp-${s.group}${focused===s.id?" focused":""}${coll?" collapsed":""}`}
-          onClick={()=>{if(coll)toggleCollapse(s.id);else setFocused(s.id);}}>
+  // ── Voice dictation (Web Speech API) — HPI only ──────────────────────────
+  const startDictation = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      showToast(setToasts, "Speech recognition not supported in this browser.", "error");
+      return;
+    }
+    const rec = new SpeechRecognition();
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.lang = "en-US";
+    rec.onresult = (e) => {
+      const transcript = Array.from(e.results)
+        .map(r => r[0].transcript).join(" ");
+      setHpiText(p => p ? p.trimEnd() + " " + transcript : transcript);
+    };
+    rec.onerror = () => {
+      setListening(false);
+      showToast(setToasts, "Dictation stopped — microphone error.", "error");
+    };
+    rec.onend = () => setListening(false);
+    speechRef.current = rec;
+    rec.start();
+    setListening(true);
+  };
+  const stopDictation = () => {
+    speechRef.current?.stop();
+    setListening(false);
+  };
 
-          <div className="cns2-sec-hdr"
-            role="button" tabIndex={0}
-            aria-expanded={!coll} aria-label={`${s.title} — ${st}`}
-            onClick={e=>{e.stopPropagation();toggleCollapse(s.id);setFocused(s.id);}}
-            onKeyDown={e=>{
-              if(e.key==="Enter"||e.key===" "){
-                e.preventDefault();e.stopPropagation();
-                toggleCollapse(s.id);setFocused(s.id);
-                if(coll) setTimeout(()=>taRefs.current[s.id]?.focus(),60);
-              }
-            }}>
-            <span className="cns2-sec-num">{s.key}</span>
-            <span className="cns2-sec-icon">{s.icon}</span>
-            <div className="cns2-sec-info">
-              <div className="cns2-sec-title">{s.title}</div>
-              {coll&&txt&&<div className="cns2-sec-preview">{txt.split("\n").find(l=>l.trim())||""}</div>}
-            </div>
-            {!embedded&&<span className="cns2-sec-short">⌘{s.key}</span>}
-            <div className="cns2-sec-acts" onClick={e=>e.stopPropagation()}>
-              {/* E&M badge inline in assessment header */}
-              {isAssess&&mdmRisk&&!coll&&(
-                <span className={`cns2-em-badge${mdmRisk==="high"?" high":""}`}>{emResult.code}</span>
-              )}
-              {srcTab&&(
-                <button className="ibtn" title={`Edit source data → ${srcTab} tab`}
-                  onClick={()=>navigate(`/NewPatientInput?tab=${srcTab}`)} style={{fontSize:10}}>↩</button>
-              )}
-              <span className={`cns2-status st-${st}`}>{st==="locked"?"🔒 locked":st}</span>
-              <button className={`ibtn${busy?" spin":""}`} title="AI Generate (⌘G)"
-                disabled={lk||busy} onClick={()=>generateSection(s.id)}>{busy?"⟳":"✦"}</button>
-              <button className="ibtn" title={lk?"Unlock":"Lock"}
-                onClick={()=>toggleLock(s.id)} style={lk?{color:"var(--blue)"}:{}}>{lk?"🔒":"🔓"}</button>
-            </div>
-            <span className="cns2-chevron">›</span>
-          </div>
+  // ─── RENDER ───────────────────────────────────────────────────────────────
+  return (
+    <div style={{ display: "flex", gap: 20, fontFamily: "'DM Sans',sans-serif", maxWidth: 1100, minHeight: "60vh" }}>
 
-          {!coll&&hasMacros&&!lk&&(
-            <div className="cns2-macro-bar" onClick={e=>e.stopPropagation()}>
-              {MACROS[s.id].map(m=>(
-                <button key={m.label} className={`macro-pill ${m.cls||""}`}
-                  tabIndex={0}
-                  onClick={()=>applyMacro(s.id,m.text)}
-                  onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();applyMacro(s.id,m.text);}}}
-                >{m.label}</button>
-              ))}
-            </div>
-          )}
-
-          {!coll&&isAssess&&!lk&&(
-            <div onClick={e=>e.stopPropagation()}>
-              <div className="cns2-builder-toggle"
-                role="button" tabIndex={0}
-                onClick={()=>setMdmOpen(o=>!o)}
-                onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setMdmOpen(o=>!o);}}}>
-                <span style={{fontSize:13}}>⊕</span>
-                <span>Assessment Builder — MDM + E&M Estimator</span>
-                <span className={`cns2-toggle-chev${mdmOpen?" open":""}`}>›</span>
-              </div>
-              {mdmOpen&&<MDMBuilder dx={mdmDx} setDx={setMdmDx}
-                dxConf={mdmDxConf} setDxConf={setMdmDxConf}
-                risk={mdmRisk} setRisk={setMdmRisk}
-                data={mdmData} setData={setMdmData}
-                plan={mdmPlan} setPlan={setMdmPlan}
-                calcs={mdmCalcs} setCalcs={setMdmCalcs}
-                sdoh={mdmSdoh} setSdoh={setMdmSdoh}
-                notOrdered={mdmNotOrdered} setNotOrdered={setMdmNotOrdered}
-                comorb={mdmComorb} setComorb={setMdmComorb}
-                ccTime={mdmCCTime} setCCTime={setMdmCCTime}
-                onApply={applyMDM} emResult={emResult}/>}
-            </div>
-          )}
-
-          {!coll&&isDispo&&!lk&&(
-            <div onClick={e=>e.stopPropagation()}>
-              <div className="cns2-builder-toggle"
-                role="button" tabIndex={0}
-                onClick={()=>setDispoOpen(o=>!o)}
-                onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setDispoOpen(o=>!o);}}}>
-                <span style={{fontSize:13}}>⊕</span>
-                <span>Disposition Builder</span>
-                <span className={`cns2-toggle-chev${dispoOpen?" open":""}`}>›</span>
-              </div>
-              {dispoOpen&&<DispoBuilder mode={dispoMode} setMode={setDispoMode}
-                service={dispoSvc} setService={setDispoSvc}
-                followup={dispoFw} setFollowup={setDispoFw}
-                fwTime={dispoFwT} setFwTime={setDispoFwT}
-                prec={dispoPrec} setPrec={setDispoPrec} onApply={applyDispo}/>}
-            </div>
-          )}
-
-          {!coll&&(
-            <div className="cns2-sec-body" onClick={e=>e.stopPropagation()}>
-              <textarea ref={el=>{taRefs.current[s.id]=el;}}
-                className={`cns2-ta${lk?" locked":""}`} value={txt} disabled={lk}
-                placeholder={
-                  isAssess?"Document clinical impression, differential, and MDM — or use the builder above…"
-                  :s.id==="plan"?"Document active management — or use macros above…"
-                  :isDispo?"Document disposition — or use the builder above…"
-                  :`${s.title}…`
-                }
-                onChange={e=>updateSection(s.id,e.target.value)}
-                onFocus={()=>setFocused(s.id)}
-                onKeyDown={e=>{
-                  // Tab from textarea moves to next section (⌘↓ also works)
-                  if(e.key==="Tab"&&!e.shiftKey&&!e.metaKey&&!e.ctrlKey){
-                    const idx=SECTIONS.findIndex(x=>x.id===s.id);
-                    const next=SECTIONS[idx+1];
-                    if(next){e.preventDefault();jumpTo(next.id);}
-                  }
-                  if(e.key==="Tab"&&e.shiftKey&&!e.metaKey&&!e.ctrlKey){
-                    const idx=SECTIONS.findIndex(x=>x.id===s.id);
-                    const prev=SECTIONS[idx-1];
-                    if(prev){e.preventDefault();jumpTo(prev.id);}
-                  }
-                }}
-                onInput={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
-              />
-            </div>
-          )}
-
-          {!coll&&(
-            <div className="cns2-sec-foot" onClick={e=>e.stopPropagation()}>
-              <span className="cns2-chars">{txt.length} chars · {txt?txt.split("\n").length:0} lines</span>
-              {!lk&&(
-                <span className="cns2-done-link"
-                  role="button" tabIndex={0}
-                  onClick={()=>markComplete(s.id)}
-                  onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();markComplete(s.id);}}}>
-                  {st==="complete"?"✓ done — expand":"Mark complete ✓"}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    });
-    return els;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[sections,focused,loading,embedded,mdmOpen,dispoOpen,
-     mdmDx,mdmDxConf,mdmRisk,mdmData,mdmPlan,
-     mdmCalcs,mdmSdoh,mdmNotOrdered,mdmComorb,mdmCCTime,
-     dispoMode,dispoSvc,dispoFw,dispoFwT,dispoPrec,emResult]);
-
-  return(
-    <div className={`cns2${embedded?" emb":""}`} style={{position:"relative"}}>
-      {anyBusy&&<div className="cns2-load"/>}
-
-      {embedded?(
-        <div className="cns2-emb-top">
-          <div className="cns2-badge">NOTE STUDIO</div>
-          <APSOChips/>
-          <div style={{flex:1,display:"flex",alignItems:"center",gap:7,minWidth:0}}>
-            <div className="cns2-emb-prog-bar">
-              <div className="cns2-emb-prog-fill" style={{width:`${pct}%`}}/>
-            </div>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--t4)",whiteSpace:"nowrap"}}>
-              {completedCount}/{SECTIONS.length}
-            </span>
-          </div>
-          <div className={`cns2-timer${elapsed>TIMER_WARN?" over":""}`}>{timerStr}</div>
-          <ActionBtns/>
-        </div>
-      ):(
-        <div className="cns2-top">
-          <button className="btn btn-ghost" style={{flexShrink:0}}
-            onClick={()=>onBack?onBack():navigate(-1)}>← Back</button>
-          <div className="cns2-badge">NOTE STUDIO</div>
-          <span className="cns2-ptname">{patientName}</span>
-          {(demo.age||demo.sex)&&(
-            <span className="cns2-meta">{[demo.age?demo.age+"y":"",demo.sex].filter(Boolean).join(" · ")}</span>
-          )}
-          {cc.text&&<span className="cns2-cc">CC: {cc.text}</span>}
-          {esiLevel&&<span className="cns2-esi">ESI {esiLevel}</span>}
-          <APSOChips/>
-          <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-            <div className="cns2-prog-bar"><div className="cns2-prog-bar-fill" style={{width:`${pct}%`}}/></div>
-            <span className="cns2-prog-count">{completedCount}/{SECTIONS.length}</span>
-          </div>
-          <div className={`cns2-timer${elapsed>TIMER_WARN?" over":""}`}>{timerStr}</div>
-          <ActionBtns/>
-        </div>
-      )}
-
-      {/* NQS popover — PDQI-9 breakdown */}
-      {nqsOpen&&(
-        <div className="nqs-panel" onClick={e=>e.stopPropagation()}>
-          <div className="nqs-title">Note Quality Score — PDQI-9</div>
-          {nqs.breakdown.map(row=>(
-            <div key={row.label} className="nqs-row">
-              <span className="nqs-row-label">{row.label}</span>
-              <div className="nqs-row-bar">
-                <div className="nqs-row-fill"
-                  style={{width:`${(row.pts/row.max)*100}%`,background:row.color}}/>
-              </div>
-              <span className="nqs-row-pts">{row.pts}/{row.max}</span>
-            </div>
+      {/* ── LEFT RAIL ──────────────────────────────────────────────────── */}
+      <div style={{ width: 200, flexShrink: 0 }}>
+        <div style={{ position: "sticky", top: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-txt4)", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>Note sections</div>
+          {SECTIONS.map(s => (
+            <button key={s.id} onClick={() => scrollTo(s.id)}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 7, background: expanded[s.id] ? "rgba(59,158,255,.1)" : "transparent", border: `1px solid ${expanded[s.id] ? "rgba(59,158,255,.25)" : "transparent"}`, cursor: "pointer", textAlign: "left", transition: "all .12s" }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: complete[s.id] ? "var(--npi-teal)" : "transparent", border: `1.5px solid ${complete[s.id] ? "var(--npi-teal)" : "var(--npi-bd)"}` }} />
+              <span style={{ fontSize: 11, color: expanded[s.id] ? "var(--npi-blue)" : "var(--npi-txt3)", fontWeight: s.priority ? 600 : 400, flex: 1, lineHeight: 1.3 }}>{s.label.replace(/^\d+ /, "")}</span>
+            </button>
           ))}
-          <div className="nqs-total">
-            <span className="nqs-total-num"
-              style={{color:nqs.total>=75?"var(--teal)":nqs.total>=45?"var(--gold)":"var(--coral)"}}>
-              {nqs.total}
-            </span>
-            <span className="nqs-total-max">/100</span>
-            <span className="nqs-total-label">
-              {nqs.total>=75?"Excellent":nqs.total>=45?"Developing":"Needs attention"}
-            </span>
-          </div>
-          <div style={{marginTop:8,fontSize:9,fontFamily:"'JetBrains Mono',monospace",color:"var(--t4)"}}>
-            Based on PDQI-9 · Wrenn et al. AJEM 2010
-          </div>
-        </div>
-      )}
-
-      <div className="cns2-body" onClick={()=>setNqsOpen(false)}>
-        {/* Sidebar */}
-        <div className="cns2-sb">
-          <div className="cns2-sb-head">
-            <div className="cns2-sb-label">APSO Note Sections</div>
-            <div className="cns2-sb-bar"><div className="cns2-sb-fill" style={{width:`${pct}%`}}/></div>
-            <div className="cns2-sb-sub">{completedCount} of {SECTIONS.length} signed off</div>
-          </div>
-          <div className="cns2-sb-list">
-            {sidebarItems.map(item=>{
-              if(item.type==="group"){
-                const gst=getGroupStatus(item.group);
-                return(
-                  <div key={`g-${item.group}`} className="cns2-sb-grp" style={{color:item.color}}>
-                    <span className="cns2-sb-grp-pill"
-                      style={{background:`${item.color}15`,border:`1px solid ${item.color}40`,color:item.color}}>
-                      {item.group}
-                    </span>
-                    <span className="cns2-sb-grp-lbl" style={{color:item.color}}>{item.label}</span>
-                    <div className="cns2-sb-grp-line" style={{color:item.color}}/>
-                    {gst==="done"&&<span style={{fontSize:9,color:item.color}}>✓</span>}
-                  </div>
-                );
-              }
-              const st=sections[item.id]?.status||"empty";
-              return(
-                <div key={item.id} className={`cns2-sb-item${focused===item.id?" on":""}`}
-                  role="button" tabIndex={0}
-                  onClick={()=>jumpTo(item.id)}
-                  onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();jumpTo(item.id);}}}>
-                  <span className="cns2-sb-ico">{item.icon}</span>
-                  <div className="cns2-sb-txt"><div className="cns2-sb-name">{item.title}</div></div>
-                  {!embedded&&<span className="cns2-sb-key">⌘{item.key}</span>}
-                  <div className={`cns2-sb-dot ${st}`}/>
-                </div>
-              );
-            })}
-          </div>
-          <button className="cns2-sc-toggle" onClick={()=>setScOpen(o=>!o)}>
-            <span>⌨ Shortcuts</span>
-            <span className={`cns2-sc-chev${scOpen?" open":""}`}>›</span>
-          </button>
-          {scOpen&&(
-            <div className="cns2-sb-legend">
-              {[
-                !embedded&&["⌘ 1–9, 0", "Jump to section"],
-                ["⌘ ↓ / ↑",  "Next / prev section"],
-                ["Tab",       "Advance section"],
-                ["Enter",     "Expand / collapse"],
-                ["Esc",       "Collapse section"],
-                ["⌘ G",       "Generate focused"],
-                ["⌘ ⇧G",      "Generate all"],
-                ["⌘ K",       "Mark complete"],
-                ["⌘ E",       "Collapse / expand"],
-                ["⌘ M",       "Toggle MDM builder"],
-                ["⌘ D",       "Toggle Dispo builder"],
-                ["⌘ R",       "Rebuild from data"],
-                ["⌘ S",       "Save"],
-                ["⌘ P",       "Print"],
-                ["⌘ ⇧C",      "Copy note"],
-              ].filter(Boolean).map(([k,d])=>(
-                <div key={k} className="cns2-sc-row">
-                  <span className="cns2-sc-k">{k}</span>
-                  <span className="cns2-sc-d">{d}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Note area */}
-        <div className="cns2-area">
-          {noteElements}
-
-          <div style={{padding:"10px 14px",borderRadius:10,background:"rgba(8,22,40,.5)",
-            border:"1px solid rgba(26,53,85,.3)",fontSize:10,fontFamily:"'DM Sans',sans-serif",
-            color:"var(--t4)",display:"flex",alignItems:"flex-start",gap:10}}>
-            <span style={{color:"var(--teal)",flexShrink:0}}>ⓘ</span>
-            <span>
-              <strong style={{color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1}}>
-                DOCUMENTATION BASIS
-              </strong>
-              {" "}— APSO: Rosenbloom et al. JAMIA 2010 (30–60% faster time-to-critical-information).
-              Dx confidence: Singh et al. BMJ 2013.
-              E&M estimation + Risk Calculators + "Not Ordered" credit + Comorbidity-MDM impact + SDOH:
-              ACEP CNAC 2023 CPT Documentation Guidelines FAQ (70 items).
-              SDOH mandatory reporting: CMS G0136 eff. Jan 2024.
-              Critical care time: CPT 99291/99292.
-              NQS: PDQI-9, Wrenn et al. AJEM 2010.
-              SBAR Handoff: I-PASS Study NEJM 2014.
-              History and exam: "medically appropriate" standard — APSO format is fully CPT 2023 compliant.
-            </span>
-          </div>
-
-          <div className="cns2-sig">
-            <div className="cns2-sig-lbl">Electronic Signature</div>
-            <div>Attending Physician: ___________________________  Date: ______________</div>
-            <div style={{marginTop:6,fontSize:10,color:"var(--t4)"}}>
-              I have personally seen and evaluated this patient and agree with the above documentation.
-              Notrya is a clinical decision support tool — verify all clinical decisions independently.
-            </div>
+          <div style={{ marginTop: 12, borderTop: "1px solid var(--npi-bd)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 4 }}>Keyboard</div>
+            {[["⌘D","→ Impression"],["⌘M","→ MDM"],["⌘G","Generate MDM"],["1–4","Set complexity"]].map(([k,d]) => (
+              <div key={k} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--npi-txt4)" }}>
+                <KK ch={k} />{d}
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {sbarOpen&&(
-        <SBARModal sections={sectionsRef.current} patientName={patientName}
-          cc={cc.text} onClose={()=>setSbarOpen(false)}/>
+      {/* ── MAIN NOTE BODY ─────────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 0 }}>
+
+        {/* Patient header strip */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: "rgba(13,31,60,.7)", border: "1px solid rgba(59,130,246,.15)", borderRadius: 10, marginBottom: 16, flexWrap: "wrap" }}>
+          <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 16, fontWeight: 600, color: "#fff" }}>{patientName}</span>
+          {demo.age && <span style={{ fontSize: 12, color: "var(--npi-txt3)" }}>{demo.age}y · {demo.sex||"—"}</span>}
+          {cc.text && <span style={{ fontSize: 12, color: "var(--npi-teal)", background: "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.25)", borderRadius: 20, padding: "1px 10px" }}>CC: {cc.text}</span>}
+          {esiLevel && <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 6, padding: "1px 8px" }}>ESI {esiLevel}</span>}
+          {registration.room && <span style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Room {registration.room}</span>}
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            {allDone && onSave && (
+              <button onClick={onSave} style={{ padding: "5px 16px", borderRadius: 7, background: "var(--npi-teal)", color: "#050f1e", border: "none", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                Sign & Save ⌘⇧S
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── 01 IMPRESSION / DDx ──────────────────────────────────────── */}
+        <div ref={refs.ddx} style={{ background: "rgba(13,31,60,.5)", border: `1px solid ${expanded.ddx ? "rgba(255,107,107,.25)" : "rgba(59,130,246,.12)"}`, borderRadius: 10, padding: "0 16px", marginBottom: 8, transition: "border-color .2s" }}>
+          <SectionHeader section={SECTIONS[0]} expanded={expanded.ddx} onToggle={() => toggle("ddx")} complete={complete.ddx}>
+            {primaryDx && `${primaryDx}${icd10 ? "  ·  " + icd10 : ""}`}
+          </SectionHeader>
+          {expanded.ddx && (
+            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={FL}>Primary diagnosis</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={primaryDx} onChange={e => setPrimaryDx(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); suggestICD(); } }} placeholder="Enter working diagnosis…" style={{ ...TA, flex: 1, resize: "none", padding: "9px 12px" }} />
+                  <button onClick={suggestICD} disabled={icdLoading || !primaryDx.trim()}
+                    style={{ padding: "9px 16px", borderRadius: 7, background: icdLoading || !primaryDx.trim() ? "rgba(255,255,255,.04)" : "rgba(59,158,255,.15)", border: "1px solid rgba(59,158,255,.3)", color: "var(--npi-blue)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    {icdLoading ? "⏳" : "✦ Apply Dx"}
+                  </button>
+                </div>
+                {icd10 && <div style={{ marginTop: 5, fontSize: 11, color: "var(--npi-teal)", fontFamily: "'JetBrains Mono',monospace" }}>{icd10}</div>}
+              </div>
+              {differential.length > 0 && (
+                <div>
+                  <div style={FL}>Differential</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {differential.map((dx, i) => (
+                      <div key={dx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
+                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-txt4)", width: 16 }}>{i + 1}.</span>
+                        <span style={{ fontSize: 13, color: "var(--npi-txt2)" }}>{dx}</span>
+                        <button onClick={() => setPrimaryDx(dx)} style={{ marginLeft: "auto", fontSize: 10, color: "var(--npi-txt4)", background: "none", border: "none", cursor: "pointer" }}>↑ promote</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <div style={FL}>Add to differential</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={diffInput} onChange={e => setDiffInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (diffInput.trim()) { setDiff(p => [...p, diffInput.trim()]); setDiffInput(""); } } }} placeholder="Add diagnosis to differential…" style={{ ...TA, flex: 1, resize: "none", padding: "9px 12px" }} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 02 MDM ─────────────────────────────────────────────────────── */}
+        <div ref={refs.mdm} tabIndex={-1} onKeyDown={onMdmKeyDown} style={{ background: "rgba(13,31,60,.5)", border: `1px solid ${expanded.mdm ? "rgba(255,107,107,.25)" : "rgba(59,130,246,.12)"}`, borderRadius: 10, padding: "0 16px", marginBottom: 8, outline: "none", transition: "border-color .2s" }}>
+          <SectionHeader section={SECTIONS[1]} expanded={expanded.mdm} onToggle={() => toggle("mdm")} complete={complete.mdm}>
+            {complexity > 0 && `${COMPLEXITY[complexity-1].label} — ${[mdmProblems, mdmData, mdmRisk].filter(Boolean).length}/3 domains`}
+          </SectionHeader>
+          {expanded.mdm && (
+            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+
+              {/* Complexity level */}
+              <div>
+                <div style={FL}>
+                  MDM complexity level
+                  <span style={{ textTransform: "none", letterSpacing: 0, color: "#64748b", marginLeft: 6 }}>
+                    (press 1–4 · AMA 2023 Table)
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {COMPLEXITY.map(c => (
+                    <button key={c.n} onClick={() => setComplexity(prev => prev === c.n ? 0 : c.n)}
+                      style={{ flex: 1, padding: "8px 6px", borderRadius: 7, border: `1px solid ${complexity === c.n ? c.color : "rgba(255,255,255,.1)"}`, background: complexity === c.n ? c.color + "22" : "rgba(255,255,255,.04)", color: complexity === c.n ? c.color : "var(--npi-txt4)", fontFamily: "'DM Sans',sans-serif", fontSize: 11, cursor: "pointer", transition: "all .12s", textAlign: "center" }}>
+                      <div style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, fontSize: 13 }}>{c.label}</div>
+                      <div style={{ fontSize: 9, marginTop: 2, lineHeight: 1.25, opacity: .75 }}>{c.sub}</div>
+                    </button>
+                  ))}
+                </div>
+                {complexity > 0 && (
+                  <div style={{ marginTop: 5, fontSize: 10, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>
+                    To bill this level, document 2 of the 3 domains below.
+                    {" "}<span style={{ color: [mdmProblems, mdmData, mdmRisk].filter(Boolean).length >= 2 ? "var(--npi-teal)" : "var(--npi-orange)" }}>
+                      {[mdmProblems, mdmData, mdmRisk].filter(Boolean).length}/3 documented
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* AI generate row */}
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={generateMDM} disabled={mdmLoading}
+                  style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 6, background: mdmLoading ? "transparent" : "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.3)", color: "var(--npi-teal)", fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  {mdmLoading ? "⏳ Generating…" : <><span>✦</span> AI Generate All 3 Domains <KK ch="⌘G" /></>}
+                </button>
+              </div>
+
+              {/* Domain 1 — Problems */}
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                  <div style={FL}>Domain 1 — Problems</div>
+                  <span style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Number and complexity of problems addressed</span>
+                </div>
+                <textarea value={mdmProblems} onChange={e => setMdmProblems(e.target.value)}
+                  placeholder="e.g., One acute problem with systemic symptoms — new-onset chest pain, dyspnea on exertion, hemodynamically stable. No prior cardiac history."
+                  rows={2} style={TA} />
+              </div>
+
+              {/* Domain 2 — Data */}
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                  <div style={FL}>Domain 2 — Data</div>
+                  <span style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Data reviewed, ordered, and independently interpreted</span>
+                </div>
+                <textarea value={mdmData} onChange={e => setMdmData(e.target.value)}
+                  placeholder="e.g., ECG reviewed and interpreted by this provider — NSR, no ischemic changes. Troponin and BMP ordered and reviewed. CXR interpreted — no acute cardiopulmonary process."
+                  rows={2} style={TA} />
+              </div>
+
+              {/* Domain 3 — Risk */}
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                  <div style={FL}>Domain 3 — Risk</div>
+                  <span style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Complexity of management, risk of complications or mortality</span>
+                </div>
+                <textarea value={mdmRisk} onChange={e => setMdmRisk(e.target.value)}
+                  placeholder="e.g., Moderate risk — prescription drug therapy (anticoagulation), hospital admission for further evaluation and monitoring. Risk of major adverse cardiac event without timely intervention."
+                  rows={2} style={TA} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 03 DISPOSITION + PLAN ─────────────────────────────────────── */}
+        <div ref={refs.plan} style={{ background: "rgba(13,31,60,.5)", border: `1px solid ${expanded.plan ? "rgba(0,229,192,.25)" : "rgba(59,130,246,.12)"}`, borderRadius: 10, padding: "0 16px", marginBottom: 8, transition: "border-color .2s" }}>
+          <SectionHeader section={SECTIONS[2]} expanded={expanded.plan} onToggle={() => toggle("plan")} complete={complete.plan}>
+            {dispType && DISP_OPTS.find(d => d.id === dispType)?.label}
+          </SectionHeader>
+          {expanded.plan && (
+            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={FL}>Disposition</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {DISP_OPTS.map(d => (
+                    <button key={d.id} onClick={() => setDispType(prev => prev === d.id ? "" : d.id)}
+                      style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${dispType === d.id ? "var(--npi-teal)" : "rgba(255,255,255,.1)"}`, background: dispType === d.id ? "rgba(0,229,192,.12)" : "rgba(255,255,255,.04)", color: dispType === d.id ? "var(--npi-teal)" : "var(--npi-txt3)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: dispType === d.id ? 600 : 400, cursor: "pointer" }}>
+                      {d.icon} {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={FL}>Plan items</div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+                  <input value={planInput} onChange={e => setPlanInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPlanItem(); } }} placeholder="Add plan item and press Enter…" style={{ ...TA, flex: 1, resize: "none", padding: "9px 12px" }} />
+                  <button onClick={addPlanItem} disabled={!planInput.trim()} style={{ padding: "9px 14px", borderRadius: 7, background: planInput.trim() ? "rgba(59,158,255,.15)" : "rgba(255,255,255,.04)", border: "1px solid rgba(59,158,255,.3)", color: "var(--npi-blue)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, cursor: "pointer" }}>+ Add</button>
+                </div>
+                {planItems.map((item, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)", marginBottom: 3 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-txt4)", width: 16 }}>{i+1}.</span>
+                    <span style={{ flex: 1, fontSize: 13, color: "var(--npi-txt2)" }}>{item}</span>
+                    <button onClick={() => setPlanItems(p => p.filter((_,j) => j!==i))} style={{ background: "none", border: "none", color: "var(--npi-txt4)", cursor: "pointer", fontSize: 13 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={FL}>Consults</div>
+                  <input value={consults} onChange={e => { setConsults(e.target.value); setConsultsDirty(true); }} placeholder="Consulting services…" style={{ ...TA, resize: "none", padding: "9px 12px" }} />
+                </div>
+                <div>
+                  <div style={FL}>Follow-up</div>
+                  <input value={followUp} onChange={e => setFollowUp(e.target.value)} placeholder="With PCP in 3 days…" style={{ ...TA, resize: "none", padding: "9px 12px" }} />
+                </div>
+              </div>
+              <div>
+                <div style={FL}>Return precautions</div>
+                <textarea value={returnPrec} onChange={e => setReturnPrec(e.target.value)} placeholder="Return to ED for: worsening symptoms, fever >101°F, inability to tolerate PO…" rows={2} style={TA} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 04 HPI ───────────────────────────────────────────────────── */}
+        <div ref={refs.hpi} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[3]} expanded={expanded.hpi} onToggle={() => toggle("hpi")} complete={complete.hpi}>
+            {hpiText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.hpi && (
+            <div style={{ paddingBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", marginBottom: 6, gap: 8 }}>
+                <span style={{ fontSize: 10, color: listening ? "var(--npi-coral)" : "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>
+                  {listening ? "● REC" : "voice input"}
+                </span>
+                <button onClick={listening ? stopDictation : startDictation}
+                  title={listening ? "Stop dictation" : "Start voice dictation"}
+                  style={{ padding: "4px 12px", borderRadius: 7, cursor: "pointer",
+                    background: listening ? "rgba(255,107,107,.15)" : "rgba(59,158,255,.1)",
+                    border: `1px solid ${listening ? "rgba(255,107,107,.4)" : "rgba(59,158,255,.3)"}`,
+                    color: listening ? "var(--npi-coral)" : "var(--npi-blue)",
+                    fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 600,
+                    animation: listening ? "pulse 1.5s ease-in-out infinite" : "none" }}>
+                  {listening ? "⏹ Stop" : "🎙 Dictate"}
+                </button>
+              </div>
+              <textarea value={hpiText} onChange={e => setHpiText(e.target.value)} placeholder="History of present illness… or press Dictate to speak" rows={5} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 05 ROS ───────────────────────────────────────────────────── */}
+        <div ref={refs.ros} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[4]} expanded={expanded.ros} onToggle={() => toggle("ros")} complete={complete.ros}>
+            {rosText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.ros && (
+            <div style={{ paddingBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                {!rosText
+                  ? <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontStyle: "italic" }}>Auto-populated from ROS tab — pertinent findings only</div>
+                  : <div style={{ fontSize: 10, color: rosDirty ? "rgba(239,159,39,.7)" : "rgba(0,229,192,.5)", fontFamily: "'JetBrains Mono',monospace" }}>{rosDirty ? "✎ manually edited" : "✓ auto-generated"}</div>
+                }
+                {rosDirty && (
+                  <button onClick={() => { setRosText(buildRosText(rosState)); setRosDirty(false); }}
+                    style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "transparent", border: "1px solid var(--npi-bd)", color: "var(--npi-txt4)", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
+                    ↺ Reset
+                  </button>
+                )}
+              </div>
+              <textarea value={rosText} onChange={e => { setRosText(e.target.value); setRosDirty(true); }}
+                placeholder="Complete ROS in the ROS tab first, or enter pertinent findings here…" rows={3} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 06 PE ────────────────────────────────────────────────────── */}
+        <div ref={refs.pe} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[5]} expanded={expanded.pe} onToggle={() => toggle("pe")} complete={complete.pe}>
+            {peText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.pe && (
+            <div style={{ paddingBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                {!peText
+                  ? <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontStyle: "italic" }}>Auto-populated from PE tab — abnormals prominent, normals abbreviated</div>
+                  : <div style={{ fontSize: 10, color: peDirty ? "rgba(239,159,39,.7)" : "rgba(0,229,192,.5)", fontFamily: "'JetBrains Mono',monospace" }}>{peDirty ? "✎ manually edited" : "✓ auto-generated"}</div>
+                }
+                {peDirty && (
+                  <button onClick={() => { setPeText(buildPeText(peState, peFindings)); setPeDirty(false); }}
+                    style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "transparent", border: "1px solid var(--npi-bd)", color: "var(--npi-txt4)", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
+                    ↺ Reset
+                  </button>
+                )}
+              </div>
+              <textarea value={peText} onChange={e => { setPeText(e.target.value); setPeDirty(true); }}
+                placeholder="Complete PE in the Physical Exam tab first, or enter findings here…" rows={4} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 07 RESULTS ───────────────────────────────────────────────── */}
+        <div ref={refs.results} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[6]} expanded={expanded.results} onToggle={() => toggle("results")} complete={complete.results}>
+            {resultsText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.results && (
+            <div style={{ paddingBottom: 14 }}>
+              <div style={{ fontSize: 11, color: "var(--npi-txt4)", marginBottom: 8, fontStyle: "italic" }}>Reference labs and imaging by result name — do not paste raw values</div>
+              <textarea value={resultsText} onChange={e => setResultsText(e.target.value)} placeholder="ECG: NSR, no ischemic changes. Troponin ×2 negative. CXR: no acute cardiopulmonary process. BMP: Na 138, K 4.1, Cr 0.9…" rows={4} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 08 METADATA ──────────────────────────────────────────────── */}
+        <div ref={refs.meta} style={{ background: "rgba(13,31,60,.35)", border: "1px solid rgba(59,130,246,.08)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[7]} expanded={expanded.meta} onToggle={() => toggle("meta")} complete={complete.meta} />
+          {expanded.meta && (
+            <div style={{ paddingBottom: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* Core encounter fields */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+                {[
+                  ["Patient", patientName],
+                  ["DOB", demo.dob || "—"],
+                  ["MRN", registration.mrn || "—"],
+                  ["Room", registration.room || "—"],
+                  ["Allergies", allergies.length ? allergies.join(", ") : "NKDA"],
+                  ["Meds", medications.length ? `${medications.length} listed` : "none"],
+                  ["BP", vitals.bp || "—"],
+                  ["HR", vitals.hr || "—"],
+                  ["SpO\u2082", vitals.spo2 ? vitals.spo2 + "%" : "—"],
+                  ["Temp", vitals.temp || "—"],
+                  ["ESI", esiLevel || "—"],
+                  ["Encounter", new Date().toLocaleDateString()],
+                ].map(([label, val]) => (
+                  <div key={label} style={{ minWidth: 120 }}>
+                    <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 }}>{label}</div>
+                    <div style={{ fontSize: 12, color: "var(--npi-txt2)", fontFamily: "'DM Sans',sans-serif" }}>{val}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Extended history */}
+              {(pmhExtra || surgHx || famHx || socHx) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8, borderTop: "1px solid rgba(59,130,246,.1)" }}>
+                  {[
+                    ["Additional PMH", pmhExtra],
+                    ["Surgical Hx", surgHx],
+                    ["Family Hx", famHx],
+                    ["Social Hx", socHx],
+                  ].filter(([, v]) => v).map(([label, val]) => (
+                    <div key={label}>
+                      <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: 12, color: "var(--npi-txt2)", fontFamily: "'DM Sans',sans-serif", lineHeight: 1.5 }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* SDOH flags */}
+              {sdoh && Object.entries(sdoh).some(([, v]) => v && v !== "unknown" && v !== false) && (
+                <div style={{ paddingTop: 8, borderTop: "1px solid rgba(59,130,246,.1)" }}>
+                  <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>SDOH Factors</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {Object.entries(sdoh).filter(([, v]) => v && v !== "unknown" && v !== false).map(([k, v]) => (
+                      <span key={k} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(245,200,66,.1)", border: "1px solid rgba(245,200,66,.25)", color: "var(--npi-gold)", fontFamily: "'DM Sans',sans-serif" }}>
+                        {k.replace(/_/g, " ")}{typeof v === "string" && v !== "true" ? ": " + v : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Sign bar ─────────────────────────────────────────────────── */}
+        {onSave && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderTop: "1px solid rgba(59,130,246,.15)", marginTop: 4 }}>
+            <button onClick={onSave} style={{ padding: "9px 22px", borderRadius: 8, background: "var(--npi-teal)", color: "#050f1e", border: "none", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              Sign &amp; Save Chart
+            </button>
+            <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>
+              <KK ch="⌘⇧S" /> sign
+            </div>
+            <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {SECTIONS.slice(0,3).map(s => (
+                <span key={s.id} style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: complete[s.id] ? "var(--npi-teal)" : "var(--npi-coral)", background: complete[s.id] ? "rgba(0,229,192,.08)" : "rgba(255,107,107,.08)", border: `1px solid ${complete[s.id] ? "rgba(0,229,192,.25)" : "rgba(255,107,107,.25)"}`, borderRadius: 5, padding: "2px 8px" }}>
+                  {complete[s.id] ? "✓" : "○"} {s.label.replace(/^\d+ /, "")}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {/* ── Toasts ─────────────────────────────────────────────────────── */}
+      {toasts.length > 0 && (
+        <div style={{ position: "fixed", bottom: 20, right: 20, display: "flex", flexDirection: "column", gap: 6, zIndex: 300 }}>
+          {toasts.map(t => (
+            <div key={t.id} style={{
+              padding: "9px 16px", borderRadius: 10, fontSize: 12,
+              fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap",
+              background: "rgba(13,31,60,.95)", backdropFilter: "blur(16px)",
+              border: `1px solid ${t.type === "success" ? "rgba(0,229,192,.4)" : "rgba(255,107,107,.4)"}`,
+              color: t.type === "success" ? "var(--npi-teal)" : "var(--npi-coral)",
+              boxShadow: "0 4px 20px rgba(0,0,0,.5)",
+            }}>{t.type === "success" ? "\u2713" : "\u2715"} {t.msg}</div>
+          ))}
+        </div>
       )}
     </div>
   );

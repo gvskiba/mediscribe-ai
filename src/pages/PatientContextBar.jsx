@@ -307,24 +307,15 @@ export default function PatientContextBar({
   showSave     = true,
   onSave,
 }) {
-  if (!pt) return null;
-
-  const los  = losDisplay(pt.arrival);
-  const vt   = pt.vitalTrend || {};
-  const v    = pt.vitals || {};
-
-  const vitalCards = [
-    { key:"hr",   label:"HR",   value: v.hr,    unit:"",   trend: vt.hr   },
-    { key:"bp",   label:"BP",   value: v.bp,    unit:"",   trend: vt.bp   },
-    { key:"spo2", label:"SpO₂", value: v.spo2,  unit:"%",  trend: vt.spo2 },
-    ...(v.temp != null ? [{ key:"temp", label:"Temp", value: v.temp, unit:"°F", trend: null }] : []),
-  ].filter(c => c.value != null);
-
   const signBtn = useMemo(() => {
     if (signState === "signed")  return { label:"✓ Signed",             variant:"ghost-green", disabled:true  };
     if (signState === "ready")   return { label:"✍ Sign & Complete",     variant:"teal",        disabled:false };
     return { label:`⚠ ${blockerCount} Required`,                         variant:"gold",        disabled:false };
   }, [signState, blockerCount]);
+
+  if (!pt) return null;
+
+  const los  = losDisplay(pt.arrival);
 
   return (
     <>

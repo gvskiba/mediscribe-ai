@@ -700,7 +700,7 @@ function ConditionPage({ cond, onBack }) {
 
         {tab==="overview" && cond.id==="steward" && (
           <div style={{marginTop:14}}>
-            <div style={{fontSize:11,fontWeight:700,color:T.txt3,textTransform:"uppercase",letterSpacing:".07em",marginBottom:10}}>High-Bioavailability IV → PO Agents (>90% Oral Bioavailability)</div>
+            <div style={{fontSize:11,fontWeight:700,color:T.txt3,textTransform:"uppercase",letterSpacing:".07em",marginBottom:10}}>High-Bioavailability IV → PO Agents (&gt;90% Oral Bioavailability)</div>
             {[
               {drug:"Ciprofloxacin",  po:"500–750mg PO q12h",    color:T.blue},
               {drug:"Levofloxacin",   po:"750mg PO q24h",         color:T.blue},

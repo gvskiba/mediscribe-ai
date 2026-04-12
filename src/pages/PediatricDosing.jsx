@@ -751,7 +751,7 @@ function LogModal({ onClose, onSave, prefillDrug, weight }) {
               <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.07em', color: T.dim, marginBottom: 4 }}>Medication</div>
               <input style={inputStyle} value={drugName} onChange={e => setDrugName(e.target.value)} placeholder="e.g. Epinephrine" list="ped-drug-list" />
               <datalist id="ped-drug-list">
-                {ACTIVE_DRUG_DATA.map(d => <option key={d.id} value={d.name + ' (' + d.indication + ')'} />)}
+                {DRUG_DATA.map(d => <option key={d.id} value={d.name + ' (' + d.indication + ')'} />)}
               </datalist>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

@@ -33,7 +33,7 @@ export default function FolderManager({ selectedFolder, onSelectFolder, isOpen, 
 
   const deleteFolderMutation = useMutation({
     mutationFn: (id) => base44.entities.SnippetFolder.delete(id),
-    onSuccess: () => {
+    onSuccess: (data, id) => {
       queryClient.invalidateQueries({ queryKey: ["snippetFolders"] });
       if (selectedFolder?.id === id) {
         onSelectFolder(null);

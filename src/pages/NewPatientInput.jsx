@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useNPIState } from "@/components/npi/useNPIState";
@@ -395,10 +396,10 @@ export default function NewPatientInput() {
   };
 
   // ── Onboarding overlay (shown once per session) ───────────────────────────
-  const [showOnboarding, setShowOnboarding] = React.useState(() => {
+  const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return !sessionStorage.getItem("notrya_intro_seen"); } catch { return true; }
   });
-  const dismissOnboarding = React.useCallback(() => {
+  const dismissOnboarding = useCallback(() => {
     try { sessionStorage.setItem("notrya_intro_seen", "1"); } catch {}
     setShowOnboarding(false);
   }, []);
@@ -643,7 +644,7 @@ export default function NewPatientInput() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => { sendMessage(QUICK_ACTIONS[4].prompt); setAiOpen(true); setCdsOpen(false); }}
+              <button onClick={() => { sendMessage(QUICK_ACTIONS[4].prompt); if (!aiOpen) toggleAI(); setCdsOpen(false); }}
                 style={{ marginTop:8, padding:"5px 12px", borderRadius:6, border:"1px solid rgba(59,158,255,0.4)", background:"rgba(59,158,255,0.1)", color:"#3b9eff", fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, cursor:"pointer" }}>
                 \u2728 Draft MDM with AI
               </button>

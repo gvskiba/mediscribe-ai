@@ -363,7 +363,7 @@ export default function DrugsAndBugs(){
             <span>⏱️</span>
             <div>
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:C.amber,marginBottom:2}}>TIMING RULE</div>
-              <div style={{fontSize:12,color:C.text,lineHeight:1.6}}>Administer within <strong style={{color:C.amber}}>1 hour</strong> of sepsis/septic shock recognition. Do not delay > 3 hr for uncomplicated sepsis. Obtain ≥ 2 blood culture sets before antibiotics — <strong>do not delay antibiotics &gt; 45 min</strong> for cultures.</div>
+              <div style={{fontSize:12,color:C.text,lineHeight:1.6}}>Administer within <strong style={{color:C.amber}}>1 hour</strong> of sepsis/septic shock recognition. Do not delay &gt; 3 hr for uncomplicated sepsis. Obtain ≥ 2 blood culture sets before antibiotics — <strong>do not delay antibiotics &gt; 45 min</strong> for cultures.</div>
             </div>
           </div>
 

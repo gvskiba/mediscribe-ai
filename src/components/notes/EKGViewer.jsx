@@ -282,12 +282,10 @@ For each finding, indicate severity (critical/abnormal/normal) and clinical sign
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              {FINDING_TYPES[analysis.severity]?.icon && (
-                <FINDING_TYPES[analysis.severity].icon
-                  size={18}
-                  style={{ color: FINDING_TYPES[analysis.severity].color }}
-                />
-              )}
+              {(() => {
+                const SevIcon = FINDING_TYPES[analysis.severity]?.icon;
+                return SevIcon ? <SevIcon size={18} style={{ color: FINDING_TYPES[analysis.severity].color }} /> : null;
+              })()}
               <span
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",

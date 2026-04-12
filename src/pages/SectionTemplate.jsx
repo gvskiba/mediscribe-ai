@@ -17,7 +17,7 @@ const FORM_FIELDS = [
 ];
 
 // ─── MAIN COMPONENT ───────────────────────────────
-export default function [COMPONENT_NAME]() {
+export default function SectionTemplate() {
   const [formData, setFormData] = useState(
     FORM_FIELDS.reduce((acc, field) => ({ ...acc, [field.id]: "" }), {})
   );

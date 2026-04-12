@@ -514,7 +514,7 @@ Provide: (1) overall risk assessment, (2) top 3 immediate actions, (3) quality m
             <div>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: C.bright }}>💊 Drug Interactions</div>
-                <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>Active medication cross-check · {drugList.length} drugs on profile · 2 interactions detected</div>
+                <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>Active medication cross-check · {(currentEncounter.medications || []).length} drugs on profile · 2 interactions detected</div>
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>

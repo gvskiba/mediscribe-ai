@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
-import { useNPIState } from "@/components/npi/Usenpistate";
+import { toast } from "sonner";
+import { useNPIState } from "@/components/npi/useNPIState";
 import { NPI_CSS } from "@/components/npi/npiStyles";
 import {
   NAV_DATA, GROUP_META, ALL_SECTIONS, SECTION_SHORTCUT, QUICK_ACTIONS,
-  ROS_RAIL_SYSTEMS, PE_RAIL_SYSTEMS, BEERS_DRUGS, getCCRiskHints,
+  ROS_RAIL_SYSTEMS, PE_RAIL_SYSTEMS, BEERS_DRUGS, getCCRiskHints, buildDecisionDocPhrase,
+  SEPSIS_BUNDLE_ITEMS, computeEMLevel, EM_LEVEL_MAP, SIMPLE_HIDDEN,
 } from "@/components/npi/npiData";
 
 // ── Already-separate tab components ──────────────────────────────────────────
@@ -30,6 +32,7 @@ import DispositionTab           from "@/components/npi/DispositionTab";
 import PatientSummaryTab        from "@/components/npi/PatientSummaryTab";
 import HandoffTab               from "@/components/npi/HandoffTab";
 import DischargeInstructionsTab from "@/components/npi/DischargeInstructionsTab";
+import MDMBuilderTab            from "@/components/npi/MDMBuilderTab";
 
 // ── Utility / overlay components ─────────────────────────────────────────────
 import ParseFab              from "@/components/npi/ParseFab";
@@ -62,7 +65,7 @@ export default function NewPatientInput() {
     parseText, setParseText, parsing,
     pmhExpanded, setPmhExpanded,
     avpu, setAvpu, o2del, setO2del, pain, setPain,
-    triage, setTriage, esiLevel, setEsiLevel,
+    triage, setTriage, esiLevel, setEsiLevel, visitMode, setVisitMode,
     consults, setConsults, sdoh, setSdoh,
     disposition, setDisposition, dispReason, setDispReason, dispTime, setDispTime,
     registration, setRegistration,
@@ -70,6 +73,10 @@ export default function NewPatientInput() {
     cdsOpen, setCdsOpen,
     rosActiveSystem, setRosActiveSystem, peActiveSystem, setPeActiveSystem,
     reassessState, setReassessState, clinicalTimeline, setClinicalTimeline,
+    sepsisBundle, setSepsisBundle,
+    pdmpState, setPdmpState,
+    isarState, setIsarState,
+    mdmState, setMdmState, mdmDataElements, setMdmDataElements,
     appliedTemplate, templateDismissed, setTemplateDismissed,
     nursingOpen, setNursingOpen, nursingInterventions, setNursingInterventions,
     nursingNotes, setNursingNotes,
@@ -92,15 +99,17 @@ export default function NewPatientInput() {
           triage={triage}       setTriage={setTriage}
           avpu={avpu}           setAvpu={setAvpu}
           pain={pain}           setPain={setPain}
+          patientAge={demo.age}
+          isarState={isarState} setIsarState={setIsarState}
           onAdvance={() => selectSection("demo")}
         />
       );
       case "demo":       return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} registration={registration} setRegistration={setRegistration} onAdvance={() => selectSection("cc")} />;
       case "cc":         return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} onAdvance={() => selectSection("vit")} />;
       case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} onAdvance={() => { addVitalsSnapshot("Triage"); selectSection("meds"); }} />;
-      case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("sdoh")} />;
-      case "sdoh":       return <SDOHWidget sdoh={sdoh} setSdoh={setSdoh} onAdvance={() => selectSection("summary")} />;
-      case "summary":    return <PatientSummaryTab demo={demo} cc={cc} vitals={vitals} vitalsHistory={vitalsHistory} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} sdoh={sdoh} consults={consults} onAdvance={() => selectSection("hpi")} />;
+      case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} patientAge={demo.age} pdmpState={pdmpState} setPdmpState={setPdmpState} onAdvance={() => selectSection("sdoh")} />;
+      case "sdoh":       return <SDOHWidget sdoh={sdoh} setSdoh={setSdoh} patientSex={demo.sex} onAdvance={() => selectSection("summary")} />;
+      case "summary":    return <PatientSummaryTab demo={demo} cc={cc} vitals={vitals} vitalsHistory={vitalsHistory} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} sdoh={sdoh} consults={consults} sepsisBundle={sepsisBundle} mdmState={mdmState} isarState={isarState} pdmpState={pdmpState} onAdvance={() => selectSection("hpi")} />;
       case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} patientAge={demo.age} patientSex={demo.sex} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} />;
       case "ros": return (
         <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
@@ -127,6 +136,229 @@ export default function NewPatientInput() {
       );
       case "consult":    return <ConsultTab consults={consults} setConsults={setConsults} onAdvance={() => selectSection("chart")} />;
       case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState} onVitalsSnapshot={v => addVitalsSnapshot(`Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`, v)} onAdvance={() => selectSection("timeline")} />;
+      case "sepsis": return (
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+
+          {/* ── qSOFA Live Score ──────────────────────────────────────────────── */}
+          {(() => {
+            const sysBP      = parseFloat((vitals.bp||"").split("/")[0]) || 0;
+            const rrVal      = parseFloat(vitals.rr||"0");
+            const rrMet      = rrVal > 0 && rrVal >= 22;
+            const bpMet      = sysBP > 0 && sysBP <= 100;
+            const msMet      = Boolean(avpu && avpu !== "Alert");
+            const score      = (rrMet?1:0) + (bpMet?1:0) + (msMet?1:0);
+            const hasAnyData = vitals.rr || vitals.bp || avpu;
+            const scoreCol   = score >= 2 ? "#ff6b6b" : score === 1 ? "#f5c842" : "var(--npi-teal)";
+            return (
+              <div style={{ padding:"13px 16px", borderRadius:11,
+                background:"rgba(14,37,68,0.65)",
+                border:`1px solid ${score >= 2 ? "rgba(255,107,107,0.3)" : "rgba(26,53,85,0.4)"}`,
+                borderTop:`2px solid ${scoreCol}55` }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                  marginBottom:12, flexWrap:"wrap", gap:8 }}>
+                  <div>
+                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:13,
+                      fontWeight:700, color:"var(--npi-txt)" }}>qSOFA Score</div>
+                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                      color:"var(--npi-txt4)", marginTop:1 }}>
+                      Sepsis-3 screening \u2014 \u22652 suggests high risk of poor outcomes in suspected infection
+                    </div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:32,
+                      fontWeight:900, color:scoreCol, lineHeight:1 }}>{hasAnyData ? score : "—"}</div>
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      color:scoreCol, letterSpacing:1, textTransform:"uppercase", marginTop:2 }}>
+                      {!hasAnyData ? "no vitals" : score >= 2 ? "High Risk" : score === 1 ? "Borderline" : "Low Risk"}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {[
+                    { label:"Respiratory Rate \u226522", met:rrMet, val:vitals.rr ? `${vitals.rr} breaths/min` : "—", hint:"RR not entered" },
+                    { label:"Systolic BP \u2264100",      met:bpMet, val:vitals.bp ? `${vitals.bp} mmHg`       : "—", hint:"BP not entered"  },
+                    { label:"Altered Mentation",         met:msMet, val:avpu      ? `AVPU: ${avpu}`           : "—", hint:"AVPU not set"    },
+                  ].map(({ label, met, val, hint }) => {
+                    const hasVal = val !== "—";
+                    return (
+                      <div key={label} style={{ display:"flex", alignItems:"center", gap:10,
+                        padding:"7px 10px", borderRadius:8,
+                        background: met ? "rgba(255,107,107,0.06)" : "rgba(8,22,40,0.4)",
+                        border:`1px solid ${met ? "rgba(255,107,107,0.2)" : "rgba(26,53,85,0.3)"}` }}>
+                        <div style={{ width:18, height:18, borderRadius:"50%", flexShrink:0,
+                          display:"flex", alignItems:"center", justifyContent:"center",
+                          background: met ? "rgba(255,107,107,0.15)" : hasVal ? "rgba(0,229,192,0.12)" : "rgba(42,77,114,0.3)",
+                          border:`1px solid ${met ? "rgba(255,107,107,0.4)" : hasVal ? "rgba(0,229,192,0.3)" : "rgba(42,77,114,0.4)"}` }}>
+                          <span style={{ fontSize:9, fontWeight:700,
+                            color: met ? "#ff8a8a" : hasVal ? "var(--npi-teal)" : "var(--npi-txt4)" }}>
+                            {met ? "✓" : hasVal ? "✗" : "?"}
+                          </span>
+                        </div>
+                        <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                          color: met ? "var(--npi-txt)" : "var(--npi-txt3)", flex:1 }}>{label}</span>
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+                          color: met ? "#ff8a8a" : hasVal ? "var(--npi-teal)" : "var(--npi-txt4)" }}>
+                          {hasVal ? val : hint}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {score >= 2 && (
+                  <div style={{ marginTop:10, padding:"8px 11px", borderRadius:7,
+                    background:"rgba(255,107,107,0.07)", border:"1px solid rgba(255,107,107,0.25)",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#ff8a8a", lineHeight:1.55 }}>
+                    qSOFA \u22652 — initiate sepsis workup: blood cultures \u00d72, lactate, broad-spectrum antibiotics within 1 hour of recognition. Stamp bundle elements below.
+                  </div>
+                )}
+                {!hasAnyData && (
+                  <div style={{ marginTop:8, fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    color:"var(--npi-txt4)", letterSpacing:1 }}>
+                    Enter vitals and AVPU in the Vitals and Triage tabs to compute qSOFA score.
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ── Sepsis Bundle Timestamps (CMS SEP-1) ─────────────────────────── */}
+          {(() => {
+            const now = () => new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", hour12:false });
+            const allStamped  = SEPSIS_BUNDLE_ITEMS.every(item => sepsisBundle[item.key]);
+            const anyStamped  = SEPSIS_BUNDLE_ITEMS.some(item => sepsisBundle[item.key]);
+            return (
+              <div style={{ padding:"16px 18px", borderRadius:12, background:"rgba(14,37,68,0.65)",
+                border:"1px solid rgba(227,112,85,0.25)", borderTop:"2px solid rgba(227,112,85,0.55)" }}>
+
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <span style={{ fontSize:16 }}>&#x1F9AB;</span>
+                    <div>
+                      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:14, fontWeight:700, color:"var(--npi-txt)" }}>
+                        Sepsis Bundle Tracker
+                      </div>
+                      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--npi-txt4)", marginTop:1 }}>
+                        CMS SEP-1 \u2014 stamp each element at time of completion
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    {allStamped && (
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1,
+                        padding:"3px 9px", borderRadius:5, background:"rgba(0,229,192,0.1)",
+                        border:"1px solid rgba(0,229,192,0.3)", color:"var(--npi-teal)" }}>
+                        \u2713 Bundle complete
+                      </span>
+                    )}
+                    {anyStamped && (
+                      <button onClick={() => setSepsisBundle({})}
+                        style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, letterSpacing:1,
+                          textTransform:"uppercase", padding:"3px 8px", borderRadius:4, cursor:"pointer",
+                          border:"1px solid rgba(42,77,114,0.4)", background:"transparent",
+                          color:"var(--npi-txt4)" }}>
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {SEPSIS_BUNDLE_ITEMS.map(item => {
+                    const val     = sepsisBundle[item.key] || "";
+                    const stamped = Boolean(val);
+                    return (
+                      <div key={item.key} style={{ display:"flex", alignItems:"center", gap:10,
+                        padding:"10px 13px", borderRadius:9,
+                        background: stamped ? "rgba(0,229,192,0.05)" : "rgba(8,22,40,0.45)",
+                        border:`1px solid ${stamped ? "rgba(0,229,192,0.22)" : "rgba(26,53,85,0.4)"}` }}>
+                        <div style={{ width:8, height:8, borderRadius:"50%", flexShrink:0,
+                          background: stamped ? "var(--npi-teal)" : "rgba(42,77,114,0.5)",
+                          boxShadow: stamped ? "0 0 6px rgba(0,229,192,0.55)" : "none", transition:"all .2s" }} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+                            color: stamped ? "var(--npi-txt)" : "var(--npi-txt3)" }}>
+                            {item.label}
+                          </div>
+                          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--npi-txt4)", marginTop:1 }}>
+                            {item.hint}
+                          </div>
+                        </div>
+                        {stamped ? (
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12,
+                              color:"var(--npi-teal)", background:"rgba(0,229,192,0.08)",
+                              border:"1px solid rgba(0,229,192,0.22)", borderRadius:6,
+                              padding:"3px 10px", letterSpacing:.5 }}>
+                              {val}
+                            </span>
+                            <button onClick={() => setSepsisBundle(p => ({ ...p, [item.key]:"" }))}
+                              style={{ background:"transparent", border:"none", color:"var(--npi-txt4)",
+                                cursor:"pointer", fontSize:11, padding:"2px 4px", lineHeight:1 }}>
+                              &#x2715;
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setSepsisBundle(p => ({ ...p, [item.key]: now() }))}
+                            style={{ padding:"6px 14px", borderRadius:7, cursor:"pointer",
+                              fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1,
+                              textTransform:"uppercase", flexShrink:0,
+                              border:"1px solid rgba(0,229,192,0.35)", background:"rgba(0,229,192,0.07)",
+                              color:"var(--npi-teal)", whiteSpace:"nowrap" }}>
+                            Stamp Now
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {anyStamped && (
+                  <div style={{ marginTop:10, paddingTop:9, borderTop:"1px solid rgba(26,53,85,0.4)",
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)",
+                    letterSpacing:1, display:"flex", gap:14, flexWrap:"wrap" }}>
+                    <span>{SEPSIS_BUNDLE_ITEMS.filter(i => sepsisBundle[i.key]).length} / {SEPSIS_BUNDLE_ITEMS.length} elements documented</span>
+                    {sepsisBundle.lactateOrdered && sepsisBundle.abxOrdered && (() => {
+                      const [lh,lm] = sepsisBundle.lactateOrdered.split(":").map(Number);
+                      const [ah,am] = sepsisBundle.abxOrdered.split(":").map(Number);
+                      const delta = (ah*60+am) - (lh*60+lm);
+                      if (delta < 0 || delta > 720) return null;
+                      return (
+                        <span style={{ color: delta <= 180 ? "var(--npi-teal)" : "#ff8a8a" }}>
+                          Lactate \u2192 ABX: {delta}m{delta > 180 ? " \u26A0 >3h" : " \u2713"}
+                        </span>
+                      );
+                    })()}
+                    {sepsisBundle.lactateValue && sepsisBundle.repeatLactateValue && (() => {
+                      const lac1 = parseFloat(sepsisBundle.lactateValue);
+                      const lac2 = parseFloat(sepsisBundle.repeatLactateValue);
+                      if (isNaN(lac1) || isNaN(lac2) || lac1 <= 0) return null;
+                      const clr = Math.round((lac1 - lac2) / lac1 * 100);
+                      return (
+                        <span style={{ color: clr >= 10 ? "var(--npi-teal)" : "#ff8a8a" }}>
+                          Clearance: {clr}%{clr >= 10 ? " \u2713 \u226510%" : " \u26A0 <10%"}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          <div style={{ padding:"11px 14px", borderRadius:9,
+            background:"rgba(8,18,36,0.5)", border:"1px solid rgba(26,53,85,0.35)",
+            fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--npi-txt4)", lineHeight:1.6 }}>
+            For full sepsis scoring (qSOFA, SOFA, SIRS), lactate interpretation, and antibiotic selection \u2014{" "}
+            <button onClick={() => navigate("/SepsisHub")}
+              style={{ background:"none", border:"none", color:"var(--npi-teal)", cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, padding:0 }}>
+              open Sepsis Hub &#x2192;
+            </button>
+          </div>
+        </div>
+      );
       case "timeline": return (
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
           <VitalSignsChart vitalsHistory={vitalsHistory} />
@@ -144,13 +376,32 @@ export default function NewPatientInput() {
       case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
       case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} patientWeight={demo.weight||vitals.weight||""} /></div>;
       case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;
-      case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} onAdvance={() => selectSection("timeline")} />;
+      case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} onAdvance={() => selectSection("mdm")} />;
+      case "mdm": return (
+        <MDMBuilderTab
+          demo={demo} cc={cc} vitals={vitals} medications={medications}
+          pmhSelected={pmhSelected} consults={consults} sdoh={sdoh}
+          disposition={disposition} esiLevel={esiLevel} isarState={isarState}
+          mdmState={mdmState} setMdmState={setMdmState}
+          mdmDataElements={mdmDataElements} setMdmDataElements={setMdmDataElements}
+          onAdvance={() => selectSection("timeline")}
+        />
+      );
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto" }}><MedicationReferencePage embedded /></div>;
       case "erplan":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><ERPlanBuilder embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} patientCC={cc.text} patientVitals={vitals} patientAllergies={allergies} patientMedications={medications} /></div>;
       default:           return null;
     }
   };
+
+  // ── Onboarding overlay (shown once per session) ───────────────────────────
+  const [showOnboarding, setShowOnboarding] = React.useState(() => {
+    try { return !sessionStorage.getItem("notrya_intro_seen"); } catch { return true; }
+  });
+  const dismissOnboarding = React.useCallback(() => {
+    try { sessionStorage.setItem("notrya_intro_seen", "1"); } catch {}
+    setShowOnboarding(false);
+  }, []);
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
@@ -202,6 +453,38 @@ export default function NewPatientInput() {
           <span className="npi-pt-name">{patientName}</span>
           {demo.dob && <span className="npi-pt-dob" title="Date of birth — second patient identifier">DOB {demo.dob}</span>}
           <span className="npi-door-time" title="Time since intake started">&#x23F1; {doorTime}</span>
+          {/* ── Visit mode selector ── */}
+          <div style={{ display:"flex", gap:2, background:"rgba(8,22,46,0.8)",
+            border:"1px solid rgba(26,53,85,0.5)", borderRadius:7, overflow:"hidden", flexShrink:0 }}>
+            {[
+              { key:"simple",   label:"Simple",   hint:"ESI 4-5 — hides complex close tabs",    autoEsi:[4,5] },
+              { key:"standard", label:"Standard",  hint:"Default — all tabs visible",             autoEsi:[]    },
+              { key:"critical", label:"Critical",  hint:"ESI 1-2 — all tabs + sepsis promoted",  autoEsi:[1,2] },
+            ].map(({ key, label, hint, autoEsi }) => {
+              const active    = visitMode === key;
+              const suggested = esiLevel && autoEsi.includes(parseInt(esiLevel)) && visitMode === "standard" && key !== "standard";
+              const col       = key === "simple" ? "var(--npi-teal)" : key === "critical" ? "var(--npi-coral)" : "var(--npi-txt3)";
+              return (
+                <button key={key} title={hint}
+                  onClick={() => {
+                    setVisitMode(key);
+                    if (key === "critical") selectSection("sepsis");
+                  }}
+                  style={{ padding:"3px 10px", border:"none", cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight: active ? 700 : 400,
+                    background: active ? `${col}18` : "transparent",
+                    color: active ? col : suggested ? col : "var(--npi-txt4)",
+                    borderLeft: key !== "simple" ? "1px solid rgba(26,53,85,0.4)" : "none",
+                    transition:"all .12s", position:"relative" }}>
+                  {label}
+                  {suggested && !active && (
+                    <span style={{ position:"absolute", top:2, right:2, width:4, height:4,
+                      borderRadius:"50%", background:col }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
           <div className={`npi-allergy-wrap${allergies.length > 0 ? " has-allergies" : ""}`} onClick={() => selectSection("meds")} title="Click to view/edit medications">
             {allergies.length === 0
               ? <span className="npi-allergy-nka">&#x2713; NKA</span>
@@ -316,7 +599,25 @@ export default function NewPatientInput() {
                         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--npi-txt4)", letterSpacing:1, textTransform:"uppercase" }}>{h.tier}</span>
                       </div>
                       <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--npi-txt3)", marginBottom:4 }}>{h.use}</div>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:col }}>\u2192 {h.action}</div>
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:col, marginBottom:8 }}>\u2192 {h.action}</div>
+                      <button
+                        onClick={async () => {
+                          const phrase = buildDecisionDocPhrase(h);
+                          try { await navigator.clipboard.writeText(phrase); } catch(_) {}
+                          setMdmDataElements(prev =>
+                            prev.some(e => e.score === h.score)
+                              ? prev
+                              : [...prev, { id: String(Date.now()), source:"cds", score:h.score, phrase, ts:Date.now() }]
+                          );
+                          toast.success(`${h.score} documented in MDM builder + copied to clipboard.`);
+                        }}
+                        style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
+                          padding:"4px 10px", borderRadius:5, cursor:"pointer",
+                          border:`1px solid ${isAdvisory ? "rgba(245,200,66,0.45)" : "rgba(0,229,192,0.35)"}`,
+                          background: isAdvisory ? "rgba(245,200,66,0.08)" : "rgba(0,229,192,0.07)",
+                          color:col, display:"flex", alignItems:"center", gap:5 }}>
+                        &#x1F4CB; Document decision (copy phrase)
+                      </button>
                     </div>
                   );
                 })}
@@ -462,7 +763,9 @@ export default function NewPatientInput() {
 
         {GROUP_META.map(g => {
           const isActive = g.key === activeGroup;
-          const items    = NAV_DATA[g.key] || [];
+          const items    = (NAV_DATA[g.key] || []).filter(item =>
+            !(visitMode === "simple" && SIMPLE_HIDDEN.has(item.section))
+          );
           const badge    = getGroupBadge(g.key);
           return (
             <div key={g.key} className="npi-wf-group">
@@ -492,6 +795,72 @@ export default function NewPatientInput() {
           );
         })}
       </aside>
+
+      {/* ── Onboarding overlay ── */}
+      {showOnboarding && (
+        <div onClick={dismissOnboarding}
+          style={{ position:"fixed", inset:0, zIndex:99999, background:"rgba(3,8,16,0.82)",
+            backdropFilter:"blur(6px)", display:"flex", alignItems:"center",
+            justifyContent:"center", padding:20 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:"#081628", border:"1px solid rgba(26,53,85,0.7)",
+              borderRadius:18, padding:"28px 32px", width:500, maxWidth:"92vw",
+              boxShadow:"0 32px 96px rgba(0,0,0,0.7)" }}>
+            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700,
+              color:"#e8f0fe", marginBottom:4 }}>
+              Welcome to Notrya
+            </div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"#4a6a8a",
+              marginBottom:22 }}>
+              Three features that cut documentation time in half
+            </div>
+
+            {[
+              {
+                icon:"📋", color:"#3b9eff",
+                title:"SmartParse — paste any clinical text",
+                desc:"Tap the clipboard button (bottom-right) and paste a triage note, nursing assessment, or typed HPI. Demographics, vitals, allergies, and medications are extracted automatically.",
+              },
+              {
+                icon:"🔍", color:"#00e5c0",
+                title:"ROS — click Deny All first, then mark positives",
+                desc:"Open Review of Systems and click \u2713 Deny All in the header. A 13-system ROS is complete. Then click any symptom to mark it as reported. Full keyboard navigation also available — press ? to see shortcuts.",
+              },
+              {
+                icon:"⚖️", color:"#f5c842",
+                title:"MDM Builder — Quick mode for routine visits",
+                desc:"The MDM Builder opens in \u26A1 Quick mode. Select your E/M level in one click and hit Build Narrative. Switch to \u229e Full grid only for complex encounters that need line-by-line documentation.",
+              },
+            ].map(({ icon, color, title, desc }) => (
+              <div key={title} style={{ display:"flex", gap:14, marginBottom:18 }}>
+                <div style={{ width:38, height:38, borderRadius:10, flexShrink:0,
+                  background:`${color}15`, border:`1px solid ${color}33`,
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
+                  {icon}
+                </div>
+                <div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700,
+                    color:"#e8f0fe", marginBottom:4 }}>{title}</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5,
+                    color:"#4a6a8a", lineHeight:1.65 }}>{desc}</div>
+                </div>
+              </div>
+            ))}
+
+            <button onClick={dismissOnboarding}
+              style={{ width:"100%", padding:"11px 0", borderRadius:10, cursor:"pointer",
+                background:"linear-gradient(135deg,#00e5c0,#00b4d8)", border:"none",
+                fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:700,
+                color:"#050f1e", marginTop:6 }}>
+              Got it \u2014 start charting
+            </button>
+            <div style={{ textAlign:"center", marginTop:10, fontFamily:"'JetBrains Mono',monospace",
+              fontSize:9, color:"rgba(42,77,114,0.8)", letterSpacing:1 }}>
+              This message won\u2019t show again this session
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

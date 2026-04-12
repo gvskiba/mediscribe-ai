@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
 
 // ════════════════════════════════════════════════════════════
 //  FONT INJECTION  (idempotent)
@@ -248,6 +246,61 @@ const EM_GROUPS = [
 ];
 
 // ════════════════════════════════════════════════════════════
+//  SYSTEM LABEL MAPS  (mirror ROSTab / PETab IDs)
+// ════════════════════════════════════════════════════════════
+const ROS_LABELS = {
+  const:"Constitutional", heent:"HEENT", cv:"Cardiovascular",
+  resp:"Respiratory", gi:"GI/Abdomen", gu:"Genitourinary",
+  msk:"MSK", neuro:"Neurological", psych:"Psychiatric",
+  skin:"Skin", endo:"Endocrine", heme:"Heme/Lymph",
+  allergy:"Allergic/Immunologic",
+};
+const PE_LABELS = {
+  gen:"General", heent:"HEENT", neck:"Neck",
+  cv:"Cardiovascular", resp:"Respiratory", abd:"Abdomen",
+  msk:"MSK", neuro:"Neurological", skin:"Skin", psych:"Psychiatric",
+};
+const META_SKIP = ["_remainderNeg","_remainderNormal","_mode","_visual"];
+
+// Builds a structured clinical note from shared platform state.
+// Called on mount and when rosState/peState change (unless noteDirty).
+function buildNoteFromState({ demo={}, cc={}, vitals={}, medications=[], allergies=[],
+  pmhSelected={}, rosState={}, peState={}, peFindings={}, esiLevel }) {
+  const lines = [];
+  const name = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "Patient";
+  const ageSex = [demo.age ? demo.age + "y" : null, demo.sex].filter(Boolean).join(" ");
+  lines.push(`PATIENT: ${name}${ageSex ? " — " + ageSex : ""}${esiLevel ? "  |  ESI " + esiLevel : ""}`);
+  if (cc.text) lines.push(`\nCHIEF COMPLAINT: ${cc.text}`);
+  if (cc.hpi)  lines.push(`\nHPI: ${cc.hpi}`);
+  const vPairs = [["BP",vitals.bp],["HR",vitals.hr],["SpO2",vitals.spo2],["Temp",vitals.temp],["RR",vitals.rr],["Weight",vitals.weight]].filter(([,v])=>v);
+  if (vPairs.length) lines.push(`\nVITALS: ${vPairs.map(([k,v])=>`${k} ${v}`).join("  ")}`);
+  const pmhList = Object.keys(pmhSelected||{}).filter(k=>pmhSelected[k]);
+  if (pmhList.length) lines.push(`\nPMH: ${pmhList.join(", ")}`);
+  if (medications.length) lines.push(`\nMEDICATIONS: ${medications.join(", ")}`);
+  if (allergies.length)   lines.push(`\nALLERGIES: ${allergies.join(", ")}`);
+  const rosPos = Object.entries(rosState).filter(([k,v])=>!META_SKIP.includes(k)&&v==="has-positives").map(([k])=>ROS_LABELS[k]||k);
+  const rosNeg = Object.entries(rosState).filter(([k,v])=>!META_SKIP.includes(k)&&v==="reviewed").map(([k])=>ROS_LABELS[k]||k);
+  if (rosPos.length||rosNeg.length) {
+    lines.push("\nREVIEW OF SYSTEMS:");
+    if (rosPos.length) lines.push(`  Positive: ${rosPos.join(", ")}`);
+    if (rosNeg.length) lines.push(`  Negative: ${rosNeg.join(", ")}`);
+  }
+  const peAbn = Object.entries(peState).filter(([k,v])=>!META_SKIP.includes(k)&&(v==="abnormal"||v==="mixed"));
+  const peNorm = Object.entries(peState).filter(([k,v])=>!META_SKIP.includes(k)&&v==="normal").map(([k])=>PE_LABELS[k]||k);
+  if (peAbn.length||peNorm.length) {
+    lines.push("\nPHYSICAL EXAMINATION:");
+    peAbn.forEach(([k])=>{
+      const sf = peFindings?.[k];
+      const findings = sf ? Object.entries(sf.findings||{}).filter(([,v])=>v==="abnormal").map(([f])=>f.replace(/-/g," ")).join(", ") : "";
+      const note = sf?.note?.trim() || "";
+      lines.push(`  ${PE_LABELS[k]||k}: ${findings||"abnormal"}${note?" — "+note:""}`);
+    });
+    if (peNorm.length) lines.push(`  Normal: ${peNorm.join(", ")}`);
+  }
+  return lines.join("\n").trim();
+}
+
+// ════════════════════════════════════════════════════════════
 //  AMBIENT BACKGROUND  — large glowing orbs for glass to refract
 // ════════════════════════════════════════════════════════════
 function AmbientBg() {
@@ -449,8 +502,11 @@ function EmptyState({ icon, msg }) {
 // ════════════════════════════════════════════════════════════
 //  MAIN COMPONENT
 // ════════════════════════════════════════════════════════════
-export default function AutocoderHub() {
-  const navigate = useNavigate();
+export default function AutocoderHub({
+  demo={}, cc={}, vitals={}, medications=[], allergies=[],
+  pmhSelected={}, rosState={}, peState={}, peFindings={},
+  esiLevel, consults=[],
+}) {
   const [nav, setNav]             = useState("icd10");
   const [toasts, setToasts]       = useState([]);
   const [cart, setCart]           = useState([]);
@@ -464,9 +520,15 @@ export default function AutocoderHub() {
   const [cptCat, setCptCat]       = useState("All");
   const [cptHits, setCptHits]     = useState([]);
   const [emFilter, setEmFilter]   = useState("All");
-  const [noteText, setNoteText]   = useState("");
+  const [noteText, setNoteText]   = useState(() => buildNoteFromState({ demo, cc, vitals, medications, allergies, pmhSelected, rosState, peState, peFindings, esiLevel }));
+  const [noteDirty, setNoteDirty] = useState(false);
   const [acBusy, setAcBusy]       = useState(false);
   const [acResult, setAcResult]   = useState(null);
+
+  // Re-sync note when ROS/PE/vitals change — unless provider has manually edited
+  useEffect(() => {
+    if (!noteDirty) setNoteText(buildNoteFromState({ demo, cc, vitals, medications, allergies, pmhSelected, rosState, peState, peFindings, esiLevel }));
+  }, [rosState, peState, vitals]); // eslint-disable-line
 
   const toast = useCallback((msg, type="info") => {
     const id = Date.now() + Math.random();
@@ -500,51 +562,45 @@ export default function AutocoderHub() {
 
   const removeFromCart = (code) => setCart(p => p.filter(c => c.code !== code));
 
-  // Persist cart to localStorage so BillingSubmissions can read it
-  useEffect(() => {
-    try { localStorage.setItem("notrya_autocoder_cart", JSON.stringify(cart)); } catch {}
-  }, [cart]);
-
   const runAiIcd = async () => {
     if (!aiCond.trim() || aiIcdBusy) return;
     setAiIcdBusy(true); setAiIcdRecs([]);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a board-certified clinical documentation specialist. Return the 5 most appropriate ICD-10 codes for the described condition.\n\nClinical condition: ${aiCond}\n\nReturn top 5 ICD-10 codes as a JSON array.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            codes: { type: "array", items: { type: "object", properties: { code:{type:"string"}, desc:{type:"string"}, specificity:{type:"string"}, rationale:{type:"string"} } } }
-          }
-        }
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:1000,
+          system:`You are a board-certified clinical documentation specialist. Return the 5 most appropriate ICD-10 codes for the described condition. Respond ONLY with a valid JSON array, no markdown. Format: [{"code":"I21.9","desc":"Acute myocardial infarction, unspecified","specificity":"Medium","rationale":"Use when type/location not further specified"}]`,
+          messages:[{ role:"user", content:`Clinical condition: ${aiCond}\nReturn top 5 ICD-10 codes as JSON array.` }]
+        })
       });
-      setAiIcdRecs(result.codes || []);
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "[]").replace(/```json|```/g,"").trim();
+      setAiIcdRecs(JSON.parse(raw));
       toast("AI recommendations ready", "success");
     } catch { toast("AI query failed — check connection", "error"); }
-    setAiIcdBusy(false);
+    finally  { setAiIcdBusy(false); }
   };
 
   const runAutocoder = async () => {
     if (!noteText.trim() || acBusy) return;
     setAcBusy(true); setAcResult(null);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are an expert emergency medicine clinical coder (CPC-certified). Analyze the following clinical note and extract all billable codes.\n\nClinical Note:\n${noteText}`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            summary: { type: "string" },
-            icd10: { type: "array", items: { type: "object", properties: { code:{type:"string"}, desc:{type:"string"}, role:{type:"string"} } } },
-            cpt: { type: "array", items: { type: "object", properties: { code:{type:"string"}, desc:{type:"string"}, cat:{type:"string"} } } },
-            em_level: { type: "object", properties: { code:{type:"string"}, level:{type:"string"}, rationale:{type:"string"} } },
-            coding_notes: { type: "string" }
-          }
-        }
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:1800,
+          system:`You are an expert emergency medicine clinical coder (CPC-certified). Analyze the note and extract all billable codes. Respond ONLY with valid JSON, no markdown. Format:
+{"summary":"One-sentence encounter summary","icd10":[{"code":"I21.9","desc":"Acute MI, unspecified","role":"principal"}],"cpt":[{"code":"99285","desc":"ED visit, high complexity","cat":"E&M"}],"em_level":{"code":"99285","level":"5","rationale":"High complexity MDM: multiple chronic conditions, urgent new problem"},"coding_notes":"Any important coding flags or guidance"}`,
+          messages:[{ role:"user", content:`Clinical Note:\n${noteText}` }]
+        })
       });
-      setAcResult(result);
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g,"").trim();
+      setAcResult(JSON.parse(raw));
       toast("Autocoding complete", "success");
     } catch { toast("Autocoder failed — check note format", "error"); }
-    setAcBusy(false);
+    finally  { setAcBusy(false); }
   };
 
   const importAcToCart = () => {
@@ -734,8 +790,8 @@ export default function AutocoderHub() {
           backgroundSize:"200% 100%", animation:"shimmer 3s linear infinite" }}/>
         <SectionHeader icon="🤖" title="AI Autocoder" badge="AI-POWERED" accent={T.purple}
           sub="Paste a clinical note — AI extracts all ICD-10 diagnoses, CPT procedures, and the correct E&M level"/>
-        <textarea value={noteText} onChange={e=>setNoteText(e.target.value)}
-          placeholder="Paste clinical note, HPI, assessment & plan, or procedure documentation here…" rows={8}
+        <textarea value={noteText} onChange={e=>{setNoteText(e.target.value);setNoteDirty(true);}}
+          placeholder="Auto-populated from chart data — edit freely or reset below…" rows={8}
           style={{
             ...G.input(T.purple), width:"100%", padding:"13px 15px",
             lineHeight:1.65, resize:"vertical",
@@ -743,11 +799,17 @@ export default function AutocoderHub() {
           onFocus={e=>{e.target.style.borderColor=`${T.purple}55`;e.target.style.boxShadow=`0 0 0 3px ${T.purple}14,inset 0 1px 0 rgba(255,255,255,0.12)`;}}
           onBlur={e=>{e.target.style.borderColor=T.border;e.target.style.boxShadow=T.shine;}}/>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:10 }}>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4 }}>
-            {noteText.length>0 ? `${noteText.length} chars · ${noteText.trim().split(/\s+/).length} words` : "Paste note to begin"}
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color: noteDirty ? T.gold : T.txt4 }}>
+            {noteDirty ? "✎ manually edited" : noteText.length > 0 ? `${noteText.length} chars · ${noteText.trim().split(/\s+/).length} words · auto-populated` : "Building from chart…"}
           </span>
           <div style={{ display:"flex", gap:8 }}>
-            <button onClick={()=>{setNoteText("");setAcResult(null);}}
+            {noteDirty && (
+              <button onClick={()=>{setNoteText(buildNoteFromState({demo,cc,vitals,medications,allergies,pmhSelected,rosState,peState,peFindings,esiLevel}));setNoteDirty(false);setAcResult(null);}}
+                style={{ ...G.btn(T.gold,false), padding:"8px 16px", fontSize:12, color:T.gold }}>
+                ↺ Reset from Chart
+              </button>
+            )}
+            <button onClick={()=>{setNoteText("");setAcResult(null);setNoteDirty(true);}}
               style={{ ...G.btn(null,false), padding:"8px 16px", fontSize:12 }}
               onMouseEnter={e=>e.currentTarget.style.borderColor=T.borderHi}
               onMouseLeave={e=>e.currentTarget.style.borderColor=T.border}>
@@ -907,9 +969,7 @@ export default function AutocoderHub() {
     { id:"em",        icon:"📋", label:"E&M Levels",   accent:T.blue   },
     { id:"autocoder", icon:"🤖", label:"AI Autocoder", accent:T.purple },
     { id:"cart",      icon:"📦", label:"Code Cart",    accent:T.coral, badge:cart.length||null },
-    { id:"submit",    icon:"📤", label:"Submissions",  accent:T.green },
   ];
-  useEffect(() => { if (nav === "submit") navigate("/billing-submissions"); }, [nav]);
   const SECTIONS = { icd10:renderICD10, cpt:renderCPT, em:renderEM, autocoder:renderAutocoder, cart:renderCart };
   const activeNav = NAV.find(n=>n.id===nav);
 
@@ -932,20 +992,6 @@ export default function AutocoderHub() {
       }}>
         {/* Top edge shine */}
         <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)", pointerEvents:"none" }}/>
-
-        {/* Back to Hub */}
-        <button onClick={() => navigate('/hub')} style={{
-          display:"flex", alignItems:"center", gap:7, padding:"9px 13px", borderRadius:10,
-          border:"1px solid rgba(167,139,250,0.25)", width:"100%", marginBottom:16,
-          background:"rgba(167,139,250,0.08)", backdropFilter:"blur(16px)",
-          cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12,
-          color:"rgba(196,181,253,0.85)", transition:"all .2s",
-          boxShadow:"0 2px 12px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.08)",
-        }}
-        onMouseEnter={e=>{ e.currentTarget.style.background="rgba(167,139,250,0.18)"; e.currentTarget.style.borderColor="rgba(167,139,250,0.5)"; e.currentTarget.style.color="#c4b5fd"; }}
-        onMouseLeave={e=>{ e.currentTarget.style.background="rgba(167,139,250,0.08)"; e.currentTarget.style.borderColor="rgba(167,139,250,0.25)"; e.currentTarget.style.color="rgba(196,181,253,0.85)"; }}>
-          ← Back to Hub
-        </button>
 
         {/* Wordmark */}
         <div style={{ marginBottom:28, paddingLeft:8 }}>

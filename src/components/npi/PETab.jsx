@@ -207,7 +207,7 @@ function SysItem({ sys, isActive, status, onClick }) {
   );
 }
 
-function FindingChip({ finding, value, kbFocused, onClick }) {
+function FindingChip({ finding, value, kbFocused, kbIndex, onClick }) {
   const isNormal   = value === 'normal';
   const isAbnormal = value === 'abnormal';
   const cls = ['pe-chip',
@@ -217,6 +217,9 @@ function FindingChip({ finding, value, kbFocused, onClick }) {
   ].filter(Boolean).join(' ');
   return (
     <button className={cls} onClick={onClick}>
+      {kbIndex != null && (
+        <span className="pe-chip-num">{kbIndex}</span>
+      )}
       <span className="pe-chip-ico">
         {isNormal ? '✓' : isAbnormal ? '✕' : '○'}
       </span>
@@ -240,8 +243,8 @@ function StatusBadge({ status }) {
 function KbLegend({ isFocused }) {
   const keys = [
     ['↑↓', 'navigate'], ['←→', 'system'], ['letter', 'jump'],
-    ['Space', 'toggle'], ['↵', 'normal'], ['X', 'abnormal'],
-    ['⌘↵', 'sys normal'], ['⌘⇧N', 'all normal'], ['Esc', 'exit'],
+    ['1–9', 'quick pick'], ['Space', 'toggle'], ['↵', 'normal'], ['X', 'abnormal'],
+    ['⌘↵', 'sys normal'], ['⌘⇧N', 'all normal'], ['⌘F', 'mode'], ['⌘R', 'rest norm'], ['⌘V', 'visual'], ['Esc', 'exit'],
   ];
   return (
     <div className={`pe-kb-bar${isFocused ? ' pe-kb-on' : ''}`}>
@@ -260,8 +263,36 @@ function KbLegend({ isFocused }) {
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function PETab({ peState, setPeState, peFindings, setPeFindings, onAdvance, extSysIdx, onSysChange }) {
+// ─── CC → FOCUSED PE SYSTEM MAPPING ─────────────────────────────────────────
+const PE_CC_MAP = [
+  { kws:['chest','palpitat','syncope'],  ids:['gen','cv','resp']              },
+  { kws:['breath','cough','wheez'],      ids:['gen','resp','cv']              },
+  { kws:['abdom','stomach','nausea'],    ids:['gen','abd','cv']               },
+  { kws:['headache','dizzi','neuro'],    ids:['gen','neuro','heent']          },
+  { kws:['back','lumbar'],              ids:['gen','msk','abd']              },
+  { kws:['joint','arthr','msk'],         ids:['gen','msk','skin']             },
+  { kws:['trauma','injur','fall'],       ids:['gen','msk','neuro','skin']     },
+  { kws:['fever','infect','sepsis'],     ids:['gen','heent','cv','resp','abd']},
+  { kws:['rash','skin'],                ids:['gen','skin']                   },
+  { kws:['urin','dysuria'],             ids:['gen','abd']                    },
+  { kws:['anxiet','panic','psych'],      ids:['gen','psych','cv']             },
+  { kws:['weak','stroke','neuro'],       ids:['gen','neuro','cv']             },
+];
+function getFocusedPeIds(cc) {
+  if (!cc) return ['gen','cv','resp','abd'];
+  const lc = cc.toLowerCase();
+  for (const { kws, ids } of PE_CC_MAP) {
+    if (kws.some(kw => lc.includes(kw))) return ids;
+  }
+  return ['gen','cv','resp','abd'];
+}
+
+export default function PETab({ peState, setPeState, peFindings, setPeFindings, onAdvance, extSysIdx, onSysChange, chiefComplaint }) {
   const [examData, setExamData] = useState(initExamData);
+  const [docMode,          setDocMode]          = useState('focused'); // 'focused'|'full'|'visual'
+  const [remainderNormal,  setRemainderNormal]  = useState(false);
+  const [visualAppearance, setVisualAppearance] = useState('');
+  const [visualNotes,      setVisualNotes]      = useState('');
   const mainRef    = useRef(null);
 
   // ── Action handlers ──────────────────────────────────────────────────────
@@ -322,17 +353,32 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
 
   const clearAll = useCallback(() => setExamData(initExamData()), []);
 
+  // ── Visible systems (focused mode filter) — must be computed before hook ──
+  const focusedPeIds  = getFocusedPeIds(chiefComplaint);
+  const visiblePeSys  = docMode === 'full' ? PE_SYSTEMS : PE_SYSTEMS.filter(s => focusedPeIds.includes(s.id));
+  const hiddenPeCount = PE_SYSTEMS.length - visiblePeSys.length;
+
   // ── Keyboard hook ────────────────────────────────────────────────────────
   const {
     activeSystemIdx, setActiveSystemIdx,
     activeFindingIdx, setActiveFindingIdx,
-    isFocused, panelProps, goToSystem,
+    isFocused, panelProps, goToSystem, focus,
   } = useBodySystemKeyboard({
-    systems: PE_SYSTEMS,
+    systems:         PE_SYSTEMS,
+    visibleSystems:  visiblePeSys,
     onFindingAction: handleFindingAction,
     onSystemNormal:  markSystemNormal,
     onAllNormal:     markAllNormal,
+    onModeToggle:    () => setDocMode(m => m === 'focused' ? 'full' : m === 'full' ? 'focused' : 'focused'),
+    onRemainder:     () => setRemainderNormal(r => !r),
+    onVisualMode:    () => setDocMode(m => m === 'visual' ? 'focused' : 'visual'),
   });
+
+  // Auto-focus on mount — keyboard-first from the first render
+  useEffect(() => {
+    const t = setTimeout(focus, 60);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line
 
   const activeSys  = PE_SYSTEMS[activeSystemIdx];
   const sysData    = examData[activeSys?.id] || { findings: {}, note: '' };
@@ -367,9 +413,13 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
         newFindings[s.id] = examData[s.id];
       }
     });
+    if (remainderNormal)  newState._remainderNormal = true;
+    if (docMode === 'visual' && (visualAppearance || visualNotes)) {
+      newState._visual = { appearance: visualAppearance, notes: visualNotes };
+    }
     setPeState(newState);
     setPeFindings(newFindings);
-  }, [examData, setPeState, setPeFindings]);
+  }, [examData, remainderNormal, docMode, visualAppearance, visualNotes, setPeState, setPeFindings]);
 
   // ── Two-way sync with parent rail ────────────────────────────────────────
   useEffect(() => {
@@ -407,10 +457,24 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
         {/* ── HEADER BAR ───────────────────────────────────────────────── */}
         <div className="pe-hdr">
           <span className="pe-hdr-title">Physical Exam</span>
+          {/* Mode toggle */}
+          <div className="pe-mode-toggle">
+            <button className={`pe-mode-btn${docMode==='focused'?' active':''}`} onClick={() => setDocMode('focused')}>
+              Focused{docMode==='focused' ? ` (${visiblePeSys.length})` : ''}
+            </button>
+            <button className={`pe-mode-btn${docMode==='full'?' active':''}`} onClick={() => setDocMode('full')}>
+              Full ({totalSystems})
+            </button>
+            <button className={`pe-mode-btn pe-mode-visual${docMode==='visual'?' active':''}`} onClick={() => setDocMode('visual')}>
+              Visual
+            </button>
+          </div>
           <div className="pe-hdr-stats">
-            <span className="pe-hdr-badge pe-hdr-badge-blue">
-              {assessedSystems} / {totalSystems} systems
-            </span>
+            {docMode !== 'visual' && (
+              <span className="pe-hdr-badge pe-hdr-badge-blue">
+                {assessedSystems} / {totalSystems} systems
+              </span>
+            )}
             {abnormalSystems > 0 && (
               <span className="pe-hdr-badge pe-hdr-badge-coral">
                 {abnormalSystems} abnormal
@@ -418,8 +482,8 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
             )}
           </div>
           <div className="pe-hdr-acts">
-            <button className="pe-btn-all-normal" onClick={markAllNormal}>✓ All Normal</button>
-            <button className="pe-btn-clear-all"  onClick={clearAll}>✕ Clear All</button>
+            {docMode !== 'visual' && <button className="pe-btn-all-normal" onClick={markAllNormal}>✓ All Normal</button>}
+            {docMode !== 'visual' && <button className="pe-btn-clear-all" onClick={() => { clearAll(); setRemainderNormal(false); }}>✕ Clear</button>}
             {onAdvance && (
               <button
                 onClick={onAdvance}
@@ -432,68 +496,150 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
         </div>
 
         {/* ── BODY ─────────────────────────────────────────────────────── */}
-        <div className="pe-body">
+        <div className="pe-body"
+          style={{ gridTemplateColumns: docMode === 'visual' ? '1fr' : '156px 1fr' }}>
 
-          {/* ── MAIN PANEL ───────────────────────────────────────────── */}
-          <div className="pe-main" ref={mainRef}>
-
-            {/* System header */}
-            <div className="pe-sys-hdr">
-              <span className="pe-sys-hdr-ico">{activeSys?.icon}</span>
-              <span className="pe-sys-hdr-name">{activeSys?.label}</span>
-              <StatusBadge status={sysStatus} />
-              <div className="pe-sys-hdr-acts">
-                <button className="pe-btn-sys-normal" onClick={() => markSystemNormal(activeSys?.id)}>
-                  ✓ Mark Normal
-                </button>
-                <button className="pe-btn-sys-clear" onClick={() => clearSystem(activeSys?.id)}>
-                  ✕ Clear
-                </button>
-              </div>
-            </div>
-
-            {/* Normal statement — shown when system is fully normal */}
-            {sysStatus === 'normal' && (
-              <div className="pe-normal-stmt">
-                <span className="pe-normal-ico">✓</span>
-                <span className="pe-normal-txt">{activeSys?.normal}</span>
-              </div>
-            )}
-
-            {/* Finding chips */}
-            <div className="pe-chips-grid">
-              {activeSys?.findings.map((f, fi) => (
-                <div key={f.id} data-fidx={fi}>
-                  <FindingChip
-                    finding={f}
-                    value={sysData.findings[f.id]}
-                    kbFocused={isFocused && fi === activeFindingIdx}
-                    onClick={() => {
-                      handleFindingAction('toggle', activeSys.id, f.id);
-                      setActiveFindingIdx(fi);
-                      panelProps.ref.current?.focus();
-                    }}
-                  />
-                </div>
+          {/* ── SIDEBAR ──────────────────────────────────────────────── */}
+          {docMode !== 'visual' && (
+            <div className="pe-sidebar">
+              {PE_SYSTEMS.map((sys, i) => (
+                <SysItem
+                  key={sys.id}
+                  sys={sys}
+                  isActive={i === activeSystemIdx}
+                  status={getSysStatus(examData[sys.id]?.findings || {})}
+                  onClick={() => {
+                    setActiveSystemIdx(i);
+                    setActiveFindingIdx(-1);
+                    focus();
+                  }}
+                />
               ))}
             </div>
+          )}
 
-            {/* Free-text note */}
-            <div className="pe-note-wrap">
-              <label className="pe-note-lbl">📝 Additional findings</label>
-              <textarea
-                className="pe-note-ta"
-                rows={2}
-                placeholder={`Additional ${activeSys?.label} findings or qualifications…`}
-                value={sysData.note}
-                onChange={e => setExamData(prev => ({
-                  ...prev,
-                  [activeSys.id]: { ...prev[activeSys.id], note: e.target.value },
-                }))}
-              />
+          {/* ── VISUAL MODE ──────────────────────────────────────────────── */}
+          {docMode === 'visual' && (
+            <div className="pe-visual" ref={mainRef}>
+              <div className="pe-visual-section">
+                <div className="pe-visual-lbl">General appearance</div>
+                <div className="pe-visual-chips">
+                  {['Well-appearing','Ill-appearing','Toxic-appearing','Uncomfortable','Altered'].map(opt => (
+                    <button key={opt}
+                      className={`pe-visual-chip${visualAppearance===opt?' active':''}`}
+                      onClick={() => setVisualAppearance(visualAppearance===opt ? '' : opt)}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="pe-visual-section">
+                <div className="pe-visual-lbl">Exam notes / pertinent observations</div>
+                <textarea
+                  className="pe-note-ta"
+                  rows={4}
+                  placeholder="E.g. No acute distress. Moving all extremities. No obvious deformity. Abdomen soft and non-tender on visual inspection…"
+                  value={visualNotes}
+                  onChange={e => setVisualNotes(e.target.value)}
+                  style={{ minHeight:90 }}
+                />
+              </div>
+              <div className="pe-visual-note">
+                Visual/observational exam only. Hands-on exam not performed. Document reason in HPI if clinically relevant.
+              </div>
             </div>
+          )}
 
-          </div>{/* /pe-main */}
+          {/* ── STANDARD PANEL (focused or full) ─────────────────────────── */}
+          {docMode !== 'visual' && (
+            <div className="pe-main" ref={mainRef}>
+
+              {/* System header */}
+              <div className="pe-sys-hdr">
+                <span className="pe-sys-hdr-ico">{activeSys?.icon}</span>
+                <span className="pe-sys-hdr-name">{activeSys?.label}</span>
+                <StatusBadge status={sysStatus} />
+                <div className="pe-sys-hdr-acts">
+                  <button className="pe-btn-sys-normal" onClick={() => markSystemNormal(activeSys?.id)}>
+                    ✓ Mark Normal
+                  </button>
+                  <button className="pe-btn-sys-clear" onClick={() => clearSystem(activeSys?.id)}>
+                    ✕ Clear
+                  </button>
+                </div>
+              </div>
+
+              {/* Normal statement — shown when system is fully normal */}
+              {sysStatus === 'normal' && (
+                <div className="pe-normal-stmt">
+                  <span className="pe-normal-ico">✓</span>
+                  <span className="pe-normal-txt">{activeSys?.normal}</span>
+                </div>
+              )}
+
+              {/* Finding chips */}
+              <div className="pe-chips-grid">
+                {activeSys?.findings.map((f, fi) => (
+                  <div key={f.id} data-fidx={fi}>
+                    <FindingChip
+                      finding={f}
+                      value={sysData.findings[f.id]}
+                      kbFocused={isFocused && fi === activeFindingIdx}
+                      kbIndex={isFocused && fi < 9 ? fi + 1 : null}
+                      onClick={() => {
+                        handleFindingAction('toggle', activeSys.id, f.id);
+                        setActiveFindingIdx(fi);
+                        panelProps.ref.current?.focus();
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Free-text note */}
+              <div className="pe-note-wrap">
+                <label className="pe-note-lbl">📝 Additional findings</label>
+                <textarea
+                  className="pe-note-ta"
+                  rows={2}
+                  placeholder={`Additional ${activeSys?.label} findings or qualifications…`}
+                  value={sysData.note}
+                  onChange={e => setExamData(prev => ({
+                    ...prev,
+                    [activeSys.id]: { ...prev[activeSys.id], note: e.target.value },
+                  }))}
+                />
+              </div>
+
+              {/* Focused mode: remainder banner */}
+              {docMode === 'focused' && hiddenPeCount > 0 && (
+                <div className={`pe-remainder${remainderNormal ? ' pe-remainder-done' : ''}`}>
+                  {remainderNormal ? (
+                    <>
+                      <span className="pe-remainder-ico">✓</span>
+                      <span className="pe-remainder-txt">
+                        Remaining {hiddenPeCount} systems examined — all normal
+                      </span>
+                      <button className="pe-remainder-undo" onClick={() => setRemainderNormal(false)}>undo</button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="pe-remainder-txt pe-remainder-pending">
+                        {hiddenPeCount} systems not yet documented
+                      </span>
+                      <button className="pe-remainder-btn" onClick={() => setRemainderNormal(true)}>
+                        ✓ Mark all others normal
+                      </button>
+                      <button className="pe-remainder-expand" onClick={() => setDocMode('full')}>
+                        or expand to full exam
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+            </div>
+          )}{/* /pe-main */}
         </div>{/* /pe-body */}
 
         <KbLegend isFocused={isFocused} />
@@ -524,7 +670,7 @@ const PE_CSS = `
 .pe-btn-clear-all:hover{border-color:rgba(255,107,107,.4);color:var(--npi-coral)}
 
 /* Body layout */
-.pe-body{display:grid;grid-template-columns:1fr;flex:1;overflow:hidden;min-height:0}
+.pe-body{display:grid;grid-template-columns:156px 1fr;flex:1;overflow:hidden;min-height:0}
 
 /* Sidebar */
 .pe-sidebar{border-right:1px solid var(--npi-bd);overflow-y:auto;background:var(--npi-panel);scrollbar-width:thin;scrollbar-color:#1a3555 transparent}
@@ -581,6 +727,7 @@ const PE_CSS = `
 .pe-chip-ico{font-size:11px;flex-shrink:0;width:14px;text-align:center;font-family:'JetBrains Mono',monospace}
 .pe-chip-txt{flex:1;line-height:1.3;font-size:11.5px}
 .pe-chip-hint{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--npi-blue);background:rgba(59,158,255,.1);border:1px solid rgba(59,158,255,.25);border-radius:3px;padding:1px 5px;flex-shrink:0;white-space:nowrap}
+.pe-chip-num{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--npi-txt4);background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:3px;padding:1px 5px;flex-shrink:0;min-width:16px;text-align:center}
 
 /* Note area */
 .pe-note-wrap{display:flex;flex-direction:column;gap:5px;margin-top:2px}
@@ -597,4 +744,35 @@ const PE_CSS = `
 .pe-kb-item kbd{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--npi-up);border:1px solid var(--npi-bd);border-radius:3px;padding:1px 5px;color:var(--npi-txt2);white-space:nowrap}
 .pe-kb-item span{font-size:10px;color:var(--npi-txt4);white-space:nowrap}
 .pe-kb-prompt{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--npi-txt4);font-style:italic}
+
+/* Mode toggle */
+.pe-mode-toggle{display:flex;gap:0;border:1px solid var(--npi-bd);border-radius:6px;overflow:hidden;flex-shrink:0}
+.pe-mode-btn{padding:3px 10px;font-size:10px;font-weight:500;font-family:'DM Sans',sans-serif;background:transparent;border:none;color:var(--npi-txt4);cursor:pointer;transition:all .15s}
+.pe-mode-btn:hover{color:var(--npi-txt2);background:var(--npi-up)}
+.pe-mode-btn.active{background:rgba(59,158,255,.12);color:var(--npi-blue);font-weight:600}
+.pe-mode-btn+.pe-mode-btn{border-left:1px solid var(--npi-bd)}
+.pe-mode-visual.active{background:rgba(155,109,255,.12);color:var(--npi-purple)}
+
+/* Visual mode */
+.pe-visual{padding:16px 18px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.pe-visual-section{display:flex;flex-direction:column;gap:8px}
+.pe-visual-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--npi-txt4);text-transform:uppercase;letter-spacing:.1em}
+.pe-visual-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pe-visual-chip{padding:5px 13px;border-radius:20px;font-size:11px;font-weight:500;font-family:'DM Sans',sans-serif;background:var(--npi-up);border:1px solid var(--npi-bd);color:var(--npi-txt3);cursor:pointer;transition:all .15s}
+.pe-visual-chip:hover{border-color:var(--npi-bhi);color:var(--npi-txt2)}
+.pe-visual-chip.active{background:rgba(155,109,255,.12);border-color:rgba(155,109,255,.35);color:var(--npi-purple);font-weight:600}
+.pe-visual-note{font-size:10px;color:var(--npi-txt4);font-style:italic;line-height:1.5;padding:8px 12px;background:rgba(14,37,68,.4);border-radius:6px;border-left:2px solid var(--npi-bd)}
+
+/* Remainder banner */
+.pe-remainder{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;border:1px dashed rgba(26,53,85,.8);background:rgba(8,22,40,.4);flex-wrap:wrap;margin-top:4px}
+.pe-remainder-done{border-color:rgba(0,229,192,.25);background:rgba(0,229,192,.05)}
+.pe-remainder-ico{color:#00e5c0;font-size:12px;flex-shrink:0}
+.pe-remainder-txt{font-size:11px;color:var(--npi-txt3);flex:1}
+.pe-remainder-pending{color:var(--npi-txt4) !important}
+.pe-remainder-btn{padding:4px 12px;border-radius:5px;font-size:10px;font-weight:600;font-family:'DM Sans',sans-serif;background:rgba(0,229,192,.1);border:1px solid rgba(0,229,192,.3);color:#00e5c0;cursor:pointer;transition:all .15s;white-space:nowrap}
+.pe-remainder-btn:hover{background:rgba(0,229,192,.2)}
+.pe-remainder-expand{padding:4px 10px;border-radius:5px;font-size:10px;font-family:'DM Sans',sans-serif;background:transparent;border:1px solid var(--npi-bd);color:var(--npi-txt4);cursor:pointer;transition:all .15s;white-space:nowrap}
+.pe-remainder-expand:hover{color:var(--npi-txt2);border-color:var(--npi-bhi)}
+.pe-remainder-undo{padding:2px 8px;border-radius:4px;font-size:9px;font-family:'JetBrains Mono',monospace;background:transparent;border:1px solid rgba(26,53,85,.6);color:var(--npi-txt4);cursor:pointer;margin-left:auto}
+.pe-remainder-undo:hover{color:var(--npi-coral);border-color:rgba(255,107,107,.3)}
 `;

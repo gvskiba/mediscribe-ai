@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
 
 // Literature: I-PASS reduced information loss 75%→37.5% in pediatric ED (AHRQ 2023)
 export default function HandoffTab({ demo, cc, vitals, medications, allergies, pmhSelected,
@@ -21,7 +20,15 @@ export default function HandoffTab({ demo, cc, vitals, medications, allergies, p
     setSummaryLoading(true);
     try {
       const rosPos = Object.entries(rosState||{}).filter(([,v])=>v==="has-positives").map(([k])=>k);
-      const pePos  = Object.entries(peState||{}).filter(([,v])=>v==="abnormal"||v==="has-positives"||v==="mixed").map(([k])=>k);
+      const META_SKIP = ["_remainderNeg","_remainderNormal","_mode","_visual"];
+      const peAbnLines = Object.entries(peState||{})
+        .filter(([k,v])=>!META_SKIP.includes(k)&&(v==="abnormal"||v==="has-positives"||v==="mixed"))
+        .map(([k]) => {
+          const sf = peFindings?.[k];
+          const findings = sf ? Object.entries(sf.findings||{}).filter(([,v])=>v==="abnormal").map(([f])=>f.replace(/-/g," ")).join(", ") : "";
+          const note = sf?.note?.trim() || "";
+          return `${k}${findings ? ": "+findings : ""}${note ? " ("+note+")" : ""}`;
+        }).join("; ") || "none";
       const prompt = [
         "Write a 2-3 sentence physician-to-physician I-PASS patient summary for an ED handoff.",
         "Include: patient identity, chief complaint, key history, current clinical status, pertinent positives and negatives.",
@@ -31,14 +38,21 @@ export default function HandoffTab({ demo, cc, vitals, medications, allergies, p
         `Allergies: ${allergies.join(", ")||"NKDA"}. Meds: ${medications.slice(0,4).join("; ")||"none"}.`,
         `PMH: ${pmhList.slice(0,4).join(", ")||"none"}.`,
         rosPos.length ? `ROS positives: ${rosPos.join(", ")}.` : "",
-        pePos.length  ? `PE abnormals: ${pePos.join(", ")}.`   : "",
+        peAbnLines !== "none" ? `PE abnormals: ${peAbnLines}.` : "",
         disposition ? `Disposition plan: ${disposition}${dispReason ? " — " + dispReason.slice(0,60) : ""}.` : "",
+        registration?.room ? `Location: Room ${registration.room}.` : "",
       ].filter(Boolean).join(" ");
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: { type:"object", properties:{ summary:{ type:"string" } } },
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 300,
+          system: "Write a 2-3 sentence physician-to-physician I-PASS handoff summary. Return ONLY valid JSON: {\"summary\":\"...\"}",
+          messages: [{ role: "user", content: prompt }],
+        }),
       });
-      setPatientSummary(res?.summary || "");
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g, "").trim();
+      setPatientSummary(JSON.parse(raw)?.summary || "");
     } catch(_) { setPatientSummary("AI unavailable \u2014 please enter patient summary manually."); }
     finally    { setSummaryLoading(false); }
   }
@@ -96,7 +110,7 @@ export default function HandoffTab({ demo, cc, vitals, medications, allergies, p
           <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
             color:"var(--npi-green)", background:"rgba(61,255,160,0.1)",
             padding:"4px 10px", borderRadius:6, border:"1px solid rgba(61,255,160,0.3)" }}>
-            &#x2713; HANDOFF COMPLETE
+            \u2713 HANDOFF COMPLETE
           </span>
         )}
       </div>
@@ -148,7 +162,7 @@ export default function HandoffTab({ demo, cc, vitals, medications, allergies, p
               <div key={c.id} style={{ display:"flex", alignItems:"center", gap:8,
                 padding:"6px 10px", borderRadius:7,
                 background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.2)" }}>
-                <span style={{ color:"var(--npi-gold)", fontSize:11 }}>&#x23f3;</span>
+                <span style={{ color:"var(--npi-gold)", fontSize:11 }}>\u23f3</span>
                 <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12.5,
                   color:"var(--npi-txt2)", flex:1 }}>
                   Awaiting {c.service} consult{c.question?`: ${c.question.slice(0,60)}`:""}
@@ -170,7 +184,7 @@ export default function HandoffTab({ demo, cc, vitals, medications, allergies, p
                   textDecoration:a.done?"line-through":"none" }}>{a.text}</span>
                 <button onClick={()=>removeAction(a.id)}
                   style={{ background:"transparent", border:"none",
-                    color:"var(--npi-txt4)", cursor:"pointer", fontSize:11 }}>&#x2715;</button>
+                    color:"var(--npi-txt4)", cursor:"pointer", fontSize:11 }}>\u2715</button>
               </div>
             ))}
             {actions.length===0 && consults.filter(c=>c.status==="pending").length===0 && (
@@ -198,6 +212,27 @@ export default function HandoffTab({ demo, cc, vitals, medications, allergies, p
             color:"var(--npi-txt4)", marginBottom:6 }}>
             Anticipated changes and if/then contingency plans for the receiving provider
           </div>
+          {/* SDOH flags relevant to contingency planning */}
+          {sdoh && Object.entries(sdoh).some(([,v])=>v&&v!=="unknown"&&v!==false) && (
+            <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:8 }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--npi-txt4)", textTransform:"uppercase", letterSpacing:".08em",
+                alignSelf:"center", marginRight:3 }}>SDOH:</span>
+              {Object.entries(sdoh).filter(([,v])=>v&&v!=="unknown"&&v!==false).map(([k,v])=>(
+                <span key={k} style={{ fontSize:10, padding:"2px 8px", borderRadius:10,
+                  background:"rgba(167,139,250,.1)", border:"1px solid rgba(167,139,250,.25)",
+                  color:"var(--npi-purple)", fontFamily:"'DM Sans',sans-serif" }}>
+                  {k.replace(/_/g," ")}{typeof v==="string"&&v!=="true"?": "+v:""}
+                </span>
+              ))}
+            </div>
+          )}
+          {registration?.room && (
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+              color:"var(--npi-txt4)", marginBottom:6 }}>
+              Room {registration.room}{registration?.mrn ? "  \xb7  MRN " + registration.mrn : ""}
+            </div>
+          )}
           <textarea value={situation} onChange={e=>setSituation(e.target.value)}
             rows={3} style={iaBase}
             placeholder={"If BP drops below 90 \u2192 NS bolus + call senior resident\nIf troponin elevated \u2192 activate cardiology consult"} />

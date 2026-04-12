@@ -10,6 +10,8 @@ import { useState } from "react";
 })();
 
 // ── Section definitions ───────────────────────────────────────────────────────
+// Each section has: id, label, icon, and a `check` function that returns true
+// when that section is sufficiently complete to count toward progress.
 const SECTIONS = [
   {
     id:    "registration",
@@ -60,9 +62,9 @@ const SECTIONS = [
 
 // ── Color helpers ─────────────────────────────────────────────────────────────
 function sectionColor(done, active) {
-  if (done)   return "#00e5c0";
-  if (active) return "#3b9eff";
-  return "#1a3550";
+  if (done)   return "#00e5c0";   // teal — complete
+  if (active) return "#3b9eff";   // blue — current focus
+  return "#1a3550";               // dark — not yet done
 }
 
 // ── Tooltip ───────────────────────────────────────────────────────────────────
@@ -88,6 +90,13 @@ function Tooltip({ children, tip }) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
+// Props:
+//   demo, vitals, rosState, peState           — from platform shared state
+//   mdmComplexity (number 1-4)                — from ClinicalNoteStudio
+//   mdmDomainsCount (number 0-3)              — how many MDM domains are filled
+//   disposition (string)                      — from ClinicalNoteStudio or HandoffTab
+//   activeSection (string)                    — current tab/section id for highlighting
+//   onSectionClick (fn)                       — optional: called with section id on click
 export default function ChartProgressStrip({
   demo = {}, vitals = {}, rosState = {}, peState = {},
   mdmComplexity = 0, mdmDomainsCount = 0,
@@ -167,6 +176,7 @@ export default function ChartProgressStrip({
                   cursor: onSectionClick ? "pointer" : "default",
                   transition: "all .15s",
                 }}>
+                {/* Status dot */}
                 <div style={{
                   width: 5, height: 5, borderRadius: "50%", flexShrink: 0,
                   background: color,

@@ -29,7 +29,6 @@ export const NAV_DATA = {
     { section: "chart",      icon: "📄", label: "Clinical Note",     abbr: "Cn", dot: "empty" },
     { section: "reassess",   icon: "🔄", label: "Reassessment",      abbr: "Ra", dot: "empty" },
     { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty" },
-    { section: "mdm",        icon: "⚖️", label: "MDM Builder",       abbr: "Md", dot: "empty" },
     { section: "timeline",   icon: "⏱",  label: "Timeline",          abbr: "Tl", dot: "empty" },
     { section: "closeout",   icon: "✅", label: "Close-out",         abbr: "Cl", dot: "empty" },
     { section: "handoff",    icon: "🤝", label: "Handoff (I-PASS)",  abbr: "Ho", dot: "empty" },
@@ -58,11 +57,6 @@ export const GROUP_META = [
 ];
 
 export const ALL_SECTIONS = Object.values(NAV_DATA).flat();
-
-// ─── VISIT MODE NAV FILTERING ─────────────────────────────────────────────────
-// Simple mode (ESI 4-5): hide complex close-group tabs not needed for routine visits
-export const SIMPLE_HIDDEN = new Set(["reassess", "autocoder", "mdm", "timeline", "handoff"]);
-// Critical mode (ESI 1-2): all tabs shown; sepsis tool gets visual promotion
 
 export const SHORTCUT_MAP = {
   "1": "triage", "2": "demo",  "3": "cc",
@@ -117,20 +111,6 @@ export const PE_RAIL_SYSTEMS = [
 export const SYSTEM_PROMPT =
   "You are Notrya AI — a helpful AI assistant embedded in an emergency medicine documentation platform. Respond in 2-4 concise, actionable sentences. Be direct. Never fabricate data.";
 
-// ─── NOTE BLOAT GUARD ─────────────────────────────────────────────────────────
-// Import this constant and append it to any AI note-generation prompt.
-// Basis: AMA/CPT 2023 guidance against auto-pulling EHR data that adds length
-// but no clinical value. Only clinically relevant findings should appear.
-export const NOTE_BLOAT_GUARD =
-  "\n\nNOTE QUALITY RULES (mandatory — AMA/CPT 2023 documentation standards):\n" +
-  "- Include ONLY findings that are clinically relevant to this specific encounter.\n" +
-  "- Do NOT auto-list normal or negative findings unless they directly support or" +
-  " exclude a diagnosis being considered.\n" +
-  "- Do NOT reproduce every ROS checkbox or every PE system if they are not pertinent.\n" +
-  "- A complete note is not the same as a long note. Brevity with specificity is correct.\n" +
-  "- For MDM: state the problem complexity, data reviewed, and risk level explicitly." +
-  " Do not pad with peripheral data.";
-
 export function buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab) {
   const name = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
   const pmhList = Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]).join(", ") || "none";
@@ -177,27 +157,10 @@ export function getCCRiskHints(ccText) {
   return h;
 }
 
-// ─── AMA CPT 2023 CATEGORY 2 DOCUMENTATION PHRASE BUILDER ───────────────────
-// Generates a ready-to-paste chart phrase for "decision not to order" credit.
-// Basis: AMA CPT 2023 FAQ #36 — ordering a test that was considered but not
-// selected after shared decision-making satisfies MDM Category 2 data element.
-export function buildDecisionDocPhrase(hint) {
-  const verb = hint.tier === "advisory"
-    ? "Applied to support decision regarding further workup"
-    : "Applied to guide imaging / testing decision";
-  return (
-    `Clinical decision rule applied: ${hint.score}. ${verb} (${hint.use}). ` +
-    `Result: ${hint.action}. ` +
-    `Per AMA CPT 2023 FAQ \u002336, documented application of a validated clinical ` +
-    `decision rule with explicit reasoning satisfies MDM Category 2 data element ` +
-    `(Amount and Complexity of Data Reviewed and Analyzed).`
-  );
-}
-
 // ─── SDOH ─────────────────────────────────────────────────────────────────────
 export const SDOH_DOMAINS = [
   { key:"housing",   icon:"🏠", label:"Housing",     q:"Is housing stable?",         opts:["Stable","Unstable","Homeless / at risk"]      },
-  { key:"food",      icon:"🍎", label:"Food",         q:"In the past 12 months, did you worry food would run out before you had money to buy more?", opts:["Adequate","Inconsistent","Insecure / hungry"]  },
+  { key:"food",      icon:"🍎", label:"Food",         q:"Food access adequate?",      opts:["Adequate","Inconsistent","Insecure / hungry"]  },
   { key:"transport", icon:"🚗", label:"Transport",    q:"Can get to appointments?",   opts:["No barrier","Occasional barrier","Major barrier"] },
   { key:"utilities", icon:"💡", label:"Utilities",    q:"Heat / water stable?",       opts:["Stable","At risk","Shut off / absent"]         },
   { key:"isolation", icon:"👥", label:"Social",       q:"Social support adequate?",   opts:["Connected","Limited","Isolated"]               },
@@ -205,181 +168,6 @@ export const SDOH_DOMAINS = [
 ];
 
 export const TIER_COLORS = { "0":"#00e5c0", "1":"#f5c842", "2":"#ff6b6b" };
-
-// ─── ISAR-6 FALL RISK SCREEN ──────────────────────────────────────────────────
-// Identification of Seniors At Risk — validated specifically for ED use.
-// Score ≥ 2 = high risk for functional decline, readmission, and adverse outcomes.
-// "Yes" answers score 1 point each EXCEPT q3 (vision) where "No" scores 1 point.
-export const ISAR_QUESTIONS = [
-  { key:"q1", q:"Do you need someone to help you on a regular basis?",               yesScores:true,  hint:"Dependency in ADLs / IADLs"                              },
-  { key:"q2", q:"Have you had an emergency hospital visit in the last 6 months?",    yesScores:true,  hint:"Prior acute care utilization"                             },
-  { key:"q3", q:"In general, do you see well?",                                      yesScores:false, hint:"Score 1 if NO — impaired vision is the risk factor"       },
-  { key:"q4", q:"Do you have serious problems with your memory?",                    yesScores:true,  hint:"Cognitive impairment"                                     },
-  { key:"q5", q:"Do you take more than 3 different medications every day?",          yesScores:true,  hint:"Polypharmacy \u2014 \u22654 meds is an independent risk factor" },
-  { key:"q6", q:"Do you have any problems with walking or balance?",                 yesScores:true,  hint:"Functional limitation / fall risk"                        },
-];
-
-// ─── PHQ-2 DEPRESSION SCREENING ───────────────────────────────────────────────
-// CMS eCQM #134 / NQF-0418 — two-item depression screen validated for ED use.
-// Score each item 0-3; total ≥ 3 = positive screen (sensitivity ~83%, spec ~92%).
-export const PHQ2_COLORS    = { "0":"#00e5c0", "1":"#f5c842", "2":"#ff9f43", "3":"#ff6b6b" };
-export const PHQ2_OPTS      = ["Not at all", "Several days", "More than half the days", "Nearly every day"];
-export const PHQ2_QUESTIONS = [
-  { key:"phq2q1", q:"Over the past 2 weeks — little interest or pleasure in doing things?" },
-  { key:"phq2q2", q:"Over the past 2 weeks — feeling down, depressed, or hopeless?"        },
-];
-
-// ─── AUDIT-C ALCOHOL SCREENING ────────────────────────────────────────────────
-// MIPS Measure #431 / USPSTF Grade B — 3-item screen for unhealthy alcohol use.
-// Each item scored 0-4; positive threshold: ≥ 3 (women) or ≥ 4 (men).
-// CAGE is NOT recommended by USPSTF — use AUDIT-C or NIAAA Single Question only.
-export const AUDITC_COLORS    = { "0":"#00e5c0", "1":"#7ecbff", "2":"#f5c842", "3":"#ff9f43", "4":"#ff6b6b" };
-export const AUDITC_QUESTIONS = [
-  { key:"auditcq1", q:"How often do you have a drink containing alcohol?",
-    opts:["Never","Monthly or less","2–4 times/month","2–3 times/week","4+ times/week"] },
-  { key:"auditcq2", q:"How many standard drinks do you have on a typical drinking day?",
-    opts:["1–2","3–4","5–6","7–9","10+"] },
-  { key:"auditcq3", q:"How often do you have 6 or more drinks on one occasion?",
-    opts:["Never","Less than monthly","Monthly","Weekly","Daily or almost daily"] },
-];
-
-// ─── SEPSIS BUNDLE TIMESTAMPS (CMS SEP-1) ────────────────────────────────────
-// Three-field lightweight tracker surfaced in the Sepsis tool tab and
-// PatientSummaryTab. Each entry is a HH:MM string stamped at time of action.
-export const SEPSIS_BUNDLE_ITEMS = [
-  { key:"lactateOrdered",       label:"Lactate ordered",             hint:"Initial serum lactate \u2014 \u22654 mmol/L = severe sepsis / septic shock"          },
-  { key:"lactateValue",         label:"Initial lactate (mmol/L)",    hint:"Enter value \u2014 \u22652 triggers repeat; \u22654 mandates fluids",  isValue:true  },
-  { key:"abxOrdered",           label:"Antibiotics ordered",         hint:"CMS SEP-1: broad-spectrum ABX within 3 hrs of sepsis recognition"                    },
-  { key:"fluidsStarted",        label:"30 mL/kg IV fluids started",  hint:"Required if hypotension present or initial lactate \u22654 mmol/L"                   },
-  { key:"repeatLactateOrdered", label:"Repeat lactate ordered",      hint:"CEDR 2025: required if initial lactate > 2 mmol/L; target clearance \u226510%"       },
-  { key:"repeatLactateValue",   label:"Repeat lactate (mmol/L)",     hint:"Enter value \u2014 clearance = (initial \u2212 repeat) \u00f7 initial \u00d7 100%", isValue:true },
-];
-
-// ─── FOLLOW-UP COORDINATION ───────────────────────────────────────────────────
-// CEDR 2025 follow-up care coordination measure: requires at least one of —
-// (a) specific date/time with provider documented, (b) communication to follow-up
-// provider, or (c) hospital-guaranteed follow-up documented in discharge summary.
-export const FOLLOW_UP_METHODS = [
-  "Appointment scheduled",
-  "Referral sent to provider",
-  "Patient instructed to call for appointment",
-  "Telehealth visit arranged",
-  "Hospital follow-up clinic guaranteed",
-  "Follow-up via care coordinator",
-];
-
-// ─── MDM GRID — AMA CPT 2023 ──────────────────────────────────────────────────
-// Three-column grid: COPA | Data | Risk. Final E/M level = highest level
-// where at least 2 of 3 columns meet or exceed that level's threshold.
-
-export const MDM_COPA_LEVELS = [
-  { key:"minimal",  label:"Minimal",  color:"#8892a4", rank:1,
-    desc:"1 self-limited or minor problem",
-    emCodes:"99202 / 99212" },
-  { key:"low",      label:"Low",      color:"#00e5c0", rank:2,
-    desc:"2+ self-limited; or 1 stable chronic condition; or 1 acute uncomplicated illness/injury",
-    emCodes:"99203 / 99213" },
-  { key:"moderate", label:"Moderate", color:"#f5c842", rank:3,
-    desc:"1+ chronic with exacerbation or progression; or undiagnosed new problem with uncertain prognosis; or acute illness with systemic symptoms; or acute complicated injury",
-    emCodes:"99204 / 99214" },
-  { key:"high",     label:"High",     color:"#ff6b6b", rank:4,
-    desc:"1+ chronic with severe exacerbation; or acute/chronic illness posing threat to life or bodily function",
-    emCodes:"99205 / 99215" },
-];
-
-export const MDM_DATA_CATS = {
-  cat1Items: [
-    { key:"orderLab",   label:"Ordered and/or reviewed lab result(s)"                                     },
-    { key:"orderRad",   label:"Ordered and/or reviewed radiology result(s)"                               },
-    { key:"orderOther", label:"Ordered and/or reviewed other diagnostic test(s)"                          },
-    { key:"extRecords", label:"Reviewed external records / communicated with treating clinician"           },
-    { key:"indepHist",  label:"Obtained independent history from additional source (family, EMS, etc.)"   },
-  ],
-  cat2Label: "Independent interpretation of a test result not separately reported by another provider",
-  cat3Label: "Discussion of management or test interpretation with external provider/specialist",
-};
-
-export const MDM_RISK_LEVELS = [
-  { key:"minimal",  label:"Minimal",  color:"#8892a4", rank:1,
-    examples:"OTC medications, rest, bandages, superficial suture closure" },
-  { key:"low",      label:"Low",      color:"#00e5c0", rank:2,
-    examples:"Prescription drug management; minor procedures (sutures, splints, IV fluids); lab or imaging ordered" },
-  { key:"moderate", label:"Moderate", color:"#f5c842", rank:3,
-    examples:"New Rx with minor risk; IV drugs requiring intensive monitoring; closed fracture without manipulation; social determinants of health affecting management; mental health treatment (AMA CPT 2023 Table of Risk)" },
-  { key:"high",     label:"High",     color:"#ff6b6b", rank:4,
-    examples:"Drug therapy requiring intensive monitoring for toxicity; decision for elective major surgery; diagnosis or treatment significantly limited by social determinants; life-threatening condition" },
-];
-
-export const EM_LEVEL_MAP = {
-  1: { outpatient:"99202", established:"99212", ed:"99281",       label:"Straightforward",     color:"#8892a4" },
-  2: { outpatient:"99203", established:"99213", ed:"99282",       label:"Low Complexity",      color:"#00e5c0" },
-  3: { outpatient:"99204", established:"99214", ed:"99283–99284", label:"Moderate Complexity", color:"#f5c842" },
-  4: { outpatient:"99205", established:"99215", ed:"99285",       label:"High Complexity",     color:"#ff6b6b" },
-};
-
-// Highest rank where ≥2 of 3 MDM columns meet/exceed that rank.
-export function computeEMLevel(copa, dataLevel, risk) {
-  const rank = { "":0, minimal:1, low:2, moderate:3, high:4 };
-  const cols = [rank[copa]||0, rank[dataLevel]||0, rank[risk]||0];
-  for (const r of [4,3,2,1]) {
-    if (cols.filter(v => v >= r).length >= 2) return r;
-  }
-  return 0;
-}
-
-// AMA 2023 data level from checked categories:
-// Limited  = ≥2 Cat1 items OR Cat2
-// Moderate = ≥3 Cat1 items OR Cat2 OR Cat3
-// High     = ≥2 of the three Moderate categories met
-export function computeDataLevel(cat1Keys, hasCat2, hasCat3) {
-  const c1 = (cat1Keys||[]).length;
-  const metMod = [c1>=3, hasCat2, hasCat3].filter(Boolean).length;
-  if (metMod >= 2) return "high";
-  if (metMod >= 1) return "moderate";
-  if (c1 >= 2 || hasCat2) return "limited";
-  return "none";
-}
-
-export function buildMDMNarrative(mdmState, mdmDataElements, patientName, patientCC) {
-  const copa = MDM_COPA_LEVELS.find(l => l.key === mdmState.copa);
-  const risk = MDM_RISK_LEVELS.find(l => l.key === mdmState.risk);
-  const emRank = computeEMLevel(mdmState.copa, mdmState.dataLevel, mdmState.risk);
-  const emLevel = EM_LEVEL_MAP[emRank];
-  const cat1Labels = (mdmState.dataChecks?.cat1||[])
-    .map(k => MDM_DATA_CATS.cat1Items.find(i => i.key===k)?.label).filter(Boolean);
-  const hasCat2 = mdmState.dataChecks?.cat2 || (mdmDataElements||[]).length > 0;
-  const hasCat3 = mdmState.dataChecks?.cat3;
-  return [
-    `MEDICAL DECISION MAKING — AMA CPT 2023${patientName ? " | " + patientName : ""}${patientCC ? " | " + patientCC : ""}`,
-    "",
-    "1. NUMBER & COMPLEXITY OF PROBLEMS ADDRESSED (COPA):",
-    copa ? `   Level: ${copa.label} — ${copa.desc}` : "   Level: Not specified",
-    mdmState.copaRationale ? `   Rationale: ${mdmState.copaRationale}` : "",
-    "",
-    `2. AMOUNT & COMPLEXITY OF DATA: ${mdmState.dataLevel ? mdmState.dataLevel.charAt(0).toUpperCase()+mdmState.dataLevel.slice(1) : "Not specified"}`,
-    ...(cat1Labels.length ? ["   Category 1:", ...cat1Labels.map(l => `     \u2022 ${l}`)] : []),
-    ...((mdmDataElements||[]).length ? [
-      "   Category 2 — Clinical decision rules applied (AMA CPT 2023 FAQ #36):",
-      ...(mdmDataElements||[]).map(e => `     \u2022 ${e.score}: ${e.phrase.slice(0,160).trimEnd()}\u2026`),
-    ] : []),
-    ...(hasCat2 && !(mdmDataElements||[]).length ? ["   \u2022 Independent interpretation of test result"] : []),
-    ...(hasCat3 ? ["   \u2022 Discussion of management with external specialist/clinician"] : []),
-    "",
-    "3. RISK OF COMPLICATIONS AND/OR MORBIDITY/MORTALITY:",
-    risk ? `   Level: ${risk.label} — ${risk.examples}` : "   Level: Not specified",
-    mdmState.riskRationale ? `   Rationale: ${mdmState.riskRationale}` : "",
-    "",
-    emLevel
-      ? `FINAL E/M LEVEL: ${emLevel.outpatient}/${emLevel.established} (office) \u00b7 ${emLevel.ed} (ED) \u2014 ${emLevel.label}`
-      : "FINAL E/M LEVEL: Pending \u2014 complete all three columns",
-    emLevel
-      ? `Basis: 2-of-3 AMA CPT 2023 MDM columns meet or exceed the ${emLevel.label} threshold.`
-      : "",
-    emLevel && emLevel.ed === "99285"
-      ? "NOTE: For critically ill patients (ESI 1\u20132), consider critical care codes 99291/99292 if high-complexity decision-making provided to a patient with a critical illness. Critical care requires documented time (\u226530 min) and is billed separately from or instead of the ED E/M."
-      : "",
-  ].filter(l => l !== undefined).join("\n").replace(/\n{3,}/g, "\n\n").trim();
-}
 
 // ─── TRIAGE ───────────────────────────────────────────────────────────────────
 export const ESI_CFG = [
@@ -623,15 +411,12 @@ export const DC_SECTIONS = [
   { key:"additional_care",          icon:"🩹", label:"Additional Care",        color:"#ff9f43",  hint:"Wound care, devices, condition-specific home instructions" },
 ];
 
-export function buildDCPrompt(demo, cc, vitals, medications, allergies, pmhSelected, disposition, dispReason, consults, lang, followUp = null) {
+export function buildDCPrompt(demo, cc, vitals, medications, allergies, pmhSelected, disposition, dispReason, consults, lang) {
   const pmhList = Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]).slice(0, 8).join(", ");
   const followupSvcs = (consults || []).filter(c => c.status === "completed").map(c => c.service).join(", ");
   const langLine = lang === "simple"
     ? "Write at a 6th-grade reading level. Use very short sentences. No medical jargon — if a medical term is unavoidable, define it immediately in plain English. Use 'you' and 'your' throughout."
     : "Write clearly for an adult patient. Use plain, direct language. Minimal jargon. Use 'you' and 'your'. Brief and actionable.";
-  const followUpLine = followUp?.provider
-    ? `STRUCTURED FOLLOW-UP (CEDR documented): ${followUp.provider}${followUp.specialty ? " — " + followUp.specialty : ""}${followUp.date ? ", on " + followUp.date : ""}. Method: ${followUp.method || "appointment scheduled"}.`
-    : "";
   return [
     "You are writing discharge instructions for a patient leaving the emergency department.",
     langLine,
@@ -648,15 +433,12 @@ export function buildDCPrompt(demo, cc, vitals, medications, allergies, pmhSelec
     medications.length  ? `CURRENT MEDICATIONS: ${medications.slice(0, 10).join("; ")}.`                    : "MEDICATIONS: None listed.",
     pmhList             ? `PMH: ${pmhList}.`                                                                 : "",
     followupSvcs        ? `FOLLOW-UP SPECIALISTS ARRANGED: ${followupSvcs}.`                                : "",
-    followUpLine,
     "",
     "Guidance per section:",
     "visit_summary: In 2-3 sentences, explain what condition was evaluated, key findings, and what was done or tested. No technical lab values.",
     "medications_instructions: List what medications to continue, any changes or new prescriptions discussed, and what to stop. Include allergy reminder if allergies documented. Use bullets.",
     "return_precautions: Give 4-6 SPECIFIC warning signs for this patient's condition that should prompt immediate return to the ED. Be precise — tailor to the CC, not generic.",
-    followUpLine
-      ? `follow_up: Use the structured follow-up data provided above (provider, specialty, date, method). Write 2-3 sentences confirming the appointment details and what to expect.`
-      : "follow_up: Recommend follow-up timing and with whom (PCP and/or specialists). Incorporate any consult services listed above.",
+    "follow_up: Recommend follow-up timing and with whom (PCP and/or specialists). Incorporate any consult services listed above.",
     "activity_diet: Cover activity restrictions, rest, diet, fluids, driving restrictions, and return-to-work/school guidance relevant to this visit.",
     "additional_care: Any wound care, device instructions, or home care advice specific to this encounter. If nothing specific applies, give practical general wellness guidance.",
   ].filter(Boolean).join("\n");
@@ -717,3 +499,117 @@ export const BODY_REGIONS = [
   "Hip","Thigh","Knee","Lower leg","Ankle","Foot","Toe(s)",
   "Groin","Sacrum / Gluteal","Perineum","Bilateral / Multiple","Other",
 ];
+
+// ─── SEPSIS BUNDLE ───────────────────────────────────────────────────────────
+export const SEPSIS_BUNDLE_ITEMS = [
+  { key: "lactateOrdered",     label: "Lactate ordered" },
+  { key: "lactateValue",       label: "Initial lactate (mmol/L)" },
+  { key: "bloodCulturesDrawn", label: "Blood cultures drawn" },
+  { key: "abxOrdered",         label: "Antibiotics ordered" },
+  { key: "fluidOrdered",       label: "30 mL/kg IVF ordered" },
+  { key: "fluidCompleted",     label: "IVF completed" },
+  { key: "repeatLactateValue", label: "Repeat lactate (mmol/L)" },
+  { key: "vasopressorsStarted",label: "Vasopressors started" },
+];
+
+// ─── AMA 2023 MDM TABLES ──────────────────────────────────────────────────────
+// Source: AMA CPT E/M Guidelines 2023, Table of MDM
+export const MDM_COPA_LEVELS = [
+  { key: "minimal",  label: "Minimal",  color: "#3dffa0", desc: "Self-limited or minor problem" },
+  { key: "low",      label: "Low",      color: "#3b9eff", desc: "Stable chronic / uncomplicated acute" },
+  { key: "moderate", label: "Moderate", color: "#f5c842", desc: "Exacerbation / new problem with additional workup" },
+  { key: "high",     label: "High",     color: "#ff6b6b", desc: "Severe exacerbation / threat to life or organ" },
+];
+
+export const MDM_DATA_CATS = [
+  { key: "review_external",   label: "Review of external records",                         cat: 1 },
+  { key: "review_results",    label: "Review & order tests (labs, imaging, EKG)",           cat: 1 },
+  { key: "order_independent", label: "Independent interpretation of results",               cat: 2 },
+  { key: "discuss_mgmt",      label: "Discussion with treating/consulting provider",         cat: 2 },
+  { key: "independent_hx",    label: "Independent history from someone other than patient", cat: 3 },
+];
+
+export const MDM_RISK_LEVELS = [
+  { key: "minimal",  label: "Minimal",  color: "#3dffa0", desc: "OTC drugs; no prescription required" },
+  { key: "low",      label: "Low",      color: "#3b9eff", desc: "Prescription drug management" },
+  { key: "moderate", label: "Moderate", color: "#f5c842", desc: "Prescription drug management; minor surgery with risk factors" },
+  { key: "high",     label: "High",     color: "#ff6b6b", desc: "Drug therapy requiring intensive monitoring; major surgery" },
+];
+
+// E/M code map keyed by MDM complexity rank (0=none,1=str,2=low,3=mod,4=high)
+export const EM_LEVEL_MAP = {
+  0: { code: "—",     label: "Insufficient data",  mdm: "—",              color: "#5a82a8" },
+  1: { code: "99281", label: "Straightforward MDM", mdm: "Straightforward", color: "#3dffa0" },
+  2: { code: "99282", label: "Low complexity MDM",  mdm: "Low",            color: "#3b9eff" },
+  3: { code: "99284", label: "Moderate MDM",         mdm: "Moderate",       color: "#f5c842" },
+  4: { code: "99285", label: "High complexity MDM",  mdm: "High",           color: "#ff6b6b" },
+};
+
+const RANK = { "": 0, minimal: 1, low: 2, moderate: 3, high: 4 };
+
+/**
+ * AMA 2023: E/M level = highest level supported by 2 of 3 domains.
+ * Returns rank 0-4.
+ */
+export function computeEMLevel(copa, dataLevel, risk) {
+  const r = [RANK[copa] || 0, RANK[dataLevel] || 0, RANK[risk] || 0].sort((a,b) => a-b);
+  // Need at least 2 domains — take the second-highest (median of sorted desc)
+  return r[1] || 0;
+}
+
+/**
+ * Auto-compute data complexity level from checkbox selections.
+ * cat1 = array of cat-1 items checked, cat2 = boolean, cat3 = boolean
+ */
+export function computeDataLevel(cat1Items, cat2, cat3) {
+  if (cat3) return "high";
+  if (cat2 || (cat1Items && cat1Items.length >= 3)) return "moderate";
+  if (cat1Items && cat1Items.length >= 1) return "low";
+  return "";
+}
+
+/**
+ * Build a plain-text MDM narrative from structured inputs.
+ */
+export function buildMDMNarrative({
+  copa, copaRationale, dataChecks, dataLevel, risk, riskRationale,
+  consideredNotOrdered, sdohFactors, criticalCareMinutes,
+}) {
+  const lines = ["MEDICAL DECISION MAKING", ""];
+  if (copa) {
+    lines.push(`Number/Complexity of Problems Addressed (Domain 1): ${copa.toUpperCase()}`);
+    if (copaRationale) lines.push(`  ${copaRationale}`);
+    lines.push("");
+  }
+  if (dataLevel) {
+    lines.push(`Amount/Complexity of Data Reviewed (Domain 2): ${dataLevel.toUpperCase()}`);
+    const cat1 = dataChecks?.cat1 || [];
+    if (cat1.length) lines.push(`  · ${cat1.join("  · ")}`);
+    if (dataChecks?.cat2) lines.push(`  · Independent interpretation of results by this provider`);
+    if (dataChecks?.cat3) lines.push(`  · Independent history obtained`);
+    lines.push("");
+  }
+  if (risk) {
+    lines.push(`Risk of Complications/Morbidity (Domain 3): ${risk.toUpperCase()}`);
+    if (riskRationale) lines.push(`  ${riskRationale}`);
+    lines.push("");
+  }
+  if (consideredNotOrdered?.trim()) {
+    lines.push(`Tests/Treatments Considered But Not Ordered:`);
+    lines.push(`  ${consideredNotOrdered.trim()}`);
+    lines.push("");
+  }
+  if (sdohFactors?.length) {
+    lines.push(`SDOH Factors (G0136 — Moderate Risk MDM): ${sdohFactors.join(", ")}`);
+    lines.push("");
+  }
+  if (criticalCareMinutes) {
+    lines.push(`Critical Care Time: ${criticalCareMinutes} min (CPT 99291/99292)`);
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+// ── Stub exports referenced by NewPatientInput ────────────────────────────────
+export const SIMPLE_HIDDEN = [];
+export function buildDecisionDocPhrase() { return ""; }

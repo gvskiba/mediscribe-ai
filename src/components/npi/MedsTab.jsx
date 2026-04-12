@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
 
-// ── Font + CSS injection ───────────────────────────────────────────
 (() => {
   if (document.getElementById("meds-tab-fonts")) return;
   const l = document.createElement("link"); l.id = "meds-tab-fonts";
@@ -21,7 +20,6 @@ import { useState, useMemo, useCallback } from "react";
   document.head.appendChild(s);
 })();
 
-// ── Tokens ─────────────────────────────────────────────────────────
 const T = {
   bg:"#050f1e",panel:"#081628",card:"#0b1e36",up:"#0e2544",
   b:"rgba(26,53,85,0.8)",
@@ -35,84 +33,40 @@ const inp   = (focus,err) => ({width:"100%",background:"rgba(14,37,68,0.8)",bord
 const row   = (x={}) => ({display:"flex",alignItems:"center",gap:8,...x});
 const col   = (x={}) => ({display:"flex",flexDirection:"column",gap:6,...x});
 
-// ── Beers Criteria (AGS 2023) ──────────────────────────────────────
-// keyword = any substring of a medication string triggers the flag
-const BEERS_DB = [
-  {
-    keywords:["alprazolam","clonazepam","diazepam","lorazepam","oxazepam","temazepam","triazolam","chlordiazepoxide","flurazepam","clorazepate","nitrazepam","midazolam"],
-    concern:"Benzodiazepine",
-    risk:"Cognitive impairment, delirium, falls, fractures, and MVA risk in older adults — all benzodiazepines regardless of half-life.",
-    alt:"Non-pharmacologic approaches; buspirone or SSRI/SNRI for anxiety. If BZD unavoidable, use lowest dose for shortest duration.",
-  },
-  {
-    keywords:["zolpidem","zaleplon","eszopiclone"],
-    concern:"Z-drug / Sedative-Hypnotic",
-    risk:"Similar risk profile to benzodiazepines — cognitive impairment, delirium, falls, fractures in elderly.",
-    alt:"CBT-I is first-line for insomnia. Melatonin 0.5-5mg or low-dose doxepin (3-6mg) have more favorable profiles.",
-  },
-  {
-    keywords:["diphenhydramine","hydroxyzine","promethazine","chlorpheniramine","cyproheptadine","brompheniramine","clemastine","dexchlorpheniramine","triprolidine","doxylamine"],
-    concern:"First-Generation Antihistamine (Anticholinergic)",
-    risk:"Highly anticholinergic — confusion, acute delirium, urinary retention, constipation, dry mouth. Diphenhydramine can precipitate acute delirium even at normal doses in elderly.",
-    alt:"Second-gen antihistamines (loratadine, cetirizine, fexofenadine) for allergy symptoms. Melatonin for sleep.",
-  },
-  {
-    keywords:["amitriptyline","imipramine","doxepin","trimipramine","clomipramine","nortriptyline"],
-    concern:"Tricyclic Antidepressant",
-    risk:"Strongly anticholinergic and sedating; orthostatic hypotension causing falls; QTc prolongation and arrhythmia risk in elderly.",
-    alt:"SSRIs or SNRIs for depression; duloxetine/pregabalin for neuropathic pain. Low-dose doxepin (3-6mg) for insomnia is acceptable.",
-  },
-  {
-    keywords:["oxybutynin","tolterodine","hyoscyamine","dicyclomine","fesoterodine","flavoxate","solifenacin","darifenacin","propantheline"],
-    concern:"Anticholinergic / Bladder Relaxant",
-    risk:"Anticholinergic effects — cognitive impairment, delirium, urinary retention, constipation; oxybutynin has highest CNS penetration.",
-    alt:"Mirabegron (beta-3 agonist) has much lower anticholinergic burden; pelvic floor training; bladder retraining.",
-  },
-  {
-    keywords:["ibuprofen","naproxen","diclofenac","meloxicam","indomethacin","etodolac","oxaprozin","piroxicam","sulindac","ketoprofen","ketorolac","diflunisal"],
-    concern:"NSAID (Systemic)",
-    risk:"5x increased risk of GI bleeding/peptic ulcer; AKI (especially with RAAS inhibitors or diuretics); fluid retention worsening HF; hypertension exacerbation.",
-    alt:"Acetaminophen preferred for pain in older adults. Topical NSAIDs (diclofenac gel) have lower systemic absorption. If oral NSAID necessary, add PPI.",
-  },
-  {
-    keywords:["tramadol","ultram","conzip"],
-    concern:"Tramadol (Opioid-like)",
-    risk:"Fall and fracture risk, cognitive impairment, hyponatremia (SIADH), lowers seizure threshold, serotonin syndrome risk particularly with SSRIs/SNRIs.",
-    alt:"Acetaminophen for mild-moderate pain. If opioid needed, start at 25-50% lower dose with close monitoring.",
-  },
-  {
-    keywords:["cyclobenzaprine","carisoprodol","methocarbamol","chlorzoxazone","orphenadrine","baclofen"],
-    concern:"Skeletal Muscle Relaxant",
-    risk:"Anticholinergic effects, sedation, increased fall risk; carisoprodol metabolizes to meprobamate (abuse potential). Most muscle-relaxant evidence base is poor across all ages.",
-    alt:"Physical therapy is preferred. Heat/cold application, NSAIDs (cautiously), low-dose cyclobenzaprine with monitoring if needed.",
-  },
-  {
-    keywords:["glyburide","glibenclamide","chlorpropamide"],
-    concern:"Long-Acting Sulfonylurea",
-    risk:"Prolonged hypoglycemia risk — glyburide has active metabolites with extended duration in elderly; fall and fracture risk from hypoglycemia.",
-    alt:"Shorter-acting sulfonylureas (glipizide IR); metformin (if eGFR allows); DPP-4 inhibitors; SGLT2 inhibitors.",
-  },
-  {
-    keywords:["nitrofurantoin","macrobid","macrodantin"],
-    concern:"Nitrofurantoin",
-    risk:"Pulmonary toxicity (fibrosis) and hepatotoxicity with long-term use; inadequate drug concentrations if CrCl <30 mL/min making it ineffective and potentially harmful.",
-    alt:"Fosfomycin (single dose), trimethoprim (alone), or amoxicillin-clavulanate for UTI if CrCl <30. Short course acceptable if CrCl >=30.",
-  },
-  {
-    keywords:["metoclopramide","reglan"],
-    concern:"Metoclopramide",
-    risk:"Risk of tardive dyskinesia (potentially irreversible) with long-term use; risk is higher in elderly. Avoid for >12 weeks.",
-    alt:"Ondansetron for nausea/vomiting. If gastroparesis, dietary modifications + consider domperidone (outside US).",
-  },
-  {
-    keywords:["megestrol","megace"],
-    concern:"Megestrol Acetate",
-    risk:"DVT/PE risk; adrenal suppression. Minimal benefit for appetite stimulation with significant harms in elderly.",
-    alt:"Address underlying causes of weight loss. Mirtazapine has appetite-stimulating properties. Dronabinol is an option.",
-  },
+// ── Controlled substance keywords for PDMP trigger ─────────────────
+const CONTROLLED_KEYWORDS = [
+  "morphine","oxycodone","hydrocodone","hydromorphone","fentanyl","codeine","tramadol",
+  "buprenorphine","methadone","dilaudid","percocet","vicodin","oxycontin","norco",
+  "lorazepam","diazepam","alprazolam","clonazepam","midazolam","temazepam","oxazepam",
+  "chlordiazepoxide","ativan","valium","xanax","klonopin",
+  "zolpidem","zaleplon","eszopiclone","ambien","lunesta",
+  "amphetamine","methylphenidate","dextroamphetamine","adderall","ritalin","vyvanse",
+  "carisoprodol","soma",
 ];
 
-// ── Allergy cross-reference keywords ──────────────────────────────
+const PDMP_METHODS = [
+  "Checked state PDMP portal",
+  "Delegate checked PDMP",
+  "Patient provided documentation",
+  "PDMP integrated in EHR",
+  "Waived — emergency dispensing exception",
+];
+
+const BEERS_DB = [
+  {keywords:["alprazolam","clonazepam","diazepam","lorazepam","oxazepam","temazepam","triazolam","chlordiazepoxide","flurazepam","clorazepate","nitrazepam","midazolam"],concern:"Benzodiazepine",risk:"Cognitive impairment, delirium, falls, fractures, and MVA risk in older adults — all benzodiazepines regardless of half-life.",alt:"Non-pharmacologic approaches; buspirone or SSRI/SNRI for anxiety. If BZD unavoidable, use lowest dose for shortest duration."},
+  {keywords:["zolpidem","zaleplon","eszopiclone"],concern:"Z-drug / Sedative-Hypnotic",risk:"Similar risk profile to benzodiazepines — cognitive impairment, delirium, falls, fractures in elderly.",alt:"CBT-I is first-line for insomnia. Melatonin 0.5-5mg or low-dose doxepin (3-6mg) have more favorable profiles."},
+  {keywords:["diphenhydramine","hydroxyzine","promethazine","chlorpheniramine","cyproheptadine","brompheniramine","clemastine","dexchlorpheniramine","triprolidine","doxylamine"],concern:"First-Generation Antihistamine (Anticholinergic)",risk:"Highly anticholinergic — confusion, acute delirium, urinary retention, constipation, dry mouth. Diphenhydramine can precipitate acute delirium even at normal doses in elderly.",alt:"Second-gen antihistamines (loratadine, cetirizine, fexofenadine) for allergy symptoms. Melatonin for sleep."},
+  {keywords:["amitriptyline","imipramine","doxepin","trimipramine","clomipramine","nortriptyline"],concern:"Tricyclic Antidepressant",risk:"Strongly anticholinergic and sedating; orthostatic hypotension causing falls; QTc prolongation and arrhythmia risk in elderly.",alt:"SSRIs or SNRIs for depression; duloxetine/pregabalin for neuropathic pain. Low-dose doxepin (3-6mg) for insomnia is acceptable."},
+  {keywords:["oxybutynin","tolterodine","hyoscyamine","dicyclomine","fesoterodine","flavoxate","solifenacin","darifenacin","propantheline"],concern:"Anticholinergic / Bladder Relaxant",risk:"Anticholinergic effects — cognitive impairment, delirium, urinary retention, constipation; oxybutynin has highest CNS penetration.",alt:"Mirabegron (beta-3 agonist) has much lower anticholinergic burden; pelvic floor training; bladder retraining."},
+  {keywords:["ibuprofen","naproxen","diclofenac","meloxicam","indomethacin","etodolac","oxaprozin","piroxicam","sulindac","ketoprofen","ketorolac","diflunisal"],concern:"NSAID (Systemic)",risk:"5x increased risk of GI bleeding/peptic ulcer; AKI (especially with RAAS inhibitors or diuretics); fluid retention worsening HF; hypertension exacerbation.",alt:"Acetaminophen preferred for pain in older adults. Topical NSAIDs (diclofenac gel) have lower systemic absorption. If oral NSAID necessary, add PPI."},
+  {keywords:["tramadol","ultram","conzip"],concern:"Tramadol (Opioid-like)",risk:"Fall and fracture risk, cognitive impairment, hyponatremia (SIADH), lowers seizure threshold, serotonin syndrome risk particularly with SSRIs/SNRIs.",alt:"Acetaminophen for mild-moderate pain. If opioid needed, start at 25-50% lower dose with close monitoring."},
+  {keywords:["cyclobenzaprine","carisoprodol","methocarbamol","chlorzoxazone","orphenadrine","baclofen"],concern:"Skeletal Muscle Relaxant",risk:"Anticholinergic effects, sedation, increased fall risk; carisoprodol metabolizes to meprobamate (abuse potential). Most muscle-relaxant evidence base is poor across all ages.",alt:"Physical therapy is preferred. Heat/cold application, NSAIDs (cautiously), low-dose cyclobenzaprine with monitoring if needed."},
+  {keywords:["glyburide","glibenclamide","chlorpropamide"],concern:"Long-Acting Sulfonylurea",risk:"Prolonged hypoglycemia risk — glyburide has active metabolites with extended duration in elderly; fall and fracture risk from hypoglycemia.",alt:"Shorter-acting sulfonylureas (glipizide IR); metformin (if eGFR allows); DPP-4 inhibitors; SGLT2 inhibitors."},
+  {keywords:["nitrofurantoin","macrobid","macrodantin"],concern:"Nitrofurantoin",risk:"Pulmonary toxicity (fibrosis) and hepatotoxicity with long-term use; inadequate drug concentrations if CrCl <30 mL/min making it ineffective and potentially harmful.",alt:"Fosfomycin (single dose), trimethoprim (alone), or amoxicillin-clavulanate for UTI if CrCl <30. Short course acceptable if CrCl >=30."},
+  {keywords:["metoclopramide","reglan"],concern:"Metoclopramide",risk:"Risk of tardive dyskinesia (potentially irreversible) with long-term use; risk is higher in elderly. Avoid for >12 weeks.",alt:"Ondansetron for nausea/vomiting. If gastroparesis, dietary modifications + consider domperidone (outside US)."},
+  {keywords:["megestrol","megace"],concern:"Megestrol Acetate",risk:"DVT/PE risk; adrenal suppression. Minimal benefit for appetite stimulation with significant harms in elderly.",alt:"Address underlying causes of weight loss. Mirtazapine has appetite-stimulating properties. Dronabinol is an option."},
+];
+
 const ALLERGY_KEYWORDS = {
   penicillin:    ["amoxicillin","ampicillin","penicillin","piperacillin","oxacillin","nafcillin","dicloxacillin","augmentin","amox-clav"],
   sulfonamide:   ["sulfamethoxazole","bactrim","septra","sulfadiazine","sulfasalazine","trimethoprim-sulfa"],
@@ -129,43 +83,20 @@ const ALLERGY_KEYWORDS = {
   "beta-blocker": ["metoprolol","atenolol","carvedilol","propranolol","bisoprolol","labetalol","nadolol"],
 };
 
-// ── PMH Condition Grid ─────────────────────────────────────────────
 const PMH_CATS = [
-  { label:"Cardiovascular", color:T.coral, icon:"❤️", items:[
-    "HTN","CAD / Angina","Prior MI","HFrEF","HFpEF","Atrial Fibrillation","SVT","PAD","DVT / PE","Hyperlipidemia","Cardiomyopathy","Pacemaker / ICD","Valvular Disease",
-  ]},
-  { label:"Pulmonary", color:T.blue, icon:"🫁", items:[
-    "Asthma","COPD","OSA","Pulmonary Hypertension","ILD / Pulmonary Fibrosis","Prior PE","Recurrent Pneumonia",
-  ]},
-  { label:"Metabolic / Endocrine", color:T.green, icon:"🩸", items:[
-    "DM Type 1","DM Type 2","Obesity (BMI >30)","Hypothyroidism","Hyperthyroidism","Metabolic Syndrome","Adrenal Insufficiency","Cushing Syndrome",
-  ]},
-  { label:"GI / Hepatic", color:T.orange, icon:"🫃", items:[
-    "GERD","IBD (Crohn's / UC)","Cirrhosis / Liver Disease","NAFLD / NASH","PUD / GI Bleed","Celiac Disease","Pancreatitis (prior)","Cholecystectomy",
-  ]},
-  { label:"Renal / GU", color:T.cyan, icon:"🫘", items:[
-    "CKD","ESRD on Hemodialysis","Kidney Stones","BPH","Neurogenic Bladder","Recurrent UTI","PKD",
-  ]},
-  { label:"Neurological", color:T.purple, icon:"🧠", items:[
-    "Epilepsy / Seizures","CVA / TIA","Migraines","Parkinson Disease","Dementia / Alzheimer's","Peripheral Neuropathy","MS","Myasthenia Gravis","Essential Tremor",
-  ]},
-  { label:"Psychiatric", color:T.gold, icon:"💭", items:[
-    "Depression","Anxiety Disorder","Bipolar Disorder","Schizophrenia / Psychosis","PTSD","ADHD","OCD","Eating Disorder","Alcohol Use Disorder","Substance Use Disorder",
-  ]},
-  { label:"Oncologic / Heme", color:T.rose||T.coral, icon:"🔬", items:[
-    "Active Malignancy","Cancer in Remission","Hematologic Malignancy","Sickle Cell Disease","Coagulopathy","On Anticoagulation","Anemia (chronic)",
-  ]},
-  { label:"Immunologic / Infectious", color:T.teal, icon:"🦠", items:[
-    "HIV / AIDS","Hepatitis B","Hepatitis C","Autoimmune (SLE / RA / other)","Immunocompromised","Solid Organ Transplant","Recurrent C. diff",
-  ]},
-  { label:"Musculoskeletal", color:T.txt2, icon:"🦴", items:[
-    "Osteoporosis","Osteoarthritis","Rheumatoid Arthritis","Gout","Fibromyalgia","Chronic Back Pain","Prior Fractures",
-  ]},
+  { label:"Cardiovascular", color:T.coral, icon:"❤️", items:["HTN","CAD / Angina","Prior MI","HFrEF","HFpEF","Atrial Fibrillation","SVT","PAD","DVT / PE","Hyperlipidemia","Cardiomyopathy","Pacemaker / ICD","Valvular Disease"]},
+  { label:"Pulmonary", color:T.blue, icon:"🫁", items:["Asthma","COPD","OSA","Pulmonary Hypertension","ILD / Pulmonary Fibrosis","Prior PE","Recurrent Pneumonia"]},
+  { label:"Metabolic / Endocrine", color:T.green, icon:"🩸", items:["DM Type 1","DM Type 2","Obesity (BMI >30)","Hypothyroidism","Hyperthyroidism","Metabolic Syndrome","Adrenal Insufficiency","Cushing Syndrome"]},
+  { label:"GI / Hepatic", color:T.orange, icon:"🫃", items:["GERD","IBD (Crohn's / UC)","Cirrhosis / Liver Disease","NAFLD / NASH","PUD / GI Bleed","Celiac Disease","Pancreatitis (prior)","Cholecystectomy"]},
+  { label:"Renal / GU", color:T.cyan, icon:"🫘", items:["CKD","ESRD on Hemodialysis","Kidney Stones","BPH","Neurogenic Bladder","Recurrent UTI","PKD"]},
+  { label:"Neurological", color:T.purple, icon:"🧠", items:["Epilepsy / Seizures","CVA / TIA","Migraines","Parkinson Disease","Dementia / Alzheimer's","Peripheral Neuropathy","MS","Myasthenia Gravis","Essential Tremor"]},
+  { label:"Psychiatric", color:T.gold, icon:"💭", items:["Depression","Anxiety Disorder","Bipolar Disorder","Schizophrenia / Psychosis","PTSD","ADHD","OCD","Eating Disorder","Alcohol Use Disorder","Substance Use Disorder"]},
+  { label:"Oncologic / Heme", color:T.coral, icon:"🔬", items:["Active Malignancy","Cancer in Remission","Hematologic Malignancy","Sickle Cell Disease","Coagulopathy","On Anticoagulation","Anemia (chronic)"]},
+  { label:"Immunologic / Infectious", color:T.teal, icon:"🦠", items:["HIV / AIDS","Hepatitis B","Hepatitis C","Autoimmune (SLE / RA / other)","Immunocompromised","Solid Organ Transplant","Recurrent C. diff"]},
+  { label:"Musculoskeletal", color:T.txt2, icon:"🦴", items:["Osteoporosis","Osteoarthritis","Rheumatoid Arthritis","Gout","Fibromyalgia","Chronic Back Pain","Prior Fractures"]},
 ];
 
-// ── Social Hx defaults ─────────────────────────────────────────────
 const SOC_DEFAULTS = { tobacco:"never",tobaccoDetail:"",alcohol:"none",alcoholDetail:"",drugs:"never",drugsDetail:"",living:"",employment:"",exercise:"none",notes:"" };
-
 const TOBACCO_OPTS  = ["never","former","current (light <1ppd)","current (heavy >=1ppd)","vaping / e-cig","smokeless tobacco"];
 const ALCOHOL_OPTS  = ["none","occasional (<1/wk)","social (1-7/wk)","regular (>7/wk)","concerning / heavy","prior AUD (in remission)"];
 const DRUGS_OPTS    = ["never","prior (in remission)","current (recreational)","current (dependent)","cannabis only","on MAT (buprenorphine/methadone)"];
@@ -175,19 +106,19 @@ const EXERCISE_OPTS = ["none","sedentary","light (walks occasionally)","moderate
 const FREQ_OPTS_MED = ["Daily","BID","TID","QID","QHS","Q4-6h PRN","PRN","Weekly","Monthly","Continuous / infusion","Other"];
 const ROUTE_OPTS_MED= ["PO","IV","IM","SC","SL","Topical","Inhaled","Patch","Rectal","Ophthalmic","Intranasal","Other"];
 
-// ══════════════════════════════════════════════════════════════════
-// MODULE-SCOPE HELPERS
-// ══════════════════════════════════════════════════════════════════
-
 function matchBeers(str) {
   if (!str || !str.trim()) return null;
   const lower = str.toLowerCase();
   for (const entry of BEERS_DB) {
-    for (const kw of entry.keywords) {
-      if (lower.includes(kw)) return entry;
-    }
+    for (const kw of entry.keywords) { if (lower.includes(kw)) return entry; }
   }
   return null;
+}
+
+function matchControlled(str) {
+  if (!str || !str.trim()) return false;
+  const lower = str.toLowerCase();
+  return CONTROLLED_KEYWORDS.some(kw => lower.includes(kw));
 }
 
 function matchAllergyMed(medStr, allergies) {
@@ -197,9 +128,7 @@ function matchAllergyMed(medStr, allergies) {
     const allergyLower = allergy.toLowerCase().replace(/[\s-]/g, "");
     for (const [cls, keywords] of Object.entries(ALLERGY_KEYWORDS)) {
       if (!cls.includes(allergyLower) && !allergyLower.includes(cls.replace(/-/g, "").slice(0,5))) continue;
-      for (const kw of keywords) {
-        if (lower.includes(kw)) return `${allergy} allergy — possible cross-reactivity`;
-      }
+      for (const kw of keywords) { if (lower.includes(kw)) return `${allergy} allergy — possible cross-reactivity`; }
     }
     for (const [cls, keywords] of Object.entries(ALLERGY_KEYWORDS)) {
       for (const kw of keywords) {
@@ -214,11 +143,9 @@ function matchAllergyMed(medStr, allergies) {
 
 function parsePastedMeds(text) {
   if (!text.trim()) return [];
-  return text.split(/\n|;/)
-    .map(l => l.trim())
-    .filter(l => l.length > 1)
-    .map(l => l.replace(/^\d+[\.\)]\s*/,"").replace(/^-\s*/,"").trim())
-    .filter(l => l.length > 1 && l.length < 200);
+  return text.split(/\n|;/).map(l=>l.trim()).filter(l=>l.length>1)
+    .map(l=>l.replace(/^\d+[\.\)]\s*/,"").replace(/^-\s*/,"").trim())
+    .filter(l=>l.length>1&&l.length<200);
 }
 
 function buildMedString(name, dose, route, freq) {
@@ -231,21 +158,9 @@ function buildMedString(name, dose, route, freq) {
 
 function parseSocHxStr(str) {
   if (!str) return { ...SOC_DEFAULTS };
-  try {
-    const parsed = JSON.parse(str);
-    return { ...SOC_DEFAULTS, ...parsed };
-  } catch {
-    return { ...SOC_DEFAULTS, notes: str };
-  }
+  try { return { ...SOC_DEFAULTS, ...JSON.parse(str) }; } catch { return { ...SOC_DEFAULTS, notes: str }; }
 }
-
-function socHxToStr(obj) {
-  return JSON.stringify(obj);
-}
-
-// ══════════════════════════════════════════════════════════════════
-// UI PRIMITIVES
-// ══════════════════════════════════════════════════════════════════
+function socHxToStr(obj) { return JSON.stringify(obj); }
 
 function Badge({ label, color, size }) {
   const fs = size === "sm" ? 9 : 10;
@@ -260,18 +175,12 @@ function BeersInlineBanner({ entry }) {
   if (!entry) return null;
   return (
     <div className="mt-in" style={{ padding:"10px 13px",background:"rgba(245,200,66,0.09)",border:"1px solid rgba(245,200,66,0.45)",borderLeft:"3px solid rgba(245,200,66,0.8)",borderRadius:9,marginTop:4 }}>
-      <div style={{ ...row({}), marginBottom:5 }}>
+      <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:5 }}>
         <span style={{ fontSize:13 }}>👴</span>
-        <span style={{ fontFamily:"JetBrains Mono",fontSize:9,color:T.gold,letterSpacing:1.2,textTransform:"uppercase" }}>
-          Beers Criteria — {entry.concern}
-        </span>
+        <span style={{ fontFamily:"JetBrains Mono",fontSize:9,color:T.gold,letterSpacing:1.2,textTransform:"uppercase" }}>Beers Criteria — {entry.concern}</span>
       </div>
-      <div style={{ fontFamily:"DM Sans",fontSize:11.5,color:"#f5e28a",lineHeight:1.6,marginBottom:4 }}>
-        <strong>Risk:</strong> {entry.risk}
-      </div>
-      <div style={{ fontFamily:"DM Sans",fontSize:11.5,color:T.txt3,lineHeight:1.6 }}>
-        <strong style={{color:T.teal}}>Alternative:</strong> {entry.alt}
-      </div>
+      <div style={{ fontFamily:"DM Sans",fontSize:11.5,color:"#f5e28a",lineHeight:1.6,marginBottom:4 }}><strong>Risk:</strong> {entry.risk}</div>
+      <div style={{ fontFamily:"DM Sans",fontSize:11.5,color:T.txt3,lineHeight:1.6 }}><strong style={{color:T.teal}}>Alternative:</strong> {entry.alt}</div>
     </div>
   );
 }
@@ -306,9 +215,6 @@ function SelectField({ value, onChange, options }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ══════════════════════════════════════════════════════════════════
 export default function MedsTab({
   medications, setMedications,
   allergies, setAllergies,
@@ -320,8 +226,8 @@ export default function MedsTab({
   pmhExpanded, setPmhExpanded,
   onAdvance,
   patientAge,
+  pdmpState, setPdmpState,
 }) {
-  // ── Medications form state ──────────────────────────────────────
   const [drugInput,  setDrugInput]  = useState("");
   const [doseInput,  setDoseInput]  = useState("");
   const [routeInput, setRouteInput] = useState("PO");
@@ -331,34 +237,31 @@ export default function MedsTab({
   const [pasteOpen,  setPasteOpen]  = useState(false);
   const [pasteText,  setPasteText]  = useState("");
   const [parsedPaste,setParsedPaste]= useState([]);
-
-  // ── Allergies form state ────────────────────────────────────────
   const [allergyInput, setAllergyInput] = useState("");
   const [allergyOpen,  setAllergyOpen]  = useState(true);
-
-  // ── PMH state ───────────────────────────────────────────────────
   const [pmhOpen,   setPmhOpen]   = useState(false);
   const [activePmhCat, setActivePmhCat] = useState(0);
-
-  // ── Surgical / Family / Social state ───────────────────────────
   const [hxOpen, setHxOpen] = useState(false);
   const [socOpen, setSocOpen] = useState(false);
   const [soc, setSoc] = useState(() => parseSocHxStr(socHx));
-
-  // ── Geriatric gate ─────────────────────────────────────────────
   const [ageInput, setAgeInput] = useState(patientAge || "");
+
   const isGeriatric = parseInt(ageInput) >= 65;
 
-  // ── Live Beers check ────────────────────────────────────────────
-  const beersWarning = useMemo(() => {
-    if (!isGeriatric) return null;
-    return matchBeers(drugInput);
-  }, [drugInput, isGeriatric]);
+  // ── pmhSelected is an object {conditionName: true/false} ──────────
+  const pmhList  = Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]);
+  const pmhCount = pmhList.length;
 
-  // ── Allergy cross-check for new med input ──────────────────────
+  const beersWarning   = useMemo(() => isGeriatric ? matchBeers(drugInput) : null, [drugInput, isGeriatric]);
   const allergyWarning = useMemo(() => matchAllergyMed(drugInput, allergies), [drugInput, allergies]);
+  const controlledWarning = useMemo(() => matchControlled(drugInput), [drugInput]);
 
-  // ── Handlers ───────────────────────────────────────────────────
+  // ── Detect controlled substances in current med list ───────────────
+  const controlledInList = useMemo(() =>
+    medications.filter(m => matchControlled(m)),
+  [medications]);
+  const pdmpRequired = controlledInList.length > 0;
+
   const handleAddMed = useCallback(() => {
     const name = drugInput.trim();
     if (!name) return;
@@ -383,20 +286,18 @@ export default function MedsTab({
     setAllergies(prev => prev.filter((_,j) => j !== i));
   }, [setAllergies]);
 
+  // ── PMH uses object pattern: { "HTN": true, "DM Type 2": true } ───
   const handleTogglePMH = useCallback((cond) => {
-    setPmhSelected(prev => ({ ...prev, [cond]: !prev[cond] }));
+    setPmhSelected(prev => ({ ...(prev||{}), [cond]: !(prev||{})[cond] }));
   }, [setPmhSelected]);
 
-  const handlePasteParse = useCallback(() => {
-    setParsedPaste(parsePastedMeds(pasteText));
-  }, [pasteText]);
+  const handlePasteParse = useCallback(() => { setParsedPaste(parsePastedMeds(pasteText)); }, [pasteText]);
 
   const handleAcceptParsed = useCallback(() => {
     if (!parsedPaste.length) return;
     setMedications(prev => {
       const existing = new Set(prev.map(m => m.toLowerCase()));
-      const toAdd = parsedPaste.filter(m => !existing.has(m.toLowerCase()));
-      return [...prev, ...toAdd];
+      return [...prev, ...parsedPaste.filter(m => !existing.has(m.toLowerCase()))];
     });
     setPasteText(""); setParsedPaste([]); setPasteOpen(false);
   }, [parsedPaste, setMedications]);
@@ -409,39 +310,37 @@ export default function MedsTab({
     });
   }, [setSocHx]);
 
-  // ── Stats ───────────────────────────────────────────────────────
   const beersCount = useMemo(() => {
     if (!isGeriatric) return 0;
     return medications.filter(m => matchBeers(m)).length;
   }, [medications, isGeriatric]);
 
   const allergyFlagCount = useMemo(() =>
-    medications.filter(m => matchAllergyMed(m, allergies)).length
-  , [medications, allergies]);
+    medications.filter(m => matchAllergyMed(m, allergies)).length,
+  [medications, allergies]);
 
-  // ── Paste toggle ────────────────────────────────────────────────
   function handlePasteKeyDown(e) {
     if (e.key === "Enter" && e.ctrlKey) handlePasteParse();
   }
 
-  // ── Render ──────────────────────────────────────────────────────
   return (
     <div style={{ display:"flex",flexDirection:"column",gap:0,height:"100%",overflowY:"auto",padding:"0 0 80px 0" }}>
 
-      {/* ── Stats bar ──────────────────────────────────────────── */}
-      <div style={{ ...row({flexWrap:"wrap",gap:8,padding:"12px 20px",borderBottom:"1px solid rgba(26,53,85,0.4)",background:"rgba(5,15,30,0.5)",flexShrink:0}) }}>
+      {/* ── Stats bar ── */}
+      <div style={{ display:"flex",alignItems:"center",flexWrap:"wrap",gap:8,padding:"12px 20px",borderBottom:"1px solid rgba(26,53,85,0.4)",background:"rgba(5,15,30,0.5)",flexShrink:0 }}>
         {[
-          { label:`${medications.length} Meds`, color:T.teal,   show:true },
-          { label:`${allergies.length} Allergies`, color:T.coral, show:true },
-          { label:`${Object.values(pmhSelected).filter(Boolean).length} PMH`, color:T.blue,   show:true },
-          { label:`${beersCount} Beers`, color:T.gold,   show:beersCount>0 },
-          { label:`${allergyFlagCount} DDI/Allergy`, color:T.orange, show:allergyFlagCount>0 },
+          { label:`${medications.length} Meds`,       color:T.teal,   show:true },
+          { label:`${allergies.length} Allergies`,    color:T.coral,  show:true },
+          { label:`${pmhCount} PMH`,                  color:T.blue,   show:true },
+          { label:`${beersCount} Beers`,              color:T.gold,   show:beersCount>0 },
+          { label:`${allergyFlagCount} DDI/Allergy`,  color:T.orange, show:allergyFlagCount>0 },
+          { label:`PDMP Required`,                    color:"#ff9f43",show:pdmpRequired && !pdmpState?.checked },
+          { label:`PDMP \u2713`,                      color:T.teal,   show:pdmpRequired && !!pdmpState?.checked },
         ].filter(s => s.show).map(s=>(
           <span key={s.label} style={{ fontFamily:"JetBrains Mono",fontSize:10,color:s.color,background:`${s.color}15`,padding:"3px 10px",borderRadius:20,border:`1px solid ${s.color}33` }}>{s.label}</span>
         ))}
         <div style={{ flex:1 }}/>
-        {/* Geriatric age gate */}
-        <div style={{ ...row({}),padding:"3px 10px",borderRadius:8,background:isGeriatric?"rgba(245,200,66,0.1)":"rgba(14,37,68,0.6)",border:`1px solid ${isGeriatric?"rgba(245,200,66,0.4)":"rgba(26,53,85,0.5)"}` }}>
+        <div style={{ display:"flex",alignItems:"center",gap:6,padding:"3px 10px",borderRadius:8,background:isGeriatric?"rgba(245,200,66,0.1)":"rgba(14,37,68,0.6)",border:`1px solid ${isGeriatric?"rgba(245,200,66,0.4)":"rgba(26,53,85,0.5)"}` }}>
           <span style={{ fontFamily:"JetBrains Mono",fontSize:10,color:isGeriatric?T.gold:T.txt3 }}>{isGeriatric?"👴":"👤"}</span>
           <input placeholder="Age" value={ageInput} onChange={e=>setAgeInput(e.target.value)}
             type="number" min="0" max="120"
@@ -452,14 +351,12 @@ export default function MedsTab({
 
       <div style={{ padding:"14px 20px",display:"flex",flexDirection:"column",gap:12 }}>
 
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* MEDICATIONS SECTION */}
-        {/* ═══════════════════════════════════════════════════════ */}
+        {/* ── Medications ── */}
         <div style={{ ...glass({borderRadius:14}),overflow:"hidden" }}>
           <SectionHeader icon="💊" title="Current Medications" count={medications.length} color={T.teal}
             expanded={medsOpen} onToggle={()=>setMedsOpen(v=>!v)}
             trailing={
-              <div style={{ ...row({}),gap:6 }}>
+              <div style={{ display:"flex",alignItems:"center",gap:6 }}>
                 <button onClick={e=>{e.stopPropagation();setPasteOpen(v=>!v);setAddMedOpen(false);}}
                   style={{ padding:"3px 9px",borderRadius:7,background:pasteOpen?"rgba(59,158,255,0.15)":"rgba(26,53,85,0.5)",border:`1px solid ${pasteOpen?"rgba(59,158,255,0.5)":"rgba(42,77,114,0.4)"}`,color:pasteOpen?T.blue:T.txt3,fontFamily:"DM Sans",fontWeight:600,fontSize:10.5,cursor:"pointer",whiteSpace:"nowrap" }}>
                   📋 Paste
@@ -471,61 +368,39 @@ export default function MedsTab({
               </div>
             }
           />
-
           {medsOpen && (
             <div style={{ padding:"0 16px 14px" }}>
-
-              {/* Paste mode */}
               {pasteOpen && (
-                <div className="mt-in" style={{ ...col({}),gap:8,padding:"12px 14px",background:"rgba(59,158,255,0.06)",border:"1px solid rgba(59,158,255,0.2)",borderRadius:10,marginBottom:10 }}>
-                  <div style={{ fontFamily:"DM Sans",fontSize:11.5,color:T.txt3 }}>
-                    Paste a medication list — one med per line, or semicolons. Ctrl+Enter to parse.
-                  </div>
-                  <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)}
-                    onKeyDown={handlePasteKeyDown} rows={5}
+                <div className="mt-in" style={{ display:"flex",flexDirection:"column",gap:8,padding:"12px 14px",background:"rgba(59,158,255,0.06)",border:"1px solid rgba(59,158,255,0.2)",borderRadius:10,marginBottom:10 }}>
+                  <div style={{ fontFamily:"DM Sans",fontSize:11.5,color:T.txt3 }}>Paste a medication list — one med per line, or semicolons. Ctrl+Enter to parse.</div>
+                  <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} onKeyDown={handlePasteKeyDown} rows={5}
                     placeholder={"Metformin 500mg BID\nLisinopril 10mg daily\nAtorvastatin 40mg nightly"}
                     style={{ ...inp(!!pasteText),resize:"vertical",lineHeight:1.6,fontFamily:"JetBrains Mono",fontSize:12 }} />
-                  <div style={{ ...row({}) }}>
-                    <button onClick={handlePasteParse}
-                      style={{ padding:"7px 16px",borderRadius:8,background:`${T.blue}22`,border:`1px solid ${T.blue}44`,color:T.blue,fontFamily:"DM Sans",fontWeight:700,fontSize:12,cursor:"pointer" }}>
-                      Parse List
-                    </button>
-                    {parsedPaste.length > 0 && (
-                      <span style={{ fontFamily:"DM Sans",fontSize:11.5,color:T.txt2,marginLeft:6 }}>{parsedPaste.length} found</span>
-                    )}
+                  <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                    <button onClick={handlePasteParse} style={{ padding:"7px 16px",borderRadius:8,background:`${T.blue}22`,border:`1px solid ${T.blue}44`,color:T.blue,fontFamily:"DM Sans",fontWeight:700,fontSize:12,cursor:"pointer" }}>Parse List</button>
+                    {parsedPaste.length > 0 && <span style={{ fontFamily:"DM Sans",fontSize:11.5,color:T.txt2,marginLeft:6 }}>{parsedPaste.length} found</span>}
                     <div style={{ flex:1 }}/>
                     {parsedPaste.length > 0 && (
-                      <button onClick={handleAcceptParsed}
-                        style={{ padding:"7px 16px",borderRadius:8,background:`${T.teal}22`,border:`1px solid ${T.teal}44`,color:T.teal,fontFamily:"DM Sans",fontWeight:700,fontSize:12,cursor:"pointer" }}>
-                        Accept All ({parsedPaste.length})
-                      </button>
+                      <button onClick={handleAcceptParsed} style={{ padding:"7px 16px",borderRadius:8,background:`${T.teal}22`,border:`1px solid ${T.teal}44`,color:T.teal,fontFamily:"DM Sans",fontWeight:700,fontSize:12,cursor:"pointer" }}>Accept All ({parsedPaste.length})</button>
                     )}
                   </div>
                   {parsedPaste.length > 0 && (
                     <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
                       {parsedPaste.map((m,i) => {
                         const b = isGeriatric ? matchBeers(m) : null;
-                        return (
-                          <span key={i} style={{ padding:"4px 11px",borderRadius:20,background:b?"rgba(245,200,66,0.1)":"rgba(0,229,192,0.08)",border:`1px solid ${b?"rgba(245,200,66,0.4)":"rgba(0,229,192,0.25)"}`,fontFamily:"DM Sans",fontWeight:500,fontSize:12,color:b?T.gold:T.teal }}>
-                            {b ? "👴 " : ""}{m}
-                          </span>
-                        );
+                        return <span key={i} style={{ padding:"4px 11px",borderRadius:20,background:b?"rgba(245,200,66,0.1)":"rgba(0,229,192,0.08)",border:`1px solid ${b?"rgba(245,200,66,0.4)":"rgba(0,229,192,0.25)"}`,fontFamily:"DM Sans",fontWeight:500,fontSize:12,color:b?T.gold:T.teal }}>{b?"👴 ":""}{m}</span>;
                       })}
                     </div>
                   )}
                 </div>
               )}
-
-              {/* Add medication form */}
               {addMedOpen && (
-                <div className="mt-in" style={{ ...col({}),gap:10,padding:"12px 14px",background:"rgba(0,229,192,0.04)",border:"1px solid rgba(0,229,192,0.2)",borderRadius:10,marginBottom:10 }}>
+                <div className="mt-in" style={{ display:"flex",flexDirection:"column",gap:10,padding:"12px 14px",background:"rgba(0,229,192,0.04)",border:"1px solid rgba(0,229,192,0.2)",borderRadius:10,marginBottom:10 }}>
                   <div style={{ display:"grid",gridTemplateColumns:"1fr auto",gap:8 }}>
                     <div>
                       <FieldLabel required>Drug Name</FieldLabel>
-                      <input value={drugInput} onChange={e=>setDrugInput(e.target.value)}
-                        onKeyDown={e=>e.key==="Enter"&&drugInput.trim()&&handleAddMed()}
-                        placeholder="e.g., Metformin, Lisinopril 10mg..."
-                        style={inp(!!drugInput)} autoFocus />
+                      <input value={drugInput} onChange={e=>setDrugInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&drugInput.trim()&&handleAddMed()}
+                        placeholder="e.g., Metformin, Lisinopril 10mg..." style={inp(!!drugInput)} autoFocus />
                     </div>
                     <div style={{ display:"flex",flexDirection:"column",justifyContent:"flex-end" }}>
                       <button onClick={handleAddMed} disabled={!drugInput.trim()}
@@ -535,87 +410,110 @@ export default function MedsTab({
                     </div>
                   </div>
                   <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8 }}>
-                    <div>
-                      <FieldLabel>Dose</FieldLabel>
-                      <input value={doseInput} onChange={e=>setDoseInput(e.target.value)}
-                        placeholder="e.g., 10mg, 500mg" style={inp(!!doseInput)} />
-                    </div>
-                    <div>
-                      <FieldLabel>Route</FieldLabel>
-                      <SelectField value={routeInput} onChange={setRouteInput} options={ROUTE_OPTS_MED} />
-                    </div>
-                    <div>
-                      <FieldLabel>Frequency</FieldLabel>
-                      <SelectField value={freqInput} onChange={setFreqInput} options={FREQ_OPTS_MED} />
-                    </div>
+                    <div><FieldLabel>Dose</FieldLabel><input value={doseInput} onChange={e=>setDoseInput(e.target.value)} placeholder="e.g., 10mg, 500mg" style={inp(!!doseInput)} /></div>
+                    <div><FieldLabel>Route</FieldLabel><SelectField value={routeInput} onChange={setRouteInput} options={ROUTE_OPTS_MED} /></div>
+                    <div><FieldLabel>Frequency</FieldLabel><SelectField value={freqInput} onChange={setFreqInput} options={FREQ_OPTS_MED} /></div>
                   </div>
-
-                  {/* Live Beers warning */}
                   {isGeriatric && beersWarning && <BeersInlineBanner entry={beersWarning} />}
-
-                  {/* Live allergy cross-check */}
                   {allergyWarning && (
                     <div className="mt-in" style={{ padding:"8px 12px",background:"rgba(255,107,107,0.1)",border:"1px solid rgba(255,107,107,0.4)",borderLeft:"3px solid rgba(255,107,107,0.8)",borderRadius:8,fontFamily:"DM Sans",fontSize:12,color:T.coral }}>
                       ⚠ {allergyWarning}
                     </div>
                   )}
-
+                  {controlledWarning && (
+                    <div className="mt-in" style={{ padding:"8px 12px",background:"rgba(255,159,67,0.08)",border:"1px solid rgba(255,159,67,0.35)",borderLeft:"3px solid #ff9f43",borderRadius:8,fontFamily:"DM Sans",fontSize:12,color:"#ffb870" }}>
+                      📋 Controlled substance detected — PDMP check required before dispensing. Document below after checking.
+                    </div>
+                  )}
                   {!isGeriatric && drugInput && matchBeers(drugInput) && (
                     <div style={{ padding:"7px 11px",background:"rgba(245,200,66,0.07)",border:"1px solid rgba(245,200,66,0.25)",borderRadius:8,fontFamily:"DM Sans",fontSize:11,color:"#b8922a" }}>
-                      👴 This drug appears on the AGS Beers Criteria. Set patient age &ge;65 above to see full risk details.
+                      👴 This drug appears on the AGS Beers Criteria. Set patient age ≥65 above to see full risk details.
                     </div>
                   )}
                 </div>
               )}
-
-              {/* Medications list */}
               {medications.length === 0 ? (
-                <div style={{ padding:"20px 12px",textAlign:"center",color:T.txt4,fontFamily:"DM Sans",fontSize:13 }}>
-                  No medications added — use Add or Paste above
-                </div>
+                <div style={{ padding:"20px 12px",textAlign:"center",color:T.txt4,fontFamily:"DM Sans",fontSize:13 }}>No medications added — use Add or Paste above</div>
               ) : (
                 <div style={{ display:"flex",flexWrap:"wrap",gap:7 }}>
                   {medications.map((m, i) => {
-                    const beers     = isGeriatric ? matchBeers(m) : null;
-                    const allergyX  = matchAllergyMed(m, allergies);
-                    const hasBadge  = beers || allergyX;
+                    const beers    = isGeriatric ? matchBeers(m) : null;
+                    const allergyX = matchAllergyMed(m, allergies);
+                    const ctrl     = matchControlled(m);
                     return (
                       <div key={i} className="mt-chip mt-slide"
                         style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"6px 11px",borderRadius:20,
-                          background: beers?"rgba(245,200,66,0.1)":allergyX?"rgba(255,107,107,0.1)":"rgba(14,37,68,0.8)",
-                          border:`1px solid ${beers?"rgba(245,200,66,0.4)":allergyX?"rgba(255,107,107,0.4)":"rgba(42,77,114,0.4)"}`,
+                          background: beers?"rgba(245,200,66,0.1)":allergyX?"rgba(255,107,107,0.1)":ctrl?"rgba(255,159,67,0.08)":"rgba(14,37,68,0.8)",
+                          border:`1px solid ${beers?"rgba(245,200,66,0.4)":allergyX?"rgba(255,107,107,0.4)":ctrl?"rgba(255,159,67,0.3)":"rgba(42,77,114,0.4)"}`,
                           maxWidth:"100%",flexWrap:"nowrap" }}>
-                        {beers   && <span title={`Beers: ${beers.concern}`} style={{ fontSize:11,cursor:"help" }}>👴</span>}
+                        {beers    && <span title={`Beers: ${beers.concern}`} style={{ fontSize:11,cursor:"help" }}>👴</span>}
                         {allergyX && <span title={allergyX} style={{ fontSize:11,cursor:"help" }}>⚠</span>}
-                        <span style={{ fontFamily:"DM Sans",fontWeight:500,fontSize:12.5,color:beers?T.gold:allergyX?T.coral:T.txt2,maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{m}</span>
-                        <button onClick={()=>handleRemoveMed(i)}
-                          style={{ background:"transparent",border:"none",color:T.txt4,cursor:"pointer",fontSize:11,padding:"0 1px",flexShrink:0,lineHeight:1 }}>✕</button>
+                        {ctrl     && <span title="Controlled substance — PDMP required" style={{ fontSize:11,cursor:"help" }}>📋</span>}
+                        <span style={{ fontFamily:"DM Sans",fontWeight:500,fontSize:12.5,color:beers?T.gold:allergyX?T.coral:ctrl?"#ffb870":T.txt2,maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{m}</span>
+                        <button onClick={()=>handleRemoveMed(i)} style={{ background:"transparent",border:"none",color:T.txt4,cursor:"pointer",fontSize:11,padding:"0 1px",flexShrink:0,lineHeight:1 }}>✕</button>
                       </div>
                     );
                   })}
                 </div>
               )}
-
-              {/* Beers summary note */}
               {isGeriatric && beersCount > 0 && (
                 <div style={{ marginTop:10,padding:"8px 12px",background:"rgba(245,200,66,0.07)",border:"1px solid rgba(245,200,66,0.25)",borderRadius:8,fontFamily:"DM Sans",fontSize:11.5,color:"#b8922a" }}>
-                  👴 <strong>{beersCount} medication{beersCount>1?"s":""}</strong> on the AGS 2023 Beers Criteria detected. Consider medication review for this &ge;65 patient.
+                  👴 <strong>{beersCount} medication{beersCount>1?"s":""}</strong> on the AGS 2023 Beers Criteria detected. Consider medication review for this ≥65 patient.
+                </div>
+              )}
+
+              {/* ── PDMP Documentation ────────────────────────────────── */}
+              {pdmpRequired && (
+                <div className="mt-in" style={{ marginTop:12,padding:"12px 14px",background:pdmpState?.checked?"rgba(0,229,192,0.06)":"rgba(255,159,67,0.07)",border:`1px solid ${pdmpState?.checked?"rgba(0,229,192,0.25)":"rgba(255,159,67,0.3)"}`,borderLeft:`3px solid ${pdmpState?.checked?"var(--npi-teal, #00e5c0)":"#ff9f43"}`,borderRadius:10 }}>
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8 }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                      <span style={{ fontSize:14 }}>📋</span>
+                      <div>
+                        <div style={{ fontFamily:"JetBrains Mono",fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:pdmpState?.checked?"#00e5c0":"#ff9f43" }}>
+                          PDMP Check {pdmpState?.checked ? "— Documented" : "— Required"}
+                        </div>
+                        <div style={{ fontFamily:"DM Sans",fontSize:10,color:T.txt4,marginTop:1 }}>
+                          {controlledInList.slice(0,3).join(", ")}{controlledInList.length>3?` +${controlledInList.length-3} more`:""}
+                        </div>
+                      </div>
+                    </div>
+                    {!pdmpState?.checked && (
+                      <button onClick={() => setPdmpState(p => ({ ...p, checked:true, timestamp:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false}) }))}
+                        style={{ padding:"6px 14px",borderRadius:7,cursor:"pointer",background:"rgba(255,159,67,0.12)",border:"1px solid rgba(255,159,67,0.45)",fontFamily:"DM Sans",fontWeight:700,fontSize:12,color:"#ff9f43",whiteSpace:"nowrap" }}>
+                        ✓ Stamp PDMP Checked
+                      </button>
+                    )}
+                    {pdmpState?.checked && (
+                      <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                        <span style={{ fontFamily:"JetBrains Mono",fontSize:10,color:"#00e5c0" }}>✓ {pdmpState.timestamp}</span>
+                        <button onClick={() => setPdmpState(p => ({ ...p, checked:false, timestamp:"", method:"" }))}
+                          style={{ background:"transparent",border:"none",color:T.txt4,cursor:"pointer",fontSize:11,padding:"0 2px" }}>✕</button>
+                      </div>
+                    )}
+                  </div>
+                  {pdmpState?.checked && (
+                    <div>
+                      <FieldLabel>Method</FieldLabel>
+                      <SelectField value={pdmpState?.method||""} onChange={v => setPdmpState(p => ({ ...p, method:v }))}
+                        options={["", ...PDMP_METHODS]} />
+                    </div>
+                  )}
+                  {!pdmpState?.checked && (
+                    <div style={{ fontFamily:"DM Sans",fontSize:11,color:T.txt4,lineHeight:1.6 }}>
+                      Controlled substance(s) on medication list. Most states require a PDMP query before prescribing Schedule II–IV medications. Stamp when checked to document compliance.
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* ALLERGIES SECTION */}
-        {/* ═══════════════════════════════════════════════════════ */}
+        {/* ── Allergies ── */}
         <div style={{ ...glass({borderRadius:14}),overflow:"hidden" }}>
-          <SectionHeader icon="⚠️" title="Allergies & Intolerances" count={allergies.length} color={T.coral}
-            expanded={allergyOpen} onToggle={()=>setAllergyOpen(v=>!v)}
-          />
+          <SectionHeader icon="⚠️" title="Allergies & Intolerances" count={allergies.length} color={T.coral} expanded={allergyOpen} onToggle={()=>setAllergyOpen(v=>!v)} />
           {allergyOpen && (
             <div style={{ padding:"0 16px 14px",display:"flex",flexDirection:"column",gap:10 }}>
-              {/* Allergy input */}
               <div style={{ display:"flex",gap:8 }}>
                 <input value={allergyInput} onChange={e=>setAllergyInput(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&allergyInput.trim()&&handleAddAllergy()}
@@ -626,37 +524,25 @@ export default function MedsTab({
                   + Add
                 </button>
               </div>
-
-              {/* NKDA / allergy list */}
               {allergies.length === 0 ? (
-                <div style={{ padding:"10px 14px",borderRadius:9,background:"rgba(61,255,160,0.06)",border:"1px solid rgba(61,255,160,0.25)",fontFamily:"DM Sans",fontSize:13,color:T.green,fontWeight:600 }}>
-                  ✓ NKDA — No Known Drug Allergies
-                </div>
+                <div style={{ padding:"10px 14px",borderRadius:9,background:"rgba(61,255,160,0.06)",border:"1px solid rgba(61,255,160,0.25)",fontFamily:"DM Sans",fontSize:13,color:T.green,fontWeight:600 }}>✓ NKDA — No Known Drug Allergies</div>
               ) : (
                 <div style={{ display:"flex",flexWrap:"wrap",gap:7 }}>
                   {allergies.map((a, i) => (
-                    <div key={i} className="mt-chip"
-                      style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,background:"rgba(255,107,107,0.12)",border:"1px solid rgba(255,107,107,0.4)" }}>
+                    <div key={i} className="mt-chip" style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,background:"rgba(255,107,107,0.12)",border:"1px solid rgba(255,107,107,0.4)" }}>
                       <span style={{ fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:T.coral }}>⚠ {a}</span>
                       <button onClick={()=>handleRemoveAllergy(i)} style={{ background:"transparent",border:"none",color:T.txt4,cursor:"pointer",fontSize:11,padding:"0 1px",lineHeight:1 }}>✕</button>
                     </div>
                   ))}
                 </div>
               )}
-
-              {/* Cross-reactivity quick reference */}
               {allergies.length > 0 && (
                 <details style={{ cursor:"pointer" }}>
                   <summary style={{ fontFamily:"DM Sans",fontSize:11.5,color:T.txt3,userSelect:"none",listStyle:"none",display:"flex",alignItems:"center",gap:6 }}>
                     <span style={{ fontSize:10,color:T.txt4 }}>▶</span> Cross-reactivity reference
                   </summary>
                   <div style={{ marginTop:8,display:"flex",flexDirection:"column",gap:6 }}>
-                    {[
-                      {allergy:"Penicillin",cross:"Cephalosporins (~1-2% cross-reactivity); Carbapenems (~1%)"},
-                      {allergy:"Sulfonamide (antibiotic)",cross:"Non-antibiotic sulfonamides (furosemide, thiazides, sulfonylureas) — no class cross-reactivity"},
-                      {allergy:"NSAID / Aspirin",cross:"All COX-1 inhibiting NSAIDs; selective COX-2 inhibitors (celecoxib) may be tolerated"},
-                      {allergy:"Fluoroquinolone",cross:"Class-wide cross-reactivity likely — avoid all fluoroquinolones"},
-                    ].map((r,i)=>(
+                    {[{allergy:"Penicillin",cross:"Cephalosporins (~1-2% cross-reactivity); Carbapenems (~1%)"},{allergy:"Sulfonamide (antibiotic)",cross:"Non-antibiotic sulfonamides (furosemide, thiazides, sulfonylureas) — no class cross-reactivity"},{allergy:"NSAID / Aspirin",cross:"All COX-1 inhibiting NSAIDs; selective COX-2 inhibitors (celecoxib) may be tolerated"},{allergy:"Fluoroquinolone",cross:"Class-wide cross-reactivity likely — avoid all fluoroquinolones"},].map((r,i)=>(
                       <div key={i} style={{ padding:"7px 11px",background:"rgba(14,37,68,0.5)",border:"1px solid rgba(255,159,67,0.15)",borderRadius:8,fontFamily:"DM Sans",fontSize:11.5,color:T.txt2,lineHeight:1.5 }}>
                         <strong style={{color:T.orange}}>{r.allergy}:</strong> {r.cross}
                       </div>
@@ -668,16 +554,11 @@ export default function MedsTab({
           )}
         </div>
 
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* PAST MEDICAL HISTORY */}
-        {/* ═══════════════════════════════════════════════════════ */}
+        {/* ── Past Medical History ── */}
         <div style={{ ...glass({borderRadius:14}),overflow:"hidden" }}>
-          <SectionHeader icon="📋" title="Past Medical History" count={Object.values(pmhSelected).filter(Boolean).length} color={T.blue}
-            expanded={pmhExpanded} onToggle={()=>setPmhExpanded(v=>!v)}
-          />
+          <SectionHeader icon="📋" title="Past Medical History" count={pmhCount} color={T.blue} expanded={pmhExpanded} onToggle={()=>setPmhExpanded(v=>!v)} />
           {pmhExpanded && (
             <div style={{ padding:"0 16px 14px" }}>
-              {/* Category tabs */}
               <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginBottom:12 }}>
                 {PMH_CATS.map((cat, i) => (
                   <button key={i} onClick={()=>setActivePmhCat(i)}
@@ -686,38 +567,32 @@ export default function MedsTab({
                   </button>
                 ))}
               </div>
-
-              {/* Condition checkboxes */}
               <div className="mt-in" style={{ display:"flex",flexWrap:"wrap",gap:6,marginBottom:12 }}>
                 {PMH_CATS[activePmhCat].items.map(cond => {
-                  const selected = !!pmhSelected[cond];
+                  const selected = !!(pmhSelected||{})[cond];
                   const cat = PMH_CATS[activePmhCat];
                   return (
-                    <button key={cond} onClick={()=>handleTogglePMH(cond)}
-                      className="mt-pmh-check"
+                    <button key={cond} onClick={()=>handleTogglePMH(cond)} className="mt-pmh-check"
                       style={{ padding:"6px 13px",borderRadius:9,background:selected?`${cat.color}22`:"rgba(14,37,68,0.7)",border:`1px solid ${selected?cat.color+"66":"rgba(42,77,114,0.35)"}`,color:selected?cat.color:T.txt2,fontFamily:"DM Sans",fontWeight:selected?700:400,fontSize:12,cursor:"pointer" }}>
                       {selected && "✓ "}{cond}
                     </button>
                   );
                 })}
               </div>
-
-              {/* Selected PMH summary */}
-              {Object.keys(pmhSelected).filter(k=>pmhSelected[k]).length > 0 && (
+              {pmhCount > 0 && (
                 <div style={{ padding:"10px 13px",background:"rgba(59,158,255,0.06)",border:"1px solid rgba(59,158,255,0.2)",borderRadius:9,marginBottom:10 }}>
                   <div style={{ fontFamily:"JetBrains Mono",fontSize:9,color:T.blue,textTransform:"uppercase",letterSpacing:1,marginBottom:6 }}>Selected Conditions</div>
                   <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
-                  {Object.keys(pmhSelected).filter(k=>pmhSelected[k]).map(c=>(
+                    {pmhList.slice(0,8).map(c=>(
                       <span key={c} style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:20,background:"rgba(59,158,255,0.12)",border:"1px solid rgba(59,158,255,0.3)",fontFamily:"DM Sans",fontSize:11.5,color:T.blue }}>
                         {c}
                         <button onClick={()=>handleTogglePMH(c)} style={{ background:"transparent",border:"none",color:T.txt4,cursor:"pointer",fontSize:10,padding:"0",lineHeight:1 }}>✕</button>
                       </span>
                     ))}
+                    {pmhCount > 8 && <span style={{ fontFamily:"DM Sans",fontSize:11,color:T.txt4 }}>+{pmhCount-8}</span>}
                   </div>
                 </div>
               )}
-
-              {/* Extra PMH free text */}
               <div>
                 <FieldLabel>Additional PMH / Details</FieldLabel>
                 <textarea value={pmhExtra} onChange={e=>setPmhExtra(e.target.value)} rows={2}
@@ -728,13 +603,9 @@ export default function MedsTab({
           )}
         </div>
 
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* SURGICAL / FAMILY HISTORY */}
-        {/* ═══════════════════════════════════════════════════════ */}
+        {/* ── Surgical / Family History ── */}
         <div style={{ ...glass({borderRadius:14}),overflow:"hidden" }}>
-          <SectionHeader icon="✂️" title="Surgical & Family History" count={0} color={T.purple}
-            expanded={hxOpen} onToggle={()=>setHxOpen(v=>!v)}
-          />
+          <SectionHeader icon="✂️" title="Surgical & Family History" count={0} color={T.purple} expanded={hxOpen} onToggle={()=>setHxOpen(v=>!v)} />
           {hxOpen && (
             <div style={{ padding:"0 16px 14px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:14 }}>
               <div>
@@ -753,13 +624,9 @@ export default function MedsTab({
           )}
         </div>
 
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* SOCIAL HISTORY */}
-        {/* ═══════════════════════════════════════════════════════ */}
+        {/* ── Social History ── */}
         <div style={{ ...glass({borderRadius:14}),overflow:"hidden" }}>
-          <SectionHeader icon="🏠" title="Social History" count={0} color={T.cyan}
-            expanded={socOpen} onToggle={()=>setSocOpen(v=>!v)}
-          />
+          <SectionHeader icon="🏠" title="Social History" count={0} color={T.cyan} expanded={socOpen} onToggle={()=>setSocOpen(v=>!v)} />
           {socOpen && (
             <div style={{ padding:"0 16px 14px" }}>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12 }}>
@@ -767,40 +634,28 @@ export default function MedsTab({
                   <FieldLabel>Tobacco</FieldLabel>
                   <SelectField value={soc.tobacco} onChange={v=>handleSocChange("tobacco",v)} options={TOBACCO_OPTS} />
                   {(soc.tobacco.includes("current")||soc.tobacco.includes("former")) && (
-                    <input value={soc.tobaccoDetail} onChange={e=>handleSocChange("tobaccoDetail",e.target.value)}
-                      placeholder="Pack-years, quit date..." style={{ ...inp(!!soc.tobaccoDetail),marginTop:6,fontSize:11 }} />
+                    <input value={soc.tobaccoDetail} onChange={e=>handleSocChange("tobaccoDetail",e.target.value)} placeholder="Pack-years, quit date..." style={{ ...inp(!!soc.tobaccoDetail),marginTop:6,fontSize:11 }} />
                   )}
                 </div>
                 <div>
                   <FieldLabel>Alcohol</FieldLabel>
                   <SelectField value={soc.alcohol} onChange={v=>handleSocChange("alcohol",v)} options={ALCOHOL_OPTS} />
                   {soc.alcohol !== "none" && (
-                    <input value={soc.alcoholDetail} onChange={e=>handleSocChange("alcoholDetail",e.target.value)}
-                      placeholder="Drinks/day, type..." style={{ ...inp(!!soc.alcoholDetail),marginTop:6,fontSize:11 }} />
+                    <input value={soc.alcoholDetail} onChange={e=>handleSocChange("alcoholDetail",e.target.value)} placeholder="Drinks/day, type..." style={{ ...inp(!!soc.alcoholDetail),marginTop:6,fontSize:11 }} />
                   )}
                 </div>
                 <div>
                   <FieldLabel>Substance Use</FieldLabel>
                   <SelectField value={soc.drugs} onChange={v=>handleSocChange("drugs",v)} options={DRUGS_OPTS} />
                   {soc.drugs !== "never" && (
-                    <input value={soc.drugsDetail} onChange={e=>handleSocChange("drugsDetail",e.target.value)}
-                      placeholder="Substances, last use..." style={{ ...inp(!!soc.drugsDetail),marginTop:6,fontSize:11 }} />
+                    <input value={soc.drugsDetail} onChange={e=>handleSocChange("drugsDetail",e.target.value)} placeholder="Substances, last use..." style={{ ...inp(!!soc.drugsDetail),marginTop:6,fontSize:11 }} />
                   )}
                 </div>
               </div>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12 }}>
-                <div>
-                  <FieldLabel>Living Situation</FieldLabel>
-                  <SelectField value={soc.living} onChange={v=>handleSocChange("living",v)} options={LIVING_OPTS} />
-                </div>
-                <div>
-                  <FieldLabel>Employment</FieldLabel>
-                  <SelectField value={soc.employment} onChange={v=>handleSocChange("employment",v)} options={EMPLOY_OPTS} />
-                </div>
-                <div>
-                  <FieldLabel>Exercise Level</FieldLabel>
-                  <SelectField value={soc.exercise} onChange={v=>handleSocChange("exercise",v)} options={EXERCISE_OPTS} />
-                </div>
+                <div><FieldLabel>Living Situation</FieldLabel><SelectField value={soc.living} onChange={v=>handleSocChange("living",v)} options={LIVING_OPTS} /></div>
+                <div><FieldLabel>Employment</FieldLabel><SelectField value={soc.employment} onChange={v=>handleSocChange("employment",v)} options={EMPLOY_OPTS} /></div>
+                <div><FieldLabel>Exercise Level</FieldLabel><SelectField value={soc.exercise} onChange={v=>handleSocChange("exercise",v)} options={EXERCISE_OPTS} /></div>
               </div>
               <div>
                 <FieldLabel>Additional Social History Notes</FieldLabel>
@@ -812,12 +667,10 @@ export default function MedsTab({
           )}
         </div>
 
-        {/* ── Advance button ──────────────────────────────────── */}
         <button onClick={onAdvance}
           style={{ alignSelf:"flex-end",padding:"11px 28px",borderRadius:12,background:`linear-gradient(135deg,${T.teal},#00b4d8)`,border:"none",color:"#050f1e",fontFamily:"DM Sans",fontWeight:700,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,229,192,0.25)" }}>
-          Continue to HPI ▶
+          Continue to SDOH ▶
         </button>
-
       </div>
     </div>
   );

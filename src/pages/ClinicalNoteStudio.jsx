@@ -1,840 +1,816 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
-import { toast } from "sonner";
 
-import DemoTab from "@/components/npi/DemoTab";
-import CCTab from "@/components/npi/CCTab";
-import VitalsTab from "@/components/npi/VitalsTab";
-import MedsTab from "@/components/npi/MedsTab";
-import ROSTab from "@/components/npi/ROSTab";
-import PETab from "@/components/npi/PETab";
-import AutoCoderTab from "@/components/npi/AutoCoderTab";
-import DischargePlanning from "@/pages/DischargePlanning";
-import EDProcedureNotes from "@/pages/EDProcedureNotes";
-import MedicationReferencePage from "@/pages/MedicationReference";
-import ERPlanBuilder from "@/pages/ERPlanBuilder";
-import ResultsViewer from "@/pages/ResultsViewer";
-import CDSAlertsSidebar from "@/components/npi/CDSAlertsSidebar";
-import ERxHub from "@/pages/ERx";
-import ClinicalNoteStudio from "@/components/npi/ClinicalNoteStudio";
-import ReassessmentTab from "@/components/npi/ReassessmentTab";
-import ClinicalTimeline from "@/components/npi/ClinicalTimeline";
-import VitalSignsChart  from "@/components/npi/VitalSignsChart";
-import InlineHPITab from "@/components/npi/InlineHPITab";
-import OrdersPanel from "@/components/npi/OrdersPanel";
-import { NPI_CSS } from "@/components/npi/npiStyles";
+// ─── SECTION CONFIG ────────────────────────────────────────────────────────────
+const SECTIONS = [
+  { id: "ddx",     label: "01  Impression / DDx",          icon: "🎯", priority: true  },
+  { id: "mdm",     label: "02  Medical Decision Making",    icon: "⚖️", priority: true  },
+  { id: "plan",    label: "03  Disposition + Plan",         icon: "📋", priority: true  },
+  { id: "hpi",     label: "04  HPI",                        icon: "📝", priority: false },
+  { id: "ros",     label: "05  ROS",                        icon: "🔍", priority: false },
+  { id: "pe",      label: "06  Physical Exam",              icon: "🩺", priority: false },
+  { id: "results", label: "07  Results",                    icon: "🧪", priority: false },
+  { id: "meta",    label: "08  Encounter Metadata",         icon: "📊", priority: false },
+];
 
-// ─── NAV DATA ─────────────────────────────────────────────────────────────────
-const NAV_DATA = {
-  intake: [
-    { section: "triage",     icon: "🏷️", label: "Triage",           abbr: "Tr", dot: "empty" },
-    { section: "demo",       icon: "👤", label: "Demographics",      abbr: "Dm", dot: "empty" },
-    { section: "cc",         icon: "💬", label: "Chief Complaint",   abbr: "Cc", dot: "empty" },
-    { section: "vit",        icon: "📈", label: "Vitals",            abbr: "Vt", dot: "empty" },
-    { section: "meds",       icon: "💊", label: "Meds & PMH",        abbr: "Rx", dot: "empty" },
-  ],
-  assess: [
-    { section: "hpi",        icon: "📝", label: "HPI",               abbr: "Hp", dot: "empty" },
-    { section: "ros",        icon: "🔍", label: "Review of Systems", abbr: "Rs", dot: "empty" },
-    { section: "pe",         icon: "🩺", label: "Physical Exam",     abbr: "Pe", dot: "empty" },
-    { section: "erplan",     icon: "🗺️", label: "ER Plan Builder",   abbr: "Ep", dot: "empty" },
-  ],
-  orders: [
-    { section: "orders",     icon: "📋", label: "Orders",            abbr: "Or", dot: "empty" },
-    { section: "erx",        icon: "💉", label: "eRx",               abbr: "Ex", dot: "empty" },
-    { section: "procedures", icon: "✂️", label: "Procedures",        abbr: "Pr", dot: "empty" },
-    { section: "consult",    icon: "👥", label: "Consults",          abbr: "Co", dot: "empty" },
-  ],
-  close: [
-    { section: "chart",      icon: "📄", label: "Clinical Note",     abbr: "Cn", dot: "empty" },
-    { section: "reassess",   icon: "🔄", label: "Reassessment",      abbr: "Ra", dot: "empty" },
-    { section: "autocoder",  icon: "🤖", label: "AutoCoder",         abbr: "Ac", dot: "empty" },
-    { section: "timeline",   icon: "⏱",  label: "Timeline",          abbr: "Tl", dot: "empty" },
-    { section: "discharge",  icon: "🚪", label: "Discharge",         abbr: "Dc", dot: "empty" },
-  ],
-  tools: [
-    { section: "sepsis",     icon: "🦠", label: "Sepsis Protocol",   abbr: "Sp", dot: "empty", href: "/SepsisHub"           },
-    { section: "ecg",        icon: "❤️", label: "ECG Review",        abbr: "Eg", dot: "empty", href: "/ECGHub"              },
-    { section: "psych",      icon: "🧠", label: "Psych Assessment",  abbr: "Px", dot: "empty", href: "/PsychHub"            },
-    { section: "resus",      icon: "🫀", label: "Resus Hub",         abbr: "Rh", dot: "empty", href: "/ResusHub"            },
-    { section: "labsint",    icon: "🔬", label: "Labs Interpreter",  abbr: "Li", dot: "empty", href: "/LabsInterpreter"     },
-    { section: "knowledge",  icon: "📚", label: "Knowledge Base",    abbr: "Kb", dot: "empty", href: "/KnowledgeBaseV2"     },
-    { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results"             },
-    { section: "medref",     icon: "🧬", label: "ED Med Ref",        abbr: "Mr", dot: "empty", href: "/MedicationReference" },
-    { section: "calc",       icon: "🧮", label: "Calculators",       abbr: "Ca", dot: "empty", href: "/Calculators"         },
-    { section: "hub",        icon: "🏥", label: "Clinical Hub",      abbr: "Hb", dot: "empty", href: "/hub"                 },
-  ],
+// AMA 2023 MDM complexity levels — matches CPT E/M table exactly (4 levels, not 5)
+const COMPLEXITY = [
+  { n: 1, label: "Straightforward", sub: "Self-limited / minor",               color: "#00e5c0" },
+  { n: 2, label: "Low",             sub: "Stable chronic / uncomplicated acute",color: "#3b9eff" },
+  { n: 3, label: "Moderate",        sub: "Exacerbation / systemic symptoms",    color: "#ffd93d" },
+  { n: 4, label: "High",            sub: "Threat to life / severe exacerbation",color: "#ff6b6b" },
+];
+
+const DISP_OPTS = [
+  { id: "discharge", label: "Discharge",   icon: "🏠" },
+  { id: "admit",     label: "Admit",        icon: "🏥" },
+  { id: "obs",       label: "Observation",  icon: "👁️" },
+  { id: "transfer",  label: "Transfer",     icon: "🚑" },
+  { id: "lwbs",      label: "LWBS / AMA",   icon: "⚠️" },
+];
+
+// ─── SYSTEM LABEL MAPS ────────────────────────────────────────────────────────
+// Mirror the IDs in ROSTab.jsx / PETab.jsx — used for prose note generation.
+const ROS_SYS_LABELS = {
+  const:   "Constitutional", heent:  "HEENT",          cv:    "Cardiovascular",
+  resp:    "Respiratory",    gi:     "GI/Abdomen",      gu:    "Genitourinary",
+  msk:     "MSK",            neuro:  "Neurological",    psych: "Psychiatric",
+  skin:    "Skin",           endo:   "Endocrine",       heme:  "Heme/Lymph",
+  allergy: "Allergic/Immunologic",
 };
-
-const GROUP_META = [
-  { key: "intake",  icon: "📋", label: "Intake"  },
-  { key: "assess",  icon: "🔍", label: "Assess"  },
-  { key: "orders",  icon: "📋", label: "Orders"  },
-  { key: "close",   icon: "📝", label: "Close"   },
-  { key: "tools",   icon: "🔧", label: "Tools"   },
-];
-
-const ALL_SECTIONS = Object.values(NAV_DATA).flat();
-
-const SHORTCUT_MAP = {
-  "1": "triage", "2": "demo",  "3": "cc",
-  "4": "vit",    "5": "meds",  "6": "hpi",
-  "7": "ros",    "8": "pe",    "9": "orders",
-  "0": "discharge",
+const PE_SYS_LABELS = {
+  gen:   "General",        heent: "HEENT",         neck: "Neck",
+  cv:    "Cardiovascular", resp:  "Respiratory",   abd:  "Abdomen",
+  msk:   "MSK",            neuro: "Neurological",  skin: "Skin",
+  psych: "Psychiatric",
 };
-const SECTION_SHORTCUT = Object.fromEntries(
-  Object.entries(SHORTCUT_MAP).map(([k, v]) => [v, k])
-);
+const META_KEYS = ["_remainderNeg", "_remainderNormal", "_mode", "_visual"];
 
-const QUICK_ACTIONS = [
-  { icon: "📋", label: "Summarise", prompt: "Summarise what I have entered so far."                  },
-  { icon: "🔍", label: "Check",     prompt: "What am I missing? Check my entries for completeness." },
-  { icon: "📝", label: "Draft Note",prompt: "Generate a draft note from the data entered."           },
-  { icon: "🧠", label: "DDx",       prompt: "Suggest differential diagnoses based on current data." },
-];
-
-const ROS_RAIL_SYSTEMS = [
-  { id: "const",   icon: "🌡️", label: "Constitutional"    },
-  { id: "heent",   icon: "👁️", label: "HEENT"             },
-  { id: "cv",      icon: "❤️", label: "Cardiovascular"    },
-  { id: "resp",    icon: "🫁", label: "Respiratory"       },
-  { id: "gi",      icon: "🫃", label: "GI / Abdomen"      },
-  { id: "gu",      icon: "🔵", label: "Genitourinary"     },
-  { id: "msk",     icon: "🦴", label: "MSK"               },
-  { id: "neuro",   icon: "🧠", label: "Neurological"      },
-  { id: "psych",   icon: "🧘", label: "Psychiatric"       },
-  { id: "skin",    icon: "🩹", label: "Skin"              },
-  { id: "endo",    icon: "⚗️", label: "Endocrine"         },
-  { id: "heme",    icon: "🩸", label: "Heme / Lymph"      },
-  { id: "allergy", icon: "🌿", label: "Allergic / Immuno" },
-];
-const PE_RAIL_SYSTEMS = [
-  { id: "gen",   icon: "🧍", label: "General"        },
-  { id: "heent", icon: "👁️", label: "HEENT"          },
-  { id: "neck",  icon: "🔵", label: "Neck"           },
-  { id: "cv",    icon: "❤️", label: "Cardiovascular" },
-  { id: "resp",  icon: "🫁", label: "Respiratory"    },
-  { id: "abd",   icon: "🫃", label: "Abdomen"        },
-  { id: "msk",   icon: "🦴", label: "MSK"            },
-  { id: "neuro", icon: "🧠", label: "Neurological"   },
-  { id: "skin",  icon: "🩹", label: "Skin"           },
-  { id: "psych", icon: "🧘", label: "Psychiatric"    },
-];
-
-const SYSTEM_PROMPT =
-  "You are Notrya AI — a helpful AI assistant embedded in an emergency medicine documentation platform. Respond in 2-4 concise, actionable sentences. Be direct. Never fabricate data.";
-
-// ─── PATIENT CONTEXT BUILDER ──────────────────────────────────────────────────
-function buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab) {
-  const name = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
-  const pmhList = Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]).join(", ") || "none";
-  return [
-    `Patient: ${name}, ${demo.age || "?"}${demo.sex ? " " + demo.sex : ""}.`,
-    cc.text     ? `CC: ${cc.text}.`                                                                   : null,
-    vitals.bp   ? `BP ${vitals.bp}  HR ${vitals.hr || "-"}  SpO2 ${vitals.spo2 || "-"}  T ${vitals.temp || "-"}.` : null,
-    allergies.length ? `Allergies: ${allergies.join(", ")}.`                                          : "Allergies: NKDA.",
-    pmhList !== "none" ? `PMH: ${pmhList}.`                                                           : null,
-    cc.hpi      ? `HPI summary: ${cc.hpi.slice(0, 200)}.`                                             : null,
-    `Active section: ${currentTab}.`,
-  ].filter(Boolean).join(" ");
+// ─── TOAST HELPER ────────────────────────────────────────────────────────────
+// Module-scope so it can be used inside useCallback without re-render issues.
+// Components call: showToast(setToasts, "msg", "success"|"error")
+function showToast(setter, msg, type) {
+  const id = Date.now();
+  setter(p => [...p, { id, msg, type }]);
+  setTimeout(() => setter(p => p.filter(t => t.id !== id)), 3000);
 }
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function NewPatientInput() {
-  const navigate = useNavigate();
-  const location = useLocation();
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function buildRosText(rosState) {
+  if (!rosState || !Object.keys(rosState).length) return "";
 
-  const [currentTab, setCurrentTab] = useState(
-    () => new URLSearchParams(window.location.search).get("tab") || "demo"
-  );
-  useEffect(() => {
-    const tab = new URLSearchParams(location.search).get("tab");
-    if (tab) setCurrentTab(tab);
-  }, [location.search]);
-
-  const [activeGroup, setActiveGroup] = useState(() => {
-    const tab = new URLSearchParams(window.location.search).get("tab") || "demo";
-    for (const [group, items] of Object.entries(NAV_DATA)) {
-      if (items.find(i => i.section === tab)) return group;
-    }
-    return "intake";
+  const pos = [], neg = [];
+  let remainderNeg = false;
+  Object.entries(rosState).forEach(([sys, val]) => {
+    if (sys === "_remainderNeg") { if (val) remainderNeg = true; return; }
+    if (META_KEYS.includes(sys)) return;
+    const label = ROS_SYS_LABELS[sys] || sys;
+    if (val === "has-positives") pos.push(label);
+    else if (val === "reviewed") neg.push(label);
   });
 
-  const [navDots, setNavDots] = useState(() => {
-    const m = {}; ALL_SECTIONS.forEach(s => (m[s.section] = s.dot)); return m;
+  if (!pos.length && !neg.length && !remainderNeg) return "";
+
+  const parts = [];
+  if (pos.length) parts.push(`Positive for: ${pos.join(", ")}.`);
+
+  if (!pos.length && neg.length >= 5 && remainderNeg) {
+    // All systems reviewed negative — single aggregate sentence
+    parts.push("All systems reviewed and negative.");
+  } else if (!pos.length && neg.length >= 5) {
+    parts.push(`All ${neg.length} reviewed systems negative.`);
+  } else {
+    if (neg.length) parts.push(`Reviewed and negative: ${neg.join(", ")}.`);
+    if (remainderNeg) parts.push("All remaining systems reviewed and negative.");
+  }
+
+  return parts.join(" ");
+}
+
+function buildPeText(peState, peFindings) {
+  if (!peState || !Object.keys(peState).length) return "";
+
+  const abn = [], normal = [];
+  let remainderNormal = false;
+  let visualData = null;
+  Object.entries(peState).forEach(([sys, val]) => {
+    if (sys === "_remainderNormal") { if (val) remainderNormal = true; return; }
+    if (sys === "_visual") { visualData = val; return; }
+    if (META_KEYS.includes(sys)) return;
+    const label = PE_SYS_LABELS[sys] || sys;
+    if (val === "abnormal" || val === "mixed") abn.push({ id: sys, label });
+    else if (val === "normal") normal.push(label);
   });
 
-  const arrivalTimeRef = useRef(Date.now());
-  const [doorTime, setDoorTime] = useState("0m");
-  useEffect(() => {
-    const update = () => {
-      const mins = Math.floor((Date.now() - arrivalTimeRef.current) / 60000);
-      const h = Math.floor(mins / 60), m = mins % 60;
-      setDoorTime(h > 0 ? `${h}h ${m}m` : `${m}m`);
-    };
-    update();
-    const id = setInterval(update, 60000);
-    return () => clearInterval(id);
-  }, []);
+  if (!abn.length && !normal.length && !remainderNormal && !visualData) return "";
 
-  const [demo, setDemo]               = useState({ firstName:"", lastName:"", age:"", dob:"", sex:"", mrn:"", insurance:"", insuranceId:"", address:"", city:"", phone:"", email:"", emerg:"", height:"", weight:"", lang:"", notes:"", pronouns:"" });
-  const [cc, setCC]                   = useState({ text:"", onset:"", duration:"", severity:"", quality:"", radiation:"", aggravate:"", relieve:"", assoc:"", hpi:"" });
-  const [vitals, setVitals]           = useState({});
-  const [vitalsHistory, setVitalsHistory] = useState([]);
-  const [medications, setMedications] = useState([]);
-  const [allergies, setAllergies]     = useState([]);
-  const [pmhSelected, setPmhSelected] = useState({});
-  const [pmhExtra, setPmhExtra]       = useState("");
-  const [surgHx, setSurgHx]           = useState("");
-  const [famHx, setFamHx]             = useState("");
-  const [socHx, setSocHx]             = useState("");
-  const [rosState, setRosState]       = useState({});
-  const [rosSymptoms, setRosSymptoms] = useState({});
-  const [rosNotes, setRosNotes]       = useState({});
-  const [peState, setPeState]         = useState({});
-  const [peFindings, setPeFindings]   = useState({});
-  const [selectedCC, setSelectedCC]   = useState(-1);
-  const [parseText, setParseText]     = useState("");
-  const [parsing, setParsing]         = useState(false);
-  const [pmhExpanded, setPmhExpanded] = useState({ cardio: true, endo: true });
-  const [avpu, setAvpu]               = useState("");
-  const [o2del, setO2del]             = useState("");
-  const [pain, setPain]               = useState("");
-  const [triage, setTriage]           = useState("");
-  const [esiLevel, setEsiLevel]       = useState("");
-  const [consults, setConsults]       = useState([]);
-  const [svcIn,    setSvcIn]           = useState("");
-  const [qIn,      setQIn]             = useState("");
-  const [respIn,   setRespIn]          = useState({});
-  const [registration, setRegistration] = useState({ mrn:"", room:"" });
-  const [showShortcuts, setShowShortcuts] = useState(false);
-  const [cdsOpen,      setCdsOpen]      = useState(false);
-  const [rosActiveSystem, setRosActiveSystem] = useState(0);
-  const [peActiveSystem,  setPeActiveSystem]  = useState(0);
-  const [reassessState,   setReassessState]   = useState({});
-  const [clinicalTimeline, setClinicalTimeline] = useState({});
+  const lines = [];
 
-  const [providerName, setProviderName] = useState("Provider");
-  const [providerRole, setProviderRole] = useState("ED");
-  useEffect(() => {
-    (async () => {
-      try {
-        const me = await base44.auth?.me?.();
-        if (me) {
-          const full = [me.first_name, me.last_name].filter(Boolean).join(" ");
-          if (full) setProviderName(full);
-          if (me.role) setProviderRole(me.role);
-        }
-      } catch (_) {}
-    })();
-  }, []);
+  if (visualData) {
+    const vParts = [];
+    if (visualData.appearance) vParts.push(visualData.appearance);
+    if (visualData.notes) vParts.push(visualData.notes);
+    if (vParts.length) lines.push(vParts.join(". ") + ".");
+  }
 
-  const ASSESS_SECTIONS = ["hpi", "ros", "pe"];
-  const prevTabRef = useRef(null);
-  const [resumeSection, setResumeSection] = useState(null);
-  useEffect(() => {
-    const prev = prevTabRef.current;
-    if (prev && ASSESS_SECTIONS.includes(prev) && !ASSESS_SECTIONS.includes(currentTab)) setResumeSection(prev);
-    if (ASSESS_SECTIONS.includes(currentTab)) setResumeSection(null);
-    prevTabRef.current = currentTab;
-  }, [currentTab]); // eslint-disable-line
+  abn.forEach(({ id, label }) => {
+    const sf = peFindings?.[id];
+    const findings = sf
+      ? Object.entries(sf.findings || {})
+          .filter(([, v]) => v === "abnormal")
+          .map(([k]) => k.replace(/-/g, " "))
+          .join(", ")
+      : "";
+    const note = sf?.note?.trim();
+    let line = `${label}: ${findings || "abnormal findings noted"}`;
+    if (note) line += ` — ${note}`;
+    lines.push(line + ".");
+  });
 
-  const [aiOpen, setAiOpen]       = useState(false);
-  const [aiMsgs, setAiMsgs]       = useState([{ role:"sys", text:"Notrya AI ready — select a quick action or ask a clinical question." }]);
-  const [aiInput, setAiInput]     = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [unread, setUnread]       = useState(0);
-  const [history, setHistory]     = useState([]);
-  const msgsRef  = useRef(null);
-  const inputRef = useRef(null);
-
-  useEffect(() => { msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior:"smooth" }); }, [aiMsgs, aiLoading]);
-  useEffect(() => { if (aiOpen) setTimeout(() => inputRef.current?.focus(), 280); }, [aiOpen]);
-  useEffect(() => {
-    const h = e => { if (e.key === "Escape" && aiOpen) setAiOpen(false); if (e.key === "Escape" && cdsOpen) setCdsOpen(false); };
-    window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h);
-  }, [aiOpen, cdsOpen]);
-
-  useEffect(() => {
-    setNavDots(prev => ({
-      ...prev,
-      demo:     (demo.firstName || demo.lastName || demo.age) ? "done"    : "empty",
-      cc:       cc.text                                        ? "done"    : "empty",
-      vit:      (vitals.bp || vitals.hr)                       ? "done"    : "empty",
-      meds:     (medications.length || allergies.length)       ? "done"    : "empty",
-      hpi:      cc.hpi ? "done" : cc.text                      ? "partial" : "empty",
-      ros:      Object.keys(rosState).length > 3 ? "done" : Object.keys(rosState).length > 0 ? "partial" : "empty",
-      pe:       Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
-      triage:   esiLevel                        ? "done"    : "empty",
-      consult:  consults.length > 0               ? "done"    : "empty",
-      reassess: reassessState.condition ? "done" : reassessState.note ? "partial" : "empty",
-      timeline: clinicalTimeline?.times?.departed ? "done" : clinicalTimeline?.times?.disposition ? "partial" : "empty",
-    }));
-  }, [
-    demo.firstName, demo.lastName, demo.age, cc.text, cc.hpi, vitals.bp, vitals.hr,
-    medications.length, allergies.length,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    Object.keys(rosState).length, Object.keys(peState).length,
-    esiLevel, consults.length,
-    reassessState.condition, reassessState.note,
-    clinicalTimeline?.times?.departed, clinicalTimeline?.times?.disposition,
-  ]);
-
-  const selectGroup = useCallback((group) => {
-    setActiveGroup(group);
-    const items = NAV_DATA[group];
-    if (items.every(i => i.href)) return;
-    if (items.length === 1) { navigate(`/NewPatientInput?tab=${items[0].section}`); return; }
-    const target = items.find(i => i.section === currentTab) ? currentTab : items[0].section;
-    navigate(`/NewPatientInput?tab=${target}`);
-  }, [currentTab, navigate]);
-
-  const selectSection = useCallback((sectionId) => {
-    navigate(`/NewPatientInput?tab=${sectionId}`);
-    for (const [group, items] of Object.entries(NAV_DATA)) {
-      if (items.find(i => i.section === sectionId)) { setActiveGroup(group); break; }
+  if (normal.length) {
+    if (!abn.length && normal.length >= 4 && remainderNormal) {
+      lines.push("Exam within normal limits.");
+    } else {
+      lines.push(`Normal: ${normal.join(", ")}.`);
     }
-  }, [navigate]);
+  }
 
-  const getGroupBadge = useCallback((groupKey) => {
-    const items = NAV_DATA[groupKey];
-    if (items.every(i => navDots[i.section] === "done")) return "done";
-    if (items.some(i => navDots[i.section] === "done" || navDots[i.section] === "partial")) return "partial";
-    return "empty";
-  }, [navDots]);
+  if (remainderNormal && !(normal.length >= 4 && !abn.length)) {
+    lines.push("Remaining exam within normal limits.");
+  }
 
-  const vitalClass = (key, raw) => {
-    if (!raw || raw === "\u2014") return "";
-    const src = key === "bp" ? String(raw).split("/")[0] : raw;
-    const n = parseFloat(src); if (isNaN(n)) return "";
-    if (key === "hr")   return n > 110 || n < 50  ? " abn" : n > 90  || n < 55 ? " warn" : "";
-    if (key === "rr")   return n > 22  || n < 8   ? " abn" : n > 20  || n < 10 ? " warn" : "";
-    if (key === "spo2") return n < 90              ? " abn" : n < 94            ? " warn" : "";
-    if (key === "temp") return n > 39.5 || n < 35.5 ? " abn" : n > 38 || n < 36 ? " warn" : "";
-    if (key === "bp")   return n > 180 || n < 80  ? " abn" : n > 140 || n < 90 ? " warn" : "";
-    return "";
-  };
+  return lines.join(" ");
+}
 
-  const getRosSysDot = (sysId) => {
-    const st = rosState[sysId]; if (!st) return "empty";
-    return st === "has-positives" ? "partial" : "done";
-  };
-  const getPeSysDot = (sysId) => {
-    const st = peState[sysId]; if (!st) return "empty";
-    return (st === "has-positives" || st === "abnormal" || st === "mixed") ? "partial" : "done";
-  };
-
-  const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
-
-  const addVitalsSnapshot = useCallback((label, overrideVitals) => {
-    const v = overrideVitals || vitals;
-    if (!v || (!v.hr && !v.bp)) return;
-    setVitalsHistory(prev => [...prev, { t: Date.now(), label, ...v }]);
-  }, [vitals]);
-
-  const handleSaveChart = useCallback(async () => {
-    try {
-      const payload = {
-        raw_note: parseText || `Patient ${[demo.firstName,demo.lastName].filter(Boolean).join(" ")||"New Patient"} presenting with ${cc.text||"unspecified complaint"}`,
-        patient_name:    [demo.firstName,demo.lastName].filter(Boolean).join(" ")||"New Patient",
-        patient_id:      registration.mrn||demo.mrn||"",
-        patient_age:     demo.age||"",
-        patient_gender:  demo.sex?.toLowerCase()==="male"?"male":demo.sex?.toLowerCase()==="female"?"female":"other",
-        date_of_birth:   demo.dob||"",
-        chief_complaint: cc.text||"",
-        history_of_present_illness: cc.hpi||"",
-        medications, allergies, status:"draft",
-        registration_mrn: registration.mrn||"", registration_room: registration.room||"",
-        triage_esi_level: esiLevel||"",
-      };
-      await base44.entities.ClinicalNote.create(payload);
-      toast.success("Chart signed and saved.");
-      navigate("/EDTrackingBoard");
-    } catch (e) { toast.error("Failed to save: " + e.message); }
-  }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,navigate]);
-
-  useEffect(() => {
-    const handler = e => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && SHORTCUT_MAP[e.key]) { e.preventDefault(); selectSection(SHORTCUT_MAP[e.key]); return; }
-      if (mod && e.shiftKey && e.key === "s") { e.preventDefault(); handleSaveChart(); return; }
-      if (mod && e.shiftKey && e.key === "n") { e.preventDefault(); navigate("/NewPatientInput?tab=demo"); return; }
-      if (e.key === "?" && !mod && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
-        e.preventDefault(); setShowShortcuts(s => !s);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [selectSection,navigate,handleSaveChart,demo,cc,vitals,medications,allergies,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration]);
-
-  const sendMessage = useCallback(async (text) => {
-    if (!text.trim() || aiLoading) return;
-    setAiMsgs(m => [...m, { role:"user", text:text.trim() }]);
-    setAiInput(""); setAiLoading(true);
-    const ctx = buildPatientCtx(demo,cc,vitals,allergies,pmhSelected,currentTab);
-    setHistory(h => [...h, { role:"user", content: ctx+"\n\n"+text.trim() }]);
-    try {
-      const res = await base44.integrations.Core.InvokeLLM({ prompt: SYSTEM_PROMPT+"\n\nPATIENT CONTEXT:\n"+ctx+"\n\nPHYSICIAN QUESTION:\n"+text.trim() });
-      const reply = typeof res === "string" ? res : JSON.stringify(res);
-      setHistory(h => [...h, { role:"assistant", content:reply }]);
-      setAiMsgs(m => [...m, { role:"bot", text:reply }]);
-      setAiOpen(open => { if (!open) setUnread(u => u+1); return open; });
-    } catch {
-      setAiMsgs(m => [...m, { role:"sys", text:"\u26a0 Connection error \u2014 please try again." }]);
-    } finally { setAiLoading(false); }
-  }, [aiLoading,history,currentTab,demo,cc,vitals,allergies,pmhSelected]);
-
-  const handleAIKey = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(aiInput); } };
-
-  const renderMsg = text =>
-    text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,'<strong style="color:#00e5c0">$1</strong>');
-
-  const smartParse = async () => {
-    if (!parseText.trim()) { toast.error("Please enter some text to parse."); return; }
-    setParsing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Extract structured patient data from the following text. Return ONLY valid JSON.\nText: ${parseText}`,
-        response_json_schema: { type:"object", properties:{ firstName:{type:"string"},lastName:{type:"string"},age:{type:"string"},sex:{type:"string"},dob:{type:"string"},cc:{type:"string"},onset:{type:"string"},duration:{type:"string"},severity:{type:"string"},quality:{type:"string"},bp:{type:"string"},hr:{type:"string"},rr:{type:"string"},spo2:{type:"string"},temp:{type:"string"},gcs:{type:"string"},medications:{type:"array",items:{type:"string"}},allergies:{type:"array",items:{type:"string"}},pmh:{type:"array",items:{type:"string"}} } },
-      });
-      setDemo(prev => ({ ...prev, firstName:result.firstName||prev.firstName, lastName:result.lastName||prev.lastName, age:result.age||prev.age, sex:result.sex||prev.sex, dob:result.dob||prev.dob }));
-      setCC(prev => ({ ...prev, text:result.cc||prev.text, onset:result.onset||prev.onset, duration:result.duration||prev.duration, severity:result.severity||prev.severity, quality:result.quality||prev.quality }));
-      setVitals(prev => ({ ...prev, bp:result.bp||prev.bp||"", hr:result.hr||prev.hr||"", rr:result.rr||prev.rr||"", spo2:result.spo2||prev.spo2||"", temp:result.temp||prev.temp||"", gcs:result.gcs||prev.gcs||"" }));
-      (result.medications||[]).forEach(m => { if (m) setMedications(p => p.includes(m)?p:[...p,m]); });
-      (result.allergies||[]).forEach(a => { if (a) setAllergies(p => p.includes(a)?p:[...p,a]); });
-      toast.success("Patient data extracted!");
-    } catch { toast.error("Could not parse automatically."); }
-    setParsing(false);
-  };
-
-  const patientName = [demo.firstName,demo.lastName].filter(Boolean).join(" ") || "New Patient";
-
-  // ── Build the patientData bundle once so CNS always gets a consistent object
-  const patientDataBundle = {
-    demo,
-    cc,
-    vitals,
-    medications,
-    allergies,
-    pmhSelected,
-    pmhExtra,
-    surgHx,
-    famHx,
-    socHx,
-    rosState,
-    rosNotes,
-    rosSymptoms,
-    peState,
-    peFindings,
-    esiLevel,
-    registration,
-  };
-
-  const renderContent = () => {
-    switch (currentTab) {
-      case "triage": {
-        const ESI_CFG = [
-          { level:1, label:"Immediate",   color:"#ff6b6b", desc:"Life-threatening"      },
-          { level:2, label:"Emergent",    color:"#ff9f43", desc:"High-risk / unstable"  },
-          { level:3, label:"Urgent",      color:"#f5c842", desc:"Stable, 2+ resources"  },
-          { level:4, label:"Less Urgent", color:"#00e5c0", desc:"1 resource expected"   },
-          { level:5, label:"Non-urgent",  color:"#8892a4", desc:"No resources needed"   },
-        ];
-        return (
-          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:10 }}>ESI Level — Emergency Severity Index</div>
-              <div style={{ display:"flex", gap:8 }}>
-                {ESI_CFG.map(({ level, label, color, desc }) => (
-                  <button key={level} onClick={() => setEsiLevel(String(level))}
-                    style={{ flex:1, padding:"12px 6px", borderRadius:10, cursor:"pointer", transition:"all .14s",
-                      border:`2px solid ${esiLevel===String(level)?color:"rgba(42,77,114,0.4)"}`,
-                      background:esiLevel===String(level)?`${color}18`:"rgba(14,37,68,0.5)" }}>
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:24, fontWeight:700, color:esiLevel===String(level)?color:"var(--npi-txt3)" }}>{level}</div>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, color:esiLevel===String(level)?color:"var(--npi-txt3)", marginTop:2 }}>{label}</div>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--npi-txt4)", marginTop:3 }}>{desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Triage Assessment Note</div>
-              <textarea value={triage} onChange={e=>setTriage(e.target.value)}
-                placeholder="Document presenting complaint, initial appearance, chief concern..." rows={4}
-                style={{ width:"100%", background:"rgba(14,37,68,0.8)", border:"1px solid rgba(26,53,85,0.55)", borderTop:"2px solid rgba(0,229,192,0.3)", borderRadius:9, padding:"9px 12px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none", resize:"none", boxSizing:"border-box" }} />
-            </div>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Mental Status — AVPU</div>
-              <div style={{ display:"flex", gap:8 }}>
-                {["Alert","Verbal","Pain","Unresponsive"].map(v => (
-                  <button key={v} onClick={() => setAvpu(v)}
-                    style={{ flex:1, padding:"9px 4px", borderRadius:8, cursor:"pointer",
-                      border:`1px solid ${avpu===v?"rgba(59,158,255,0.5)":"rgba(42,77,114,0.4)"}`,
-                      background:avpu===v?"rgba(59,158,255,0.1)":"transparent",
-                      color:avpu===v?"#3b9eff":"var(--npi-txt3)",
-                      fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:avpu===v?600:400 }}>
-                    {v}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Pain Score (0–10)</div>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {Array.from({length:11},(_,i)=>i).map(i => {
-                  const col = i<=3?"#00e5c0":i<=6?"#f5c842":"#ff6b6b";
-                  return (
-                    <button key={i} onClick={()=>setPain(String(i))}
-                      style={{ width:38, height:38, borderRadius:8, cursor:"pointer",
-                        border:`1px solid ${pain===String(i)?col+"88":"rgba(42,77,114,0.35)"}`,
-                        background:pain===String(i)?col+"18":"transparent",
-                        color:pain===String(i)?col:"var(--npi-txt3)",
-                        fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:pain===String(i)?700:400 }}>
-                      {i}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {(esiLevel||triage||avpu) && (
-              <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(0,229,192,0.05)", border:"1px solid rgba(0,229,192,0.2)", fontFamily:"'DM Sans',sans-serif", fontSize:12, display:"flex", gap:12, flexWrap:"wrap" }}>
-                {esiLevel && <span><span style={{ color:"var(--npi-teal)", fontWeight:700 }}>ESI {esiLevel}</span></span>}
-                {avpu     && <span style={{ color:"var(--npi-txt3)" }}>AVPU: {avpu}</span>}
-                {pain     && <span style={{ color:"var(--npi-txt3)" }}>Pain: {pain}/10</span>}
-              </div>
-            )}
-          </div>
-        );
-      }
-      case "demo":       return <DemoTab demo={demo} setDemo={setDemo} parseText={parseText} setParseText={setParseText} parsing={parsing} onSmartParse={smartParse} esiLevel={esiLevel} setEsiLevel={setEsiLevel} registration={registration} setRegistration={setRegistration} onAdvance={() => selectSection("cc")} />;
-      case "cc":         return <CCTab cc={cc} setCC={setCC} selectedCC={selectedCC} setSelectedCC={setSelectedCC} onAdvance={() => selectSection("vit")} />;
-      case "vit":        return <VitalsTab vitals={vitals} setVitals={setVitals} avpu={avpu} setAvpu={setAvpu} o2del={o2del} setO2del={setO2del} pain={pain} setPain={setPain} triage={triage} setTriage={setTriage} onAdvance={() => { addVitalsSnapshot("Triage"); selectSection("meds"); }} />;
-      case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} onAdvance={() => selectSection("hpi")} />;
-      case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} />;
-      case "ros":        return <ROSTab onStateChange={setRosState} chiefComplaint={cc.text} onAdvance={() => selectSection("pe")} extSysIdx={rosActiveSystem} onSysChange={setRosActiveSystem} />;
-      case "pe":         return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} onAdvance={() => selectSection("chart")} extSysIdx={peActiveSystem} onSysChange={setPeActiveSystem} chiefComplaint={cc.text} />;
-
-      // ── FIX: pass a single patientData object, embedded flag, and correct callbacks
-      case "chart": return (
-        <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}>
-          <ClinicalNoteStudio
-            patientData={patientDataBundle}
-            embedded={true}
-            onBack={() => selectSection("pe")}
-            onSave={handleSaveChart}
-          />
-        </div>
-      );
-
-      case "consult": {
-        const elapsed = ts => { const m=Math.floor((Date.now()-ts)/60000); return m<60?`${m}m`:`${Math.floor(m/60)}h ${m%60}m`; };
-        const addConsult = (svc, q) => {
-          if (!svc.trim()) return;
-          setConsults(prev=>[...prev,{ id:Date.now(), service:svc.trim(), question:q.trim(), requestedAt:Date.now(), status:"pending", response:"" }]);
-        };
-        const markReceived = (id, resp) => setConsults(prev=>prev.map(c=>c.id===id?{...c,status:"completed",response:resp}:c));
-
-        return (
-          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-            <div style={{ padding:"14px 16px", borderRadius:10, background:"rgba(14,37,68,0.7)", border:"1px solid rgba(26,53,85,0.55)", borderTop:"2px solid rgba(0,229,192,0.35)" }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>Request New Consult</div>
-              <input value={svcIn} onChange={e=>setSvcIn(e.target.value)} placeholder="Consulting service (e.g. Cardiology, Surgery, Neurology)"
-                style={{ width:"100%", background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)", borderRadius:7, padding:"7px 10px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none", marginBottom:8, boxSizing:"border-box" }} />
-              <textarea value={qIn} onChange={e=>setQIn(e.target.value)} placeholder="Clinical question / reason for consult..." rows={2}
-                style={{ width:"100%", background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)", borderRadius:7, padding:"7px 10px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none", resize:"none", marginBottom:10, boxSizing:"border-box" }} />
-              <button onClick={()=>{ addConsult(svcIn,qIn); setSvcIn(""); setQIn(""); }}
-                style={{ padding:"7px 18px", borderRadius:7, border:"1px solid rgba(0,229,192,0.4)", background:"rgba(0,229,192,0.1)", color:"var(--npi-teal)", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, cursor:"pointer" }}>
-                + Add Consult
-              </button>
-            </div>
-            {consults.length>0 ? (
-              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase" }}>Active Consults ({consults.length})</div>
-                {consults.map(c=>(
-                  <div key={c.id} style={{ padding:"12px 14px", borderRadius:10, background:"rgba(14,37,68,0.7)", border:`1px solid ${c.status==="completed"?"rgba(0,229,192,0.25)":"rgba(245,200,66,0.25)"}` }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"var(--npi-txt)" }}>{c.service}</span>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"var(--npi-txt4)" }}>{elapsed(c.requestedAt)} ago</span>
-                    </div>
-                    {c.question&&<div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt3)", marginBottom:8 }}>{c.question}</div>}
-                    {c.status==="pending"?(
-                      <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                        <input value={respIn[c.id]||""} onChange={e=>setRespIn(p=>({...p,[c.id]:e.target.value}))}
-                          placeholder="Consultant response / recommendations..."
-                          style={{ flex:1, background:"rgba(8,24,48,0.6)", border:"1px solid rgba(26,53,85,0.55)", borderRadius:6, padding:"5px 9px", color:"var(--npi-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none" }} />
-                        <button onClick={()=>{ markReceived(c.id,respIn[c.id]||""); setRespIn(p=>({...p,[c.id]:""})); }}
-                          style={{ padding:"5px 12px", borderRadius:6, border:"1px solid rgba(0,229,192,0.4)", background:"rgba(0,229,192,0.08)", color:"var(--npi-teal)", fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
-                          Mark Received
-                        </button>
-                      </div>
-                    ):(
-                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                        <span style={{ color:"var(--npi-teal)", fontSize:11 }}>✓ Received</span>
-                        {c.response&&<span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt3)" }}>{c.response}</span>}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ):(
-              <div style={{ textAlign:"center", color:"var(--npi-txt4)", fontFamily:"'DM Sans',sans-serif", fontSize:13, padding:"28px 0" }}>No consults requested yet</div>
-            )}
-          </div>
-        );
-      }
-      case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState}
-        onVitalsSnapshot={v => addVitalsSnapshot(
-          `Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`,
-          v
-        )}
-        onAdvance={() => selectSection("timeline")} />;
-      case "timeline":   return (
-        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-          <VitalSignsChart vitalsHistory={vitalsHistory}/>
-          <ClinicalTimeline arrivalMs={arrivalTimeRef.current} onStateChange={setClinicalTimeline}/>
-        </div>
-      );
-      case "discharge":  return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><DischargePlanning embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} /></div>;
-      case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
-      case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden"  }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} patientWeight={demo.weight||vitals.weight||""} /></div>;
-      case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;
-      case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
-      case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
-      case "medref":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto"   }}><MedicationReferencePage embedded /></div>;
-      case "erplan":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><ERPlanBuilder embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} patientCC={cc.text} patientVitals={vitals} patientAllergies={allergies} patientMedications={medications} /></div>;
-      default:           return null;
-    }
-  };
-
+const FL = { fontSize: 10, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 5 };
+const TA = { width: "100%", padding: "10px 14px", boxSizing: "border-box", background: "rgba(255,255,255,.04)", border: "1px solid rgba(59,130,246,.18)", borderRadius: 8, color: "#e2e8f0", fontFamily: "'DM Sans',sans-serif", fontSize: 13, lineHeight: 1.65, resize: "vertical", outline: "none" };
+function KK({ ch }) {
+  return <kbd style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-blue)", background: "rgba(59,158,255,.12)", border: "1px solid rgba(59,158,255,.25)", borderRadius: 3, padding: "0 5px" }}>{ch}</kbd>;
+}
+function SectionHeader({ section, expanded, onToggle, complete, children }) {
   return (
-    <div>
-      <style>{NPI_CSS}</style>
-
-      <header className="npi-top-bar">
-        <div className="npi-top-row-1">
-          <span className="npi-dr-label">
-            {providerName.split(" ").length > 1 ? `Dr. ${providerName.split(" ").slice(-1)[0]}` : providerName}
-            <span className="npi-dr-role">{providerRole}</span>
-          </span>
-          <div className="npi-vsep" />
-          <div className="npi-stat"><span className="npi-stat-val">0</span><span className="npi-stat-lbl">Active</span></div>
-          <div className="npi-stat"><span className="npi-stat-val alert">14</span><span className="npi-stat-lbl">Pending</span></div>
-          <div className="npi-vsep" />
-          <button className="npi-tb-link" onClick={() => navigate("/EDTrackingBoard")}>🏥 Track Board</button>
-          <div className="npi-top-right">
-            <button
-              className={`npi-cds-btn${cdsOpen?" open":""}${allergies.length>0?" cds-alert":medications.length>0?" cds-warn":""}`}
-              onClick={()=>setCdsOpen(o=>!o)} title="Clinical Decision Support">
-              <div className="npi-cds-dot"/>
-              CDS
-            </button>
-            <button className={`npi-ai-btn${aiOpen?" open":""}`} onClick={toggleAI} title="Notrya AI">
-              <div className="npi-ai-dot" /> AI
-              {unread > 0 && <span className="npi-ai-badge">{unread > 9 ? "9+" : unread}</span>}
-            </button>
-            <button className="npi-new-pt" onClick={() => navigate("/NewPatientInput?tab=demo")}>+ New Patient</button>
-            <Link to="/AppSettings" className="npi-tb-settings" title="Settings">⚙️</Link>
-          </div>
-        </div>
-        <div className="npi-top-row-2">
-          <span className={`npi-chart-badge${registration.mrn ? " registered" : ""}`}>{registration.mrn || "PT-NEW"}</span>
-          <span className="npi-pt-name">{patientName}</span>
-          {demo.dob && <span className="npi-pt-dob" title="Date of birth — second patient identifier">DOB {demo.dob}</span>}
-          <span className="npi-door-time" title="Time since intake started">⏱ {doorTime}</span>
-          <div className={`npi-allergy-wrap${allergies.length > 0 ? " has-allergies" : ""}`}
-               onClick={() => selectSection("meds")} title="Click to view/edit medications">
-            {allergies.length === 0
-              ? <span className="npi-allergy-nka">✓ NKA</span>
-              : <span className="npi-allergy-alert">⚠ {allergies.slice(0, 2).join(" · ")}{allergies.length > 2 ? ` +${allergies.length - 2}` : ""}</span>
-            }
-          </div>
-          {resumeSection && (
-            <button className="npi-resume-chip"
-              onClick={() => { selectSection(resumeSection); setResumeSection(null); }} title="Return to where you were">
-              ↩ Resume {ALL_SECTIONS.find(s => s.section === resumeSection)?.label || resumeSection}
-              <span className="npi-resume-dismiss" onClick={e => { e.stopPropagation(); setResumeSection(null); }}>✕</span>
-            </button>
-          )}
-          <div className="npi-top-acts">
-            <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>+ Order</button>
-            <button className="npi-btn-ghost" onClick={() => selectSection("orders")} title="Request consultation">👥 Consult</button>
-            <button className="npi-btn-coral" onClick={() => selectSection("discharge")}>🚪 Discharge</button>
-            <button className="npi-btn-primary" onClick={handleSaveChart}>✍ Sign &amp; Save</button>
-          </div>
-        </div>
-      </header>
-
-      <div className="npi-main-wrap">
-        <main className="npi-content">{renderContent()}</main>
+    <div style={{ borderBottom: `1px solid ${expanded ? "rgba(59,130,246,.2)" : "transparent"}`, marginBottom: expanded ? 16 : 0 }}>
+      <div
+        onClick={onToggle}
+        style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", cursor: "pointer", userSelect: "none" }}
+      >
+        <span style={{ fontSize: 14 }}>{section.icon}</span>
+        <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, fontWeight: 600, color: section.priority ? "#fff" : "var(--npi-txt2)", flex: 1 }}>
+          {section.label}
+        </span>
+        {complete && !expanded && (
+          <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "var(--npi-teal)", background: "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.25)", borderRadius: 20, padding: "1px 8px" }}>✓</span>
+        )}
+        {children && !expanded && <span style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>}
+        <span style={{ color: "var(--npi-txt4)", fontSize: 12, flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>
       </div>
+    </div>
+  );
+}
 
-      <div className={`npi-scrim${aiOpen?" open":""}`} onClick={toggleAI} />
-      <div className={`npi-overlay${aiOpen?" open":""}`}>
-        <div className="npi-n-hdr">
-          <div className="npi-n-hdr-top">
-            <div className="npi-n-avatar">🤖</div>
-            <div className="npi-n-hdr-info">
-              <div className="npi-n-hdr-name">Notrya AI</div>
-              <div className="npi-n-hdr-sub"><span className="dot" /> Clinical assistant · online</div>
-            </div>
-            <button className="npi-n-close" onClick={toggleAI}>✕</button>
-          </div>
-          <div className="npi-n-quick">
-            {QUICK_ACTIONS.map(q => (
-              <button key={q.label} className="npi-n-qbtn" onClick={() => sendMessage(q.prompt)} disabled={aiLoading}>
-                {q.icon} {q.label}
-              </button>
+// ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
+export default function ClinicalNoteStudio({
+  demo, cc, vitals, medications, allergies,
+  pmhSelected, pmhExtra, surgHx, famHx, socHx,
+  rosState, peState, peFindings,
+  esiLevel, registration, sdoh,
+  consultsProp,
+  onSave,
+}) {
+  const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
+
+  // ── Section expand/collapse ─────────────────────────────────────────────
+  const [expanded, setExpanded] = useState({ ddx: true, mdm: true, plan: true, hpi: false, ros: false, pe: false, results: false, meta: false });
+  const toggle = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
+
+  // ── DDx state ───────────────────────────────────────────────────────────
+  const [primaryDx, setPrimaryDx]   = useState(cc.text || "");
+  const [icd10, setIcd10]           = useState("");
+  const [differential, setDiff]     = useState([]);
+  const [diffInput, setDiffInput]   = useState("");
+  const [icdLoading, setIcdLoading] = useState(false);
+  const [toasts,     setToasts]     = useState([]);
+
+  // ── MDM state — AMA 2023 three domains ──────────────────────────────────────
+  // AMA requires documentation of 2 of 3 domains to support the selected level.
+  const [complexity,  setComplexity]  = useState(0);
+  const [mdmProblems, setMdmProblems] = useState(""); // Domain 1: Number & complexity of problems
+  const [mdmData,     setMdmData]     = useState(""); // Domain 2: Amount/complexity of data reviewed
+  const [mdmRisk,     setMdmRisk]     = useState(""); // Domain 3: Risk of complications / management
+  const [mdmLoading,  setMdmLoading]  = useState(false);
+
+  // ── Plan state ──────────────────────────────────────────────────────────
+  const [dispType, setDispType]         = useState("");
+  const [planItems, setPlanItems]       = useState([]);
+  const [planInput, setPlanInput]       = useState("");
+  const [returnPrec, setReturnPrec]     = useState("");
+  const [followUp, setFollowUp]         = useState("");
+  const [consults, setConsults]         = useState(() => {
+    if (!consultsProp || !consultsProp.length) return "";
+    return consultsProp.filter(c => c.service).map(c =>
+      `${c.service}${c.question ? " — " + c.question.slice(0, 80) : ""}`
+    ).join("\n");
+  });
+  const [consultsDirty, setConsultsDirty] = useState(false);
+
+  // Re-sync consults when new consults are added upstream, unless manually edited
+  useEffect(() => {
+    if (consultsDirty || !consultsProp || !consultsProp.length) return;
+    setConsults(consultsProp.filter(c => c.service).map(c =>
+      `${c.service}${c.question ? " — " + c.question.slice(0, 80) : ""}`
+    ).join("\n"));
+  }, [consultsProp]); // eslint-disable-line
+
+  // ── Supporting section content (auto + editable) ─────────────────────────
+  const [hpiText, setHpiText]           = useState(cc.hpi || "");
+  const [listening,  setListening]      = useState(false);
+  const speechRef                       = useRef(null);
+  const [rosText, setRosText]           = useState(() => buildRosText(rosState));
+  const [peText, setPeText]             = useState(() => buildPeText(peState, peFindings));
+  const [resultsText, setResultsText]   = useState("");
+  // Dirty flags — prevent auto-sync from overwriting manual edits
+  const [rosDirty, setRosDirty] = useState(false);
+  const [peDirty,  setPeDirty]  = useState(false);
+
+  // Re-sync when source data changes (e.g. doctor goes back to ROS/PE tab)
+  // Only fires if the provider hasn't manually edited the text in the note.
+  useEffect(() => {
+    if (!rosDirty) setRosText(buildRosText(rosState));
+  }, [rosState]); // eslint-disable-line
+  useEffect(() => {
+    if (!peDirty) setPeText(buildPeText(peState, peFindings));
+  }, [peState, peFindings]); // eslint-disable-line
+
+  // ── Refs for keyboard scroll-to ─────────────────────────────────────────
+  const refs = { ddx: useRef(null), mdm: useRef(null), plan: useRef(null), hpi: useRef(null), ros: useRef(null), pe: useRef(null), results: useRef(null), meta: useRef(null) };
+  const scrollTo = useCallback((id) => {
+    setExpanded(p => ({ ...p, [id]: true }));
+    setTimeout(() => refs[id]?.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }, []);
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────
+  useEffect(() => {
+    const h = (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      if (e.key === "d") { e.preventDefault(); scrollTo("ddx"); }
+      if (e.key === "m") { e.preventDefault(); scrollTo("mdm"); }
+      if (e.key === "g") { e.preventDefault(); generateMDM(); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [scrollTo]);
+
+  // 1–4 keys set complexity when MDM section is focused
+  const onMdmKeyDown = (e) => {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4 && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
+      setComplexity(n);
+    }
+    if (e.metaKey && e.key === "Enter") { e.preventDefault(); generateMDM(); }
+  };
+
+  // ── AI: ICD-10 suggestion ────────────────────────────────────────────────
+  const suggestICD = async () => {
+    if (!primaryDx.trim()) return;
+    setIcdLoading(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 600,
+          system: `You are an emergency medicine clinical documentation expert. Return ONLY valid JSON, no markdown.
+For the given ED diagnosis, provide:
+- icd10: most specific ICD-10-CM code with description (e.g. "I21.9 Acute MI, unspecified")
+- differentials: array of 3 ED-relevant differential diagnoses
+- mdm_problem: 1 sentence for AMA 2023 MDM Domain 1 (number/complexity of problems)
+- plan_items: array of 3-4 key ED management steps
+- return_precautions: 1 sentence listing condition-specific return-to-ED warning signs
+Format: {"icd10":"...","differentials":["..."],"mdm_problem":"...","plan_items":["..."],"return_precautions":"..."}`,
+          messages: [{ role: "user", content: `ED Diagnosis: ${primaryDx}\nPatient: ${demo.age||"?"}y ${demo.sex||""}, CC: ${cc.text||primaryDx}` }],
+        }),
+      });
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(raw);
+      if (parsed.icd10)        setIcd10(parsed.icd10);
+      if (parsed.differentials) setDiff(parsed.differentials);
+      // Downstream population — only pre-fill if field is currently empty
+      if (parsed.mdm_problem && !mdmProblems) setMdmProblems(parsed.mdm_problem);
+      if (parsed.plan_items?.length && planItems.length === 0) setPlanItems(parsed.plan_items);
+      if (parsed.return_precautions && !returnPrec) setReturnPrec(parsed.return_precautions);
+      showToast(setToasts, "Diagnosis applied — ICD-10, MDM, plan, and return precautions populated.", "success");
+    } catch { showToast(setToasts, "ICD-10 lookup failed.", "error"); }
+    finally  { setIcdLoading(false); }
+  };
+
+  // ── AI: MDM generation — three AMA 2023 domains ──────────────────────────────
+  const generateMDM = useCallback(async () => {
+    if (mdmLoading) return;
+    setMdmLoading(true);
+    const pmhList = Object.keys(pmhSelected||{}).filter(k => pmhSelected[k]).slice(0,5).join(", ") || "none";
+    const vStr = vitals.bp ? `BP ${vitals.bp} HR ${vitals.hr||"—"} SpO2 ${vitals.spo2||"—"} T ${vitals.temp||"—"}` : "not documented";
+    // ROS positives — relevant to Domain 1 (problem complexity)
+    const META_SKIP = ["_remainderNeg","_remainderNormal","_mode","_visual"];
+    const rosPos = Object.entries(rosState||{})
+      .filter(([k,v])=>!META_SKIP.includes(k)&&v==="has-positives")
+      .map(([k])=>k).join(", ") || "none documented";
+    // PE abnormals with finding text — relevant to Domain 1 and 2
+    const peAbnLines = Object.entries(peState||{})
+      .filter(([k,v])=>!META_SKIP.includes(k)&&(v==="abnormal"||v==="mixed"))
+      .map(([k]) => {
+        const sf = peFindings?.[k];
+        const findings = sf ? Object.entries(sf.findings||{}).filter(([,v])=>v==="abnormal").map(([f])=>f.replace(/-/g," ")).join(", ") : "";
+        const note = sf?.note?.trim() || "";
+        return `${k}: ${findings||"abnormal"}${note?" ("+note+")":""}`;
+      }).join("; ") || "none documented";
+    // SDOH complexity factors — can elevate MDM risk domain
+    const sdohFlags = Object.entries(sdoh||{}).filter(([,v])=>v&&v!=="unknown"&&v!==false).map(([k])=>k).join(", ");
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 800,
+          system: `Generate AMA 2023 MDM documentation for an ED encounter. Return ONLY valid JSON with exactly three fields: {"problems":"...","data":"...","risk":"..."}
+- problems (1-2 sentences): Number and complexity of problems addressed. Reference specific ROS positives and PE abnormals. State acute vs chronic, stable vs exacerbation.
+- data (1-2 sentences): Data reviewed and ordered — labs, imaging, ECG, external records. State what was interpreted independently by this provider.
+- risk (1-2 sentences): Complexity of management and risk of complications, morbidity, or mortality. Name specific interventions and their risk level. Include SDOH factors that elevate complexity if present.`,
+          messages: [{ role: "user", content:
+`Patient: ${patientName}, ${demo.age||"?"}y ${demo.sex||""}
+CC: ${cc.text||"unspecified"}
+Primary DX: ${primaryDx||cc.text||"pending"}
+HPI: ${cc.hpi?.slice(0,200)||"not documented"}
+Vitals: ${vStr}
+PMH: ${pmhList}
+Surgical Hx: ${surgHx||"none"}
+Meds: ${(medications||[]).slice(0,5).join(", ")||"none"}
+Allergies: ${(allergies||[]).join(", ")||"NKDA"}
+ROS positives: ${rosPos}
+PE abnormals: ${peAbnLines}${sdohFlags ? "\nSDOH factors: " + sdohFlags : ""}` }],
+        }),
+      });
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(raw);
+      if (parsed.problems) setMdmProblems(parsed.problems);
+      if (parsed.data)     setMdmData(parsed.data);
+      if (parsed.risk)     setMdmRisk(parsed.risk);
+      showToast(setToasts, "MDM domains generated", "success");
+    } catch { showToast(setToasts, "MDM generation failed.", "error"); }
+    finally  { setMdmLoading(false); }
+  }, [mdmLoading, patientName, demo, cc, primaryDx, vitals, pmhSelected, medications, allergies, rosState, peState, peFindings, surgHx, sdoh]);
+
+  // ── Completion checks ────────────────────────────────────────────────────
+  const complete = {
+    ddx:     !!primaryDx,
+    mdm:     complexity > 0 && [mdmProblems, mdmData, mdmRisk].filter(Boolean).length >= 2,
+    plan:    !!dispType,
+    hpi:     !!hpiText,
+    ros:     !!rosText,
+    pe:      !!peText,
+    results: !!resultsText,
+    meta:    true,
+  };
+
+  // ── Section dots for left rail ───────────────────────────────────────────
+  const allDone = SECTIONS.slice(0,3).every(s => complete[s.id]);
+
+  const addPlanItem = () => {
+    const t = planInput.trim();
+    if (!t) return;
+    setPlanItems(p => [...p, t]);
+    setPlanInput("");
+  };
+
+  // ── Voice dictation (Web Speech API) — HPI only ──────────────────────────
+  const startDictation = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      showToast(setToasts, "Speech recognition not supported in this browser.", "error");
+      return;
+    }
+    const rec = new SpeechRecognition();
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.lang = "en-US";
+    rec.onresult = (e) => {
+      const transcript = Array.from(e.results)
+        .map(r => r[0].transcript).join(" ");
+      setHpiText(p => p ? p.trimEnd() + " " + transcript : transcript);
+    };
+    rec.onerror = () => {
+      setListening(false);
+      showToast(setToasts, "Dictation stopped — microphone error.", "error");
+    };
+    rec.onend = () => setListening(false);
+    speechRef.current = rec;
+    rec.start();
+    setListening(true);
+  };
+  const stopDictation = () => {
+    speechRef.current?.stop();
+    setListening(false);
+  };
+
+  // ─── RENDER ───────────────────────────────────────────────────────────────
+  return (
+    <div style={{ display: "flex", gap: 20, fontFamily: "'DM Sans',sans-serif", maxWidth: 1100, minHeight: "60vh" }}>
+
+      {/* ── LEFT RAIL ──────────────────────────────────────────────────── */}
+      <div style={{ width: 200, flexShrink: 0 }}>
+        <div style={{ position: "sticky", top: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-txt4)", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>Note sections</div>
+          {SECTIONS.map(s => (
+            <button key={s.id} onClick={() => scrollTo(s.id)}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 7, background: expanded[s.id] ? "rgba(59,158,255,.1)" : "transparent", border: `1px solid ${expanded[s.id] ? "rgba(59,158,255,.25)" : "transparent"}`, cursor: "pointer", textAlign: "left", transition: "all .12s" }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: complete[s.id] ? "var(--npi-teal)" : "transparent", border: `1.5px solid ${complete[s.id] ? "var(--npi-teal)" : "var(--npi-bd)"}` }} />
+              <span style={{ fontSize: 11, color: expanded[s.id] ? "var(--npi-blue)" : "var(--npi-txt3)", fontWeight: s.priority ? 600 : 400, flex: 1, lineHeight: 1.3 }}>{s.label.replace(/^\d+ /, "")}</span>
+            </button>
+          ))}
+          <div style={{ marginTop: 12, borderTop: "1px solid var(--npi-bd)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 4 }}>Keyboard</div>
+            {[["⌘D","→ Impression"],["⌘M","→ MDM"],["⌘G","Generate MDM"],["1–4","Set complexity"]].map(([k,d]) => (
+              <div key={k} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--npi-txt4)" }}>
+                <KK ch={k} />{d}
+              </div>
             ))}
           </div>
         </div>
-        <div className="npi-n-msgs" ref={msgsRef}>
-          {aiMsgs.map((m, i) => (
-            <div key={i} className={`npi-n-msg ${m.role}`} dangerouslySetInnerHTML={{ __html: renderMsg(m.text) }} />
-          ))}
-          {aiLoading && <div className="npi-n-dots"><span /><span /><span /></div>}
-        </div>
-        <div className="npi-n-input-bar">
-          <textarea ref={inputRef} className="npi-n-ta" rows={1} placeholder="Ask anything…" value={aiInput}
-            onChange={e => setAiInput(e.target.value)} onKeyDown={handleAIKey} disabled={aiLoading}
-            onInput={e => { e.target.style.height="auto"; e.target.style.height=Math.min(e.target.scrollHeight,90)+"px"; }}
-          />
-          <button className="npi-n-send" onClick={() => sendMessage(aiInput)} disabled={aiLoading||!aiInput.trim()}>↑</button>
-        </div>
       </div>
 
-      {cdsOpen && (
-        <div className="npi-cds-scrim" onClick={()=>setCdsOpen(false)}/>
-      )}
-      <div className={`npi-cds-overlay${cdsOpen?" open":""}`}>
-        <div className="npi-cds-overlay-hdr">
-          <span className="npi-cds-overlay-title">Clinical Decision Support</span>
-          <button className="npi-cds-close" onClick={()=>setCdsOpen(false)}>✕</button>
-        </div>
-        <CDSAlertsSidebar medications={medications} allergies={allergies} vitals={vitals} pmhSelected={pmhSelected} age={demo.age} cc={cc.text}/>
-        {allergies.length === 0 && medications.length === 0 && (
-          <div style={{ padding:"24px 16px", textAlign:"center", color:"var(--npi-txt4)", fontSize:12, fontFamily:"'DM Sans',sans-serif" }}>
-            No alerts — add medications or allergies to enable checking.
+      {/* ── MAIN NOTE BODY ─────────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 0 }}>
+
+        {/* Patient header strip */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: "rgba(13,31,60,.7)", border: "1px solid rgba(59,130,246,.15)", borderRadius: 10, marginBottom: 16, flexWrap: "wrap" }}>
+          <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 16, fontWeight: 600, color: "#fff" }}>{patientName}</span>
+          {demo.age && <span style={{ fontSize: 12, color: "var(--npi-txt3)" }}>{demo.age}y · {demo.sex||"—"}</span>}
+          {cc.text && <span style={{ fontSize: 12, color: "var(--npi-teal)", background: "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.25)", borderRadius: 20, padding: "1px 10px" }}>CC: {cc.text}</span>}
+          {esiLevel && <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 6, padding: "1px 8px" }}>ESI {esiLevel}</span>}
+          {registration.room && <span style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Room {registration.room}</span>}
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            {allDone && onSave && (
+              <button onClick={onSave} style={{ padding: "5px 16px", borderRadius: 7, background: "var(--npi-teal)", color: "#050f1e", border: "none", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                Sign & Save ⌘⇧S
+              </button>
+            )}
           </div>
-        )}
-      </div>
+        </div>
 
-      <button className="npi-sc-hint-fab" title="Keyboard shortcuts (?)" onClick={() => setShowShortcuts(s=>!s)}>?</button>
-
-      {showShortcuts && (
-        <div onClick={() => setShowShortcuts(false)} style={{ position:"fixed",inset:0,zIndex:99998,background:"rgba(3,8,16,.75)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background:"#081628",border:"1px solid #1a3555",borderRadius:16,padding:"24px 28px",width:520,maxWidth:"90vw",boxShadow:"0 24px 80px rgba(0,0,0,.6)" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
-              <span style={{ fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff" }}>Keyboard Shortcuts</span>
-              <button onClick={() => setShowShortcuts(false)} style={{ background:"#0e2544",border:"1px solid #1a3555",borderRadius:6,width:28,height:28,color:"#7aa0c0",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
+        {/* ── 01 IMPRESSION / DDx ──────────────────────────────────────── */}
+        <div ref={refs.ddx} style={{ background: "rgba(13,31,60,.5)", border: `1px solid ${expanded.ddx ? "rgba(255,107,107,.25)" : "rgba(59,130,246,.12)"}`, borderRadius: 10, padding: "0 16px", marginBottom: 8, transition: "border-color .2s" }}>
+          <SectionHeader section={SECTIONS[0]} expanded={expanded.ddx} onToggle={() => toggle("ddx")} complete={complete.ddx}>
+            {primaryDx && `${primaryDx}${icd10 ? "  ·  " + icd10 : ""}`}
+          </SectionHeader>
+          {expanded.ddx && (
+            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={FL}>Primary diagnosis</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={primaryDx} onChange={e => setPrimaryDx(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); suggestICD(); } }} placeholder="Enter working diagnosis…" style={{ ...TA, flex: 1, resize: "none", padding: "9px 12px" }} />
+                  <button onClick={suggestICD} disabled={icdLoading || !primaryDx.trim()}
+                    style={{ padding: "9px 16px", borderRadius: 7, background: icdLoading || !primaryDx.trim() ? "rgba(255,255,255,.04)" : "rgba(59,158,255,.15)", border: "1px solid rgba(59,158,255,.3)", color: "var(--npi-blue)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    {icdLoading ? "⏳" : "✦ Apply Dx"}
+                  </button>
+                </div>
+                {icd10 && <div style={{ marginTop: 5, fontSize: 11, color: "var(--npi-teal)", fontFamily: "'JetBrains Mono',monospace" }}>{icd10}</div>}
+              </div>
+              {differential.length > 0 && (
+                <div>
+                  <div style={FL}>Differential</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {differential.map((dx, i) => (
+                      <div key={dx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
+                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-txt4)", width: 16 }}>{i + 1}.</span>
+                        <span style={{ fontSize: 13, color: "var(--npi-txt2)" }}>{dx}</span>
+                        <button onClick={() => setPrimaryDx(dx)} style={{ marginLeft: "auto", fontSize: 10, color: "var(--npi-txt4)", background: "none", border: "none", cursor: "pointer" }}>↑ promote</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <div style={FL}>Add to differential</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={diffInput} onChange={e => setDiffInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (diffInput.trim()) { setDiff(p => [...p, diffInput.trim()]); setDiffInput(""); } } }} placeholder="Add diagnosis to differential…" style={{ ...TA, flex: 1, resize: "none", padding: "9px 12px" }} />
+                </div>
+              </div>
             </div>
-            {[
-              { section:"Navigate to section", rows:[["Cmd 1","Triage"],["Cmd 2","Demographics"],["Cmd 3","Chief Complaint"],["Cmd 4","Vitals"],["Cmd 5","Meds & PMH"],["Cmd 6","HPI"],["Cmd 7","ROS"],["Cmd 8","Physical Exam"],["Cmd 9","Orders"],["Cmd 0","Discharge"]] },
-              { section:"HPI (scan mode)", rows:[["Y / Enter","Symptom present"],["N","Symptom absent"],["Space","Skip symptom"],["0-9","Pain scale or option #"],["Arrow Up/Down","Navigate rows"],["Backspace","Go back one row"],["Esc","Finish & build narrative"]] },
-              { section:"Actions", rows:[["Cmd Shift S","Save Chart"],["Cmd Shift N","New Patient"],["?","Toggle shortcuts"]] },
-              { section:"Note Studio (when in Clinical Note tab)", rows:[["Cmd G","AI generate focused section"],["Cmd Shift G","Generate all empty sections"],["Cmd R","Rebuild from patient data"],["Cmd S","Save note"],["Cmd P","Print note"],["Cmd Shift C","Copy full note"]] },
-            ].map(({ section, rows }) => (
-              <div key={section} style={{ marginBottom:16 }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#5a82a8",letterSpacing:2,textTransform:"uppercase",marginBottom:8 }}>{section}</div>
-                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 16px" }}>
-                  {rows.map(([key,desc]) => (
-                    <div key={key} style={{ display:"flex",alignItems:"center",gap:8 }}>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"#b8d4f0",background:"#0e2544",border:"1px solid #1a3555",borderRadius:4,padding:"1px 7px",flexShrink:0,whiteSpace:"nowrap" }}>{key}</span>
-                      <span style={{ fontSize:11,color:"#82aece" }}>{desc}</span>
-                    </div>
+          )}
+        </div>
+
+        {/* ── 02 MDM ─────────────────────────────────────────────────────── */}
+        <div ref={refs.mdm} tabIndex={-1} onKeyDown={onMdmKeyDown} style={{ background: "rgba(13,31,60,.5)", border: `1px solid ${expanded.mdm ? "rgba(255,107,107,.25)" : "rgba(59,130,246,.12)"}`, borderRadius: 10, padding: "0 16px", marginBottom: 8, outline: "none", transition: "border-color .2s" }}>
+          <SectionHeader section={SECTIONS[1]} expanded={expanded.mdm} onToggle={() => toggle("mdm")} complete={complete.mdm}>
+            {complexity > 0 && `${COMPLEXITY[complexity-1].label} — ${[mdmProblems, mdmData, mdmRisk].filter(Boolean).length}/3 domains`}
+          </SectionHeader>
+          {expanded.mdm && (
+            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+
+              {/* Complexity level */}
+              <div>
+                <div style={FL}>
+                  MDM complexity level
+                  <span style={{ textTransform: "none", letterSpacing: 0, color: "#64748b", marginLeft: 6 }}>
+                    (press 1–4 · AMA 2023 Table)
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {COMPLEXITY.map(c => (
+                    <button key={c.n} onClick={() => setComplexity(prev => prev === c.n ? 0 : c.n)}
+                      style={{ flex: 1, padding: "8px 6px", borderRadius: 7, border: `1px solid ${complexity === c.n ? c.color : "rgba(255,255,255,.1)"}`, background: complexity === c.n ? c.color + "22" : "rgba(255,255,255,.04)", color: complexity === c.n ? c.color : "var(--npi-txt4)", fontFamily: "'DM Sans',sans-serif", fontSize: 11, cursor: "pointer", transition: "all .12s", textAlign: "center" }}>
+                      <div style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, fontSize: 13 }}>{c.label}</div>
+                      <div style={{ fontSize: 9, marginTop: 2, lineHeight: 1.25, opacity: .75 }}>{c.sub}</div>
+                    </button>
+                  ))}
+                </div>
+                {complexity > 0 && (
+                  <div style={{ marginTop: 5, fontSize: 10, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>
+                    To bill this level, document 2 of the 3 domains below.
+                    {" "}<span style={{ color: [mdmProblems, mdmData, mdmRisk].filter(Boolean).length >= 2 ? "var(--npi-teal)" : "var(--npi-orange)" }}>
+                      {[mdmProblems, mdmData, mdmRisk].filter(Boolean).length}/3 documented
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* AI generate row */}
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={generateMDM} disabled={mdmLoading}
+                  style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 6, background: mdmLoading ? "transparent" : "rgba(0,229,192,.1)", border: "1px solid rgba(0,229,192,.3)", color: "var(--npi-teal)", fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  {mdmLoading ? "⏳ Generating…" : <><span>✦</span> AI Generate All 3 Domains <KK ch="⌘G" /></>}
+                </button>
+              </div>
+
+              {/* Domain 1 — Problems */}
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                  <div style={FL}>Domain 1 — Problems</div>
+                  <span style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Number and complexity of problems addressed</span>
+                </div>
+                <textarea value={mdmProblems} onChange={e => setMdmProblems(e.target.value)}
+                  placeholder="e.g., One acute problem with systemic symptoms — new-onset chest pain, dyspnea on exertion, hemodynamically stable. No prior cardiac history."
+                  rows={2} style={TA} />
+              </div>
+
+              {/* Domain 2 — Data */}
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                  <div style={FL}>Domain 2 — Data</div>
+                  <span style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Data reviewed, ordered, and independently interpreted</span>
+                </div>
+                <textarea value={mdmData} onChange={e => setMdmData(e.target.value)}
+                  placeholder="e.g., ECG reviewed and interpreted by this provider — NSR, no ischemic changes. Troponin and BMP ordered and reviewed. CXR interpreted — no acute cardiopulmonary process."
+                  rows={2} style={TA} />
+              </div>
+
+              {/* Domain 3 — Risk */}
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                  <div style={FL}>Domain 3 — Risk</div>
+                  <span style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>Complexity of management, risk of complications or mortality</span>
+                </div>
+                <textarea value={mdmRisk} onChange={e => setMdmRisk(e.target.value)}
+                  placeholder="e.g., Moderate risk — prescription drug therapy (anticoagulation), hospital admission for further evaluation and monitoring. Risk of major adverse cardiac event without timely intervention."
+                  rows={2} style={TA} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 03 DISPOSITION + PLAN ─────────────────────────────────────── */}
+        <div ref={refs.plan} style={{ background: "rgba(13,31,60,.5)", border: `1px solid ${expanded.plan ? "rgba(0,229,192,.25)" : "rgba(59,130,246,.12)"}`, borderRadius: 10, padding: "0 16px", marginBottom: 8, transition: "border-color .2s" }}>
+          <SectionHeader section={SECTIONS[2]} expanded={expanded.plan} onToggle={() => toggle("plan")} complete={complete.plan}>
+            {dispType && DISP_OPTS.find(d => d.id === dispType)?.label}
+          </SectionHeader>
+          {expanded.plan && (
+            <div style={{ paddingBottom: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={FL}>Disposition</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {DISP_OPTS.map(d => (
+                    <button key={d.id} onClick={() => setDispType(prev => prev === d.id ? "" : d.id)}
+                      style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${dispType === d.id ? "var(--npi-teal)" : "rgba(255,255,255,.1)"}`, background: dispType === d.id ? "rgba(0,229,192,.12)" : "rgba(255,255,255,.04)", color: dispType === d.id ? "var(--npi-teal)" : "var(--npi-txt3)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: dispType === d.id ? 600 : 400, cursor: "pointer" }}>
+                      {d.icon} {d.label}
+                    </button>
                   ))}
                 </div>
               </div>
-            ))}
-            <div style={{ marginTop:8,paddingTop:12,borderTop:"1px solid #1a3555",fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#5a82a8",textAlign:"center" }}>press ? to dismiss</div>
-          </div>
-        </div>
-      )}
-
-      <aside className="npi-wf-rail">
-        <div className="npi-wf-pt">
-          <div className="npi-wf-pt-name">{patientName}</div>
-          <div className="npi-wf-pt-meta">
-            {demo.age && <span>{demo.age}y {demo.sex ? `· ${demo.sex}` : ""}</span>}
-            {cc.text && <span className="npi-wf-pt-cc">{cc.text}</span>}
-          </div>
-          <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:2 }}>
-            {esiLevel && (
-              <span className="npi-wf-esi" style={{
-                color: esiLevel<=2?"var(--npi-coral)":esiLevel===3?"var(--npi-orange)":"var(--npi-teal)",
-                borderColor: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.3)`,
-                background: `rgba(${esiLevel<=2?"255,107,107":esiLevel===3?"255,159,67":"0,229,192"},.08)`,
-              }}>ESI {esiLevel}</span>
-            )}
-            {registration.room && (
-              <span className="npi-wf-esi" style={{ color:"var(--npi-teal)", borderColor:"rgba(0,229,192,.3)", background:"rgba(0,229,192,.08)" }}>Rm {registration.room}</span>
-            )}
-          </div>
-          <div className="npi-wf-vitals">
-            {[
-              { key:"bp",   lbl:"BP",   val: vitals.bp   || "\u2014" },
-              { key:"hr",   lbl:"HR",   val: vitals.hr   || "\u2014" },
-              { key:"rr",   lbl:"RR",   val: vitals.rr   || "\u2014" },
-              { key:"spo2", lbl:"SpO\u2082", val: vitals.spo2 || "\u2014" },
-              { key:"temp", lbl:"T",    val: vitals.temp || "\u2014" },
-            ].map(v => (
-              <div key={v.key} className="npi-wf-v-row">
-                <span className="npi-wf-v-lbl">{v.lbl}</span>
-                <span className={`npi-wf-v-val${vitalClass(v.key, v.val)}`}>{v.val}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {GROUP_META.map(g => {
-          const isActive = g.key === activeGroup;
-          const items    = NAV_DATA[g.key] || [];
-          const badge    = getGroupBadge(g.key);
-          return (
-            <div key={g.key} className="npi-wf-group">
-              <button className={`npi-wf-gh${isActive ? " active" : ""}`} onClick={() => selectGroup(g.key)}>
-                <span className="npi-wf-gh-icon">{g.icon}</span>
-                <span className="npi-wf-gh-label">{g.label}</span>
-                <span className={`npi-wf-gh-badge ${badge}`} />
-              </button>
-              {isActive && (
-                <div className="npi-wf-items">
-                  {items.map(item => (
-                      <div key={item.section} style={{display:"contents"}}>
-                        <button className={`npi-wf-item${item.section === currentTab ? " active" : ""}`}
-                          onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}>
-                          <span className="npi-wf-item-icon">{item.icon}</span>
-                          <span className="npi-wf-item-label">{item.label}</span>
-                          <span className={`npi-wf-item-dot ${navDots[item.section]||"empty"}`} />
-                          {SECTION_SHORTCUT[item.section] && (
-                            <span className="npi-wf-item-sc">⌘{SECTION_SHORTCUT[item.section]}</span>
-                          )}
-                        </button>
-                        {item.section === "ros" && currentTab === "ros" && ROS_RAIL_SYSTEMS.map((sys, i) => (
-                          <button key={sys.id} className={`npi-wf-sys-item${i === rosActiveSystem ? " active" : ""}`}
-                            onClick={() => setRosActiveSystem(i)}>
-                            <span className="npi-wf-sys-icon">{sys.icon}</span>
-                            <span className="npi-wf-sys-label">{sys.label}</span>
-                            <span className={`npi-wf-item-dot ${getRosSysDot(sys.id)}`} />
-                          </button>
-                        ))}
-                        {item.section === "pe" && currentTab === "pe" && PE_RAIL_SYSTEMS.map((sys, i) => (
-                          <button key={sys.id} className={`npi-wf-sys-item${i === peActiveSystem ? " active" : ""}`}
-                            onClick={() => setPeActiveSystem(i)}>
-                            <span className="npi-wf-sys-icon">{sys.icon}</span>
-                            <span className="npi-wf-sys-label">{sys.label}</span>
-                            <span className={`npi-wf-item-dot ${getPeSysDot(sys.id)}`} />
-                          </button>
-                        ))}
-                      </div>
-                  ))}
+              <div>
+                <div style={FL}>Plan items</div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+                  <input value={planInput} onChange={e => setPlanInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPlanItem(); } }} placeholder="Add plan item and press Enter…" style={{ ...TA, flex: 1, resize: "none", padding: "9px 12px" }} />
+                  <button onClick={addPlanItem} disabled={!planInput.trim()} style={{ padding: "9px 14px", borderRadius: 7, background: planInput.trim() ? "rgba(59,158,255,.15)" : "rgba(255,255,255,.04)", border: "1px solid rgba(59,158,255,.3)", color: "var(--npi-blue)", fontFamily: "'DM Sans',sans-serif", fontSize: 12, cursor: "pointer" }}>+ Add</button>
+                </div>
+                {planItems.map((item, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)", marginBottom: 3 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--npi-txt4)", width: 16 }}>{i+1}.</span>
+                    <span style={{ flex: 1, fontSize: 13, color: "var(--npi-txt2)" }}>{item}</span>
+                    <button onClick={() => setPlanItems(p => p.filter((_,j) => j!==i))} style={{ background: "none", border: "none", color: "var(--npi-txt4)", cursor: "pointer", fontSize: 13 }}>✕</button>
                   </div>
+                ))}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={FL}>Consults</div>
+                  <input value={consults} onChange={e => { setConsults(e.target.value); setConsultsDirty(true); }} placeholder="Consulting services…" style={{ ...TA, resize: "none", padding: "9px 12px" }} />
+                </div>
+                <div>
+                  <div style={FL}>Follow-up</div>
+                  <input value={followUp} onChange={e => setFollowUp(e.target.value)} placeholder="With PCP in 3 days…" style={{ ...TA, resize: "none", padding: "9px 12px" }} />
+                </div>
+              </div>
+              <div>
+                <div style={FL}>Return precautions</div>
+                <textarea value={returnPrec} onChange={e => setReturnPrec(e.target.value)} placeholder="Return to ED for: worsening symptoms, fever >101°F, inability to tolerate PO…" rows={2} style={TA} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 04 HPI ───────────────────────────────────────────────────── */}
+        <div ref={refs.hpi} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[3]} expanded={expanded.hpi} onToggle={() => toggle("hpi")} complete={complete.hpi}>
+            {hpiText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.hpi && (
+            <div style={{ paddingBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", marginBottom: 6, gap: 8 }}>
+                <span style={{ fontSize: 10, color: listening ? "var(--npi-coral)" : "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>
+                  {listening ? "● REC" : "voice input"}
+                </span>
+                <button onClick={listening ? stopDictation : startDictation}
+                  title={listening ? "Stop dictation" : "Start voice dictation"}
+                  style={{ padding: "4px 12px", borderRadius: 7, cursor: "pointer",
+                    background: listening ? "rgba(255,107,107,.15)" : "rgba(59,158,255,.1)",
+                    border: `1px solid ${listening ? "rgba(255,107,107,.4)" : "rgba(59,158,255,.3)"}`,
+                    color: listening ? "var(--npi-coral)" : "var(--npi-blue)",
+                    fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 600,
+                    animation: listening ? "pulse 1.5s ease-in-out infinite" : "none" }}>
+                  {listening ? "⏹ Stop" : "🎙 Dictate"}
+                </button>
+              </div>
+              <textarea value={hpiText} onChange={e => setHpiText(e.target.value)} placeholder="History of present illness… or press Dictate to speak" rows={5} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 05 ROS ───────────────────────────────────────────────────── */}
+        <div ref={refs.ros} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[4]} expanded={expanded.ros} onToggle={() => toggle("ros")} complete={complete.ros}>
+            {rosText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.ros && (
+            <div style={{ paddingBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                {!rosText
+                  ? <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontStyle: "italic" }}>Auto-populated from ROS tab — pertinent findings only</div>
+                  : <div style={{ fontSize: 10, color: rosDirty ? "rgba(239,159,39,.7)" : "rgba(0,229,192,.5)", fontFamily: "'JetBrains Mono',monospace" }}>{rosDirty ? "✎ manually edited" : "✓ auto-generated"}</div>
+                }
+                {rosDirty && (
+                  <button onClick={() => { setRosText(buildRosText(rosState)); setRosDirty(false); }}
+                    style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "transparent", border: "1px solid var(--npi-bd)", color: "var(--npi-txt4)", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
+                    ↺ Reset
+                  </button>
+                )}
+              </div>
+              <textarea value={rosText} onChange={e => { setRosText(e.target.value); setRosDirty(true); }}
+                placeholder="Complete ROS in the ROS tab first, or enter pertinent findings here…" rows={3} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 06 PE ────────────────────────────────────────────────────── */}
+        <div ref={refs.pe} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[5]} expanded={expanded.pe} onToggle={() => toggle("pe")} complete={complete.pe}>
+            {peText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.pe && (
+            <div style={{ paddingBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                {!peText
+                  ? <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontStyle: "italic" }}>Auto-populated from PE tab — abnormals prominent, normals abbreviated</div>
+                  : <div style={{ fontSize: 10, color: peDirty ? "rgba(239,159,39,.7)" : "rgba(0,229,192,.5)", fontFamily: "'JetBrains Mono',monospace" }}>{peDirty ? "✎ manually edited" : "✓ auto-generated"}</div>
+                }
+                {peDirty && (
+                  <button onClick={() => { setPeText(buildPeText(peState, peFindings)); setPeDirty(false); }}
+                    style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "transparent", border: "1px solid var(--npi-bd)", color: "var(--npi-txt4)", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
+                    ↺ Reset
+                  </button>
+                )}
+              </div>
+              <textarea value={peText} onChange={e => { setPeText(e.target.value); setPeDirty(true); }}
+                placeholder="Complete PE in the Physical Exam tab first, or enter findings here…" rows={4} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 07 RESULTS ───────────────────────────────────────────────── */}
+        <div ref={refs.results} style={{ background: "rgba(13,31,60,.4)", border: "1px solid rgba(59,130,246,.1)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[6]} expanded={expanded.results} onToggle={() => toggle("results")} complete={complete.results}>
+            {resultsText?.slice(0,80)}
+          </SectionHeader>
+          {expanded.results && (
+            <div style={{ paddingBottom: 14 }}>
+              <div style={{ fontSize: 11, color: "var(--npi-txt4)", marginBottom: 8, fontStyle: "italic" }}>Reference labs and imaging by result name — do not paste raw values</div>
+              <textarea value={resultsText} onChange={e => setResultsText(e.target.value)} placeholder="ECG: NSR, no ischemic changes. Troponin ×2 negative. CXR: no acute cardiopulmonary process. BMP: Na 138, K 4.1, Cr 0.9…" rows={4} style={TA} />
+            </div>
+          )}
+        </div>
+
+        {/* ── 08 METADATA ──────────────────────────────────────────────── */}
+        <div ref={refs.meta} style={{ background: "rgba(13,31,60,.35)", border: "1px solid rgba(59,130,246,.08)", borderRadius: 10, padding: "0 16px", marginBottom: 6 }}>
+          <SectionHeader section={SECTIONS[7]} expanded={expanded.meta} onToggle={() => toggle("meta")} complete={complete.meta} />
+          {expanded.meta && (
+            <div style={{ paddingBottom: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* Core encounter fields */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+                {[
+                  ["Patient", patientName],
+                  ["DOB", demo.dob || "—"],
+                  ["MRN", registration.mrn || "—"],
+                  ["Room", registration.room || "—"],
+                  ["Allergies", allergies.length ? allergies.join(", ") : "NKDA"],
+                  ["Meds", medications.length ? `${medications.length} listed` : "none"],
+                  ["BP", vitals.bp || "—"],
+                  ["HR", vitals.hr || "—"],
+                  ["SpO\u2082", vitals.spo2 ? vitals.spo2 + "%" : "—"],
+                  ["Temp", vitals.temp || "—"],
+                  ["ESI", esiLevel || "—"],
+                  ["Encounter", new Date().toLocaleDateString()],
+                ].map(([label, val]) => (
+                  <div key={label} style={{ minWidth: 120 }}>
+                    <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 }}>{label}</div>
+                    <div style={{ fontSize: 12, color: "var(--npi-txt2)", fontFamily: "'DM Sans',sans-serif" }}>{val}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Extended history */}
+              {(pmhExtra || surgHx || famHx || socHx) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8, borderTop: "1px solid rgba(59,130,246,.1)" }}>
+                  {[
+                    ["Additional PMH", pmhExtra],
+                    ["Surgical Hx", surgHx],
+                    ["Family Hx", famHx],
+                    ["Social Hx", socHx],
+                  ].filter(([, v]) => v).map(([label, val]) => (
+                    <div key={label}>
+                      <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: 12, color: "var(--npi-txt2)", fontFamily: "'DM Sans',sans-serif", lineHeight: 1.5 }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* SDOH flags */}
+              {sdoh && Object.entries(sdoh).some(([, v]) => v && v !== "unknown" && v !== false) && (
+                <div style={{ paddingTop: 8, borderTop: "1px solid rgba(59,130,246,.1)" }}>
+                  <div style={{ fontSize: 9, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>SDOH Factors</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {Object.entries(sdoh).filter(([, v]) => v && v !== "unknown" && v !== false).map(([k, v]) => (
+                      <span key={k} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(245,200,66,.1)", border: "1px solid rgba(245,200,66,.25)", color: "var(--npi-gold)", fontFamily: "'DM Sans',sans-serif" }}>
+                        {k.replace(/_/g, " ")}{typeof v === "string" && v !== "true" ? ": " + v : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-          );
-        })}
-      </aside>
+          )}
+        </div>
+
+        {/* ── Sign bar ─────────────────────────────────────────────────── */}
+        {onSave && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderTop: "1px solid rgba(59,130,246,.15)", marginTop: 4 }}>
+            <button onClick={onSave} style={{ padding: "9px 22px", borderRadius: 8, background: "var(--npi-teal)", color: "#050f1e", border: "none", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              Sign &amp; Save Chart
+            </button>
+            <div style={{ fontSize: 11, color: "var(--npi-txt4)", fontFamily: "'JetBrains Mono',monospace" }}>
+              <KK ch="⌘⇧S" /> sign
+            </div>
+            <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {SECTIONS.slice(0,3).map(s => (
+                <span key={s.id} style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: complete[s.id] ? "var(--npi-teal)" : "var(--npi-coral)", background: complete[s.id] ? "rgba(0,229,192,.08)" : "rgba(255,107,107,.08)", border: `1px solid ${complete[s.id] ? "rgba(0,229,192,.25)" : "rgba(255,107,107,.25)"}`, borderRadius: 5, padding: "2px 8px" }}>
+                  {complete[s.id] ? "✓" : "○"} {s.label.replace(/^\d+ /, "")}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {/* ── Toasts ─────────────────────────────────────────────────────── */}
+      {toasts.length > 0 && (
+        <div style={{ position: "fixed", bottom: 20, right: 20, display: "flex", flexDirection: "column", gap: 6, zIndex: 300 }}>
+          {toasts.map(t => (
+            <div key={t.id} style={{
+              padding: "9px 16px", borderRadius: 10, fontSize: 12,
+              fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap",
+              background: "rgba(13,31,60,.95)", backdropFilter: "blur(16px)",
+              border: `1px solid ${t.type === "success" ? "rgba(0,229,192,.4)" : "rgba(255,107,107,.4)"}`,
+              color: t.type === "success" ? "var(--npi-teal)" : "var(--npi-coral)",
+              boxShadow: "0 4px 20px rgba(0,0,0,.5)",
+            }}>{t.type === "success" ? "\u2713" : "\u2715"} {t.msg}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

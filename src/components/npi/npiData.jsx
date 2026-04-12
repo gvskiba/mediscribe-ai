@@ -499,3 +499,101 @@ export const BODY_REGIONS = [
   "Hip","Thigh","Knee","Lower leg","Ankle","Foot","Toe(s)",
   "Groin","Sacrum / Gluteal","Perineum","Bilateral / Multiple","Other",
 ];
+
+// ─── AMA 2023 MDM TABLES ──────────────────────────────────────────────────────
+// Source: AMA CPT E/M Guidelines 2023, Table of MDM
+export const MDM_COPA_LEVELS = [
+  { key: "minimal",  label: "Minimal",  color: "#3dffa0", desc: "Self-limited or minor problem" },
+  { key: "low",      label: "Low",      color: "#3b9eff", desc: "Stable chronic / uncomplicated acute" },
+  { key: "moderate", label: "Moderate", color: "#f5c842", desc: "Exacerbation / new problem with additional workup" },
+  { key: "high",     label: "High",     color: "#ff6b6b", desc: "Severe exacerbation / threat to life or organ" },
+];
+
+export const MDM_DATA_CATS = [
+  { key: "review_external",   label: "Review of external records",                         cat: 1 },
+  { key: "review_results",    label: "Review & order tests (labs, imaging, EKG)",           cat: 1 },
+  { key: "order_independent", label: "Independent interpretation of results",               cat: 2 },
+  { key: "discuss_mgmt",      label: "Discussion with treating/consulting provider",         cat: 2 },
+  { key: "independent_hx",    label: "Independent history from someone other than patient", cat: 3 },
+];
+
+export const MDM_RISK_LEVELS = [
+  { key: "minimal",  label: "Minimal",  color: "#3dffa0", desc: "OTC drugs; no prescription required" },
+  { key: "low",      label: "Low",      color: "#3b9eff", desc: "Prescription drug management" },
+  { key: "moderate", label: "Moderate", color: "#f5c842", desc: "Prescription drug management; minor surgery with risk factors" },
+  { key: "high",     label: "High",     color: "#ff6b6b", desc: "Drug therapy requiring intensive monitoring; major surgery" },
+];
+
+// E/M code map keyed by MDM complexity rank (0=none,1=str,2=low,3=mod,4=high)
+export const EM_LEVEL_MAP = {
+  0: { code: "—",     label: "Insufficient data",  mdm: "—",              color: "#5a82a8" },
+  1: { code: "99281", label: "Straightforward MDM", mdm: "Straightforward", color: "#3dffa0" },
+  2: { code: "99282", label: "Low complexity MDM",  mdm: "Low",            color: "#3b9eff" },
+  3: { code: "99284", label: "Moderate MDM",         mdm: "Moderate",       color: "#f5c842" },
+  4: { code: "99285", label: "High complexity MDM",  mdm: "High",           color: "#ff6b6b" },
+};
+
+const RANK = { "": 0, minimal: 1, low: 2, moderate: 3, high: 4 };
+
+/**
+ * AMA 2023: E/M level = highest level supported by 2 of 3 domains.
+ * Returns rank 0-4.
+ */
+export function computeEMLevel(copa, dataLevel, risk) {
+  const r = [RANK[copa] || 0, RANK[dataLevel] || 0, RANK[risk] || 0].sort((a,b) => a-b);
+  // Need at least 2 domains — take the second-highest (median of sorted desc)
+  return r[1] || 0;
+}
+
+/**
+ * Auto-compute data complexity level from checkbox selections.
+ * cat1 = array of cat-1 items checked, cat2 = boolean, cat3 = boolean
+ */
+export function computeDataLevel(cat1Items, cat2, cat3) {
+  if (cat3) return "high";
+  if (cat2 || (cat1Items && cat1Items.length >= 3)) return "moderate";
+  if (cat1Items && cat1Items.length >= 1) return "low";
+  return "";
+}
+
+/**
+ * Build a plain-text MDM narrative from structured inputs.
+ */
+export function buildMDMNarrative({
+  copa, copaRationale, dataChecks, dataLevel, risk, riskRationale,
+  consideredNotOrdered, sdohFactors, criticalCareMinutes,
+}) {
+  const lines = ["MEDICAL DECISION MAKING", ""];
+  if (copa) {
+    lines.push(`Number/Complexity of Problems Addressed (Domain 1): ${copa.toUpperCase()}`);
+    if (copaRationale) lines.push(`  ${copaRationale}`);
+    lines.push("");
+  }
+  if (dataLevel) {
+    lines.push(`Amount/Complexity of Data Reviewed (Domain 2): ${dataLevel.toUpperCase()}`);
+    const cat1 = dataChecks?.cat1 || [];
+    if (cat1.length) lines.push(`  · ${cat1.join("  · ")}`);
+    if (dataChecks?.cat2) lines.push(`  · Independent interpretation of results by this provider`);
+    if (dataChecks?.cat3) lines.push(`  · Independent history obtained`);
+    lines.push("");
+  }
+  if (risk) {
+    lines.push(`Risk of Complications/Morbidity (Domain 3): ${risk.toUpperCase()}`);
+    if (riskRationale) lines.push(`  ${riskRationale}`);
+    lines.push("");
+  }
+  if (consideredNotOrdered?.trim()) {
+    lines.push(`Tests/Treatments Considered But Not Ordered:`);
+    lines.push(`  ${consideredNotOrdered.trim()}`);
+    lines.push("");
+  }
+  if (sdohFactors?.length) {
+    lines.push(`SDOH Factors (G0136 — Moderate Risk MDM): ${sdohFactors.join(", ")}`);
+    lines.push("");
+  }
+  if (criticalCareMinutes) {
+    lines.push(`Critical Care Time: ${criticalCareMinutes} min (CPT 99291/99292)`);
+    lines.push("");
+  }
+  return lines.join("\n");
+}

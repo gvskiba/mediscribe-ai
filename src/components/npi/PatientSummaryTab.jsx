@@ -367,6 +367,7 @@ export default function PatientSummaryTab({ demo, cc, vitals, vitalsHistory, med
 
         {/* ── Sepsis Bundle ── */}
         {anySepisStamped && (
+          <Card title="Sepsis Bundle" color="var(--npi-coral)">
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               {SEPSIS_BUNDLE_ITEMS.filter(i => sepsisBundle[i.key]).map(item => (
                 <div key={item.key} style={{ display:"flex", alignItems:"center", gap:8 }}>

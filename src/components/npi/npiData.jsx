@@ -500,6 +500,18 @@ export const BODY_REGIONS = [
   "Groin","Sacrum / Gluteal","Perineum","Bilateral / Multiple","Other",
 ];
 
+// ─── SEPSIS BUNDLE ───────────────────────────────────────────────────────────
+export const SEPSIS_BUNDLE_ITEMS = [
+  { key: "lactateOrdered",     label: "Lactate ordered" },
+  { key: "lactateValue",       label: "Initial lactate (mmol/L)" },
+  { key: "bloodCulturesDrawn", label: "Blood cultures drawn" },
+  { key: "abxOrdered",         label: "Antibiotics ordered" },
+  { key: "fluidOrdered",       label: "30 mL/kg IVF ordered" },
+  { key: "fluidCompleted",     label: "IVF completed" },
+  { key: "repeatLactateValue", label: "Repeat lactate (mmol/L)" },
+  { key: "vasopressorsStarted",label: "Vasopressors started" },
+];
+
 // ─── AMA 2023 MDM TABLES ──────────────────────────────────────────────────────
 // Source: AMA CPT E/M Guidelines 2023, Table of MDM
 export const MDM_COPA_LEVELS = [

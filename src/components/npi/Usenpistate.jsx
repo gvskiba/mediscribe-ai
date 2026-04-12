@@ -1,23 +1,36 @@
-// useNPIState.js — extracted state & logic hook for NewPatientInput
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { toast } from "sonner";
 import {
-  NAV_DATA, ALL_SECTIONS, SHORTCUT_MAP, SYSTEM_PROMPT,
-  getTemplateForCC, buildPatientCtx, QUICK_ACTIONS,
+  NAV_DATA, ALL_SECTIONS, SHORTCUT_MAP,
+  SYSTEM_PROMPT, buildPatientCtx,
+  getTemplateForCC, ROS_RAIL_SYSTEMS, PE_RAIL_SYSTEMS,
 } from "@/components/npi/npiData";
 
-const ASSESS_SECTIONS = ["hpi", "ros", "pe"];
+// ── State-based toast helper ──────────────────────────────────────────────────
+function showToast(setter, msg, type) {
+  const id = Date.now() + Math.random();
+  setter(p => [...p, { id, msg, type }]);
+  setTimeout(() => setter(p => p.filter(t => t.id !== id)), 3500);
+}
 
 export function useNPIState() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  // ── Toast state ──────────────────────────────────────────────────────────────
+  const [toasts, setToasts] = useState([]);
 
-  // ── Tab / group navigation ──────────────────────────────────────────────────
+  // ── Tab / nav routing — state-based, no react-router ────────────────────────
   const [currentTab, setCurrentTab] = useState(
     () => new URLSearchParams(window.location.search).get("tab") || "demo"
   );
+  // Sync currentTab if browser back/forward used
+  useEffect(() => {
+    const onPop = () => {
+      const tab = new URLSearchParams(window.location.search).get("tab");
+      if (tab) setCurrentTab(tab);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   const [activeGroup, setActiveGroup] = useState(() => {
     const tab = new URLSearchParams(window.location.search).get("tab") || "demo";
     for (const [group, items] of Object.entries(NAV_DATA)) {
@@ -26,17 +39,11 @@ export function useNPIState() {
     return "intake";
   });
 
-  useEffect(() => {
-    const tab = new URLSearchParams(location.search).get("tab");
-    if (tab) setCurrentTab(tab);
-  }, [location.search]);
-
-  // ── Nav dots ────────────────────────────────────────────────────────────────
   const [navDots, setNavDots] = useState(() => {
     const m = {}; ALL_SECTIONS.forEach(s => (m[s.section] = s.dot)); return m;
   });
 
-  // ── Arrival timer ───────────────────────────────────────────────────────────
+  // ── Door timer ───────────────────────────────────────────────────────────────
   const arrivalTimeRef = useRef(Date.now());
   const [doorTime, setDoorTime] = useState("0m");
   useEffect(() => {
@@ -50,55 +57,70 @@ export function useNPIState() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Patient data ────────────────────────────────────────────────────────────
-  const [demo, setDemo]               = useState({ firstName:"", lastName:"", age:"", dob:"", sex:"", mrn:"", insurance:"", insuranceId:"", address:"", city:"", phone:"", email:"", emerg:"", height:"", weight:"", lang:"", notes:"", pronouns:"" });
-  const [cc, setCC]                   = useState({ text:"", onset:"", duration:"", severity:"", quality:"", radiation:"", aggravate:"", relieve:"", assoc:"", hpi:"" });
-  const [vitals, setVitals]           = useState({});
+  // ── Clinical data state ───────────────────────────────────────────────────────
+  const [demo, setDemo] = useState({ firstName:"", lastName:"", age:"", dob:"", sex:"", mrn:"", insurance:"", insuranceId:"", address:"", city:"", phone:"", email:"", emerg:"", height:"", weight:"", lang:"", notes:"", pronouns:"" });
+  const [cc, setCC]                       = useState({ text:"", onset:"", duration:"", severity:"", quality:"", radiation:"", aggravate:"", relieve:"", assoc:"", hpi:"" });
+  const [vitals, setVitals]               = useState({});
   const [vitalsHistory, setVitalsHistory] = useState([]);
-  const [medications, setMedications] = useState([]);
-  const [allergies, setAllergies]     = useState([]);
-  const [pmhSelected, setPmhSelected] = useState({});
-  const [pmhExtra, setPmhExtra]       = useState("");
-  const [surgHx, setSurgHx]           = useState("");
-  const [famHx, setFamHx]             = useState("");
-  const [socHx, setSocHx]             = useState("");
-  const [rosState, setRosState]       = useState({});
-  const [rosSymptoms, setRosSymptoms] = useState({});
-  const [rosNotes, setRosNotes]       = useState({});
-  const [peState, setPeState]         = useState({});
-  const [peFindings, setPeFindings]   = useState({});
-  const [selectedCC, setSelectedCC]   = useState(-1);
-  const [parseText, setParseText]     = useState("");
-  const [parsing, setParsing]         = useState(false);
-  const [pmhExpanded, setPmhExpanded] = useState({ cardio: true, endo: true });
-  const [avpu, setAvpu]               = useState("");
-  const [o2del, setO2del]             = useState("");
-  const [pain, setPain]               = useState("");
-  const [triage, setTriage]           = useState("");
-  const [esiLevel, setEsiLevel]       = useState("");
-  const [consults, setConsults]       = useState([]);
-  const [sdoh, setSdoh]               = useState({ housing:"", food:"", transport:"", utilities:"", isolation:"", safety:"" });
-  const [disposition, setDisposition] = useState("");
-  const [dispReason, setDispReason]   = useState("");
-  const [dispTime, setDispTime]       = useState("");
-  const [registration, setRegistration] = useState({ mrn:"", room:"" });
-  const [railCompact, setRailCompact] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
-  const [cdsOpen, setCdsOpen]         = useState(false);
+  const [medications, setMedications]     = useState([]);
+  const [allergies, setAllergies]         = useState([]);
+  const [pmhSelected, setPmhSelected]     = useState({});
+  const [pmhExtra, setPmhExtra]           = useState("");
+  const [surgHx, setSurgHx]               = useState("");
+  const [famHx, setFamHx]                 = useState("");
+  const [socHx, setSocHx]                 = useState("");
+  const [rosState, setRosState]           = useState({});
+  const [rosSymptoms, setRosSymptoms]     = useState({});
+  const [rosNotes, setRosNotes]           = useState({});
+  const [peState, setPeState]             = useState({});
+  const [peFindings, setPeFindings]       = useState({});
+  const [selectedCC, setSelectedCC]       = useState(-1);
+  const [parseText, setParseText]         = useState("");
+  const [parsing, setParsing]             = useState(false);
+  const [saving,  setSaving]              = useState(false);
+  const [pmhExpanded, setPmhExpanded]     = useState({ cardio: true, endo: true });
+  const [avpu, setAvpu]                   = useState("");
+  const [o2del, setO2del]                 = useState("");
+  const [pain, setPain]                   = useState("");
+  const [triage, setTriage]               = useState("");
+  const [esiLevel, setEsiLevel]           = useState("");
+  const [visitMode, setVisitMode]         = useState("standard"); // "simple" | "standard" | "critical"
+  const [consults, setConsults]           = useState([]);
+  const [sdoh, setSdoh]                   = useState({ housing:"", food:"", transport:"", utilities:"", isolation:"", safety:"", tobacco:"", phq2q1:"", phq2q2:"", auditcq1:"", auditcq2:"", auditcq3:"" });
+  const [disposition, setDisposition]     = useState("");
+  const [dispReason, setDispReason]       = useState("");
+  const [dispTime, setDispTime]           = useState("");
+  const [registration, setRegistration]   = useState({ mrn:"", room:"" });
   const [rosActiveSystem, setRosActiveSystem] = useState(0);
-  const [peActiveSystem, setPeActiveSystem]   = useState(0);
-  const [reassessState, setReassessState]     = useState({});
+  const [peActiveSystem,  setPeActiveSystem]  = useState(0);
+  const [reassessState,   setReassessState]   = useState({});
   const [clinicalTimeline, setClinicalTimeline] = useState({});
+  const [sepsisBundle,    setSepsisBundle]      = useState({});
+  const [pdmpState,       setPdmpState]         = useState({ checked:false, timestamp:"", method:"" });
+  const [isarState,       setIsarState]         = useState({ q1:null, q2:null, q3:null, q4:null, q5:null, q6:null });
+  const [mdmState,        setMdmState]          = useState({ copa:"", copaRationale:"", dataChecks:{ cat1:[], cat2:false, cat3:false }, dataLevel:"", risk:"", riskRationale:"", sdohRiskAccepted:false, narrative:"" });
+  const [mdmDataElements, setMdmDataElements]   = useState([]);
+
+  // ── UI state ─────────────────────────────────────────────────────────────────
+  const [railCompact, setRailCompact]       = useState(false);
+  const [showShortcuts, setShowShortcuts]   = useState(false);
+  const [cdsOpen, setCdsOpen]               = useState(false);
+  const [resumeSection, setResumeSection]   = useState(null);
+
+  // ── CC Smart Template state ───────────────────────────────────────────────────
+  const [appliedTemplate,   setAppliedTemplate]   = useState(null);
   const [templateDismissed, setTemplateDismissed] = useState({ ros:false, pe:false });
+  const templateFiredRef = useRef({ ros:false, pe:false });
+  const prevCCRef        = useRef("");
 
-  // ── Nursing & Media panels ───────────────────────────────────────────────────
-  const [nursingOpen, setNursingOpen]                   = useState(false);
+  // ── Panel state ──────────────────────────────────────────────────────────────
+  const [nursingOpen,          setNursingOpen]          = useState(false);
   const [nursingInterventions, setNursingInterventions] = useState([]);
-  const [nursingNotes, setNursingNotes]                 = useState([]);
-  const [mediaOpen, setMediaOpen]                       = useState(false);
-  const [attachments, setAttachments]                   = useState([]);
+  const [nursingNotes,         setNursingNotes]         = useState([]);
+  const [mediaOpen,            setMediaOpen]            = useState(false);
+  const [attachments,          setAttachments]          = useState([]);
 
-  // ── Provider identity ────────────────────────────────────────────────────────
+  // ── Provider ─────────────────────────────────────────────────────────────────
   const [providerName, setProviderName] = useState("Provider");
   const [providerRole, setProviderRole] = useState("ED");
   useEffect(() => {
@@ -114,17 +136,7 @@ export function useNPIState() {
     })();
   }, []);
 
-  // ── Resume section tracking ──────────────────────────────────────────────────
-  const prevTabRef = useRef(null);
-  const [resumeSection, setResumeSection] = useState(null);
-  useEffect(() => {
-    const prev = prevTabRef.current;
-    if (prev && ASSESS_SECTIONS.includes(prev) && !ASSESS_SECTIONS.includes(currentTab)) setResumeSection(prev);
-    if (ASSESS_SECTIONS.includes(currentTab)) setResumeSection(null);
-    prevTabRef.current = currentTab;
-  }, [currentTab]); // eslint-disable-line
-
-  // ── AI state ─────────────────────────────────────────────────────────────────
+  // ── AI overlay state ─────────────────────────────────────────────────────────
   const [aiOpen, setAiOpen]       = useState(false);
   const [aiMsgs, setAiMsgs]       = useState([{ role:"sys", text:"Notrya AI ready — select a quick action or ask a clinical question." }]);
   const [aiInput, setAiInput]     = useState("");
@@ -134,17 +146,32 @@ export function useNPIState() {
   const msgsRef  = useRef(null);
   const inputRef = useRef(null);
 
+  // ── Resume section tracker ────────────────────────────────────────────────────
+  const ASSESS_SECTIONS = ["hpi", "ros", "pe"];
+  const prevTabRef = useRef(null);
+  useEffect(() => {
+    const prev = prevTabRef.current;
+    if (prev && ASSESS_SECTIONS.includes(prev) && !ASSESS_SECTIONS.includes(currentTab)) setResumeSection(prev);
+    if (ASSESS_SECTIONS.includes(currentTab)) setResumeSection(null);
+    prevTabRef.current = currentTab;
+  }, [currentTab]); // eslint-disable-line
+
+  // ── AI overlay effects ────────────────────────────────────────────────────────
   useEffect(() => { msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior:"smooth" }); }, [aiMsgs, aiLoading]);
   useEffect(() => { if (aiOpen) setTimeout(() => inputRef.current?.focus(), 280); }, [aiOpen]);
+
+  // ── Escape key ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    const h = e => { if (e.key === "Escape" && aiOpen) setAiOpen(false); if (e.key === "Escape" && cdsOpen) setCdsOpen(false); };
+    const h = e => {
+      if (e.key === "Escape" && aiOpen)      setAiOpen(false);
+      if (e.key === "Escape" && cdsOpen)     setCdsOpen(false);
+      if (e.key === "Escape" && nursingOpen) setNursingOpen(false);
+      if (e.key === "Escape" && mediaOpen)   setMediaOpen(false);
+    };
     window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h);
-  }, [aiOpen, cdsOpen]);
+  }, [aiOpen, cdsOpen, nursingOpen, mediaOpen]);
 
-  // ── Applied CC template ──────────────────────────────────────────────────────
-  const appliedTemplate = getTemplateForCC(cc.text);
-
-  // ── Nav dots update ──────────────────────────────────────────────────────────
+  // ── Nav dot computation ────────────────────────────────────────────────────────
   useEffect(() => {
     setNavDots(prev => ({
       ...prev,
@@ -155,14 +182,22 @@ export function useNPIState() {
       hpi:      cc.hpi ? "done" : cc.text                      ? "partial" : "empty",
       ros:      Object.keys(rosState).length > 3 ? "done" : Object.keys(rosState).length > 0 ? "partial" : "empty",
       pe:       Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
-      triage:   esiLevel                        ? "done"    : "empty",
+      triage:   esiLevel                          ? "done"    : "empty",
       consult:  consults.length > 0               ? "done"    : "empty",
       closeout: disposition                        ? "done"    : "empty",
-      sdoh:     Object.values(sdoh).filter(v => v === "2").length > 0 ? "partial"
-                  : Object.values(sdoh).some(Boolean) ? "done" : "empty",
+      sdoh: (() => {
+        const sdohPositive = Object.entries(sdoh).filter(([k]) => !k.startsWith("phq2") && !k.startsWith("auditc") && k !== "tobacco").some(([,v]) => v === "2");
+        const phq2Score = parseInt(sdoh.phq2q1||"0") + parseInt(sdoh.phq2q2||"0");
+        const auditcScore = parseInt(sdoh.auditcq1||"0") + parseInt(sdoh.auditcq2||"0") + parseInt(sdoh.auditcq3||"0");
+        const auditcPositive = Boolean(sdoh.auditcq1 && sdoh.auditcq2 && sdoh.auditcq3 && auditcScore >= 4);
+        if (sdohPositive || phq2Score >= 3 || auditcPositive) return "partial";
+        if (Object.values(sdoh).some(Boolean)) return "done";
+        return "empty";
+      })(),
       reassess: reassessState.condition ? "done" : reassessState.note ? "partial" : "empty",
       timeline: clinicalTimeline?.times?.departed ? "done" : clinicalTimeline?.times?.disposition ? "partial" : "empty",
       summary:  (demo.firstName || cc.text || vitals.bp) ? "partial" : "empty",
+      mdm:      mdmState.narrative ? "done" : (mdmState.copa || mdmState.risk) ? "partial" : "empty",
       handoff:  "empty",
     }));
   }, [
@@ -177,23 +212,46 @@ export function useNPIState() {
     clinicalTimeline?.times?.departed, clinicalTimeline?.times?.disposition,
   ]);
 
-  // ── Navigation helpers ───────────────────────────────────────────────────────
+  // ── CC Template auto-apply ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (cc.text !== prevCCRef.current) {
+      templateFiredRef.current = { ros:false, pe:false };
+      setTemplateDismissed({ ros:false, pe:false });
+      prevCCRef.current = cc.text;
+    }
+    const tpl = getTemplateForCC(cc.text);
+    setAppliedTemplate(tpl || null);
+    if (!tpl) return;
+    if (currentTab === "ros" && !templateFiredRef.current.ros) {
+      templateFiredRef.current.ros = true;
+      const idx = ROS_RAIL_SYSTEMS.findIndex(s => s.id === tpl.rosPriority[0]);
+      if (idx >= 0) setRosActiveSystem(idx);
+    }
+    if (currentTab === "pe" && !templateFiredRef.current.pe) {
+      templateFiredRef.current.pe = true;
+      const idx = PE_RAIL_SYSTEMS.findIndex(s => s.id === tpl.pePriority[0]);
+      if (idx >= 0) setPeActiveSystem(idx);
+    }
+  }, [cc.text, currentTab]); // eslint-disable-line
+
+  // ── Navigation callbacks ─────────────────────────────────────────────────────
   const selectSection = useCallback((sectionId) => {
-    navigate(`/NewPatientInput?tab=${sectionId}`);
+    setCurrentTab(sectionId);
+    window.history.pushState({}, "", `?tab=${sectionId}`);
     for (const [group, items] of Object.entries(NAV_DATA)) {
       if (items.find(i => i.section === sectionId)) { setActiveGroup(group); break; }
     }
-  }, [navigate]);
+  }, []);
 
   const selectGroup = useCallback((group) => {
     if (group === activeGroup) return;
     setActiveGroup(group);
     const items = NAV_DATA[group];
     if (items.every(i => i.href)) return;
-    if (items.length === 1) { navigate(`/NewPatientInput?tab=${items[0].section}`); return; }
     const target = items.find(i => i.section === currentTab) ? currentTab : items[0].section;
-    navigate(`/NewPatientInput?tab=${target}`);
-  }, [currentTab, activeGroup, navigate]);
+    setCurrentTab(target);
+    window.history.pushState({}, "", `?tab=${target}`);
+  }, [currentTab, activeGroup]);
 
   const getGroupBadge = useCallback((groupKey) => {
     const items = NAV_DATA[groupKey];
@@ -202,16 +260,16 @@ export function useNPIState() {
     return "empty";
   }, [navDots]);
 
-  // ── Vital utilities ──────────────────────────────────────────────────────────
+  // ── Vital helpers ─────────────────────────────────────────────────────────────
   const vitalClass = (key, raw) => {
     if (!raw || raw === "\u2014") return "";
     const src = key === "bp" ? String(raw).split("/")[0] : raw;
     const n = parseFloat(src); if (isNaN(n)) return "";
-    if (key === "hr")   return n > 110 || n < 50  ? " abn" : n > 90  || n < 55 ? " warn" : "";
-    if (key === "rr")   return n > 22  || n < 8   ? " abn" : n > 20  || n < 10 ? " warn" : "";
-    if (key === "spo2") return n < 90              ? " abn" : n < 94            ? " warn" : "";
+    if (key === "hr")   return n > 110 || n < 50   ? " abn" : n > 90  || n < 55 ? " warn" : "";
+    if (key === "rr")   return n > 22  || n < 8    ? " abn" : n > 20  || n < 10 ? " warn" : "";
+    if (key === "spo2") return n < 90               ? " abn" : n < 94            ? " warn" : "";
     if (key === "temp") return n > 39.5 || n < 35.5 ? " abn" : n > 38 || n < 36 ? " warn" : "";
-    if (key === "bp")   return n > 180 || n < 80  ? " abn" : n > 140 || n < 90 ? " warn" : "";
+    if (key === "bp")   return n > 180 || n < 80   ? " abn" : n > 140 || n < 90 ? " warn" : "";
     return "";
   };
 
@@ -219,13 +277,11 @@ export function useNPIState() {
     const st = rosState[sysId]; if (!st) return "empty";
     return st === "has-positives" ? "partial" : "done";
   };
+
   const getPeSysDot = (sysId) => {
     const st = peState[sysId]; if (!st) return "empty";
     return (st === "has-positives" || st === "abnormal" || st === "mixed") ? "partial" : "done";
   };
-
-  // ── Actions ──────────────────────────────────────────────────────────────────
-  const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
 
   const addVitalsSnapshot = useCallback((label, overrideVitals) => {
     const v = overrideVitals || vitals;
@@ -233,7 +289,9 @@ export function useNPIState() {
     setVitalsHistory(prev => [...prev, { t: Date.now(), label, ...v }]);
   }, [vitals]);
 
+  // ── Chart save ────────────────────────────────────────────────────────────────
   const handleSaveChart = useCallback(async () => {
+    setSaving(true);
     try {
       const payload = {
         raw_note: parseText || `Patient ${[demo.firstName,demo.lastName].filter(Boolean).join(" ")||"New Patient"} presenting with ${cc.text||"unspecified complaint"}`,
@@ -245,118 +303,168 @@ export function useNPIState() {
         chief_complaint: cc.text||"",
         history_of_present_illness: cc.hpi||"",
         medications, allergies, status:"draft",
+        registration_mrn: registration.mrn||"", registration_room: registration.room||"",
+        triage_esi_level: esiLevel||"",
+        sdoh_housing: sdoh.housing||"", sdoh_food: sdoh.food||"",
+        sdoh_transport: sdoh.transport||"", sdoh_isolation: sdoh.isolation||"",
+        sdoh_safety: sdoh.safety||"", sdoh_tobacco: sdoh.tobacco||"",
+        sdoh_phq2q1: sdoh.phq2q1||"", sdoh_phq2q2: sdoh.phq2q2||"",
+        sdoh_phq2_score: String(parseInt(sdoh.phq2q1||"0") + parseInt(sdoh.phq2q2||"0")),
+        sepsis_lactate_ordered:        sepsisBundle.lactateOrdered||"",
+        sepsis_lactate_value:          sepsisBundle.lactateValue||"",
+        sepsis_abx_ordered:            sepsisBundle.abxOrdered||"",
+        sepsis_fluids_started:         sepsisBundle.fluidsStarted||"",
+        sepsis_repeat_lactate_ordered: sepsisBundle.repeatLactateOrdered||"",
+        sepsis_repeat_lactate_value:   sepsisBundle.repeatLactateValue||"",
+        pdmp_checked:            pdmpState.checked ? "yes" : "no",
+        pdmp_timestamp:          pdmpState.timestamp||"",
+        pdmp_method:             pdmpState.method||"",
+        isar_score:              String(
+                                   (isarState.q1===true?1:0)+(isarState.q2===true?1:0)+
+                                   (isarState.q3===false?1:0)+(isarState.q4===true?1:0)+
+                                   (isarState.q5===true?1:0)+(isarState.q6===true?1:0)
+                                 ),
         disposition: disposition||"", disposition_reason: dispReason||"",
         consult_count: consults.length,
         consult_services: consults.map(c => c.service).join(", ")||"",
         ros_summary: Object.keys(rosState).filter(k => rosState[k]).join(", ")||"",
         pe_summary:  Object.keys(peState).filter(k => peState[k]).join(", ")||"",
       };
-      if (!disposition) toast.warning("Disposition not set — chart saved as draft without close-out.");
+      if (!disposition) showToast(setToasts, "Disposition not set \u2014 chart saved as draft.", "warn");
       await base44.entities.ClinicalNote.create(payload);
-      toast.success("Chart signed and saved.");
-      navigate("/EDTrackingBoard");
-    } catch (e) { toast.error("Failed to save: " + e.message); }
-  }, [demo,cc,vitals,medications,allergies,parseText,rosState,peState,registration,disposition,dispReason,consults,navigate]);
+      showToast(setToasts, "Chart signed and saved.", "success");
+      setCurrentTab("demo");
+      window.history.pushState({}, "", "?tab=demo");
+    } catch (e) { showToast(setToasts, "Failed to save: " + e.message, "error"); }
+    finally     { setSaving(false); }
+  }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,sdoh,consults,disposition,dispReason,sepsisBundle]);
 
-  const smartParse = useCallback(async () => {
-    if (!parseText.trim()) { toast.error("Please enter some text to parse."); return; }
+  // ── Smart parse ───────────────────────────────────────────────────────────────
+  const smartParse = async () => {
+    if (!parseText.trim()) { showToast(setToasts, "Please enter some text to parse.", "error"); return; }
     setParsing(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Extract structured patient data from the following text. Return ONLY valid JSON.\nText: ${parseText}`,
-        response_json_schema: { type:"object", properties:{ firstName:{type:"string"},lastName:{type:"string"},age:{type:"string"},sex:{type:"string"},dob:{type:"string"},cc:{type:"string"},onset:{type:"string"},duration:{type:"string"},severity:{type:"string"},quality:{type:"string"},bp:{type:"string"},hr:{type:"string"},rr:{type:"string"},spo2:{type:"string"},temp:{type:"string"},gcs:{type:"string"},medications:{type:"array",items:{type:"string"}},allergies:{type:"array",items:{type:"string"}},pmh:{type:"array",items:{type:"string"}} } },
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 600,
+          system: `Extract structured patient data from the following text. Return ONLY valid JSON, no markdown.
+Fields: firstName, lastName, age, sex, dob, cc, onset, duration, severity, quality, bp, hr, rr, spo2, temp, gcs, medications (array), allergies (array), pmh (array).
+Omit any field not present in the text.`,
+          messages: [{ role: "user", content: `Text: ${parseText}` }],
+        }),
       });
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g, "").trim();
+      const result = JSON.parse(raw);
       setDemo(prev => ({ ...prev, firstName:result.firstName||prev.firstName, lastName:result.lastName||prev.lastName, age:result.age||prev.age, sex:result.sex||prev.sex, dob:result.dob||prev.dob }));
       setCC(prev => ({ ...prev, text:result.cc||prev.text, onset:result.onset||prev.onset, duration:result.duration||prev.duration, severity:result.severity||prev.severity, quality:result.quality||prev.quality }));
       setVitals(prev => ({ ...prev, bp:result.bp||prev.bp||"", hr:result.hr||prev.hr||"", rr:result.rr||prev.rr||"", spo2:result.spo2||prev.spo2||"", temp:result.temp||prev.temp||"", gcs:result.gcs||prev.gcs||"" }));
       (result.medications||[]).forEach(m => { if (m) setMedications(p => p.includes(m)?p:[...p,m]); });
       (result.allergies||[]).forEach(a => { if (a) setAllergies(p => p.includes(a)?p:[...p,a]); });
-      toast.success("Patient data extracted!");
-    } catch { toast.error("Could not parse automatically."); }
-    setParsing(false);
-  }, [parseText]);
+      showToast(setToasts, "Patient data extracted!", "success");
+    } catch { showToast(setToasts, "Could not parse automatically.", "error"); }
+    finally  { setParsing(false); }
+  };
 
-  // ── AI messaging ─────────────────────────────────────────────────────────────
+  // ── AI message handler ────────────────────────────────────────────────────────
+  const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
+
   const sendMessage = useCallback(async (text) => {
     if (!text.trim() || aiLoading) return;
     setAiMsgs(m => [...m, { role:"user", text:text.trim() }]);
     setAiInput(""); setAiLoading(true);
-    const ctx = buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab);
-    setHistory(h => [...h, { role:"user", content: ctx+"\n\n"+text.trim() }]);
+    const ctx = buildPatientCtx(demo,cc,vitals,allergies,pmhSelected,currentTab);
+    const newHistory = [...history, { role:"user", content: ctx+"\n\n"+text.trim() }];
+    setHistory(newHistory);
     try {
-      const res = await base44.integrations.Core.InvokeLLM({ prompt: SYSTEM_PROMPT+"\n\nPATIENT CONTEXT:\n"+ctx+"\n\nPHYSICIAN QUESTION:\n"+text.trim() });
-      const reply = typeof res === "string" ? res : JSON.stringify(res);
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 800,
+          system: SYSTEM_PROMPT,
+          messages: newHistory.slice(-10), // cap history to last 10 turns
+        }),
+      });
+      const data = await res.json();
+      const reply = data.content?.[0]?.text || "No response.";
       setHistory(h => [...h, { role:"assistant", content:reply }]);
       setAiMsgs(m => [...m, { role:"bot", text:reply }]);
       setAiOpen(open => { if (!open) setUnread(u => u+1); return open; });
     } catch {
       setAiMsgs(m => [...m, { role:"sys", text:"\u26a0 Connection error \u2014 please try again." }]);
     } finally { setAiLoading(false); }
-  }, [aiLoading, currentTab, demo, cc, vitals, allergies, pmhSelected]);
+  }, [aiLoading,history,currentTab,demo,cc,vitals,allergies,pmhSelected]);
 
-  const handleAIKey = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(aiInput); } };
+  const handleAIKey = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(aiInput); } };
 
   const renderMsg = text =>
     text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
       .replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,'<strong style="color:#00e5c0">$1</strong>');
 
-  // ── Keyboard shortcuts ────────────────────────────────────────────────────────
+  // ── Global keyboard shortcuts — defined last so handleSaveChart is in scope ──
   useEffect(() => {
     const handler = e => {
       const mod = e.metaKey || e.ctrlKey;
       if (mod && SHORTCUT_MAP[e.key]) { e.preventDefault(); selectSection(SHORTCUT_MAP[e.key]); return; }
       if (mod && e.shiftKey && e.key === "s") { e.preventDefault(); handleSaveChart(); return; }
-      if (mod && e.shiftKey && e.key === "n") { e.preventDefault(); navigate("/NewPatientInput?tab=demo"); return; }
+      if (mod && e.shiftKey && e.key === "n") { e.preventDefault(); setCurrentTab("demo"); window.history.pushState({}, "", "?tab=demo"); return; }
       if (e.key === "?" && !mod && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
         e.preventDefault(); setShowShortcuts(s => !s);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectSection, navigate, handleSaveChart]);
+  }, [selectSection, handleSaveChart]); // eslint-disable-line
 
   // ── Derived values ────────────────────────────────────────────────────────────
-  const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
+  const patientName = [demo.firstName,demo.lastName].filter(Boolean).join(" ") || "New Patient";
 
   const patientDataBundle = {
     demo, cc, vitals, medications, allergies,
     pmhSelected, pmhExtra, surgHx, famHx, socHx,
-    rosState, rosNotes, rosSymptoms, peState, peFindings,
-    esiLevel, registration, sdoh,
+    rosState, rosNotes, rosSymptoms,
+    peState, peFindings,
+    esiLevel, registration, sdoh, attachments,
   };
 
   return {
-    navigate, currentTab, activeGroup,
-    navDots, selectGroup, selectSection, getGroupBadge,
+    currentTab, setCurrentTab, activeGroup, setActiveGroup,
+    navDots, setNavDots, selectGroup, selectSection, getGroupBadge,
     arrivalTimeRef, doorTime,
     demo, setDemo, cc, setCC,
-    vitals, setVitals, vitalsHistory,
+    vitals, setVitals, vitalsHistory, setVitalsHistory,
     medications, setMedications, allergies, setAllergies,
     pmhSelected, setPmhSelected, pmhExtra, setPmhExtra,
     surgHx, setSurgHx, famHx, setFamHx, socHx, setSocHx,
     rosState, setRosState, rosSymptoms, setRosSymptoms, rosNotes, setRosNotes,
     peState, setPeState, peFindings, setPeFindings,
     selectedCC, setSelectedCC,
-    parseText, setParseText, parsing,
+    parseText, setParseText, parsing, saving,
     pmhExpanded, setPmhExpanded,
     avpu, setAvpu, o2del, setO2del, pain, setPain,
-    triage, setTriage, esiLevel, setEsiLevel,
+    triage, setTriage, esiLevel, setEsiLevel, visitMode, setVisitMode,
     consults, setConsults, sdoh, setSdoh,
     disposition, setDisposition, dispReason, setDispReason, dispTime, setDispTime,
     registration, setRegistration,
-    railCompact, setRailCompact, showShortcuts, setShowShortcuts,
-    cdsOpen, setCdsOpen,
+    railCompact, setRailCompact, showShortcuts, setShowShortcuts, cdsOpen, setCdsOpen,
     rosActiveSystem, setRosActiveSystem, peActiveSystem, setPeActiveSystem,
     reassessState, setReassessState, clinicalTimeline, setClinicalTimeline,
+    sepsisBundle, setSepsisBundle,
+    pdmpState, setPdmpState,
+    isarState, setIsarState,
+    mdmState, setMdmState, mdmDataElements, setMdmDataElements,
     appliedTemplate, templateDismissed, setTemplateDismissed,
     nursingOpen, setNursingOpen, nursingInterventions, setNursingInterventions,
     nursingNotes, setNursingNotes,
     mediaOpen, setMediaOpen, attachments, setAttachments,
     providerName, providerRole,
-    aiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread, msgsRef, inputRef,
+    aiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread,
+    msgsRef, inputRef,
     resumeSection, setResumeSection,
     patientName, patientDataBundle,
     vitalClass, getRosSysDot, getPeSysDot,
+    toasts, setToasts,
     toggleAI, addVitalsSnapshot, handleSaveChart, smartParse,
     sendMessage, handleAIKey, renderMsg,
   };

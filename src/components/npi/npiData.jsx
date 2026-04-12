@@ -610,6 +610,29 @@ export function buildMDMNarrative({
   return lines.join("\n");
 }
 
-// ── Stub exports referenced by NewPatientInput ────────────────────────────────
-export const SIMPLE_HIDDEN = [];
-export function buildDecisionDocPhrase() { return ""; }
+// ─── VISIT MODE NAV FILTERING ────────────────────────────────────────────────
+export const SIMPLE_HIDDEN = new Set(["reassess", "autocoder", "mdm", "timeline", "handoff"]);
+
+// ─── ISAR-6 FALL RISK SCREEN ──────────────────────────────────────────────────
+export const ISAR_QUESTIONS = [
+  { key:"q1", q:"Do you need someone to help you on a regular basis?",               yesScores:true,  hint:"Dependency in ADLs / IADLs"                              },
+  { key:"q2", q:"Have you had an emergency hospital visit in the last 6 months?",    yesScores:true,  hint:"Prior acute care utilization"                             },
+  { key:"q3", q:"In general, do you see well?",                                      yesScores:false, hint:"Score 1 if NO \u2014 impaired vision is the risk factor"       },
+  { key:"q4", q:"Do you have serious problems with your memory?",                    yesScores:true,  hint:"Cognitive impairment"                                     },
+  { key:"q5", q:"Do you take more than 3 different medications every day?",          yesScores:true,  hint:"Polypharmacy \u2014 \u22654 meds is an independent risk factor" },
+  { key:"q6", q:"Do you have any problems with walking or balance?",                 yesScores:true,  hint:"Functional limitation / fall risk"                        },
+];
+
+// ─── AMA CPT 2023 CATEGORY 2 DOCUMENTATION PHRASE BUILDER ───────────────────
+export function buildDecisionDocPhrase(hint) {
+  if (!hint) return "";
+  const verb = hint.tier === "advisory"
+    ? "Applied to support decision regarding further workup"
+    : "Applied to guide imaging / testing decision";
+  return (
+    `Clinical decision rule applied: ${hint.score}. ${verb} (${hint.use}). ` +
+    `Result: ${hint.action}. ` +
+    `Per AMA CPT 2023 FAQ \u002336, documented application of a validated clinical ` +
+    `decision rule with explicit reasoning satisfies MDM Category 2 data element.`
+  );
+}

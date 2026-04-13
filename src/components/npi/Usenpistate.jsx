@@ -1,25 +1,35 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { toast } from "sonner";
 import {
   NAV_DATA, ALL_SECTIONS, SHORTCUT_MAP,
   SYSTEM_PROMPT, buildPatientCtx,
   getTemplateForCC, ROS_RAIL_SYSTEMS, PE_RAIL_SYSTEMS,
 } from "@/components/npi/npiData";
 
-export function useNPIState() {
-  const navigate = useNavigate();
-  const location = useLocation();
+// ── State-based toast helper ──────────────────────────────────────────────────
+function showToast(setter, msg, type) {
+  const id = Date.now() + Math.random();
+  setter(p => [...p, { id, msg, type }]);
+  setTimeout(() => setter(p => p.filter(t => t.id !== id)), 3500);
+}
 
-  // ── Tab / nav routing ────────────────────────────────────────────────────────
+export function useNPIState() {
+  // ── Toast state ──────────────────────────────────────────────────────────────
+  const [toasts, setToasts] = useState([]);
+
+  // ── Tab / nav routing — state-based, no react-router ────────────────────────
   const [currentTab, setCurrentTab] = useState(
     () => new URLSearchParams(window.location.search).get("tab") || "demo"
   );
+  // Sync currentTab if browser back/forward used
   useEffect(() => {
-    const tab = new URLSearchParams(location.search).get("tab");
-    if (tab) setCurrentTab(tab);
-  }, [location.search]);
+    const onPop = () => {
+      const tab = new URLSearchParams(window.location.search).get("tab");
+      if (tab) setCurrentTab(tab);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   const [activeGroup, setActiveGroup] = useState(() => {
     const tab = new URLSearchParams(window.location.search).get("tab") || "demo";
@@ -67,6 +77,7 @@ export function useNPIState() {
   const [selectedCC, setSelectedCC]       = useState(-1);
   const [parseText, setParseText]         = useState("");
   const [parsing, setParsing]             = useState(false);
+  const [saving,  setSaving]              = useState(false);
   const [pmhExpanded, setPmhExpanded]     = useState({ cardio: true, endo: true });
   const [avpu, setAvpu]                   = useState("");
   const [o2del, setO2del]                 = useState("");
@@ -108,8 +119,6 @@ export function useNPIState() {
   const [nursingNotes,         setNursingNotes]         = useState([]);
   const [mediaOpen,            setMediaOpen]            = useState(false);
   const [attachments,          setAttachments]          = useState([]);
-  const [toasts,               setToasts]               = useState([]);
-  const [saving,               setSaving]               = useState(false);
 
   // ── Provider ─────────────────────────────────────────────────────────────────
   const [providerName, setProviderName] = useState("Provider");
@@ -227,21 +236,22 @@ export function useNPIState() {
 
   // ── Navigation callbacks ─────────────────────────────────────────────────────
   const selectSection = useCallback((sectionId) => {
-    navigate(`/NewPatientInput?tab=${sectionId}`);
+    setCurrentTab(sectionId);
+    window.history.pushState({}, "", `?tab=${sectionId}`);
     for (const [group, items] of Object.entries(NAV_DATA)) {
       if (items.find(i => i.section === sectionId)) { setActiveGroup(group); break; }
     }
-  }, [navigate]);
+  }, []);
 
   const selectGroup = useCallback((group) => {
     if (group === activeGroup) return;
     setActiveGroup(group);
     const items = NAV_DATA[group];
     if (items.every(i => i.href)) return;
-    if (items.length === 1) { navigate(`/NewPatientInput?tab=${items[0].section}`); return; }
     const target = items.find(i => i.section === currentTab) ? currentTab : items[0].section;
-    navigate(`/NewPatientInput?tab=${target}`);
-  }, [currentTab, activeGroup, navigate]);
+    setCurrentTab(target);
+    window.history.pushState({}, "", `?tab=${target}`);
+  }, [currentTab, activeGroup]);
 
   const getGroupBadge = useCallback((groupKey) => {
     const items = NAV_DATA[groupKey];
@@ -281,6 +291,7 @@ export function useNPIState() {
 
   // ── Chart save ────────────────────────────────────────────────────────────────
   const handleSaveChart = useCallback(async () => {
+    setSaving(true);
     try {
       const payload = {
         raw_note: parseText || `Patient ${[demo.firstName,demo.lastName].filter(Boolean).join(" ")||"New Patient"} presenting with ${cc.text||"unspecified complaint"}`,
@@ -319,30 +330,41 @@ export function useNPIState() {
         ros_summary: Object.keys(rosState).filter(k => rosState[k]).join(", ")||"",
         pe_summary:  Object.keys(peState).filter(k => peState[k]).join(", ")||"",
       };
-      if (!disposition) toast.warning("Disposition not set \u2014 chart saved as draft without close-out.");
+      if (!disposition) showToast(setToasts, "Disposition not set \u2014 chart saved as draft.", "warn");
       await base44.entities.ClinicalNote.create(payload);
-      toast.success("Chart signed and saved.");
-      navigate("/EDTrackingBoard");
-    } catch (e) { toast.error("Failed to save: " + e.message); }
-  }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,sdoh,consults,disposition,dispReason,sepsisBundle,navigate]);
+      showToast(setToasts, "Chart signed and saved.", "success");
+      setCurrentTab("demo");
+      window.history.pushState({}, "", "?tab=demo");
+    } catch (e) { showToast(setToasts, "Failed to save: " + e.message, "error"); }
+    finally     { setSaving(false); }
+  }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,sdoh,consults,disposition,dispReason,sepsisBundle]);
 
   // ── Smart parse ───────────────────────────────────────────────────────────────
   const smartParse = async () => {
-    if (!parseText.trim()) { toast.error("Please enter some text to parse."); return; }
+    if (!parseText.trim()) { showToast(setToasts, "Please enter some text to parse.", "error"); return; }
     setParsing(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Extract structured patient data from the following text. Return ONLY valid JSON.\nText: ${parseText}`,
-        response_json_schema: { type:"object", properties:{ firstName:{type:"string"},lastName:{type:"string"},age:{type:"string"},sex:{type:"string"},dob:{type:"string"},cc:{type:"string"},onset:{type:"string"},duration:{type:"string"},severity:{type:"string"},quality:{type:"string"},bp:{type:"string"},hr:{type:"string"},rr:{type:"string"},spo2:{type:"string"},temp:{type:"string"},gcs:{type:"string"},medications:{type:"array",items:{type:"string"}},allergies:{type:"array",items:{type:"string"}},pmh:{type:"array",items:{type:"string"}} } },
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 600,
+          system: `Extract structured patient data from the following text. Return ONLY valid JSON, no markdown.
+Fields: firstName, lastName, age, sex, dob, cc, onset, duration, severity, quality, bp, hr, rr, spo2, temp, gcs, medications (array), allergies (array), pmh (array).
+Omit any field not present in the text.`,
+          messages: [{ role: "user", content: `Text: ${parseText}` }],
+        }),
       });
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g, "").trim();
+      const result = JSON.parse(raw);
       setDemo(prev => ({ ...prev, firstName:result.firstName||prev.firstName, lastName:result.lastName||prev.lastName, age:result.age||prev.age, sex:result.sex||prev.sex, dob:result.dob||prev.dob }));
       setCC(prev => ({ ...prev, text:result.cc||prev.text, onset:result.onset||prev.onset, duration:result.duration||prev.duration, severity:result.severity||prev.severity, quality:result.quality||prev.quality }));
       setVitals(prev => ({ ...prev, bp:result.bp||prev.bp||"", hr:result.hr||prev.hr||"", rr:result.rr||prev.rr||"", spo2:result.spo2||prev.spo2||"", temp:result.temp||prev.temp||"", gcs:result.gcs||prev.gcs||"" }));
       (result.medications||[]).forEach(m => { if (m) setMedications(p => p.includes(m)?p:[...p,m]); });
       (result.allergies||[]).forEach(a => { if (a) setAllergies(p => p.includes(a)?p:[...p,a]); });
-      toast.success("Patient data extracted!");
-    } catch { toast.error("Could not parse automatically."); }
-    setParsing(false);
+      showToast(setToasts, "Patient data extracted!", "success");
+    } catch { showToast(setToasts, "Could not parse automatically.", "error"); }
+    finally  { setParsing(false); }
   };
 
   // ── AI message handler ────────────────────────────────────────────────────────
@@ -353,10 +375,19 @@ export function useNPIState() {
     setAiMsgs(m => [...m, { role:"user", text:text.trim() }]);
     setAiInput(""); setAiLoading(true);
     const ctx = buildPatientCtx(demo,cc,vitals,allergies,pmhSelected,currentTab);
-    setHistory(h => [...h, { role:"user", content: ctx+"\n\n"+text.trim() }]);
+    const newHistory = [...history, { role:"user", content: ctx+"\n\n"+text.trim() }];
+    setHistory(newHistory);
     try {
-      const res = await base44.integrations.Core.InvokeLLM({ prompt: SYSTEM_PROMPT+"\n\nPATIENT CONTEXT:\n"+ctx+"\n\nPHYSICIAN QUESTION:\n"+text.trim() });
-      const reply = typeof res === "string" ? res : JSON.stringify(res);
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 800,
+          system: SYSTEM_PROMPT,
+          messages: newHistory.slice(-10), // cap history to last 10 turns
+        }),
+      });
+      const data = await res.json();
+      const reply = data.content?.[0]?.text || "No response.";
       setHistory(h => [...h, { role:"assistant", content:reply }]);
       setAiMsgs(m => [...m, { role:"bot", text:reply }]);
       setAiOpen(open => { if (!open) setUnread(u => u+1); return open; });
@@ -377,14 +408,14 @@ export function useNPIState() {
       const mod = e.metaKey || e.ctrlKey;
       if (mod && SHORTCUT_MAP[e.key]) { e.preventDefault(); selectSection(SHORTCUT_MAP[e.key]); return; }
       if (mod && e.shiftKey && e.key === "s") { e.preventDefault(); handleSaveChart(); return; }
-      if (mod && e.shiftKey && e.key === "n") { e.preventDefault(); navigate("/NewPatientInput?tab=demo"); return; }
+      if (mod && e.shiftKey && e.key === "n") { e.preventDefault(); setCurrentTab("demo"); window.history.pushState({}, "", "?tab=demo"); return; }
       if (e.key === "?" && !mod && !["INPUT","TEXTAREA"].includes(e.target.tagName)) {
         e.preventDefault(); setShowShortcuts(s => !s);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectSection, navigate, handleSaveChart]); // eslint-disable-line
+  }, [selectSection, handleSaveChart]); // eslint-disable-line
 
   // ── Derived values ────────────────────────────────────────────────────────────
   const patientName = [demo.firstName,demo.lastName].filter(Boolean).join(" ") || "New Patient";
@@ -398,7 +429,7 @@ export function useNPIState() {
   };
 
   return {
-    navigate, currentTab, activeGroup, setActiveGroup,
+    currentTab, setCurrentTab, activeGroup, setActiveGroup,
     navDots, setNavDots, selectGroup, selectSection, getGroupBadge,
     arrivalTimeRef, doorTime,
     demo, setDemo, cc, setCC,
@@ -409,7 +440,7 @@ export function useNPIState() {
     rosState, setRosState, rosSymptoms, setRosSymptoms, rosNotes, setRosNotes,
     peState, setPeState, peFindings, setPeFindings,
     selectedCC, setSelectedCC,
-    parseText, setParseText, parsing,
+    parseText, setParseText, parsing, saving,
     pmhExpanded, setPmhExpanded,
     avpu, setAvpu, o2del, setO2del, pain, setPain,
     triage, setTriage, esiLevel, setEsiLevel, visitMode, setVisitMode,
@@ -427,13 +458,13 @@ export function useNPIState() {
     nursingOpen, setNursingOpen, nursingInterventions, setNursingInterventions,
     nursingNotes, setNursingNotes,
     mediaOpen, setMediaOpen, attachments, setAttachments,
-    toasts, setToasts, saving,
     providerName, providerRole,
-    aiOpen, setAiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread,
+    aiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread,
     msgsRef, inputRef,
     resumeSection, setResumeSection,
     patientName, patientDataBundle,
     vitalClass, getRosSysDot, getPeSysDot,
+    toasts, setToasts,
     toggleAI, addVitalsSnapshot, handleSaveChart, smartParse,
     sendMessage, handleAIKey, renderMsg,
   };

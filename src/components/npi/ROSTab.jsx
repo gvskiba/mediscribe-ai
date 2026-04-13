@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useBodySystemKeyboard } from '@/hooks/useBodySystemKeyboard';
 
 // ─── SYSTEM & SYMPTOM DATA ────────────────────────────────────────────────────
 const ROS_SYSTEMS = [
@@ -363,25 +362,110 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
 
   const clearAll = useCallback(() => setRosData(initRosData()), []);
 
-  // ── Visible systems (focused mode filter) — must be computed before hook ──
+  // ── Visible systems (focused mode filter) ────────────────────────────────
   const focusedIds  = getFocusedIds(chiefComplaint);
   const visibleSys  = docMode === 'full' ? ROS_SYSTEMS : ROS_SYSTEMS.filter(s => focusedIds.includes(s.id));
   const hiddenCount = ROS_SYSTEMS.length - visibleSys.length;
 
-  // ── Keyboard hook ────────────────────────────────────────────────────────
-  const {
-    activeSystemIdx, setActiveSystemIdx,
-    activeFindingIdx, setActiveFindingIdx,
-    isFocused, panelProps, goToSystem, focus,
-  } = useBodySystemKeyboard({
-    systems:          ROS_SYSTEMS,
-    visibleSystems:   visibleSys,   // computed below — pass after declaration
-    onFindingAction:  handleFindingAction,
-    onSystemNormal:   markSystemNormal,
-    onAllNormal:      markAllNormal,
-    onModeToggle:     () => setDocMode(m => m === 'focused' ? 'full' : 'focused'),
-    onRemainder:      () => setRemainderNeg(r => !r),
-  });
+  // ── Keyboard navigation state (useBodySystemKeyboard inlined) ─────────────
+  const [activeSystemIdx,  setActiveSystemIdx]  = useState(0);
+  const [activeFindingIdx, setActiveFindingIdx] = useState(-1);
+  const [isFocused,        setIsFocused]        = useState(false);
+  const panelRef = useRef(null);
+
+  const focus = useCallback(() => panelRef.current?.focus(), []);
+
+  const panelProps = {
+    ref:      panelRef,
+    tabIndex: 0,
+    onFocus:  () => setIsFocused(true),
+    onBlur:   () => { setIsFocused(false); setActiveFindingIdx(-1); },
+    style:    { outline: 'none' },
+  };
+
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    function handleKey(e) {
+      const cmd = e.metaKey || e.ctrlKey;
+      const k   = e.key;
+      const activeSysData = ROS_SYSTEMS[activeSystemIdx];
+      const symCount      = activeSysData?.symptoms.length ?? 0;
+
+      if (k === 'Escape') { el.blur(); return; }
+
+      if (cmd && e.shiftKey && (k === 'N' || k === 'n')) {
+        e.preventDefault(); markAllNormal(); return;
+      }
+      if (cmd && k === 'Enter') {
+        e.preventDefault(); markSystemNormal(activeSysData?.id); return;
+      }
+      if (cmd && (k === 'f' || k === 'F')) {
+        e.preventDefault(); setDocMode(m => m === 'focused' ? 'full' : 'focused'); return;
+      }
+      if (cmd && (k === 'r' || k === 'R')) {
+        e.preventDefault(); setRemainderNeg(r => !r); return;
+      }
+      if (k === 'ArrowLeft') {
+        e.preventDefault();
+        const visCur = visibleSys.findIndex(s => s.id === activeSysData?.id);
+        const prev   = visibleSys[Math.max(0, visCur - 1)];
+        if (prev) setActiveSystemIdx(ROS_SYSTEMS.findIndex(s => s.id === prev.id));
+        setActiveFindingIdx(-1); return;
+      }
+      if (k === 'ArrowRight') {
+        e.preventDefault();
+        const visCur = visibleSys.findIndex(s => s.id === activeSysData?.id);
+        const next   = visibleSys[Math.min(visibleSys.length - 1, visCur + 1)];
+        if (next) setActiveSystemIdx(ROS_SYSTEMS.findIndex(s => s.id === next.id));
+        setActiveFindingIdx(-1); return;
+      }
+      if (k === 'ArrowUp') {
+        e.preventDefault();
+        setActiveFindingIdx(i => i <= 0 ? symCount - 1 : i - 1); return;
+      }
+      if (k === 'ArrowDown') {
+        e.preventDefault();
+        setActiveFindingIdx(i => i < symCount - 1 ? i + 1 : 0); return;
+      }
+      if (/^[1-9]$/.test(k)) {
+        const idx = parseInt(k) - 1;
+        if (idx < symCount) setActiveFindingIdx(idx);
+        return;
+      }
+      if (k === ' ') {
+        e.preventDefault();
+        if (activeFindingIdx >= 0 && activeSysData) {
+          const sym = activeSysData.symptoms[activeFindingIdx];
+          if (sym) handleFindingAction('toggle', activeSysData.id, sym.id);
+        }
+        return;
+      }
+      if (k === 'Enter') {
+        if (activeFindingIdx >= 0 && activeSysData) {
+          const sym = activeSysData.symptoms[activeFindingIdx];
+          if (sym) handleFindingAction('normal', activeSysData.id, sym.id);
+        }
+        return;
+      }
+      if (k === 'x' || k === 'X') {
+        if (activeFindingIdx >= 0 && activeSysData) {
+          const sym = activeSysData.symptoms[activeFindingIdx];
+          if (sym) handleFindingAction('abnormal', activeSysData.id, sym.id);
+        }
+        return;
+      }
+      if (/^[A-Za-z]$/.test(k) && !cmd) {
+        const sysIdx = visibleSys.findIndex(s => s.key === k.toUpperCase());
+        if (sysIdx !== -1) {
+          setActiveSystemIdx(ROS_SYSTEMS.findIndex(s => s.id === visibleSys[sysIdx].id));
+          setActiveFindingIdx(-1);
+        }
+      }
+    }
+    el.addEventListener('keydown', handleKey);
+    return () => el.removeEventListener('keydown', handleKey);
+  }, [activeSystemIdx, activeFindingIdx, visibleSys, handleFindingAction, markSystemNormal, markAllNormal]); // eslint-disable-line
 
   // Auto-focus on mount — keyboard-first from the first render
   useEffect(() => {

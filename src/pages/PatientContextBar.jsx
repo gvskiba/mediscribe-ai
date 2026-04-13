@@ -316,6 +316,14 @@ export default function PatientContextBar({
   if (!pt) return null;
 
   const los  = losDisplay(pt.arrival);
+  const vt   = pt.vitalTrend || {};
+  const v    = pt.vitals || {};
+  const vitalCards = [
+    { key:"hr",   label:"HR",   value: v.hr,    unit:"",   trend: vt.hr   },
+    { key:"bp",   label:"BP",   value: v.bp,    unit:"",   trend: vt.bp   },
+    { key:"spo2", label:"SpO₂", value: v.spo2,  unit:"%",  trend: vt.spo2 },
+    ...(v.temp != null ? [{ key:"temp", label:"Temp", value: v.temp, unit:"°F", trend: null }] : []),
+  ].filter(c => c.value != null);
 
   return (
     <>

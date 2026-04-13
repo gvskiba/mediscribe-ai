@@ -720,7 +720,7 @@ function ConditionPage({ cond, onBack }) {
               </div>
             ))}
             <div style={{marginTop:14,fontSize:11,color:T.txt3,padding:"10px 14px",background:"rgba(61,255,160,0.05)",border:"1px solid rgba(61,255,160,0.18)",borderRadius:8,lineHeight:1.7}}>
-              <strong style={{color:T.green}}>Duration Targets:</strong> Sepsis 5–7d · CAP 5d · Urosepsis (no bacteremia) 5–7d · Bacteremia 14d · Endocarditis 4–6 wks · Meningitis 7–14d · NF 7–14d post-debridement · Neutropenic fever: until ANC >500
+              <strong style={{color:T.green}}>Duration Targets:</strong> Sepsis 5–7d · CAP 5d · Urosepsis (no bacteremia) 5–7d · Bacteremia 14d · Endocarditis 4–6 wks · Meningitis 7–14d · NF 7–14d post-debridement · Neutropenic fever: until ANC &gt;500
             </div>
           </div>
         )}

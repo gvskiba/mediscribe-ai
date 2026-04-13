@@ -108,6 +108,8 @@ export function useNPIState() {
   const [nursingNotes,         setNursingNotes]         = useState([]);
   const [mediaOpen,            setMediaOpen]            = useState(false);
   const [attachments,          setAttachments]          = useState([]);
+  const [toasts,               setToasts]               = useState([]);
+  const [saving,               setSaving]               = useState(false);
 
   // ── Provider ─────────────────────────────────────────────────────────────────
   const [providerName, setProviderName] = useState("Provider");
@@ -425,8 +427,9 @@ export function useNPIState() {
     nursingOpen, setNursingOpen, nursingInterventions, setNursingInterventions,
     nursingNotes, setNursingNotes,
     mediaOpen, setMediaOpen, attachments, setAttachments,
+    toasts, setToasts, saving,
     providerName, providerRole,
-    aiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread,
+    aiOpen, setAiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread,
     msgsRef, inputRef,
     resumeSection, setResumeSection,
     patientName, patientDataBundle,

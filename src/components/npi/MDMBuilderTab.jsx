@@ -322,6 +322,8 @@ export default function MDMBuilderTab({
     // v1: append "considered but not ordered" per AMA CPT 2023 / ACEP FAQ:
     // "Ordering a test may include those considered but not selected."
     const cc2 = mdmState.dataChecks?.consideredCount || 0;
+    // "Ordering a test may include those considered but not selected."
+    const cc2 = mdmState.dataChecks?.consideredCount || 0;
     const cnote = (mdmState.dataChecks?.consideredNote || "").trim();
     if (cc2 > 0 && cnote) {
       text += `\n\nTests/Studies Considered but Not Selected (${cc2}): ${cnote}`;
@@ -446,7 +448,7 @@ export default function MDMBuilderTab({
 
   // ─── JSX ──────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:14, paddingBottom:32, paddingTop:40 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:14, paddingBottom:32 }}>
 
       {/* ── Header ── */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",

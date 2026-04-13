@@ -1,460 +1,358 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { useState } from 'react';
 
-// ── Font + CSS Injection (Base44 pattern) ──────────────────────────
+// ── Font + CSS injection ───────────────────────────────────────────────────────
 (() => {
   if (document.getElementById("notrya-home-fonts")) return;
-  const l = document.createElement("link"); l.id = "notrya-home-fonts";
-  l.rel = "stylesheet";
-  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap";
+  const l = document.createElement("link");
+  l.id = "notrya-home-fonts"; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap";
   document.head.appendChild(l);
-  const s = document.createElement("style"); s.id = "notrya-home-css";
+  const s = document.createElement("style");
+  s.id = "notrya-home-css";
   s.textContent = `
     *{box-sizing:border-box;margin:0;padding:0}
-    ::-webkit-scrollbar{width:5px;height:5px}
-    ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:3px}
-    input,select,button{font-family:'DM Sans',sans-serif;outline:none;}
-    select option{background:#0a1628}
-    @keyframes nh-meshFloat1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,40px) scale(1.08)}}
-    @keyframes nh-meshFloat2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-50px,60px) scale(1.06)}}
-    @keyframes nh-meshFloat3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-50px) scale(1.05)}}
-    @keyframes nh-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
-    @keyframes nh-bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
-    @keyframes nh-fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes nh-fadeInPop{from{opacity:0;transform:scale(.96) translateY(-6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.07);border-radius:2px}
+    button{font-family:'DM Sans',sans-serif;outline:none;cursor:pointer}
+    @keyframes nh-f1{0%,100%{transform:translate(0,0)}50%{transform:translate(55px,38px)}}
+    @keyframes nh-f2{0%,100%{transform:translate(0,0)}50%{transform:translate(-48px,55px)}}
+    @keyframes nh-f3{0%,100%{transform:translate(0,0)}50%{transform:translate(38px,-48px)}}
+    @keyframes nh-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    @keyframes nh-crit{0%,100%{box-shadow:0 0 0 0 rgba(255,107,107,0.5)}60%{box-shadow:0 0 0 5px rgba(255,107,107,0)}}
+    .nh-pt-row{transition:background .14s}
+    .nh-pt-row:hover{background:rgba(59,158,255,0.05)!important}
+    .nh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(276px,1fr));gap:12px}
+    .nh-tb-grid{display:grid;grid-template-columns:36px 52px 1fr 1fr 70px 130px 90px;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid rgba(26,53,85,0.35)}
+    .nh-tb-hdr{display:grid;grid-template-columns:36px 52px 1fr 1fr 70px 130px 90px;gap:12px;padding:7px 16px;border-bottom:1px solid rgba(26,53,85,0.3);background:rgba(5,15,30,0.4)}
+    @media(max-width:680px){
+      .nh-tb-grid{grid-template-columns:28px 1fr 58px 76px;gap:8px;padding:10px 12px}
+      .nh-tb-hdr{grid-template-columns:28px 1fr 58px 76px;gap:8px;padding:6px 12px}
+      .nh-tb-room,.nh-tb-cc,.nh-tb-dots{display:none!important}
+    }
   `;
   document.head.appendChild(s);
 })();
 
+// ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg:"#050f1e", panel:"#081628", card:"#0b1e36", up:"#0e2544",
-  b:"rgba(26,53,85,0.8)", bhi:"rgba(42,79,122,0.9)",
-  txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
+  bg:"#050f1e", panel:"#081628", card:"#0b1e36",
+  txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
   teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
-  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", cyan:"#00d4ff",
+  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", cyan:"#00d4ff", rose:"#f472b6",
 };
 
-const HUBS = [
-  { id:"sepsis",    icon:"🦠", title:"Sepsis Hub",          desc:"Sepsis-3 definitions, qSOFA & SIRS calculators, Hour-1 Bundle, source-based antibiotic tiers, AI local resistance lookup, and stewardship protocols.", color:"#f5c842", gl:"rgba(245,200,66,0.08)",   br:"rgba(245,200,66,0.3)",   badge:"SSC 2021",   conditions:9,  calcs:3, tag:"CRITICAL CARE", features:["qSOFA Calculator","SIRS Calculator","30 mL/kg Fluid Bolus","AI Local Resistance","7 Source-Based ABX Sets","Stewardship Dashboard"] },
-  { id:"airway",    icon:"🌬️", title:"Airway Hub",           desc:"RSI protocol with weight-based drug calculator, difficult airway DAS 2022 algorithm, ARDSNet ventilation, HFNC/CPAP/BiPAP management, and liberation protocols.", color:"#3b9eff", gl:"rgba(59,158,255,0.08)",  br:"rgba(59,158,255,0.3)",   badge:"DAS 2022",   conditions:9,  calcs:4, tag:"AIRWAY",        features:["RSI Drug Calculator","ARDSNet IBW/TV Calc","ROX Index Calculator","RSBI Extubation Calc","CICO Plan A–D","ABCDEF Bundle"] },
-  { id:"erx",       icon:"💊", title:"ERx Hub",              desc:"Evidence-based electronic prescribing for emergency medicine. Condition-specific drug formularies, renal dosing adjustments, IV-to-PO conversion, and PDMP integration.", color:"#00e5c0", gl:"rgba(0,229,192,0.08)",   br:"rgba(0,229,192,0.3)",   badge:"ACEP 2023",  conditions:12, calcs:2, tag:"PRESCRIBING",   features:["Renal Dose Adjuster","IV → PO Converter","Drug Interactions","PDMP Integration","Allergy Checker","Formulary Search"] },
-  { id:"knowledge", icon:"📖", title:"Knowledge Base",       desc:"Landmark clinical trials, IDSA/ACC/AHA/SSC guidelines, and evidence summaries with AI-powered synthesis. Searchable by condition, drug, or guideline body.", color:"#9b6dff", gl:"rgba(155,109,255,0.08)", br:"rgba(155,109,255,0.3)",  badge:"AI-Powered", conditions:0,  calcs:0, tag:"REFERENCE",     features:["Landmark Trials","IDSA / SSC / AHA Guidelines","AI Evidence Summary","Drug Monographs","Clinical Pearls","NNT / NNH Data"] },
-  { id:"calendar",  icon:"📅", title:"Provider Schedule",    desc:"Glassmorphic shift calendar built for physicians. One-click shift adding, month/week views, hours tracking, CME/call/PTO categorization, and department filtering.", color:"#ff9f43", gl:"rgba(255,159,67,0.08)",  br:"rgba(255,159,67,0.3)",   badge:"LIVE",       conditions:0,  calcs:0, tag:"SCHEDULING",    features:["1-Click Shift Add","Month & Week Views","Hours Tracker","9 Shift Types","Department Filter","Upcoming Panel"] },
-  { id:"coming",    icon:"⚡", title:"More Hubs Coming",     desc:"Cardiology Hub, Toxicology Hub, Pediatric Hub, Trauma Hub, and Neurology Hub are in active development. Each will follow the same evidence-based architecture.", color:"#3dffa0", gl:"rgba(61,255,160,0.05)",   br:"rgba(61,255,160,0.2)",   badge:"ROADMAP",    conditions:0,  calcs:0, tag:"COMING SOON",   features:["Cardiology Hub","Toxicology Hub","Pediatric Hub","Trauma Hub","Neurology Hub","Ob/Gyn Hub"], locked:true },
+// ── Hub groups ─────────────────────────────────────────────────────────────────
+const GROUPS = [
+  { label:"Critical Care", color:T.coral, hubs:[
+    { id:"sepsis",    route:"/SepsisHub",        icon:"🦠", title:"Sepsis Hub",       badge:"SSC 2021",  color:T.coral,  desc:"Sepsis-3, qSOFA/SIRS, Hour-1 Bundle, source-based antibiotic tiers, AI resistance lookup.", features:["qSOFA / SIRS","Hour-1 Bundle","7 Source ABX Sets","AI Resistance Lookup"] },
+    { id:"airway",    route:"/AirwayHub",         icon:"🌬️", title:"Airway Hub",        badge:"DAS 2022",  color:T.blue,   desc:"RSI weight-based dosing, DAS 2022 difficult airway algorithm, ARDSNet, HFNC/CPAP/BiPAP.", features:["RSI Drug Calculator","ARDSNet IBW / TV","ROX Index / RSBI","CICO Plan A–D"] },
+    { id:"shock",     route:"/ShockHub",          icon:"⚡", title:"Shock Hub",         badge:"ACEP 2023", color:T.coral,  desc:"4 shock state profiles, vasopressor ladder with weight-based dosing, RUSH exam protocol.", features:["4 Shock States","Vasopressor Ladder","RUSH Protocol","Resuscitation Endpoints"] },
+  ]},
+  { label:"Diagnostics", color:T.cyan, hubs:[
+    { id:"ecg",       route:"/ECGHub",            icon:"📈", title:"ECG Hub",           badge:"ACC/AHA",   color:T.cyan,   desc:"SVG waveform library, STEMI equivalents, QTc calculator, Sgarbossa criteria, 8-step reading.", features:["Waveform Library","STEMI Equivalents","QTc Calculator","Sgarbossa Criteria"] },
+    { id:"labs",      route:"/LabsInterpreter",   icon:"🧪", title:"Labs Interpreter",  badge:"47 LABS",   color:T.green,  desc:"47 labs, 6 imaging modalities, 40+ clinical patterns, critical values grid, pattern interpretation.", features:["47 Lab Values","Critical Values Grid","40+ Patterns","ABG / Coag"] },
+    { id:"scores",    route:"/ClinicalScoresHub", icon:"📊", title:"Clinical Scores",   badge:"19 TOOLS",  color:T.orange, desc:"19 validated tools: HEART, Wells, PERC, CURB-65, NIHSS, PECARN, SOFA, MELD, GCS, Ottawa.", features:["HEART / Wells / PERC","PECARN / NIHSS","SOFA / MELD","Ottawa Rules"] },
+  ]},
+  { label:"Pharmacology & Specialty", color:T.green, hubs:[
+    { id:"erx",       route:"/erx",               icon:"💊", title:"ERx Hub",           badge:"ACEP 2023", color:T.teal,   desc:"Emergency prescribing, renal dosing, IV-to-PO conversion, DDI checking, PDMP integration.", features:["Renal Dose Adjuster","IV → PO Converter","Drug Interactions","Beers Criteria"] },
+    { id:"infectious",route:"/InfectiousHub",      icon:"🔬", title:"Infectious Disease", badge:"IDSA 2024", color:T.green,  desc:"11 ID syndromes, empiric antibiotic selection, IV-to-PO guidance, de-escalation protocols.", features:["11 ID Syndromes","Empiric ABX","IV → PO Guidance","De-escalation"] },
+    { id:"psych",     route:"/PsychHub",           icon:"🧠", title:"Psych Hub",         badge:"LIVE",      color:T.rose,   desc:"Agitation escalation protocols, SI/HI risk scoring, CIWA-Ar, 9 intoxication syndromes.", features:["Agitation Protocol","SI / HI Risk Score","CIWA-Ar","9 Intox Syndromes"] },
+  ]},
+  { label:"Tools & Reference", color:T.purple, hubs:[
+    { id:"calcs",     route:"/CalculatorHub",     icon:"🧮", title:"Calculator Hub",   badge:"62 CALCS",  color:T.blue,   desc:"62 interactive calculators across 13 categories: resuscitation, neurology, ortho, nephrology.", features:["62 Calculators","13 Categories","Resuscitation / Ortho","Nephrology / Neuro"] },
+    { id:"knowledge", route:"/KnowledgeBaseV2",   icon:"📖", title:"Knowledge Base",   badge:"AI-POWERED",color:T.purple, desc:"17 guidelines, 20 landmark trials, AI-powered evidence summaries, drug monographs, NNT/NNH.", features:["17 Guidelines","20 Landmark Trials","AI Summaries","NNT / NNH Data"] },
+    { id:"autocoder", route:"/AutocoderHub",      icon:"🏷️", title:"Autocoder Hub",    badge:"AI-POWERED",color:T.purple, desc:"AI-powered ICD-10/CPT coding, E&M level calculator, code cart, transmit-ready summaries.", features:["ICD-10 / CPT","E&M Calculator","Code Cart","AI Autocoder"] },
+    { id:"discharge", route:"/SmartDischargeHub", icon:"🚪", title:"Smart Discharge",  badge:"AI-POWERED",color:T.gold,   desc:"AI-generated discharge instructions tailored to diagnosis, medications, and follow-up plan.", features:["AI Instructions","Diagnosis-Specific","Med Reconciliation","Print-Ready"] },
+  ]},
 ];
 
-const STATS = [
-  { val:"47+",  label:"Evidence-Based Conditions",  color:"#00e5c0", icon:"🩺" },
-  { val:"12",   label:"Interactive Calculators",     color:"#f5c842", icon:"🧮" },
-  { val:"200+", label:"Antibiotic Tiers Documented", color:"#3b9eff", icon:"💊" },
-  { val:"AI",   label:"Local Resistance Lookup",     color:"#9b6dff", icon:"🌐" },
-];
+// ── Chart completion helper ────────────────────────────────────────────────────
+// chartStatus shape: { triage, demo, vitals, ros, pe, chart } — all booleans
+const PHASES = ['triage','demo','vitals','ros','pe','chart'];
+const PHASE_LABELS = ['T','D','V','R','P','M'];
 
-const GUIDELINES = [
-  { label:"SSC 2021", color:"#00e5c0" },{ label:"IDSA 2024", color:"#3b9eff" },
-  { label:"ARDSNet 2000", color:"#ff6b6b" },{ label:"DAS 2022", color:"#f5c842" },
-  { label:"ATS/IDSA CAP 2019", color:"#00d4ff" },{ label:"PADIS 2018", color:"#9b6dff" },
-  { label:"PROSEVA 2013", color:"#ff9f43" },{ label:"ACCP/ATS 2017", color:"#3dffa0" },
-  { label:"ASHP/SIDP 2020", color:"#00e5c0" },{ label:"Tokyo 2018", color:"#f5c842" },
-  { label:"AASM 2021", color:"#3b9eff" },{ label:"IDSA/ASCO 2018", color:"#ff6b6b" },
-];
-
-const PHRASES = [
-  "Emergency Medicine, Elevated.",
-  "Evidence at the Point of Care.",
-  "Antibiotics. Airway. Answers.",
-  "From Guidelines to Bedside.",
-  "Sepsis. Airway. Every Decision.",
-];
-
-const AI_SYSTEM = `You are Notrya AI, an expert emergency medicine clinical decision support assistant. The Notrya platform has: Sepsis Hub (Sepsis-3, qSOFA, SIRS, source-based antibiotics, ARDSNet, stewardship, AI local resistance), Airway Hub (RSI, DAS 2022 difficult airway, HFNC/CPAP/BiPAP, vent management, SAT/SBT/RSBI weaning), ERx Hub (emergency prescribing, renal dosing, IV to PO), Knowledge Base (guidelines, landmark trials), and Provider Schedule. Give concise, clinically precise answers referenced to current guidelines (SSC 2021, IDSA 2024, DAS 2022, ARDSNet, ATS/IDSA, PADIS 2018). Use bullet points. Always note that clinical judgment supersedes protocol.`;
-
-// ── Typewriter: cursor blink is a LOCAL interval, not inline Math.sin ──
-function Typewriter() {
-  const [idx,      setIdx]      = useState(0);
-  const [text,     setText]     = useState("");
-  const [deleting, setDeleting] = useState(false);
-  const [paused,   setPaused]   = useState(false);
-  const [cursorOn, setCursorOn] = useState(true); // FIX: independent blink state
-
-  useEffect(() => {
-    const t = setInterval(() => setCursorOn(v => !v), 480);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    const phrase = PHRASES[idx];
-    if (paused) {
-      const t = setTimeout(() => { setDeleting(true); setPaused(false); }, 2200);
-      return () => clearTimeout(t);
-    }
-    if (!deleting) {
-      if (text.length < phrase.length) {
-        const t = setTimeout(() => setText(phrase.slice(0, text.length + 1)), 52);
-        return () => clearTimeout(t);
-      } else { setPaused(true); }
-    } else {
-      if (text.length > 0) {
-        const t = setTimeout(() => setText(text.slice(0, -1)), 28);
-        return () => clearTimeout(t);
-      } else {
-        setDeleting(false);
-        setIdx(i => (i + 1) % PHRASES.length);
-      }
-    }
-  }, [text, deleting, paused, idx]);
-
-  return (
-    <span style={{ color:"#00e5c0" }}>
-      {text}<span style={{ opacity: cursorOn ? 1 : 0, transition:"opacity .1s" }}>|</span>
-    </span>
-  );
+function getAction(status) {
+  const done = PHASES.filter(p => status?.[p]).length;
+  if (done === 0)            return { label:"Open →",   color:T.blue   };
+  if (done === PHASES.length)return { label:"Sign →",   color:T.gold   };
+  return                           { label:"Resume →",  color:T.teal   };
 }
 
+function esiColor(level) {
+  if (level <= 2) return T.coral;
+  if (level === 3) return T.orange;
+  return T.teal;
+}
+
+// ── Door time helpers ─────────────────────────────────────────────────────────
+// Accepts strings like "47m", "1h 22m", "2h 05m", "90m", "1:22"
+function parseDoorMinutes(str) {
+  if (!str) return 0;
+  const hMatch = str.match(/(\d+)h/);
+  const mMatch = str.match(/(\d+)m/);
+  const colonMatch = str.match(/^(\d+):(\d+)$/);
+  if (colonMatch) return parseInt(colonMatch[1]) * 60 + parseInt(colonMatch[2]);
+  let mins = 0;
+  if (hMatch) mins += parseInt(hMatch[1]) * 60;
+  if (mMatch) mins += parseInt(mMatch[1]);
+  return mins || parseInt(str) || 0;
+}
+
+function doorTimeColor(doorTime) {
+  const m = parseDoorMinutes(doorTime);
+  if (m >= 120) return T.coral;
+  if (m >= 60)  return T.orange;
+  return T.txt4;
+}
+
+function doorTimeWeight(doorTime) {
+  return parseDoorMinutes(doorTime) >= 60 ? 700 : 400;
+}
+
+// ── Background mesh ───────────────────────────────────────────────────────────
 function BgMesh() {
   return (
     <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" }}>
-      <div style={{ position:"absolute", width:700, height:700, borderRadius:"50%", top:-200, left:-100, background:"radial-gradient(circle,rgba(0,229,192,0.055) 0%,transparent 70%)", animation:"nh-meshFloat1 18s ease-in-out infinite" }} />
-      <div style={{ position:"absolute", width:600, height:600, borderRadius:"50%", top:"30%", right:-150, background:"radial-gradient(circle,rgba(59,158,255,0.05) 0%,transparent 70%)", animation:"nh-meshFloat2 22s ease-in-out infinite" }} />
-      <div style={{ position:"absolute", width:500, height:500, borderRadius:"50%", bottom:-100, left:"35%", background:"radial-gradient(circle,rgba(155,109,255,0.04) 0%,transparent 70%)", animation:"nh-meshFloat3 26s ease-in-out infinite" }} />
+      <div style={{ position:"absolute", width:600, height:600, borderRadius:"50%", top:-150, left:-80,  background:"radial-gradient(circle,rgba(0,229,192,0.04) 0%,transparent 70%)",   animation:"nh-f1 18s ease-in-out infinite" }} />
+      <div style={{ position:"absolute", width:500, height:500, borderRadius:"50%", top:"40%", right:-120, background:"radial-gradient(circle,rgba(59,158,255,0.035) 0%,transparent 70%)", animation:"nh-f2 22s ease-in-out infinite" }} />
+      <div style={{ position:"absolute", width:420, height:420, borderRadius:"50%", bottom:-80, left:"38%", background:"radial-gradient(circle,rgba(155,109,255,0.03) 0%,transparent 70%)",  animation:"nh-f3 26s ease-in-out infinite" }} />
     </div>
   );
 }
 
-function GBox({ children, style={}, onClick, onMouseEnter, onMouseLeave }) {
+// ── ESI badge ─────────────────────────────────────────────────────────────────
+function ESIBadge({ level }) {
+  const col = esiColor(level);
+  const critical = level <= 2;
   return (
-    <div onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} style={{ background:"rgba(255,255,255,0.035)", backdropFilter:"blur(18px) saturate(1.5)", WebkitBackdropFilter:"blur(18px) saturate(1.5)", border:"1px solid rgba(255,255,255,0.07)", ...style }}>{children}</div>
+    <div style={{ width:28, height:28, borderRadius:7, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:col + "18", border:`1px solid ${col}45`, animation: critical ? "nh-crit 1.6s ease-out infinite" : "none" }}>
+      <span style={{ fontSize:12, fontWeight:700, fontFamily:"'JetBrains Mono',monospace", color:col }}>{level}</span>
+    </div>
   );
 }
 
-function HubCard({ hub, onOpen }) {
-  const [hov, setHov] = useState(false);
-  const active = hov && !hub.locked;
+// ── Chart status dots ─────────────────────────────────────────────────────────
+function StatusDots({ status }) {
+  const done = PHASES.filter(p => status?.[p]).length;
   return (
-    <div onClick={() => !hub.locked && onOpen(hub)} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ background: active ? `linear-gradient(135deg,${hub.gl.replace("0.08","0.14")},rgba(255,255,255,0.04))` : hub.gl, backdropFilter:"blur(20px) saturate(1.4)", WebkitBackdropFilter:"blur(20px) saturate(1.4)", border:`1px solid ${active ? hub.color+"55" : hub.br}`, borderRadius:16, padding:"20px 22px", cursor: hub.locked ? "default" : "pointer", transition:"all .22s cubic-bezier(.4,0,.2,1)", transform: active ? "translateY(-3px)" : "translateY(0)", boxShadow: active ? `0 12px 40px ${hub.color}18` : "none", display:"flex", flexDirection:"column", gap:14, position:"relative", overflow:"hidden" }}>
-      <div style={{ position:"absolute", top:-30, right:-30, width:120, height:120, borderRadius:"50%", background:`radial-gradient(circle,${hub.color}18,transparent 70%)`, pointerEvents:"none" }} />
-      <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
-        <div style={{ width:46, height:46, borderRadius:13, flexShrink:0, background:hub.gl, border:`1px solid ${hub.br}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>{hub.icon}</div>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
-            <div style={{ fontSize:15, fontWeight:700, color:T.txt, fontFamily:"'Playfair Display',serif" }}>{hub.title}</div>
-            {hub.locked && <span style={{ fontSize:9, color:T.txt4 }}>🔒</span>}
+    <div style={{ display:"flex", alignItems:"center", gap:3 }}>
+      {PHASES.map((p, i) => {
+        const complete = status?.[p];
+        return (
+          <div key={p} title={p.charAt(0).toUpperCase() + p.slice(1)} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+            <span style={{ fontSize:7, fontFamily:"'JetBrains Mono',monospace", color:complete ? T.teal : T.txt4, lineHeight:1 }}>{PHASE_LABELS[i]}</span>
+            <div style={{ width:7, height:7, borderRadius:"50%", background:complete ? T.teal : "transparent", border:`1px solid ${complete ? T.teal + "80" : "rgba(42,79,122,0.5)"}`, transition:"all .2s" }} />
           </div>
-          <div style={{ display:"flex", gap:6 }}>
-            <span style={{ fontSize:9, fontFamily:"monospace", fontWeight:700, padding:"2px 8px", borderRadius:20, background:hub.gl, border:`1px solid ${hub.br}`, color:hub.color }}>{hub.tag}</span>
-            <span style={{ fontSize:9, fontFamily:"monospace", fontWeight:700, padding:"2px 8px", borderRadius:20, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", color:T.txt3 }}>{hub.badge}</span>
-          </div>
+        );
+      })}
+      <span style={{ fontSize:9, fontFamily:"'JetBrains Mono',monospace", color:T.txt4, marginLeft:4 }}>{done}/{PHASES.length}</span>
+    </div>
+  );
+}
+
+// ── Patient row ───────────────────────────────────────────────────────────────
+function PatientRow({ patient }) {
+  const action   = getAction(patient.chartStatus);
+  const dtColor  = doorTimeColor(patient.doorTime);
+  const dtWeight = doorTimeWeight(patient.doorTime);
+  return (
+    <div className="nh-pt-row nh-tb-grid">
+      <ESIBadge level={patient.esiLevel} />
+      <span className="nh-tb-room" style={{ fontSize:11, fontWeight:600, color:T.txt2, fontFamily:"'JetBrains Mono',monospace" }}>{patient.room || "—"}</span>
+      <div>
+        <div style={{ fontSize:12, fontWeight:600, color:T.txt, lineHeight:1.2 }}>{patient.name}</div>
+        <div style={{ fontSize:10, color:T.txt4, fontFamily:"'JetBrains Mono',monospace" }}>{patient.age}y {patient.sex}</div>
+      </div>
+      <span className="nh-tb-cc" style={{ fontSize:11, color:T.txt3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{patient.cc}</span>
+      <span style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:dtColor, fontWeight:dtWeight }}>{patient.doorTime}</span>
+      <div className="nh-tb-dots"><StatusDots status={patient.chartStatus} /></div>
+      <button
+        onClick={() => { window.location.href = "/NewPatientInput"; }}
+        style={{ padding:"5px 0", borderRadius:7, border:`1px solid ${action.color}40`, background:action.color + "12", color:action.color, fontSize:10, fontWeight:700, fontFamily:"'JetBrains Mono',monospace", transition:"all .16s", width:"100%" }}
+        onMouseEnter={e => { e.currentTarget.style.background = action.color + "25"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = action.color + "12"; }}>
+        {action.label}
+      </button>
+    </div>
+  );
+}
+
+// ── Track board ───────────────────────────────────────────────────────────────
+function TrackBoard({ patients }) {
+  const hasPatients = patients && patients.length > 0;
+
+  // Fix 3: incomplete = started but not signed
+  const incomplete = hasPatients
+    ? patients.filter(pt => {
+        const done = PHASES.filter(p => pt.chartStatus?.[p]).length;
+        return done > 0 && done < PHASES.length;
+      }).length
+    : 0;
+
+  return (
+    <div style={{ background:"rgba(8,16,32,0.72)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", border:"1px solid rgba(26,53,85,0.6)", borderTop:`2px solid ${T.blue}55`, borderRadius:14, overflow:"hidden", marginBottom:12 }}>
+
+      {/* header */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"13px 16px", borderBottom:"1px solid rgba(26,53,85,0.45)", flexWrap:"wrap" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{ width:7, height:7, borderRadius:"50%", background: hasPatients ? T.teal : T.txt4, animation: hasPatients ? "nh-pulse 2.5s infinite" : "none" }} />
+          <span style={{ fontSize:11, fontWeight:700, color:T.txt, fontFamily:"'Playfair Display',serif" }}>
+            Active Patients
+          </span>
+          {hasPatients && (
+            <span style={{ fontSize:9, fontFamily:"'JetBrains Mono',monospace", padding:"1px 7px", borderRadius:20, background:T.teal + "14", border:`1px solid ${T.teal}30`, color:T.teal }}>
+              {patients.length}
+            </span>
+          )}
+          {/* Fix 3: incomplete charts badge */}
+          {incomplete > 0 && (
+            <span style={{ fontSize:9, fontFamily:"'JetBrains Mono',monospace", padding:"1px 7px", borderRadius:20, background:T.orange + "14", border:`1px solid ${T.orange}35`, color:T.orange }}>
+              {incomplete} incomplete
+            </span>
+          )}
+        </div>
+        <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center" }}>
+          <button
+            onClick={() => { window.location.href = "/EDTrackingBoard"; }}
+            style={{ fontSize:10, color:T.txt4, background:"transparent", border:"1px solid rgba(26,53,85,0.5)", borderRadius:6, padding:"4px 11px", transition:"all .14s" }}
+            onMouseEnter={e => { e.currentTarget.style.color = T.txt2; e.currentTarget.style.borderColor = "rgba(42,79,122,0.7)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = T.txt4; e.currentTarget.style.borderColor = "rgba(26,53,85,0.5)"; }}>
+            Full Track Board →
+          </button>
+          <button
+            onClick={() => { window.location.href = "/NewPatientInput"; }}
+            style={{ fontSize:10, fontWeight:700, color:"#050f1e", background:"linear-gradient(135deg,#00e5c0,#3b9eff)", border:"none", borderRadius:7, padding:"5px 14px", boxShadow:"0 2px 12px rgba(0,229,192,0.2)" }}>
+            + New Patient
+          </button>
         </div>
       </div>
-      <div style={{ fontSize:11.5, color:T.txt2, lineHeight:1.65 }}>{hub.desc}</div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"5px 10px" }}>
-        {hub.features.map((f,i) => (
-          <div key={i} style={{ display:"flex", alignItems:"center", gap:6, fontSize:10, color: hub.locked ? T.txt4 : T.txt2 }}>
-            <div style={{ width:4, height:4, borderRadius:"50%", background: hub.locked ? T.txt4 : hub.color, flexShrink:0 }} />
+
+      {/* column headers — match PatientRow CSS classes for responsive hiding */}
+      {hasPatients && (
+        <div className="nh-tb-hdr">
+          <span style={{ fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:".07em", fontFamily:"'JetBrains Mono',monospace" }}>ESI</span>
+          <span className="nh-tb-room" style={{ fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:".07em", fontFamily:"'JetBrains Mono',monospace" }}>Room</span>
+          <span style={{ fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:".07em", fontFamily:"'JetBrains Mono',monospace" }}>Patient</span>
+          <span className="nh-tb-cc" style={{ fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:".07em", fontFamily:"'JetBrains Mono',monospace" }}>Chief Complaint</span>
+          <span style={{ fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:".07em", fontFamily:"'JetBrains Mono',monospace" }}>Time</span>
+          <span className="nh-tb-dots" style={{ fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:".07em", fontFamily:"'JetBrains Mono',monospace" }}>Chart Status</span>
+          <span style={{ fontSize:8 }} />
+        </div>
+      )}
+
+      {/* rows or empty state */}
+      {hasPatients ? (
+        patients.map(pt => <PatientRow key={pt.id} patient={pt} />)
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"44px 24px", gap:12 }}>
+          <div style={{ fontSize:32, opacity:.3 }}>🏥</div>
+          <div style={{ fontSize:13, fontWeight:600, color:T.txt4, fontFamily:"'Playfair Display',serif" }}>Department clear</div>
+          <div style={{ fontSize:11, color:T.txt4 }}>No active patients this session</div>
+          <button
+            onClick={() => { window.location.href = "/NewPatientInput"; }}
+            style={{ marginTop:8, padding:"10px 24px", borderRadius:9, border:"none", background:"linear-gradient(135deg,#00e5c0,#3b9eff)", color:"#050f1e", fontWeight:700, fontSize:12, boxShadow:"0 4px 18px rgba(0,229,192,0.22)", transition:"all .16s" }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,229,192,0.35)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 18px rgba(0,229,192,0.22)"; }}>
+            📋 Start New Patient
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Hub card ──────────────────────────────────────────────────────────────────
+function HubCard({ hub }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onClick={() => { window.location.href = hub.route; }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        background:   hov ? hub.color + "16" : hub.color + "09",
+        border:       `1px solid ${hov ? hub.color + "50" : hub.color + "22"}`,
+        borderRadius: 13, padding:"15px 17px",
+        transition:   "all .18s cubic-bezier(.4,0,.2,1)",
+        transform:    hov ? "translateY(-2px)" : "translateY(0)",
+        boxShadow:    hov ? `0 8px 28px ${hub.color}12` : "none",
+        display:"flex", flexDirection:"column", gap:10, cursor:"pointer",
+      }}>
+      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <div style={{ width:36, height:36, borderRadius:9, flexShrink:0, background:hub.color + "14", border:`1px solid ${hub.color}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:19 }}>
+          {hub.icon}
+        </div>
+        <div style={{ minWidth:0 }}>
+          <div style={{ fontSize:12.5, fontWeight:700, color:T.txt, fontFamily:"'Playfair Display',serif", lineHeight:1.25, marginBottom:3 }}>{hub.title}</div>
+          <span style={{ fontSize:8, fontFamily:"'JetBrains Mono',monospace", fontWeight:700, padding:"1px 7px", borderRadius:20, background:hub.color + "14", border:`1px solid ${hub.color}28`, color:hub.color, letterSpacing:".04em" }}>{hub.badge}</span>
+        </div>
+      </div>
+      <div style={{ fontSize:11, color:T.txt3, lineHeight:1.6 }}>{hub.desc}</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"3px 8px" }}>
+        {hub.features.map((f, i) => (
+          <div key={i} style={{ display:"flex", alignItems:"center", gap:5, fontSize:9.5, color:T.txt4 }}>
+            <div style={{ width:3, height:3, borderRadius:"50%", background:hub.color, flexShrink:0 }} />
             {f}
           </div>
         ))}
       </div>
-      {!hub.locked && (
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", borderTop:`1px solid ${hub.br}`, paddingTop:12, marginTop:2 }}>
-          <div style={{ display:"flex", gap:14 }}>
-            {hub.conditions > 0 && <div style={{ fontSize:10, color:T.txt3 }}><span style={{ fontWeight:700, color:hub.color, fontFamily:"monospace" }}>{hub.conditions}</span> conditions</div>}
-            {hub.calcs > 0 && <div style={{ fontSize:10, color:T.txt3 }}><span style={{ fontWeight:700, color:hub.color, fontFamily:"monospace" }}>{hub.calcs}</span> calculators</div>}
-          </div>
-          <div style={{ fontSize:11, fontWeight:700, color: active ? "#060d1a" : hub.color, background: active ? hub.color : "transparent", border:`1px solid ${hub.color}55`, borderRadius:7, padding:"4px 12px", transition:"all .18s" }}>Open →</div>
-        </div>
-      )}
     </div>
   );
 }
 
-// ── AIChat: FIX — uses base44.integrations.Core.InvokeLLM ──────────
-function AIChat() {
-  const [messages, setMessages] = useState([
-    { role:"assistant", text:"Hello! I'm Notrya AI — your clinical decision support assistant. Ask me about sepsis protocols, airway management, drug dosing, guidelines, or any emergency medicine question." }
-  ]);
-  const [input,   setInput]   = useState("");
-  const [loading, setLoading] = useState(false);
-  const bottomRef = useRef();
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages]);
-
-  const send = async () => {
-    const q = input.trim();
-    if (!q || loading) return;
-    setInput("");
-    const updated = [...messages, { role:"user", text:q }];
-    setMessages(updated);
-    setLoading(true);
-    try {
-      const history = updated.map(m => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`).join("\n\n");
-      const prompt  = `${AI_SYSTEM}\n\nConversation:\n${history}\n\nAssistant:`;
-      const reply   = await base44.integrations.Core.InvokeLLM({ prompt });
-      setMessages(p => [...p, { role:"assistant", text: reply || "I encountered an error. Please try again." }]);
-    } catch (e) {
-      setMessages(p => [...p, { role:"assistant", text:"Connection error. Please try again." }]);
-    }
-    setLoading(false);
-  };
-
-  const SUGGESTIONS = [
-    "qSOFA threshold for high-risk sepsis?",
-    "RSI induction agent for hypotensive patient",
-    "ARDSNet tidal volume for 170cm female",
-    "COPD exac pH 7.28 — BiPAP settings?",
-  ];
-
+// ── Group section ─────────────────────────────────────────────────────────────
+function GroupSection({ group }) {
   return (
-    <GBox style={{ borderRadius:16, display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
-      <div style={{ padding:"14px 18px", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
-        <div style={{ width:36, height:36, borderRadius:10, background:"rgba(0,229,192,0.12)", border:"1px solid rgba(0,229,192,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🤖</div>
-        <div>
-          <div style={{ fontSize:13, fontWeight:700, color:T.txt, fontFamily:"'Playfair Display',serif" }}>Notrya AI</div>
-          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-            <div style={{ width:6, height:6, borderRadius:"50%", background:T.teal, animation:"nh-pulse 2s infinite" }} />
-            <span style={{ fontSize:9, color:T.teal, fontWeight:600 }}>Clinical Assistant · Online</span>
-          </div>
-        </div>
-        <div style={{ marginLeft:"auto", fontSize:9, fontFamily:"monospace", padding:"2px 8px", borderRadius:20, background:"rgba(0,229,192,0.1)", border:"1px solid rgba(0,229,192,0.3)", color:T.teal, fontWeight:700 }}>claude-sonnet</div>
+    <div style={{ marginBottom:28 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:13 }}>
+        <div style={{ width:3, height:14, borderRadius:2, background:group.color, flexShrink:0 }} />
+        <span style={{ fontSize:9, fontWeight:700, color:group.color, textTransform:"uppercase", letterSpacing:".1em", fontFamily:"'JetBrains Mono',monospace" }}>{group.label}</span>
+        <div style={{ height:1, flex:1, background:group.color + "18" }} />
+        <span style={{ fontSize:8, color:T.txt4, fontFamily:"'JetBrains Mono',monospace" }}>{group.hubs.length} {group.hubs.length === 1 ? "hub" : "hubs"}</span>
       </div>
-      <div style={{ flex:1, overflowY:"auto", padding:"14px 16px", display:"flex", flexDirection:"column", gap:10, minHeight:0 }}>
-        {messages.map((m,i) => (
-          <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start", flexDirection: m.role === "user" ? "row-reverse" : "row" }}>
-            <div style={{ width:28, height:28, borderRadius:8, flexShrink:0, background: m.role === "user" ? "rgba(59,158,255,0.2)" : "rgba(0,229,192,0.15)", border:`1px solid ${m.role === "user" ? "rgba(59,158,255,0.4)" : "rgba(0,229,192,0.3)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>{m.role === "user" ? "👤" : "🤖"}</div>
-            <div style={{ maxWidth:"78%", padding:"10px 13px", borderRadius:10, fontSize:12, lineHeight:1.65, background: m.role === "user" ? "rgba(59,158,255,0.12)" : "rgba(255,255,255,0.04)", border:`1px solid ${m.role === "user" ? "rgba(59,158,255,0.3)" : "rgba(255,255,255,0.07)"}`, color:T.txt, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{m.text}</div>
-          </div>
-        ))}
-        {loading && (
-          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-            <div style={{ width:28, height:28, borderRadius:8, background:"rgba(0,229,192,0.15)", border:"1px solid rgba(0,229,192,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>🤖</div>
-            <div style={{ padding:"10px 14px", borderRadius:10, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", display:"flex", gap:5, alignItems:"center" }}>
-              {[0,1,2].map(i => <div key={i} style={{ width:6, height:6, borderRadius:"50%", background:T.teal, animation:`nh-bounce .9s ${i*.15}s infinite ease-in-out` }} />)}
-            </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
-      {messages.filter(m => m.role === "user").length === 0 && (
-        <div style={{ padding:"0 14px 10px", display:"flex", flexDirection:"column", gap:5 }}>
-          {SUGGESTIONS.map((s,i) => (
-            <button key={i} onClick={() => setInput(s)} style={{ textAlign:"left", padding:"7px 11px", borderRadius:8, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", color:T.txt2, fontSize:10.5, cursor:"pointer", fontFamily:"inherit", transition:"all .15s" }}
-              onMouseEnter={e => { e.currentTarget.style.background="rgba(0,229,192,0.08)"; e.currentTarget.style.color=T.teal; }}
-              onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.03)"; e.currentTarget.style.color=T.txt2; }}>
-              💬 {s}
-            </button>
-          ))}
-        </div>
-      )}
-      <div style={{ padding:"10px 14px 14px", borderTop:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
-        <div style={{ display:"flex", gap:8 }}>
-          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()} placeholder="Ask about protocols, dosing, guidelines…" style={{ flex:1, padding:"9px 13px", borderRadius:9, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.09)", color:T.txt, fontSize:12 }} />
-          <button onClick={send} disabled={!input.trim() || loading} style={{ padding:"9px 16px", borderRadius:9, border:"none", cursor: input.trim() && !loading ? "pointer" : "not-allowed", background: input.trim() && !loading ? T.teal : "rgba(255,255,255,0.06)", color: input.trim() && !loading ? "#060d1a" : T.txt4, fontWeight:700, fontSize:12, transition:"all .18s" }}>→</button>
-        </div>
-      </div>
-    </GBox>
-  );
-}
-
-function StatsRow() {
-  return (
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
-      {STATS.map((s,i) => (
-        <GBox key={i} style={{ borderRadius:12, padding:"16px 18px", textAlign:"center" }}>
-          <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>
-          <div style={{ fontSize:24, fontWeight:700, color:s.color, fontFamily:"'JetBrains Mono',monospace", lineHeight:1, marginBottom:5 }}>{s.val}</div>
-          <div style={{ fontSize:10, color:T.txt3, textTransform:"uppercase", letterSpacing:".06em", lineHeight:1.4 }}>{s.label}</div>
-        </GBox>
-      ))}
-    </div>
-  );
-}
-
-function GuidelinesTicker() {
-  return (
-    <GBox style={{ borderRadius:10, padding:"10px 16px" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
-        <span style={{ fontSize:9, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:".08em", flexShrink:0, marginRight:4 }}>Referenced Guidelines</span>
-        {GUIDELINES.map((g,i) => (
-          <span key={i} style={{ fontSize:9, fontFamily:"monospace", fontWeight:700, padding:"2px 9px", borderRadius:20, background:`${g.color}12`, border:`1px solid ${g.color}35`, color:g.color, flexShrink:0 }}>{g.label}</span>
-        ))}
-      </div>
-    </GBox>
-  );
-}
-
-const HUB_ROUTES = {
-  sepsis:    "/sepsis-hub",
-  airway:    "/airway-hub",
-  erx:       "/erx",
-  knowledge: "/KnowledgeBaseV2",
-  calendar:  "/Calendar",
-};
-
-function HubOverlay({ hub, onClose }) {
-  const navigate = useNavigate();
-  const handleOpen = () => {
-    const route = HUB_ROUTES[hub.id];
-    if (route) { onClose(); navigate(route); }
-    else onClose();
-  };
-  return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(3,8,20,0.82)", zIndex:400, backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-      <div onClick={e => e.stopPropagation()} style={{ width:"92%", maxWidth:520, background:"rgba(8,16,30,0.97)", backdropFilter:"blur(32px)", border:`1px solid ${hub.color}44`, borderRadius:18, boxShadow:`0 32px 80px rgba(0,0,0,0.7),0 0 80px ${hub.color}12`, padding:"28px", animation:"nh-fadeInPop .18s ease" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:18 }}>
-          <div style={{ width:56, height:56, borderRadius:16, background:hub.gl, border:`1px solid ${hub.br}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:30, flexShrink:0 }}>{hub.icon}</div>
-          <div>
-            <div style={{ fontSize:20, fontWeight:700, color:T.txt, fontFamily:"'Playfair Display',serif" }}>{hub.title}</div>
-            <span style={{ fontSize:9, fontFamily:"monospace", fontWeight:700, padding:"2px 9px", borderRadius:20, background:hub.gl, border:`1px solid ${hub.br}`, color:hub.color }}>{hub.badge}</span>
-          </div>
-          <button onClick={onClose} style={{ marginLeft:"auto", background:"none", border:"none", color:T.txt3, cursor:"pointer", fontSize:22, lineHeight:1 }}>×</button>
-        </div>
-        <div style={{ fontSize:13, color:T.txt2, lineHeight:1.7, marginBottom:18 }}>{hub.desc}</div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:20 }}>
-          {hub.features.map((f,i) => (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", borderRadius:8, background:hub.gl, border:`1px solid ${hub.br}` }}>
-              <div style={{ width:5, height:5, borderRadius:"50%", background:hub.color, flexShrink:0 }} />
-              <span style={{ fontSize:11, color:T.txt2 }}>{f}</span>
-            </div>
-          ))}
-        </div>
-        <div style={{ display:"flex", gap:10 }}>
-          <div onClick={handleOpen} style={{ flex:1, padding:"11px", borderRadius:10, background:hub.color, color:"#060d1a", fontWeight:700, fontSize:13, textAlign:"center", cursor: hub.locked ? "default" : "pointer", opacity: hub.locked ? .5 : 1 }}>
-            {hub.locked ? "Coming Soon" : `Open ${hub.title} →`}
-          </div>
-          <button onClick={onClose} style={{ padding:"11px 18px", borderRadius:10, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.04)", color:T.txt2, fontSize:12, cursor:"pointer", fontWeight:600, fontFamily:"inherit" }}>Close</button>
-        </div>
+      <div className="nh-grid">
+        {group.hubs.map(hub => <HubCard key={hub.id} hub={hub} />)}
       </div>
     </div>
   );
 }
 
-export default function NotryaHome() {
-  const [selectedHub, setSelectedHub] = useState(null);
-  // NOTE: tick/setTick removed — cursor blink now lives inside Typewriter
-
+// ── Home ──────────────────────────────────────────────────────────────────────
+// patients prop — array of patient objects with shape:
+//   { id, room, name, age, sex, cc, esiLevel, doorTime, urgent?,
+//     chartStatus: { triage, demo, vitals, ros, pe, chart } }
+// Pass from Base44 context or track board state when available.
+export default function NotryaHome({ patients = [] }) {
   return (
-    <div style={{ minHeight:"100vh", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif", position:"relative", overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif", position:"relative" }}>
       <BgMesh />
-      <div style={{ position:"relative", zIndex:1 }}>
+      <div style={{ position:"relative", zIndex:1, padding:"24px 28px 48px", maxWidth:1400, margin:"0 auto" }}>
 
-        <nav style={{ position:"fixed", top:48, left:0, right:0, zIndex:100, background:"rgba(5,15,30,0.88)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(255,255,255,0.06)", padding:"0 32px", height:56, display:"flex", alignItems:"center", gap:20 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <div style={{ width:32, height:32, borderRadius:9, background:"linear-gradient(135deg,#3b9eff,#00e5c0)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:700, fontFamily:"'Playfair Display',serif", color:"#050f1e", boxShadow:"0 0 16px rgba(0,229,192,0.4)" }}>N</div>
-            <span style={{ fontSize:16, fontWeight:700, color:T.txt, fontFamily:"'Playfair Display',serif", letterSpacing:".02em" }}>Notrya</span>
-            <span style={{ fontSize:9, fontWeight:700, padding:"1px 7px", borderRadius:20, background:"rgba(0,229,192,0.12)", border:"1px solid rgba(0,229,192,0.3)", color:T.teal, fontFamily:"monospace" }}>AI</span>
-          </div>
-          <div style={{ display:"flex", gap:4, marginLeft:16 }}>
-            {[["🏠","Home"],["🦠","Sepsis"],["🌬️","Airway"],["💊","ERx"],["📖","Knowledge"],["📅","Schedule"]].map(([icon,label],i) => (
-              <button key={i} style={{ padding:"5px 13px", borderRadius:7, background: i===0 ? "rgba(59,158,255,0.12)" : "transparent", border:`1px solid ${i===0 ? "rgba(59,158,255,0.3)" : "transparent"}`, color: i===0 ? T.blue : T.txt3, fontSize:11, fontWeight: i===0 ? 700 : 400, cursor:"pointer", fontFamily:"inherit", transition:"all .15s", display:"flex", alignItems:"center", gap:5 }}
-                onMouseEnter={e => { if(i!==0){ e.currentTarget.style.color=T.txt2; e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}}
-                onMouseLeave={e => { if(i!==0){ e.currentTarget.style.color=T.txt3; e.currentTarget.style.background="transparent"; }}}>
-                <span>{icon}</span><span>{label}</span>
-              </button>
-            ))}
-          </div>
-          <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:10 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 12px", borderRadius:20, background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.25)" }}>
-              <div style={{ width:7, height:7, borderRadius:"50%", background:T.teal, animation:"nh-pulse 2s infinite" }} />
-              <span style={{ fontSize:10, fontWeight:600, color:T.teal }}>AI Online</span>
-            </div>
-            <div style={{ width:32, height:32, borderRadius:9, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, cursor:"pointer" }}>👤</div>
-          </div>
-        </nav>
-
-        <div style={{ padding:"104px 32px 48px", maxWidth:1440, margin:"0 auto" }}>
-
-          <div style={{ padding:"56px 0 40px", textAlign:"center", animation:"nh-fadeInUp .6s ease" }}>
-            <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"5px 14px", borderRadius:20, marginBottom:24, background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.25)", fontSize:11, fontWeight:600, color:T.teal }}>
-              <span style={{ animation:"nh-pulse 2s infinite", display:"inline-block", width:6, height:6, borderRadius:"50%", background:T.teal }} />
-              Emergency Medicine Clinical Decision Support · Powered by Claude
-            </div>
-            <h1 style={{ fontSize:"clamp(32px,5vw,58px)", fontWeight:700, lineHeight:1.15, fontFamily:"'Playfair Display',serif", color:T.txt, marginBottom:16, letterSpacing:"-.01em" }}>
-              Clinical Intelligence<br /><Typewriter />
-            </h1>
-            <p style={{ fontSize:"clamp(13px,1.8vw,17px)", color:T.txt2, maxWidth:600, margin:"0 auto 32px", lineHeight:1.7 }}>
-              Evidence-based protocols, interactive calculators, and AI-powered decision support built for emergency medicine clinicians. From sepsis to airway — every decision, optimized.
-            </p>
-            <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
-              <button onClick={() => setSelectedHub(HUBS[0])} style={{ padding:"13px 28px", borderRadius:11, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#00e5c0,#3b9eff)", color:"#050f1e", fontWeight:700, fontSize:14, fontFamily:"inherit", boxShadow:"0 8px 32px rgba(0,229,192,0.3)", transition:"all .2s" }}
-                onMouseEnter={e => e.currentTarget.style.transform="translateY(-2px)"}
-                onMouseLeave={e => e.currentTarget.style.transform="translateY(0)"}>
-                🚀 Open Sepsis Hub
-              </button>
-              <button style={{ padding:"13px 28px", borderRadius:11, cursor:"pointer", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.12)", color:T.txt, fontWeight:600, fontSize:14, fontFamily:"inherit", transition:"all .2s" }}
-                onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.08)"}
-                onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"}>
-                🤖 Ask Notrya AI
-              </button>
-            </div>
-          </div>
-
-          <div style={{ marginBottom:24 }}><StatsRow /></div>
-          <div style={{ marginBottom:32 }}><GuidelinesTicker /></div>
-
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 360px", gap:20, marginBottom:32, alignItems:"start" }}>
-            <div>
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
-                <div style={{ height:1, flex:1, background:"rgba(255,255,255,0.06)" }} />
-                <span style={{ fontSize:10, fontWeight:700, color:T.txt3, textTransform:"uppercase", letterSpacing:".1em" }}>Clinical Hubs</span>
-                <div style={{ height:1, flex:1, background:"rgba(255,255,255,0.06)" }} />
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-                {HUBS.map(h => <HubCard key={h.id} hub={h} onOpen={setSelectedHub} />)}
-              </div>
-            </div>
-
-            {/* AI Chat panel: FIX — explicit 640px height, no calc(100vh) */}
-            <div style={{ position:"sticky", top:116, display:"flex", flexDirection:"column" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
-                <div style={{ height:1, flex:1, background:"rgba(255,255,255,0.06)" }} />
-                <span style={{ fontSize:10, fontWeight:700, color:T.txt3, textTransform:"uppercase", letterSpacing:".1em" }}>Notrya AI</span>
-                <div style={{ height:1, flex:1, background:"rgba(255,255,255,0.06)" }} />
-              </div>
-              <div style={{ height:640 }}><AIChat /></div>
-            </div>
-          </div>
-
-          <GBox style={{ borderRadius:16, padding:"28px 32px", marginBottom:20 }}>
-            <div style={{ textAlign:"center", marginBottom:24 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:T.txt3, textTransform:"uppercase", letterSpacing:".1em", marginBottom:8 }}>Why Notrya</div>
-              <div style={{ fontSize:22, fontWeight:700, color:T.txt, fontFamily:"'Playfair Display',serif" }}>Built for the Point of Care</div>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-              {[
-                { icon:"⚡", title:"Real-Time Decision Support",  desc:"Interactive calculators, scored criteria, and protocol flows at the bedside — no more mental arithmetic under pressure.", color:T.gold },
-                { icon:"🌐", title:"AI-Localized Resistance Data", desc:"Enter your hospital or city and Claude estimates local antimicrobial resistance rates for smarter empiric antibiotic selection.", color:T.teal },
-                { icon:"📚", title:"Current Evidence, Always",    desc:"Every protocol referenced to the most current guidelines: SSC 2021, IDSA 2024, DAS 2022, ARDSNet, PADIS 2018, and more.", color:T.blue },
-                { icon:"💊", title:"Full Antibiotic Stewardship", desc:"Empiric to renal-adjusted to IV-to-PO to de-escalation. Expandable drug rows with every tier for every source.", color:T.purple },
-                { icon:"🤖", title:"Claude AI Integration",       desc:"Every hub backed by Claude AI for dynamic content generation, resistance lookups, and clinical question answering.", color:T.coral },
-                { icon:"🧮", title:"7 Clinical Calculators",      desc:"qSOFA, SIRS, 30 mL/kg Fluid Bolus, ARDSNet IBW/TV, ROX Index, RSBI, and RSI Weight-Based Drug Dosing.", color:T.orange },
-              ].map((f,i) => (
-                <div key={i} style={{ padding:"18px 20px", borderRadius:12, background:`${f.color}09`, border:`1px solid ${f.color}25`, display:"flex", flexDirection:"column", gap:10 }}>
-                  <div style={{ fontSize:26 }}>{f.icon}</div>
-                  <div style={{ fontSize:13, fontWeight:700, color:f.color, fontFamily:"'Playfair Display',serif" }}>{f.title}</div>
-                  <div style={{ fontSize:11.5, color:T.txt2, lineHeight:1.65 }}>{f.desc}</div>
-                </div>
-              ))}
-            </div>
-          </GBox>
-
-          <GBox style={{ borderRadius:12, padding:"16px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <div style={{ width:26, height:26, borderRadius:7, background:"linear-gradient(135deg,#3b9eff,#00e5c0)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:"#050f1e", fontFamily:"'Playfair Display',serif" }}>N</div>
-              <div>
-                <span style={{ fontSize:13, fontWeight:700, color:T.txt, fontFamily:"'Playfair Display',serif" }}>Notrya</span>
-                <span style={{ fontSize:10, color:T.txt3, marginLeft:8 }}>Emergency Medicine Clinical Decision Support</span>
-              </div>
-            </div>
-            <div style={{ fontSize:10, color:T.txt4, lineHeight:1.6, maxWidth:500, textAlign:"right" }}>
-              For clinical decision support only. Not a substitute for clinical judgment. All protocols should be verified against current institutional guidelines. Powered by Claude (Anthropic).
-            </div>
-          </GBox>
-
+        {/* ── Brand row ─────────────────────────────────────────────────────── */}
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20 }}>
+          <div style={{ width:26, height:26, borderRadius:7, background:"linear-gradient(135deg,#3b9eff,#00e5c0)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, fontFamily:"'Playfair Display',serif", color:"#050f1e", flexShrink:0 }}>N</div>
+          <span style={{ fontSize:12, fontWeight:700, color:T.txt3, fontFamily:"'Playfair Display',serif" }}>Notrya</span>
+          <span style={{ fontSize:9, color:T.txt4, fontFamily:"'JetBrains Mono',monospace" }}>Emergency Medicine</span>
         </div>
+
+        {/* ── Track board — PRIMARY ──────────────────────────────────────────── */}
+        <TrackBoard patients={patients} />
+
+        {/* ── Clinical hubs — SECONDARY ─────────────────────────────────────── */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, margin:"24px 0 18px" }}>
+          <div style={{ height:1, flex:1, background:"rgba(26,53,85,0.5)" }} />
+          <span style={{ fontSize:9, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:".1em", fontFamily:"'JetBrains Mono',monospace" }}>Clinical Hubs</span>
+          <div style={{ height:1, flex:1, background:"rgba(26,53,85,0.5)" }} />
+        </div>
+
+        {GROUPS.map(g => <GroupSection key={g.label} group={g} />)}
+
+        {/* ── Footer ───────────────────────────────────────────────────────── */}
+        <div style={{ borderTop:"1px solid rgba(26,53,85,0.4)", paddingTop:14, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
+          <span style={{ fontSize:10, fontWeight:700, color:T.txt4, fontFamily:"'Playfair Display',serif" }}>Notrya</span>
+          <span style={{ fontSize:9, color:T.txt4 }}>Clinical decision support only — not a substitute for clinical judgment. Powered by Claude (Anthropic).</span>
+        </div>
+
       </div>
-      {selectedHub && <HubOverlay hub={selectedHub} onClose={() => setSelectedHub(null)} />}
     </div>
   );
 }

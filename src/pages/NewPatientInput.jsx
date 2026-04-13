@@ -142,7 +142,19 @@ export default function NewPatientInput() {
       );
       case "chart": return (
         <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}>
-          <ClinicalNoteStudio patientData={patientDataBundle} embedded={true} onBack={() => selectSection("pe")} onSave={handleSaveChart} onAdvance={() => selectSection("reassess")} consultsProp={consults} sdoh={sdoh} />
+          <ClinicalNoteStudio
+            demo={demo} cc={cc} vitals={vitals}
+            medications={medications} allergies={allergies}
+            pmhSelected={pmhSelected} pmhExtra={pmhExtra}
+            surgHx={surgHx} famHx={famHx} socHx={socHx}
+            rosState={rosState} peState={peState} peFindings={peFindings}
+            esiLevel={esiLevel} registration={registration} sdoh={sdoh}
+            consultsProp={consults}
+            embedded={true}
+            onBack={() => selectSection("pe")}
+            onSave={handleSaveChart}
+            onAdvance={() => selectSection("reassess")}
+          />
         </div>
       );
       case "consult":    return <ConsultTab consults={consults} setConsults={setConsults} onAdvance={() => selectSection("chart")} />;

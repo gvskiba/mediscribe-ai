@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useBodySystemKeyboard } from '@/hooks/useBodySystemKeyboard';
 
 // ─── SYSTEM & FINDING DATA ────────────────────────────────────────────────────
 const PE_SYSTEMS = [
@@ -353,26 +352,124 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
 
   const clearAll = useCallback(() => setExamData(initExamData()), []);
 
-  // ── Visible systems (focused mode filter) — must be computed before hook ──
+  // ── Visible systems (focused mode filter) ────────────────────────────────
   const focusedPeIds  = getFocusedPeIds(chiefComplaint);
   const visiblePeSys  = docMode === 'full' ? PE_SYSTEMS : PE_SYSTEMS.filter(s => focusedPeIds.includes(s.id));
   const hiddenPeCount = PE_SYSTEMS.length - visiblePeSys.length;
 
-  // ── Keyboard hook ────────────────────────────────────────────────────────
-  const {
-    activeSystemIdx, setActiveSystemIdx,
-    activeFindingIdx, setActiveFindingIdx,
-    isFocused, panelProps, goToSystem, focus,
-  } = useBodySystemKeyboard({
-    systems:         PE_SYSTEMS,
-    visibleSystems:  visiblePeSys,
-    onFindingAction: handleFindingAction,
-    onSystemNormal:  markSystemNormal,
-    onAllNormal:     markAllNormal,
-    onModeToggle:    () => setDocMode(m => m === 'focused' ? 'full' : m === 'full' ? 'focused' : 'focused'),
-    onRemainder:     () => setRemainderNormal(r => !r),
-    onVisualMode:    () => setDocMode(m => m === 'visual' ? 'focused' : 'visual'),
-  });
+  // ── Keyboard navigation state (useBodySystemKeyboard inlined) ─────────────
+  const [activeSystemIdx,  setActiveSystemIdx]  = useState(0);
+  const [activeFindingIdx, setActiveFindingIdx] = useState(-1);
+  const [isFocused,        setIsFocused]        = useState(false);
+  const panelRef = useRef(null);
+
+  const focus = useCallback(() => panelRef.current?.focus(), []);
+
+  const panelProps = {
+    ref:      panelRef,
+    tabIndex: 0,
+    onFocus:  () => setIsFocused(true),
+    onBlur:   () => { setIsFocused(false); setActiveFindingIdx(-1); },
+    style:    { outline: 'none' },
+  };
+
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    function handleKey(e) {
+      const cmd = e.metaKey || e.ctrlKey;
+      const k   = e.key;
+      const activeSysData = PE_SYSTEMS[activeSystemIdx];
+      const symCount      = activeSysData?.findings.length ?? 0;
+
+      // Esc: first press blurs, second press advances
+      if (k === 'Escape') {
+        if (isFocused) { el.blur(); }
+        else if (onAdvance) { onAdvance(); }
+        return;
+      }
+
+      // ⌘→ — advance to MDM
+      if (cmd && k === 'ArrowRight') {
+        e.preventDefault(); if (onAdvance) onAdvance(); return;
+      }
+
+      if (cmd && e.shiftKey && (k === 'N' || k === 'n')) {
+        e.preventDefault(); markAllNormal(); return;
+      }
+      if (cmd && k === 'Enter') {
+        e.preventDefault(); markSystemNormal(activeSysData?.id); return;
+      }
+      if (cmd && (k === 'f' || k === 'F')) {
+        e.preventDefault(); setDocMode(m => m === 'focused' ? 'full' : 'focused'); return;
+      }
+      if (cmd && (k === 'r' || k === 'R')) {
+        e.preventDefault(); setRemainderNormal(r => !r); return;
+      }
+      if (cmd && (k === 'v' || k === 'V')) {
+        e.preventDefault(); setDocMode(m => m === 'visual' ? 'focused' : 'visual'); return;
+      }
+
+      if (k === 'ArrowLeft') {
+        e.preventDefault();
+        const visCur = visiblePeSys.findIndex(s => s.id === activeSysData?.id);
+        const prev   = visiblePeSys[Math.max(0, visCur - 1)];
+        if (prev) setActiveSystemIdx(PE_SYSTEMS.findIndex(s => s.id === prev.id));
+        setActiveFindingIdx(-1); return;
+      }
+      if (k === 'ArrowRight') {
+        e.preventDefault();
+        const visCur = visiblePeSys.findIndex(s => s.id === activeSysData?.id);
+        const next   = visiblePeSys[Math.min(visiblePeSys.length - 1, visCur + 1)];
+        if (next) setActiveSystemIdx(PE_SYSTEMS.findIndex(s => s.id === next.id));
+        setActiveFindingIdx(-1); return;
+      }
+      if (k === 'ArrowUp') {
+        e.preventDefault();
+        setActiveFindingIdx(i => i <= 0 ? symCount - 1 : i - 1); return;
+      }
+      if (k === 'ArrowDown') {
+        e.preventDefault();
+        setActiveFindingIdx(i => i < symCount - 1 ? i + 1 : 0); return;
+      }
+      if (/^[1-9]$/.test(k)) {
+        const idx = parseInt(k) - 1;
+        if (idx < symCount) setActiveFindingIdx(idx);
+        return;
+      }
+      if (k === ' ') {
+        e.preventDefault();
+        if (activeFindingIdx >= 0 && activeSysData) {
+          const f = activeSysData.findings[activeFindingIdx];
+          if (f) handleFindingAction('toggle', activeSysData.id, f.id);
+        }
+        return;
+      }
+      if (k === 'Enter') {
+        if (activeFindingIdx >= 0 && activeSysData) {
+          const f = activeSysData.findings[activeFindingIdx];
+          if (f) handleFindingAction('normal', activeSysData.id, f.id);
+        }
+        return;
+      }
+      if (k === 'x' || k === 'X') {
+        if (activeFindingIdx >= 0 && activeSysData) {
+          const f = activeSysData.findings[activeFindingIdx];
+          if (f) handleFindingAction('abnormal', activeSysData.id, f.id);
+        }
+        return;
+      }
+      if (/^[A-Za-z]$/.test(k) && !cmd) {
+        const sysIdx = visiblePeSys.findIndex(s => s.key === k.toUpperCase());
+        if (sysIdx !== -1) {
+          setActiveSystemIdx(PE_SYSTEMS.findIndex(s => s.id === visiblePeSys[sysIdx].id));
+          setActiveFindingIdx(-1);
+        }
+      }
+    }
+    el.addEventListener('keydown', handleKey);
+    return () => el.removeEventListener('keydown', handleKey);
+  }, [activeSystemIdx, activeFindingIdx, isFocused, visiblePeSys, handleFindingAction, markSystemNormal, markAllNormal, onAdvance]); // eslint-disable-line
 
   // Auto-focus on mount — keyboard-first from the first render
   useEffect(() => {
@@ -383,24 +480,6 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
   const activeSys  = PE_SYSTEMS[activeSystemIdx];
   const sysData    = examData[activeSys?.id] || { findings: {}, note: '' };
   const sysStatus  = getSysStatus(sysData.findings);
-
-  // Extend panelProps to fire onAdvance when Esc is pressed while panel is
-  // already unfocused (i.e. second Esc — first Esc deselects finding, second exits)
-  const extPanelProps = {
-    ...panelProps,
-    onKeyDown: (e) => {
-      // Let the hook handle it first
-      panelProps.onKeyDown(e);
-      // If panel was already blurred by the hook's Esc handler, advance
-      if (e.key === 'Escape' && !isFocused && onAdvance) {
-        onAdvance();
-      }
-      // ⌘→ anywhere on panel → advance
-      if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight' && onAdvance) {
-        e.preventDefault(); onAdvance();
-      }
-    },
-  };
 
   // ── Sync to parent ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -452,7 +531,7 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
   return (
     <>
       <style>{PE_CSS}</style>
-      <div className={`pe-wrap${isFocused ? ' pe-focused' : ''}`} {...extPanelProps}>
+      <div className={`pe-wrap${isFocused ? ' pe-focused' : ''}`} {...panelProps}>
 
         {/* ── HEADER BAR ───────────────────────────────────────────────── */}
         <div className="pe-hdr">
@@ -496,27 +575,7 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
         </div>
 
         {/* ── BODY ─────────────────────────────────────────────────────── */}
-        <div className="pe-body"
-          style={{ gridTemplateColumns: docMode === 'visual' ? '1fr' : '156px 1fr' }}>
-
-          {/* ── SIDEBAR ──────────────────────────────────────────────── */}
-          {docMode !== 'visual' && (
-            <div className="pe-sidebar">
-              {PE_SYSTEMS.map((sys, i) => (
-                <SysItem
-                  key={sys.id}
-                  sys={sys}
-                  isActive={i === activeSystemIdx}
-                  status={getSysStatus(examData[sys.id]?.findings || {})}
-                  onClick={() => {
-                    setActiveSystemIdx(i);
-                    setActiveFindingIdx(-1);
-                    focus();
-                  }}
-                />
-              ))}
-            </div>
-          )}
+        <div className="pe-body">
 
           {/* ── VISUAL MODE ──────────────────────────────────────────────── */}
           {docMode === 'visual' && (
@@ -670,7 +729,7 @@ const PE_CSS = `
 .pe-btn-clear-all:hover{border-color:rgba(255,107,107,.4);color:var(--npi-coral)}
 
 /* Body layout */
-.pe-body{display:grid;grid-template-columns:156px 1fr;flex:1;overflow:hidden;min-height:0}
+.pe-body{display:grid;grid-template-columns:1fr;flex:1;overflow:hidden;min-height:0}
 
 /* Sidebar */
 .pe-sidebar{border-right:1px solid var(--npi-bd);overflow-y:auto;background:var(--npi-panel);scrollbar-width:thin;scrollbar-color:#1a3555 transparent}

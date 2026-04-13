@@ -1,7 +1,6 @@
-import { useState, useCallback } from "react";
-import { Link } from "react-router-dom";
-import { toast } from "sonner";
+import { useState, useEffect, useCallback } from 'react';
 import { useNPIState } from "@/components/npi/useNPIState";
+import ChartProgressStrip from "@/components/npi/ChartProgressStrip";
 import { NPI_CSS } from "@/components/npi/npiStyles";
 import {
   NAV_DATA, GROUP_META, ALL_SECTIONS, SECTION_SHORTCUT, QUICK_ACTIONS,
@@ -52,7 +51,7 @@ import ERxHub                  from "@/pages/ERx";
 // ─────────────────────────────────────────────────────────────────────────────
 export default function NewPatientInput() {
   const {
-    navigate, currentTab, activeGroup,
+    currentTab, activeGroup,
     navDots, selectGroup, selectSection, getGroupBadge,
     arrivalTimeRef, doorTime,
     demo, setDemo, cc, setCC,
@@ -89,7 +88,18 @@ export default function NewPatientInput() {
     vitalClass, getRosSysDot, getPeSysDot,
     toggleAI, addVitalsSnapshot, handleSaveChart, smartParse,
     sendMessage, handleAIKey, renderMsg,
+    toasts, setToasts, saving,
   } = useNPIState();
+
+  const showToast = useCallback((msg, type="success") => {
+    setToasts(p => [...p, { id: Date.now(), msg, type }]);
+  }, [setToasts]);
+
+  useEffect(() => {
+    if (!toasts.length) return;
+    const t = setTimeout(() => setToasts(p => p.slice(1)), 3500);
+    return () => clearTimeout(t);
+  }, [toasts, setToasts]);
 
   // ── renderContent ─────────────────────────────────────────────────────────
   const renderContent = () => {
@@ -132,7 +142,7 @@ export default function NewPatientInput() {
       );
       case "chart": return (
         <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}>
-          <ClinicalNoteStudio patientData={patientDataBundle} embedded={true} onBack={() => selectSection("pe")} onSave={handleSaveChart} onAdvance={() => selectSection("reassess")} />
+          <ClinicalNoteStudio patientData={patientDataBundle} embedded={true} onBack={() => selectSection("pe")} onSave={handleSaveChart} onAdvance={() => selectSection("reassess")} consultsProp={consults} sdoh={sdoh} />
         </div>
       );
       case "consult":    return <ConsultTab consults={consults} setConsults={setConsults} onAdvance={() => selectSection("chart")} />;
@@ -352,7 +362,7 @@ export default function NewPatientInput() {
             background:"rgba(8,18,36,0.5)", border:"1px solid rgba(26,53,85,0.35)",
             fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--npi-txt4)", lineHeight:1.6 }}>
             For full sepsis scoring (qSOFA, SOFA, SIRS), lactate interpretation, and antibiotic selection \u2014{" "}
-            <button onClick={() => navigate("/SepsisHub")}
+            <button onClick={() => window.location.href = "/SepsisHub"}
               style={{ background:"none", border:"none", color:"var(--npi-teal)", cursor:"pointer",
                 fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, padding:0 }}>
               open Sepsis Hub &#x2192;
@@ -374,10 +384,10 @@ export default function NewPatientInput() {
       case "closeout":   return <DispositionTab disposition={disposition} setDisposition={setDisposition} dispReason={dispReason} setDispReason={setDispReason} dispTime={dispTime} setDispTime={setDispTime} onAdvance={() => selectSection("handoff")} />;
       case "handoff":    return <HandoffTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} sdoh={sdoh} consults={consults} disposition={disposition} dispReason={dispReason} onAdvance={() => selectSection("discharge")} />;
       case "discharge":  return <DischargeInstructionsTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} disposition={disposition} dispReason={dispReason} dispTime={dispTime} consults={consults} sdoh={sdoh} esiLevel={esiLevel} registration={registration} providerName={providerName} doorTime={doorTime} />;
-      case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
+      case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><ERxHub embedded medications={medications} allergies={allergies} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
       case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} patientWeight={demo.weight||vitals.weight||""} /></div>;
       case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;
-      case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} onAdvance={() => selectSection("mdm")} />;
+      case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} consults={consults} sdoh={sdoh} esiLevel={esiLevel} onAdvance={() => selectSection("mdm")} />;
       case "mdm": return (
         <MDMBuilderTab
           demo={demo} cc={cc} vitals={vitals} medications={medications}
@@ -385,6 +395,7 @@ export default function NewPatientInput() {
           disposition={disposition} esiLevel={esiLevel} isarState={isarState}
           mdmState={mdmState} setMdmState={setMdmState}
           mdmDataElements={mdmDataElements} setMdmDataElements={setMdmDataElements}
+          onToast={showToast}
           onAdvance={() => selectSection("timeline")}
         />
       );
@@ -396,11 +407,8 @@ export default function NewPatientInput() {
   };
 
   // ── Onboarding overlay (shown once per session) ───────────────────────────
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    try { return !sessionStorage.getItem("notrya_intro_seen"); } catch { return true; }
-  });
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const dismissOnboarding = useCallback(() => {
-    try { sessionStorage.setItem("notrya_intro_seen", "1"); } catch {}
     setShowOnboarding(false);
   }, []);
 
@@ -420,7 +428,7 @@ export default function NewPatientInput() {
           <div className="npi-stat"><span className="npi-stat-val">0</span><span className="npi-stat-lbl">Active</span></div>
           <div className="npi-stat"><span className="npi-stat-val alert">14</span><span className="npi-stat-lbl">Pending</span></div>
           <div className="npi-vsep" />
-          <button className="npi-tb-link" onClick={() => navigate("/EDTrackingBoard")}>&#x1F3E5; Track Board</button>
+          <button className="npi-tb-link" onClick={() => window.location.href = "/EDTrackingBoard"}>&#x1F3E5; Track Board</button>
           <div className="npi-top-right">
             <button className={`npi-cds-btn${cdsOpen?" open":""}${allergies.length>0?" cds-alert":medications.length>0?" cds-warn":""}`} onClick={()=>setCdsOpen(o=>!o)} title="Clinical Decision Support">
               <div className="npi-cds-dot"/>CDS
@@ -445,8 +453,8 @@ export default function NewPatientInput() {
                 </span>
               )}
             </button>
-            <button className="npi-new-pt" onClick={() => navigate("/NewPatientInput?tab=demo")}>+ New Patient</button>
-            <Link to="/AppSettings" className="npi-tb-settings" title="Settings">&#x2699;&#xFE0F;</Link>
+            <button className="npi-new-pt" onClick={() => selectSection("demo")}>+ New Patient</button>
+            <a href="/AppSettings" className="npi-tb-settings" title="Settings">&#x2699;&#xFE0F;</a>
           </div>
         </div>
         <div className="npi-top-row-2">
@@ -505,6 +513,12 @@ export default function NewPatientInput() {
             <button className="npi-btn-primary" onClick={handleSaveChart}>&#x270D; Sign &amp; Save</button>
           </div>
         </div>
+        <ChartProgressStrip
+          demo={demo} vitals={vitals} rosState={rosState} peState={peState}
+          mdmComplexity={["","minimal","low","moderate","high"].indexOf(mdmState?.copa)}
+          mdmDomainsCount={[mdmState?.copa, mdmState?.dataLevel, mdmState?.risk].filter(Boolean).length}
+          disposition={disposition} activeSection={currentTab} onSectionClick={selectSection}
+        />
       </header>
 
       {/* ── Main content ── */}
@@ -610,7 +624,7 @@ export default function NewPatientInput() {
                               ? prev
                               : [...prev, { id: String(Date.now()), source:"cds", score:h.score, phrase, ts:Date.now() }]
                           );
-                          toast.success(`${h.score} documented in MDM builder + copied to clipboard.`);
+                          showToast(`${h.score} documented in MDM builder + copied to clipboard.`);
                         }}
                         style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
                           padding:"4px 10px", borderRadius:5, cursor:"pointer",
@@ -644,7 +658,7 @@ export default function NewPatientInput() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => { sendMessage(QUICK_ACTIONS[4].prompt); if (!aiOpen) toggleAI(); setCdsOpen(false); }}
+              <button onClick={() => { sendMessage(QUICK_ACTIONS[4].prompt); setAiOpen(true); setCdsOpen(false); }}
                 style={{ marginTop:8, padding:"5px 12px", borderRadius:6, border:"1px solid rgba(59,158,255,0.4)", background:"rgba(59,158,255,0.1)", color:"#3b9eff", fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, cursor:"pointer" }}>
                 \u2728 Draft MDM with AI
               </button>
@@ -780,7 +794,7 @@ export default function NewPatientInput() {
                   {items.map(item => (
                     <div key={item.section} style={{display:"contents"}}>
                       <button className={`npi-wf-item${item.section === currentTab ? " active" : ""}`}
-                        onClick={() => item.href ? navigate(item.href) : selectSection(item.section)}>
+                        onClick={() => item.href ? (window.location.href = item.href) : selectSection(item.section)}>
                         <span className="npi-wf-item-icon">{item.icon}</span>
                         <span className="npi-wf-item-label">{item.label}</span>
                         <span className={`npi-wf-item-dot ${navDots[item.section]||"empty"}`} />
@@ -860,6 +874,22 @@ export default function NewPatientInput() {
               This message won\u2019t show again this session
             </div>
           </div>
+        </div>
+      )}
+      {/* ── Toast strip ── */}
+      {toasts.length > 0 && (
+        <div style={{ position:"fixed", bottom:24, right:24, zIndex:99998, display:"flex", flexDirection:"column", gap:8, pointerEvents:"none" }}>
+          {toasts.map(t => (
+            <div key={t.id} style={{
+              background: t.type === "error" ? "rgba(255,107,107,0.96)" : "rgba(0,229,192,0.96)",
+              color: t.type === "error" ? "#fff" : "#050f1e",
+              padding:"10px 16px", borderRadius:9,
+              fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+              boxShadow:"0 8px 32px rgba(0,0,0,0.4)", maxWidth:340,
+            }}>
+              {t.type !== "error" ? "✓ " : "✕ "}{t.msg}
+            </div>
+          ))}
         </div>
       )}
     </div>

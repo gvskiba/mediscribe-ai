@@ -82,7 +82,7 @@ export default function NewPatientInput() {
     nursingNotes, setNursingNotes,
     mediaOpen, setMediaOpen, attachments, setAttachments,
     providerName, providerRole,
-    aiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread, msgsRef, inputRef,
+    aiOpen, setAiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread, msgsRef, inputRef,
     resumeSection, setResumeSection,
     patientName, patientDataBundle,
     vitalClass, getRosSysDot, getPeSysDot,
@@ -414,7 +414,7 @@ export default function NewPatientInput() {
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
-    <div>
+    <div style={{ paddingTop: 80 }}>
       <style>{NPI_CSS}</style>
 
       {/* ── Top bar ── */}

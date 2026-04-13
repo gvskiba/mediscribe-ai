@@ -446,7 +446,7 @@ export default function MDMBuilderTab({
 
   // ─── JSX ──────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:14, paddingBottom:32 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:14, paddingBottom:32, paddingTop:80 }}>
 
       {/* ── Header ── */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",

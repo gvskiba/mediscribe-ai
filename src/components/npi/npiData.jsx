@@ -34,6 +34,7 @@ export const NAV_DATA = {
     { section: "closeout",   icon: "✅", label: "Close-out",         abbr: "Cl", dot: "empty" },
     { section: "handoff",    icon: "🤝", label: "Handoff (I-PASS)",  abbr: "Ho", dot: "empty" },
     { section: "discharge",  icon: "🚪", label: "Discharge",         abbr: "Dc", dot: "empty" },
+    { section: "capacity",   icon: "⚖️", label: "Capacity/AMA",      abbr: "Ca", dot: "empty" },
     { section: "audit",      icon: "🔒", label: "Audit Lock",         abbr: "Al", dot: "empty" },
   ],
   tools: [

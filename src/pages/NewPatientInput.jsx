@@ -40,6 +40,8 @@ import NoteAuditLock           from "@/components/npi/NoteAuditLock";
 import ScoreHub                from "@/pages/ScoreHub";
 import WeightDoseHub           from "@/pages/WeightDoseHub";
 import SmartDifferential       from "@/components/npi/SmartDifferential";
+import CapacityAMAModule        from "@/components/npi/CapacityAMAModule";
+import ShiftHandoffGenerator    from "@/components/npi/ShiftHandoffGenerator";
 import ConsultPrepPanel         from "@/components/npi/ConsultPrepPanel";
 import EmbeddedConsultGuide     from "@/components/npi/EmbeddedConsultGuide";
 import NPILookupWidget          from "@/components/npi/NPILookupWidget";
@@ -559,7 +561,28 @@ export default function NewPatientInput() {
         </div>
       );
       case "closeout":   return <DispositionTab disposition={disposition} setDisposition={setDisposition} dispReason={dispReason} setDispReason={setDispReason} dispTime={dispTime} setDispTime={setDispTime} onAdvance={() => selectSection("handoff")} />;
-      case "handoff":    return <HandoffTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} sdoh={sdoh} consults={consults} disposition={disposition} dispReason={dispReason} onAdvance={() => selectSection("discharge")} />;
+      case "capacity": return (
+        <CapacityAMAModule
+          demo={demo} cc={cc} vitals={vitals}
+          mdmState={mdmState} providerName={providerName}
+          onToast={showToast} embedded
+        />
+      );
+      case "handoff": return (
+        <ShiftHandoffGenerator
+          demo={demo}           cc={cc}               vitals={vitals}
+          vitalsHistory={vitalsHistory}               medications={medications}
+          allergies={allergies} pmhSelected={pmhSelected}
+          rosState={rosState}   peState={peState}      peFindings={peFindings}
+          mdmState={mdmState}   consults={consults}
+          disposition={disposition}                   dispReason={dispReason}
+          dispTime={dispTime}   esiLevel={esiLevel}
+          registration={registration}                 sdoh={sdoh}
+          sepsisBundle={sepsisBundle}
+          providerName={providerName}                 doorTime={doorTime}
+          onToast={showToast}
+        />
+      );
       case "audit": return (
         <NoteAuditLock
           demo={demo} cc={cc} vitals={vitals} vitalsHistory={vitalsHistory}

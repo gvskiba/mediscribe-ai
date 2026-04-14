@@ -37,6 +37,7 @@ import SmartDischargeHub       from "@/components/npi/SmartDischargeHub";
 import MDMBuilderTab            from "@/components/npi/MDMBuilderTab";
 import TimeBillingTracker      from "@/components/npi/TimeBillingTracker";
 import NoteAuditLock           from "@/components/npi/NoteAuditLock";
+import ScoreHub                from "@/pages/ScoreHub";
 import ConsultPrepPanel         from "@/components/npi/ConsultPrepPanel";
 import EmbeddedConsultGuide     from "@/components/npi/EmbeddedConsultGuide";
 import NPILookupWidget          from "@/components/npi/NPILookupWidget";
@@ -590,6 +591,15 @@ export default function NewPatientInput() {
             />
           )}
         </div>
+      );
+      case "scores": return (
+        <ScoreHub
+          embedded
+          demo={demo}
+          vitals={vitals}
+          pmhSelected={pmhSelected}
+          cc={cc}
+        />
       );
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto" }}><MedicationReferencePage embedded /></div>;

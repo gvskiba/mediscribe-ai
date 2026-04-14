@@ -37,6 +37,7 @@ export const NAV_DATA = {
     { section: "audit",      icon: "🔒", label: "Audit Lock",         abbr: "Al", dot: "empty" },
   ],
   tools: [
+    { section: "scores",     icon: "🧮", label: "Score Calc",        abbr: "Sc", dot: "empty" },
     { section: "sepsis",     icon: "🦠", label: "Sepsis Protocol",   abbr: "Sp", dot: "empty", href: "/SepsisHub"           },
     { section: "ecg",        icon: "❤️", label: "ECG Review",        abbr: "Eg", dot: "empty", href: "/ECGHub"              },
     { section: "psych",      icon: "🧠", label: "Psych Assessment",  abbr: "Px", dot: "empty", href: "/PsychHub"            },

@@ -35,6 +35,8 @@ import HandoffTab               from "@/components/npi/HandoffTab";
 import DischargeInstructionsTab from "@/components/npi/DischargeInstructionsTab";
 import MDMBuilderTab            from "@/components/npi/MDMBuilderTab";
 import ConsultPrepPanel         from "@/components/npi/ConsultPrepPanel";
+import EmbeddedConsultGuide     from "@/components/npi/EmbeddedConsultGuide";
+import NPILookupWidget          from "@/components/npi/NPILookupWidget";
 
 // ── Utility / overlay components ─────────────────────────────────────────────
 import ParseFab              from "@/components/npi/ParseFab";
@@ -94,6 +96,8 @@ export default function NewPatientInput() {
 
   // ── Consult specialty state (lifted so ConsultPrepPanel + ConsultTab share it) ─
   const [consultSpecialty, setConsultSpecialty] = useState(null);
+  const [consultSubTab,    setConsultSubTab]    = useState("prep");
+  const [consultProvider,  setConsultProvider]  = useState(null);
 
   // ── MDMBuilderTab toast bridge ─────────────────────────────────────────────
   // MDMBuilderTab uses an onToast(msg, type) prop to stay free of direct sonner
@@ -149,22 +153,126 @@ export default function NewPatientInput() {
       );
       case "consult": return (
         <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-          <div style={{ padding:"0 0 12px" }}>
+
+          {/* ── Sub-tab strip ─────────────────────────────────────────────────── */}
+          <div style={{ display:"flex", gap:5,
+            padding:"6px 0 10px",
+            borderBottom:"1px solid rgba(26,53,85,0.35)",
+            marginBottom:12 }}>
+
+            {[
+              { id:"prep",   label:"🎯 Prep This Call",        accent:"#9b6dff" },
+              { id:"browse", label:"📚 Browse All Specialties", accent:"#00e5c0" },
+            ].map(t => (
+              <button key={t.id}
+                onClick={() => setConsultSubTab(t.id)}
+                style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                  fontSize:12, padding:"7px 16px", borderRadius:9,
+                  cursor:"pointer", transition:"all .15s",
+                  border:`1px solid ${consultSubTab===t.id ? t.accent+"60" : "rgba(26,53,85,0.4)"}`,
+                  background:consultSubTab===t.id
+                    ? `linear-gradient(135deg,${t.accent}18,${t.accent}08)`
+                    : "transparent",
+                  color:consultSubTab===t.id ? t.accent : "var(--npi-txt4)" }}>
+                {t.label}
+              </button>
+            ))}
+
+            {/* Live specialty indicator */}
+            {consultSubTab === "prep" && consultSpecialty && (() => {
+              const sp = [
+                {id:"cardiology",color:"#ff4444",name:"Cardiology"},
+                {id:"ctvs",color:"#ff6b6b",name:"CT/Vascular"},
+                {id:"neurology",color:"#9b6dff",name:"Neurology"},
+                {id:"neurosurgery",color:"#f472b6",name:"Neurosurgery"},
+                {id:"gensurg",color:"#ff9f43",name:"Gen Surgery"},
+                {id:"ortho",color:"#f5c842",name:"Orthopedics"},
+                {id:"urology",color:"#3b9eff",name:"Urology"},
+                {id:"obgyn",color:"#f472b6",name:"OB/GYN"},
+                {id:"hemeonc",color:"#9b6dff",name:"Heme/Onc"},
+                {id:"nephrology",color:"#00e5c0",name:"Nephrology"},
+                {id:"gi",color:"#ff9f43",name:"GI"},
+                {id:"pulm",color:"#3b9eff",name:"Pulm/CC"},
+                {id:"id",color:"#3dffa0",name:"Inf Disease"},
+                {id:"psych",color:"#00d4ff",name:"Psychiatry"},
+                {id:"ophtho",color:"#00e5c0",name:"Ophthalmology"},
+                {id:"ent",color:"#f5c842",name:"ENT"},
+              ].find(s => s.id === consultSpecialty);
+              if (!sp) return null;
+              return (
+                <div style={{ marginLeft:"auto", display:"flex", alignItems:"center",
+                  gap:6, padding:"4px 10px", borderRadius:20,
+                  background:`${sp.color}12`, border:`1px solid ${sp.color}35` }}>
+                  <div style={{ width:6, height:6, borderRadius:"50%",
+                    background:sp.color, flexShrink:0 }} />
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    color:sp.color, letterSpacing:1 }}>{sp.name}</span>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* ── Panel content ──────────────────────────────────────────────────── */}
+          {consultSubTab === "prep" && (
             <ConsultPrepPanel
-              demo={demo}
-              cc={cc}
-              vitals={vitals}
-              medications={medications}
-              pmhSelected={pmhSelected}
-              consults={consults}
-              onToast={showToast}
+              demo={demo} cc={cc} vitals={vitals}
+              medications={medications} pmhSelected={pmhSelected}
+              consults={consults} onToast={showToast}
               selectedSpecialty={consultSpecialty}
-              onSpecialtyChange={setConsultSpecialty}
+              onSpecialtyChange={id => { setConsultSpecialty(id); setConsultSubTab("prep"); }}
+            />
+          )}
+          {consultSubTab === "browse" && <EmbeddedConsultGuide />}
+
+          {/* ── NPI Provider Lookup — always docked, collapsible ──────────────── */}
+          <div style={{ marginTop:12 }}>
+            <NPILookupWidget
+              onToast={showToast}
+              defaultSpecialty={consultSpecialty}
+              onSelect={provider => setConsultProvider(provider)}
             />
           </div>
+
+          {/* ── Divider ────────────────────────────────────────────────────────── */}
+          <div style={{ display:"flex", alignItems:"center", gap:8,
+            borderTop:"1px solid rgba(26,53,85,0.35)", margin:"12px 0" }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:"var(--npi-txt4)", letterSpacing:1.5, textTransform:"uppercase",
+              whiteSpace:"nowrap", padding:"0 6px" }}>
+              Consult Documentation
+            </span>
+            <div style={{ flex:1, height:1,
+              background:"linear-gradient(90deg,rgba(42,79,122,0.4),transparent)" }} />
+            {/* Provider chip */}
+            {consultProvider && (
+              <div style={{ display:"flex", alignItems:"center", gap:6,
+                padding:"3px 10px", borderRadius:20,
+                background:"rgba(0,229,192,0.09)",
+                border:"1px solid rgba(0,229,192,0.3)",
+                flexShrink:0 }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"#00e5c0", letterSpacing:1 }}>
+                  ✓ {consultProvider.name}
+                  {consultProvider.credential ? ", " + consultProvider.credential : ""}
+                  {" · NPI "}{consultProvider.npi}
+                </span>
+                <button
+                  onClick={() => setConsultProvider(null)}
+                  style={{ background:"none", border:"none",
+                    color:"rgba(0,229,192,0.5)", cursor:"pointer",
+                    fontSize:10, padding:0, lineHeight:1 }}>
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ── ConsultTab — always docked ─────────────────────────────────────── */}
           <ConsultTab
             consults={consults}
             setConsults={setConsults}
+            pendingProvider={consultProvider}
+            onProviderConsumed={() => setConsultProvider(null)}
             onAdvance={() => selectSection("chart")}
           />
         </div>

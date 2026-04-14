@@ -1,8 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export default function ConsultTab({ consults, setConsults, onAdvance }) {
+export default function ConsultTab({ consults, setConsults, onAdvance, pendingProvider, onProviderConsumed }) {
   const [svcIn,  setSvcIn]  = useState("");
   const [qIn,    setQIn]    = useState("");
+
+  useEffect(() => {
+    if (!pendingProvider) return;
+    const label = pendingProvider.name +
+      (pendingProvider.credential ? ", " + pendingProvider.credential : "");
+    setSvcIn(label);
+    onProviderConsumed?.();
+  }, [pendingProvider]);
   const [respIn, setRespIn] = useState({});
 
   const elapsed = ts => {

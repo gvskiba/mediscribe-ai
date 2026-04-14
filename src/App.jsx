@@ -71,6 +71,7 @@ import ClinicalNoteV2 from '@/pages/ClinicalNoteV2';
 import NotryaNewTechnology from '@/pages/NotryaNewTechnology';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 import DischargeDisposition from '@/pages/DischargeDisposition';
+import ScoreHub from '@/pages/ScoreHub';
 
 
 
@@ -199,6 +200,7 @@ const AuthenticatedApp = () => {
       <Route path="/discharge-disposition" element={<DischargeDisposition />} />
       <Route path="/ClinicalNoteV2" element={<ClinicalNoteV2 />} />
       <Route path="/new-technology" element={<NotryaNewTechnology />} />
+      <Route path="/score-hub" element={<ScoreHub />} />
 
 
       <Route path="*" element={<PageNotFound />} />

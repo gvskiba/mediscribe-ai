@@ -169,13 +169,22 @@ function SectionHeader({ section, expanded, onToggle, complete, children }) {
 
 // ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function ClinicalNoteStudio({
-  demo, cc, vitals, medications, allergies,
+  demo: demoProp, cc: ccProp, vitals: vitalsProp, medications: medicationsProp, allergies: allergiesProp,
   pmhSelected, pmhExtra, surgHx, famHx, socHx,
   rosState, peState, peFindings,
-  esiLevel, registration, sdoh,
+  esiLevel, registration: registrationProp, sdoh,
   consultsProp,
+  patientData,
   onSave,
 }) {
+  // Support both direct props (NPI embedded mode) and patientData bundle (standalone mode)
+  const demo         = demoProp         || patientData?.demo         || {};
+  const cc           = ccProp           || patientData?.cc           || {};
+  const vitals       = vitalsProp       || patientData?.vitals       || {};
+  const medications  = medicationsProp  || patientData?.medications  || [];
+  const allergies    = allergiesProp    || patientData?.allergies    || [];
+  const registration = registrationProp || patientData?.registration || {};
+
   const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
 
   // ── Section expand/collapse ─────────────────────────────────────────────

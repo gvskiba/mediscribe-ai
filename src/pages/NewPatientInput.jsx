@@ -35,6 +35,7 @@ import HandoffTab               from "@/components/npi/HandoffTab";
 import DischargeInstructionsTab from "@/components/npi/DischargeInstructionsTab";
 import SmartDischargeHub       from "@/components/npi/SmartDischargeHub";
 import MDMBuilderTab            from "@/components/npi/MDMBuilderTab";
+import TimeBillingTracker      from "@/components/npi/TimeBillingTracker";
 import ConsultPrepPanel         from "@/components/npi/ConsultPrepPanel";
 import EmbeddedConsultGuide     from "@/components/npi/EmbeddedConsultGuide";
 import NPILookupWidget          from "@/components/npi/NPILookupWidget";
@@ -99,6 +100,7 @@ export default function NewPatientInput() {
   const [consultSpecialty, setConsultSpecialty] = useState(null);
   const [consultSubTab,    setConsultSubTab]    = useState("prep");
   const [consultProvider,  setConsultProvider]  = useState(null);
+  const [mdmSubTab,        setMdmSubTab]        = useState("mdm");
 
   // ── MDMBuilderTab toast bridge ─────────────────────────────────────────────
   // MDMBuilderTab uses an onToast(msg, type) prop to stay free of direct sonner
@@ -521,15 +523,56 @@ export default function NewPatientInput() {
       case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;
       case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} onAdvance={() => selectSection("mdm")} />;
       case "mdm": return (
-        <MDMBuilderTab
-          demo={demo} cc={cc} vitals={vitals} medications={medications}
-          pmhSelected={pmhSelected} consults={consults} sdoh={sdoh}
-          disposition={disposition} esiLevel={esiLevel} isarState={isarState}
-          mdmState={mdmState} setMdmState={setMdmState}
-          mdmDataElements={mdmDataElements} setMdmDataElements={setMdmDataElements}
-          onToast={showToast}
-          onAdvance={() => selectSection("timeline")}
-        />
+        <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+          {/* Sub-tab strip */}
+          <div style={{ display:"flex", gap:5, padding:"6px 0 12px",
+            borderBottom:"1px solid rgba(26,53,85,0.35)",
+            marginBottom:14, alignItems:"center" }}>
+            {[
+              { id:"mdm",  label:"MDM Builder",       active_color:"rgba(245,200,66,0.5)",  active_bg:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.05))",  text_active:"var(--npi-gold)" },
+              { id:"time", label:"Time-Based Billing", active_color:"rgba(0,229,192,0.5)",   active_bg:"linear-gradient(135deg,rgba(0,229,192,0.15),rgba(0,229,192,0.05))",   text_active:"var(--npi-teal)" },
+            ].map(t => (
+              <button key={t.id} onClick={() => setMdmSubTab(t.id)}
+                style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                  fontSize:12, padding:"7px 16px", borderRadius:9,
+                  cursor:"pointer", transition:"all .15s",
+                  border:`1px solid ${mdmSubTab===t.id ? t.active_color : "rgba(26,53,85,0.4)"}`,
+                  background:mdmSubTab===t.id ? t.active_bg : "transparent",
+                  color:mdmSubTab===t.id ? t.text_active : "var(--npi-txt4)" }}>
+                {t.label}
+              </button>
+            ))}
+            {mdmSubTab === "time" && (
+              <span style={{ marginLeft:"auto", fontFamily:"'JetBrains Mono',monospace",
+                fontSize:9, color:"var(--npi-txt4)", letterSpacing:1 }}>
+                Door: {doorTime || "—"}
+              </span>
+            )}
+          </div>
+
+          {mdmSubTab === "mdm" && (
+            <MDMBuilderTab
+              demo={demo} cc={cc} vitals={vitals} medications={medications}
+              pmhSelected={pmhSelected} consults={consults} sdoh={sdoh}
+              disposition={disposition} esiLevel={esiLevel} isarState={isarState}
+              mdmState={mdmState} setMdmState={setMdmState}
+              mdmDataElements={mdmDataElements} setMdmDataElements={setMdmDataElements}
+              onToast={showToast}
+              onAdvance={() => selectSection("timeline")}
+            />
+          )}
+
+          {mdmSubTab === "time" && (
+            <TimeBillingTracker
+              doorTime={doorTime}
+              demo={demo} cc={cc}
+              providerName={providerName}
+              mdmState={mdmState}
+              setMdmState={setMdmState}
+              onToast={showToast}
+            />
+          )}
+        </div>
       );
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;
       case "medref":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto" }}><MedicationReferencePage embedded /></div>;

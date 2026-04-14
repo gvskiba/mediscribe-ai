@@ -1,976 +1,944 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
-import ProcedureSettings, { loadPrefs } from '@/components/procedures/ProcedureSettings';
-import AnatomicMap from '@/components/procedures/AnatomicMap';
+// EDProcedureNotes.jsx
+// ED Procedure Note Builder — standalone hub + embedded in NPI case "procedures"
+// Covers: Laceration, I&D, LP, Central Line, Thoracentesis, Arthrocentesis,
+//         Intubation, Chest Tube, Paracentesis, Foley Catheterization
+//
+// Props (embedded mode):
+//   embedded        bool     — hides back-nav header
+//   patientName     string
+//   patientAllergies string
+//   physicianName   string
+//
+// Constraints: no form, no localStorage, no router import, straight quotes only,
+//   single react import, border before borderTop/etc., finally { setBusy(false) }
 
-/* ══════════════════════════════════════
-   DESIGN TOKENS
-══════════════════════════════════════ */
+import { useState, useCallback } from "react";
+
+// ── Font injection (idempotent) ───────────────────────────────────────────────
+(() => {
+  if (document.getElementById("proc-fonts")) return;
+  const l = document.createElement("link");
+  l.id = "proc-fonts"; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  document.head.appendChild(l);
+  const s = document.createElement("style"); s.id = "proc-css";
+  s.textContent = `
+    @keyframes proc-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .proc-fade{animation:proc-fade .2s ease forwards;}
+    @keyframes proc-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    .proc-spin{animation:proc-spin 1s linear infinite;display:inline-block;}
+    @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+    .shimmer-text{
+      background:linear-gradient(90deg,#e8f0fe 0%,#fff 30%,#9b6dff 52%,#00e5c0 72%,#e8f0fe 100%);
+      background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;animation:shimmer 5s linear infinite;
+    }
+  `;
+  document.head.appendChild(s);
+})();
+
+// ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg:'#050f1e',panel:'#081628',card:'#0b1e36',up:'#0e2544',
-  border:'#1a3555',borderHi:'#2a4f7a',
-  blue:'#3b9eff',cyan:'#00d4ff',teal:'#00e5c0',gold:'#f5c842',
-  purple:'#9b6dff',coral:'#ff6b6b',green:'#3dffa0',orange:'#ff9f43',
-  txt:'#e8f0fe',txt2:'#8aaccc',txt3:'#4a6a8a',txt4:'#2e4a6a',
+  bg:"#050f1e", panel:"#081628", card:"#0b1e36", up:"#0e2544",
+  b:"rgba(26,53,85,0.8)", bhi:"rgba(42,79,122,0.9)",
+  txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
+  teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
+  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", cyan:"#00d4ff",
 };
 
-/* ══════════════════════════════════════
-   PROCEDURE DATA
-══════════════════════════════════════ */
-const LIDO=['Lidocaine 1% plain','Lidocaine 1% w/ epi','Lidocaine 2% plain','Lidocaine 2% w/ epi','Bupivacaine 0.25%','Bupivacaine 0.5%'];
-const NVpre=['Sensation intact','Motor intact','Cap refill <2s','Pulses present'];
-const NVpost=['Sensation intact','Motor function intact','Pulses intact','Cap refill <2 sec'];
-
-const fi=(id,lbl,req,ph)=>({id,label:lbl,type:'input',required:!!req,placeholder:ph||''});
-const fs=(id,lbl,opts,req)=>({id,label:lbl,type:'select',options:opts,required:!!req});
-const fc=(id,lbl,opts,defs)=>({id,label:lbl,type:'chips',options:opts,defaults:defs||[]});
-const fa=(id,lbl,ph)=>({id,label:lbl,type:'textarea',placeholder:ph||''});
-const sec=(icon,title,fields,warning)=>({icon,title,fields,warning:warning||null});
-
-const P={
-lac:{key:'lac',name:'Laceration Repair',icon:'🩹',subtitle:'Wound closure',risk:'low',category:'wound',tips:'Epi contraindications digits/ears/nose; billing: simple <2.5cm vs complex',sections:[
-  sec('📍','Wound Details',[fi('location','Location',1,'Right forehead'),fi('length','Length',1,'3.5 cm'),fs('depth','Depth',['Superficial','Deep dermis','Subcutaneous','Fascia','Muscle']),fs('wtype','Wound Type',['Linear','Stellate','Avulsion','Degloving','Puncture']),fs('contam','Contamination',['Clean','Mild','Heavy','Bite','Soil/debris']),fc('wchar','Characteristics',['Well-approximated','Jagged/irregular','Active bleeding','Minimal bleeding','FB noted','Tendon visible','Bone visible'])]),
-  sec('💉','Anesthesia & Prep',[fs('anes','Anesthetic',[...LIDO,'LET gel','Diphenhydramine'],1),fi('anes_amt','Amount (mL)',0,'5 mL'),fs('anes_tech','Technique',['Local infiltration','Field block','Digital block','Regional','Topical']),fc('prep','Preparation',['NS irrigation','Betadine','Chlorhexidine','FB removed','Explored','Hair removal'],['NS irrigation'])]),
-  sec('🧵','Closure',[fs('closure','Method',['Simple interrupted','Running','Horizontal mattress','Vertical mattress','Deep + interrupted','Staples','Dermabond','Steri-strips'],1),fs('sut_mat','Material',['N/A','3-0 Nylon','4-0 Nylon','5-0 Nylon','6-0 Nylon','3-0 Vicryl','3-0 Chromic']),fi('sut_n','# Sutures',0,'6'),fs('dressing','Dressing',['Dry sterile','Bacitracin + gauze','Petrolatum','Tegaderm','None (face)'])]),
-  sec('✅','Aftercare',[fs('tet','Tetanus',['Up to date','Tdap given','TIG given','Tdap + TIG','Declined'],1),fs('abx','Antibiotics',['None','Cephalexin 500mg QID x 5d','Amox-clav 875mg BID x 5d','Clindamycin 300mg QID x 5d']),fs('fu','Follow-Up',['Face: 5d','Scalp: 7-10d','Trunk: 7-10d','Extremities: 10-14d','Joint: 14d']),fc('nvpost','Post NV',NVpost,NVpost),fa('addl','Notes','Tolerated well…')])]},
-
-iand:{key:'iand',name:'I&D / Abscess',icon:'💉',subtitle:'Incision & drainage',risk:'low',category:'wound',tips:'MRSA coverage; packing type; admission criteria',sections:[
-  sec('📍','Abscess',[fi('location','Location',1,'Left buttock'),fi('size','Size',1,'4x3x2 cm'),fs('skin','Overlying',['Erythematous fluctuant','Indurated','Pointing','Cellulitis'])]),
-  sec('💉','Procedure',[fs('anes','Anesthetic',['Lido 1%','Lido 1% w/epi','Lido 2%','Proc sedation','None'],1),fs('incision','Incision',['Linear #11','Linear #15','Cruciate','Loop']),fc('drain','Drainage',['Purulent','Serosanguineous','Malodorous','Loculations broken','Irrigated']),fs('packing','Packing',['Iodoform 1/4"','Iodoform 1/2"','Plain gauze','Not packed','Loop']),fs('cx','Cultures',['Wound culture','Not sent','Blood cultures','MRSA swab'])]),
-  sec('✅','Disposition',[fs('abx','Antibiotics',['None','TMP-SMX DS BID x 7d','Doxy 100mg BID x 7d','Clinda 300mg TID x 7d','Cephalexin 500mg QID x 7d'],1),fs('fu','Follow-Up',['48h wound check','48-72h repack','PCP 3-5d','Wound clinic','Admit']),fa('addl','Notes')])]},
-
-fb:{key:'fb',name:'Foreign Body Removal',icon:'🔍',subtitle:'Soft tissue FB',risk:'low',category:'wound',tips:'Wood/glass radiolucent — use US; post-removal imaging',sections:[sec('🔍','FB Details',[fi('location','Location',1,'R index finger'),fs('fbtype','Type',['Wood','Glass','Metal','Fishhook','Thorn','Gravel','Needle'],1),fs('imaging','Imaging',['XR — seen','XR — negative','US — identified','None — visible']),fs('anes','Anesthetic',LIDO.slice(0,2).concat(['Digital block','Regional']),1),fs('result','Removed?',['Yes intact','Fragmented','Partial — referral','Unable']),fa('addl','Notes')])]},
-
-wc:{key:'wc',name:'Wound Irrigation',icon:'🧴',subtitle:'Wound care & irrigation',risk:'low',category:'wound',tips:'High-pressure irrigation; delayed closure for contaminated',sections:[sec('🧴','Wound',[fi('location','Location',1,'R lower extremity'),fi('size','Size',0,'6x4 cm'),fs('wtype','Type',['Abrasion','Avulsion','Crush','Infected','Burn','Ulcer','Dehiscence'],1),fs('contam','Contamination',['Minimal','Moderate','Heavy','Fecal']),fc('irrig','Irrigation',['High-pressure NS','Wound scrub','Debridement','FB removed'],['High-pressure NS']),fa('addl','Notes')])]},
-
-nail:{key:'nail',name:'Nail Trephination',icon:'🔨',subtitle:'Subungual hematoma',risk:'low',category:'wound',tips:'No block needed if >50%; check XR for tuft fracture',sections:[sec('🔨','Procedure',[fi('digit','Digit',1,'R thumb'),fs('method','Method',['Electrocautery','18G needle','Heated paper clip'],1),fs('hema','Hematoma Size',['<25%','25-50%','>50%']),fs('xr','X-ray',['No fracture','Tuft fx — splint','Not obtained']),fa('addl','Notes')])]},
-
-intub:{key:'intub',name:'Intubation / RSI',icon:'🌬️',subtitle:'Rapid sequence intubation',risk:'high',category:'airway',tips:'Succ contraindications; capnography mandatory; backup airway; 6mL/kg IBW',sections:[
-  sec('🌬️','Indication',[fc('ind','Indication',['Hypoxic resp failure','Hypercapnic','Airway protect — AMS','GCS ≤8','Impending failure','Obstruction']),fs('preox','Pre-O₂',['15L NRB x 3min','BVM + PEEP','HFNC 60L','BiPAP','Crash']),fi('prespo2','SpO₂ Prior',0,'94%')],'⚠️ High-risk. Document all attempts and backup plans.'),
-  sec('💊','RSI Meds',[fs('ind_agent','Induction',['Ketamine 1.5-2 mg/kg','Propofol 1.5-2 mg/kg','Etomidate 0.3 mg/kg'],1),fi('ind_dose','Dose',0,'Ketamine 200mg'),fs('par','Paralytic',['Succ 1.5 mg/kg','Roc 1.2 mg/kg','Vec 0.1 mg/kg'],1),fi('par_dose','Dose',0,'Succ 150mg')]),
-  sec('🔭','Laryngoscopy',[fs('dev','Device',['DL Mac 3','DL Mac 4','DL Miller 2','VL GlideScope','VL C-MAC','FOB','LMA'],1),fs('att','Attempts',['1st success','2 success','3 success','Failed'],1),fs('ett','ETT',['6.0','6.5','7.0','7.5','8.0'],1),fi('ettd','Depth',0,'23 cm'),fc('conf','Confirmation',['Waveform capnography ✓','Bilateral breath sounds ✓','Bilateral chest rise ✓','SpO₂ maintained','CXR ordered'],['Waveform capnography ✓','Bilateral breath sounds ✓','Bilateral chest rise ✓','SpO₂ maintained','CXR ordered'])]),
-  sec('⚙️','Post-Intubation',[fs('vm','Vent',['AC/VC','AC/PC','SIMV']),fi('tv','TV',0,'500 mL'),fi('vset','Rate/PEEP/FiO₂',0,'RR14 PEEP5 100%'),fc('comp','Complications',['No complications','Transient hypoxia','Esophageal (corrected)','R mainstem (fixed)'],['No complications']),fa('addl','Notes')])]},
-
-cryo:{key:'cryo',name:'Cricothyrotomy',icon:'🔪',subtitle:'Surgical airway',risk:'high',category:'airway',tips:'Last resort; 6.0-6.5 ETT; CXR + bronchoscopy post',sections:[sec('🔪','Procedure',[fs('ind','Indication',['Cannot intubate','Failed intubation ≥2','Facial trauma','Severe angioedema'],1),fs('method','Technique',['Landmark palpation','US guided','Scalpel classic','Needle/cannula'],1),fi('prespo2','SpO₂ Prior',0,'78%'),fs('tube','Tube',['6.0 ETT','6.5 ETT','Trach tube']),fc('post','Post',['CXR ordered','Bronch scheduled','ICU notified','Trach planned 24h']),fa('addl','Notes')],'⚠️ Emergency surgical airway.')]},
-
-sed:{key:'sed',name:'Procedural Sedation',icon:'💤',subtitle:'Conscious sedation',risk:'mod',category:'airway',tips:'Ketamine preferred in ED; capnography for deep; discharge criteria',sections:[
-  sec('💤','Pre-Sedation',[fi('ind','Indication',1,'Shoulder reduction'),fs('asa','ASA',['I — healthy','II — mild systemic','III — severe','IV']),fs('npo','NPO',['Emergency — N/A','NPO >8h','NPO >6h','Not NPO — risk discussed'])]),
-  sec('💊','Medications',[fs('agent','Agent',['Ketamine 1-1.5 IV','Ketamine 4 IM','Propofol 1 IV','Midaz + Fent','Etomidate 0.1-0.15'],1),fi('dose','Dose',0,'Ketamine 100mg'),fs('slvl','Level',['Minimal','Moderate','Deep','Dissociative']),fi('dur','Duration',0,'15 min')]),
-  sec('✅','Recovery',[fc('rec','Recovery',['Returned to baseline','SpO₂ on RA','No adverse events'],['Returned to baseline','SpO₂ on RA','No adverse events']),fa('addl','Outcome')])]},
-
-cl:{key:'cl',name:'Central Line',icon:'🩺',subtitle:'CVC insertion',risk:'high',category:'vascular',tips:'US guidance standard; CXR required; full barrier',sections:[
-  sec('🩺','Indication',[fc('ind','Indication',['No PIV','Hemodynamic monitoring','Vasopressors','Rapid volume','TV pacing','Caustic meds']),fs('site','Site',['R IJ','L IJ','R subclavian','L subclavian','R femoral','L femoral'],1),fs('cath','Catheter',['Triple lumen','Double lumen','Single lumen','Cordis','Shiley'])]),
-  sec('🔊','Technique',[fs('us','US Guidance',['Real-time','US localization','Landmark'],1),fs('att','Attempts',['1 success','2 success','3 success','Failed'],1),fi('depth','Depth cm',0,'15'),fc('lum','Lumens',['All ports flush','Sutured','Sterile dressing'],['All ports flush','Sutured','Sterile dressing'])],'⚠️ Document US, attempts, CXR.'),
-  sec('✅','Confirmation',[fc('conf','Position',['CXR SVC/RA junction','No PTX on CXR','Venous blood confirmed'],['CXR SVC/RA junction','No PTX on CXR','Venous blood confirmed']),fc('comp','Complications',['No complications','Arterial puncture','PTX','Hematoma'],['No complications']),fa('addl','Notes')])]},
-
-piv:{key:'piv',name:'Peripheral IV',icon:'💉',subtitle:'PIV insertion',risk:'low',category:'vascular',tips:'Two large-bore for resuscitation',sections:[sec('💉','IV',[fs('ind','Indication',['IV access','Resuscitation','Blood draw'],1),fs('gauge','Gauge',['18G','20G','22G'],1),fs('site','Site',['Antecubital','Forearm','Hand','Lower ext'],1),fc('conf','Confirmation',['Blood return','Fluid flows','No swelling','Secured'],['Blood return','Fluid flows','No swelling','Secured'])])]},
-
-io:{key:'io',name:'Intraosseous Access',icon:'🦴',subtitle:'IO vascular access',risk:'high',category:'vascular',tips:'Last resort; marrow aspirate first; compartment syndrome risk',sections:[sec('💉','IO',[fs('ind','Indication',['Cardiac arrest — no IV','Severe shock','Pediatric','Burns'],1),fs('site','Site',['Proximal humerus','Proximal tibia','Distal tibia','Distal femur'],1),fi('att','Attempts',0,'1 success'),fc('conf','Confirmation',['Needle firm','Marrow aspirate','Free flow','No extravasation'],['Needle firm','Marrow aspirate','Free flow','No extravasation']),fa('addl','Notes')],'⚠️ High-risk — document failed PIV.')]},
-
-art:{key:'art',name:'Arterial Line',icon:'🩸',subtitle:'A-line hemodynamics',risk:'mod',category:'vascular',tips:'Allen test before radial; waveform mandatory',sections:[sec('🩸','A-Line',[fs('ind','Indication',['Continuous BP','Frequent ABGs','Vasopressors','Hemodynamic instability'],1),fs('site','Site',['Radial','Femoral','Axillary'],1),fs('allen','Allen Test',['Positive','Negative','Not done']),fi('size','Catheter',0,'20G'),fc('tech','Technique',['US guidance','Landmark','Waveform confirmed'])])]},
-
-ct:{key:'ct',name:'Chest Tube',icon:'🫁',subtitle:'Tube thoracostomy',risk:'high',category:'thoracic',tips:'Safe triangle 4th/5th ICS AAL; CXR mandatory',sections:[sec('🫁','Details',[fs('ind','Indication',['PTX simple','PTX tension','Hemothorax','Hemopneumothorax','Empyema','Effusion'],1),fs('side','Side',['Right','Left'],1),fs('fr','Size',['28 Fr','32 Fr','36 Fr','40 Fr','14 pigtail']),fs('site','Site',['4th/5th ICS AAL','2nd ICS MCL','Posterior']),fi('drain','Output',0,'400 mL'),fs('suct','Suction',['-20 cmH₂O','Water seal','Heimlich']),fc('conf','Confirmation',['CXR confirmed','Lung expanded','Sutured','Occlusive dressing'],['CXR confirmed','Lung expanded','Sutured','Occlusive dressing']),fa('addl','Notes')],'⚠️ High complication risk.')]},
-
-thorac:{key:'thorac',name:'Thoracentesis',icon:'💧',subtitle:'Pleural fluid aspiration',risk:'mod',category:'thoracic',tips:'US guided; re-expansion edema if >1.5L; send fluid studies',sections:[sec('💧','Thoracentesis',[fs('ind','Indication',['Diagnostic','Therapeutic','Both'],1),fs('side','Side',['Right','Left'],1),fs('us','US Guidance',['Real-time','US marked','Landmark'],1),fi('vol','Volume Removed',0,'1200 mL'),fs('app','Appearance',['Clear yellow','Turbid','Bloody','Milky'],1),fc('labs','Studies',['Cell count','Protein/LDH/glucose','Culture/gram','pH','Cytology','Triglycerides'],['Cell count','Protein/LDH/glucose','Culture/gram']),fa('addl','Notes')])]},
-
-pericardio:{key:'pericardio',name:'Pericardiocentesis',icon:'❤️',subtitle:'Pericardial drainage',risk:'high',category:'thoracic',tips:'US mandatory; subxiphoid; monitor for PEA/VT; surgery standby',sections:[sec('❤️','Pericardiocentesis',[fs('ind','Indication',['Tamponade','Large effusion','Diagnostic'],1),fs('approach','Approach',['Subxiphoid US','Apical US','CT guided']),fi('vol','Volume',0,'250 mL'),fs('app','Appearance',['Serous','Bloody','Purulent']),fs('drain','Drain',['Pigtail catheter','No drain','Surgical window planned']),fa('addl','Notes')],'⚠️ High-risk — surgery standby.')]},
-
-sp_proc:{key:'sp_proc',name:'Splint Application',icon:'🦴',subtitle:'Orthopedic immobilization',risk:'low',category:'ortho',tips:'Pre AND post NV exams required',sections:[
-  sec('🦴','Injury',[fi('dx','Diagnosis',1,'Distal radius fx'),fs('ext','Extremity',['R upper','L upper','R lower','L lower'],1),fc('nvpre','Pre NV',NVpre,NVpre)]),
-  sec('🩹','Splint',[fs('spltype','Type',['Post long arm','Short arm volar','Ulnar gutter','Radial gutter','Thumb spica','Sugar-tong','Post ankle','Stirrup','Knee immobilizer'],1),fi('pos','Position',1,'Wrist 20° ext')]),
-  sec('✅','Post',[fc('nvpost2','Post NV',['Sensation intact','Motor intact','Cap refill <2s','Pulses intact','No increased pain'],['Sensation intact','Motor intact','Cap refill <2s','Pulses intact']),fa('addl','Notes')])]},
-
-red:{key:'red',name:'Fracture/Dislocation Reduction',icon:'🔧',subtitle:'Orthopedic reduction',risk:'mod',category:'ortho',tips:'Pre AND post NV mandatory; pre/post XR; ortho for failed',sections:[sec('🔧','Reduction',[fi('dx','Diagnosis',1,'R anterior shoulder dislocation'),fi('mech','Mechanism',0,'FOOSH'),fc('nvpre','Pre NV',['Sensation intact','Motor intact','Pulses present','Axillary nerve checked'],['Sensation intact','Motor intact','Pulses present']),fs('prexr','Pre-XR',['Dislocation confirmed','Dislocation + fx','Angulated fx','XR deferred'],1),fs('analg','Analgesia',['IA lidocaine','IV morphine + midaz','IV fentanyl + midaz','Ketamine sedation','Propofol','No sedation'],1),fs('tech','Technique',['Cunningham','FARES','Stimson','External rotation','Traction-countertraction','Milch','Allis','Longitudinal traction'],1),fs('att','Attempts',['1 success','2 success','3 failed — ortho']),fc('post','Post-Reduction',['Post-XR reduced','Sensation post','Motor post','Pulses post','Splint/sling applied']),fa('addl','Notes')])]},
-
-cv:{key:'cv',name:'Cardioversion',icon:'⚡',subtitle:'Synchronized cardioversion',risk:'high',category:'cardiac',tips:'SYNC mode; anticoag if AFib >48h; energy: AFib 120-200J, flutter 50-100J',sections:[sec('⚡','Cardioversion',[fs('ind','Rhythm',['AFib unstable','AFib elective','A-flutter','SVT refractory','VT with pulse','VT unstable'],1),fs('dur','Duration',['<48h','≥48h — anticoag','Emergent']),fi('previt','Pre Vitals',0,'BP 82/54 HR 148'),fs('sed','Sedation',['Midaz + Fent','Etomidate','Propofol','Ketamine','None — life threat']),fi('j1','Shock 1 (J)',1,'120J biphasic'),fs('r1','Result',['Sinus restored','No change','Partial']),fi('j2','Shock 2',0,'200J'),fs('postrhythm','Post Rhythm',['NSR','Sinus brady','Junctional','Persistent AFib','VF — defib'],1),fi('postvit','Post Vitals',0,'BP 118/72 HR 78'),fa('addl','Notes')],'⚠️ Confirm SYNC mode before every shock.')]},
-
-lp:{key:'lp',name:'Lumbar Puncture',icon:'🔬',subtitle:'Spinal tap',risk:'mod',category:'procedure',tips:'CT before LP; CSF interpretation; 4 tubes; HSV PCR',sections:[
-  sec('🔬','Indication',[fc('ind','Indication',['R/O SAH','R/O meningitis','CNS infection','Therapeutic','Demyelinating']),fs('ct','Pre-LP CT',['CT safe','CT normal','Not required','Contraindicated'],1)]),
-  sec('🩺','Procedure',[fs('pos','Position',['Lateral decubitus','Seated']),fs('lvl','Level',['L3-L4','L4-L5','L2-L3'],1),fs('att','Attempts',['1 success','2 success','3 success','Failed'],1),fi('op','Opening Pressure',1,'18 cmH₂O'),fs('csf','CSF',['Clear','Xanthochromic','Bloody clearing','Uniformly bloody','Turbid'],1)]),
-  sec('🧪','CSF Studies',[fc('tubes','Tubes',['Tube 1 Cell count','Tube 2 Protein/glucose','Tube 3 Culture/gram','Tube 4 Repeat cell','HSV PCR','Crypto','VDRL'],['Tube 1 Cell count','Tube 2 Protein/glucose','Tube 3 Culture/gram','Tube 4 Repeat cell']),fa('addl','Notes')])]},
-
-fast:{key:'fast',name:'FAST Exam',icon:'🔊',subtitle:'Trauma sonography',risk:'low',category:'procedure',tips:'All views documented; action for positive; sensitivity ~80%',sections:[sec('🔊','FAST',[fs('ind','Indication',['Blunt trauma','Penetrating','Hypotension','Rib fx','eFAST'],1),fi('ctx','Context',0,'MVC restrained'),fs('ruq','RUQ',['Neg','Pos','Indet'],1),fs('luq','LUQ',['Neg','Pos','Indet'],1),fs('pelv','Pelvic',['Neg','Pos','Indet'],1),fs('card','Cardiac',['Neg','Pos effusion','Indet'],1),fs('result','Overall',['NEGATIVE','POSITIVE','INDETERMINATE'],1),fa('addl','Notes')])]},
-
-par:{key:'par',name:'Paracentesis',icon:'💧',subtitle:'Abdominal paracentesis',risk:'mod',category:'procedure',tips:'SBP if PMN >250; albumin if >5L; US reduces complications',sections:[sec('💧','Paracentesis',[fs('ind','Indication',['Diagnostic — R/O SBP','Therapeutic','Both'],1),fs('site','Site',['LLQ US-guided','RLQ','Midline infraumbilical']),fs('us','US Used',['Real-time','US pocket ID','Landmark'],1),fi('vol','Volume',0,'4.5 L'),fs('app','Appearance',['Clear yellow','Turbid','Bloody','Milky'],1),fc('labs','Studies',['Cell count + diff','Protein/albumin/LDH','Gram stain + culture','Glucose/amylase','Cytology'],['Cell count + diff','Protein/albumin/LDH','Gram stain + culture']),fa('addl','Notes')])]},
-
-arth:{key:'arth',name:'Arthrocentesis',icon:'🦵',subtitle:'Joint aspiration',risk:'mod',category:'procedure',tips:'WBC >50k = septic; crystal analysis important',sections:[sec('🦵','Arthrocentesis',[fs('joint','Joint',['R knee','L knee','R ankle','L ankle','R wrist','L wrist','R elbow','L elbow','R shoulder','L shoulder'],1),fs('ind','Indication',['R/O septic','Gout/pseudogout','Diagnostic','Therapeutic','Hemarthrosis'],1),fi('vol','Volume',0,'35 mL'),fs('app','Appearance',['Clear/straw','Yellow turbid','Purulent','Bloody','Chalky white'],1),fc('labs','Studies',['Cell count + diff','Crystal analysis','Gram stain + culture','Glucose/protein'],['Cell count + diff','Crystal analysis','Gram stain + culture']),fs('ster','Steroid',['None — septic not excluded','Methylpred 40mg','Triamcinolone 40mg','Betamethasone 6mg']),fa('addl','Notes')])]},
-
-foley:{key:'foley',name:'Foley Catheter',icon:'🚽',subtitle:'Urinary catheter',risk:'low',category:'procedure',tips:'Aseptic; check hematuria; daily removal assessment',sections:[sec('🚽','Placement',[fs('ind','Indication',['Retention','Sepsis I/Os','Hemodynamic','Burns'],1),fs('size','Size',['16 Fr','18 Fr','20 Fr','22 Fr'],1),fc('tech','Technique',['Sterile field','Betadine/CHG','No resistance','Urine return'],['Sterile field','Betadine/CHG','No resistance','Urine return']),fi('urine','Output',0,'400 mL'),fs('color','Color',['Clear','Cloudy','Tea-colored','Hematuria'],1),fa('addl','Notes')])]},
-
-ngt:{key:'ngt',name:'Nasogastric Tube',icon:'🧴',subtitle:'NGT insertion',risk:'low',category:'procedure',tips:'16-18 Fr; pH <6 confirms; CXR if doubt',sections:[sec('🧴','NGT',[fs('ind','Indication',['Gastric decompression','Aspiration risk','Medication admin','Enteral feeding'],1),fs('size','Size',['14 Fr','16 Fr','18 Fr']),fi('depth','Depth cm',0,'50'),fs('conf','Confirmation',['Gastric aspirate','pH <6','CXR confirmed','Auscultation — air'],1),fa('addl','Notes')])]},
-
-epi:{key:'epi',name:'Epistaxis / Nasal Packing',icon:'👃',subtitle:'Anterior/posterior packing',risk:'low',category:'ent',tips:'Anterior Rhino Rocket first; posterior = Foley if fails; ENT for posterior',sections:[sec('👃','Epistaxis',[fs('side','Side',['Right','Left','Bilateral'],1),fs('type','Type',['Anterior','Posterior','Unable to determine']),fs('initial','Initial',['Direct pressure 15 min','Afrin spray','Silver nitrate cautery','Surgicel/gelfoam']),fs('packing','Packing',['Rhino Rocket','Merocel sponge','Rapid Rhino','Posterior Foley balloon','Posterior pack — ENT','None — cautery sufficient'],1),fs('fu','Follow-Up',['ENT 24-48h','ENT emergent','PCP 3-5d','Return if rebleed']),fa('addl','Notes')])]},
-
-cantho:{key:'cantho',name:'Lateral Canthotomy',icon:'👁️',subtitle:'Orbital decompression',risk:'high',category:'ent',tips:'IOP >40 or clinical signs; time-critical — do not wait for ophth',sections:[sec('👁️','Canthotomy',[fs('side','Eye',['Right','Left'],1),fs('ind','Indication',['Retrobulbar hemorrhage','IOP >40','Proptosis + vision loss','APD'],1),fi('iop_pre','IOP Pre',0,'52 mmHg'),fs('anes','Anesthetic',['Lido 1% w/epi','None — emergent']),fi('iop_post','IOP Post',0,'18 mmHg'),fc('exam','Post Exam',['Vision assessed','IOP remeasured','Pupil reactivity','Ophthalmology called']),fa('addl','Notes')],'⚠️ Time-critical — do not delay.')]},
-
-dental:{key:'dental',name:'Dental Nerve Block',icon:'🦷',subtitle:'IAN / infraorbital block',risk:'low',category:'ent',tips:'Aspirate before injecting; IAN for lower molars; infraorbital for upper',sections:[sec('🦷','Block',[fs('block','Block Type',['Inferior alveolar (IAN)','Long buccal','Mental/incisive','Infraorbital','Post superior alveolar','Ant superior alveolar'],1),fs('side','Side',['Right','Left','Bilateral'],1),fs('anes','Anesthetic',['Lido 2% w/epi','Lido 2% plain','Bupivacaine 0.5%'],1),fi('vol','Volume',0,'1.8 mL'),fs('indication','For',['Dental abscess','Fracture stabilization','Oral laceration','Avulsed tooth']),fa('addl','Notes')])]},
-
-digblk:{key:'digblk',name:'Digital Nerve Block',icon:'💉',subtitle:'Finger/toe block',risk:'low',category:'nerve',tips:'Ring block at base; no epi; onset 3-5 min',sections:[sec('💉','Block',[fi('digit','Digit',1,'R ring finger'),fs('anes','Anesthetic',['Lido 1% plain','Lido 2% plain','Bupivacaine 0.25%'],1),fi('vol','Volume',0,'2 mL each side'),fs('tech','Technique',['Ring block — web space','Transthecal','Metacarpal block']),fc('conf','Confirmation',['Sensation diminished','No blanching','Adequate anesthesia']),fa('addl','Notes')])]},
-
-femblk:{key:'femblk',name:'Femoral Nerve Block',icon:'🦵',subtitle:'US-guided femoral block',risk:'low',category:'nerve',tips:'US mandatory; identify nerve lateral to artery; aspirate before inject',sections:[sec('🦵','Block',[fs('side','Side',['Right','Left'],1),fs('ind','Indication',['Hip fracture','Femur fracture','Anterior thigh lac','Pre-reduction'],1),fs('anes','Anesthetic',['Bupivacaine 0.25% 20mL','Bupivacaine 0.5% 15mL','Ropivacaine 0.5% 20mL'],1),fc('conf','Confirmation',['Spread on US','Motor block','Sensory block confirmed']),fa('addl','Notes')])]},
-
-fascblk:{key:'fascblk',name:'Fascia Iliaca Block',icon:'🦴',subtitle:'FICB for hip/femur',risk:'low',category:'nerve',tips:'Infrainguinal preferred; 30-40mL; reliable for hip fx',sections:[sec('🦴','FICB',[fs('side','Side',['Right','Left'],1),fs('approach','Approach',['Infrainguinal US','Suprainguinal US','Landmark 2-pop'],1),fs('anes','Anesthetic',['Bupivacaine 0.25% 30mL','Bupivacaine 0.25% 40mL','Ropivacaine 0.2% 40mL'],1),fi('vol','Volume',0,'30 mL'),fc('conf','Confirmation',['Fascial pop (landmark)','Spread deep to fascia on US','Onset 15-20 min']),fa('addl','Notes')])]},
-
-paraph:{key:'paraph',name:'Paraphimosis Reduction',icon:'🔵',subtitle:'Manual reduction',risk:'mod',category:'gu',tips:'Ice + compression first; dorsal slit if fails; urology for recurrent',sections:[sec('🔵','Reduction',[fs('method','Method',['Ice + manual compression','Osmotic sugar wrap','Puncture technique','Dorsal slit'],1),fs('anes','Analgesia',['Dorsal penile block','Topical EMLA','Ring block','None']),fs('result','Result',['Successfully reduced','Partially — urology','Failed — dorsal slit','Failed — urology emergent'],1),fc('post','Post',['Foreskin reduced','Circulation restored','No necrosis','Urology consulted']),fa('addl','Notes')])]},
-
-detors:{key:'detors',name:'Testicular Detorsion',icon:'🔵',subtitle:'Manual detorsion',risk:'high',category:'gu',tips:'Open book — lateral rotation; US Doppler pre/post; OR for failed; salvage drops after 6h',sections:[sec('🔵','Detorsion',[fs('side','Side',['Right','Left'],1),fi('duration','Symptom Duration',0,'4 hours'),fs('us_pre','Pre US Doppler',['Absent flow','Decreased flow','Hyperemia — epididymitis','Not obtained']),fs('tech','Technique',['Open book — medial to lateral','Opposite direction','Bilateral attempt'],1),fs('result','Result',['Pain relief + flow restored','Partial improvement','No improvement — OR','Unable to assess']),fs('us_post','Post US',['Flow restored','Equivocal','No change — OR']),fc('disp','Disposition',['Urology — OR orchiopexy','Observation + repeat US','Emergent OR']),fa('addl','Notes')],'⚠️ Time-critical — salvage drops after 6h.')]},
-
-burn:{key:'burn',name:'Burn Assessment',icon:'🔥',subtitle:'Burn evaluation & care',risk:'mod',category:'trauma',tips:'Rule of 9s; Parkland 4mL/kg/%BSA; escharotomy for circumferential',sections:[sec('🔥','Burn',[fi('mech','Mechanism',1,'Grease splash'),fs('degree','Degree',['Superficial (1st)','Partial superficial (2nd)','Partial deep (2nd)','Full thickness (3rd)','4th degree'],1),fi('bsa','TBSA %',1,'12%'),fi('locations','Locations',0,'R forearm, R hand, anterior chest'),fc('mgmt','Management',['IV access','Parkland calculated','Wound cleaned','Silvadene applied','Non-adherent dressing','Tetanus updated','Pain managed'],['IV access','Wound cleaned']),fs('dispo','Disposition',['Outpatient','Burn center','Admit — IV fluids','Admit — OR debridement']),fa('addl','Notes')])]},
-
-dth:{key:'dth',name:'Death Pronouncement',icon:'📋',subtitle:'Clinical death note',risk:'low',category:'trauma',tips:'Time; exam; all notifications; ME for unwitnessed/trauma',sections:[
-  sec('🕐','Circumstances',[fi('time','Date & Time',1,''),fs('circ','Circumstances',['Arrest — resuscitated','Arrest — DNR','Expected — comfort','Traumatic','Natural death'],1),fc('res','Resuscitation',['Full','Terminated ACLS','DNR — not initiated','Comfort measures'])]),
-  sec('🔬','Exam',[fc('exam','Findings',['Pupils fixed/dilated','No resp effort','Asystole','No pulse','No pain response','Corneal reflex absent','Rigor mortis','Lividity'],['Pupils fixed/dilated','No resp effort','Asystole','No pulse','No pain response','Corneal reflex absent'])]),
-  sec('👥','Notifications',[fc('fam','Family',['Present','Notified phone','Social work','Chaplain','Unable to reach']),fc('notif','Required',['Attending notified','ME/Coroner','ME declined','OPO','Death cert']),fa('addl','Notes')])]},
-};
-
-const DEFAULT_CATEGORIES = [
-  {id:'wound',name:'Wound & Soft Tissue',icon:'🩹',color:'#3b9eff',procs:['lac','iand','fb','wc','nail']},
-  {id:'airway',name:'Airway',icon:'🌬️',color:'#ff6b6b',procs:['intub','cryo','sed']},
-  {id:'vascular',name:'Vascular Access',icon:'💉',color:'#9b6dff',procs:['cl','piv','io','art']},
-  {id:'thoracic',name:'Thoracic',icon:'🫁',color:'#ff9f43',procs:['ct','thorac','pericardio']},
-  {id:'ortho',name:'Orthopedic',icon:'🦴',color:'#00e5c0',procs:['sp_proc','red']},
-  {id:'cardiac',name:'Cardiac',icon:'❤️',color:'#e05555',procs:['cv']},
-  {id:'procedure',name:'Procedures',icon:'🩺',color:'#00d4ff',procs:['lp','fast','par','arth','foley','ngt']},
-  {id:'ent',name:'ENT & Eye',icon:'👃',color:'#f5c842',procs:['epi','cantho','dental']},
-  {id:'nerve',name:'Nerve Blocks',icon:'🦵',color:'#3dffa0',procs:['digblk','femblk','fascblk']},
-  {id:'gu',name:'Genitourinary',icon:'🔵',color:'#00b4d8',procs:['paraph','detors']},
-  {id:'trauma',name:'Trauma & Critical',icon:'⚡',color:'#ff6b6b',procs:['burn','dth']},
-];
-
-const CAT_COLORS=['#3b9eff','#00e5c0','#ff6b6b','#ff9f43','#f5c842','#9b6dff','#00d4ff','#3dffa0','#e05555','#00b4d8'];
-const CAT_ICONS=['🩹','🌬️','💉','🫁','🦴','🩺','⚡','📋','👁️','🦷','🦵','❤️','🔥','🔵','💧','👃','🔪','💤'];
-const RISK_COLOR={high:T.coral,mod:T.orange,low:T.teal};
-const RISK_BG={high:'rgba(255,107,107,.12)',mod:'rgba(255,159,67,.12)',low:'rgba(0,229,192,.08)'};
-const RISK_BD={high:'rgba(255,107,107,.3)',mod:'rgba(255,159,67,.3)',low:'rgba(0,229,192,.2)'};
-const RISK_LABEL={high:'HIGH RISK',mod:'MOD RISK',low:''};
-
-/* ══════════════════════════════════════
-   CSS
-══════════════════════════════════════ */
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
-.edpn-wrap *,.edpn-wrap *::before,.edpn-wrap *::after{box-sizing:border-box}
-.edpn-wrap{font-family:'DM Sans',sans-serif;font-size:14px;color:${T.txt};display:flex;flex-direction:column;gap:14px;padding:14px}
-.edpn-wrap ::-webkit-scrollbar{width:4px}.edpn-wrap ::-webkit-scrollbar-thumb{background:${T.border};border-radius:2px}
-.edpn-cmd-bar{position:relative;display:flex;align-items:center;gap:8px;background:${T.up};border:1px solid ${T.border};border-radius:8px;padding:7px 12px}
-.edpn-cmd-bar:focus-within{border-color:${T.blue};box-shadow:0 0 0 2px rgba(59,158,255,.08)}
-.edpn-cmd-input{flex:1;background:none;border:none;color:${T.txt};font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
-.edpn-cmd-input::placeholder{color:${T.txt4}}
-.edpn-cmd-results{position:absolute;top:calc(100% + 4px);left:0;right:0;background:${T.panel};border:1px solid ${T.border};border-radius:8px;max-height:280px;overflow-y:auto;z-index:50;box-shadow:0 12px 40px rgba(0,0,0,.4)}
-.edpn-cmd-result{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;border-bottom:1px solid rgba(26,53,85,.3);font-size:12px}
-.edpn-cmd-result:last-child{border-bottom:none}.edpn-cmd-result:hover{background:${T.up}}
-.edpn-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
-.edpn-cat-tile{position:relative;border-radius:16px;cursor:pointer;border:1.5px solid ${T.border};overflow:hidden;transition:all .25s;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 12px 18px;gap:10px;background:${T.card};aspect-ratio:1/1;min-height:160px}
-.edpn-cat-tile:hover{border-color:${T.borderHi};transform:translateY(-3px);box-shadow:0 10px 32px rgba(0,0,0,.4)}
-.edpn-cat-tile.edpn-active-cat{border-color:${T.blue};box-shadow:0 0 0 1px ${T.blue}}
-.edpn-glow{position:absolute;top:0;left:0;right:0;bottom:0;opacity:.13;pointer-events:none;transition:opacity .3s}
-.edpn-cat-tile:hover .edpn-glow{opacity:.22}
-.edpn-ct-logo{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;z-index:1;font-size:30px;transition:transform .2s;position:absolute;top:50%;left:50%;transform:translate(-50%,-68%);flex-shrink:0}
-.edpn-cat-tile:hover .edpn-ct-logo{transform:translate(-50%,-68%) scale(1.08)}
-.edpn-ct-name{font-size:12px;font-weight:600;color:${T.txt};text-align:center;line-height:1.3;z-index:1;margin-top:auto}
-.edpn-ct-count{font-family:'JetBrains Mono',monospace;font-size:10px;color:${T.txt3};z-index:1}
-.edpn-proc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:10px}
-.edpn-proc-item{background:${T.card};border:1px solid ${T.border};border-radius:8px;padding:8px 10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
-.edpn-proc-item:hover{border-color:${T.borderHi};background:${T.up}}
-.edpn-star-btn{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;color:${T.txt4};background:transparent;border:1px solid transparent;transition:all .2s;user-select:none}
-.edpn-star-btn:hover{background:rgba(245,200,66,.08);border-color:rgba(245,200,66,.2);color:${T.gold}}
-.edpn-star-btn.edpn-fav{color:${T.gold};text-shadow:0 0 8px rgba(245,200,66,.5)}
-.edpn-fav-bar{background:${T.card};border:1px solid ${T.border};border-radius:10px;padding:8px 14px;display:flex;align-items:center;gap:8px;overflow-x:auto}
-.edpn-fav-chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;cursor:pointer;background:${T.up};border:1px solid ${T.border};transition:all .2s;white-space:nowrap;flex-shrink:0;font-size:12px}
-.edpn-fav-chip:hover{border-color:${T.borderHi}}
-.edpn-bc{display:flex;align-items:center;gap:5px;font-size:11px;color:${T.txt3}}
-.edpn-bc-link{cursor:pointer;color:${T.txt2}}.edpn-bc-link:hover{color:${T.blue}}
-.edpn-bc-cur{color:${T.txt};font-weight:500}
-.edpn-form-section{background:${T.panel};border:1px solid ${T.border};border-radius:10px;overflow:hidden;margin-bottom:10px}
-.edpn-form-hdr{padding:9px 14px;background:${T.up};border-bottom:1px solid ${T.border};display:flex;align-items:center;gap:7px}
-.edpn-form-hdr-title{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:${T.txt};letter-spacing:.05em;text-transform:uppercase}
-.edpn-form-body{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
-.edpn-field{display:flex;flex-direction:column;gap:3px}
-.edpn-field-label{font-size:9px;color:${T.txt3};text-transform:uppercase;letter-spacing:.06em;font-weight:500;font-family:'JetBrains Mono',monospace}
-.edpn-input,.edpn-textarea,.edpn-select{background:${T.up};border:1px solid ${T.border};border-radius:6px;padding:7px 10px;color:${T.txt};font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%;transition:border-color .15s}
-.edpn-input:focus,.edpn-textarea:focus,.edpn-select:focus{border-color:${T.blue}}
-.edpn-input::placeholder,.edpn-textarea::placeholder{color:${T.txt4}}
-.edpn-textarea{resize:vertical;min-height:60px;line-height:1.5}
-.edpn-select option{background:${T.card}}
-.edpn-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.edpn-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.edpn-chip{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:18px;font-size:11px;cursor:pointer;border:1px solid ${T.border};background:${T.up};color:${T.txt2};transition:all .15s;user-select:none}
-.edpn-chip:hover{border-color:${T.borderHi};color:${T.txt}}
-.edpn-chip.edpn-chip-sel{background:rgba(59,158,255,.15);border-color:${T.blue};color:${T.blue}}
-.edpn-chips-wrap{display:flex;flex-wrap:wrap;gap:5px}
-.edpn-tip-warn{padding:8px 12px;border-radius:7px;font-size:11px;line-height:1.5;display:flex;align-items:flex-start;gap:6px;background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.25);color:${T.coral}}
-.edpn-tip-info{padding:8px 12px;border-radius:7px;font-size:11px;line-height:1.5;display:flex;align-items:flex-start;gap:6px;background:rgba(59,158,255,.06);border:1px solid rgba(59,158,255,.2);color:${T.txt2}}
-.edpn-tip-gold{padding:8px 12px;border-radius:7px;font-size:11px;line-height:1.5;display:flex;align-items:flex-start;gap:6px;background:rgba(245,200,66,.06);border:1px solid rgba(245,200,66,.2);color:${T.gold}}
-.edpn-note-output{background:${T.card};border:1px solid ${T.border};border-radius:10px;overflow:hidden}
-.edpn-note-hdr{padding:8px 14px;background:${T.up};border-bottom:1px solid ${T.border};display:flex;align-items:center;gap:8px}
-.edpn-note-body{padding:18px 22px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;color:${T.txt};white-space:pre-wrap;min-height:260px;outline:none}
-.edpn-btn{background:${T.up};border:1px solid ${T.border};border-radius:6px;padding:5px 12px;font-size:11px;color:${T.txt2};cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:all .15s;font-family:'DM Sans',sans-serif}
-.edpn-btn:hover{border-color:${T.borderHi};color:${T.txt}}
-.edpn-btn:disabled{opacity:.35;pointer-events:none}
-.edpn-btn-primary{background:${T.teal};color:${T.bg};border:none;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-family:'DM Sans',sans-serif}
-.edpn-btn-primary:hover{filter:brightness(1.15)}
-.edpn-btn-blue{background:${T.blue};color:white;border:none;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-family:'DM Sans',sans-serif}
-.edpn-badge-teal{background:rgba(0,229,192,.12);color:${T.teal};border:1px solid rgba(0,229,192,.3);font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 8px;border-radius:18px;font-weight:600}
-/* AI Overlay */
-.edpn-ai-fab{position:fixed;bottom:72px;right:22px;z-index:500;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,${T.teal},#00b4d8);box-shadow:0 4px 20px rgba(0,229,192,.35);transition:all .3s;font-size:22px;color:${T.bg};font-weight:700}
-.edpn-ai-fab.edpn-ai-open{background:linear-gradient(135deg,${T.coral},#e05555)}
-.edpn-ai-overlay{position:fixed;bottom:136px;right:22px;width:340px;max-height:480px;z-index:499;background:${T.panel};border:1px solid ${T.border};border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);transition:all .3s;opacity:0;transform:translateY(16px) scale(.96);pointer-events:none}
-.edpn-ai-overlay.edpn-ai-open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
-.edpn-ai-msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-height:180px;max-height:320px}
-.edpn-ai-msg{padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.55}
-.edpn-ai-msg.sys{background:${T.up};color:${T.txt3};border:1px solid ${T.border};align-self:center;font-size:11px;text-align:center}
-.edpn-ai-msg.user{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.25);color:${T.txt};align-self:flex-end;border-radius:8px 8px 2px 8px;max-width:90%}
-.edpn-ai-msg.bot{background:rgba(0,229,192,.07);border:1px solid rgba(0,229,192,.18);color:${T.txt};align-self:flex-start;border-radius:8px 8px 8px 2px;max-width:90%}
-.edpn-ai-loader{display:flex;gap:4px;padding:8px;align-self:flex-start}
-.edpn-ai-loader span{width:6px;height:6px;border-radius:50%;background:${T.teal};animation:edpnBnc 1.2s ease-in-out infinite}
-.edpn-ai-loader span:nth-child(2){animation-delay:.2s}.edpn-ai-loader span:nth-child(3){animation-delay:.4s}
-@keyframes edpnBnc{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
-.edpn-ai-input-wrap{padding:8px 10px;border-top:1px solid ${T.border};display:flex;gap:5px}
-.edpn-ai-input{flex:1;background:${T.up};border:1px solid ${T.border};border-radius:8px;padding:7px 10px;color:${T.txt};font-size:12px;outline:none;resize:none;font-family:'DM Sans',sans-serif}
-.edpn-ai-input:focus{border-color:${T.teal}}
-.edpn-ai-send{width:34px;height:34px;background:${T.teal};color:${T.bg};border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-/* Toast */
-.edpn-toast{position:fixed;bottom:64px;left:50%;transform:translateX(-50%);background:${T.teal};color:${T.bg};padding:8px 16px;border-radius:7px;font-size:11px;font-weight:700;z-index:700;pointer-events:none;font-family:'DM Sans',sans-serif;transition:opacity .3s}
-/* Modal */
-.edpn-modal-overlay{position:fixed;inset:0;background:rgba(5,15,30,.85);z-index:600;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
-.edpn-modal-box{background:${T.panel};border:1px solid ${T.border};border-radius:14px;width:460px;max-height:75vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.5)}
-.edpn-modal-hdr{padding:14px 18px 10px;border-bottom:1px solid ${T.border};display:flex;align-items:center;gap:8px}
-.edpn-modal-body{padding:14px 18px;display:flex;flex-direction:column;gap:10px}
-.edpn-color-row{display:flex;gap:5px;flex-wrap:wrap}
-.edpn-color-swatch{width:26px;height:26px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:all .15s}
-.edpn-color-swatch:hover{transform:scale(1.1)}.edpn-color-swatch.sel{border-color:${T.txt}}
-.edpn-icon-row{display:flex;gap:4px;flex-wrap:wrap}
-.edpn-icon-opt{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;border:1px solid ${T.border};background:${T.up};transition:all .15s}
-.edpn-icon-opt:hover{border-color:${T.borderHi}}.edpn-icon-opt.sel{border-color:${T.blue};background:rgba(59,158,255,.12)}
-`;
-
-/* ══════════════════════════════════════
-   FIELD RENDERER COMPONENT
-══════════════════════════════════════ */
-function FieldRenderer({ field, value, onChange }) {
-  if (field.type === 'input') {
-    return (
-      <div className="edpn-field">
-        <label className="edpn-field-label">{field.label}{field.required && <span style={{color:T.coral}}> *</span>}</label>
-        <input className="edpn-input" placeholder={field.placeholder} value={value || ''} onChange={e => onChange(e.target.value)} />
-      </div>
-    );
+// ── CPT helpers ───────────────────────────────────────────────────────────────
+function lacCPT(f) {
+  const len  = parseFloat(f.length) || 0;
+  const site = f.site_group || "trunk";
+  const comp = f.complexity || "simple";
+  if (comp === "complex") return "13100-13160 (complex repair — verify site/length)";
+  const face = site === "face";
+  const hand = site === "hand_foot";
+  if (comp === "intermediate") {
+    if (face) {
+      if (len <= 2.5) return "12051"; if (len <= 5.0) return "12052";
+      if (len <= 7.5) return "12053"; if (len <= 12.5) return "12054";
+      if (len <= 20)  return "12055"; if (len <= 30)   return "12056";
+      return "12057";
+    }
+    if (hand) {
+      if (len <= 2.5) return "12041"; if (len <= 7.5) return "12042";
+      if (len <= 12.5) return "12044"; if (len <= 20) return "12045";
+      if (len <= 30)   return "12046"; return "12047";
+    }
+    if (len <= 2.5) return "12031"; if (len <= 7.5) return "12032";
+    if (len <= 12.5) return "12034"; if (len <= 20) return "12035";
+    if (len <= 30)   return "12036"; return "12037";
   }
-  if (field.type === 'textarea') {
-    return (
-      <div className="edpn-field">
-        <label className="edpn-field-label">{field.label}</label>
-        <textarea className="edpn-textarea" placeholder={field.placeholder} value={value || ''} onChange={e => onChange(e.target.value)} />
-      </div>
-    );
+  // simple
+  if (face) {
+    if (len <= 2.5) return "12011"; if (len <= 5.0) return "12013";
+    if (len <= 7.5) return "12014"; if (len <= 12.5) return "12015";
+    if (len <= 20)  return "12016"; if (len <= 30)   return "12017";
+    return "12018";
   }
-  if (field.type === 'select') {
-    return (
-      <div className="edpn-field">
-        <label className="edpn-field-label">{field.label}{field.required && <span style={{color:T.coral}}> *</span>}</label>
-        <select className="edpn-select" value={value || ''} onChange={e => onChange(e.target.value)}>
-          <option value="">Select…</option>
-          {(field.options || []).map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
-      </div>
-    );
-  }
-  if (field.type === 'chips') {
-    const sel = Array.isArray(value) ? value : (field.defaults || []);
-    return (
-      <div className="edpn-field">
-        <label className="edpn-field-label">{field.label}</label>
-        <div className="edpn-chips-wrap">
-          {(field.options || []).map(o => {
-            const active = sel.includes(o);
-            return (
-              <div key={o} className={`edpn-chip${active ? ' edpn-chip-sel' : ''}`}
-                onClick={() => onChange(active ? sel.filter(x => x !== o) : [...sel, o])}>
-                {o}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-  return null;
+  if (len <= 2.5) return "12001"; if (len <= 7.5) return "12002";
+  if (len <= 12.5) return "12004"; if (len <= 20) return "12005";
+  if (len <= 30)   return "12006"; return "12007";
 }
 
-/* ══════════════════════════════════════
-   MAIN COMPONENT
-══════════════════════════════════════ */
-export default function EDProcedureNotes({ embedded = false, patientName = '', patientAllergies = '', physicianName = '' }) {
-  const [categories, setCategories] = useState(() => {
-    try { const s = localStorage.getItem('notrya_cats4'); return s ? JSON.parse(s) : DEFAULT_CATEGORIES; } catch { return DEFAULT_CATEGORIES; }
-  });
-  const [favorites, setFavorites] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('notrya_favs4') || '[]'); } catch { return []; }
-  });
-  const [activeCat, setActiveCat] = useState(null);
-  const [selectedProc, setSelectedProc] = useState(null);
-  const [view, setView] = useState('select'); // 'select' | 'document' | 'note'
-  const [formData, setFormData] = useState({});
-  const [ctx, setCtx] = useState({ physician: physicianName || '', date: new Date().toISOString().slice(0,10), allergies: patientAllergies || '' });
-  const [noteText, setNoteText] = useState('');
-  const [generating, setGenerating] = useState(false);
-  const [billing, setBilling] = useState(null); // { cpt, icd10, modifiers, complexity, notes }
-  const [billingLoading, setBillingLoading] = useState(false);
-  const [search, setSearch] = useState('');
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiMessages, setAiMessages] = useState([{ role: 'sys', text: 'Notrya AI ready.' }]);
-  const [aiInput, setAiInput] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [mapMode, setMapMode] = useState(false);
-  const [toast, setToast] = useState('');
-  const [modal, setModal] = useState(null); // null | {type, data}
-  const [modalCatColor, setModalCatColor] = useState(CAT_COLORS[0]);
-  const [modalCatIcon, setModalCatIcon] = useState(CAT_ICONS[0]);
-  const aiMsgsRef = useRef(null);
-  const searchRef = useRef(null);
+function arthroCPT(f) {
+  const j = f.joint || "";
+  if (/finger|toe|IP|MCP|MTP/i.test(j)) return "20600";
+  if (/wrist|elbow|ankle|TMJ/i.test(j))  return "20605";
+  return "20610";
+}
 
-  const showToast = useCallback((msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 2500);
-  }, []);
+// ── Procedure data ────────────────────────────────────────────────────────────
+const PROCEDURES = [
+  // ── 1. Laceration Repair ──────────────────────────────────────────────────
+  {
+    id:"lac", name:"Laceration Repair", icon:"🪡", color:T.teal,
+    cptFn: f => lacCPT(f),
+    fields:[
+      {id:"indication",    label:"Indication",            type:"text",     placeholder:"e.g. traumatic laceration requiring closure"},
+      {id:"consent",       label:"Consent",               type:"select",   options:["Verbal","Written","Implied — emergency","Unable to obtain — reason documented"]},
+      {id:"location",      label:"Wound Location",        type:"text",     placeholder:"e.g. left forehead, 2cm above lateral brow"},
+      {id:"site_group",    label:"Site Group (for CPT)",  type:"select",   options:["trunk","face","hand_foot","extremity"]},
+      {id:"length",        label:"Length",                type:"number",   unit:"cm",  placeholder:"2.5"},
+      {id:"depth",         label:"Depth",                 type:"select",   options:["superficial (skin only)","subcutaneous tissue","fascia","muscle"]},
+      {id:"complexity",    label:"Complexity",            type:"select",   options:["simple","intermediate","complex"]},
+      {id:"contamination", label:"Contamination",         type:"select",   options:["clean","contaminated","grossly contaminated"]},
+      {id:"anesthesia",    label:"Anesthesia",            type:"text",     placeholder:"e.g. 1% lidocaine with epinephrine, 3 mL"},
+      {id:"prep",          label:"Wound Prep",            type:"text",     placeholder:"e.g. betadine scrub, saline irrigation 200 mL"},
+      {id:"closure",       label:"Closure Type",          type:"text",     placeholder:"e.g. 4-0 nylon simple interrupted x6"},
+      {id:"dressing",      label:"Dressing Applied",      type:"text",     placeholder:"e.g. bacitracin, non-stick pad, tape"},
+      {id:"nv_intact",     label:"Neurovascular Status",  type:"select",   options:["intact distally","deficit noted — see below"]},
+      {id:"complications", label:"Complications",         type:"text",     placeholder:"None"},
+      {id:"followup",      label:"Follow-up",             type:"text",     placeholder:"e.g. 5-7 days for suture removal"},
+    ],
+    noteBuilder:(f, meta) => `PROCEDURE NOTE — LACERATION REPAIR
+Date/Time: ${meta.ts}
+Physician: ${meta.physician}
+Patient: ${meta.patient}
 
-  const saveCats = useCallback((cats) => {
-    try { localStorage.setItem('notrya_cats4', JSON.stringify(cats)); } catch {}
-  }, []);
+PROCEDURE: Laceration Repair  |  CPT: ${lacCPT(f)}
+INDICATION: ${f.indication || "[indication]"}
+CONSENT: ${f.consent || "verbal"} consent obtained. Risks, benefits, and alternatives including non-closure were discussed.
 
-  const saveFavs = useCallback((favs) => {
-    try { localStorage.setItem('notrya_favs4', JSON.stringify(favs)); } catch {}
-  }, []);
+PROCEDURE:
+The patient was placed in a comfortable position. Wound examination revealed a ${f.complexity || "simple"}, ${f.contamination || "clean"} laceration measuring ${f.length || "[length]"} cm in length located at ${f.location || "[location]"}. Wound depth extended to ${f.depth || "subcutaneous tissue"}.
 
-  const toggleFav = useCallback((key) => {
-    setFavorites(prev => {
-      const next = prev.includes(key) ? prev.filter(x => x !== key) : [...prev, key];
-      saveFavs(next);
-      return next;
-    });
-  }, [saveFavs]);
+Anesthesia: ${f.anesthesia || "[anesthetic, volume]"} was administered with adequate effect.
+Wound preparation: ${f.prep || "Wound irrigated with normal saline and prepped in standard fashion."} Hemostasis achieved.
+Closure: ${f.closure || "[closure details]"}. Wound edges well-approximated with good cosmetic result.
+Dressing: ${f.dressing || "Standard wound dressing applied."}
 
-  useEffect(() => { if (aiMsgsRef.current) aiMsgsRef.current.scrollTop = aiMsgsRef.current.scrollHeight; }, [aiMessages, aiLoading]);
+POST-PROCEDURE ASSESSMENT:
+Neurovascular status distal to repair: ${f.nv_intact || "intact"}. Patient tolerated procedure well without acute distress. Written wound care and return precautions provided. Follow-up: ${f.followup || "5-7 days for suture removal"}.
 
-  // Close search on outside click
-  useEffect(() => {
-    const handler = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearchResults(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+COMPLICATIONS: ${f.complications || "None"}`,
+  },
 
-  const searchResults = search.trim()
-    ? Object.values(P).filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.subtitle.toLowerCase().includes(search.toLowerCase()))
-    : [];
+  // ── 2. Incision & Drainage ────────────────────────────────────────────────
+  {
+    id:"id_abs", name:"Incision & Drainage", icon:"💉", color:T.coral,
+    cptFn: f => f.complexity === "complicated" ? "10061" : "10060",
+    fields:[
+      {id:"indication",    label:"Indication",            type:"text",   placeholder:"e.g. cutaneous abscess requiring drainage"},
+      {id:"consent",       label:"Consent",               type:"select", options:["Verbal","Written","Implied — emergency"]},
+      {id:"location",      label:"Abscess Location",      type:"text",   placeholder:"e.g. right gluteal, medial aspect"},
+      {id:"size",          label:"Abscess Size",          type:"text",   placeholder:"e.g. 3 x 2 cm fluctuant area"},
+      {id:"complexity",    label:"Complexity",            type:"select", options:["simple","complicated"]},
+      {id:"anesthesia",    label:"Anesthesia",            type:"text",   placeholder:"e.g. 1% lidocaine field block, 5 mL"},
+      {id:"incision",      label:"Incision",              type:"text",   placeholder:"e.g. 1.5 cm linear incision over point of fluctuance"},
+      {id:"drainage",      label:"Drainage",              type:"text",   placeholder:"e.g. ~15 mL purulent material expressed, malodorous"},
+      {id:"loculations",   label:"Loculations",           type:"select", options:["none — unilocular","present — broken down with hemostat","extensive loculations"]},
+      {id:"irrigation",    label:"Wound Irrigation",      type:"text",   placeholder:"e.g. irrigated with 100 mL saline via angiocath"},
+      {id:"culture",       label:"Culture Sent",          type:"select", options:["Yes — wound culture sent","No"]},
+      {id:"packing",       label:"Packing",               type:"text",   placeholder:"e.g. 0.25-inch iodoform gauze, 6 cm packed loosely"},
+      {id:"dressing",      label:"Dressing",              type:"text",   placeholder:"e.g. 4x4 gauze, secured with tape"},
+      {id:"abx",           label:"Antibiotics",           type:"text",   placeholder:"e.g. TMP-SMX DS BID x 5 days / none indicated"},
+      {id:"complications", label:"Complications",         type:"text",   placeholder:"None"},
+      {id:"followup",      label:"Follow-up",             type:"text",   placeholder:"e.g. 48 hours for recheck and packing removal"},
+    ],
+    noteBuilder:(f, meta) => `PROCEDURE NOTE — INCISION & DRAINAGE
+Date/Time: ${meta.ts}
+Physician: ${meta.physician}
+Patient: ${meta.patient}
 
-  const currentCat = categories.find(c => c.id === activeCat);
-  const proc = selectedProc ? P[selectedProc] : null;
+PROCEDURE: Incision & Drainage of Abscess  |  CPT: ${f.complexity === "complicated" ? "10061" : "10060"}
+INDICATION: ${f.indication || "[indication]"}
+CONSENT: ${f.consent || "verbal"} consent obtained. Risks and benefits discussed including recurrence and need for antibiotics.
 
-  const updateField = (id, val) => setFormData(prev => ({ ...prev, [id]: val }));
+PROCEDURE:
+Location: ${f.location || "[location]"}. Fluctuant area measuring ${f.size || "[size]"} identified on examination.
+Anesthesia: ${f.anesthesia || "[anesthetic]"} administered with adequate effect.
+Technique: ${f.incision || "[incision details]"} made with #11 blade. ${f.drainage || "[drainage description]"}. Loculations: ${f.loculations || "none identified"}. ${f.irrigation || "Wound irrigated with saline."} Packing: ${f.packing || "[packing details]"}.
+Dressing: ${f.dressing || "Standard dressing applied."}
+Culture: ${f.culture || "not sent"}.
+Antibiotics: ${f.abx || "none indicated at this time"}.
 
-  const generateNote = async () => {
-    if (!proc) return;
-    setGenerating(true);
-    setBilling(null);
-    const lines = [
-      'PROCEDURE NOTE',
-      '═══════════════════════════════════════',
-      `Patient: ${patientName || 'New Patient'} | ${new Date().toLocaleDateString()}`,
-      `Attending: ${ctx.physician || '[Physician]'} | Allergies: ${ctx.allergies || 'NKDA'}`,
-      '',
-      `PROCEDURE: ${proc.name.toUpperCase()}`,
-      '───────────────────────────────────────',
-      '',
-    ];
-    proc.sections.forEach(s => {
-      lines.push(s.title.toUpperCase());
-      s.fields.forEach(f => {
-        const v = formData[f.id];
-        if (v) {
-          if (Array.isArray(v) && v.length) lines.push(`${f.label}: ${v.join(', ')}`);
-          else if (typeof v === 'string' && v.trim()) lines.push(`${f.label}: ${v}`);
-        }
-      });
-      lines.push('');
-    });
-    lines.push('COMPLICATIONS: None noted.', '', 'Patient tolerated procedure well.', '', '───────────────────────────────────────', `Signed: ${ctx.physician || '[Physician]'}`, `Date/Time: ${new Date().toLocaleString()}`);
-    const generatedNote = lines.join('\n');
-    setNoteText(generatedNote);
-    setView('note');
-    setGenerating(false);
-    // Auto-generate billing codes
-    setBillingLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a medical billing expert. Analyze this ED procedure note and return accurate billing codes.
+POST-PROCEDURE ASSESSMENT:
+Patient tolerated procedure well. Wound care and return precautions provided. Follow-up: ${f.followup || "48 hours for packing removal and wound recheck"}.
 
-PROCEDURE: ${proc.name}
-FORMDATA: ${JSON.stringify(formData)}
-NOTE EXCERPT: ${generatedNote.slice(0, 800)}
+COMPLICATIONS: ${f.complications || "None"}`,
+  },
 
-Return the most relevant billing codes for this procedure.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            cpt_codes: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  code: { type: 'string' },
-                  description: { type: 'string' },
-                  rvu: { type: 'number' },
-                  primary: { type: 'boolean' }
-                }
-              }
-            },
-            icd10_codes: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  code: { type: 'string' },
-                  description: { type: 'string' },
-                  type: { type: 'string' }
-                }
-              }
-            },
-            modifiers: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  modifier: { type: 'string' },
-                  description: { type: 'string' }
-                }
-              }
-            },
-            complexity: { type: 'string' },
-            billing_notes: { type: 'string' }
-          }
-        }
-      });
-      setBilling(result);
-    } catch {
-      setBilling({ error: true });
-    }
-    setBillingLoading(false);
+  // ── 3. Lumbar Puncture ────────────────────────────────────────────────────
+  {
+    id:"lp", name:"Lumbar Puncture", icon:"🔬", color:T.purple,
+    cptFn: f => f.type === "therapeutic" ? "62272" : "62270",
+    fields:[
+      {id:"indication",    label:"Indication",             type:"text",   placeholder:"e.g. suspected bacterial meningitis / subarachnoid hemorrhage"},
+      {id:"consent",       label:"Consent",                type:"select", options:["Written","Verbal","Implied — emergency","Unable — reason documented"]},
+      {id:"type",          label:"Procedure Type",         type:"select", options:["diagnostic","therapeutic"]},
+      {id:"position",      label:"Position",               type:"select", options:["lateral decubitus","seated upright"]},
+      {id:"level",         label:"Interspace",             type:"select", options:["L3-4","L4-5","L2-3","L5-S1"]},
+      {id:"anesthesia",    label:"Local Anesthesia",       type:"text",   placeholder:"e.g. 1% lidocaine, 3 mL subcutaneous and deep"},
+      {id:"needle",        label:"Needle",                 type:"text",   placeholder:"e.g. 22-gauge Quincke spinal needle, 3.5 inch"},
+      {id:"attempts",      label:"Attempts",               type:"select", options:["1","2","3",">3 — attending notified"]},
+      {id:"op",            label:"Opening Pressure",       type:"number", unit:"cmH2O", placeholder:"18"},
+      {id:"appearance",    label:"CSF Appearance",         type:"select", options:["clear and colorless","cloudy/turbid","bloody — see xanthochromia","xanthochromic","frankly purulent"]},
+      {id:"tubes",         label:"Tubes Collected",        type:"text",   placeholder:"e.g. 4 tubes, 1 mL each — tubes 1 and 4 for RBC comparison"},
+      {id:"studies",       label:"CSF Studies Sent",       type:"text",   placeholder:"e.g. cell count, glucose, protein, Gram stain, culture, HSV PCR"},
+      {id:"cp",            label:"Closing Pressure",       type:"number", unit:"cmH2O", placeholder:""},
+      {id:"complications", label:"Complications",          type:"text",   placeholder:"None — post-LP headache precautions discussed"},
+    ],
+    noteBuilder:(f, meta) => `PROCEDURE NOTE — LUMBAR PUNCTURE
+Date/Time: ${meta.ts}
+Physician: ${meta.physician}
+Patient: ${meta.patient}
+
+PROCEDURE: Lumbar Puncture (${f.type || "diagnostic"})  |  CPT: ${f.type === "therapeutic" ? "62272" : "62270"}
+INDICATION: ${f.indication || "[indication]"}
+CONSENT: ${f.consent || "written"} consent obtained. Risks including post-LP headache, bleeding, infection, and rare neurologic injury discussed.
+
+Pre-procedure neurological exam documented. No contraindications identified (no papilledema, no focal deficits, coagulation status acceptable).
+
+PROCEDURE:
+Position: ${f.position || "lateral decubitus"} with knees flexed to chest.
+Level: ${f.level || "L3-4"} interspace identified by palpation of iliac crests.
+Prep: Skin prepped with povidone-iodine in standard fashion and draped sterile.
+Anesthesia: ${f.anesthesia || "[local anesthetic]"} administered creating adequate wheal.
+Needle: ${f.needle || "22-gauge spinal needle"} advanced with bevel perpendicular to dural fibers.
+Attempts: ${f.attempts || "1"}. Stylet removed — CSF observed.
+Opening pressure: ${f.op || "[value]"} cmH2O.
+CSF appearance: ${f.appearance || "clear and colorless"}.
+Tubes collected: ${f.tubes || "[tube details]"}.
+Studies sent: ${f.studies || "[studies]"}.
+${f.cp ? `Closing pressure: ${f.cp} cmH2O.` : ""}
+Stylet replaced and needle withdrawn. Sterile dressing applied.
+
+POST-PROCEDURE:
+Patient tolerated procedure well. Instructed to remain supine for 30-60 minutes. Post-LP headache precautions and return instructions provided. Caffeine recommended if headache develops.
+
+COMPLICATIONS: ${f.complications || "None"}`,
+  },
+
+  // ── 4. Central Venous Access ──────────────────────────────────────────────
+  {
+    id:"cvl", name:"Central Line", icon:"🩺", color:T.blue,
+    cptFn: f => {
+      const age = parseInt(f.patient_age) || 99;
+      const site = f.site || "";
+      if (age < 5) return "36555";
+      if (/femoral/i.test(site)) return "36558";
+      return "36556";
+    },
+    fields:[
+      {id:"indication",    label:"Indication",             type:"text",   placeholder:"e.g. vasopressor administration, no peripheral access"},
+      {id:"consent",       label:"Consent",                type:"select", options:["Written","Verbal","Implied — emergency","Unable — emergent"]},
+      {id:"patient_age",   label:"Patient Age (for CPT)",  type:"number", unit:"years", placeholder:"45"},
+      {id:"site",          label:"Access Site",            type:"select", options:["Right internal jugular","Left internal jugular","Right subclavian","Left subclavian","Right femoral","Left femoral"]},
+      {id:"guidance",      label:"Guidance",               type:"select", options:["ultrasound — real-time","ultrasound — site marking only","landmark technique"]},
+      {id:"position",      label:"Patient Position",       type:"text",   placeholder:"e.g. Trendelenburg, head turned left"},
+      {id:"anesthesia",    label:"Local Anesthesia",       type:"text",   placeholder:"e.g. 1% lidocaine, 5 mL"},
+      {id:"needle_passes", label:"Needle Passes to Access",type:"select", options:["1","2","3",">3"]},
+      {id:"venous_conf",   label:"Venous Confirmation",    type:"select", options:["dark non-pulsatile blood — venous confirmed","ultrasound-confirmed compressible vein","pressure transducer — venous waveform"]},
+      {id:"wire",          label:"Wire Passage",           type:"select", options:["smooth and unimpeded","mild resistance — repositioned","ectopy noted — resolved with withdrawal"]},
+      {id:"catheter",      label:"Catheter",               type:"text",   placeholder:"e.g. triple-lumen 7Fr, 16 cm, sutured in place"},
+      {id:"lumens",        label:"All Lumens",             type:"select", options:["all lumens flush and aspirate freely","proximal only aspirates","distal only aspirates"]},
+      {id:"cxr",           label:"Post-procedure CXR",     type:"select", options:["ordered — tip at cavoatrial junction, no pneumothorax","ordered — pending","not applicable (femoral)"]},
+      {id:"complications", label:"Complications",          type:"text",   placeholder:"None"},
+    ],
+    noteBuilder:(f, meta) => {
+      const age = parseInt(f.patient_age) || 99;
+      const cpt = age < 5 ? "36555" : /femoral/i.test(f.site||"") ? "36558" : "36556";
+      return `PROCEDURE NOTE — CENTRAL VENOUS CATHETER PLACEMENT
+Date/Time: ${meta.ts}
+Physician: ${meta.physician}
+Patient: ${meta.patient}
+
+PROCEDURE: Central Venous Access  |  CPT: ${cpt}
+INDICATION: ${f.indication || "[indication]"}
+CONSENT: ${f.consent || "verbal"} consent obtained. Risks including pneumothorax, arterial puncture, infection, bleeding, and catheter malposition discussed.
+
+PROCEDURE:
+Site: ${f.site || "[site]"}. Patient positioned: ${f.position || "[position]"}.
+Guidance: ${f.guidance || "ultrasound — real-time"}.
+Skin prepped with chlorhexidine-alcohol and draped in full sterile fashion. Operator in sterile gown and gloves, mask, and cap (maximal barrier precautions).
+Anesthesia: ${f.anesthesia || "[local anesthetic]"}.
+Venous access: achieved after ${f.needle_passes || "1"} needle pass(es). ${f.venous_conf || "Venous position confirmed."} Wire: ${f.wire || "passed smoothly"}. Serial dilation performed. Catheter: ${f.catheter || "[catheter details]"} placed. ${f.lumens || "All lumens aspirate and flush freely."} Catheter secured.
+
+CXR: ${f.cxr || "ordered"}.
+
+POST-PROCEDURE:
+Patient tolerated procedure well. Line is functioning. Daily reassessment of continued need documented per protocol.
+
+COMPLICATIONS: ${f.complications || "None"}`;
+    },
+  },
+
+  // ── 5. Thoracentesis ─────────────────────────────────────────────────────
+  {
+    id:"thora", name:"Thoracentesis", icon:"🫁", color:T.cyan,
+    cptFn: f => f.guidance === "no imaging" ? "32554" : "32555",
+    fields:[
+      {id:"indication",    label:"Indication",             type:"text",   placeholder:"e.g. diagnostic — bilateral effusions, new fever / therapeutic — symptomatic dyspnea"},
+      {id:"consent",       label:"Consent",                type:"select", options:["Written","Verbal","Implied — emergency"]},
+      {id:"type",          label:"Procedure Type",         type:"select", options:["diagnostic","therapeutic"]},
+      {id:"side",          label:"Side",                   type:"select", options:["right","left","bilateral — staged"]},
+      {id:"guidance",      label:"Guidance",               type:"select", options:["ultrasound — real-time","ultrasound — site marking only","no imaging"]},
+      {id:"position",      label:"Position",               type:"text",   placeholder:"e.g. seated leaning forward, arms on pillow stand"},
+      {id:"level",         label:"Entry Level",            type:"text",   placeholder:"e.g. one interspace below effusion on ultrasound, posterior axillary line"},
+      {id:"anesthesia",    label:"Local Anesthesia",       type:"text",   placeholder:"e.g. 1% lidocaine, 10 mL to periosteum of rib"},
+      {id:"needle",        label:"Needle/Catheter",        type:"text",   placeholder:"e.g. 8Fr Turkel Safety Thoracentesis System"},
+      {id:"appearance",    label:"Fluid Appearance",       type:"select", options:["straw-colored (transudative)","dark yellow/amber","hemorrhagic","milky/chylous","purulent/empyema","sanguineous"]},
+      {id:"volume",        label:"Volume Removed",         type:"number", unit:"mL",   placeholder:"500"},
+      {id:"studies",       label:"Pleural Studies Sent",   type:"text",   placeholder:"e.g. LDH, protein, pH, cell count, culture, cytology"},
+      {id:"cxr",           label:"Post-procedure CXR",     type:"select", options:["ordered — no pneumothorax, residual effusion as expected","ordered — pneumothorax identified","not yet resulted"]},
+      {id:"complications", label:"Complications",          type:"text",   placeholder:"None"},
+    ],
+    noteBuilder:(f, meta) => `PROCEDURE NOTE — THORACENTESIS
+Date/Time: ${meta.ts}
+Physician: ${meta.physician}
+Patient: ${meta.patient}
+
+PROCEDURE: Thoracentesis (${f.type || "diagnostic"})  |  CPT: ${f.guidance === "no imaging" ? "32554" : "32555"}
+INDICATION: ${f.indication || "[indication]"}
+CONSENT: ${f.consent || "written"} consent obtained. Risks including pneumothorax, bleeding, infection, and re-expansion pulmonary edema discussed.
+
+PROCEDURE:
+Side: ${f.side || "[side]"} pleural space. Effusion confirmed on bedside ultrasound prior to procedure.
+Position: ${f.position || "seated, leaning forward"}.
+Entry site: ${f.level || "[level]"}, over superior aspect of rib to avoid neurovascular bundle.
+Guidance: ${f.guidance || "ultrasound — real-time"}.
+Skin prepped with chlorhexidine and draped sterile.
+Anesthesia: ${f.anesthesia || "[local anesthetic]"}.
+Needle/catheter: ${f.needle || "[device]"} advanced into pleural space. Fluid obtained.
+Fluid appearance: ${f.appearance || "[appearance]"}.
+Volume removed: ${f.volume || "[volume]"} mL.
+Studies sent: ${f.studies || "[studies]"}.
+Needle removed, sterile dressing applied.
+
+Post-procedure CXR: ${f.cxr || "ordered"}.
+
+POST-PROCEDURE:
+Patient tolerated procedure well. Respiratory status improved/stable. Monitored for 1 hour post-procedure.
+
+COMPLICATIONS: ${f.complications || "None"}`,
+  },
+
+  // ── 6. Arthrocentesis ────────────────────────────────────────────────────
+  {
+    id:"arthro", name:"Arthrocentesis", icon:"🦴", color:T.gold,
+    cptFn: f => arthroCPT(f),
+    fields:[
+      {id:"indication",    label:"Indication",             type:"text",   placeholder:"e.g. suspected septic arthritis / acute gout / diagnostic"},
+      {id:"consent",       label:"Consent",                type:"select", options:["Verbal","Written"]},
+      {id:"joint",         label:"Joint",                  type:"text",   placeholder:"e.g. right knee, left wrist, right MTP"},
+      {id:"approach",      label:"Approach",               type:"text",   placeholder:"e.g. medial parapatellar, lateral parapatellar"},
+      {id:"guidance",      label:"Guidance",               type:"select", options:["landmark technique","ultrasound-guided"]},
+      {id:"anesthesia",    label:"Anesthesia",             type:"text",   placeholder:"e.g. skin wheal 1% lidocaine; no intra-articular anesthetic (crystal study pending)"},
+      {id:"aspiration",    label:"Aspiration",             type:"text",   placeholder:"e.g. 15 mL straw-colored fluid aspirated / unable to aspirate"},
+      {id:"synovial",      label:"Synovial Fluid Appearance", type:"select", options:["clear/straw-colored (normal)","yellow, cloudy (inflammatory)","frankly purulent (septic)","hemorrhagic (trauma/coagulopathy)","chalky white (tophaceous gout)"]},
+      {id:"studies",       label:"Fluid Studies Sent",     type:"text",   placeholder:"e.g. cell count, crystal analysis, Gram stain, culture, glucose, LDH"},
+      {id:"injection",     label:"Joint Injection",        type:"text",   placeholder:"e.g. methylprednisolone 40 mg + 2 mL lidocaine 1% injected / none — septic arthritis suspected"},
+      {id:"complications", label:"Complications",          type:"text",   placeholder:"None"},
+      {id:"followup",      label:"Follow-up",              type:"text",   placeholder:"e.g. culture results in 48h, orthopedics if cell count suggestive of septic joint"},
+    ],
+    noteBuilder:(f, meta) => `PROCEDURE NOTE — ARTHROCENTESIS
+Date/Time: ${meta.ts}
+Physician: ${meta.physician}
+Patient: ${meta.patient}
+
+PROCEDURE: Arthrocentesis  |  CPT: ${arthroCPT(f)}
+INDICATION: ${f.indication || "[indication]"}
+CONSENT: ${f.consent || "verbal"} consent obtained. Risks including infection, bleeding, and cartilage injury discussed.
+
+PROCEDURE:
+Joint: ${f.joint || "[joint]"}.
+Approach: ${f.approach || "[approach]"}.
+Guidance: ${f.guidance || "landmark technique"}.
+Skin prepped with chlorhexidine. ${f.anesthesia || "Local anesthesia administered."}
+Aspiration: ${f.aspiration || "[aspiration result]"}.
+Fluid appearance: ${f.synovial || "[appearance]"}.
+Studies sent: ${f.studies || "[studies]"}.
+${f.injection ? `Injection: ${f.injection}.` : "No injection performed."}
+Sterile dressing applied. Joint moved through range of motion — tolerated well.
+
+POST-PROCEDURE:
+Patient tolerated procedure well. Ice and rest advised. ${f.followup || "[follow-up plan]"}.
+
+COMPLICATIONS: ${f.complications || "None"}`,
+  },
+
+  // ── 7. Endotracheal Intubation ────────────────────────────────────────────
+  {
+    id:"ett", name:"Intubation (RSI)", icon:"😮", color:T.orange,
+    cptFn: () => "31500",
+    fields:[
+      {id:"indication",    label:"Indication",             type:"text",   placeholder:"e.g. hypoxic respiratory failure, GCS 6, airway protection"},
+      {id:"consent",       label:"Consent",                type:"select", options:["Implied — emergency / altered mental status","Verbal — patient awake","Written"]},
+      {id:"preoxygenation",label:"Pre-oxygenation",        type:"text",   placeholder:"e.g. 15 LPM NRB x 3 min, SpO2 99%; BVM x 2 min with OPA"},
+      {id:"induction",     label:"Induction Agent",        type:"text",   placeholder:"e.g. ketamine 200 mg IV (2 mg/kg)"},
+      {id:"paralytic",     label:"Paralytic",              type:"text",   placeholder:"e.g. succinylcholine 160 mg IV (1.5 mg/kg)"},
+      {id:"pretreatment",  label:"Pre-treatment Agents",   type:"text",   placeholder:"e.g. fentanyl 100 mcg IV, lidocaine 100 mg IV / none"},
+      {id:"blade",         label:"Laryngoscope",           type:"text",   placeholder:"e.g. video laryngoscope (GlideScope), Mac 4 blade"},
+      {id:"view",          label:"Cormack-Lehane Grade",   type:"select", options:["Grade I — full glottis visible","Grade II — partial arytenoids visible","Grade III — epiglottis only","Grade IV — no laryngeal structures"]},
+      {id:"attempts",      label:"Intubation Attempts",    type:"select", options:["1","2 — first attempt unsuccessful (reason documented)","3 — backup plan initiated"]},
+      {id:"stylet",        label:"Adjuncts Used",          type:"text",   placeholder:"e.g. bougie, BURP maneuver, shoulder roll / none"},
+      {id:"tube",          label:"ETT Size and Depth",     type:"text",   placeholder:"e.g. 7.5 cuffed ETT, 23 cm at lip, cuff inflated to 25 cmH2O"},
+      {id:"confirmation",  label:"Position Confirmation",  type:"text",   placeholder:"e.g. ETCO2 waveform positive, bilateral BS equal, CXR ordered — tip 3 cm above carina"},
+      {id:"post_settings", label:"Initial Vent Settings",  type:"text",   placeholder:"e.g. AC/VC: TV 420 mL (6 mL/kg IBW), RR 16, FiO2 100%, PEEP 5"},
+      {id:"complications", label:"Complications",          type:"text",   placeholder:"None — SpO2 maintained throughout"},
+    ],
+    noteBuilder:(f, meta) => `PROCEDURE NOTE — ENDOTRACHEAL INTUBATION
+Date/Time: ${meta.ts}
+Physician: ${meta.physician}
+Patient: ${meta.patient}
+
+PROCEDURE: Endotracheal Intubation (Rapid Sequence Intubation)  |  CPT: 31500
+INDICATION: ${f.indication || "[indication]"}
+CONSENT: ${f.consent || "implied emergency consent"}
+
+PRE-PROCEDURE:
+Pre-oxygenation: ${f.preoxygenation || "[pre-oxygenation]"}.
+Difficult airway assessment performed. Backup airway plan established. Surgical airway kit at bedside.
+
+MEDICATIONS:
+Pre-treatment: ${f.pretreatment || "none"}.
+Induction agent: ${f.induction || "[induction agent, dose]"}.
+Paralytic: ${f.paralytic || "[paralytic, dose]"}.
+
+PROCEDURE:
+Laryngoscopy: ${f.blade || "[laryngoscope]"}.
+View: ${f.view || "Cormack-Lehane [grade]"}.
+Attempts: ${f.attempts || "1"}.
+${f.stylet ? `Adjuncts used: ${f.stylet}.` : ""}
+Tube: ${f.tube || "[ETT size and depth]"}.
+Position confirmed: ${f.confirmation || "[confirmation method]"}.
+
+VENTILATOR SETTINGS:
+${f.post_settings || "[initial vent settings]"}.
+
+POST-PROCEDURE:
+Patient intubated and mechanically ventilated. Hemodynamics stable. Sedation and analgesia initiated. Restraints applied per protocol.
+
+COMPLICATIONS: ${f.complications || "None"}`,
+  },
+
+  // ── 8. Chest Tube ────────────────────────────────────────────────────────
+  {
+    id:"ct", name:"Chest Tube", icon:"🫀", color:T.coral,
+    cptFn: () => "32551",
+    fields:[
+      {id:"indication",    label:"Indication",             type:"text",   placeholder:"e.g. large pneumothorax / hemothorax / empyema"},
+      {id:"consent",       label:"Consent",                type:"select", options:["Written","Verbal","Implied — emergency"]},
+      {id:"side",          label:"Side",                   type:"select", options:["right","left"]},
+      {id:"position",      label:"Patient Position",       type:"text",   placeholder:"e.g. supine, arm abducted and hand behind head"},
+      {id:"site",          label:"Entry Site",             type:"text",   placeholder:"e.g. 4th-5th ICS, anterior axillary line"},
+      {id:"guidance",      label:"Guidance",               type:"select", options:["ultrasound — site confirmed","landmark technique","fluoroscopy-guided"]},
+      {id:"anesthesia",    label:"Anesthesia",             type:"text",   placeholder:"e.g. 1% lidocaine 10 mL — skin, subcutaneous, rib periosteum, parietal pleura"},
+      {id:"tube_size",     label:"Tube Size",              type:"text",   placeholder:"e.g. 28 Fr thoracostomy tube"},
+      {id:"technique",     label:"Technique",              type:"select", options:["blunt dissection — standard thoracostomy","Seldinger technique — small-bore pigtail","finger thoracostomy (emergency — no tube placed yet)"]},
+      {id:"drainage",      label:"Initial Drainage",       type:"text",   placeholder:"e.g. 400 mL serosanguineous fluid, air rush on entry"},
+      {id:"position_conf", label:"Tube Position",          type:"text",   placeholder:"e.g. 4 cm inserted past last hole, directed posteriorly and apically"},
+      {id:"suction",       label:"Connected To",           type:"select", options:["water seal — -20 cmH2O suction","water seal only","Heimlich valve (outpatient)"]},
+      {id:"cxr",           label:"Post-procedure CXR",     type:"select", options:["ordered — tube in good position, lung re-expanding","ordered — pending","pneumothorax expanding — troubleshooting initiated"]},
+      {id:"complications", label:"Complications",          type:"text",   placeholder:"None"},
+    ],
+    noteBuilder:(f, meta) => `PROCEDURE NOTE — CHEST TUBE THORACOSTOMY
+Date/Time: ${meta.ts}
+Physician: ${meta.physician}
+Patient: ${meta.patient}
+
+PROCEDURE: Tube Thoracostomy  |  CPT: 32551
+INDICATION: ${f.indication || "[indication]"}
+CONSENT: ${f.consent || "verbal"} consent obtained. Risks including bleeding, infection, lung injury, and tube malposition discussed.
+
+PROCEDURE:
+Side: ${f.side || "[side]"}. Pathology confirmed on imaging prior to procedure.
+Position: ${f.position || "[position]"}.
+Entry site: ${f.site || "[site]"}.
+Guidance: ${f.guidance || "landmark technique"}.
+Prep: Skin prepped with chlorhexidine-alcohol and draped widely in sterile fashion.
+Anesthesia: ${f.anesthesia || "[local anesthetic]"} to skin, subcutaneous tissue, rib periosteum, and parietal pleura.
+Technique: ${f.technique || "Blunt dissection through chest wall into pleural space. Finger-sweep confirmed no adhesions in tract."}
+Tube: ${f.tube_size || "[tube size]"} placed. Initial drainage: ${f.drainage || "[drainage]"}.
+Position: ${f.position_conf || "[tube position]"}.
+Tube connected to: ${f.suction || "water seal at -20 cmH2O suction"}.
+Secured with 0-silk suture and petroleum gauze dressing.
+
+CXR: ${f.cxr || "ordered"}.
+
+POST-PROCEDURE:
+Patient tolerated procedure well. Hemodynamics stable. Drainage system functioning. Tube output monitored per protocol.
+
+COMPLICATIONS: ${f.complications || "None"}`,
+  },
+
+  // ── 9. Paracentesis ──────────────────────────────────────────────────────
+  {
+    id:"para", name:"Paracentesis", icon:"🫃", color:T.green,
+    cptFn: f => f.guidance === "no imaging" ? "49082" : "49083",
+    fields:[
+      {id:"indication",    label:"Indication",             type:"text",   placeholder:"e.g. diagnostic — new ascites / therapeutic — respiratory compromise"},
+      {id:"consent",       label:"Consent",                type:"select", options:["Written","Verbal"]},
+      {id:"type",          label:"Procedure Type",         type:"select", options:["diagnostic","large-volume therapeutic"]},
+      {id:"site",          label:"Entry Site",             type:"select", options:["left lower quadrant (LLQ)","right lower quadrant (RLQ)","midline infraumbilical","flank"]},
+      {id:"guidance",      label:"Guidance",               type:"select", options:["ultrasound — real-time","ultrasound — site marking","no imaging"]},
+      {id:"anesthesia",    label:"Local Anesthesia",       type:"text",   placeholder:"e.g. 1% lidocaine, 5 mL skin and deep track"},
+      {id:"needle",        label:"Needle/Catheter",        type:"text",   placeholder:"e.g. 15-gauge Caldwell-type paracentesis needle with 5 Fr pigtail catheter"},
+      {id:"appearance",    label:"Fluid Appearance",       type:"select", options:["clear straw-colored (transudative)","turbid/cloudy (exudative/SBP)","bile-stained","frankly bloody","chylous (milky)"]},
+      {id:"volume",        label:"Volume Removed",         type:"number", unit:"mL", placeholder:"4000"},
+      {id:"studies",       label:"Fluid Studies Sent",     type:"text",   placeholder:"e.g. cell count, albumin, protein, culture in blood culture bottles, cytology"},
+      {id:"albumin",       label:"Albumin Replacement",    type:"text",   placeholder:"e.g. 25% albumin 50 g IV (8 g per liter removed) / not indicated — diagnostic tap"},
+      {id:"complications", label:"Complications",          type:"text",   placeholder:"None"},
+    ],
+    noteBuilder:(f, meta) => `PROCEDURE NOTE — PARACENTESIS
+Date/Time: ${meta.ts}
+Physician: ${meta.physician}
+Patient: ${meta.patient}
+
+PROCEDURE: Paracentesis (${f.type || "diagnostic"})  |  CPT: ${f.guidance === "no imaging" ? "49082" : "49083"}
+INDICATION: ${f.indication || "[indication]"}
+CONSENT: ${f.consent || "written"} consent obtained. Risks including bleeding, infection, bowel perforation, and fluid leak discussed.
+
+PROCEDURE:
+Site: ${f.site || "[site]"}, away from surgical scars and superficial vessels. Ascites confirmed by bedside ultrasound. Guidance: ${f.guidance || "ultrasound — real-time"}.
+Skin prepped with chlorhexidine and draped sterile.
+Anesthesia: ${f.anesthesia || "[local anesthetic]"}.
+Catheter: ${f.needle || "[needle/catheter]"} inserted using Z-track technique.
+Fluid appearance: ${f.appearance || "[appearance]"}.
+Volume removed: ${f.volume || "[volume]"} mL.
+Studies sent: ${f.studies || "[studies]"}.
+Catheter removed, sterile dressing applied.
+Albumin replacement: ${f.albumin || "not required — diagnostic tap"}.
+
+POST-PROCEDURE:
+Patient tolerated procedure well. Entry site hemostatic. Vital signs stable throughout.
+
+COMPLICATIONS: ${f.complications || "None"}`,
+  },
+
+  // ── 10. Foley Catheterization ─────────────────────────────────────────────
+  {
+    id:"foley", name:"Foley Catheterization", icon:"💧", color:T.blue,
+    cptFn: () => "51702",
+    fields:[
+      {id:"indication",    label:"Indication",             type:"text",   placeholder:"e.g. urinary retention, 800 mL PVR on bedside ultrasound"},
+      {id:"consent",       label:"Consent",                type:"select", options:["Verbal","Unable — altered"]},
+      {id:"size",          label:"Catheter Size",          type:"select", options:["14 Fr","16 Fr","18 Fr","20 Fr","22 Fr","24 Fr Coude"]},
+      {id:"balloon",       label:"Balloon Inflated",       type:"select", options:["10 mL — standard","5 mL — pediatric","30 mL — hemostasis"]},
+      {id:"difficulty",    label:"Insertion",              type:"select", options:["routine — single pass","mild resistance — gentle pressure applied","difficult — Coude tip required","difficult — urology consulted"]},
+      {id:"return",        label:"Initial Return",         type:"text",   placeholder:"e.g. 650 mL clear yellow urine; immediate large volume clear return"},
+      {id:"urine_color",   label:"Urine Appearance",       type:"select", options:["clear yellow","cloudy/pyuria","frank hematuria","tea-colored","concentrated/amber"]},
+      {id:"ua_sent",       label:"UA / Culture",           type:"select", options:["UA and culture sent","UA only sent","not indicated"]},
+      {id:"secured",       label:"Secured and Connected",  type:"text",   placeholder:"e.g. secured to thigh, connected to closed drainage system"},
+      {id:"complications", label:"Complications",          type:"text",   placeholder:"None"},
+    ],
+    noteBuilder:(f, meta) => `PROCEDURE NOTE — URINARY CATHETERIZATION
+Date/Time: ${meta.ts}
+Physician: ${meta.physician}
+Patient: ${meta.patient}
+
+PROCEDURE: Urethral Catheterization (Foley)  |  CPT: 51702
+INDICATION: ${f.indication || "[indication]"}
+CONSENT: ${f.consent || "verbal"} consent obtained. Risks including infection, trauma, and balloon complications explained.
+
+PROCEDURE:
+Standard sterile technique employed. Perineum prepped with betadine.
+Catheter: ${f.size || "16 Fr"} urethral catheter inserted.
+Insertion: ${f.difficulty || "routine single pass"}.
+Balloon: ${f.balloon || "10 mL balloon"} inflated without resistance and catheter gently retracted to confirm position in bladder.
+Initial return: ${f.return || "[return description]"}.
+Urine appearance: ${f.urine_color || "clear yellow"}.
+Catheter: ${f.secured || "secured to thigh and connected to closed drainage system"}.
+UA/Culture: ${f.ua_sent || "sent per protocol"}.
+
+POST-PROCEDURE:
+Patient comfortable. Drainage system patent and functioning. Daily reassessment of catheter necessity per protocol.
+
+COMPLICATIONS: ${f.complications || "None"}`,
+  },
+];
+
+// ── Field renderer ────────────────────────────────────────────────────────────
+function FieldInput({ def, value, onChange }) {
+  const base = {
+    width:"100%",
+    background:"rgba(14,37,68,0.75)",
+    border:`1px solid ${value ? "rgba(42,122,160,0.5)" : "rgba(26,53,85,0.4)"}`,
+    borderRadius:7, outline:"none",
+    fontFamily:"'DM Sans',sans-serif", fontSize:12,
+    color:T.txt, transition:"border-color .1s",
   };
 
-  const sendAI = async () => {
-    const q = aiInput.trim();
-    if (!q || aiLoading) return;
-    setAiInput('');
-    setAiMessages(prev => [...prev, { role: 'user', text: q }]);
-    setAiLoading(true);
-    try {
-      const procCtx = proc ? `Current procedure: ${proc.name}. ` : '';
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Notrya AI, an ED clinical assistant. Be concise and practical. ${procCtx}${q}`,
-      });
-      setAiMessages(prev => [...prev, { role: 'bot', text: typeof res === 'string' ? res : JSON.stringify(res) }]);
-    } catch {
-      setAiMessages(prev => [...prev, { role: 'sys', text: '⚠ Error connecting to AI.' }]);
-    }
-    setAiLoading(false);
-  };
-
-  const openCat = (id) => {
-    setActiveCat(id);
-  };
-
-  const goHome = () => { setActiveCat(null); setSelectedProc(null); setView('select'); };
-
-  const selectProc = (key) => {
-    setSelectedProc(key);
-    setNoteText('');
-    // initialize chip defaults + physician prefs
-    const pData = P[key];
-    const prefs = loadPrefs();
-    const defaults = {};
-    pData.sections.forEach(s => s.fields.forEach(f => {
-      if (f.type === 'chips' && f.defaults?.length) defaults[f.id] = f.defaults;
-      // Apply pref defaults by matching field id patterns
-      if (f.type === 'select') {
-        if ((f.id === 'anes' || f.id === 'anes_tech') && prefs.anesthetic && f.options?.includes(prefs.anesthetic)) defaults[f.id] = prefs.anesthetic;
-        if (f.id === 'sut_mat' && prefs.suture_material && f.options?.includes(prefs.suture_material)) defaults[f.id] = prefs.suture_material;
-        if (f.id === 'closure' && prefs.closure_method && f.options?.includes(prefs.closure_method)) defaults[f.id] = prefs.closure_method;
-        if (f.id === 'dressing' && prefs.dressing && f.options?.includes(prefs.dressing)) defaults[f.id] = prefs.dressing;
-        if (f.id === 'tet' && prefs.tetanus && f.options?.includes(prefs.tetanus)) defaults[f.id] = prefs.tetanus;
-        if (f.id === 'location' && prefs.location && f.options?.some(o => o.toLowerCase() === prefs.location.toLowerCase())) defaults[f.id] = f.options.find(o => o.toLowerCase() === prefs.location.toLowerCase());
-      }
-    }));
-    setFormData(defaults);
-    // Pre-fill ctx with prefs
-    setCtx(prev => ({
-      ...prev,
-      physician: prefs.physician || prev.physician,
-      allergies: prefs.allergies || prev.allergies,
-    }));
-    setView('document');
-  };
-
-  // Category CRUD
-  const createCat = (name, color, icon) => {
-    const newCat = { id: 'c_' + Date.now(), name, icon, color, procs: [] };
-    const next = [...categories, newCat];
-    setCategories(next); saveCats(next);
-    setModal(null); showToast('Created: ' + name);
-  };
-  const updateCat = (id, name) => {
-    const next = categories.map(c => c.id === id ? { ...c, name } : c);
-    setCategories(next); saveCats(next); setModal(null);
-    if (activeCat === id) openCat(id);
-  };
-  const deleteCat = (id) => {
-    const next = categories.filter(c => c.id !== id);
-    setCategories(next); saveCats(next); setModal(null); goHome();
-  };
-  const addProcToCat = (catId, procKey) => {
-    const next = categories.map(c => c.id === catId ? { ...c, procs: [...c.procs, procKey] } : c);
-    setCategories(next); saveCats(next); showToast(P[procKey].name + ' added');
-  };
-
-  /* ── BREADCRUMB ── */
-  const Breadcrumb = () => (
-    <div className="edpn-bc">
-      <span className="edpn-bc-link" onClick={goHome}>Categories</span>
-      {activeCat && currentCat && <>
-        <span style={{color:T.txt4}}>›</span>
-        <span className={`edpn-bc-link${!selectedProc ? ' edpn-bc-cur' : ''}`} onClick={() => { setSelectedProc(null); setView('select'); }}>{currentCat.name}</span>
-      </>}
-      {proc && <><span style={{color:T.txt4}}>›</span><span className="edpn-bc-cur">{proc.name}</span></>}
+  if (def.type === "select") {
+    return (
+      <div style={{ position:"relative" }}>
+        <select value={value || ""} onChange={e => onChange(e.target.value)}
+          style={{ ...base, padding:"7px 28px 7px 10px",
+            appearance:"none", WebkitAppearance:"none", cursor:"pointer",
+            color: value ? T.txt : T.txt4 }}>
+          <option value="">— select —</option>
+          {def.options.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+        <span style={{ position:"absolute", right:10, top:"50%",
+          transform:"translateY(-50%)", color:T.txt4,
+          fontSize:9, pointerEvents:"none" }}>▼</span>
+      </div>
+    );
+  }
+  if (def.type === "textarea") {
+    return (
+      <textarea value={value || ""} onChange={e => onChange(e.target.value)}
+        placeholder={def.placeholder || ""}
+        rows={2}
+        style={{ ...base, padding:"7px 10px", resize:"vertical", lineHeight:1.55 }} />
+    );
+  }
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+      <input type={def.type === "number" ? "number" : "text"}
+        value={value || ""} onChange={e => onChange(e.target.value)}
+        placeholder={def.placeholder || ""}
+        style={{ ...base, flex:1, padding:"7px 10px" }} />
+      {def.unit && (
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+          color:T.txt4, flexShrink:0, letterSpacing:1 }}>{def.unit}</span>
+      )}
     </div>
   );
+}
 
-  /* ── MODALS ── */
-  const NewCatModal = () => {
-    const [name, setName] = useState('');
-    const [color, setColor] = useState(CAT_COLORS[0]);
-    const [icon, setIcon] = useState(CAT_ICONS[0]);
-    return (
-      <div className="edpn-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
-        <div className="edpn-modal-box">
-          <div className="edpn-modal-hdr">
-            <span>📁</span>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:600}}>New Category</span>
-            <button className="edpn-btn" style={{marginLeft:'auto'}} onClick={() => setModal(null)}>✕</button>
-          </div>
-          <div className="edpn-modal-body">
-            <div className="edpn-field"><label className="edpn-field-label">Name</label><input className="edpn-input" placeholder="e.g., Cardiac" value={name} onChange={e => setName(e.target.value)} /></div>
-            <div className="edpn-field"><label className="edpn-field-label">Color</label><div className="edpn-color-row">{CAT_COLORS.map(c => <div key={c} className={`edpn-color-swatch${color===c?' sel':''}`} style={{background:c}} onClick={() => setColor(c)} />)}</div></div>
-            <div className="edpn-field"><label className="edpn-field-label">Icon</label><div className="edpn-icon-row">{CAT_ICONS.map(ic => <div key={ic} className={`edpn-icon-opt${icon===ic?' sel':''}`} onClick={() => setIcon(ic)}>{ic}</div>)}</div></div>
-            <div style={{display:'flex',justifyContent:'flex-end',gap:6}}>
-              <button className="edpn-btn" onClick={() => setModal(null)}>Cancel</button>
-              <button className="edpn-btn-primary" onClick={() => name.trim() && createCat(name.trim(), color, icon)}>✦ Create</button>
-            </div>
-          </div>
-        </div>
+// ── Procedure picker card ─────────────────────────────────────────────────────
+function ProcCard({ proc, onSelect }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onClick={() => onSelect(proc.id)}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ display:"flex", flexDirection:"column", alignItems:"flex-start",
+        gap:5, padding:"12px 14px",
+        background: hover
+          ? `linear-gradient(135deg,${proc.color}18,rgba(8,22,40,0.95))`
+          : "rgba(8,22,40,0.7)",
+        border:`1px solid ${hover ? proc.color+"66" : "rgba(26,53,85,0.4)"}`,
+        borderTop:`3px solid ${proc.color}`,
+        borderRadius:10, cursor:"pointer", textAlign:"left",
+        transition:"all .15s" }}>
+      <span style={{ fontSize:22 }}>{proc.icon}</span>
+      <div>
+        <div style={{ fontFamily:"'Playfair Display',serif",
+          fontWeight:700, fontSize:13, color:proc.color }}>{proc.name}</div>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color:T.txt4, letterSpacing:1, marginTop:2 }}>CPT auto-code</div>
       </div>
-    );
-  };
+    </button>
+  );
+}
 
-  const EditCatModal = ({ cat }) => {
-    const [name, setName] = useState(cat.name);
-    return (
-      <div className="edpn-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
-        <div className="edpn-modal-box">
-          <div className="edpn-modal-hdr">
-            <span>✏️</span>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:600}}>Edit: {cat.name}</span>
-            <button className="edpn-btn" style={{marginLeft:'auto'}} onClick={() => setModal(null)}>✕</button>
-          </div>
-          <div className="edpn-modal-body">
-            <div className="edpn-field"><label className="edpn-field-label">Name</label><input className="edpn-input" value={name} onChange={e => setName(e.target.value)} /></div>
-            <div style={{display:'flex',justifyContent:'flex-end',gap:6}}>
-              <button className="edpn-btn" style={{color:T.coral,borderColor:'rgba(255,107,107,.3)'}} onClick={() => deleteCat(cat.id)}>🗑️ Delete</button>
-              <button className="edpn-btn" onClick={() => setModal(null)}>Cancel</button>
-              <button className="edpn-btn-primary" onClick={() => updateCat(cat.id, name.trim() || cat.name)}>💾 Save</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+// ── Main export ───────────────────────────────────────────────────────────────
+export default function EDProcedureNotes({
+  embedded = false,
+  patientName = "",
+  patientAllergies = "",
+  physicianName = "",
+}) {
+  const [activeId,  setActiveId]  = useState(null);
+  const [fields,    setFields]    = useState({});
+  const [note,      setNote]      = useState("");
+  const [copied,    setCopied]    = useState(false);
+  const [showNote,  setShowNote]  = useState(false);
 
-  const AddProcModal = ({ cat }) => {
-    const avail = Object.keys(P).filter(k => !cat.procs.includes(k));
-    const [added, setAdded] = useState([]);
-    return (
-      <div className="edpn-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
-        <div className="edpn-modal-box">
-          <div className="edpn-modal-hdr">
-            <span>➕</span>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:600}}>Add to {cat.name}</span>
-            <button className="edpn-btn" style={{marginLeft:'auto'}} onClick={() => setModal(null)}>✕</button>
-          </div>
-          <div className="edpn-modal-body">
-            {avail.length === 0 ? <div style={{textAlign:'center',padding:20,color:T.txt3}}>All procedures assigned.</div> :
-              avail.map(k => (
-                <div key={k} onClick={() => { if (!added.includes(k)) { addProcToCat(cat.id, k); setAdded(prev => [...prev, k]); } }}
-                  style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',background:T.card,border:`1px solid ${T.border}`,borderRadius:7,cursor:'pointer',opacity:added.includes(k)?0.4:1,pointerEvents:added.includes(k)?'none':'auto'}}>
-                  <span style={{fontSize:18}}>{P[k].icon}</span>
-                  <div style={{flex:1,fontSize:12,color:T.txt}}>{P[k].name}</div>
-                  <span style={{color:T.teal}}>+</span>
-                </div>
-              ))
-            }
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const proc = PROCEDURES.find(p => p.id === activeId) || null;
+  const cpt  = proc ? proc.cptFn(fields) : "";
+
+  const setField = useCallback((id, val) => {
+    setFields(p => ({ ...p, [id]:val }));
+    setNote("");
+    setShowNote(false);
+  }, []);
+
+  const handleSelect = useCallback((id) => {
+    setActiveId(id);
+    setFields({});
+    setNote("");
+    setShowNote(false);
+  }, []);
+
+  const buildNote = useCallback(() => {
+    if (!proc) return;
+    const meta = {
+      ts: new Date().toLocaleString("en-US", {
+        month:"2-digit", day:"2-digit", year:"numeric",
+        hour:"2-digit", minute:"2-digit", hour12:false
+      }),
+      physician: physicianName || "[Physician]",
+      patient:   patientName   || "[Patient]",
+    };
+    const built = proc.noteBuilder(fields, meta);
+    setNote(built);
+    setShowNote(true);
+  }, [proc, fields, physicianName, patientName]);
+
+  const copyNote = useCallback(() => {
+    if (!note) return;
+    navigator.clipboard.writeText(note).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [note]);
+
+  const ts = new Date().toLocaleString("en-US", {
+    month:"2-digit", day:"2-digit", year:"numeric",
+    hour:"2-digit", minute:"2-digit", hour12:false,
+  });
 
   return (
-    <>
-      <style>{CSS}</style>
-      <div className="edpn-wrap" style={{background: embedded ? 'transparent' : T.bg, minHeight: embedded ? 'unset' : '100vh'}}>
+    <div style={{ fontFamily:"'DM Sans',sans-serif",
+      background: embedded ? "transparent" : T.bg,
+      minHeight: embedded ? "auto" : "100vh",
+      color:T.txt, padding: embedded ? "0" : "0 16px" }}>
 
-        {/* Header */}
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <span style={{fontSize:18}}>✂️</span>
-          <div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:600}}>ED Procedure Notes</div>
-            <div style={{fontSize:11,color:T.txt3}}>Select a category, then document your procedure</div>
-          </div>
-          <div style={{marginLeft:'auto',display:'flex',gap:6}}>
-            <button className={`edpn-btn${mapMode?' edpn-btn-blue':''}`} onClick={() => setMapMode(m => !m)} style={mapMode?{background:T.blue,color:'white',border:'none'}:{}}>
-              🫀 {mapMode ? 'Hide Map' : 'Anatomy Map'}
-            </button>
-            <button className="edpn-btn" onClick={() => setShowSettings(true)}>⚙️ Preferences</button>
-            <button className="edpn-btn" onClick={() => setModal({type:'newcat'})}>+ Category</button>
-          </div>
-        </div>
+      <div style={{ maxWidth:1100, margin:"0 auto",
+        padding: embedded ? "0" : "18px 0 40px" }}>
 
-        {/* Search */}
-        <div className="edpn-cmd-bar" ref={searchRef}>
-          <span style={{fontSize:13,color:T.txt3}}>🔍</span>
-          <input className="edpn-cmd-input" placeholder={`Search ${Object.keys(P).length} procedures… ⌘K`}
-            value={search} onChange={e => { setSearch(e.target.value); setShowSearchResults(true); }}
-            onFocus={() => search && setShowSearchResults(true)} />
-          {showSearchResults && searchResults.length > 0 && (
-            <div className="edpn-cmd-results">
-              {searchResults.slice(0, 7).map(p => (
-                <div key={p.key} className="edpn-cmd-result" onClick={() => { selectProc(p.key); setSearch(''); setShowSearchResults(false); }}>
-                  <span style={{fontSize:16,width:24,textAlign:'center'}}>{p.icon}</span>
-                  <div style={{flex:1}}>
-                    <div style={{color:T.txt,fontWeight:500,fontSize:12}}>{p.name}</div>
-                    <div style={{fontSize:10,color:T.txt3}}>{p.subtitle}</div>
+        {/* Header — standalone only */}
+        {!embedded && (
+          <div style={{ marginBottom:18 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+              <div style={{ background:"rgba(5,15,30,0.9)",
+                border:"1px solid rgba(42,79,122,0.6)",
+                borderRadius:10, padding:"5px 12px",
+                display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:10, color:T.purple, letterSpacing:3 }}>NOTRYA</span>
+                <span style={{ color:T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:10 }}>/</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:10, color:T.txt3, letterSpacing:2 }}>PROCEDURES</span>
+              </div>
+              <div style={{ height:1, flex:1,
+                background:"linear-gradient(90deg,rgba(255,159,67,0.5),transparent)" }} />
+            </div>
+            <h1 className="shimmer-text"
+              style={{ fontFamily:"'Playfair Display',serif",
+                fontSize:"clamp(22px,4vw,36px)", fontWeight:900,
+                letterSpacing:-0.5, lineHeight:1.1 }}>
+              Procedure Note Builder
+            </h1>
+            <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+              color:T.txt4, marginTop:4 }}>
+              10 ED Procedures · Structured Documentation · CPT Auto-Code · Formatted Note Export
+            </p>
+          </div>
+        )}
+
+        {/* Embedded subheader */}
+        {embedded && (
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+            <span style={{ fontFamily:"'Playfair Display',serif",
+              fontWeight:700, fontSize:16, color:T.orange }}>
+              Procedure Note Builder
+            </span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace",
+              fontSize:8, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase",
+              background:"rgba(255,159,67,0.1)",
+              border:"1px solid rgba(255,159,67,0.25)",
+              borderRadius:4, padding:"2px 7px" }}>
+              10 procedures
+            </span>
+            {patientName && (
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                fontSize:9, color:T.txt4, marginLeft:"auto" }}>
+                {patientName}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Stat strip */}
+        {!activeId && (
+          <div style={{ display:"grid",
+            gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",
+            gap:8, marginBottom:16 }}>
+            {[
+              {v:"10", l:"Procedures", c:T.orange},
+              {v:"CPT", l:"Auto-Coded", c:T.teal},
+              {v:"Full", l:"Note Templates", c:T.purple},
+              {v:"1-click", l:"Copy to Chart", c:T.green},
+            ].map(b => (
+              <div key={b.l} style={{ padding:"8px 12px",
+                background:`linear-gradient(135deg,${b.c}12,rgba(8,22,40,0.8))`,
+                border:`1px solid ${b.c}28`,
+                borderLeft:`3px solid ${b.c}`, borderRadius:9 }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:14, fontWeight:700, color:b.c }}>{b.v}</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif",
+                  fontSize:10, color:T.txt3, marginTop:2 }}>{b.l}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Procedure picker */}
+        {!activeId && (
+          <div className="proc-fade">
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:T.txt4, letterSpacing:1.5, textTransform:"uppercase",
+              marginBottom:10 }}>
+              Select Procedure to Begin Documentation
+            </div>
+            <div style={{ display:"grid",
+              gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:8 }}>
+              {PROCEDURES.map(p => (
+                <ProcCard key={p.id} proc={p} onSelect={handleSelect} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Active procedure form */}
+        {proc && (
+          <div className="proc-fade">
+            {/* Header bar */}
+            <div style={{ display:"flex", alignItems:"center", gap:10,
+              marginBottom:14, flexWrap:"wrap" }}>
+              <button onClick={() => setActiveId(null)}
+                style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                  fontWeight:600, padding:"5px 12px", borderRadius:8,
+                  cursor:"pointer",
+                  border:"1px solid rgba(42,79,122,0.4)",
+                  background:"rgba(14,37,68,0.7)", color:T.txt4 }}>
+                Back
+              </button>
+              <span style={{ fontSize:22 }}>{proc.icon}</span>
+              <div style={{ flex:1 }}>
+                <span style={{ fontFamily:"'Playfair Display',serif",
+                  fontWeight:700, fontSize:16, color:proc.color }}>
+                  {proc.name}
+                </span>
+              </div>
+              {/* CPT live display */}
+              <div style={{ padding:"5px 12px",
+                background:`${proc.color}12`,
+                border:`1px solid ${proc.color}35`,
+                borderRadius:8 }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:8, color:proc.color, letterSpacing:1,
+                  textTransform:"uppercase" }}>CPT </span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:12, fontWeight:700, color:proc.color }}>
+                  {cpt || "—"}
+                </span>
+              </div>
+            </div>
+
+            {/* Meta strip */}
+            <div style={{ display:"flex", gap:16, flexWrap:"wrap",
+              padding:"7px 12px", borderRadius:8, marginBottom:14,
+              background:"rgba(8,22,40,0.6)",
+              border:"1px solid rgba(26,53,85,0.35)",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>
+              <span>Time: {ts}</span>
+              {patientName    && <span>Patient: {patientName}</span>}
+              {physicianName  && <span>MD: {physicianName}</span>}
+              {patientAllergies && (
+                <span style={{ color:T.coral }}>Allergies: {patientAllergies}</span>
+              )}
+            </div>
+
+            {/* Fields grid */}
+            <div style={{ display:"grid",
+              gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",
+              gap:10, marginBottom:14 }}>
+              {proc.fields.map(def => (
+                <div key={def.id}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:T.txt4, letterSpacing:1.3, textTransform:"uppercase",
+                    marginBottom:4 }}>
+                    {def.label}
                   </div>
-                  <div className={`edpn-star-btn${favorites.includes(p.key)?' edpn-fav':''}`}
-                    onClick={e => { e.stopPropagation(); toggleFav(p.key); }}>
-                    {favorites.includes(p.key) ? '★' : '☆'}
-                  </div>
+                  <FieldInput
+                    def={def}
+                    value={fields[def.id] || ""}
+                    onChange={v => setField(def.id, v)}
+                  />
                 </div>
               ))}
             </div>
-          )}
-        </div>
 
-        {/* Favorites bar */}
-        {favorites.length > 0 && (
-          <div className="edpn-fav-bar">
-            <span style={{fontSize:14,flexShrink:0}}>⭐</span>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.gold,textTransform:'uppercase',letterSpacing:'.08em',fontWeight:600,flexShrink:0}}>Favorites</span>
-            <div style={{width:1,height:18,background:T.border,flexShrink:0,margin:'0 3px'}} />
-            {favorites.filter(k => P[k]).map(k => (
-              <div key={k} className="edpn-fav-chip" onClick={() => selectProc(k)}>
-                <span style={{fontSize:13}}>{P[k].icon}</span>
-                <span style={{color:T.txt,fontWeight:500}}>{P[k].name}</span>
-                <span style={{color:T.gold,cursor:'pointer',fontSize:11}} onClick={e => { e.stopPropagation(); toggleFav(k); }}>★</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Breadcrumb */}
-        <Breadcrumb />
-
-        {/* ── SELECT VIEW ── */}
-        {/* Anatomic Map Panel */}
-        {view === 'select' && mapMode && (
-          <div style={{background:T.panel,border:`1px solid ${T.border}`,borderRadius:12,padding:'14px 16px'}}>
-            <AnatomicMap onSelectProc={(key) => { selectProc(key); setMapMode(false); }} />
-          </div>
-        )}
-
-        {view === 'select' && !activeCat && !mapMode && (
-          <div style={{fontSize:11,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:'.06em',fontWeight:600,marginBottom:-6}}>Categories</div>
-        )}
-        {view === 'select' && !activeCat && (
-          <div className="edpn-cat-grid">
-            {categories.map(cat => (
-              <div key={cat.id} className="edpn-cat-tile" onClick={() => openCat(cat.id)}>
-                <div className="edpn-glow" style={{background:`radial-gradient(circle at 50% 40%, ${cat.color} 0%, transparent 70%)`}} />
-                <div className="edpn-ct-logo" style={{background:`${cat.color}22`,border:`1.5px solid ${cat.color}55`,boxShadow:`0 0 20px ${cat.color}44`}}>{cat.icon}</div>
-                <div className="edpn-ct-name">{cat.name}</div>
-                <div className="edpn-ct-count">{cat.procs.length}</div>
-              </div>
-            ))}
-            <div className="edpn-cat-tile" style={{borderStyle:'dashed',borderColor:T.txt4,background:'transparent'}} onClick={() => setModal({type:'newcat'})}>
-              <div className="edpn-ct-logo" style={{background:'transparent',border:`1px dashed ${T.txt4}`,fontSize:20,color:T.txt4,position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-68%)'}}>+</div>
-              <div className="edpn-ct-name" style={{color:T.txt3}}>New Category</div>
-              <div className="edpn-ct-count" style={{opacity:0}}>0</div>
-            </div>
-          </div>
-        )}
-
-        {/* ── CATEGORY PROCS ── */}
-        {view === 'select' && activeCat && currentCat && (
-          <div>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-              <span style={{fontSize:24}}>{currentCat.icon}</span>
-              <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:600}}>{currentCat.name}</div>
-                <div style={{fontSize:10,color:T.txt3}}>{currentCat.procs.length} procedure{currentCat.procs.length !== 1 ? 's' : ''}</div>
-              </div>
-              <button className="edpn-btn" style={{marginLeft:'auto'}} onClick={() => setModal({type:'addproc',cat:currentCat})}>+ Add</button>
-              <button className="edpn-btn" onClick={() => setModal({type:'editcat',cat:currentCat})}>✏️</button>
-            </div>
-            {currentCat.procs.length === 0
-              ? <div style={{textAlign:'center',padding:28,color:T.txt3,border:`1px dashed ${T.border}`,borderRadius:8}}>Empty — add procedures above.</div>
-              : <div className="edpn-proc-list">
-                  {currentCat.procs.filter(k => P[k]).map(k => {
-                    const p = P[k]; const rl = RISK_LABEL[p.risk]; const fv = favorites.includes(k);
-                    return (
-                      <div key={k} className="edpn-proc-item" onClick={() => selectProc(k)}>
-                        <span style={{fontSize:18,flexShrink:0}}>{p.icon}</span>
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:12,fontWeight:500,color:T.txt}}>{p.name}</div>
-                          <div style={{fontSize:9,color:T.txt3,marginTop:1}}>{p.subtitle}</div>
-                        </div>
-                        {rl && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,padding:'2px 5px',borderRadius:4,background:RISK_BG[p.risk],color:RISK_COLOR[p.risk],border:`1px solid ${RISK_BD[p.risk]}`,flexShrink:0}}>{rl}</span>}
-                        <div className={`edpn-star-btn${fv?' edpn-fav':''}`} onClick={e => { e.stopPropagation(); toggleFav(k); }}>{fv?'★':'☆'}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-            }
-          </div>
-        )}
-
-        {/* ── DOCUMENT VIEW ── */}
-        {view === 'document' && proc && (
-          <div style={{display:'flex',flexDirection:'column',gap:12}}>
-            {/* Proc title + back */}
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <span style={{fontSize:22}}>{proc.icon}</span>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:600,display:'flex',alignItems:'center',gap:8}}>
-                  {proc.name}
-                  <div className={`edpn-star-btn${favorites.includes(selectedProc)?' edpn-fav':''}`} onClick={() => toggleFav(selectedProc)}>{favorites.includes(selectedProc)?'★':'☆'}</div>
-                </div>
-                <div style={{fontSize:12,color:T.txt3}}>{proc.subtitle}</div>
-              </div>
-              <button className="edpn-btn" onClick={() => { setSelectedProc(null); setView('select'); }}>← Back</button>
+            {/* Build note button */}
+            <div style={{ display:"flex", gap:8, alignItems:"center",
+              marginBottom:14 }}>
+              <button onClick={buildNote}
+                style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+                  fontSize:13, padding:"10px 26px", borderRadius:10,
+                  cursor:"pointer",
+                  border:`1px solid ${proc.color}77`,
+                  background:`linear-gradient(135deg,${proc.color}22,${proc.color}08)`,
+                  color:proc.color, transition:"all .15s" }}>
+                Build Procedure Note
+              </button>
+              {note && (
+                <button onClick={copyNote}
+                  style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                    fontSize:12, padding:"10px 20px", borderRadius:10,
+                    cursor:"pointer", transition:"all .15s",
+                    border:`1px solid ${copied ? T.green+"77" : "rgba(42,79,122,0.4)"}`,
+                    background: copied ? "rgba(61,255,160,0.1)" : "rgba(42,79,122,0.15)",
+                    color: copied ? T.green : T.txt3 }}>
+                  {copied ? "Copied!" : "Copy Note"}
+                </button>
+              )}
+              {note && (
+                <button onClick={() => setShowNote(p => !p)}
+                  style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    padding:"10px 14px", borderRadius:10, cursor:"pointer",
+                    border:"1px solid rgba(42,79,122,0.35)",
+                    background:"transparent", color:T.txt4,
+                    letterSpacing:1, textTransform:"uppercase" }}>
+                  {showNote ? "Hide" : "Show"} Note
+                </button>
+              )}
             </div>
 
-            {/* Physician/Encounter */}
-            <div className="edpn-form-section">
-              <div className="edpn-form-hdr">
-                <span>👤</span>
-                <span className="edpn-form-hdr-title">Physician & Encounter</span>
-                <span className="edpn-badge-teal" style={{marginLeft:'auto'}}>{proc.icon} {proc.name}</span>
-              </div>
-              <div className="edpn-form-body">
-                <div className="edpn-grid-3">
-                  <div className="edpn-field">
-                    <label className="edpn-field-label">Physician</label>
-                    <input className="edpn-input" placeholder="Dr. Smith, MD" value={ctx.physician} onChange={e => setCtx(p => ({...p,physician:e.target.value}))} />
-                  </div>
-                  <div className="edpn-field">
-                    <label className="edpn-field-label">Date</label>
-                    <input className="edpn-input" type="date" value={ctx.date} onChange={e => setCtx(p => ({...p,date:e.target.value}))} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,colorScheme:'dark'}} />
-                  </div>
-                  <div className="edpn-field">
-                    <label className="edpn-field-label">Allergies</label>
-                    <input className="edpn-input" placeholder="NKDA" value={ctx.allergies} onChange={e => setCtx(p => ({...p,allergies:e.target.value}))} />
-                  </div>
+            {/* Note output */}
+            {note && showNote && (
+              <div className="proc-fade">
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:T.teal, letterSpacing:1.5, textTransform:"uppercase",
+                  marginBottom:6 }}>
+                  Formatted Procedure Note — Copy to Chart
+                </div>
+                <pre style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                  color:T.txt2, lineHeight:1.7,
+                  background:"rgba(5,15,30,0.9)",
+                  border:"1px solid rgba(42,79,122,0.4)",
+                  borderRadius:10, padding:"14px 16px",
+                  whiteSpace:"pre-wrap", wordBreak:"break-word",
+                  overflowY:"auto", maxHeight:520 }}>
+                  {note}
+                </pre>
+                <div style={{ marginTop:6,
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"rgba(42,79,122,0.55)", letterSpacing:1 }}>
+                  NOTRYA PROCEDURE NOTES — VERIFY ALL ENTRIES BEFORE SIGNING — CPT CODES REQUIRE ATTENDING CONFIRMATION
                 </div>
               </div>
-            </div>
-
-            {/* Dynamic sections */}
-            {proc.sections.map((s, si) => (
-              <div key={si} className="edpn-form-section">
-                <div className="edpn-form-hdr">
-                  <span style={{fontSize:13}}>{s.icon}</span>
-                  <span className="edpn-form-hdr-title">{s.title}</span>
-                </div>
-                <div className="edpn-form-body">
-                  {s.warning && <div className="edpn-tip-warn"><span>⚠️</span><span>{s.warning}</span></div>}
-                  <div className="edpn-grid-2" style={{gap:10}}>
-                    {s.fields.map(f => (
-                      <div key={f.id} style={f.type === 'chips' || f.type === 'textarea' ? {gridColumn:'1/-1'} : {}}>
-                        <FieldRenderer field={f} value={formData[f.id]} onChange={val => updateField(f.id, val)} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Tips */}
-            {proc.tips && (
-              <div className="edpn-tip-gold">
-                <span>⚠</span>
-                <div>
-                  <strong style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,letterSpacing:'.1em',display:'block',marginBottom:2}}>KEY REMINDERS</strong>
-                  {proc.tips}
-                </div>
-              </div>
-            )}
-
-            <button className="edpn-btn-primary" onClick={generateNote} disabled={generating} style={{padding:'9px 22px',fontSize:13,fontWeight:700,alignSelf:'flex-start'}}>
-              {generating ? '⏳ Generating…' : '✦ Generate Note'}
-            </button>
-          </div>
-        )}
-
-        {/* ── NOTE VIEW ── */}
-        {view === 'note' && (
-          <div style={{display:'flex',flexDirection:'column',gap:14}}>
-            {!noteText ? (
-              <div style={{textAlign:'center',padding:48,color:T.txt3}}>
-                <div style={{fontSize:36,opacity:.3,marginBottom:10}}>📄</div>
-                <div style={{fontSize:13,color:T.txt2}}>No note yet</div>
-                <button className="edpn-btn-blue" onClick={() => setView('document')} style={{marginTop:12}}>← Fill Form</button>
-              </div>
-            ) : (
-              <>
-                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:600}}>Generated Note</span>
-                  <span className="edpn-badge-teal" style={{marginLeft:'auto'}}>Ready</span>
-                  <button className="edpn-btn" onClick={generateNote}>↺ Regen</button>
-                  <button className="edpn-btn-primary" onClick={() => { navigator.clipboard.writeText(noteText).then(() => showToast('Copied!')).catch(() => showToast('Failed')); }}>📋 Copy</button>
-                  <button className="edpn-btn" onClick={() => setView('document')}>← Edit</button>
-                </div>
-                <div className="edpn-note-output">
-                  <div className="edpn-note-hdr">
-                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3}}>{proc?.icon} {proc?.name} — {ctx.date}</span>
-                    <span style={{marginLeft:'auto',fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4}}>~{noteText.split(/\s+/).length} words</span>
-                  </div>
-                  <div className="edpn-note-body" contentEditable suppressContentEditableWarning onInput={e => setNoteText(e.currentTarget.innerText)}>{noteText}</div>
-                </div>
-                <div className="edpn-tip-info"><span>✏️</span><span>Editable. Verify all details before signing.</span></div>
-
-                {/* Billing Codes Panel */}
-                <div style={{background:T.panel,border:`1px solid ${T.border}`,borderRadius:12,overflow:'hidden'}}>
-                  <div style={{padding:'10px 16px',background:T.up,borderBottom:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:8}}>
-                    <span>💰</span>
-                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:600,color:T.txt,letterSpacing:'.05em',textTransform:'uppercase'}}>Billing Code Suggestions</span>
-                    {billingLoading && <span style={{marginLeft:6,fontSize:10,color:T.teal,fontFamily:"'JetBrains Mono',monospace"}}>⏳ Analyzing…</span>}
-                    {billing && !billingLoading && billing.complexity && (
-                      <span style={{marginLeft:'auto',padding:'2px 10px',borderRadius:18,fontSize:10,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",background:billing.complexity.toLowerCase().includes('high')?'rgba(255,107,107,.15)':billing.complexity.toLowerCase().includes('mod')?'rgba(255,159,67,.15)':'rgba(0,229,192,.1)',color:billing.complexity.toLowerCase().includes('high')?T.coral:billing.complexity.toLowerCase().includes('mod')?T.orange:T.teal,border:`1px solid ${billing.complexity.toLowerCase().includes('high')?'rgba(255,107,107,.3)':billing.complexity.toLowerCase().includes('mod')?'rgba(255,159,67,.3)':'rgba(0,229,192,.2)'}`}}>{billing.complexity}</span>
-                    )}
-                  </div>
-                  {billingLoading && (
-                    <div style={{padding:'20px 16px',display:'flex',alignItems:'center',gap:8,color:T.txt3,fontSize:12}}>
-                      <div className="edpn-ai-loader" style={{padding:0}}><span/><span/><span/></div>
-                      Extracting CPT &amp; ICD-10 codes…
-                    </div>
-                  )}
-                  {billing && !billingLoading && !billing.error && (
-                    <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
-                      {/* CPT Codes */}
-                      {billing.cpt_codes?.length > 0 && (
-                        <div>
-                          <div style={{fontSize:9,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:'.07em',fontWeight:600,marginBottom:6}}>CPT Codes</div>
-                          <div style={{display:'flex',flexDirection:'column',gap:5}}>
-                            {billing.cpt_codes.map((c, i) => (
-                              <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 10px',background:T.card,border:`1px solid ${c.primary?'rgba(59,158,255,.3)':T.border}`,borderRadius:8}}>
-                                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700,color:c.primary?T.blue:T.txt,minWidth:56}}>{c.code}</span>
-                                <span style={{flex:1,fontSize:12,color:T.txt2}}>{c.description}</span>
-                                {c.rvu > 0 && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.gold,flexShrink:0}}>{c.rvu} RVU</span>}
-                                {c.primary && <span style={{fontSize:9,padding:'1px 6px',borderRadius:10,background:'rgba(59,158,255,.15)',color:T.blue,border:'1px solid rgba(59,158,255,.3)',fontFamily:"'JetBrains Mono',monospace",fontWeight:700,flexShrink:0}}>PRIMARY</span>}
-                                <button onClick={() => navigator.clipboard.writeText(c.code).then(() => showToast(`Copied ${c.code}`))} style={{background:'none',border:'none',color:T.txt3,cursor:'pointer',fontSize:12,padding:'2px 4px'}}>📋</button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* ICD-10 Codes */}
-                      {billing.icd10_codes?.length > 0 && (
-                        <div>
-                          <div style={{fontSize:9,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:'.07em',fontWeight:600,marginBottom:6}}>ICD-10 Codes</div>
-                          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-                            {billing.icd10_codes.map((c, i) => (
-                              <div key={i} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 10px',background:T.card,border:`1px solid ${T.border}`,borderRadius:8,cursor:'pointer'}} onClick={() => navigator.clipboard.writeText(c.code).then(() => showToast(`Copied ${c.code}`))}>
-                                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.teal}}>{c.code}</span>
-                                <span style={{fontSize:11,color:T.txt2}}>{c.description}</span>
-                                {c.type && <span style={{fontSize:9,padding:'1px 5px',borderRadius:8,background:'rgba(0,229,192,.1)',color:T.teal,border:'1px solid rgba(0,229,192,.2)',fontFamily:"'JetBrains Mono',monospace"}}>{c.type}</span>}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* Modifiers */}
-                      {billing.modifiers?.length > 0 && (
-                        <div>
-                          <div style={{fontSize:9,color:T.txt3,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:'.07em',fontWeight:600,marginBottom:6}}>Modifiers</div>
-                          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-                            {billing.modifiers.map((m, i) => (
-                              <div key={i} style={{display:'flex',alignItems:'center',gap:5,padding:'4px 10px',background:'rgba(155,109,255,.08)',border:'1px solid rgba(155,109,255,.25)',borderRadius:8}}>
-                                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:T.purple}}>-{m.modifier}</span>
-                                <span style={{fontSize:11,color:T.txt2}}>{m.description}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* Billing Notes */}
-                      {billing.billing_notes && (
-                        <div style={{padding:'8px 12px',background:'rgba(245,200,66,.05)',border:'1px solid rgba(245,200,66,.18)',borderRadius:8,fontSize:11,color:T.gold,lineHeight:1.55}}>
-                          <strong style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:'.08em',display:'block',marginBottom:3}}>BILLING NOTES</strong>
-                          {billing.billing_notes}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {billing?.error && (
-                    <div style={{padding:'12px 16px',fontSize:12,color:T.txt3}}>⚠ Could not generate billing codes. Please review manually.</div>
-                  )}
-                </div>
-              </>
             )}
           </div>
         )}
       </div>
-
-      {/* Toast */}
-      {toast && <div className="edpn-toast">{toast}</div>}
-
-      {/* AI Overlay */}
-      <div className={`edpn-ai-overlay${aiOpen?' edpn-ai-open':''}`}>
-        <div style={{padding:'10px 12px',borderBottom:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:8}}>
-          <div style={{width:7,height:7,borderRadius:'50%',background:T.teal}} />
-          <span style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600}}>Notrya AI</span>
-          <span style={{marginLeft:'auto',fontFamily:"'JetBrains Mono',monospace",fontSize:9,background:T.up,border:`1px solid ${T.border}`,borderRadius:20,padding:'2px 7px',color:T.txt3}}>gpt</span>
-          <button onClick={() => setAiOpen(false)} style={{width:24,height:24,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:5,border:`1px solid ${T.border}`,background:T.up,color:T.txt3,cursor:'pointer',fontSize:12}}>─</button>
-        </div>
-        <div className="edpn-ai-msgs" ref={aiMsgsRef}>
-          {aiMessages.map((m, i) => (
-            <div key={i} className={`edpn-ai-msg ${m.role}`} dangerouslySetInnerHTML={{__html: m.text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}} />
-          ))}
-          {aiLoading && <div className="edpn-ai-loader"><span/><span/><span/></div>}
-        </div>
-        <div className="edpn-ai-input-wrap">
-          <textarea className="edpn-ai-input" rows={1} placeholder="Ask anything…" value={aiInput} onChange={e => setAiInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAI(); } }} />
-          <button className="edpn-ai-send" onClick={sendAI}>↑</button>
-        </div>
-      </div>
-      <button className={`edpn-ai-fab${aiOpen?' edpn-ai-open':''}`} onClick={() => setAiOpen(o => !o)}>
-        {aiOpen ? '✕' : '✦'}
-      </button>
-
-      {/* Modals */}
-      {modal?.type === 'newcat' && <NewCatModal />}
-      {modal?.type === 'editcat' && <EditCatModal cat={modal.cat} />}
-      {modal?.type === 'addproc' && <AddProcModal cat={modal.cat} />}
-      {showSettings && <ProcedureSettings onClose={() => setShowSettings(false)} />}
-    </>
+    </div>
   );
 }

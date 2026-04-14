@@ -39,6 +39,7 @@ import TimeBillingTracker      from "@/components/npi/TimeBillingTracker";
 import NoteAuditLock           from "@/components/npi/NoteAuditLock";
 import ScoreHub                from "@/pages/ScoreHub";
 import WeightDoseHub           from "@/pages/WeightDoseHub";
+import SmartDifferential       from "@/components/npi/SmartDifferential";
 import ConsultPrepPanel         from "@/components/npi/ConsultPrepPanel";
 import EmbeddedConsultGuide     from "@/components/npi/EmbeddedConsultGuide";
 import NPILookupWidget          from "@/components/npi/NPILookupWidget";
@@ -104,6 +105,7 @@ export default function NewPatientInput() {
   const [consultSubTab,    setConsultSubTab]    = useState("prep");
   const [consultProvider,  setConsultProvider]  = useState(null);
   const [mdmSubTab,        setMdmSubTab]        = useState("mdm");
+  const [workingDx,        setWorkingDx]        = useState("");
 
   // ── MDMBuilderTab toast bridge ─────────────────────────────────────────────
   // MDMBuilderTab uses an onToast(msg, type) prop to stay free of direct sonner
@@ -133,7 +135,45 @@ export default function NewPatientInput() {
       case "meds":       return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} patientAge={demo.age} pdmpState={pdmpState} setPdmpState={setPdmpState} onAdvance={() => selectSection("sdoh")} />;
       case "sdoh":       return <SDOHWidget sdoh={sdoh} setSdoh={setSdoh} patientSex={demo.sex} onAdvance={() => selectSection("summary")} />;
       case "summary":    return <PatientSummaryTab demo={demo} cc={cc} vitals={vitals} vitalsHistory={vitalsHistory} medications={medications} allergies={allergies} pmhSelected={pmhSelected} pmhExtra={pmhExtra} surgHx={surgHx} famHx={famHx} socHx={socHx} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} sdoh={sdoh} consults={consults} sepsisBundle={sepsisBundle} mdmState={mdmState} isarState={isarState} pdmpState={pdmpState} onAdvance={() => selectSection("hpi")} />;
-      case "hpi":        return <InlineHPITab cc={cc} setCC={setCC} onAdvance={() => selectSection("ros")} patientAge={demo.age} patientSex={demo.sex} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} />;
+      case "hpi": return (
+        <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+          <details style={{ marginBottom:12 }}>
+            <summary style={{ fontFamily:"'JetBrains Mono',monospace",
+              fontSize:9, color:"var(--npi-txt4)", letterSpacing:1.5,
+              textTransform:"uppercase", cursor:"pointer", padding:"7px 0",
+              borderBottom:"1px solid rgba(26,53,85,0.3)",
+              listStyle:"none", display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ color:"var(--npi-purple)" }}>▶</span>
+              Smart Differential Generator
+              {workingDx && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:8, color:"var(--npi-teal)",
+                  background:"rgba(0,229,192,0.1)",
+                  border:"1px solid rgba(0,229,192,0.3)",
+                  borderRadius:4, padding:"1px 7px", marginLeft:6 }}>
+                  Working Dx: {workingDx}
+                </span>
+              )}
+            </summary>
+            <div style={{ paddingTop:10 }}>
+              <SmartDifferential
+                cc={cc} demo={demo} vitals={vitals}
+                medications={medications} pmhSelected={pmhSelected}
+                rosSymptoms={rosSymptoms}
+                embedded
+                onToast={showToast}
+                onSelectDx={dx => setWorkingDx(dx)}
+              />
+            </div>
+          </details>
+          <InlineHPITab
+            cc={cc} setCC={setCC}
+            onAdvance={() => selectSection("ros")}
+            patientAge={demo.age} patientSex={demo.sex}
+            vitals={vitals} medications={medications}
+            allergies={allergies} pmhSelected={pmhSelected} />
+        </div>
+      );
       case "ros": return (
         <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
           <SystemProgressHeader systems={ROS_RAIL_SYSTEMS} activeIdx={rosActiveSystem} onSelect={setRosActiveSystem} getDot={getRosSysDot} />
@@ -576,6 +616,7 @@ export default function NewPatientInput() {
               disposition={disposition} esiLevel={esiLevel} isarState={isarState}
               mdmState={mdmState} setMdmState={setMdmState}
               mdmDataElements={mdmDataElements} setMdmDataElements={setMdmDataElements}
+              workingDx={workingDx}
               onToast={showToast}
               onAdvance={() => selectSection("timeline")}
             />
@@ -592,6 +633,14 @@ export default function NewPatientInput() {
             />
           )}
         </div>
+      );
+      case "diff": return (
+        <SmartDifferential
+          cc={cc} demo={demo} vitals={vitals}
+          medications={medications} pmhSelected={pmhSelected}
+          rosSymptoms={rosSymptoms}
+          onToast={showToast}
+          onSelectDx={dx => setWorkingDx(dx)} />
       );
       case "weightdose": return (
         <WeightDoseHub embedded demo={demo} vitals={vitals} />

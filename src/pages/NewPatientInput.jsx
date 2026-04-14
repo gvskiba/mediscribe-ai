@@ -38,6 +38,7 @@ import MDMBuilderTab            from "@/components/npi/MDMBuilderTab";
 import TimeBillingTracker      from "@/components/npi/TimeBillingTracker";
 import NoteAuditLock           from "@/components/npi/NoteAuditLock";
 import ScoreHub                from "@/pages/ScoreHub";
+import WeightDoseHub           from "@/pages/WeightDoseHub";
 import ConsultPrepPanel         from "@/components/npi/ConsultPrepPanel";
 import EmbeddedConsultGuide     from "@/components/npi/EmbeddedConsultGuide";
 import NPILookupWidget          from "@/components/npi/NPILookupWidget";
@@ -591,6 +592,9 @@ export default function NewPatientInput() {
             />
           )}
         </div>
+      );
+      case "weightdose": return (
+        <WeightDoseHub embedded demo={demo} vitals={vitals} />
       );
       case "scores": return (
         <ScoreHub

@@ -72,6 +72,7 @@ import NotryaNewTechnology from '@/pages/NotryaNewTechnology';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 import DischargeDisposition from '@/pages/DischargeDisposition';
 import ScoreHub from '@/pages/ScoreHub';
+import WeightDoseHub from '@/pages/WeightDoseHub';
 
 
 
@@ -201,6 +202,7 @@ const AuthenticatedApp = () => {
       <Route path="/ClinicalNoteV2" element={<ClinicalNoteV2 />} />
       <Route path="/new-technology" element={<NotryaNewTechnology />} />
       <Route path="/score-hub" element={<ScoreHub />} />
+      <Route path="/weight-dose" element={<WeightDoseHub />} />
 
 
       <Route path="*" element={<PageNotFound />} />

@@ -33,6 +33,7 @@ import DispositionTab           from "@/components/npi/DispositionTab";
 import PatientSummaryTab        from "@/components/npi/PatientSummaryTab";
 import HandoffTab               from "@/components/npi/HandoffTab";
 import DischargeInstructionsTab from "@/components/npi/DischargeInstructionsTab";
+import SmartDischargeHub       from "@/components/npi/SmartDischargeHub";
 import MDMBuilderTab            from "@/components/npi/MDMBuilderTab";
 import ConsultPrepPanel         from "@/components/npi/ConsultPrepPanel";
 import EmbeddedConsultGuide     from "@/components/npi/EmbeddedConsultGuide";
@@ -514,7 +515,7 @@ export default function NewPatientInput() {
       );
       case "closeout":   return <DispositionTab disposition={disposition} setDisposition={setDisposition} dispReason={dispReason} setDispReason={setDispReason} dispTime={dispTime} setDispTime={setDispTime} onAdvance={() => selectSection("handoff")} />;
       case "handoff":    return <HandoffTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} sdoh={sdoh} consults={consults} disposition={disposition} dispReason={dispReason} onAdvance={() => selectSection("discharge")} />;
-      case "discharge":  return <DischargeInstructionsTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} disposition={disposition} dispReason={dispReason} dispTime={dispTime} consults={consults} sdoh={sdoh} esiLevel={esiLevel} registration={registration} providerName={providerName} doorTime={doorTime} />;
+      case "discharge":  return <SmartDischargeHub demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} disposition={disposition} dispReason={dispReason} dispTime={dispTime} consults={consults} sdoh={sdoh} esiLevel={esiLevel} registration={registration} providerName={providerName} doorTime={doorTime} />;
       case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
       case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} patientWeight={demo.weight||vitals.weight||""} /></div>;
       case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;

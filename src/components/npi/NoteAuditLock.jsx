@@ -139,7 +139,9 @@ function assembleNote({
     .join(", ") || "NKDA";
 
   const pmhLine = [
-    ...(pmhSelected || []),
+    ...(Array.isArray(pmhSelected)
+      ? pmhSelected
+      : Object.keys(pmhSelected || {}).filter(k => (pmhSelected || {})[k])),
     pmhExtra ? pmhExtra.trim() : null,
   ].filter(Boolean).join(", ") || "None documented";
 

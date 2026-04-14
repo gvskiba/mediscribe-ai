@@ -34,6 +34,7 @@ import PatientSummaryTab        from "@/components/npi/PatientSummaryTab";
 import HandoffTab               from "@/components/npi/HandoffTab";
 import DischargeInstructionsTab from "@/components/npi/DischargeInstructionsTab";
 import MDMBuilderTab            from "@/components/npi/MDMBuilderTab";
+import ConsultPrepPanel         from "@/components/npi/ConsultPrepPanel";
 
 // ── Utility / overlay components ─────────────────────────────────────────────
 import ParseFab              from "@/components/npi/ParseFab";
@@ -91,6 +92,9 @@ export default function NewPatientInput() {
     sendMessage, handleAIKey, renderMsg,
   } = useNPIState();
 
+  // ── Consult specialty state (lifted so ConsultPrepPanel + ConsultTab share it) ─
+  const [consultSpecialty, setConsultSpecialty] = useState(null);
+
   // ── MDMBuilderTab toast bridge ─────────────────────────────────────────────
   // MDMBuilderTab uses an onToast(msg, type) prop to stay free of direct sonner
   // imports. This thin wrapper maps it onto the existing sonner toast instance.
@@ -143,7 +147,28 @@ export default function NewPatientInput() {
           <ClinicalNoteStudio patientData={patientDataBundle} embedded={true} onBack={() => selectSection("pe")} onSave={handleSaveChart} onAdvance={() => selectSection("reassess")} />
         </div>
       );
-      case "consult":    return <ConsultTab consults={consults} setConsults={setConsults} onAdvance={() => selectSection("chart")} />;
+      case "consult": return (
+        <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+          <div style={{ padding:"0 0 12px" }}>
+            <ConsultPrepPanel
+              demo={demo}
+              cc={cc}
+              vitals={vitals}
+              medications={medications}
+              pmhSelected={pmhSelected}
+              consults={consults}
+              onToast={showToast}
+              selectedSpecialty={consultSpecialty}
+              onSpecialtyChange={setConsultSpecialty}
+            />
+          </div>
+          <ConsultTab
+            consults={consults}
+            setConsults={setConsults}
+            onAdvance={() => selectSection("chart")}
+          />
+        </div>
+      );
       case "reassess":   return <ReassessmentTab initialVitals={vitals} onStateChange={setReassessState} onVitalsSnapshot={v => addVitalsSnapshot(`Reassessment ${vitalsHistory.filter(e => e.label.startsWith("Reassessment")).length + 1}`, v)} onAdvance={() => selectSection("timeline")} />;
       case "sepsis": return (
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>

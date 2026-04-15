@@ -55,6 +55,7 @@ const COMMANDS = [
   { id:"imaging",   type:"hub",      label:"ImagingInterpreter",   desc:"CXR, CT head, CT chest, CT abdomen interpretation",           icon:"🖼️", path:"/imaging-interpreter", tags:["imaging","cxr","xray","ct","radiology","report","interpret"] },
   { id:"wound",     type:"hub",      label:"WoundCareHub",         desc:"Irrigation, closure, antibiotic prophylaxis, tetanus",        icon:"🩹", path:"/wound-care-hub",      tags:["wound","laceration","closure","tetanus","irrigation","abx"] },
   { id:"seizure",   type:"hub",      label:"SeizureHub",           desc:"SE protocol, BZD dosing, levetiracetam, ACEP 2024",           icon:"⚡", path:"/seizure-hub",         tags:["seizure","status","epilepticus","benzo","levetiracetam","keppra"] },
+  { id:"chestpain", type:"hub",      label:"ChestPainHub",         desc:"HEART score, serial troponin, EDACS, ACS protocol, disposition", icon:"💓", path:"/ChestPainHub",        tags:["chest","pain","heart","acs","stemi","nstemi","troponin","edacs"] },
 
   // ── NPI Encounter sections ─────────────────────────────────────────────────
   { id:"s_demo",    type:"section",  label:"Demographics",         desc:"Patient registration, demographics, SDOH",                    icon:"👤", section:"demo",             tags:["demo","registration","patient","sdoh","demographics"] },

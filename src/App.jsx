@@ -26,7 +26,7 @@ import CardiacHub from '@/pages/CardiacHub';
 import TraumaHub from '@/pages/TraumaHub';
 import HubSelectorPage from '@/pages/HubSelectorPage';
 import OBGYNHub from '@/pages/OBGYNHub';
-import SepsisHub from '@/pages/SepsisHub';
+import SepsisAbxHub from '@/pages/SepsisAbxHub';
 import AirwayHub from '@/pages/AirwayHub';
 import ToxicologyHub from '@/pages/ToxicologyHub';
 import LabInterpreter from '@/pages/LabInterpreter';
@@ -168,7 +168,7 @@ const AuthenticatedApp = () => {
       <Route path="/trauma-hub" element={<TraumaHub />} />
       <Route path="/hub" element={<HubSelectorPage />} />
       <Route path="/ob-hub" element={<OBGYNHub />} />
-      <Route path="/sepsis-hub" element={<SepsisHub />} />
+      <Route path="/sepsis-hub" element={<SepsisAbxHub />} />
       <Route path="/airway-hub" element={<AirwayHub />} />
       <Route path="/tox-hub" element={<ToxicologyHub />} />
       <Route path="/lab-interpreter" element={<LabInterpreter />} />

@@ -87,6 +87,7 @@ import DyspneaHub from '@/pages/DyspneaHub';
 import HeadacheHub from '@/pages/HeadacheHub';
 import AbdominalPainHub from '@/pages/AbdominalPainHub';
 import AMSHub from '@/pages/AMSHub';
+import DVTHub from '@/pages/DVTHub';
 
 
 
@@ -240,6 +241,7 @@ const AuthenticatedApp = () => {
       <Route path="/HeadacheHub" element={<LayoutWrapper currentPageName="HeadacheHub"><HeadacheHub /></LayoutWrapper>} />
       <Route path="/AbdominalPainHub" element={<LayoutWrapper currentPageName="AbdominalPainHub"><AbdominalPainHub /></LayoutWrapper>} />
       <Route path="/ams-hub" element={<AMSHub />} />
+      <Route path="/dvt-hub" element={<DVTHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

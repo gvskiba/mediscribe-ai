@@ -42,6 +42,7 @@ import WeightDoseHub           from "@/pages/WeightDoseHub";
 import SmartDifferential       from "@/components/npi/SmartDifferential";
 import CapacityAMAModule        from "@/components/npi/CapacityAMAModule";
 import ShiftHandoffGenerator    from "@/components/npi/ShiftHandoffGenerator";
+import PediatricModePanel       from "@/components/npi/PediatricModePanel";
 import ConsultPrepPanel         from "@/components/npi/ConsultPrepPanel";
 import EmbeddedConsultGuide     from "@/components/npi/EmbeddedConsultGuide";
 import NPILookupWidget          from "@/components/npi/NPILookupWidget";
@@ -103,6 +104,8 @@ export default function NewPatientInput() {
   } = useNPIState();
 
   // ── Consult specialty state (lifted so ConsultPrepPanel + ConsultTab share it) ─
+  const isPediatric = Boolean(demo?.age) && parseFloat(demo.age) < 18;
+
   const [consultSpecialty, setConsultSpecialty] = useState(null);
   const [consultSubTab,    setConsultSubTab]    = useState("prep");
   const [consultProvider,  setConsultProvider]  = useState(null);
@@ -798,7 +801,17 @@ export default function NewPatientInput() {
 
       {/* ── Main content ── */}
       <div className="npi-main-wrap">
-        <main className="npi-content">{renderContent()}</main>
+        <main className="npi-content">
+          {isPediatric && (
+            <PediatricModePanel
+              demo={demo}
+              vitals={vitals}
+              medications={medications}
+              onToast={showToast}
+            />
+          )}
+          {renderContent()}
+        </main>
       </div>
 
       {/* ── AI overlay ── */}

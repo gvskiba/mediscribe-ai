@@ -1,7 +1,7 @@
 // PediatricModePanel.jsx
 // Activates automatically when demo.age < 18.
 
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   getAgeBand, AGE_BAND_LABELS,
   interpretPedVitals, getVitalSummary, minSBP,

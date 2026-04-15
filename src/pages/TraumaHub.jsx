@@ -322,8 +322,8 @@ function ShockTab() {
       <Card color={T.coral} title="Shock Index = HR / SBP">
         <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
           color:T.txt4, marginBottom:10, lineHeight:1.5 }}>
-          SI > 1.0 indicates significant blood loss and predicts need for MTP.
-          SI > 1.4 = massive hemorrhage / impending arrest.
+          SI &gt; 1.0 indicates significant blood loss and predicts need for MTP.
+          SI &gt; 1.4 = massive hemorrhage / impending arrest.
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
           {[["Heart Rate (bpm)", hr, setHR, T.coral],

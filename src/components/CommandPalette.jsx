@@ -56,7 +56,7 @@ const COMMANDS = [
   { id:"wound",     type:"hub",      label:"WoundCareHub",         desc:"Irrigation, closure, antibiotic prophylaxis, tetanus",        icon:"🩹", path:"/wound-care-hub",      tags:["wound","laceration","closure","tetanus","irrigation","abx"] },
   { id:"seizure",   type:"hub",      label:"SeizureHub",           desc:"SE protocol, BZD dosing, levetiracetam, ACEP 2024",           icon:"⚡", path:"/seizure-hub",         tags:["seizure","status","epilepticus","benzo","levetiracetam","keppra"] },
   { id:"chestpain", type:"hub",      label:"ChestPainHub",         desc:"HEART score, serial troponin, EDACS, ACS protocol, disposition", icon:"💓", path:"/ChestPainHub",        tags:["chest","pain","heart","acs","stemi","nstemi","troponin","edacs"] },
-  { id:"dyspnea",   type:"hub",      label:"DyspneaHub",           desc:"Differential diagnosis, CURB-65, shock index, acute protocol",     icon:"🫁", path:"/DyspneaHub",         tags:["dyspnea","sob","shortness","breath","pneumonia","heart","pe"] },
+  { id:"dyspnea",   type:"hub",      label:"DyspneaHub",           desc:"BLUE protocol, PE pathway (PERC/Wells), CHF/ADHF, COPD, asthma, pneumonia (CURB-65, IDSA 2019)", icon:"💨", path:"/DyspneaHub",         tags:["dyspnea","shortness","breath","chf","copd","asthma","pneumonia","pe","blue","protocol","curb","bnp","perc","wells","bipap"] },
 
   // ── NPI Encounter sections ─────────────────────────────────────────────────
   { id:"s_demo",    type:"section",  label:"Demographics",         desc:"Patient registration, demographics, SDOH",                    icon:"👤", section:"demo",             tags:["demo","registration","patient","sdoh","demographics"] },

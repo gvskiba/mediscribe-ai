@@ -829,9 +829,20 @@ export default function StrokeAssessment() {
                       <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.teal,fontWeight:700,marginBottom:4}}>ALTEPLASE DOSING</div>
                       <div style={{fontSize:12,color:T.txt2,lineHeight:1.65}}>0.9 mg/kg IV (max 90 mg). 10% bolus over 1 min → 90% over 60 min. Hold anticoagulants/antiplatelets 24h post.</div>
                     </div>
+                    <div style={{marginTop:10,padding:'10px 14px',background:'rgba(59,158,255,0.07)',border:'1px solid rgba(59,158,255,0.3)',borderRadius:10}}>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.blue,fontWeight:700,marginBottom:4}}>TNK (TENECTEPLASE) — ACEP 2024 LEVEL B</div>
+                      <div style={{fontSize:12,color:T.txt2,lineHeight:1.65,marginBottom:6}}>Tenecteplase 0.25 mg/kg IV bolus (max 25 mg) — single bolus, no infusion required.</div>
+                      <div style={{fontSize:11,color:T.txt3,lineHeight:1.6,marginBottom:4}}>• Single IV push vs alteplase 10% bolus + 60-min infusion — operationally simpler</div>
+                      <div style={{fontSize:11,color:T.txt3,lineHeight:1.6,marginBottom:4}}>• Higher fibrin specificity, non-inferior to alteplase (EXTEND-IA TNKv2, NOR-TEST 2)</div>
+                      <div style={{fontSize:11,color:T.txt3,lineHeight:1.6,marginBottom:4}}>• Preferred by many centers when IV thrombolysis indicated with confirmed LVO</div>
+                      <div style={{fontSize:11,color:T.coral,lineHeight:1.6}}>⚠ Dose: 0.25 mg/kg — NOT 0.4 mg/kg (higher dose showed worse outcomes in trials)</div>
+                    </div>
                   </div>
                   <div className="sa-card">
-                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:T.blue,marginBottom:12}}>🔧 Mechanical Thrombectomy</div>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:T.blue,marginBottom:6}}>🔧 Mechanical Thrombectomy</div>
+                    <div style={{padding:'7px 10px',background:'rgba(59,158,255,0.07)',border:'1px solid rgba(59,158,255,0.25)',borderRadius:8,marginBottom:10,fontSize:11,color:T.blue,lineHeight:1.55}}>
+                      <strong>ACEP 2024 / SWIFT-DIRECT / DIRECT-SAFE:</strong> For confirmed LVO eligible for both IV tPA and thrombectomy — proceed to angiography suite SIMULTANEOUSLY with tPA. Do NOT wait for tPA response before activating thrombectomy team.
+                    </div>
                     <div style={{fontSize:11,color:T.txt3,marginBottom:8}}>Class I, LOE A — AHA 2018</div>
                     {[["NIHSS","≥6 (or any if proven LVO)"],["Vessel","ICA or M1/M2 MCA, basilar artery"],["Time Window","≤24h from LKW (DAWN/DEFUSE-3)"],["Pre-stroke mRS","0–1 (functionally independent)"],["ASPECTS","≥6 on CT or CT perfusion mismatch"]].map(([k,v])=>(<div key={k} style={{display:'flex',justifyContent:'space-between',padding:'7px 12px',background:'rgba(20,55,100,0.3)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:8,marginBottom:5,gap:8}}><span style={{fontSize:11,color:T.txt3}}>{k}</span><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.blue,fontWeight:600}}>{v}</span></div>))}
                   </div>

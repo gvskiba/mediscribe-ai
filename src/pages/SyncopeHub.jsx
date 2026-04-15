@@ -603,18 +603,34 @@ export default function SyncopeHub({ embedded = false, demo, vitals, cc, pmhSele
               onToggle={toggleField(setRoseFields)}
             />
 
-            <ScorePanel
-              title="San Francisco Syncope Rule"
-              ref_="Quinn 2004"
-              sensitivity="98%"
-              specificity="56%"
-              color={sfsr.color}
-              result={sfsr}
-              criteria={SFSR_CRITERIA}
-              fields={{ ...sfsrFields, sbp_low:sfsrFields.sbp_low || sfsr.autoSBP }}
-              onToggle={toggleField(setSfsrFields)}
-              autoNote={sfsr.autoSBP ? "SBP < 90 auto-populated from vitals" : null}
-            />
+            <div>
+              <ScorePanel
+                title="San Francisco Syncope Rule"
+                ref_="Quinn 2004"
+                sensitivity="98%"
+                specificity="56%"
+                color={sfsr.color}
+                result={sfsr}
+                criteria={SFSR_CRITERIA}
+                fields={{ ...sfsrFields, sbp_low:sfsrFields.sbp_low || sfsr.autoSBP }}
+                onToggle={toggleField(setSfsrFields)}
+                autoNote={sfsr.autoSBP ? "SBP < 90 auto-populated from vitals" : null}
+              />
+              {/* SFSR Validation Warning — ACEP */}
+              <div style={{ padding:"8px 11px", borderRadius:8, marginTop:4,
+                background:"rgba(245,200,66,0.07)",
+                border:"1px solid rgba(245,200,66,0.3)" }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:T.gold, letterSpacing:1.3, textTransform:"uppercase",
+                  marginBottom:4 }}>
+                  ⚠ SFSR Validation Caveat (Cosgriff 2007, Reed 2010, Birnbaum 2008)
+                </div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                  color:T.txt3, lineHeight:1.6 }}>
+                  SFSR failed to replicate its original 96% sensitivity in multiple external validation studies (range 74–87%). A <strong style={{color:T.gold}}>negative SFSR does NOT reliably exclude serious outcome.</strong> Use as one input to clinical judgment — not as a standalone rule-out tool. CSRS is better validated for this purpose.
+                </div>
+              </div>
+            </div>
 
             <ScorePanel
               title="Canadian Syncope Risk Score"

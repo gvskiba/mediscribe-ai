@@ -571,6 +571,36 @@ export default function PsychHub() {
             <div style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.teal,textTransform:"uppercase",letterSpacing:2,marginBottom:6}}>
               Agitation Escalation Ladder — Verbal → Oral → IM → IV
             </div>
+
+            {/* ACEP 2023 Level B Preferred Regimen Banner */}
+            <div style={{padding:"12px 14px",background:"rgba(155,109,255,0.09)",border:"1px solid rgba(155,109,255,0.4)",borderRadius:10,marginBottom:12}}>
+              <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.purple,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>
+                ⭐ FIRST-LINE IM REGIMEN — ACEP OCTOBER 2023 LEVEL B
+              </div>
+              <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:13,color:T.purple,marginBottom:6}}>
+                Droperidol 5 mg IM + Midazolam 5 mg IM (simultaneous, different sites)
+              </div>
+              <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2,lineHeight:1.65,marginBottom:6}}>
+                DOMINO trial: faster sedation than haloperidol+lorazepam, fewest repeat doses, no increase in adverse events. DORM II: superior to droperidol alone for time to adequate sedation. Median time to sedation ~7 min vs 15 min with HAL+LOR.
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {[
+                  {label:"Elderly / Frail",val:"Droperidol 2.5 mg + Midazolam 2 mg IM",color:T.gold},
+                  {label:"Partially Sedated",val:"Droperidol 5 mg IM alone (omit midazolam)",color:T.teal},
+                  {label:"Stimulant Intox",val:"Midazolam 5 mg IM alone (avoid droperidol — QTc concern)",color:T.orange},
+                  {label:"Droperidol CI",val:"Haloperidol 5 mg + Lorazepam 2 mg IM (Level C fallback)",color:T.txt3},
+                ].map((r,i)=>(
+                  <div key={i} style={{padding:"6px 9px",background:"rgba(14,37,68,0.5)",borderRadius:7,border:`1px solid ${r.color}22`}}>
+                    <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:r.color,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{r.label}</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2}}>{r.val}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:8,fontFamily:"DM Sans",fontSize:10,color:T.txt4,lineHeight:1.5}}>
+                Monitoring: baseline EKG for QTc (droperidol CI if QTc &gt;500 ms). BVM at bedside. Avoid prone restraint — asphyxia risk.
+              </div>
+            </div>
+
             <div style={{padding:"10px 14px",background:"rgba(0,229,192,0.07)",border:"1px solid rgba(0,229,192,0.2)",borderRadius:10,marginBottom:16,fontFamily:"DM Sans",fontSize:12,color:T.txt2,lineHeight:1.7}}>
               📌 <strong style={{color:T.teal}}>Core principle:</strong> The goal of chemical sedation is a calm, cooperative patient — not a sedated one. Use the minimum effective dose at each tier before escalating. Document all attempts at verbal de-escalation.
             </div>

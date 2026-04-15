@@ -289,6 +289,50 @@ const PROTOCOLS = [
     pearl:"Dihydropyridines (amlodipine, nifedipine) cause vasodilation + reflex tachycardia. Non-dihydropyridines (diltiazem, verapamil) cause bradycardia + AV block. HDI works by improving myocardial metabolism — start with hemodynamic instability, not only in arrest.",
   },
   {
+    id:"co", name:"Carbon Monoxide Poisoning", icon:"💨", color:T.blue,
+    alert:"HBO2 vs normobaric O2 — ACEP January 2025: aggregate evidence does NOT show HBO2 superior to normobaric O2 for most cognitive outcomes at 6 weeks",
+    sections:[
+      {
+        label:"Immediate Management", color:T.blue, items:[
+          "100% O2 via non-rebreather mask IMMEDIATELY — do not wait for COHgb level",
+          "Remove from CO source — decontamination is treatment",
+          "IV access, cardiac monitor, 12-lead EKG — CO causes myocardial injury",
+          "Co-oximetry for COHgb level — pulse ox unreliable (reads COHgb as oxyhemoglobin = falsely normal SpO2)",
+          "BMP, lactate, troponin, CBC, ABG",
+        ],
+      },
+      {
+        label:"COHgb Thresholds", color:T.teal, items:[
+          "COHgb > 25%: severe — consider HBO2 consultation",
+          "COHgb > 15% + neurologic symptoms: HBO2 consultation",
+          "COHgb > 15% + cardiovascular involvement: HBO2 consultation",
+          "Pregnancy: lower threshold — COHgb > 15% or any symptoms",
+          "Note: COHgb correlates poorly with clinical severity — use clinical picture, not level alone",
+        ],
+      },
+      {
+        label:"HBO2 vs Normobaric O2 — ACEP 2025", color:T.gold, items:[
+          "ACEP January 2025 Clinical Policy: aggregate data does NOT show HBO2 superior to normobaric O2 for most cognitive outcomes at 6 weeks",
+          "Scheinkestel 1999 (pro-HBO2): significant methodologic limitations — difficult to replicate",
+          "Weaver 2002 (pro-HBO2): positive for cognitive sequelae reduction, but single center",
+          "Meta-analyses: inconsistent results — no Class A/B evidence favoring HBO2 for routine use",
+          "Current recommendation: HBO2 considered on case-by-case basis for severe cases (LOC, seizure, cardiac involvement, COHgb > 25%, pregnancy)",
+          "Normobaric 100% O2 × 5–6 hours remains standard of care for most patients",
+        ],
+      },
+      {
+        label:"Disposition", color:T.orange, items:[
+          "Mild (COHgb < 15%, no symptoms beyond headache): 6h observation, discharge if asymptomatic",
+          "Moderate (COHgb 15–25% or neurologic symptoms): admission for monitoring",
+          "Severe (LOC, seizure, cardiac involvement): ICU + HBO2 consultation",
+          "All patients: evaluate for source — do NOT return to potentially contaminated environment",
+          "Delayed neurologic syndrome: 3–240 days post-exposure (personality change, memory loss, parkinsonism)",
+        ],
+      },
+    ],
+    pearl:"Pulse oximetry reads COHgb as oxyhemoglobin — patient may have SpO2 99% with COHgb 40%. Only co-oximetry (ABG or venous) accurately measures COHgb. ACEP 2025 does not recommend routine HBO2 for mild-moderate CO poisoning.",
+  },
+  {
     id:"opioid", name:"Opioid Toxidrome", icon:"💤", color:T.purple,
     alert:"Fentanyl analogues may require 10+ mg naloxone — have high threshold to intubate",
     sections:[

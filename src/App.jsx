@@ -78,6 +78,7 @@ import StrokeHub from '@/pages/StrokeHub';
 import EDProcedureNotesStandalone from '@/pages/EDProcedureNotes';
 import PainHub from '@/pages/PainHub';
 import SyncopeHub from '@/pages/SyncopeHub';
+import ImagingInterpreter from '@/pages/ImagingInterpreter';
 
 
 
@@ -213,6 +214,7 @@ const AuthenticatedApp = () => {
       <Route path="/ed-procedure-notes" element={<EDProcedureNotesStandalone />} />
       <Route path="/pain-hub" element={<PainHub />} />
       <Route path="/syncope-hub" element={<SyncopeHub />} />
+      <Route path="/imaging-interpreter" element={<ImagingInterpreter />} />
 
 
       <Route path="*" element={<PageNotFound />} />

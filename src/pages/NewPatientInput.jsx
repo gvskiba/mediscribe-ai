@@ -202,7 +202,7 @@ export default function NewPatientInput() {
         </div>
       );
       case "chart": return (
-        <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}>
+        <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto" }}>
           <ClinicalNoteStudio patientData={patientDataBundle} embedded={true} onBack={() => selectSection("pe")} onSave={handleSaveChart} onAdvance={() => selectSection("reassess")} />
         </div>
       );

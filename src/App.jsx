@@ -87,11 +87,19 @@ import SeizureHub from '@/pages/SeizureHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
+// Pages that mount their own encounter-aware CommandPalette
+const PAGES_WITH_OWN_PALETTE = new Set(["/NewPatientInput"]);
 
 function GlobalFloatingAI() {
   const location = useLocation();
   if (PAGES_WITH_OWN_AI.has(location.pathname)) return null;
   return <NotryaFloatingAI />;
+}
+
+function GlobalCommandPalette({ navigate }) {
+  const location = useLocation();
+  if (PAGES_WITH_OWN_PALETTE.has(location.pathname)) return null;
+  return <CommandPalette onNavigate={navigate} />;
 }
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -130,7 +138,7 @@ const AuthenticatedApp = () => {
   return (
     <>
       <GlobalNav />
-      <CommandPalette onNavigate={routerNavigate} />
+      <GlobalCommandPalette navigate={routerNavigate} />
       <PatientSidebar />
       <GlobalFloatingAI />
       <Routes>

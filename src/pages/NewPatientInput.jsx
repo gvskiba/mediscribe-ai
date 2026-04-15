@@ -49,6 +49,7 @@ import NPILookupWidget          from "@/components/npi/NPILookupWidget";
 
 // ── Utility / overlay components ─────────────────────────────────────────────
 import ParseFab              from "@/components/npi/ParseFab";
+import CommandPalette        from "@/components/CommandPalette";
 import SystemProgressHeader  from "@/components/npi/SystemProgressHeader";
 import TemplateSuggestionsBar from "@/components/npi/TemplateSuggestionsBar";
 import NursingPanel          from "@/components/npi/NursingPanel";
@@ -1029,6 +1030,14 @@ export default function NewPatientInput() {
         open={mediaOpen} onClose={() => setMediaOpen(false)}
         attachments={attachments} setAttachments={setAttachments}
         patientName={patientName} demo={demo} cc={cc} providerName={providerName}
+      />
+
+      {/* ── Command Palette — scoped to encounter ── */}
+      <CommandPalette
+        onNavigate={navigate}
+        onSelectSection={selectSection}
+        isInEncounter={true}
+        demo={demo}
       />
 
       {/* ── Keyboard shortcut FAB ── */}

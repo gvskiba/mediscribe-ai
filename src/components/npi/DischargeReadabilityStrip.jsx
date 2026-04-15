@@ -72,6 +72,7 @@ function countSyllables(word) {
 
 // ── Sentence splitter ─────────────────────────────────────────────────────────
 function splitSentences(text) {
+  // Split on ., !, ? followed by space or end of string
   const raw = text.match(/[^.!?]+[.!?]+[\s]*/g) || [text];
   return raw.filter(s => s.trim().length > 0);
 }
@@ -80,9 +81,9 @@ function splitSentences(text) {
 function computeFKGL(text) {
   if (!text || text.trim().length < 20) return null;
 
-  const words     = text.trim().split(/\s+/).filter(Boolean);
-  const sentences = splitSentences(text);
-  const syllables = words.reduce((acc, w) => acc + countSyllables(w), 0);
+  const words      = text.trim().split(/\s+/).filter(Boolean);
+  const sentences  = splitSentences(text);
+  const syllables  = words.reduce((acc, w) => acc + countSyllables(w), 0);
 
   const wc = words.length;
   const sc = Math.max(1, sentences.length);
@@ -96,32 +97,33 @@ function computeFKGL(text) {
 // ── Grade level metadata ──────────────────────────────────────────────────────
 function gradeLevel(fkgl) {
   if (fkgl === null) return null;
-  if (fkgl < 5)   return { rating:"low",  color:T.gold,  label:`Grade ${fkgl}`, note:"Very simple — may lack clinical completeness" };
-  if (fkgl <= 8)  return { rating:"good", color:T.teal,  label:`Grade ${fkgl}`, note:"Optimal — accessible to most adult readers" };
-  if (fkgl <= 10) return { rating:"fair", color:T.gold,  label:`Grade ${fkgl}`, note:"Above average — consider simplifying for some patients" };
-  if (fkgl <= 13) return { rating:"poor", color:T.coral, label:`Grade ${fkgl}`, note:"College level — likely difficult for many patients" };
-  return                 { rating:"high", color:T.coral, label:`Grade ${fkgl}`, note:"Graduate level — simplify significantly" };
+  if (fkgl < 5)            return { rating:"low",   color:T.gold,  label:`Grade ${fkgl}`,    note:"Very simple — may lack clinical completeness" };
+  if (fkgl <= 8)           return { rating:"good",  color:T.teal,  label:`Grade ${fkgl}`,    note:"Optimal — accessible to most adult readers" };
+  if (fkgl <= 10)          return { rating:"fair",  color:T.gold,  label:`Grade ${fkgl}`,    note:"Above average — consider simplifying for some patients" };
+  if (fkgl <= 13)          return { rating:"poor",  color:T.coral, label:`Grade ${fkgl}`,    note:"College level — likely difficult for many patients" };
+  return                          { rating:"high",  color:T.coral, label:`Grade ${fkgl}`,    note:"Graduate level — simplify significantly" };
 }
 
 // ── Simplification suggestions ────────────────────────────────────────────────
+// Triggered when FKGL > 9. Pattern-based, no API.
 const SIMPLIFY_PATTERNS = [
-  { pattern:/administer/gi,               suggestion:"give"       },
-  { pattern:/subsequently/gi,             suggestion:"then"       },
-  { pattern:/approximately/gi,            suggestion:"about"      },
-  { pattern:/immediately/gi,              suggestion:"right away" },
-  { pattern:/physician/gi,                suggestion:"doctor"     },
-  { pattern:/medication\(s\)/gi,          suggestion:"medicines"  },
-  { pattern:/discontinue/gi,              suggestion:"stop"       },
-  { pattern:/initiate/gi,                 suggestion:"start"      },
-  { pattern:/utilize/gi,                  suggestion:"use"        },
-  { pattern:/demonstrate/gi,              suggestion:"show"       },
-  { pattern:/obtain/gi,                   suggestion:"get"        },
-  { pattern:/sufficient/gi,               suggestion:"enough"     },
-  { pattern:/in the event that/gi,        suggestion:"if"         },
-  { pattern:/prior to/gi,                 suggestion:"before"     },
-  { pattern:/due to the fact that/gi,     suggestion:"because"    },
-  { pattern:/in order to/gi,              suggestion:"to"         },
-  { pattern:/at this time/gi,             suggestion:"now"        },
+  { pattern:/administer/gi,       suggestion:"give" },
+  { pattern:/subsequently/gi,     suggestion:"then" },
+  { pattern:/approximately/gi,    suggestion:"about" },
+  { pattern:/immediately/gi,      suggestion:"right away" },
+  { pattern:/physician/gi,        suggestion:"doctor" },
+  { pattern:/medication\(s\)/gi,  suggestion:"medicines" },
+  { pattern:/discontinue/gi,      suggestion:"stop" },
+  { pattern:/initiate/gi,         suggestion:"start" },
+  { pattern:/utilize/gi,          suggestion:"use" },
+  { pattern:/demonstrate/gi,      suggestion:"show" },
+  { pattern:/obtain/gi,           suggestion:"get" },
+  { pattern:/sufficient/gi,       suggestion:"enough" },
+  { pattern:/in the event that/gi,suggestion:"if" },
+  { pattern:/prior to/gi,         suggestion:"before" },
+  { pattern:/due to the fact that/gi, suggestion:"because" },
+  { pattern:/in order to/gi,      suggestion:"to" },
+  { pattern:/at this time/gi,     suggestion:"now" },
 ];
 
 function findSimplifications(text) {
@@ -129,7 +131,11 @@ function findSimplifications(text) {
   SIMPLIFY_PATTERNS.forEach(({ pattern, suggestion }) => {
     const matches = text.match(pattern);
     if (matches) {
-      hits.push({ original:matches[0], suggestion, count:matches.length });
+      hits.push({
+        original: matches[0],
+        suggestion,
+        count: matches.length,
+      });
     }
   });
   return hits.slice(0, 5);
@@ -143,8 +149,8 @@ export default function DischargeReadabilityStrip({
   const [copyBypassed,    setCopyBypassed]    = useState(false);
   const [copied,          setCopied]          = useState(false);
 
-  const fkgl   = useMemo(() => computeFKGL(text), [text]);
-  const grade  = useMemo(() => gradeLevel(fkgl),  [fkgl]);
+  const fkgl   = useMemo(() => computeFKGL(text),         [text]);
+  const grade  = useMemo(() => gradeLevel(fkgl),          [fkgl]);
   const simple = useMemo(() => {
     if (!grade || grade.rating === "good" || grade.rating === "low") return [];
     return findSimplifications(text);
@@ -152,7 +158,8 @@ export default function DischargeReadabilityStrip({
 
   const wordCount = useMemo(() =>
     text ? text.trim().split(/\s+/).filter(Boolean).length : 0,
-  [text]);
+    [text]
+  );
 
   const canCopy   = attested || copyBypassed;
   const needsAttn = grade && (grade.rating === "poor" || grade.rating === "high");
@@ -194,7 +201,7 @@ export default function DischargeReadabilityStrip({
               {grade.label}
             </span>
             {grade.rating === "good" && (
-              <span style={{ fontSize:10 }}>&#10003;</span>
+              <span style={{ fontSize:10 }}>✓</span>
             )}
           </div>
 
@@ -223,14 +230,15 @@ export default function DischargeReadabilityStrip({
           )}
         </div>
 
-        {/* Reading level legend */}
+        {/* Reading level reference */}
         <div style={{ display:"flex", gap:5, alignItems:"center" }}>
           {[
             { label:"6-8", color:T.teal,  note:"target" },
             { label:"9-10",color:T.gold  },
             { label:">11", color:T.coral },
           ].map(r => (
-            <div key={r.label} style={{ display:"flex", alignItems:"center", gap:3 }}>
+            <div key={r.label} style={{ display:"flex",
+              alignItems:"center", gap:3 }}>
               <div style={{ width:6, height:6, borderRadius:"50%",
                 background:r.color }} />
               <span style={{ fontFamily:"'JetBrains Mono',monospace",
@@ -331,14 +339,12 @@ export default function DischargeReadabilityStrip({
         {/* Action buttons */}
         <div style={{ display:"flex", alignItems:"center", gap:8,
           flexWrap:"wrap" }}>
-
-          {/* Primary copy */}
+          {/* Primary copy — requires attestation */}
           <button onClick={handleCopy}
             disabled={!canCopy}
             title={!canCopy ? "Complete attestation above to copy" : ""}
             style={{ display:"flex", alignItems:"center", gap:6,
-              padding:"7px 18px", borderRadius:8,
-              cursor:canCopy ? "pointer" : "not-allowed",
+              padding:"7px 18px", borderRadius:8, cursor:canCopy ? "pointer" : "not-allowed",
               fontFamily:"'DM Sans',sans-serif", fontWeight:700,
               fontSize:12, transition:"all .15s",
               border:`1px solid ${copied
@@ -352,7 +358,7 @@ export default function DischargeReadabilityStrip({
                 ? "linear-gradient(135deg,rgba(0,229,192,0.15),rgba(0,229,192,0.06))"
                 : "rgba(42,79,122,0.1)",
               color:copied ? T.green : canCopy ? T.teal : T.txt4 }}>
-            {copied ? "&#10003; Copied" : canCopy ? "Copy Instructions" : "&#128274; Copy Instructions"}
+            {copied ? "✓ Copied" : canCopy ? "Copy Instructions" : "🔒 Copy Instructions"}
           </button>
 
           {/* Print button */}
@@ -370,9 +376,12 @@ export default function DischargeReadabilityStrip({
             </button>
           )}
 
-          {/* Bypass */}
+          {/* Bypass — always available */}
           {!attested && (
-            <button onClick={() => { setCopyBypassed(true); handleCopy(); }}
+            <button onClick={() => {
+              setCopyBypassed(true);
+              handleCopy();
+            }}
               style={{ marginLeft:"auto",
                 fontFamily:"'DM Sans',sans-serif", fontSize:10,
                 fontWeight:500, padding:"5px 12px", borderRadius:6,
@@ -384,7 +393,7 @@ export default function DischargeReadabilityStrip({
           )}
         </div>
 
-        {/* Attestation audit notice */}
+        {/* Attestation included in note audit notice */}
         {attested && (
           <div style={{ marginTop:8,
             fontFamily:"'JetBrains Mono',monospace", fontSize:8,

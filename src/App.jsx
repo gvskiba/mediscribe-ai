@@ -84,6 +84,7 @@ import WoundCareHub from '@/pages/WoundCareHub';
 import SeizureHub from '@/pages/SeizureHub';
 import ChestPainHub from '@/pages/ChestPainHub';
 import DyspneaHub from '@/pages/DyspneaHub';
+import HeadacheHub from '@/pages/HeadacheHub';
 
 
 
@@ -234,6 +235,7 @@ const AuthenticatedApp = () => {
       <Route path="/seizure-hub" element={<SeizureHub />} />
       <Route path="/ChestPainHub" element={<LayoutWrapper currentPageName="ChestPainHub"><ChestPainHub /></LayoutWrapper>} />
       <Route path="/DyspneaHub" element={<LayoutWrapper currentPageName="DyspneaHub"><DyspneaHub /></LayoutWrapper>} />
+      <Route path="/HeadacheHub" element={<LayoutWrapper currentPageName="HeadacheHub"><HeadacheHub /></LayoutWrapper>} />
 
 
       <Route path="*" element={<PageNotFound />} />

@@ -62,7 +62,7 @@ import ResultsViewer           from "@/pages/ResultsViewer";
 import ERxHub                  from "@/pages/ERx";
 import LabInterpreter          from "@/pages/LabInterpreter";
 import ResusHub                from "@/pages/ResusHub";
-import StrokeHub               from "@/pages/StrokeHub.jsx";
+import StrokeHub               from "@/pages/StrokeHub";
 import ToxHub                  from "@/pages/ToxicologyHub";
 
 // ─────────────────────────────────────────────────────────────────────────────

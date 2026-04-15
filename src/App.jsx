@@ -74,6 +74,8 @@ import EDTrackingBoard from '@/pages/EDTrackingBoard';
 import DischargeDisposition from '@/pages/DischargeDisposition';
 import ScoreHub from '@/pages/ScoreHub';
 import WeightDoseHub from '@/pages/WeightDoseHub';
+import StrokeHub from '@/pages/StrokeHub';
+import EDProcedureNotesStandalone from '@/pages/EDProcedureNotes';
 
 
 
@@ -205,6 +207,8 @@ const AuthenticatedApp = () => {
       <Route path="/new-technology" element={<NotryaNewTechnology />} />
       <Route path="/score-hub" element={<ScoreHub />} />
       <Route path="/weight-dose" element={<WeightDoseHub />} />
+      <Route path="/stroke-hub" element={<StrokeHub />} />
+      <Route path="/ed-procedure-notes" element={<EDProcedureNotesStandalone />} />
 
 
       <Route path="*" element={<PageNotFound />} />

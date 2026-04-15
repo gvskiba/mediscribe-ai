@@ -15,6 +15,7 @@ export const NAV_DATA = {
   assess: [
     { section: "summary",    icon: "📊", label: "Patient Summary",    abbr: "Sm", dot: "empty" },
     { section: "hpi",        icon: "📝", label: "HPI",               abbr: "Hp", dot: "empty" },
+    { section: "diff",       icon: "🧠", label: "Differential",       abbr: "Df", dot: "empty" },
     { section: "ros",        icon: "🔍", label: "Review of Systems", abbr: "Rs", dot: "empty" },
     { section: "pe",         icon: "🩺", label: "Physical Exam",     abbr: "Pe", dot: "empty" },
     { section: "erplan",     icon: "🗺️", label: "ER Plan Builder",   abbr: "Ep", dot: "empty" },
@@ -24,6 +25,12 @@ export const NAV_DATA = {
     { section: "erx",        icon: "💉", label: "eRx",               abbr: "Ex", dot: "empty" },
     { section: "procedures", icon: "✂️", label: "Procedures",        abbr: "Pr", dot: "empty" },
     { section: "consult",    icon: "👥", label: "Consults",          abbr: "Co", dot: "empty" },
+    { section: "labs",       icon: "🔬", label: "Lab Interpret",     abbr: "Li", dot: "empty" },
+    { section: "scores",     icon: "🧮", label: "Scores",            abbr: "Sc", dot: "empty" },
+    { section: "dosing",     icon: "⚖️", label: "Drug Dosing",       abbr: "Do", dot: "empty" },
+    { section: "resus",      icon: "❤️", label: "Resuscitation",     abbr: "Rh", dot: "empty" },
+    { section: "stroke",     icon: "🧠", label: "Stroke",            abbr: "St", dot: "empty" },
+    { section: "tox",        icon: "☠️", label: "Toxicology",        abbr: "Tx", dot: "empty" },
   ],
   close: [
     { section: "chart",      icon: "📄", label: "Clinical Note",     abbr: "Cn", dot: "empty" },
@@ -35,16 +42,13 @@ export const NAV_DATA = {
     { section: "handoff",    icon: "🤝", label: "Handoff (I-PASS)",  abbr: "Ho", dot: "empty" },
     { section: "discharge",  icon: "🚪", label: "Discharge",         abbr: "Dc", dot: "empty" },
     { section: "capacity",   icon: "⚖️", label: "Capacity/AMA",      abbr: "Ca", dot: "empty" },
-    { section: "audit",      icon: "🔒", label: "Audit Lock",         abbr: "Al", dot: "empty" },
+    { section: "audit",      icon: "🔒", label: "Audit Lock",        abbr: "Al", dot: "empty" },
   ],
   tools: [
-    { section: "scores",     icon: "🧮", label: "Score Calc",        abbr: "Sc", dot: "empty" },
-    { section: "weightdose", icon: "💊", label: "Drug Dosing",        abbr: "Dd", dot: "empty" },
+    { section: "weightdose", icon: "💊", label: "Drug Dosing",       abbr: "Dd", dot: "empty" },
     { section: "sepsis",     icon: "🦠", label: "Sepsis Protocol",   abbr: "Sp", dot: "empty", href: "/SepsisHub"           },
     { section: "ecg",        icon: "❤️", label: "ECG Review",        abbr: "Eg", dot: "empty", href: "/ECGHub"              },
     { section: "psych",      icon: "🧠", label: "Psych Assessment",  abbr: "Px", dot: "empty", href: "/PsychHub"            },
-    { section: "resus",      icon: "🫀", label: "Resus Hub",         abbr: "Rh", dot: "empty", href: "/ResusHub"            },
-    { section: "labsint",    icon: "🔬", label: "Labs Interpreter",  abbr: "Li", dot: "empty", href: "/LabsInterpreter"     },
     { section: "knowledge",  icon: "📚", label: "Knowledge Base",    abbr: "Kb", dot: "empty", href: "/KnowledgeBaseV2"     },
     { section: "results",    icon: "🧪", label: "Results",           abbr: "Re", dot: "empty", href: "/Results"             },
     { section: "medref",     icon: "🧬", label: "ED Med Ref",        abbr: "Mr", dot: "empty", href: "/MedicationReference" },
@@ -65,7 +69,7 @@ export const ALL_SECTIONS = Object.values(NAV_DATA).flat();
 
 // ─── VISIT MODE NAV FILTERING ─────────────────────────────────────────────────
 // Simple mode (ESI 4-5): hide complex close-group tabs not needed for routine visits
-export const SIMPLE_HIDDEN = new Set(["reassess", "autocoder", "mdm", "timeline", "handoff"]);
+export const SIMPLE_HIDDEN = new Set(["reassess", "autocoder", "mdm", "timeline", "handoff", "diff", "labs", "scores", "dosing", "capacity", "audit"]);
 // Critical mode (ESI 1-2): all tabs shown; sepsis tool gets visual promotion
 
 export const SHORTCUT_MAP = {

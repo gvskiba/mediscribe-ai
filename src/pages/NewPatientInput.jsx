@@ -60,6 +60,10 @@ import MedicationReferencePage from "@/pages/MedicationReference";
 import ERPlanBuilder           from "@/pages/ERPlanBuilder";
 import ResultsViewer           from "@/pages/ResultsViewer";
 import ERxHub                  from "@/pages/ERx";
+import LabInterpreter          from "@/pages/LabInterpreter";
+import ResusHub                from "@/pages/ResusHub";
+import StrokeHub               from "@/pages/StrokeHub.jsx";
+import ToxHub                  from "@/pages/ToxicologyHub";
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function NewPatientInput() {
@@ -671,7 +675,34 @@ export default function NewPatientInput() {
       case "weightdose": return (
         <WeightDoseHub embedded demo={demo} vitals={vitals} />
       );
-      case "scores": return (
+      case "dosing": return (
+        <WeightDoseHub embedded demo={demo} vitals={vitals} />
+      );
+      case "labs": return (
+        <LabInterpreter
+          embedded
+          demo={demo} vitals={vitals} cc={cc}
+          medications={medications} pmhSelected={pmhSelected} />
+      );
+      case "resus": return (
+        <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto" }}>
+          <ResusHub embedded demo={demo} vitals={vitals} />
+        </div>
+      );
+      case "stroke": return (
+        <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto" }}>
+          <StrokeHub embedded
+            demo={demo} vitals={vitals} cc={cc}
+            pmhSelected={pmhSelected} medications={medications} />
+        </div>
+      );
+      case "tox": return (
+        <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto" }}>
+          <ToxHub embedded demo={demo} vitals={vitals} cc={cc} />
+        </div>
+      );
+      case "scores":
+      case "score-calc": return (
         <ScoreHub
           embedded
           demo={demo}

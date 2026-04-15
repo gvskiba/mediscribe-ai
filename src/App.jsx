@@ -76,6 +76,7 @@ import ScoreHub from '@/pages/ScoreHub';
 import WeightDoseHub from '@/pages/WeightDoseHub';
 import StrokeHub from '@/pages/StrokeHub';
 import EDProcedureNotesStandalone from '@/pages/EDProcedureNotes';
+import PainHub from '@/pages/PainHub';
 
 
 
@@ -209,6 +210,7 @@ const AuthenticatedApp = () => {
       <Route path="/weight-dose" element={<WeightDoseHub />} />
       <Route path="/stroke-hub" element={<StrokeHub />} />
       <Route path="/ed-procedure-notes" element={<EDProcedureNotesStandalone />} />
+      <Route path="/pain-hub" element={<PainHub />} />
 
 
       <Route path="*" element={<PageNotFound />} />

@@ -14,7 +14,7 @@
 // Constraints: no form, no localStorage, straight quotes only,
 //   single react import, border before borderTop/etc.
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 (() => {
@@ -796,7 +796,7 @@ const INJURY_PROTOCOLS = [
     icon:"🦴",
     color:T.purple,
     alert:"Unstable pelvic fracture can cause exsanguinating hemorrhage from retroperitoneal venous plexus.",
-    signs:["Pelvic instability on compression or distraction (examine ONCE — do not repeat)","Perineal/scrotal/labial hematoma","Blood at urethral meatus (urethral injury — do not place Foley until urology consulted)","High-riding prostate on rectal exam (urethral disruption)","FAST: look for intraperitoneal blood (pelvic hematoma is retroperitoneal — will NOT show on FAST)"],
+    signs:["Pelvic instability on compression or distraction (examine ONCE only — do not repeat)","Perineal, scrotal, or labial hematoma","Blood at urethral meatus — urethral injury, do not place Foley until urology consulted","High-riding prostate on rectal exam (urethral disruption)","FAST: pelvic hematoma is retroperitoneal and will NOT show on FAST — do not be falsely reassured"],
     tx:[
       "Immediate pelvic binder or sheet: wrap at greater trochanters (NOT iliac crests)",
       "MTP activation — pelvic fractures can lose 4–6L into retroperitoneum",

@@ -15,6 +15,7 @@
 //   finally { setBusy(false) } on all async functions
 
 import { useState, useCallback, useMemo } from "react";
+import DischargeReadabilityStrip from "@/components/npi/DischargeReadabilityStrip";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
@@ -333,10 +334,11 @@ export default function SmartDischargeHub({
   const [pFollowup, setPFollowup] = useState(true);
   const [pOutput,   setPOutput]   = useState(false);
 
-  const [busy,   setBusy]   = useState(false);
-  const [result, setResult] = useState(null);
-  const [aiErr,  setAiErr]  = useState(null);
-  const [copied, setCopied] = useState(false);
+  const [busy,     setBusy]     = useState(false);
+  const [result,   setResult]   = useState(null);
+  const [aiErr,    setAiErr]    = useState(null);
+  const [copied,   setCopied]   = useState(false);
+  const [attested, setAttested] = useState(false);
 
   const beersCount    = reconMeds.filter(m => isBeersDrug(m.name) && parseInt(demo?.age) >= 65).length;
   const conflictCount = reconMeds.filter(m => isAllergyConflict(m.name, allergies)).length;
@@ -726,17 +728,6 @@ Respond ONLY with valid JSON, no markdown fences:
             color:busy ? T.txt4 : T.teal, transition:"all .15s" }}>
           {busy ? "Generating..." : "Generate Discharge Instructions"}
         </button>
-        {result && (
-          <button onClick={copyAll}
-            style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
-              fontSize:12, padding:"11px 20px", borderRadius:10,
-              cursor:"pointer", transition:"all .15s",
-              border:`1px solid ${copied ? T.green+"77" : "rgba(42,79,122,0.4)"}`,
-              background:copied ? "rgba(61,255,160,0.1)" : "rgba(42,79,122,0.15)",
-              color:copied ? T.green : T.txt3 }}>
-            {copied ? "Copied!" : "Copy All"}
-          </button>
-        )}
       </div>
 
       {/* Error */}
@@ -788,11 +779,16 @@ Respond ONLY with valid JSON, no markdown fences:
             )}
           </div>
 
-          <div style={{ marginTop:8,
-            fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color:"rgba(42,79,122,0.55)", letterSpacing:1 }}>
-            NOTRYA SMART DISCHARGE · {readingLevel.toUpperCase()} · {language.toUpperCase()} · AI-GENERATED — PHYSICIAN REVIEW REQUIRED
-          </div>
+          <DischargeReadabilityStrip
+            text={[
+              result.diagnosis_summary, result.home_care, result.medications,
+              result.activity, result.diet, result.wound_care,
+              result.return_precautions, result.followup, result.closing,
+            ].filter(Boolean).join("\n\n")}
+            attested={attested}
+            onAttest={setAttested}
+            onCopy={copyAll}
+          />
         </Panel>
       )}
     </div>

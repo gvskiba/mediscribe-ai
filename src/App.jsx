@@ -65,6 +65,7 @@ import CommandCenterWrapper from '@/pages/CommandCenterWrapper';
 import PatientWorkspace from '@/pages/PatientWorkspace';
 import ShiftSignout from '@/pages/ShiftSignout';
 import GlobalNav from '@/components/GlobalNav';
+import CommandPalette from '@/components/CommandPalette';
 import NotryaFloatingAI from '@/components/ai/NotryaFloatingAI';
 import { useLocation } from 'react-router-dom';
 import AddendumManager from '@/pages/AddendumManager';
@@ -103,6 +104,7 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const routerNavigate = useNavigate();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -128,6 +130,7 @@ const AuthenticatedApp = () => {
   return (
     <>
       <GlobalNav />
+      <CommandPalette onNavigate={routerNavigate} />
       <PatientSidebar />
       <GlobalFloatingAI />
       <Routes>

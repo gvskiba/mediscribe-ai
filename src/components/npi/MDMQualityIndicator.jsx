@@ -1,350 +1,310 @@
-// MDMQualityIndicator.jsx
-// Real-time MDM documentation quality scorecard.
-// Evaluates completeness and billing defensibility of MDM fields,
-// surfacing specific gaps before note finalization.
+// MDMQualityIndicator.jsx — P4: MDM note quality indicator
+// Drop-in strip for MDMBuilderTab.jsx.
 //
-// Scoring dimensions (5 total, 20 pts each = 100):
-//   1. E/M Level set (COPA + Risk selected)
-//   2. Rationale documented (copaRationale or riskRationale present)
-//   3. Data documented (dataLevel computed — labs, imaging, Cat2/3)
-//   4. Differential / presenting concern populated
-//   5. Narrative built and non-empty
+// Behavior (no gating — always advisory):
+//   1. Word count chip with target range 150-350 words
+//   2. Boilerplate detector — flags if >= 2 low-value phrases found
+//   3. Color coded: green (good) → gold (attention) → coral (poor)
+//   4. Expandable detail showing exact issues
+//   5. Dismissable per session so it stays out of the way once reviewed
 //
 // Props:
-//   mdmState       object   — from useNPIState
-//   autoDataLevel  string   — "none" | "limited" | "moderate" | "high"
-//   compact        bool     — pill-only mode (no panel expansion)
-//   onClick        fn()     — optional drill-down handler
+//   text       string   — the MDM narrative to analyze
+//   className  string   — optional outer class
+//
+// Wiring in MDMBuilderTab.jsx:
+//   import MDMQualityIndicator from "@/components/npi/MDMQualityIndicator";
+//
+//   // After the AI-generated MDM textarea:
+//   {mdmText && <MDMQualityIndicator text={mdmText} />}
+//
+// No async functions, no API calls — pure deterministic analysis.
 //
 // Constraints: no form, no localStorage, no router, straight quotes only,
 //   single react import, border before borderTop/etc.
 
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 
 const T = {
   txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
   teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
-  orange:"#ff9f43", green:"#3dffa0", purple:"#9b6dff",
+  purple:"#9b6dff", green:"#3dffa0",
 };
 
-// ── Scoring engine ─────────────────────────────────────────────────────────────
-function scoreMDM(mdmState, autoDataLevel) {
-  const items = [];
+// ── Boilerplate phrase list ───────────────────────────────────────────────────
+// Phrases that inflate note length without adding clinical substance.
+// Based on CMS note bloat guidelines and E/M documentation guidance.
+const BOILERPLATE = [
+  { phrase:"risks and benefits were discussed",     label:"Generic risk counseling" },
+  { phrase:"risks and benefits discussed",          label:"Generic risk counseling" },
+  { phrase:"patient verbalized understanding",      label:"Formulaic acknowledgment" },
+  { phrase:"patient verbalized",                    label:"Formulaic acknowledgment" },
+  { phrase:"return precautions were given",         label:"Templated precaution language" },
+  { phrase:"return precautions given",              label:"Templated precaution language" },
+  { phrase:"return precautions were provided",      label:"Templated precaution language" },
+  { phrase:"questions were answered",               label:"Formulaic counseling language" },
+  { phrase:"all questions were answered",           label:"Formulaic counseling language" },
+  { phrase:"patient tolerated the procedure well",  label:"Boilerplate procedure phrase" },
+  { phrase:"informed consent was obtained",         label:"Standalone consent phrase" },
+  { phrase:"informed consent obtained",             label:"Standalone consent phrase" },
+  { phrase:"the patient is a",                      label:"Redundant patient identifier" },
+  { phrase:"presents to the emergency department",  label:"Redundant venue descriptor" },
+  { phrase:"presenting to the ed",                  label:"Redundant venue descriptor" },
+  { phrase:"no acute distress",                     label:"Exam in MDM (belongs in PE)" },
+  { phrase:"alert and oriented",                    label:"Exam in MDM (belongs in PE)" },
+  { phrase:"vital signs stable",                    label:"Vitals in MDM (belongs in triage)" },
+  { phrase:"labs were reviewed",                    label:"Vague lab reference — specify findings" },
+  { phrase:"imaging was reviewed",                  label:"Vague imaging reference — specify findings" },
+  { phrase:"follow up with",                        label:"Disposition language in MDM" },
+  { phrase:"follow-up with",                        label:"Disposition language in MDM" },
+  { phrase:"will follow up",                        label:"Disposition language in MDM" },
+  { phrase:"discharged home",                       label:"Disposition in MDM (belongs in disposition)" },
+  { phrase:"patient was discharged",                label:"Disposition in MDM" },
+];
 
-  // 1. E/M Level set
-  const levelSet = Boolean(mdmState.copa && mdmState.risk);
-  items.push({
-    key:"level",
-    label:"E/M Level Set",
-    desc:levelSet
-      ? `COPA: ${mdmState.copa} · Risk: ${mdmState.risk}`
-      : "Select COPA and Risk to establish E/M level",
-    points:20,
-    earned:levelSet ? 20 : 0,
-    pass:levelSet,
-    icon:"🏷️",
-    action:"Select level in MDM builder or use Auto-populate",
-  });
-
-  // 2. Rationale documented
-  const copaLen  = (mdmState.copaRationale || "").trim().length;
-  const riskLen  = (mdmState.riskRationale || "").trim().length;
-  const hasRationale = copaLen >= 20 || riskLen >= 20;
-  const ratPts = copaLen >= 20 && riskLen >= 20 ? 20 : (copaLen >= 20 || riskLen >= 20) ? 10 : 0;
-  items.push({
-    key:"rationale",
-    label:"Clinical Rationale",
-    desc:hasRationale
-      ? `${copaLen >= 20 ? "COPA" : ""}${copaLen >= 20 && riskLen >= 20 ? " + " : ""}${riskLen >= 20 ? "Risk" : ""} rationale documented`
-      : "No rationale text — auditors require specific clinical justification",
-    points:20,
-    earned:ratPts,
-    pass:hasRationale,
-    partial: ratPts > 0 && ratPts < 20,
-    icon:"📝",
-    action:"Add rationale explaining why this COPA/Risk level was chosen",
-  });
-
-  // 3. Data documented
-  const dataLevelMap = { none:0, limited:14, moderate:17, high:20 };
-  const dataPts = dataLevelMap[autoDataLevel] || 0;
-  const dataPass = dataPts >= 14;
-  items.push({
-    key:"data",
-    label:"Data Complexity",
-    desc:autoDataLevel && autoDataLevel !== "none"
-      ? `${autoDataLevel.charAt(0).toUpperCase() + autoDataLevel.slice(1)} — labs, imaging, or CDRs documented`
-      : "No data elements checked — document labs/imaging ordered or reviewed",
-    points:20,
-    earned:dataPts,
-    pass:dataPass,
-    partial: dataPts > 0 && dataPts < 20,
-    icon:"🔬",
-    action:"Add lab counts, imaging counts, or CDRs (Cat2) in the Data section",
-  });
-
-  // 4. Differential documented
-  const diff = mdmState.diffDx || {};
-  const diffLen = [
-    (diff.presentingConcern || "").trim().length,
-    (diff.highRiskConsidered || "").trim().length,
-    (diff.workingDx || "").trim().length,
-  ].reduce((a, b) => a + b, 0);
-  const diffPts = diffLen >= 60 ? 20 : diffLen >= 20 ? 12 : diffLen > 0 ? 6 : 0;
-  const diffPass = diffLen >= 20;
-  items.push({
-    key:"diff",
-    label:"Differential / Presenting Concern",
-    desc:diffLen >= 20
-      ? "Presenting concern and/or DDx populated — audit protection active"
-      : "Empty — document presenting concern + high-risk conditions ruled out",
-    points:20,
-    earned:diffPts,
-    pass:diffPass,
-    partial: diffPts > 0 && diffPts < 20,
-    icon:"🧠",
-    action:"Fill Presenting Concern and High-Risk Conditions in the Differential section",
-  });
-
-  // 5. Narrative built
-  const narrLen  = (mdmState.narrative || "").trim().length;
-  const narrPts  = narrLen >= 200 ? 20 : narrLen >= 80 ? 12 : narrLen > 0 ? 6 : 0;
-  const narrPass = narrLen >= 80;
-  items.push({
-    key:"narrative",
-    label:"MDM Narrative",
-    desc:narrLen >= 200
-      ? `${narrLen} chars — comprehensive narrative present`
-      : narrLen > 0
-        ? `${narrLen} chars — narrative started but may be incomplete`
-        : "No narrative — click Build Narrative to generate",
-    points:20,
-    earned:narrPts,
-    pass:narrPass,
-    partial: narrPts > 0 && narrPts < 20,
-    icon:"📋",
-    action:"Click Build Narrative after selecting COPA and Risk",
-  });
-
-  const total   = items.reduce((s, i) => s + i.earned, 0);
-  const passing = items.filter(i => i.pass).length;
-  const grade   = total >= 90 ? "A" : total >= 75 ? "B" : total >= 55 ? "C" : total >= 35 ? "D" : "F";
-  const color   = total >= 90 ? T.green : total >= 75 ? T.teal : total >= 55 ? T.gold : T.coral;
-
-  return { items, total, passing, grade, color };
+// ── Word count ────────────────────────────────────────────────────────────────
+function wordCount(text) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-// ── Score arc (SVG ring) ───────────────────────────────────────────────────────
-function ScoreRing({ score, color, size = 52 }) {
-  const r     = (size - 8) / 2;
-  const circ  = 2 * Math.PI * r;
-  const dash  = (score / 100) * circ;
-  return (
-    <svg width={size} height={size} style={{ flexShrink:0 }}>
-      <circle cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke="rgba(26,53,85,0.6)" strokeWidth={5} />
-      <circle cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke={color} strokeWidth={5}
-        strokeDasharray={`${dash} ${circ - dash}`}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition:"stroke-dasharray .4s ease" }} />
-      <text x={size / 2} y={size / 2 + 1}
-        textAnchor="middle" dominantBaseline="middle"
-        fontFamily="'JetBrains Mono',monospace" fontSize={12}
-        fontWeight="700" fill={color}>
-        {score}
-      </text>
-    </svg>
-  );
+// ── Analyze text ──────────────────────────────────────────────────────────────
+function analyzeText(text) {
+  if (!text || !text.trim()) return null;
+
+  const wc    = wordCount(text);
+  const lower = text.toLowerCase();
+
+  // Find boilerplate hits (deduplicated by label)
+  const seenLabels = new Set();
+  const hits = BOILERPLATE.filter(b => {
+    if (!lower.includes(b.phrase)) return false;
+    if (seenLabels.has(b.label))   return false;
+    seenLabels.add(b.label);
+    return true;
+  });
+
+  // Word count rating
+  let wcRating = "good";
+  if (wc < 80)               wcRating = "poor";
+  else if (wc < 150)         wcRating = "low";
+  else if (wc > 500)         wcRating = "high";
+  else if (wc > 350)         wcRating = "attention";
+
+  // Boilerplate rating
+  let bpRating = "good";
+  if (hits.length >= 4)      bpRating = "poor";
+  else if (hits.length >= 2) bpRating = "attention";
+
+  // Overall
+  const ratings = [wcRating, bpRating];
+  const overall = ratings.includes("poor")      ? "poor"
+    : ratings.includes("attention")             ? "attention"
+    : wcRating === "low" || wcRating === "high" ? "attention"
+    : "good";
+
+  return { wc, wcRating, hits, bpRating, overall };
 }
 
-// ── Row item ──────────────────────────────────────────────────────────────────
-function QRow({ item, showAction }) {
-  const dotColor = item.pass ? T.teal : item.partial ? T.gold : T.coral;
+// ── Chip ──────────────────────────────────────────────────────────────────────
+function Chip({ label, value, rating, icon }) {
+  const color = rating === "good"      ? T.teal
+    : rating === "attention"           ? T.gold
+    : T.coral;
   return (
-    <div style={{ display:"flex", alignItems:"flex-start", gap:9,
-      padding:"7px 10px", borderRadius:8,
-      background:item.pass ? "rgba(0,229,192,0.04)" : "rgba(8,22,40,0.55)",
-      border:`1px solid ${item.pass ? "rgba(0,229,192,0.15)" : item.partial ? "rgba(245,200,66,0.15)" : "rgba(255,107,107,0.12)"}` }}>
-      <div style={{ display:"flex", alignItems:"center", gap:6, width:22, flexShrink:0, paddingTop:1 }}>
-        <div style={{ width:7, height:7, borderRadius:"50%",
-          background:dotColor,
-          boxShadow:item.pass ? `0 0 5px ${dotColor}66` : "none",
-          flexShrink:0 }} />
-      </div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ display:"flex", alignItems:"center",
-          justifyContent:"space-between", gap:8, marginBottom:2 }}>
-          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-            fontWeight:600, color:item.pass ? T.txt2 : T.txt3 }}>
-            {item.icon} {item.label}
-          </span>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-            fontWeight:700, flexShrink:0,
-            color:item.earned === item.points ? T.teal : item.earned > 0 ? T.gold : T.txt4 }}>
-            {item.earned}/{item.points}
-          </span>
-        </div>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-          color:item.pass ? "rgba(130,174,206,0.8)" : T.coral, lineHeight:1.45 }}>
-          {item.desc}
-        </div>
-        {!item.pass && showAction && (
-          <div style={{ marginTop:4, fontFamily:"'DM Sans',sans-serif", fontSize:9,
-            color:"rgba(245,200,66,0.6)", fontStyle:"italic" }}>
-            → {item.action}
-          </div>
-        )}
-      </div>
+    <div style={{ display:"flex", alignItems:"center", gap:5,
+      padding:"3px 9px", borderRadius:20,
+      background:`${color}10`,
+      border:`1px solid ${color}35` }}>
+      <span style={{ fontSize:11 }}>{icon}</span>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+        color:T.txt4, letterSpacing:0.5 }}>{label}</span>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+        fontWeight:700, color }}>
+        {value}
+      </span>
     </div>
   );
 }
 
+// ── Word count context ────────────────────────────────────────────────────────
+function wordCountMessage(wc, rating) {
+  if (rating === "poor")      return `${wc} words — too brief for most ED MDM. Expand complexity discussion, data reviewed, and risk of management.`;
+  if (rating === "low")       return `${wc} words — below target range (150-350). Consider adding data interpretation and reasoning.`;
+  if (rating === "attention") return `${wc} words — consider trimming to improve readability and reduce note bloat.`;
+  if (rating === "high")      return `${wc} words — exceeds target. Review for redundancy and remove templated filler.`;
+  return `${wc} words — within target range (150-350 words).`;
+}
+
 // ── Main export ────────────────────────────────────────────────────────────────
-export default function MDMQualityIndicator({
-  mdmState, autoDataLevel, compact = false, onClick,
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const { items, total, passing, grade, color } = useMemo(
-    () => scoreMDM(mdmState || {}, autoDataLevel || "none"),
-    [mdmState, autoDataLevel]
-  );
+export default function MDMQualityIndicator({ text }) {
+  const [expanded,  setExpanded]  = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
-  const toggle = () => {
-    if (onClick) { onClick(); return; }
-    setExpanded(p => !p);
-  };
+  const analysis = useMemo(() => analyzeText(text), [text]);
 
-  // ── Compact pill mode ──────────────────────────────────────────────────────
-  if (compact) {
-    return (
-      <button onClick={toggle}
-        title={`MDM Quality: ${total}/100 — ${passing}/5 checks passed`}
-        style={{ display:"inline-flex", alignItems:"center", gap:6,
-          padding:"3px 10px", borderRadius:20, cursor:"pointer",
-          border:`1px solid ${color}44`,
-          background:`${color}0d`,
-          fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-          letterSpacing:1, color }}>
-        <div style={{ width:6, height:6, borderRadius:"50%", background:color,
-          boxShadow:`0 0 4px ${color}88` }} />
-        MDM {total}/100 · {grade}
-      </button>
-    );
-  }
+  if (!analysis || dismissed) return null;
 
-  // ── Full panel mode ────────────────────────────────────────────────────────
+  const { wc, wcRating, hits, bpRating, overall } = analysis;
+
+  const overallColor = overall === "good"     ? T.teal
+    : overall === "attention"                 ? T.gold
+    : T.coral;
+
+  const overallIcon = overall === "good" ? "✓" : overall === "attention" ? "◆" : "⚠";
+  const overallLabel = overall === "good"
+    ? "Note quality: Good"
+    : overall === "attention"
+    ? "Note quality: Review suggested"
+    : "Note quality: Needs improvement";
+
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", color:T.txt }}>
+    <div style={{ marginTop:8, borderRadius:9,
+      background:`${overallColor}06`,
+      border:`1px solid ${overallColor}28`,
+      overflow:"hidden" }}>
 
-      {/* Header row — always visible */}
-      <button onClick={toggle}
-        style={{ width:"100%", display:"flex", alignItems:"center",
-          gap:12, padding:"11px 13px", borderRadius:expanded ? "10px 10px 0 0" : 10,
-          cursor:"pointer", textAlign:"left",
-          border:`1px solid ${color}33`,
-          borderBottom:expanded ? `1px solid rgba(26,53,85,0.4)` : `1px solid ${color}33`,
-          background:`${color}09`,
-          transition:"border-radius .15s" }}>
+      {/* Summary bar — always visible */}
+      <div style={{ display:"flex", alignItems:"center",
+        justifyContent:"space-between",
+        padding:"7px 11px", gap:8, flexWrap:"wrap" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8,
+          flexWrap:"wrap" }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            letterSpacing:1.5, textTransform:"uppercase",
+            color:overallColor }}>
+            {overallIcon} {overallLabel}
+          </span>
 
-        <ScoreRing score={total} color={color} size={48} />
+          <Chip label="Words"
+            value={wc}
+            rating={wcRating === "low" || wcRating === "high"
+              ? "attention" : wcRating}
+            icon="📝" />
 
-        <div style={{ flex:1 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:2 }}>
-            <span style={{ fontFamily:"'Playfair Display',serif",
-              fontWeight:700, fontSize:13, color }}>
-              MDM Quality Score
-            </span>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-              fontWeight:700, letterSpacing:1, padding:"1px 7px",
-              borderRadius:4, background:`${color}18`,
-              border:`1px solid ${color}44`, color }}>
-              {grade}
-            </span>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:T.txt4, marginLeft:2 }}>
-              {passing}/5 checks
-            </span>
-          </div>
-          <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-            {items.map(item => (
-              <div key={item.key} style={{ width:7, height:7, borderRadius:"50%",
-                background:item.pass ? T.teal : item.partial ? T.gold : "rgba(42,79,122,0.5)",
-                title:item.label }} />
-            ))}
-            <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9,
-              color:T.txt4, marginLeft:3 }}>
-              {total >= 90 ? "Audit-ready" : total >= 75 ? "Near complete" : total >= 55 ? "Gaps present" : "Significant gaps"}
-            </span>
-          </div>
+          {hits.length > 0 && (
+            <Chip label="Boilerplate"
+              value={`${hits.length} phrase${hits.length !== 1 ? "s" : ""}`}
+              rating={bpRating}
+              icon="🔁" />
+          )}
         </div>
 
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
-          color:T.txt4, flexShrink:0 }}>
-          {expanded ? "▲" : "▼"}
-        </span>
-      </button>
+        <div style={{ display:"flex", gap:5 }}>
+          {(wcRating !== "good" || hits.length > 0) && (
+            <button onClick={() => setExpanded(p => !p)}
+              style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                letterSpacing:1, textTransform:"uppercase",
+                padding:"2px 8px", borderRadius:4, cursor:"pointer",
+                border:`1px solid ${overallColor}40`,
+                background:`${overallColor}0d`, color:overallColor }}>
+              {expanded ? "Hide" : "Details"}
+            </button>
+          )}
+          <button onClick={() => setDismissed(true)}
+            style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              padding:"2px 7px", borderRadius:4, cursor:"pointer",
+              border:"1px solid rgba(42,79,122,0.35)",
+              background:"transparent", color:T.txt4, letterSpacing:1 }}>
+            ✕
+          </button>
+        </div>
+      </div>
 
-      {/* Expanded detail panel */}
+      {/* Detail panel */}
       {expanded && (
-        <div style={{ padding:"12px 13px", borderRadius:"0 0 10px 10px",
-          background:"rgba(8,22,40,0.6)",
-          border:`1px solid ${color}22`,
-          borderTop:"none",
-          display:"flex", flexDirection:"column", gap:6 }}>
+        <div style={{ padding:"8px 11px 10px",
+          borderTop:`1px solid ${overallColor}20` }}>
 
-          {/* Score bar */}
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-            <div style={{ flex:1, height:5, borderRadius:3,
-              background:"rgba(26,53,85,0.5)", overflow:"hidden" }}>
-              <div style={{ height:"100%", borderRadius:3,
-                width:`${total}%`, background:color,
-                transition:"width .4s ease" }} />
-            </div>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-              color, fontWeight:700, flexShrink:0 }}>
-              {total}/100
-            </span>
-          </div>
-
-          {/* Check rows */}
-          {items.map(item => (
-            <QRow key={item.key} item={item} showAction={!item.pass} />
-          ))}
-
-          {/* Billing defensibility summary */}
-          {total >= 75 && (
-            <div style={{ marginTop:4, padding:"7px 10px", borderRadius:7,
-              background:"rgba(61,255,160,0.06)",
-              border:"1px solid rgba(61,255,160,0.2)" }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                color:T.green, letterSpacing:1.5, textTransform:"uppercase",
+          {/* Word count guidance */}
+          {wcRating !== "good" && (
+            <div style={{ marginBottom:7,
+              padding:"6px 9px", borderRadius:7,
+              background:`${wcRating === "poor" || wcRating === "low"
+                ? T.coral : T.gold}09`,
+              border:`1px solid ${wcRating === "poor" || wcRating === "low"
+                ? T.coral : T.gold}28` }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:wcRating === "poor" || wcRating === "low"
+                  ? T.coral : T.gold,
+                letterSpacing:1.5, textTransform:"uppercase",
                 marginBottom:3 }}>
-                Billing Defensibility
+                Word Count
               </div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                color:"rgba(61,255,160,0.8)", lineHeight:1.5 }}>
-                {total >= 90
-                  ? "Documentation supports the assigned E/M level under AMA CPT 2023 MDM criteria. All key elements present."
-                  : "Documentation is largely complete. Review any partial items before finalization."}
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:T.txt3, lineHeight:1.6 }}>
+                {wordCountMessage(wc, wcRating)}
+              </div>
+              <div style={{ marginTop:5, display:"flex",
+                alignItems:"center", gap:4 }}>
+                {[
+                  { label:"<80", note:"too brief" },
+                  { label:"80-149", note:"low" },
+                  { label:"150-350", note:"target", target:true },
+                  { label:"351-500", note:"wordy" },
+                  { label:">500", note:"bloated" },
+                ].map(r => (
+                  <div key={r.label} style={{ display:"flex",
+                    flexDirection:"column", alignItems:"center", gap:1 }}>
+                    <div style={{ padding:"1px 5px", borderRadius:3,
+                      background:r.target ? "rgba(0,229,192,0.15)" : "rgba(42,79,122,0.15)",
+                      border:`1px solid ${r.target ? "rgba(0,229,192,0.35)" : "rgba(42,79,122,0.25)"}` }}>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                        fontSize:7, fontWeight:r.target ? 700 : 400,
+                        color:r.target ? T.teal : T.txt4 }}>
+                        {r.label}
+                      </span>
+                    </div>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif",
+                      fontSize:8, color:r.target ? T.teal : T.txt4 }}>
+                      {r.note}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
-          {total < 55 && (
-            <div style={{ marginTop:4, padding:"7px 10px", borderRadius:7,
-              background:"rgba(255,107,107,0.06)",
-              border:"1px solid rgba(255,107,107,0.22)" }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                color:T.coral, letterSpacing:1.5, textTransform:"uppercase",
-                marginBottom:3 }}>
-                Audit Risk
+
+          {/* Boilerplate hits */}
+          {hits.length > 0 && (
+            <div style={{ padding:"6px 9px", borderRadius:7,
+              background:"rgba(245,200,66,0.07)",
+              border:"1px solid rgba(245,200,66,0.25)" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:T.gold, letterSpacing:1.5, textTransform:"uppercase",
+                marginBottom:5 }}>
+                Low-value Phrases Detected
               </div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                color:"rgba(255,107,107,0.8)", lineHeight:1.5 }}>
-                Significant documentation gaps. E/M level may be challenged on audit.
-                Complete COPA, Risk rationale, differential, and narrative before signing.
+              {hits.map((hit, i) => (
+                <div key={i} style={{ display:"flex", gap:7,
+                  alignItems:"flex-start", marginBottom:4 }}>
+                  <span style={{ color:T.gold, fontSize:7,
+                    marginTop:3, flexShrink:0 }}>▸</span>
+                  <div>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                      fontSize:9, color:T.gold }}>
+                      "{hit.phrase}"
+                    </span>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif",
+                      fontSize:10, color:T.txt4, marginLeft:7 }}>
+                      — {hit.label}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              <div style={{ marginTop:6,
+                fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                color:T.txt4, lineHeight:1.55 }}>
+                These phrases add length without clinical substance.
+                Replace with specific findings, reasoning, or management decisions.
               </div>
+            </div>
+          )}
+
+          {/* Good state */}
+          {overall === "good" && (
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              color:T.teal }}>
+              Note is within target word count and contains no detected boilerplate.
             </div>
           )}
         </div>

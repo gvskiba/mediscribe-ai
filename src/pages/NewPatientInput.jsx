@@ -24,6 +24,7 @@ import ClinicalTimeline     from "@/components/npi/ClinicalTimeline";
 import VitalSignsChart      from "@/components/npi/VitalSignsChart";
 import OrdersPanel          from "@/components/npi/OrdersPanel";
 import CDSAlertsSidebar     from "@/components/npi/CDSAlertsSidebar";
+import CDSSidebar           from "@/components/npi/CDSSidebar";
 
 // ── Newly extracted tab components ───────────────────────────────────────────
 import TriageTab                from "@/components/npi/TriageTab";
@@ -847,8 +848,22 @@ export default function NewPatientInput() {
       </header>
 
       {/* ── Main content ── */}
-      <div className="npi-main-wrap">
-        <main className="npi-content">
+      <div className="npi-main-wrap" style={{ display:"flex" }}>
+        <CDSSidebar
+          vitals={vitals}
+          cc={cc}
+          demo={demo}
+          pmhSelected={pmhSelected}
+          medications={medications}
+          allergies={allergies}
+          rosState={rosState}
+          mdmState={mdmState}
+          sepsisBundle={sepsisBundle}
+          esiLevel={esiLevel}
+          onSelectSection={selectSection}
+          onNavigate={navigate}
+        />
+        <main className="npi-content" style={{ flex:1, minWidth:0 }}>
           {isPediatric && (
             <PediatricModePanel
               demo={demo}

@@ -400,12 +400,15 @@ export const ESI_CFG = [
 
 // ─── DISPOSITION ──────────────────────────────────────────────────────────────
 export const DISPOSITION_OPTS = [
-  { val:"discharge",   icon:"\uD83D\uDEAA", label:"Discharge",    color:"#00e5c0", desc:"Home or follow-up care"       },
-  { val:"admit",       icon:"\uD83C\uDFE5", label:"Admit",         color:"#3b9eff", desc:"Inpatient admission"           },
-  { val:"observation", icon:"\uD83D\uDD0D", label:"Observation",   color:"#f5c842", desc:"Outpatient obs status"         },
-  { val:"transfer",    icon:"\uD83D\uDE91", label:"Transfer",       color:"#ff9f43", desc:"Transfer to another facility" },
-  { val:"ama",         icon:"\u26A0\uFE0F", label:"AMA",            color:"#ff6b6b", desc:"Against medical advice"       },
-  { val:"expired",     icon:"\u2020",       label:"Expired",        color:"#8892a4", desc:"Patient expired in ED"        },
+  { val:"discharge", icon:"🏠",  label:"Discharge",       color:"#00e5c0", desc:"Home or follow-up care"        },
+  { val:"admit",     icon:"🏥",  label:"Admit",            color:"#3b9eff", desc:"Inpatient admission"            },
+  { val:"obs",       icon:"👁️", label:"Observation",      color:"#9b6dff", desc:"23-hour obs status"             },
+  { val:"transfer",  icon:"🚑",  label:"Transfer",          color:"#f5c842", desc:"Transfer to another facility"  },
+  { val:"ama",       icon:"⚠️",  label:"AMA / Refusal",    color:"#ff6b6b", desc:"Against medical advice"        },
+  { val:"lwbs",      icon:"🚶",  label:"Left WO Seen",     color:"#ff9f43", desc:"Left without being seen"       },
+  { val:"expired",   icon:"✝",   label:"Expired",           color:"#5a82a8", desc:"Patient expired in ED"         },
+  { val:"cath_lab",  icon:"❤️",  label:"Cath Lab",          color:"#ff4444", desc:"Direct to cath lab"            },
+  { val:"or",        icon:"🔪",  label:"To OR",             color:"#ff9f43", desc:"Direct to operating room"      },
 ];
 
 // ─── CC SMART TEMPLATES ───────────────────────────────────────────────────────

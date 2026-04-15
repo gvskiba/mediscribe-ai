@@ -567,7 +567,22 @@ export default function NewPatientInput() {
           </div>
         </div>
       );
-      case "closeout":   return <DispositionTab disposition={disposition} setDisposition={setDisposition} dispReason={dispReason} setDispReason={setDispReason} dispTime={dispTime} setDispTime={setDispTime} onAdvance={() => selectSection("handoff")} />;
+      case "closeout": return (
+        <DispositionTab
+          disposition={disposition}       setDisposition={setDisposition}
+          dispReason={dispReason}         setDispReason={setDispReason}
+          dispTime={dispTime}             setDispTime={setDispTime}
+          doorTime={doorTime}
+          demo={demo}
+          cc={cc}
+          vitals={vitals}
+          mdmState={mdmState}
+          providerName={providerName}
+          onToast={showToast}
+          onGoToDischarge={() => selectSection("discharge")}
+          onAdvance={() => selectSection("handoff")}
+        />
+      );
       case "capacity": return (
         <CapacityAMAModule
           demo={demo} cc={cc} vitals={vitals}

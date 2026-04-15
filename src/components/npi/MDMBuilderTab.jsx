@@ -3,6 +3,7 @@ import {
   MDM_COPA_LEVELS, MDM_DATA_CATS, MDM_RISK_LEVELS, EM_LEVEL_MAP,
   computeEMLevel, computeDataLevel, buildMDMNarrative,
 } from "@/components/npi/npiData";
+import MDMQualityIndicator from "@/components/npi/MDMQualityIndicator";
 
 // MOI_KW at module scope — defined once per load, not recreated on every render
 const MOI_KW = [
@@ -1578,6 +1579,9 @@ export default function MDMBuilderTab({
             padding:"10px 12px", color:"var(--npi-txt)",
             fontFamily:"'JetBrains Mono',monospace", fontSize:11, lineHeight:1.65,
             outline:"none", resize:"vertical", boxSizing:"border-box" }} />
+        {mdmState?.narrative && (
+          <MDMQualityIndicator text={mdmState.narrative} />
+        )}
       </SectionCard>
 
       {/* ── Advance ── */}

@@ -303,7 +303,7 @@ function getFocusedIds(cc) {
   return ['const','cv','resp','gi','msk'];
 }
 
-export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSysIdx, onSysChange }) {
+export default function ROSTab({ onStateChange, onSymptomsChange, chiefComplaint, onAdvance, extSysIdx, onSysChange }) {
   const [rosData, setRosData] = useState(initRosData);
   const [docMode,      setDocMode]      = useState('focused'); // 'focused' | 'full'
   const [remainderNeg, setRemainderNeg] = useState(false);
@@ -487,7 +487,8 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
     if (remainderNeg) newState._remainderNeg = true;
     if (docMode !== 'full') newState._mode = docMode;
     onStateChange?.(newState);
-  }, [rosData, remainderNeg, docMode, onStateChange]);
+    onSymptomsChange?.(rosData);
+  }, [rosData, remainderNeg, docMode, onStateChange, onSymptomsChange]);
 
   // ── Two-way sync with parent rail ────────────────────────────────────────
   // Rail → tab: when rail clicks a system, update internal keyboard state
@@ -559,6 +560,23 @@ export default function ROSTab({ onStateChange, chiefComplaint, onAdvance, extSy
 
         {/* ── BODY ─────────────────────────────────────────────────────── */}
         <div className="ros-body">
+
+          {/* ── SIDEBAR ──────────────────────────────────────────────── */}
+          <div className="ros-sidebar">
+            {visibleSys.map(sys => {
+              const status    = getSysStatus(rosData[sys.id]?.symptoms || {});
+              const globalIdx = ROS_SYSTEMS.findIndex(s => s.id === sys.id);
+              return (
+                <SysItem
+                  key={sys.id}
+                  sys={sys}
+                  isActive={globalIdx === activeSystemIdx}
+                  status={status}
+                  onClick={() => { setActiveSystemIdx(globalIdx); setActiveFindingIdx(-1); focus(); }}
+                />
+              );
+            })}
+          </div>
 
           {/* ── MAIN PANEL ───────────────────────────────────────────── */}
           <div className="ros-main" ref={mainRef}>
@@ -677,7 +695,7 @@ const ROS_CSS = `
 .ros-btn-clear-all:hover{border-color:rgba(255,107,107,.4);color:var(--npi-coral)}
 
 /* Body layout */
-.ros-body{display:grid;grid-template-columns:1fr;flex:1;overflow:hidden;min-height:0}
+.ros-body{display:grid;grid-template-columns:160px 1fr;flex:1;overflow:hidden;min-height:0}
 
 /* Sidebar */
 .ros-sidebar{border-right:1px solid var(--npi-bd);overflow-y:auto;background:var(--npi-panel);scrollbar-width:thin;scrollbar-color:#1a3555 transparent}

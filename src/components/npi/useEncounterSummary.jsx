@@ -1,212 +1,233 @@
 // useEncounterSummary.js
-// Derives a structured plain-text summary of the current NPI encounter.
-// Used by handoff, discharge, autocoder, and any module that needs a
-// concise, AI-ready snapshot of everything entered so far.
+// Assembles a concise, structured clinical snapshot from encounter state and
+// returns a buildPreamble() function that any AI call in the NPI workflow can
+// prepend to its prompt.
 //
-// Returns:
-//   summary       — full multi-line string (pass directly to an LLM)
-//   hasContext    — boolean: true when at least minimal data is present
-//   sections      — object with individual section strings (for selective use)
+// Usage:
+//   import { useEncounterSummary } from "@/components/npi/useEncounterSummary";
+//   const { buildPreamble } = useEncounterSummary(encounterState);
+//   const prompt = buildPreamble() + "\n\n" + taskSpecificPrompt;
+//
+// Returned string is intentionally compact — aim for ~200 tokens maximum so it
+// doesn't crowd out task-specific prompt content. Only clinically significant
+// fields are included; empty values are silently omitted.
+//
+// acceptedOutputs — optional map of prior AI outputs the provider has accepted
+// (not just generated — accepted). Keys match section IDs across the platform:
+//   { hpi, mdm, assessment, pe, ros, discharge, handoff }
+// Accepted outputs are included as one-line summaries so downstream calls know
+// what was already decided, preventing contradictions.
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
-/**
- * @param {object} encounter  — spread of NPI state props
- */
-export function useEncounterSummary({
-  demo          = {},
-  cc            = {},
-  vitals        = {},
-  vitalsHistory = [],
-  medications   = [],
-  allergies     = [],
-  pmhSelected   = [],
-  rosState      = {},
-  peState       = {},
-  peFindings    = {},
-  mdmState      = null,
-  consults      = [],
-  disposition   = "",
-  dispReason    = "",
-  dispTime      = "",
-  esiLevel      = "",
-  doorTime      = "",
-  providerName  = "",
-  registration  = {},
-  sdoh          = {},
-  sepsisBundle  = {},
-} = {}) {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-  return useMemo(() => {
-
-    // ── Demographics ──────────────────────────────────────────────────────
-    const nameParts  = [demo?.firstName, demo?.lastName].filter(Boolean);
-    const patName    = nameParts.join(" ") || "";
-    const demoLine   = [
-      demo?.age  ? `${demo.age}yo`   : "",
-      demo?.sex  || "",
-      demo?.dob  ? `DOB ${demo.dob}` : "",
-    ].filter(Boolean).join(" ");
-    const mrnLine    = registration?.mrn ? `MRN ${registration.mrn}` : "";
-
-    const demographics = [
-      patName   && `Patient: ${patName}`,
-      demoLine  && `Demographics: ${demoLine}`,
-      mrnLine,
-      esiLevel  && `ESI Level: ${esiLevel}`,
-      doorTime  && `Arrival: ${doorTime}`,
-      providerName && `Provider: ${providerName}`,
-    ].filter(Boolean).join("\n");
-
-    // ── Chief Complaint ───────────────────────────────────────────────────
-    const chiefComplaint = [
-      cc?.text     && `CC: ${cc.text}`,
-      cc?.onset    && `Onset: ${cc.onset}`,
-      cc?.severity && `Severity: ${cc.severity}/10`,
-      cc?.hpi      && `HPI: ${cc.hpi.slice(0, 400)}${cc.hpi.length > 400 ? "..." : ""}`,
-    ].filter(Boolean).join("\n");
-
-    // ── Vitals ────────────────────────────────────────────────────────────
-    const vsItems = [
-      vitals?.bp   && `BP ${vitals.bp}`,
-      vitals?.hr   && `HR ${vitals.hr}`,
-      vitals?.rr   && `RR ${vitals.rr}`,
-      vitals?.spo2 && `SpO2 ${vitals.spo2}%`,
-      vitals?.temp && `T ${vitals.temp}`,
-      vitals?.wt   && `Wt ${vitals.wt}`,
-      vitals?.pain !== undefined && vitals?.pain !== "" && `Pain ${vitals.pain}/10`,
-    ].filter(Boolean);
-    const vitalsSection = vsItems.length ? `Vitals: ${vsItems.join("  ")}` : "";
-
-    // ── Meds / Allergies / PMH ────────────────────────────────────────────
-    const medList = (medications || [])
-      .map(m => typeof m === "string" ? m : (m?.name || m?.drug || ""))
-      .filter(Boolean);
-    const allergyList = (allergies || [])
-      .map(a => typeof a === "string" ? a : (a?.name || a?.allergen || ""))
-      .filter(Boolean);
-    const pmhList = Array.isArray(pmhSelected)
-      ? pmhSelected.slice(0, 10)
-      : Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]);
-
-    const medsAllergiesPmh = [
-      medList.length     ? `Medications: ${medList.join(", ")}`          : "Medications: None listed",
-      allergyList.length ? `Allergies: ${allergyList.join(", ")}`        : "Allergies: NKDA",
-      pmhList.length     ? `PMH: ${pmhList.slice(0, 8).join(", ")}`      : "",
-    ].filter(Boolean).join("\n");
-
-    // ── Review of Systems ─────────────────────────────────────────────────
-    const rosLines = [];
-    if (rosState && typeof rosState === "object") {
-      Object.entries(rosState).forEach(([system, data]) => {
-        if (!data) return;
-        const pos = (data.positive || []).join(", ");
-        const neg = (data.negative || []).join(", ");
-        if (pos) rosLines.push(`  ${system} (+): ${pos}`);
-        if (neg) rosLines.push(`  ${system} (-): ${neg}`);
-        if (typeof data === "string" && data.trim())
-          rosLines.push(`  ${system}: ${data.trim()}`);
-      });
-    }
-    const rosSection = rosLines.length
-      ? `Review of Systems:\n${rosLines.join("\n")}`
-      : "";
-
-    // ── Physical Exam ─────────────────────────────────────────────────────
-    const peLines = [];
-    if (peFindings && typeof peFindings === "object") {
-      Object.entries(peFindings).forEach(([system, text]) => {
-        if (text && typeof text === "string" && text.trim())
-          peLines.push(`  ${system}: ${text.trim()}`);
-      });
-    }
-    // Also check peState for abnormal findings
-    if (peState && typeof peState === "object") {
-      Object.entries(peState).forEach(([system, data]) => {
-        if (!data || peLines.some(l => l.startsWith(`  ${system}`))) return;
-        const abnormal = (data.findings || [])
-          .filter(f => f.selected && !f.isNormal)
-          .map(f => f.label);
-        if (abnormal.length)
-          peLines.push(`  ${system} (abnormal): ${abnormal.join(", ")}`);
-      });
-    }
-    const peSection = peLines.length
-      ? `Physical Exam:\n${peLines.join("\n")}`
-      : "";
-
-    // ── MDM / Assessment ──────────────────────────────────────────────────
-    const mdmSection = mdmState?.narrative?.trim()
-      ? `MDM/Assessment:\n${mdmState.narrative.slice(0, 800)}${mdmState.narrative.length > 800 ? "..." : ""}`
-      : "";
-
-    // ── Consults ──────────────────────────────────────────────────────────
-    const consultList = (consults || [])
-      .map(c => {
-        const name = c.service || c.name || c.specialty || "";
-        const status = c.status ? ` [${c.status}]` : "";
-        return name ? `${name}${status}` : null;
-      })
-      .filter(Boolean);
-    const consultsSection = consultList.length
-      ? `Consults: ${consultList.join(", ")}`
-      : "";
-
-    // ── Disposition ───────────────────────────────────────────────────────
-    const dispositionSection = disposition
-      ? `Disposition: ${disposition}${dispReason ? " — " + dispReason : ""}${dispTime ? " at " + dispTime : ""}`
-      : "";
-
-    // ── SDOH ──────────────────────────────────────────────────────────────
-    const sdohRisks = Object.entries(sdoh || {})
-      .filter(([, v]) => v === 2 || v === "2" || v === "Unsafe / IPV concern"
-        || v === "Insecure / hungry" || v === "Major barrier" || v === "Isolated")
-      .map(([k]) => k);
-    const sdohSection = sdohRisks.length
-      ? `SDOH Risks: ${sdohRisks.join(", ")}`
-      : "";
-
-    // ── Sepsis bundle ─────────────────────────────────────────────────────
-    const sepsisItems = Object.entries(sepsisBundle || {})
-      .filter(([, v]) => v)
-      .map(([k]) => k);
-    const sepsisSection = sepsisItems.length
-      ? `Sepsis Bundle: ${sepsisItems.join(", ")}`
-      : "";
-
-    // ── Assemble sections object ──────────────────────────────────────────
-    const sections = {
-      demographics,
-      chiefComplaint,
-      vitals:       vitalsSection,
-      medsAllergiesPmh,
-      ros:          rosSection,
-      pe:           peSection,
-      mdm:          mdmSection,
-      consults:     consultsSection,
-      disposition:  dispositionSection,
-      sdoh:         sdohSection,
-      sepsis:       sepsisSection,
-    };
-
-    // ── Full summary string ───────────────────────────────────────────────
-    const summary = Object.values(sections)
-      .filter(Boolean)
-      .join("\n\n");
-
-    // ── hasContext ────────────────────────────────────────────────────────
-    const hasContext = Boolean(
-      cc?.text || demo?.age || demo?.firstName || vitalsSection || mdmSection
-    );
-
-    return { summary, hasContext, sections };
-
-  }, [
-    demo, cc, vitals, vitalsHistory, medications, allergies,
-    pmhSelected, rosState, peState, peFindings,
-    mdmState, consults, disposition, dispReason, dispTime,
-    esiLevel, doorTime, providerName, registration, sdoh, sepsisBundle,
-  ]);
+function num(v) {
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
 }
 
-export default useEncounterSummary;
+function flagVitals(vitals = {}) {
+  const flags = [];
+  const sbp = num((vitals.bp || "").split("/")[0]);
+  const hr  = num(vitals.hr);
+  const spo2 = num(vitals.spo2);
+  const temp = num(vitals.temp);
+  const rr   = num(vitals.rr);
+
+  if (sbp !== null && sbp < 90)              flags.push(`hypotension (SBP ${sbp})`);
+  if (sbp !== null && sbp > 180)             flags.push(`hypertension (SBP ${sbp})`);
+  if (hr  !== null && hr  > 120)             flags.push(`tachycardia (HR ${hr})`);
+  if (hr  !== null && hr  < 50)              flags.push(`bradycardia (HR ${hr})`);
+  if (spo2 !== null && spo2 < 94)            flags.push(`hypoxia (SpO2 ${spo2}%)`);
+  if (temp !== null && temp > 100.4)         flags.push(`fever (${temp}\u00b0F)`);
+  if (temp !== null && temp < 96.8)          flags.push(`hypothermia (${temp}\u00b0F)`);
+  if (rr  !== null && rr  >= 22)             flags.push(`tachypnea (RR ${rr})`);
+
+  // Shock index
+  if (hr !== null && sbp !== null && sbp > 0) {
+    const si = hr / sbp;
+    if (si >= 1.0) flags.push(`shock index ${si.toFixed(2)}`);
+  }
+  return flags;
+}
+
+function compactVitals(vitals = {}) {
+  return [
+    vitals.bp   && `BP ${vitals.bp}`,
+    vitals.hr   && `HR ${vitals.hr}`,
+    vitals.rr   && `RR ${vitals.rr}`,
+    vitals.spo2 && `SpO2 ${vitals.spo2}%`,
+    vitals.temp && `T ${vitals.temp}\u00b0F`,
+  ].filter(Boolean).join("  ");
+}
+
+function rosPositives(rosState = {}) {
+  const META = new Set(["_remainderNeg","_remainderNormal","_mode","_visual"]);
+  return Object.entries(rosState)
+    .filter(([k, v]) => !META.has(k) && v === "has-positives")
+    .map(([k]) => k);
+}
+
+function peAbnormals(peState = {}, peFindings = {}) {
+  const META = new Set(["_remainderNeg","_remainderNormal","_mode","_visual"]);
+  return Object.entries(peState)
+    .filter(([k, v]) => !META.has(k) && (v === "abnormal" || v === "mixed"))
+    .map(([k]) => {
+      const sf      = peFindings[k];
+      const findings = sf
+        ? Object.entries(sf.findings || {})
+            .filter(([, v]) => v === "abnormal")
+            .map(([f]) => f.replace(/-/g, " "))
+            .join(", ")
+        : "";
+      const note = sf?.note?.trim() || "";
+      return `${k}${findings ? ": " + findings : ""}${note ? " (" + note + ")" : ""}`;
+    });
+}
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+export function useEncounterSummary({
+  demo           = {},
+  cc             = {},
+  vitals         = {},
+  medications    = [],
+  allergies      = [],
+  pmhSelected    = {},
+  rosState       = {},
+  peState        = {},
+  peFindings     = {},
+  sdoh           = {},
+  disposition    = "",
+  dispReason     = "",
+  esiLevel       = "",
+  registration   = {},
+  providerName   = "",
+  avpu           = "",
+  acceptedOutputs = {},   // { hpi?, mdm?, assessment?, pe?, ros?, discharge?, handoff? }
+} = {}) {
+
+  // Derived values — recalculate only when inputs change
+  const vitalFlags  = useMemo(() => flagVitals(vitals),             [vitals]);
+  const vitalLine   = useMemo(() => compactVitals(vitals),          [vitals]);
+  const rosPos      = useMemo(() => rosPositives(rosState),         [rosState]);
+  const peAbn       = useMemo(() => peAbnormals(peState, peFindings),[peState, peFindings]);
+  const pmhList     = useMemo(() =>
+    Object.keys(pmhSelected).filter(k => pmhSelected[k]).slice(0, 6),
+    [pmhSelected]
+  );
+  const medList     = useMemo(() =>
+    (medications || [])
+      .map(m => typeof m === "string" ? m : m.name || "")
+      .filter(Boolean).slice(0, 6),
+    [medications]
+  );
+  const allergyList = useMemo(() =>
+    (allergies || [])
+      .map(a => typeof a === "string" ? a : a.name || "")
+      .filter(Boolean),
+    [allergies]
+  );
+  const sdohFlags   = useMemo(() =>
+    Object.entries(sdoh || {})
+      .filter(([, v]) => v && v !== "unknown" && v !== false)
+      .map(([k]) => k.replace(/_/g, " ")),
+    [sdoh]
+  );
+
+  // ── buildPreamble ────────────────────────────────────────────────────────
+  // Returns a compact plain-text block for prepending to any AI call prompt.
+  // Omits empty fields so prompts stay lean regardless of encounter completeness.
+  const buildPreamble = useCallback(() => {
+    const lines = [];
+
+    // ── Patient identity ──
+    const patLine = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "Unknown patient";
+    const demoLine = [
+      demo.age && `${demo.age}y`,
+      demo.sex,
+      registration.mrn && `MRN ${registration.mrn}`,
+      registration.room && `Room ${registration.room}`,
+    ].filter(Boolean).join(" \u00b7 ");
+
+    lines.push(`PATIENT: ${patLine}${demoLine ? " | " + demoLine : ""}`);
+
+    // ── Clinical context ──
+    if (esiLevel)    lines.push(`ESI: ${esiLevel}`);
+    if (cc.text)     lines.push(`CC: ${cc.text}`);
+    if (cc.hpi?.trim()) lines.push(`HPI (brief): ${cc.hpi.slice(0, 200).trim()}${cc.hpi.length > 200 ? "..." : ""}`);
+
+    // ── Vitals — always include if present, flag abnormals explicitly ──
+    if (vitalLine) {
+      lines.push(`VITALS: ${vitalLine}${avpu && avpu !== "Alert" ? `  AVPU: ${avpu}` : ""}`);
+    }
+    if (vitalFlags.length) {
+      lines.push(`VITAL ALERTS: ${vitalFlags.join(", ")}`);
+    }
+
+    // ── Background ──
+    if (pmhList.length)     lines.push(`PMH: ${pmhList.join(", ")}`);
+    if (medList.length)     lines.push(`MEDS: ${medList.join(", ")}`);
+    if (allergyList.length) lines.push(`ALLERGIES: ${allergyList.join(", ")}`);
+    else                    lines.push("ALLERGIES: NKDA");
+
+    // ── Findings — only pertinent positives ──
+    if (rosPos.length) lines.push(`ROS POSITIVES: ${rosPos.join(", ")}`);
+    if (peAbn.length)  lines.push(`PE ABNORMALS: ${peAbn.join("; ")}`);
+
+    // ── Disposition ──
+    if (disposition) {
+      lines.push(`DISPOSITION: ${disposition}${dispReason ? " \u2014 " + dispReason : ""}`);
+    }
+
+    // ── SDOH (only if any positive screen) ──
+    if (sdohFlags.length) lines.push(`SDOH SCREEN: ${sdohFlags.join(", ")}`);
+
+    // ── Provider ──
+    if (providerName) lines.push(`PROVIDER: ${providerName}`);
+
+    // ── Prior accepted AI outputs — prevents contradictions ──
+    // Only outputs the provider has explicitly accepted (not just generated)
+    const ao = acceptedOutputs;
+    const priorSections = [
+      ao.assessment && `Assessment: ${ao.assessment.slice(0, 150).trim()}${ao.assessment.length > 150 ? "..." : ""}`,
+      ao.mdm        && `MDM: ${ao.mdm.slice(0, 150).trim()}${ao.mdm.length > 150 ? "..." : ""}`,
+      ao.hpi        && `HPI: ${ao.hpi.slice(0, 120).trim()}${ao.hpi.length > 120 ? "..." : ""}`,
+      ao.disposition && `Discharge plan: ${ao.disposition.slice(0, 120).trim()}`,
+    ].filter(Boolean);
+    if (priorSections.length) {
+      lines.push("PRIOR ACCEPTED AI OUTPUTS (do not contradict):");
+      priorSections.forEach(s => lines.push(`  \u2014 ${s}`));
+    }
+
+    return lines.join("\n");
+  }, [
+    demo, cc, vitals, vitalLine, vitalFlags,
+    pmhList, medList, allergyList, rosPos, peAbn,
+    esiLevel, registration, avpu,
+    disposition, dispReason, sdohFlags, providerName,
+    acceptedOutputs,
+  ]);
+
+  // ── buildLabSummary ──────────────────────────────────────────────────────
+  // Separate helper for ResultsViewer — builds a structured lab summary from
+  // the entered lab values object with flag annotations. Available independently
+  // so ResultsViewer can include it without building a full encounter preamble.
+  const buildLabSummary = useCallback((labValues = {}, labPanels = []) => {
+    const lines = labPanels.flatMap(p =>
+      p.fields.filter(f => labValues[f.id]).map(f => {
+        // Inline flag calculation — mirrors ResultsViewer's getFlag logic
+        const n  = parseFloat(labValues[f.id]);
+        let flag = "NORMAL";
+        if (!isNaN(n)) {
+          if ((f.clo !== null && n < f.clo) || (f.chi !== null && n > f.chi)) flag = "CRITICAL";
+          else if ((f.lo !== null && n < f.lo) || (f.hi !== null && n > f.hi)) flag = "ABNORMAL";
+        }
+        return `${f.label}: ${labValues[f.id]}${f.unit ? " " + f.unit : ""} [${flag}]`;
+      })
+    );
+    return lines.join("\n");
+  }, []);
+
+  return { buildPreamble, buildLabSummary };
+}

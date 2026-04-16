@@ -422,7 +422,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                   <div>
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:.1em, textTransform:"uppercase", marginBottom:5 }}>Modality</div>
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:5 }}>Modality</div>
                     <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                       {IMAGING_MODALITIES.map(m => (
                         <button key={m} onClick={() => setNewImaging(p => ({ ...p, modality:m }))}
@@ -433,18 +433,18 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:.1em, textTransform:"uppercase", marginBottom:5 }}>Date / Time (optional)</div>
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:5 }}>Date / Time (optional)</div>
                     <input type="text" placeholder="e.g. 14:32" value={newImaging.date} onChange={e => setNewImaging(p => ({ ...p, date:e.target.value }))}
                       style={{ background:T.up, border:`1px solid ${T.bd}`, borderRadius:7, padding:"7px 11px", color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none", width:"100%" }} />
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:.1em, textTransform:"uppercase", marginBottom:5 }}>Findings</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:5 }}>Findings</div>
                   <textarea rows={3} placeholder="Radiologist findings or direct interpretation..." value={newImaging.findings} onChange={e => setNewImaging(p => ({ ...p, findings:e.target.value }))}
                     style={{ width:"100%", background:T.up, border:`1px solid ${T.bd}`, borderRadius:7, padding:"8px 12px", color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12, resize:"vertical", outline:"none", lineHeight:1.55 }} />
                 </div>
                 <div>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:.1em, textTransform:"uppercase", marginBottom:5 }}>Impression</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:5 }}>Impression</div>
                   <textarea rows={2} placeholder="Radiologist impression / final read..." value={newImaging.impression} onChange={e => setNewImaging(p => ({ ...p, impression:e.target.value }))}
                     style={{ width:"100%", background:T.up, border:`1px solid ${T.bd}`, borderRadius:7, padding:"8px 12px", color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12, resize:"vertical", outline:"none", lineHeight:1.55 }} />
                 </div>
@@ -504,7 +504,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                   <div>
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:.1em, textTransform:"uppercase", marginBottom:5 }}>Source</div>
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:5 }}>Source</div>
                     <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                       {CULTURE_SOURCES.map(s => (
                         <button key={s} onClick={() => setNewCulture(p => ({ ...p, source:s }))}
@@ -515,18 +515,18 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:.1em, textTransform:"uppercase", marginBottom:5 }}>Collection Date / Time</div>
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:5 }}>Collection Date / Time</div>
                     <input type="text" placeholder="e.g. 04/14 08:15" value={newCulture.date} onChange={e => setNewCulture(p => ({ ...p, date:e.target.value }))}
                       style={{ background:T.up, border:`1px solid ${T.bd}`, borderRadius:7, padding:"7px 11px", color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none", width:"100%" }} />
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:.1em, textTransform:"uppercase", marginBottom:5 }}>Organism (leave blank if pending)</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:5 }}>Organism (leave blank if pending)</div>
                   <input type="text" placeholder="e.g. E. coli, No growth, Pending..." value={newCulture.organism} onChange={e => setNewCulture(p => ({ ...p, organism:e.target.value }))}
                     style={{ width:"100%", background:T.up, border:`1px solid ${T.bd}`, borderRadius:7, padding:"8px 12px", color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none" }} />
                 </div>
                 <div>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:.1em, textTransform:"uppercase", marginBottom:5 }}>Sensitivities / Notes</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:5 }}>Sensitivities / Notes</div>
                   <textarea rows={3} placeholder="Antibiotic sensitivities or additional micro notes..." value={newCulture.sensitivities} onChange={e => setNewCulture(p => ({ ...p, sensitivities:e.target.value }))}
                     style={{ width:"100%", background:T.up, border:`1px solid ${T.bd}`, borderRadius:7, padding:"8px 12px", color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12, resize:"vertical", outline:"none", lineHeight:1.55 }} />
                 </div>

@@ -1,4 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react';
+import VitalsPasteParser from "@/components/npi/VitalsPasteParser";
+import VitalsFhirPoll    from "@/components/npi/VitalsFhirPoll";
 
 // ─── VITAL FIELD DEFINITIONS ──────────────────────────────────────────────────
 const VITAL_FIELDS = [
@@ -37,7 +39,7 @@ const isAbn = (f, v) => {
 const FL = { fontSize:10, color:'var(--npi-txt4)', fontFamily:"'JetBrains Mono',monospace", textTransform:'uppercase', letterSpacing:'.08em', marginBottom:5 };
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
-export default function VitalsTab({ vitals, setVitals, avpu, setAvpu, o2del, setO2del, pain, setPain, triage, setTriage, onAdvance }) {
+export default function VitalsTab({ vitals, setVitals, avpu, setAvpu, o2del, setO2del, pain, setPain, triage, setTriage, onAdvance, onToast, registration, demo }) {
   const refs = useRef([]);
 
   useEffect(() => { setTimeout(() => refs.current[0]?.focus(), 80); }, []);
@@ -101,7 +103,13 @@ export default function VitalsTab({ vitals, setVitals, avpu, setAvpu, o2del, set
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <h2 style={{ margin:0, fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:600, color:'#fff' }}>Vital Signs</h2>
-        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+        <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+          <VitalsPasteParser vitals={vitals} setVitals={setVitals} onToast={onToast} />
+          <VitalsFhirPoll
+            vitals={vitals} setVitals={setVitals} onToast={onToast}
+            patientMrn={registration?.mrn || demo?.mrn}
+            patientFhirId={demo?.fhirId}
+          />
           <button
             onClick={() => setVitals(v => ({ ...v, ...ADULT_NORMALS }))}
             style={{ padding:'5px 14px', borderRadius:7, background:'rgba(0,229,192,.1)', border:'1px solid rgba(0,229,192,.3)', color:'var(--npi-teal)', fontSize:12, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>

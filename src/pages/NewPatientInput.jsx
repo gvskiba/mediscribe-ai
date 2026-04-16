@@ -45,6 +45,7 @@ import SignCloseChecklist     from "@/components/npi/SignCloseChecklist";
 import CommunicationLog       from "@/components/npi/CommunicationLog";
 import FhirDataSync           from "@/components/npi/FhirDataSync";
 import CCDASmartParse         from "@/components/npi/CCDASmartParse";
+import ConnectivityIndicator  from "@/components/npi/ConnectivityIndicator";
 
 // ── Embedded page components ──────────────────────────────────────────────────
 import EDProcedureNotes        from "@/pages/EDProcedureNotes";
@@ -579,6 +580,9 @@ export default function NewPatientInput() {
           {demo.dob && <span className="npi-pt-dob" title="Date of birth — second patient identifier">DOB {demo.dob}</span>}
           <span className="npi-door-time" title="Time since intake started">&#x23F1; {doorTime}</span>
 
+          {/* Connectivity / sync status — always visible */}
+          <ConnectivityIndicator />
+
           {/* Visit mode selector */}
           <div style={{ display:"flex", gap:2, background:"rgba(8,22,46,0.8)", border:"1px solid rgba(26,53,85,0.5)", borderRadius:7, overflow:"hidden", flexShrink:0 }}>
             {[
@@ -761,7 +765,7 @@ export default function NewPatientInput() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => { sendMessage(QUICK_ACTIONS[4].prompt); toggleAI(); setCdsOpen(false); }}
+              <button onClick={() => { sendMessage(QUICK_ACTIONS[4].prompt); setAiOpen(true); setCdsOpen(false); }}
                 style={{ marginTop:8, padding:"5px 12px", borderRadius:6, border:"1px solid rgba(59,158,255,0.4)", background:"rgba(59,158,255,0.1)", color:"#3b9eff", fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, cursor:"pointer" }}>
                 \u2728 Draft MDM with AI
               </button>

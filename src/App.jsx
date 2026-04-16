@@ -89,6 +89,7 @@ import AbdominalPainHub from '@/pages/AbdominalPainHub';
 import AMSHub from '@/pages/AMSHub';
 import DVTHub from '@/pages/DVTHub';
 import SepsisHub from '@/pages/SepsisHub';
+import HuddleBoard from '@/pages/HuddleBoard';
 
 
 
@@ -260,6 +261,7 @@ const AuthenticatedApp = () => {
       <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
       <Route path="/SmartDischargeHub" element={<DischargeHub />} />
       <Route path="/SepsisHub" element={<SepsisHub />} />
+      <Route path="/huddle-board" element={<HuddleBoard />} />
       <Route path="/AMSHub" element={<AMSHub />} />
       <Route path="/OrthoHub" element={<OrthoHub />} />
       <Route path="/ERx" element={<LayoutWrapper currentPageName="ERx"><ERx /></LayoutWrapper>} />

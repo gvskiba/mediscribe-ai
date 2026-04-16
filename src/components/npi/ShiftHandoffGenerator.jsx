@@ -1,569 +1,714 @@
-// ShiftHandoffGenerator.jsx — P1 rebuild
-// Auto-populates I-PASS from full encounter context on mount.
-// Physician edits pre-populated content — does not author from scratch.
+// ShiftHandoffGenerator.jsx
+// AI-assembled structured handoff note using I-PASS framework.
+// Pulls from full encounter state — works as case "handoff" enhancement
+// or standalone within HandoffTab.
 //
-// Yale JAMA Network Open 2024: handoffs add ~33% more EHR time per encounter.
-// Auto-population reduces authoring to editing.
+// I-PASS: Illness severity, Patient summary, Action list,
+//         Situation awareness, Synthesis by receiver
 //
-// I-PASS: Illness Severity · Patient Summary · Action List
-//         Situation Awareness · Synthesis by Receiver
-//
-// Props: demo, cc, vitals, medications, allergies, pmhSelected,
-//        rosState, peState, peFindings, mdmState,
-//        esiLevel, registration, sdoh, consults,
-//        disposition, dispReason, dispTime, doorTime,
-//        providerName, onAdvance, onToast
+// Props:
+//   demo, cc, vitals, vitalsHistory, medications, allergies,
+//   pmhSelected, rosState, peState, peFindings,
+//   mdmState, consults, disposition, dispReason, dispTime,
+//   esiLevel, registration, sdoh, sepsisBundle,
+//   providerName, doorTime, onToast
 //
 // Constraints: no form, no localStorage, no router, straight quotes only,
 //   single react import, border before borderTop/etc.,
-//   finally { setBusy(false) } on all async functions
+//   finally { setBusy(false) } on async functions
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 const T = {
-  bg:"#050f1e",
+  bg:"#050f1e", panel:"#081628", card:"#0b1e36",
   txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
   teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
   orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", red:"#ff4444",
 };
 
-// ── Derivation helpers ────────────────────────────────────────────────────────
+// ── I-PASS severity levels ────────────────────────────────────────────────────
+const SEVERITY_LEVELS = [
+  { id:"stable",   label:"Stable",           color:T.teal,   icon:"🟢",
+    desc:"Anticipated clinical course; no urgent actions needed" },
+  { id:"watcher",  label:"Watcher",          color:T.gold,   icon:"🟡",
+    desc:"Potential to deteriorate; specific triggers to watch for" },
+  { id:"unstable", label:"Unstable",         color:T.coral,  icon:"🔴",
+    desc:"Uncertain prognosis; active management required" },
+];
 
-function deriveIllnessSeverity(vitals, esiLevel, disposition) {
-  const hr   = parseFloat(vitals?.hr   || 0);
-  const sbp  = parseFloat((vitals?.bp  || "").split("/")[0]) || 0;
-  const spo2 = parseFloat(vitals?.spo2 || 0);
-  const rr   = parseFloat(vitals?.rr   || 0);
-  const esi  = parseInt(esiLevel || 3);
-  const disp = (disposition || "").toLowerCase();
-  const critV = (hr > 130 || hr < 40) || (sbp > 0 && sbp < 80) ||
-                (spo2 > 0 && spo2 < 88) || rr > 30;
-  if (esi === 1 || disp === "cath_lab" || disp === "or" || critV) return "unstable";
-  const abnV = hr > 110 || (sbp > 0 && sbp < 90) ||
-               (spo2 > 0 && spo2 < 93) || rr > 24;
-  if (esi === 2 || disp === "admit" || disp === "obs" || abnV) return "watcher";
-  return "stable";
+// ── Pending item types ────────────────────────────────────────────────────────
+const PENDING_TYPES = [
+  { id:"result",    label:"Pending Result",     color:T.blue   },
+  { id:"consult",   label:"Pending Consult",    color:T.purple },
+  { id:"procedure", label:"Pending Procedure",  color:T.orange },
+  { id:"action",    label:"Action Required",    color:T.coral  },
+  { id:"family",    label:"Family/Communication",color:T.gold  },
+];
+
+// ── Assemble context for AI ───────────────────────────────────────────────────
+function buildHandoffContext(props) {
+  const {
+    demo, cc, vitals, medications, allergies, pmhSelected,
+    mdmState, consults, disposition, dispReason, esiLevel,
+    providerName, doorTime, pendingItems, severity,
+  } = props;
+
+  const lines = [];
+  const demoLine = [demo?.age ? demo.age + "yo" : "", demo?.sex || ""].filter(Boolean).join(" ");
+  if (demoLine) lines.push(`Patient: ${demoLine}`);
+  if (demo?.firstName || demo?.lastName)
+    lines.push(`Name: ${[demo.firstName, demo.lastName].filter(Boolean).join(" ")}`);
+  if (esiLevel)  lines.push(`ESI: ${esiLevel}`);
+  if (doorTime)  lines.push(`Arrival: ${doorTime}`);
+  if (cc?.text)  lines.push(`CC: ${cc.text}`);
+
+  const vs = [];
+  if (vitals?.hr)   vs.push(`HR ${vitals.hr}`);
+  if (vitals?.bp)   vs.push(`BP ${vitals.bp}`);
+  if (vitals?.rr)   vs.push(`RR ${vitals.rr}`);
+  if (vitals?.spo2) vs.push(`SpO2 ${vitals.spo2}%`);
+  if (vitals?.temp) vs.push(`T ${vitals.temp}C`);
+  if (vs.length) lines.push(`Vitals: ${vs.join("  ")}`);
+
+  const pmh = (pmhSelected||[]).slice(0,6);
+  if (pmh.length) lines.push(`PMH: ${pmh.join(", ")}`);
+
+  const meds = (medications||[])
+    .map(m => typeof m === "string" ? m : m.name||"")
+    .filter(Boolean).slice(0,6);
+  if (meds.length) lines.push(`Meds: ${meds.join(", ")}`);
+
+  const alls = (allergies||[])
+    .map(a => typeof a === "string" ? a : a.name||"")
+    .filter(Boolean).join(", ");
+  if (alls) lines.push(`Allergies: ${alls || "NKDA"}`);
+
+  if (mdmState?.narrative?.trim())
+    lines.push(`MDM/Assessment: ${mdmState.narrative.slice(0, 600)}${mdmState.narrative.length > 600 ? "..." : ""}`);
+
+  const cons = (consults||[]).map(c => c.service||c.name||c.specialty).filter(Boolean);
+  if (cons.length) lines.push(`Consults: ${cons.join(", ")}`);
+
+  if (disposition) lines.push(`Planned Disposition: ${disposition}${dispReason ? " — " + dispReason : ""}`);
+
+  if (pendingItems?.length)
+    lines.push(`Pending: ${pendingItems.map(p => `[${p.type}] ${p.text}`).join("; ")}`);
+
+  lines.push(`Illness Severity (I-PASS): ${severity || "not set"}`);
+  lines.push(`Outgoing provider: ${providerName || "[provider]"}`);
+
+  return lines.join("\n");
 }
 
-function buildSummary(demo, cc, vitals, pmhSelected, peFindings, mdmState) {
-  const age = demo?.age ? `${demo.age}yo` : "";
-  const sex = demo?.sex || "";
-  const pt  = [age, sex].filter(Boolean).join(" ");
-  const ccT = cc?.text || "unknown complaint";
-  const pmh = (pmhSelected || []).slice(0, 4).join(", ");
-  const vs  = [
-    vitals?.hr   && `HR ${vitals.hr}`,
-    vitals?.bp   && `BP ${vitals.bp}`,
-    vitals?.spo2 && `SpO2 ${vitals.spo2}%`,
-    vitals?.temp && parseFloat(vitals.temp) > 38.2 && `T ${vitals.temp}C`,
-  ].filter(Boolean).join(", ");
-  const dx = mdmState?.workingDiagnosis || mdmState?.primaryDx || "";
-  return [
-    `${pt || "Patient"} presenting with ${ccT}.`,
-    pmh    ? `PMH: ${pmh}.` : "",
-    vs     ? `Vitals: ${vs}.` : "",
-    dx     ? `Working Dx: ${dx}.` : "",
-  ].filter(Boolean).join(" ").trim();
+// ── Pending item row ───────────────────────────────────────────────────────────
+function PendingRow({ item, onRemove }) {
+  const pt = PENDING_TYPES.find(t => t.id === item.type) || PENDING_TYPES[0];
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:8,
+      padding:"5px 9px", borderRadius:7, marginBottom:4,
+      background:`${pt.color}09`,
+      border:`1px solid ${pt.color}28` }}>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        fontWeight:700, color:pt.color, letterSpacing:0.5,
+        flexShrink:0 }}>{pt.label}</span>
+      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+        color:T.txt2, flex:1 }}>{item.text}</span>
+      {item.contingency && (
+        <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+          color:T.txt4, fontStyle:"italic" }}>
+          If: {item.contingency}
+        </span>
+      )}
+      <button onClick={onRemove}
+        style={{ background:"none", border:"none", color:T.txt4,
+          cursor:"pointer", fontSize:11, padding:"1px 3px",
+          flexShrink:0 }}>✕</button>
+    </div>
+  );
 }
 
-function buildActionList(vitals, disposition, consults, medications) {
-  const acts = [];
-  const sbp  = parseFloat((vitals?.bp || "").split("/")[0]) || 0;
-  const spo2 = parseFloat(vitals?.spo2 || 0);
-  const disp = (disposition || "").toLowerCase();
-  if (sbp > 0 && sbp < 90) acts.push("[ ] Monitor blood pressure — hypotensive on arrival");
-  if (spo2 > 0 && spo2 < 93) acts.push("[ ] Reassess respiratory status and O2 requirement");
-  if (disp === "admit" || disp === "obs")
-    acts.push("[ ] Await bed assignment and notify receiving team");
-  if (disp === "transfer")
-    acts.push("[ ] Confirm transfer acceptance and arrange transport");
-  if (disp === "discharge")
-    acts.push("[ ] Discharge when stable and instructions complete");
-  (consults || [])
-    .filter(c => c.specialty || c.service)
-    .forEach(c => acts.push(`[ ] Await ${c.specialty || c.service} consult response`));
-  if (acts.length === 0) {
-    acts.push("[ ] Await pending lab and imaging results");
-    acts.push("[ ] Reassess at [time]");
-  }
-  return acts.join("\n");
+// ── IPASS section card ────────────────────────────────────────────────────────
+function IPassCard({ letter, title, color, content }) {
+  if (!content) return null;
+  return (
+    <div style={{ padding:"11px 13px", borderRadius:9, marginBottom:9,
+      background:"rgba(8,22,40,0.65)",
+      border:`1px solid ${color}35`,
+      borderLeft:`4px solid ${color}` }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+        <div style={{ width:28, height:28, borderRadius:6, flexShrink:0,
+          background:`${color}18`, border:`1px solid ${color}44`,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          fontFamily:"'JetBrains Mono',monospace", fontSize:14,
+          fontWeight:700, color }}>
+          {letter}
+        </div>
+        <span style={{ fontFamily:"'Playfair Display',serif",
+          fontWeight:700, fontSize:13, color }}>{title}</span>
+      </div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+        color:T.txt2, lineHeight:1.75, whiteSpace:"pre-wrap" }}>
+        {content}
+      </div>
+    </div>
+  );
 }
 
-function buildContingency(vitals, cc, disposition) {
-  const plans = [];
-  const ccT  = (cc?.text || "").toLowerCase();
-  const sbp  = parseFloat((vitals?.bp || "").split("/")[0]) || 0;
-  const spo2 = parseFloat(vitals?.spo2 || 0);
-  const hr   = parseFloat(vitals?.hr   || 0);
-  if (sbp > 0 && sbp < 100)
-    plans.push("If SBP drops below 80: 500 mL NS bolus, notify senior, consider vasopressors");
-  if (spo2 > 0 && spo2 < 95)
-    plans.push("If SpO2 drops below 90%: escalate O2 delivery, consider BIPAP/intubation");
-  if (hr > 120)
-    plans.push("If HR remains >130: obtain 12-lead EKG, consider cardiology notification");
-  if (/chest|angina|acs/.test(ccT))
-    plans.push("If worsening chest pain or new EKG changes: activate cath lab, repeat troponin");
-  if (/stroke|neuro|weakness|aphasia/.test(ccT))
-    plans.push("If new neurologic deficits: repeat NIHSS, urgent neurology notification");
-  if (/sepsis|infect|fever/.test(ccT))
-    plans.push("If hemodynamic deterioration: reassess fluids, escalate per sepsis protocol");
-  if (/overdose|ingestion|tox/.test(ccT))
-    plans.push("If mental status declines: reassess airway, contact poison control");
-  if (/seiz|epilep/.test(ccT))
-    plans.push("If repeat seizure: lorazepam 2 mg IV/IM, monitor airway, neurology");
-  if (!plans.length) {
-    plans.push("If clinical deterioration: notify senior physician immediately");
-    plans.push("If patient requests to leave: complete capacity assessment and AMA documentation");
-  }
-  return plans.map((p, i) => `${i + 1}. ${p}`).join("\n");
-}
-
-const SEV = {
-  stable:   { label:"Stable",   color:T.teal,  emoji:"🟢", desc:"No immediate concerns" },
-  watcher:  { label:"Watcher",  color:T.gold,  emoji:"🟡", desc:"Potential for deterioration — monitor closely" },
-  unstable: { label:"Unstable", color:T.coral, emoji:"🔴", desc:"Active resuscitation or critical intervention" },
-};
-
+// ── Main export ────────────────────────────────────────────────────────────────
 export default function ShiftHandoffGenerator({
-  demo, cc, vitals, medications, allergies, pmhSelected,
-  rosState, peState, peFindings, mdmState,
-  esiLevel, registration, sdoh, consults,
-  disposition, dispReason, dispTime, doorTime,
-  providerName, onAdvance, onToast,
+  demo, cc, vitals, vitalsHistory, medications, allergies,
+  pmhSelected, rosState, peState, peFindings,
+  mdmState, consults, disposition, dispReason, dispTime,
+  esiLevel, registration, sdoh, sepsisBundle,
+  providerName, doorTime, onToast,
 }) {
-  const [severity,  setSeverity]   = useState("stable");
-  const [summary,   setSummary]    = useState("");
-  const [actions,   setActions]    = useState("");
-  const [contPlan,  setContPlan]   = useState("");
-  const [synthesis, setSynthesis]  = useState(false);
-  const [ready,     setReady]      = useState(false);
-  const [edited,    setEdited]     = useState({});
-  const [copied,    setCopied]     = useState(false);
-  const [polishing, setPolishing]  = useState({});
-  const [aiBusy,    setAiBusy]     = useState(false);
+  const [severity,       setSeverity]       = useState("stable");
+  const [pendingItems,   setPendingItems]   = useState([]);
+  const [newPendType,    setNewPendType]    = useState("result");
+  const [newPendText,    setNewPendText]    = useState("");
+  const [newPendConting, setNewPendConting] = useState("");
+  const [receivingDoc,   setReceivingDoc]   = useState("");
+  const [busy,           setBusy]           = useState(false);
+  const [result,         setResult]         = useState(null);
+  const [error,          setError]          = useState(null);
+  const [copied,         setCopied]         = useState(false);
 
-  // ── Auto-populate on mount — physician edits, never authors from scratch ──
-  useEffect(() => {
-    setSeverity(deriveIllnessSeverity(vitals, esiLevel, disposition));
-    setSummary(buildSummary(demo, cc, vitals, pmhSelected, peFindings, mdmState));
-    setActions(buildActionList(vitals, disposition, consults, medications));
-    setContPlan(buildContingency(vitals, cc, disposition));
-    setReady(true);
-  }, []); // runs once on mount
+  // ── Format toggle — I-PASS (default) or SBAR ─────────────────────────────
+  const [format, setFormat] = useState("ipass"); // "ipass" | "sbar"
 
-  // ── LOS ──────────────────────────────────────────────────────────────────
-  const los = useMemo(() => {
-    if (!doorTime) return null;
-    const m = doorTime.match(/(\d{1,2}):(\d{2})/);
-    if (!m) return null;
-    const d = new Date();
-    d.setHours(parseInt(m[1]), parseInt(m[2]), 0, 0);
-    const min = Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
-    const h = Math.floor(min / 60), mm = min % 60;
-    return { min, display: h > 0 ? `${h}h ${mm}m` : `${mm}m` };
-  }, [doorTime]);
+  // ── Section selector — controls what context is sent to AI ───────────────
+  const [sections, setSections] = useState({
+    demographics: true, vitals: true, meds: true, pmh: true,
+    mdm: true, consults: true, disposition: true, pending: true,
+  });
+  const toggleSec = (id) => setSections(p => ({ ...p, [id]: !p[id] }));
 
-  const losc = los ? (los.min >= 300 ? T.coral : los.min >= 180 ? T.gold : T.teal) : T.teal;
+  const SECTION_CHIPS = [
+    { id:"demographics", label:"Demographics" },
+    { id:"vitals",       label:"Vitals"       },
+    { id:"meds",         label:"Meds/Allergies"},
+    { id:"pmh",          label:"PMH"          },
+    { id:"mdm",          label:"MDM"          },
+    { id:"consults",     label:"Consults"     },
+    { id:"disposition",  label:"Disposition"  },
+    { id:"pending",      label:"Pending Items"},
+  ];
 
-  // ── Full note string ──────────────────────────────────────────────────────
-  const fullNote = useMemo(() => {
-    const pt  = [demo?.age && `${demo.age}yo`, demo?.sex].filter(Boolean).join(" ");
-    const mrn = registration?.mrn || demo?.mrn || "";
-    const now = new Date().toLocaleString();
-    const name = providerName ? `Handoff from Dr. ${providerName}` : "Shift Handoff Note";
-    const sevC = SEV[severity] || SEV.stable;
-    return [
-      `${name}${pt ? " — " + pt : ""}${mrn ? " (MRN: " + mrn + ")" : ""}`,
-      doorTime ? `Door: ${doorTime}${los ? "  |  LOS: " + los.display : ""}` : "",
-      `Generated: ${now}`,
-      "",
-      "── I: ILLNESS SEVERITY ─────────────────────────────",
-      `${sevC.emoji} ${sevC.label.toUpperCase()} — ${sevC.desc}`,
-      "",
-      "── P: PATIENT SUMMARY ──────────────────────────────",
-      summary,
-      "",
-      "── A: ACTION LIST ──────────────────────────────────",
-      actions,
-      "",
-      "── S: SITUATION AWARENESS & CONTINGENCY PLANS ──────",
-      contPlan,
-      "",
-      "── S: SYNTHESIS ────────────────────────────────────",
-      synthesis
-        ? "Oncoming provider acknowledged receipt and read back key information."
-        : "[ ] Pending read-back from oncoming provider",
-      "",
-      dispTime    ? `Disposition time: ${dispTime}` : "",
-      disposition ? `Disposition: ${disposition.toUpperCase()}` : "",
-    ].filter(l => l !== null && l !== undefined).join("\n").trim();
-  }, [demo, registration, providerName, doorTime, los, severity,
-      summary, actions, contPlan, synthesis, dispTime, disposition]);
+  const sevConfig = SEVERITY_LEVELS.find(s => s.id === severity);
 
-  const copy = useCallback(() => {
-    navigator.clipboard.writeText(fullNote).then(() => {
+  // ── Add pending item ────────────────────────────────────────────────────────
+  const addPending = useCallback(() => {
+    if (!newPendText.trim()) return;
+    setPendingItems(p => [...p, {
+      id: Date.now(), type:newPendType,
+      text:newPendText.trim(),
+      contingency:newPendConting.trim(),
+    }]);
+    setNewPendText(""); setNewPendConting("");
+  }, [newPendType, newPendText, newPendConting]);
+
+  // ── Generate handoff ────────────────────────────────────────────────────────
+  const handleGenerate = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    try {
+      // Build context respecting section toggles
+      const ctxProps = {
+        demo:         sections.demographics ? demo        : {},
+        cc:           sections.demographics ? cc         : {},
+        vitals:       sections.vitals        ? vitals     : {},
+        medications:  sections.meds          ? medications: [],
+        allergies:    sections.meds          ? allergies  : [],
+        pmhSelected:  sections.pmh           ? pmhSelected: [],
+        mdmState:     sections.mdm           ? mdmState   : null,
+        consults:     sections.consults      ? consults   : [],
+        disposition:  sections.disposition   ? disposition: "",
+        dispReason:   sections.disposition   ? dispReason : "",
+        esiLevel,
+        providerName, doorTime,
+        pendingItems: sections.pending ? pendingItems : [],
+        severity,
+      };
+      const ctx = buildHandoffContext(ctxProps);
+
+      // ── System prompt branches by format ──────────────────────────────────
+      const ipassSystem = `You are generating a structured I-PASS emergency department shift handoff. Be clinically precise, actionable, and concise. Do not pad with unnecessary details.
+
+Respond ONLY with valid JSON, no markdown fences:
+{
+  "i_illness_severity": "One sentence: severity level and its basis",
+  "p_patient_summary": "Concise clinical narrative: who is this patient, what happened, what was found, what was done. 3-5 sentences.",
+  "a_action_list": "Numbered list of specific actions still needed. Format as: 1. [Action] — [responsible party or timing]. Include all pending items.",
+  "s_situation_awareness": "Key contingencies — If X occurs, then do Y. What could go wrong and what should be done. Specific triggers and responses.",
+  "synthesis_note": "One sentence summary for verbal read-back by the receiving provider",
+  "critical_values": "Any lab, imaging, or vital sign thresholds that require immediate action — omit section if none",
+  "code_status": "Document code status and surrogate if known — omit if not documented"
+}`;
+
+      const sbarSystem = `You are generating a structured SBAR emergency department handoff for physician-to-physician communication. Be clinically precise and concise.
+
+Respond ONLY with valid JSON, no markdown fences:
+{
+  "situation": "1-2 sentences: patient identity, chief complaint, current severity, and immediate issue",
+  "background": "2-3 sentences: relevant PMH, current medications, allergies, pertinent history contributing to this presentation",
+  "assessment": "2-3 sentences: current clinical status, key exam and investigation findings, working diagnosis and differential",
+  "recommendation": "Numbered list of specific actions, pending items, and disposition plan. Format as: 1. [Action] — [timing/owner]",
+  "synthesis_note": "One sentence read-back summary for verbal confirmation by receiving provider"
+}`;
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "anthropic-dangerous-direct-browser-access":"true",
+        },
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1800,
+          system: format === "sbar" ? sbarSystem : ipassSystem,
+          messages:[{
+            role:"user",
+            content:`Generate ${format === "sbar" ? "SBAR" : "I-PASS"} handoff for:\n\n${ctx}`,
+          }],
+        }),
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      const raw = data.content?.find(b => b.type === "text")?.text || "{}";
+      setResult(JSON.parse(raw.replace(/```json|```/g, "").trim()));
+      onToast?.("Handoff generated", "success");
+    } catch (e) {
+      setError("Error: " + (e.message || "Check API connectivity"));
+      onToast?.("Handoff generation failed", "error");
+    } finally {
+      setBusy(false);
+    }
+  }, [demo, cc, vitals, medications, allergies, pmhSelected,
+      mdmState, consults, disposition, dispReason, esiLevel,
+      providerName, doorTime, pendingItems, severity,
+      sections, format, onToast]);
+
+  // ── Copy full handoff ───────────────────────────────────────────────────────
+  const copyHandoff = useCallback(() => {
+    if (!result) return;
+    const ts      = new Date().toLocaleString("en-US", { hour12:false });
+    const demoLine = [demo?.age ? demo.age + "yo" : "", demo?.sex || ""].filter(Boolean).join(" ");
+    const patLine  = [demo?.firstName, demo?.lastName].filter(Boolean).join(" ") || "Patient";
+
+    let text;
+    if (format === "sbar") {
+      text = [
+        "SBAR SHIFT HANDOFF",
+        `${ts}  ·  ${providerName || "Provider"} → ${receivingDoc || "[Receiving Provider]"}`,
+        `Patient: ${patLine}${demoLine ? " (" + demoLine + ")" : ""}  ·  ESI ${esiLevel || "?"}  ·  Arrival ${doorTime || "—"}`,
+        "═".repeat(60),
+        "",
+        "S — SITUATION",
+        result.situation,
+        "",
+        "B — BACKGROUND",
+        result.background,
+        "",
+        "A — ASSESSMENT",
+        result.assessment,
+        "",
+        "R — RECOMMENDATION",
+        result.recommendation,
+        result.synthesis_note ? "\nSYNTHESIS\n" + result.synthesis_note : "",
+        "",
+        "═".repeat(60),
+      ].filter(s => s !== null).join("\n");
+    } else {
+      text = [
+        "I-PASS SHIFT HANDOFF",
+        `${ts}  ·  ${providerName || "Provider"} → ${receivingDoc || "[Receiving Provider]"}`,
+        `Patient: ${patLine}${demoLine ? " (" + demoLine + ")" : ""}  ·  ESI ${esiLevel || "?"}  ·  Arrival ${doorTime || "—"}`,
+        "═".repeat(60),
+        "",
+        `I — ILLNESS SEVERITY: ${sevConfig?.icon || ""} ${sevConfig?.label?.toUpperCase() || ""}`,
+        result.i_illness_severity,
+        "",
+        "P — PATIENT SUMMARY",
+        result.p_patient_summary,
+        "",
+        "A — ACTION LIST",
+        result.a_action_list,
+        "",
+        "S — SITUATION AWARENESS",
+        result.s_situation_awareness,
+        result.critical_values ? "\nCRITICAL VALUES\n" + result.critical_values : "",
+        result.code_status     ? "\nCODE STATUS\n"     + result.code_status     : "",
+        "",
+        "SYNTHESIS",
+        result.synthesis_note,
+        "",
+        "═".repeat(60),
+      ].filter(s => s !== null).join("\n");
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-      onToast?.("Handoff copied to clipboard", "success");
+      onToast?.("Handoff copied", "success");
     });
-  }, [fullNote, onToast]);
+  }, [result, format, demo, providerName, receivingDoc, esiLevel,
+      doorTime, sevConfig, onToast]);
 
-  // ── AI polish single field ────────────────────────────────────────────────
-  const polishField = useCallback(async (key, val, setter) => {
-    setPolishing(p => ({ ...p, [key]:true }));
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "anthropic-dangerous-direct-browser-access":"true",
-        },
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:400,
-          system:"You are an emergency physician polishing an I-PASS handoff field. Improve clarity and clinical precision. Return ONLY the improved text — no explanation. Preserve format ([ ] for action lists, numbered for contingency plans).",
-          messages:[{
-            role:"user",
-            content:`Field: ${key}\nPatient CC: ${cc?.text || ""}\nDisposition: ${disposition || ""}\n\nCurrent:\n${val}\n\nPolish this.`,
-          }],
-        }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      const improved = data.content?.find(b => b.type === "text")?.text || val;
-      setter(improved);
-      setEdited(p => ({ ...p, [key]:true }));
-    } catch (e) {
-      onToast?.("Polish error — " + (e.message || "API"), "error");
-    } finally {
-      setPolishing(p => ({ ...p, [key]:false }));
-    }
-  }, [cc, disposition, onToast]);
-
-  // ── AI full regeneration ──────────────────────────────────────────────────
-  const regenerate = useCallback(async () => {
-    setAiBusy(true);
-    try {
-      const pt  = [demo?.age && `${demo.age}yo`, demo?.sex].filter(Boolean).join(" ");
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "anthropic-dangerous-direct-browser-access":"true",
-        },
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:1000,
-          system:'You are an emergency physician writing an I-PASS shift handoff. Return ONLY valid JSON with keys: "patient_summary", "action_list", "contingency". No markdown. Action list uses [ ] format. Contingency uses numbered if/then statements.',
-          messages:[{
-            role:"user",
-            content:`Generate I-PASS handoff.
-Patient: ${pt || "unknown"}
-CC: ${cc?.text || "not recorded"}
-Vitals: HR ${vitals?.hr || "?"} BP ${vitals?.bp || "?"} SpO2 ${vitals?.spo2 || "?"}% T ${vitals?.temp || "?"}
-PMH: ${(pmhSelected || []).join(", ") || "none"}
-Meds: ${(medications || []).map(m => typeof m === "string" ? m : m.name || "").filter(Boolean).slice(0, 5).join(", ") || "none"}
-Disposition: ${disposition || "unknown"}${dispReason ? " — " + dispReason : ""}
-Consults: ${(consults || []).map(c => c.specialty || c.service || "").filter(Boolean).join(", ") || "none"}
-${mdmState?.workingDiagnosis ? "Working Dx: " + mdmState.workingDiagnosis : ""}`,
-          }],
-        }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      const raw    = data.content?.find(b => b.type === "text")?.text || "{}";
-      const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
-      if (parsed.patient_summary) setSummary(parsed.patient_summary);
-      if (parsed.action_list)     setActions(parsed.action_list);
-      if (parsed.contingency)     setContPlan(parsed.contingency);
-      onToast?.("Handoff regenerated", "success");
-    } catch (e) {
-      onToast?.("AI error — " + (e.message || "API"), "error");
-    } finally {
-      setAiBusy(false);
-    }
-  }, [demo, cc, vitals, pmhSelected, medications, disposition,
-      dispReason, consults, mdmState, onToast]);
-
-  const mark = key => setEdited(p => ({ ...p, [key]:true }));
-  const sevC = SEV[severity] || SEV.stable;
-  const editCount = Object.keys(edited).length;
-  const pt = [demo?.age && `${demo.age}yo`, demo?.sex].filter(Boolean).join(" ");
-  const mrn = registration?.mrn || demo?.mrn || "";
+  // ── Context summary ─────────────────────────────────────────────────────────
+  const hasContext = Boolean(cc?.text || mdmState?.narrative || demo?.age);
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:14,
-      fontFamily:"'DM Sans',sans-serif", color:T.txt }}>
+    <div style={{ fontFamily:"'DM Sans',sans-serif", color:T.txt }}>
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div style={{ display:"flex", alignItems:"center",
-        justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontFamily:"'Playfair Display',serif",
-            fontWeight:700, fontSize:15, color:T.blue }}>
-            I-PASS Shift Handoff
-          </span>
-          {ready && (
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:T.teal, letterSpacing:1.5, textTransform:"uppercase",
-              background:"rgba(0,229,192,0.1)",
-              border:"1px solid rgba(0,229,192,0.3)",
-              borderRadius:4, padding:"2px 8px" }}>
-              Auto-populated
-            </span>
-          )}
-          {editCount > 0 && (
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:T.gold, letterSpacing:1,
-              background:"rgba(245,200,66,0.1)",
-              border:"1px solid rgba(245,200,66,0.3)",
-              borderRadius:4, padding:"2px 7px" }}>
-              {editCount} field{editCount !== 1 ? "s" : ""} edited
-            </span>
-          )}
+        gap:10, marginBottom:12, flexWrap:"wrap" }}>
+        <div style={{ flex:1 }}>
+          <div style={{ fontFamily:"'Playfair Display',serif",
+            fontWeight:700, fontSize:16, color:T.teal }}>
+            Shift Handoff Generator
+          </div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+            color:T.txt4, marginTop:1 }}>
+            {format === "sbar" ? "SBAR framework" : "I-PASS framework"} · AI-assembled · Pending items tracker
+          </div>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-          {los && (
-            <div style={{ display:"flex", alignItems:"center", gap:5,
-              padding:"3px 10px", borderRadius:20,
-              background:`${losc}0d`, border:`1px solid ${losc}35` }}>
-              <div style={{ width:5, height:5, borderRadius:"50%", background:losc }} />
-              <span style={{ fontFamily:"'JetBrains Mono',monospace",
-                fontSize:9, fontWeight:700, color:losc }}>
-                LOS {los.display}
-              </span>
-            </div>
-          )}
-          <button onClick={regenerate} disabled={aiBusy}
-            style={{ display:"flex", alignItems:"center", gap:5,
-              fontFamily:"'DM Sans',sans-serif", fontWeight:600,
-              fontSize:11, padding:"5px 13px", borderRadius:8,
-              cursor:aiBusy ? "not-allowed" : "pointer",
-              border:"1px solid rgba(155,109,255,0.4)",
-              background:"rgba(155,109,255,0.1)",
-              color:aiBusy ? T.txt4 : T.purple }}>
-            <span>🧠</span>
-            {aiBusy ? "Generating..." : "AI Regenerate"}
-          </button>
-          <button onClick={copy}
-            style={{ display:"flex", alignItems:"center", gap:5,
-              fontFamily:"'DM Sans',sans-serif", fontWeight:600,
-              fontSize:11, padding:"5px 13px", borderRadius:8,
-              cursor:"pointer",
-              border:`1px solid ${copied ? T.green + "66" : "rgba(42,79,122,0.4)"}`,
-              background:copied ? "rgba(61,255,160,0.1)" : "rgba(42,79,122,0.12)",
-              color:copied ? T.green : T.txt4 }}>
-            {copied ? "✓ Copied" : "Copy Note"}
-          </button>
+
+        {/* Format toggle */}
+        <div style={{ display:"flex", gap:0, borderRadius:7, overflow:"hidden", border:"1px solid rgba(42,79,122,0.45)", flexShrink:0 }}>
+          {[["ipass","I-PASS"],["sbar","SBAR"]].map(([key, lbl]) => (
+            <button key={key}
+              onClick={() => { if (!result) setFormat(key); }}
+              title={result ? "Reset handoff to change format" : ""}
+              style={{ padding:"5px 14px", border:"none",
+                cursor: result ? "not-allowed" : "pointer",
+                fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                fontWeight: format===key ? 700 : 400,
+                background: format===key ? "rgba(0,229,192,0.14)" : "transparent",
+                color: format===key ? T.teal : T.txt4,
+                borderLeft: key==="sbar" ? "1px solid rgba(42,79,122,0.4)" : "none",
+                transition:"all .12s", opacity: result ? 0.55 : 1 }}>
+              {lbl}
+            </button>
+          ))}
         </div>
+
+        {result && (
+          <div style={{ display:"flex", gap:7 }}>
+            <button onClick={copyHandoff}
+              style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                fontSize:11, padding:"6px 14px", borderRadius:7,
+                cursor:"pointer", transition:"all .15s",
+                border:`1px solid ${copied ? T.green+"66" : "rgba(42,79,122,0.4)"}`,
+                background:copied ? "rgba(61,255,160,0.1)" : "rgba(42,79,122,0.15)",
+                color:copied ? T.green : T.txt4 }}>
+              {copied ? "✓ Copied" : "Copy Handoff"}
+            </button>
+            <button onClick={() => setResult(null)}
+              style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                padding:"6px 10px", borderRadius:7, cursor:"pointer",
+                border:"1px solid rgba(42,79,122,0.35)",
+                background:"transparent", color:T.txt4,
+                letterSpacing:1, textTransform:"uppercase" }}>
+              Reset
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Patient strip */}
-      {(pt || mrn || cc?.text) && (
-        <div style={{ display:"flex", alignItems:"center", gap:8,
-          padding:"6px 12px", borderRadius:8, flexWrap:"wrap",
-          background:"rgba(14,37,68,0.55)",
-          border:"1px solid rgba(26,53,85,0.45)" }}>
-          {pt  && <span style={{ fontFamily:"'JetBrains Mono',monospace",
-            fontSize:10, fontWeight:700, color:T.txt2 }}>{pt}</span>}
-          {mrn && <span style={{ fontFamily:"'JetBrains Mono',monospace",
-            fontSize:9, color:T.txt4 }}>MRN {mrn}</span>}
-          {cc?.text && <span style={{ fontFamily:"'DM Sans',sans-serif",
-            fontSize:11, color:T.txt3 }}>· {cc.text}</span>}
-          {disposition && (
-            <span style={{ marginLeft:"auto",
-              fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              letterSpacing:1, textTransform:"uppercase",
-              color:T.orange, background:"rgba(255,159,67,0.1)",
-              border:"1px solid rgba(255,159,67,0.3)",
-              borderRadius:4, padding:"1px 7px" }}>
-              {disposition}
-            </span>
+      {/* ── Setup panel (pre-generate) ───────────────────────────────────────── */}
+      {!result && (
+        <div>
+          {/* Section selector */}
+          <div style={{ padding:"9px 12px", borderRadius:8, marginBottom:10,
+            background:"rgba(8,22,40,0.55)", border:"1px solid rgba(42,79,122,0.35)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:7, flexWrap:"wrap" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                color:T.txt4, letterSpacing:"1.2px", textTransform:"uppercase", flexShrink:0 }}>
+                Include:
+              </span>
+              {SECTION_CHIPS.map(s => {
+                const on = sections[s.id];
+                return (
+                  <button key={s.id} onClick={() => toggleSec(s.id)}
+                    style={{ padding:"3px 10px", borderRadius:20, cursor:"pointer",
+                      border:`1px solid ${on ? "rgba(0,229,192,0.38)" : "rgba(42,79,122,0.4)"}`,
+                      background: on ? "rgba(0,229,192,0.09)" : "transparent",
+                      color: on ? T.teal : T.txt4,
+                      fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                      fontWeight: on ? 600 : 400, whiteSpace:"nowrap",
+                      transition:"all .12s" }}>
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Context strip */}
+          <div style={{ padding:"8px 12px", borderRadius:8, marginBottom:10,
+            background:"rgba(8,22,40,0.6)",
+            border:`1px solid ${hasContext ? "rgba(0,212,255,0.25)" : "rgba(42,79,122,0.3)"}` }}>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5,
+              color:hasContext ? T.cyan : T.txt4 }}>
+              {hasContext
+
+                ? "⚡ Encounter data loaded — CC, vitals, MDM, consults, and disposition will be included"
+                : "⚠ Limited encounter data — complete CC and MDM for a complete handoff"}
+            </div>
+          </div>
+
+          {/* Severity selector */}
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:T.txt4, letterSpacing:1.5, textTransform:"uppercase",
+              marginBottom:7 }}>I — Illness Severity</div>
+            <div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>
+              {SEVERITY_LEVELS.map(lv => (
+                <button key={lv.id} onClick={() => setSeverity(lv.id)}
+                  style={{ flex:"1 1 160px", padding:"10px 12px",
+                    borderRadius:9, cursor:"pointer", textAlign:"left",
+                    transition:"all .15s",
+                    border:`1px solid ${severity===lv.id ? lv.color+"66" : "rgba(26,53,85,0.4)"}`,
+                    background:severity===lv.id
+                      ? `linear-gradient(135deg,${lv.color}18,rgba(8,22,40,0.95))`
+                      : "rgba(8,22,40,0.55)" }}>
+                  <div style={{ display:"flex", alignItems:"center",
+                    gap:7, marginBottom:3 }}>
+                    <span style={{ fontSize:16 }}>{lv.icon}</span>
+                    <span style={{ fontFamily:"'Playfair Display',serif",
+                      fontWeight:700, fontSize:13,
+                      color:severity===lv.id ? lv.color : T.txt3 }}>
+                      {lv.label}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                    color:T.txt4 }}>{lv.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Pending items */}
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:T.txt4, letterSpacing:1.5, textTransform:"uppercase",
+              marginBottom:7 }}>A — Pending Actions & Results</div>
+
+            {pendingItems.map((item, i) => (
+              <PendingRow key={item.id} item={item}
+                onRemove={() => setPendingItems(p => p.filter(x => x.id !== item.id))} />
+            ))}
+
+            {/* Add new pending item */}
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:6 }}>
+              {/* Type selector */}
+              <div style={{ position:"relative", flexShrink:0 }}>
+                <select value={newPendType}
+                  onChange={e => setNewPendType(e.target.value)}
+                  style={{ padding:"7px 24px 7px 9px",
+                    background:"rgba(14,37,68,0.75)",
+                    border:"1px solid rgba(42,79,122,0.4)",
+                    borderRadius:7, outline:"none",
+                    appearance:"none", WebkitAppearance:"none",
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    color:PENDING_TYPES.find(t=>t.id===newPendType)?.color||T.txt,
+                    cursor:"pointer", letterSpacing:0.5 }}>
+                  {PENDING_TYPES.map(pt => (
+                    <option key={pt.id} value={pt.id}>{pt.label}</option>
+                  ))}
+                </select>
+                <span style={{ position:"absolute", right:8, top:"50%",
+                  transform:"translateY(-50%)", color:T.txt4,
+                  fontSize:8, pointerEvents:"none" }}>▼</span>
+              </div>
+              <input value={newPendText}
+                onChange={e => setNewPendText(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addPending()}
+                placeholder="e.g. troponin 3h, CT read, ortho callback..."
+                style={{ flex:2, minWidth:160, padding:"7px 10px",
+                  background:"rgba(14,37,68,0.7)",
+                  border:"1px solid rgba(42,79,122,0.4)",
+                  borderRadius:7, outline:"none",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                  color:T.txt }} />
+              <input value={newPendConting}
+                onChange={e => setNewPendConting(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addPending()}
+                placeholder="If positive → (optional)"
+                style={{ flex:1, minWidth:130, padding:"7px 10px",
+                  background:"rgba(14,37,68,0.7)",
+                  border:"1px solid rgba(42,79,122,0.35)",
+                  borderRadius:7, outline:"none",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                  color:T.txt4 }} />
+              <button onClick={addPending}
+                style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
+                  border:"1px solid rgba(0,212,255,0.4)",
+                  background:"rgba(0,212,255,0.08)", color:T.cyan,
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                  fontSize:12 }}>+ Add</button>
+            </div>
+          </div>
+
+          {/* Receiving provider */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:T.txt4, letterSpacing:1.3, textTransform:"uppercase",
+              marginBottom:4 }}>Receiving Provider (optional)</div>
+            <input value={receivingDoc}
+              onChange={e => setReceivingDoc(e.target.value)}
+              placeholder="Name of oncoming physician or PA"
+              style={{ width:"100%", padding:"7px 10px",
+                background:"rgba(14,37,68,0.7)",
+                border:"1px solid rgba(42,79,122,0.4)",
+                borderRadius:7, outline:"none",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                color:T.txt }} />
+          </div>
+
+          {/* Generate button */}
+          <button onClick={handleGenerate} disabled={busy}
+            style={{ width:"100%", padding:"11px 0", borderRadius:10,
+              cursor:busy ? "not-allowed" : "pointer",
+              border:`1px solid ${busy ? "rgba(42,79,122,0.3)" : "rgba(0,212,255,0.5)"}`,
+              background:busy
+                ? "rgba(42,79,122,0.15)"
+                : "linear-gradient(135deg,rgba(0,212,255,0.18),rgba(0,212,255,0.06))",
+              color:busy ? T.txt4 : T.cyan,
+              fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+              fontSize:13, transition:"all .15s" }}>
+            {busy ? "⚙ Assembling handoff..." : format === "sbar" ? "🤝 Generate SBAR Handoff" : "🤝 Generate I-PASS Handoff"}
+          </button>
+
+          {error && (
+            <div style={{ padding:"8px 12px", borderRadius:8, marginTop:8,
+              background:"rgba(255,107,107,0.08)",
+              border:"1px solid rgba(255,107,107,0.3)",
+              fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              color:T.coral }}>{error}</div>
           )}
         </div>
       )}
 
-      {/* ── I: Illness Severity ───────────────────────────────────────────── */}
-      <div style={{ padding:"12px 14px", borderRadius:10,
-        background:`${sevC.color}09`,
-        border:`1px solid ${sevC.color}35`,
-        borderLeft:`4px solid ${sevC.color}` }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-          <div style={{ width:24, height:24, borderRadius:"50%",
-            background:sevC.color, display:"flex",
-            alignItems:"center", justifyContent:"center",
-            fontFamily:"'Playfair Display',serif",
-            fontWeight:900, fontSize:12, color:"#050f1e" }}>I</div>
-          <span style={{ fontFamily:"'Playfair Display',serif",
-            fontWeight:700, fontSize:14, color:sevC.color }}>
-            Illness Severity
-          </span>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color:T.txt4, letterSpacing:1, marginLeft:4 }}>
-            Auto-derived · click to override
-          </span>
-        </div>
-        <div style={{ display:"flex", gap:7 }}>
-          {Object.entries(SEV).map(([key, cfg]) => (
-            <button key={key} onClick={() => setSeverity(key)}
-              style={{ flex:1, display:"flex", flexDirection:"column",
-                alignItems:"center", gap:5, padding:"10px 8px",
-                borderRadius:9, cursor:"pointer", transition:"all .15s",
-                border:`1px solid ${severity === key ? cfg.color + "77" : cfg.color + "22"}`,
-                background:severity === key ? `${cfg.color}18` : `${cfg.color}07` }}>
-              <span style={{ fontSize:20 }}>{cfg.emoji}</span>
-              <span style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700,
-                fontSize:12, color:severity === key ? cfg.color : T.txt4 }}>
-                {cfg.label}
-              </span>
-              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9,
-                color:severity === key ? cfg.color : T.txt4,
-                textAlign:"center", lineHeight:1.4 }}>
-                {cfg.desc}
-              </span>
-              {severity === key && (
-                <div style={{ height:2, width:20, borderRadius:1, background:cfg.color }} />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── P, A, S fields ────────────────────────────────────────────────── */}
-      {[
-        { key:"summary",  letter:"P", title:"Patient Summary",
-          color:T.purple, value:summary,  setter:setSummary,  rows:4,
-          hint:"Demographics · CC · key findings · plan" },
-        { key:"actions",  letter:"A", title:"Action List",
-          color:T.orange, value:actions,  setter:setActions,  rows:5,
-          hint:"[ ] pending task format" },
-        { key:"contPlan", letter:"S", title:"Situation Awareness & Contingency Plans",
-          color:T.coral,  value:contPlan, setter:setContPlan, rows:4,
-          hint:"Numbered if/then contingency statements" },
-      ].map(f => (
-        <div key={f.key} style={{ padding:"12px 14px", borderRadius:10,
-          background:`${f.color}07`,
-          border:`1px solid ${edited[f.key] ? f.color + "44" : f.color + "25"}`,
-          borderLeft:`4px solid ${f.color}` }}>
-          <div style={{ display:"flex", alignItems:"center",
-            justifyContent:"space-between", marginBottom:8 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <div style={{ width:24, height:24, borderRadius:"50%",
-                background:f.color, display:"flex",
-                alignItems:"center", justifyContent:"center",
-                fontFamily:"'Playfair Display',serif",
-                fontWeight:900, fontSize:12, color:"#050f1e",
-                flexShrink:0 }}>{f.letter}</div>
-              <div>
-                <div style={{ fontFamily:"'Playfair Display',serif",
-                  fontWeight:700, fontSize:13, color:f.color }}>
-                  {f.title}
-                </div>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace",
-                  fontSize:8, color:T.txt4, marginTop:1 }}>
-                  {f.hint}
-                  {edited[f.key] && (
-                    <span style={{ color:T.gold, marginLeft:8 }}>· edited</span>
-                  )}
-                </div>
+      {/* ── Output ──────────────────────────────────────────────────────────── */}
+      {result && (
+        <div>
+          {/* Provider/time badge */}
+          <div style={{ display:"flex", alignItems:"center", gap:10,
+            padding:"10px 14px", borderRadius:9, marginBottom:12,
+            background:`${sevConfig?.color||T.teal}10`,
+            border:`1px solid ${sevConfig?.color||T.teal}44` }}>
+            <span style={{ fontSize:20 }}>{format === "sbar" ? "📋" : sevConfig?.icon}</span>
+            <div>
+              <div style={{ fontFamily:"'Playfair Display',serif",
+                fontWeight:700, fontSize:14,
+                color:sevConfig?.color||T.teal }}>
+                {format === "sbar" ? "SBAR" : sevConfig?.label}
+              </div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif",
+                fontSize:10, color:T.txt4, marginTop:1 }}>
+                {providerName && `${providerName} → `}
+                {receivingDoc || "Oncoming provider"}
+                {" · "}
+                {new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", hour12:false })}
               </div>
             </div>
-            <button
-              onClick={() => polishField(f.key, f.value, f.setter)}
-              disabled={polishing[f.key] || !f.value.trim()}
-              style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                letterSpacing:1, textTransform:"uppercase",
-                padding:"3px 9px", borderRadius:6, cursor:"pointer",
-                border:`1px solid ${f.color}44`,
-                background:`${f.color}0d`,
-                color:polishing[f.key] ? T.txt4 : f.color }}>
-              {polishing[f.key] ? "✨ Polishing..." : "✨ Polish"}
-            </button>
           </div>
-          <textarea value={f.value}
-            onChange={e => { f.setter(e.target.value); mark(f.key); }}
-            rows={f.rows}
-            style={{ width:"100%", resize:"vertical",
-              background:"rgba(8,22,40,0.65)",
-              border:`1px solid ${edited[f.key]
-                ? f.color + "44" : "rgba(26,53,85,0.45)"}`,
-              borderRadius:8, padding:"9px 11px", outline:"none",
-              fontFamily:"'DM Sans',sans-serif", fontSize:12,
-              color:T.txt, lineHeight:1.65 }} />
-        </div>
-      ))}
 
-      {/* ── S: Synthesis ──────────────────────────────────────────────────── */}
-      <div style={{ padding:"12px 14px", borderRadius:10,
-        background:"rgba(0,229,192,0.06)",
-        border:`1px solid ${synthesis ? "rgba(0,229,192,0.4)" : "rgba(0,229,192,0.2)"}`,
-        borderLeft:"4px solid " + T.teal }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-          <div style={{ width:24, height:24, borderRadius:"50%",
-            background:T.teal, display:"flex",
-            alignItems:"center", justifyContent:"center",
-            fontFamily:"'Playfair Display',serif",
-            fontWeight:900, fontSize:12, color:"#050f1e" }}>S</div>
-          <span style={{ fontFamily:"'Playfair Display',serif",
-            fontWeight:700, fontSize:13, color:T.teal }}>
-            Synthesis by Receiver
-          </span>
-        </div>
-        <button onClick={() => setSynthesis(p => !p)}
-          style={{ display:"flex", alignItems:"center", gap:9,
-            cursor:"pointer", border:"none",
-            background:"transparent", textAlign:"left", width:"100%" }}>
-          <div style={{ width:20, height:20, borderRadius:5, flexShrink:0,
-            border:`2px solid ${synthesis ? T.teal : "rgba(42,79,122,0.5)"}`,
-            background:synthesis ? T.teal : "transparent",
-            display:"flex", alignItems:"center", justifyContent:"center" }}>
-            {synthesis && (
-              <span style={{ color:"#050f1e", fontSize:10, fontWeight:900 }}>✓</span>
-            )}
-          </div>
-          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-            color:synthesis ? T.teal : T.txt3 }}>
-            {synthesis
-              ? "Oncoming provider acknowledged receipt and read back key information"
-              : "Mark when oncoming provider has read back key information"}
-          </span>
-        </button>
-      </div>
-
-      {/* ── Footer / advance ──────────────────────────────────────────────── */}
-      <div style={{ display:"flex", justifyContent:"space-between",
-        alignItems:"center", flexWrap:"wrap", gap:10,
-        padding:"10px 14px", borderRadius:10,
-        background:synthesis ? "rgba(61,255,160,0.06)" : "rgba(14,37,68,0.5)",
-        border:`1px solid ${synthesis ? "rgba(61,255,160,0.3)" : "rgba(26,53,85,0.35)"}` }}>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-          color:synthesis ? T.green : T.txt4 }}>
-          {synthesis
-            ? "✓ Handoff complete — all I-PASS elements documented"
-            : "Complete I-PASS elements and confirm read-back to finish"}
-        </div>
-        <div style={{ display:"flex", gap:8 }}>
-          <button onClick={copy}
-            style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
-              fontSize:12, padding:"7px 16px", borderRadius:9,
-              cursor:"pointer",
-              border:`1px solid ${copied ? T.green + "66" : "rgba(42,79,122,0.45)"}`,
-              background:copied ? "rgba(61,255,160,0.1)" : "rgba(42,79,122,0.12)",
-              color:copied ? T.green : T.txt4 }}>
-            {copied ? "✓ Copied" : "Copy Note"}
-          </button>
-          {onAdvance && (
-            <button onClick={onAdvance}
-              style={{ padding:"8px 20px", borderRadius:9,
-                background:"linear-gradient(135deg,#00e5c0,#00b4d8)",
-                border:"none", color:"#050f1e",
-                fontFamily:"'DM Sans',sans-serif",
-                fontWeight:700, fontSize:13, cursor:"pointer" }}>
-              Discharge Instructions &#9654;
-            </button>
+          {/* ── SBAR output ── */}
+          {format === "sbar" && (
+            <>
+              <IPassCard letter="S" title="Situation"    color={T.coral}  content={result.situation}       />
+              <IPassCard letter="B" title="Background"   color={T.blue}   content={result.background}      />
+              <IPassCard letter="A" title="Assessment"   color={T.gold}   content={result.assessment}      />
+              <IPassCard letter="R" title="Recommendation" color={T.purple} content={result.recommendation} />
+              {result.synthesis_note && (
+                <div style={{ padding:"10px 14px", borderRadius:9,
+                  background:"rgba(0,229,192,0.07)",
+                  border:"1px solid rgba(0,229,192,0.3)" }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:T.teal, letterSpacing:1.5, textTransform:"uppercase",
+                    marginBottom:6 }}>Synthesis — Read Back</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13,
+                    color:T.txt, lineHeight:1.75, fontStyle:"italic" }}>
+                    "{result.synthesis_note}"
+                  </div>
+                </div>
+              )}
+            </>
           )}
+
+          {/* ── I-PASS output ── */}
+          {format === "ipass" && (
+            <>
+              <IPassCard letter="I" title="Illness Severity"
+                color={sevConfig?.color||T.teal}
+                content={result.i_illness_severity} />
+              <IPassCard letter="P" title="Patient Summary"
+                color={T.blue}
+                content={result.p_patient_summary} />
+              <IPassCard letter="A" title="Action List"
+                color={T.orange}
+                content={result.a_action_list} />
+              <IPassCard letter="S" title="Situation Awareness & Contingency Planning"
+                color={T.coral}
+                content={result.s_situation_awareness} />
+
+              {result.critical_values && (
+                <div style={{ padding:"8px 12px", borderRadius:8, marginBottom:9,
+                  background:"rgba(255,68,68,0.07)",
+                  border:"1px solid rgba(255,68,68,0.3)" }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:T.red, letterSpacing:1.5, textTransform:"uppercase",
+                    marginBottom:4 }}>Critical Values / Thresholds</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    color:T.txt2, lineHeight:1.65 }}>{result.critical_values}</div>
+                </div>
+              )}
+
+              {result.code_status && (
+                <div style={{ padding:"8px 12px", borderRadius:8, marginBottom:9,
+                  background:"rgba(42,79,122,0.1)",
+                  border:"1px solid rgba(42,79,122,0.3)" }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:T.txt4, letterSpacing:1.5, textTransform:"uppercase",
+                    marginBottom:4 }}>Code Status</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    color:T.txt2 }}>{result.code_status}</div>
+                </div>
+              )}
+
+              {result.synthesis_note && (
+                <div style={{ padding:"10px 14px", borderRadius:9,
+                  background:"rgba(0,212,255,0.07)",
+                  border:"1px solid rgba(0,212,255,0.3)" }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:T.cyan, letterSpacing:1.5, textTransform:"uppercase",
+                    marginBottom:6 }}>Synthesis — Read Back</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13,
+                    color:T.txt, lineHeight:1.75, fontStyle:"italic" }}>
+                    "{result.synthesis_note}"
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          <div style={{ textAlign:"center", marginTop:12 }}>
+            <button onClick={() => setResult(null)}
+              style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                fontSize:11, padding:"6px 18px", borderRadius:8,
+                cursor:"pointer",
+                border:"1px solid rgba(42,79,122,0.4)",
+                background:"transparent", color:T.txt4 }}>
+              ↺ New Handoff
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

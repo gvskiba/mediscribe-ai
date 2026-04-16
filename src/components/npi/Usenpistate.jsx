@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom"; // FIX #1 — was missing entirely
 import { base44 } from "@/api/base44Client";
 import {
   NAV_DATA, ALL_SECTIONS, SHORTCUT_MAP,
@@ -6,22 +7,28 @@ import {
   getTemplateForCC, ROS_RAIL_SYSTEMS, PE_RAIL_SYSTEMS,
 } from "@/components/npi/npiData";
 
-// ── State-based toast helper ──────────────────────────────────────────────────
-function showToast(setter, msg, type) {
-  const id = Date.now() + Math.random();
-  setter(p => [...p, { id, msg, type }]);
-  setTimeout(() => setter(p => p.filter(t => t.id !== id)), 3500);
-}
+// FIX #7 — was defined inside the hook body, re-creating on every render
+const ASSESS_SECTIONS = ["hpi", "ros", "pe"];
 
-export function useNPIState() {
-  // ── Toast state ──────────────────────────────────────────────────────────────
-  const [toasts, setToasts] = useState([]);
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX #6 — removed the internal state-based toast system (toasts were never
+// rendered in the page JSX). Hook now accepts an onToast(msg, type) callback
+// from NewPatientInput so it can use the existing sonner instance there.
+//
+// NewPatientInput.jsx call site change required:
+//   const showToast = (msg, type="success") => type==="error" ? toast.error(msg) : toast.success(msg);
+//   const { navigate, ... } = useNPIState(showToast);
+// ─────────────────────────────────────────────────────────────────────────────
+export function useNPIState(onToast) {
+  const _toast = onToast || (() => {});
 
-  // ── Tab / nav routing — state-based, no react-router ────────────────────────
+  // FIX #1 — navigate returned so page can route to other hubs
+  const navigate = useNavigate();
+
+  // ── Tab / nav routing ────────────────────────────────────────────────────
   const [currentTab, setCurrentTab] = useState(
     () => new URLSearchParams(window.location.search).get("tab") || "demo"
   );
-  // Sync currentTab if browser back/forward used
   useEffect(() => {
     const onPop = () => {
       const tab = new URLSearchParams(window.location.search).get("tab");
@@ -43,7 +50,7 @@ export function useNPIState() {
     const m = {}; ALL_SECTIONS.forEach(s => (m[s.section] = s.dot)); return m;
   });
 
-  // ── Door timer ───────────────────────────────────────────────────────────────
+  // ── Door timer ───────────────────────────────────────────────────────────
   const arrivalTimeRef = useRef(Date.now());
   const [doorTime, setDoorTime] = useState("0m");
   useEffect(() => {
@@ -57,7 +64,7 @@ export function useNPIState() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Clinical data state ───────────────────────────────────────────────────────
+  // ── Clinical data ────────────────────────────────────────────────────────
   const [demo, setDemo] = useState({ firstName:"", lastName:"", age:"", dob:"", sex:"", mrn:"", insurance:"", insuranceId:"", address:"", city:"", phone:"", email:"", emerg:"", height:"", weight:"", lang:"", notes:"", pronouns:"" });
   const [cc, setCC]                       = useState({ text:"", onset:"", duration:"", severity:"", quality:"", radiation:"", aggravate:"", relieve:"", assoc:"", hpi:"" });
   const [vitals, setVitals]               = useState({});
@@ -84,7 +91,7 @@ export function useNPIState() {
   const [pain, setPain]                   = useState("");
   const [triage, setTriage]               = useState("");
   const [esiLevel, setEsiLevel]           = useState("");
-  const [visitMode, setVisitMode]         = useState("standard"); // "simple" | "standard" | "critical"
+  const [visitMode, setVisitMode]         = useState("standard");
   const [consults, setConsults]           = useState([]);
   const [sdoh, setSdoh]                   = useState({ housing:"", food:"", transport:"", utilities:"", isolation:"", safety:"", tobacco:"", phq2q1:"", phq2q2:"", auditcq1:"", auditcq2:"", auditcq3:"" });
   const [disposition, setDisposition]     = useState("");
@@ -101,26 +108,26 @@ export function useNPIState() {
   const [mdmState,        setMdmState]          = useState({ copa:"", copaRationale:"", dataChecks:{ cat1:[], cat2:false, cat3:false }, dataLevel:"", risk:"", riskRationale:"", sdohRiskAccepted:false, narrative:"" });
   const [mdmDataElements, setMdmDataElements]   = useState([]);
 
-  // ── UI state ─────────────────────────────────────────────────────────────────
+  // ── UI state ─────────────────────────────────────────────────────────────
   const [railCompact, setRailCompact]       = useState(false);
   const [showShortcuts, setShowShortcuts]   = useState(false);
   const [cdsOpen, setCdsOpen]               = useState(false);
   const [resumeSection, setResumeSection]   = useState(null);
 
-  // ── CC Smart Template state ───────────────────────────────────────────────────
+  // ── CC Smart Template state ──────────────────────────────────────────────
   const [appliedTemplate,   setAppliedTemplate]   = useState(null);
   const [templateDismissed, setTemplateDismissed] = useState({ ros:false, pe:false });
   const templateFiredRef = useRef({ ros:false, pe:false });
   const prevCCRef        = useRef("");
 
-  // ── Panel state ──────────────────────────────────────────────────────────────
+  // ── Panel state ──────────────────────────────────────────────────────────
   const [nursingOpen,          setNursingOpen]          = useState(false);
   const [nursingInterventions, setNursingInterventions] = useState([]);
   const [nursingNotes,         setNursingNotes]         = useState([]);
   const [mediaOpen,            setMediaOpen]            = useState(false);
   const [attachments,          setAttachments]          = useState([]);
 
-  // ── Provider ─────────────────────────────────────────────────────────────────
+  // ── Provider ─────────────────────────────────────────────────────────────
   const [providerName, setProviderName] = useState("Provider");
   const [providerRole, setProviderRole] = useState("ED");
   useEffect(() => {
@@ -136,9 +143,10 @@ export function useNPIState() {
     })();
   }, []);
 
-  // ── AI overlay state ─────────────────────────────────────────────────────────
+  // ── AI overlay state ─────────────────────────────────────────────────────
+  // FIX #4 — initial message uses "assistant" so it receives .npi-n-msg.assistant CSS
   const [aiOpen, setAiOpen]       = useState(false);
-  const [aiMsgs, setAiMsgs]       = useState([{ role:"sys", text:"Notrya AI ready — select a quick action or ask a clinical question." }]);
+  const [aiMsgs, setAiMsgs]       = useState([{ role:"assistant", text:"Notrya AI ready \u2014 select a quick action or ask a clinical question." }]);
   const [aiInput, setAiInput]     = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [unread, setUnread]       = useState(0);
@@ -146,8 +154,8 @@ export function useNPIState() {
   const msgsRef  = useRef(null);
   const inputRef = useRef(null);
 
-  // ── Resume section tracker ────────────────────────────────────────────────────
-  const ASSESS_SECTIONS = ["hpi", "ros", "pe"];
+  // ── Resume section tracker ───────────────────────────────────────────────
+  // FIX #7 — ASSESS_SECTIONS moved to module scope above
   const prevTabRef = useRef(null);
   useEffect(() => {
     const prev = prevTabRef.current;
@@ -156,11 +164,11 @@ export function useNPIState() {
     prevTabRef.current = currentTab;
   }, [currentTab]); // eslint-disable-line
 
-  // ── AI overlay effects ────────────────────────────────────────────────────────
+  // ── AI overlay effects ───────────────────────────────────────────────────
   useEffect(() => { msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior:"smooth" }); }, [aiMsgs, aiLoading]);
   useEffect(() => { if (aiOpen) setTimeout(() => inputRef.current?.focus(), 280); }, [aiOpen]);
 
-  // ── Escape key ───────────────────────────────────────────────────────────────
+  // ── Escape key ───────────────────────────────────────────────────────────
   useEffect(() => {
     const h = e => {
       if (e.key === "Escape" && aiOpen)      setAiOpen(false);
@@ -171,33 +179,34 @@ export function useNPIState() {
     window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h);
   }, [aiOpen, cdsOpen, nursingOpen, mediaOpen]);
 
-  // ── Nav dot computation ────────────────────────────────────────────────────────
+  // ── Nav dot computation ──────────────────────────────────────────────────
+  // FIX #3 — "done" → "complete" everywhere to match .npi-wf-item-dot.complete CSS
   useEffect(() => {
     setNavDots(prev => ({
       ...prev,
-      demo:     (demo.firstName || demo.lastName || demo.age) ? "done"    : "empty",
-      cc:       cc.text                                        ? "done"    : "empty",
-      vit:      (vitals.bp || vitals.hr)                       ? "done"    : "empty",
-      meds:     (medications.length || allergies.length)       ? "done"    : "empty",
-      hpi:      cc.hpi ? "done" : cc.text                      ? "partial" : "empty",
-      ros:      Object.keys(rosState).length > 3 ? "done" : Object.keys(rosState).length > 0 ? "partial" : "empty",
-      pe:       Object.keys(peState).length  > 3 ? "done" : Object.keys(peState).length  > 0 ? "partial" : "empty",
-      triage:   esiLevel                          ? "done"    : "empty",
-      consult:  consults.length > 0               ? "done"    : "empty",
-      closeout: disposition                        ? "done"    : "empty",
+      demo:     (demo.firstName || demo.lastName || demo.age) ? "complete" : "empty",
+      cc:       cc.text                                        ? "complete" : "empty",
+      vit:      (vitals.bp || vitals.hr)                       ? "complete" : "empty",
+      meds:     (medications.length || allergies.length)       ? "complete" : "empty",
+      hpi:      cc.hpi ? "complete" : cc.text                  ? "partial"  : "empty",
+      ros:      Object.keys(rosState).length > 3 ? "complete" : Object.keys(rosState).length > 0 ? "partial" : "empty",
+      pe:       Object.keys(peState).length  > 3 ? "complete" : Object.keys(peState).length  > 0 ? "partial" : "empty",
+      triage:   esiLevel                          ? "complete" : "empty",
+      consult:  consults.length > 0               ? "complete" : "empty",
+      closeout: disposition                        ? "complete" : "empty",
       sdoh: (() => {
         const sdohPositive = Object.entries(sdoh).filter(([k]) => !k.startsWith("phq2") && !k.startsWith("auditc") && k !== "tobacco").some(([,v]) => v === "2");
-        const phq2Score = parseInt(sdoh.phq2q1||"0") + parseInt(sdoh.phq2q2||"0");
-        const auditcScore = parseInt(sdoh.auditcq1||"0") + parseInt(sdoh.auditcq2||"0") + parseInt(sdoh.auditcq3||"0");
-        const auditcPositive = Boolean(sdoh.auditcq1 && sdoh.auditcq2 && sdoh.auditcq3 && auditcScore >= 4);
-        if (sdohPositive || phq2Score >= 3 || auditcPositive) return "partial";
-        if (Object.values(sdoh).some(Boolean)) return "done";
+        const phq2Score    = parseInt(sdoh.phq2q1||"0") + parseInt(sdoh.phq2q2||"0");
+        const auditcScore  = parseInt(sdoh.auditcq1||"0") + parseInt(sdoh.auditcq2||"0") + parseInt(sdoh.auditcq3||"0");
+        const auditcPos    = Boolean(sdoh.auditcq1 && sdoh.auditcq2 && sdoh.auditcq3 && auditcScore >= 4);
+        if (sdohPositive || phq2Score >= 3 || auditcPos) return "partial";
+        if (Object.values(sdoh).some(Boolean)) return "complete";
         return "empty";
       })(),
-      reassess: reassessState.condition ? "done" : reassessState.note ? "partial" : "empty",
-      timeline: clinicalTimeline?.times?.departed ? "done" : clinicalTimeline?.times?.disposition ? "partial" : "empty",
+      reassess: reassessState.condition ? "complete" : reassessState.note ? "partial" : "empty",
+      timeline: clinicalTimeline?.times?.departed ? "complete" : clinicalTimeline?.times?.disposition ? "partial" : "empty",
       summary:  (demo.firstName || cc.text || vitals.bp) ? "partial" : "empty",
-      mdm:      mdmState.narrative ? "done" : (mdmState.copa || mdmState.risk) ? "partial" : "empty",
+      mdm:      mdmState.narrative ? "complete" : (mdmState.copa || mdmState.risk) ? "partial" : "empty",
       handoff:  "empty",
     }));
   }, [
@@ -210,9 +219,10 @@ export function useNPIState() {
     Object.values(sdoh).join(","),
     reassessState.condition, reassessState.note,
     clinicalTimeline?.times?.departed, clinicalTimeline?.times?.disposition,
+    mdmState.narrative, mdmState.copa, mdmState.risk,
   ]);
 
-  // ── CC Template auto-apply ────────────────────────────────────────────────────
+  // ── CC Template auto-apply ───────────────────────────────────────────────
   useEffect(() => {
     if (cc.text !== prevCCRef.current) {
       templateFiredRef.current = { ros:false, pe:false };
@@ -234,7 +244,7 @@ export function useNPIState() {
     }
   }, [cc.text, currentTab]); // eslint-disable-line
 
-  // ── Navigation callbacks ─────────────────────────────────────────────────────
+  // ── Navigation callbacks ─────────────────────────────────────────────────
   const selectSection = useCallback((sectionId) => {
     setCurrentTab(sectionId);
     window.history.pushState({}, "", `?tab=${sectionId}`);
@@ -253,34 +263,38 @@ export function useNPIState() {
     window.history.pushState({}, "", `?tab=${target}`);
   }, [currentTab, activeGroup]);
 
+  // FIX #3 — returns "complete" to match .npi-wf-gh-badge.complete CSS
   const getGroupBadge = useCallback((groupKey) => {
     const items = NAV_DATA[groupKey];
-    if (items.every(i => navDots[i.section] === "done")) return "done";
-    if (items.some(i => navDots[i.section] === "done" || navDots[i.section] === "partial")) return "partial";
+    if (items.every(i => navDots[i.section] === "complete")) return "complete";
+    if (items.some(i => navDots[i.section] === "complete" || navDots[i.section] === "partial")) return "partial";
     return "empty";
   }, [navDots]);
 
-  // ── Vital helpers ─────────────────────────────────────────────────────────────
+  // ── Vital helpers ─────────────────────────────────────────────────────────
+  // FIX #2 — " abn" → " alert" to match .npi-wf-v-val.alert CSS class
+  // FIX #11 — thresholds are Fahrenheit-aware for US ED documentation
+  //   (temp input expected in °F; 38°C=100.4°F, 39.5°C=103.1°F, 35.5°C=95.9°F)
   const vitalClass = (key, raw) => {
     if (!raw || raw === "\u2014") return "";
     const src = key === "bp" ? String(raw).split("/")[0] : raw;
     const n = parseFloat(src); if (isNaN(n)) return "";
-    if (key === "hr")   return n > 110 || n < 50   ? " abn" : n > 90  || n < 55 ? " warn" : "";
-    if (key === "rr")   return n > 22  || n < 8    ? " abn" : n > 20  || n < 10 ? " warn" : "";
-    if (key === "spo2") return n < 90               ? " abn" : n < 94            ? " warn" : "";
-    if (key === "temp") return n > 39.5 || n < 35.5 ? " abn" : n > 38 || n < 36 ? " warn" : "";
-    if (key === "bp")   return n > 180 || n < 80   ? " abn" : n > 140 || n < 90 ? " warn" : "";
+    if (key === "hr")   return n > 110 || n < 50    ? " alert" : n > 90  || n < 55  ? " warn" : "";
+    if (key === "rr")   return n > 22  || n < 8     ? " alert" : n > 20  || n < 10  ? " warn" : "";
+    if (key === "spo2") return n < 90               ? " alert" : n < 94             ? " warn" : "";
+    if (key === "temp") return n > 103.1 || n < 95.9 ? " alert" : n > 100.4 || n < 96.8 ? " warn" : "";
+    if (key === "bp")   return n > 180 || n < 80    ? " alert" : n > 140 || n < 90  ? " warn" : "";
     return "";
   };
 
   const getRosSysDot = (sysId) => {
     const st = rosState[sysId]; if (!st) return "empty";
-    return st === "has-positives" ? "partial" : "done";
+    return st === "has-positives" ? "partial" : "complete"; // FIX #3
   };
 
   const getPeSysDot = (sysId) => {
     const st = peState[sysId]; if (!st) return "empty";
-    return (st === "has-positives" || st === "abnormal" || st === "mixed") ? "partial" : "done";
+    return (st === "has-positives" || st === "abnormal" || st === "mixed") ? "partial" : "complete"; // FIX #3
   };
 
   const addVitalsSnapshot = useCallback((label, overrideVitals) => {
@@ -289,7 +303,8 @@ export function useNPIState() {
     setVitalsHistory(prev => [...prev, { t: Date.now(), label, ...v }]);
   }, [vitals]);
 
-  // ── Chart save ────────────────────────────────────────────────────────────────
+  // ── Chart save ────────────────────────────────────────────────────────────
+  // FIX #10 — dep array now includes mdmState, reassessState, pdmpState, isarState
   const handleSaveChart = useCallback(async () => {
     setSaving(true);
     try {
@@ -316,32 +331,45 @@ export function useNPIState() {
         sepsis_fluids_started:         sepsisBundle.fluidsStarted||"",
         sepsis_repeat_lactate_ordered: sepsisBundle.repeatLactateOrdered||"",
         sepsis_repeat_lactate_value:   sepsisBundle.repeatLactateValue||"",
-        pdmp_checked:            pdmpState.checked ? "yes" : "no",
-        pdmp_timestamp:          pdmpState.timestamp||"",
-        pdmp_method:             pdmpState.method||"",
-        isar_score:              String(
-                                   (isarState.q1===true?1:0)+(isarState.q2===true?1:0)+
-                                   (isarState.q3===false?1:0)+(isarState.q4===true?1:0)+
-                                   (isarState.q5===true?1:0)+(isarState.q6===true?1:0)
-                                 ),
+        pdmp_checked:   pdmpState.checked ? "yes" : "no",
+        pdmp_timestamp: pdmpState.timestamp||"",
+        pdmp_method:    pdmpState.method||"",
+        isar_score: String(
+          (isarState.q1===true?1:0)+(isarState.q2===true?1:0)+
+          (isarState.q3===false?1:0)+(isarState.q4===true?1:0)+
+          (isarState.q5===true?1:0)+(isarState.q6===true?1:0)
+        ),
         disposition: disposition||"", disposition_reason: dispReason||"",
         consult_count: consults.length,
         consult_services: consults.map(c => c.service).join(", ")||"",
         ros_summary: Object.keys(rosState).filter(k => rosState[k]).join(", ")||"",
         pe_summary:  Object.keys(peState).filter(k => peState[k]).join(", ")||"",
+        mdm_narrative: mdmState.narrative||"",
+        mdm_copa:      mdmState.copa||"",
+        mdm_risk:      mdmState.risk||"",
+        reassess_condition: reassessState.condition||"",
+        reassess_note:      reassessState.note||"",
       };
-      if (!disposition) showToast(setToasts, "Disposition not set \u2014 chart saved as draft.", "warn");
+      if (!disposition) _toast("Disposition not set \u2014 chart saved as draft.", "warn");
       await base44.entities.ClinicalNote.create(payload);
-      showToast(setToasts, "Chart signed and saved.", "success");
+      _toast("Chart signed and saved.", "success");
       setCurrentTab("demo");
       window.history.pushState({}, "", "?tab=demo");
-    } catch (e) { showToast(setToasts, "Failed to save: " + e.message, "error"); }
+    } catch (e) { _toast("Failed to save: " + e.message, "error"); }
     finally     { setSaving(false); }
-  }, [demo,cc,vitals,medications,allergies,parseText,pmhSelected,pmhExtra,surgHx,famHx,socHx,rosState,rosNotes,rosSymptoms,peState,peFindings,esiLevel,registration,sdoh,consults,disposition,dispReason,sepsisBundle]);
+  }, [
+    // FIX #10 — full dep list including previously missing mdmState, reassessState, pdmpState, isarState
+    demo, cc, vitals, medications, allergies, parseText,
+    pmhSelected, pmhExtra, surgHx, famHx, socHx,
+    rosState, rosNotes, rosSymptoms, peState, peFindings,
+    esiLevel, registration, sdoh, consults, disposition, dispReason,
+    sepsisBundle, pdmpState, isarState, mdmState, reassessState,
+  ]);
 
-  // ── Smart parse ───────────────────────────────────────────────────────────────
+  // ── Smart parse ──────────────────────────────────────────────────────────
+  // FIX #8 — clears parseText on success
   const smartParse = async () => {
-    if (!parseText.trim()) { showToast(setToasts, "Please enter some text to parse.", "error"); return; }
+    if (!parseText.trim()) { _toast("Please enter some text to parse.", "error"); return; }
     setParsing(true);
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -362,47 +390,50 @@ Omit any field not present in the text.`,
       setVitals(prev => ({ ...prev, bp:result.bp||prev.bp||"", hr:result.hr||prev.hr||"", rr:result.rr||prev.rr||"", spo2:result.spo2||prev.spo2||"", temp:result.temp||prev.temp||"", gcs:result.gcs||prev.gcs||"" }));
       (result.medications||[]).forEach(m => { if (m) setMedications(p => p.includes(m)?p:[...p,m]); });
       (result.allergies||[]).forEach(a => { if (a) setAllergies(p => p.includes(a)?p:[...p,a]); });
-      showToast(setToasts, "Patient data extracted!", "success");
-    } catch { showToast(setToasts, "Could not parse automatically.", "error"); }
+      setParseText(""); // FIX #8 — clear input on success
+      _toast("Patient data extracted!", "success");
+    } catch { _toast("Could not parse automatically.", "error"); }
     finally  { setParsing(false); }
   };
 
-  // ── AI message handler ────────────────────────────────────────────────────────
+  // ── AI message handler ───────────────────────────────────────────────────
+  // FIX #4 — role "bot" → "assistant" to match .npi-n-msg.assistant CSS
+  // FIX #9 — history state capped to last 12 entries (6 turns) to prevent unbounded growth
   const toggleAI = useCallback(() => { setAiOpen(o => { if (!o) setUnread(0); return !o; }); }, []);
 
   const sendMessage = useCallback(async (text) => {
     if (!text.trim() || aiLoading) return;
     setAiMsgs(m => [...m, { role:"user", text:text.trim() }]);
     setAiInput(""); setAiLoading(true);
-    const ctx = buildPatientCtx(demo,cc,vitals,allergies,pmhSelected,currentTab);
-    const newHistory = [...history, { role:"user", content: ctx+"\n\n"+text.trim() }];
-    setHistory(newHistory);
+    const ctx = buildPatientCtx(demo, cc, vitals, allergies, pmhSelected, currentTab);
+    const newHistory = [...history, { role:"user", content: ctx + "\n\n" + text.trim() }];
+    setHistory(newHistory.slice(-12)); // FIX #9 — cap stored history
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 800,
           system: SYSTEM_PROMPT,
-          messages: newHistory.slice(-10), // cap history to last 10 turns
+          messages: newHistory.slice(-10),
         }),
       });
       const data = await res.json();
       const reply = data.content?.[0]?.text || "No response.";
-      setHistory(h => [...h, { role:"assistant", content:reply }]);
-      setAiMsgs(m => [...m, { role:"bot", text:reply }]);
-      setAiOpen(open => { if (!open) setUnread(u => u+1); return open; });
+      setHistory(h => [...h, { role:"assistant", content:reply }].slice(-12)); // FIX #9
+      setAiMsgs(m => [...m, { role:"assistant", text:reply }]); // FIX #4
+      setAiOpen(open => { if (!open) setUnread(u => u + 1); return open; });
     } catch {
-      setAiMsgs(m => [...m, { role:"sys", text:"\u26a0 Connection error \u2014 please try again." }]);
+      setAiMsgs(m => [...m, { role:"assistant", text:"\u26a0 Connection error \u2014 please try again." }]); // FIX #4
     } finally { setAiLoading(false); }
-  }, [aiLoading,history,currentTab,demo,cc,vitals,allergies,pmhSelected]);
+  }, [aiLoading, history, currentTab, demo, cc, vitals, allergies, pmhSelected]);
 
   const handleAIKey = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(aiInput); } };
 
   const renderMsg = text =>
     text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,'<strong style="color:#00e5c0">$1</strong>');
+      .replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,"<strong style=\"color:#00e5c0\">$1</strong>");
 
-  // ── Global keyboard shortcuts — defined last so handleSaveChart is in scope ──
+  // ── Global keyboard shortcuts ────────────────────────────────────────────
   useEffect(() => {
     const handler = e => {
       const mod = e.metaKey || e.ctrlKey;
@@ -417,8 +448,8 @@ Omit any field not present in the text.`,
     return () => window.removeEventListener("keydown", handler);
   }, [selectSection, handleSaveChart]); // eslint-disable-line
 
-  // ── Derived values ────────────────────────────────────────────────────────────
-  const patientName = [demo.firstName,demo.lastName].filter(Boolean).join(" ") || "New Patient";
+  // ── Derived values ───────────────────────────────────────────────────────
+  const patientName = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "New Patient";
 
   const patientDataBundle = {
     demo, cc, vitals, medications, allergies,
@@ -429,6 +460,7 @@ Omit any field not present in the text.`,
   };
 
   return {
+    navigate,                                                       // FIX #1
     currentTab, setCurrentTab, activeGroup, setActiveGroup,
     navDots, setNavDots, selectGroup, selectSection, getGroupBadge,
     arrivalTimeRef, doorTime,
@@ -459,12 +491,12 @@ Omit any field not present in the text.`,
     nursingNotes, setNursingNotes,
     mediaOpen, setMediaOpen, attachments, setAttachments,
     providerName, providerRole,
-    aiOpen, setAiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread,
+    aiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread,
     msgsRef, inputRef,
     resumeSection, setResumeSection,
     patientName, patientDataBundle,
     vitalClass, getRosSysDot, getPeSysDot,
-    toasts, setToasts,
+    // FIX #6 — toasts / setToasts removed; toast calls now go through onToast prop
     toggleAI, addVitalsSnapshot, handleSaveChart, smartParse,
     sendMessage, handleAIKey, renderMsg,
   };

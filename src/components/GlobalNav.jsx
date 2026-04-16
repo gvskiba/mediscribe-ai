@@ -470,12 +470,6 @@ export default function GlobalNav({ alerts = 0 }) {
           />
         </div>
 
-        {/* ⌘K badge */}
-        <button className={`${PREFIX}-kbd-badge`} onClick={openPalette} title="Command palette (⌘K)">
-          <span>Jump to</span>
-          <span className={`${PREFIX}-kbd-key`}>⌘K</span>
-        </button>
-
         {/* Hub picker toggle */}
         <button
           className={`${PREFIX}-hub-trigger`}

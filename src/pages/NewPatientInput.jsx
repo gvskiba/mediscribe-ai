@@ -53,7 +53,6 @@ import MediaAttachmentPanel  from "@/components/npi/MediaAttachmentPanel";
 import EDProcedureNotes        from "@/pages/EDProcedureNotes";
 import MedicationReferencePage from "@/pages/MedicationReference";
 import ERPlanBuilder           from "@/pages/ERPlanBuilder";
-import ResultsViewer           from "@/pages/ResultsViewer";
 import ERxHub                  from "@/pages/ERx";
 
 // TrackBoard session bridge — stubs (TrackBoardView not available in this build)
@@ -448,7 +447,7 @@ export default function NewPatientInput() {
       case "discharge":  return <DischargeInstructionsTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} disposition={disposition} dispReason={dispReason} dispTime={dispTime} consults={consults} sdoh={sdoh} esiLevel={esiLevel} registration={registration} providerName={providerName} doorTime={doorTime} />;
       case "erx":        return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} /></div>;
       case "orders":     return <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}><OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} patientWeight={demo.weight||vitals.weight||""} /></div>;
-      case "results":    return <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />;
+      case "results":    return <div style={{ padding:"40px 24px", textAlign:"center", color:"var(--npi-txt4)", fontFamily:"'DM Sans',sans-serif", fontSize:13 }}>Results viewer not available.</div>;
       case "autocoder":  return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} onAdvance={() => selectSection("mdm")} />;
       case "mdm": return (
         <div style={{ display:"flex", flexDirection:"column", gap:0 }}>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useNPIState } from "@/components/npi/useNPIState";
@@ -41,6 +41,8 @@ import SystemProgressHeader   from "@/components/npi/SystemProgressHeader";
 import TemplateSuggestionsBar from "@/components/npi/TemplateSuggestionsBar";
 import NursingPanel           from "@/components/npi/NursingPanel";
 import MediaAttachmentPanel   from "@/components/npi/MediaAttachmentPanel";
+import SignCloseChecklist     from "@/components/npi/SignCloseChecklist";
+import CommunicationLog       from "@/components/npi/CommunicationLog";
 
 // ── Embedded page components ──────────────────────────────────────────────────
 import EDProcedureNotes        from "@/pages/EDProcedureNotes";
@@ -99,7 +101,7 @@ export default function NewPatientInput() {
     nursingNotes, setNursingNotes,
     mediaOpen, setMediaOpen, attachments, setAttachments,
     providerName, providerRole,
-    aiOpen, setAiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread, msgsRef, inputRef,
+    aiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread, msgsRef, inputRef,
     resumeSection, setResumeSection,
     patientName, patientDataBundle,
     vitalClass, getRosSysDot, getPeSysDot,
@@ -113,6 +115,12 @@ export default function NewPatientInput() {
     _introDismissed = true;
     setShowOnboarding(false);
   }, []);
+
+  // ── Sign & Close checklist ──────────────────────────────────────────────────
+  const [showSignChecklist,    setShowSignChecklist]    = useState(false);
+
+  // ── Communication events log ────────────────────────────────────────────────
+  const [communicationEvents,  setCommunicationEvents]  = useState([]);
 
   // ── renderContent ──────────────────────────────────────────────────────────
   const renderContent = () => {
@@ -449,6 +457,14 @@ export default function NewPatientInput() {
         <HandoffTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} sdoh={sdoh} consults={consults} disposition={disposition} dispReason={dispReason} onAdvance={() => selectSection("discharge")} />
       );
 
+      case "comms": return (
+        <CommunicationLog
+          demo={demo} cc={cc} providerName={providerName}
+          events={communicationEvents}
+          onEventsChange={setCommunicationEvents}
+        />
+      );
+
       case "discharge": return (
         <DischargeInstructionsTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} disposition={disposition} dispReason={dispReason} dispTime={dispTime} consults={consults} sdoh={sdoh} esiLevel={esiLevel} registration={registration} providerName={providerName} doorTime={doorTime} />
       );
@@ -596,7 +612,7 @@ export default function NewPatientInput() {
             <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>+ Order</button>
             <button className="npi-btn-ghost" onClick={() => selectSection("consult")} title="Request consultation">&#x1F465; Consult</button>
             <button className="npi-btn-coral" onClick={() => selectSection("discharge")}>&#x1F6AA; Discharge</button>
-            <button className="npi-btn-primary" onClick={handleSaveChart}>&#x270D; Sign &amp; Save</button>
+            <button className="npi-btn-primary" onClick={() => setShowSignChecklist(true)}>&#x270D; Sign &amp; Save</button>
           </div>
         </div>
       </header>
@@ -891,6 +907,23 @@ export default function NewPatientInput() {
           );
         })}
       </aside>
+
+      {/* ── Sign & Close checklist ── */}
+      <SignCloseChecklist
+        open={showSignChecklist}
+        onClose={() => setShowSignChecklist(false)}
+        onConfirm={() => { setShowSignChecklist(false); handleSaveChart(); }}
+        onNavigate={section => { setShowSignChecklist(false); selectSection(section); }}
+        demo={demo} cc={cc} vitals={vitals}
+        medications={medications} allergies={allergies}
+        pmhSelected={pmhSelected}
+        rosState={rosState} peState={peState}
+        disposition={disposition} dispReason={dispReason}
+        sdoh={sdoh} esiLevel={esiLevel}
+        mdmState={mdmState} mdmDataElements={mdmDataElements}
+        sepsisBundle={sepsisBundle} avpu={avpu}
+        communicationEvents={communicationEvents}
+      />
 
       {/* ── Onboarding overlay (FIX #5 — no sessionStorage) ── */}
       {showOnboarding && (

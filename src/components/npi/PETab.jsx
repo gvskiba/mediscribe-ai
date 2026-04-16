@@ -575,7 +575,26 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
         </div>
 
         {/* ── BODY ─────────────────────────────────────────────────────── */}
-        <div className="pe-body">
+        <div className="pe-body" style={{ gridTemplateColumns: docMode === 'visual' ? '1fr' : '160px 1fr' }}>
+
+          {/* ── SIDEBAR ──────────────────────────────────────────────── */}
+          {docMode !== 'visual' && (
+            <div className="pe-sidebar">
+              {visiblePeSys.map(sys => {
+                const status    = getSysStatus(examData[sys.id]?.findings || {});
+                const globalIdx = PE_SYSTEMS.findIndex(s => s.id === sys.id);
+                return (
+                  <SysItem
+                    key={sys.id}
+                    sys={sys}
+                    isActive={globalIdx === activeSystemIdx}
+                    status={status}
+                    onClick={() => { setActiveSystemIdx(globalIdx); setActiveFindingIdx(-1); focus(); }}
+                  />
+                );
+              })}
+            </div>
+          )}
 
           {/* ── VISUAL MODE ──────────────────────────────────────────────── */}
           {docMode === 'visual' && (
@@ -729,7 +748,7 @@ const PE_CSS = `
 .pe-btn-clear-all:hover{border-color:rgba(255,107,107,.4);color:var(--npi-coral)}
 
 /* Body layout */
-.pe-body{display:grid;grid-template-columns:1fr;flex:1;overflow:hidden;min-height:0}
+.pe-body{display:grid;grid-template-columns:160px 1fr;flex:1;overflow:hidden;min-height:0}
 
 /* Sidebar */
 .pe-sidebar{border-right:1px solid var(--npi-bd);overflow-y:auto;background:var(--npi-panel);scrollbar-width:thin;scrollbar-color:#1a3555 transparent}

@@ -195,10 +195,17 @@ export default function ResultsViewer({ patientName, patientMrn, patientAge, pat
   })();
 
   // ── AI interpret ──────────────────────────────────────────────────────────
+  // Runs whenever labValues has content OR pasteText has content.
+  // Entered lab values are wired in directly — no paste required.
+  // pasteText is supplementary: imaging reports, extra context, free-text notes.
+  const hasLabValues  = Object.values(labValues).some(v => v);
+  const canInterpret  = hasLabValues || pasteText.trim().length > 0;
+
   const runInterpret = useCallback(async () => {
-    if (!pasteText.trim() && Object.values(labValues).every(v => !v)) return;
+    if (!canInterpret) return;
     setAiLoading(true); setAiResult("");
     try {
+      // ── Build structured lab summary from entered values ──────────────────
       const labSummary = LAB_PANELS.flatMap(p =>
         p.fields.filter(f => labValues[f.id]).map(f => {
           const fl = getFlag(labValues[f.id], f);
@@ -206,19 +213,50 @@ export default function ResultsViewer({ patientName, patientMrn, patientAge, pat
         })
       ).join("\n");
 
+      // ── Computed values worth surfacing explicitly ─────────────────────────
+      const computed = [];
+      if (labValues.na && labValues.cl && labValues.co2) {
+        const ag = parseFloat(labValues.na) - (parseFloat(labValues.cl) + parseFloat(labValues.co2));
+        if (!isNaN(ag)) {
+          computed.push(`Anion Gap: ${ag.toFixed(1)} mEq/L [${ag > 12 ? "ELEVATED" : "NORMAL"}]`);
+          if (labValues.alb) {
+            const corr = ag + 2.5 * (4.0 - parseFloat(labValues.alb));
+            if (!isNaN(corr)) computed.push(`Corrected Anion Gap: ${corr.toFixed(1)} mEq/L`);
+          }
+        }
+      }
+      if (labValues.cr && patientAge) {
+        const cr  = parseFloat(labValues.cr);
+        const age = parseInt(patientAge);
+        if (!isNaN(cr) && !isNaN(age) && cr > 0) {
+          const f = patientSex?.toLowerCase().startsWith("f") ? 1.012 : 1.0;
+          const k = patientSex?.toLowerCase().startsWith("f") ? 0.7   : 0.9;
+          const a = patientSex?.toLowerCase().startsWith("f") ? -0.241 : -0.302;
+          const r = cr / k;
+          const egfr = Math.round(142 * Math.pow(Math.min(r,1), a) * Math.pow(Math.max(r,1), -1.200) * Math.pow(0.9938, age) * f);
+          computed.push(`eGFR (CKD-EPI): ${egfr} mL/min/1.73m²${egfr < 60 ? " [LOW]" : egfr < 30 ? " [CRITICAL]" : ""}`);
+        }
+      }
+
+      // ── Patient context ────────────────────────────────────────────────────
       const ctx = [
-        patientAge && `Age: ${patientAge}`,
-        patientSex && `Sex: ${patientSex}`,
-        chiefComplaint && `CC: ${chiefComplaint}`,
-        allergies.length && `Allergies: ${allergies.join(", ")}`,
-        vitals.bp && `BP: ${vitals.bp}`,
-        vitals.hr && `HR: ${vitals.hr}`,
+        patientAge        && `Age: ${patientAge}`,
+        patientSex        && `Sex: ${patientSex}`,
+        chiefComplaint    && `CC: ${chiefComplaint}`,
+        allergies.length  && `Allergies: ${allergies.join(", ")}`,
+        vitals.bp         && `BP: ${vitals.bp}`,
+        vitals.hr         && `HR: ${vitals.hr}`,
+        vitals.rr         && `RR: ${vitals.rr}`,
+        vitals.spo2       && `SpO2: ${vitals.spo2}%`,
+        vitals.temp       && `Temp: ${vitals.temp}\u00b0F`,
       ].filter(Boolean).join(" | ");
 
+      // ── Assemble prompt ────────────────────────────────────────────────────
       const prompt = [
-        ctx && `Patient context: ${ctx}`,
-        labSummary && `Entered lab values:\n${labSummary}`,
-        pasteText.trim() && `Raw result text:\n${pasteText.trim()}`,
+        ctx                    && `Patient context: ${ctx}`,
+        labSummary             && `Entered lab values:\n${labSummary}`,
+        computed.length        && `Computed values:\n${computed.join("\n")}`,
+        pasteText.trim()       && `Additional result text (imaging, notes, raw EMR output):\n${pasteText.trim()}`,
       ].filter(Boolean).join("\n\n");
 
       const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -234,7 +272,8 @@ Return a structured interpretation with these sections:
 **CLINICAL CORRELATION** — brief interpretation in context of the chief complaint and patient demographics
 **SUGGESTED FOLLOW-UP** — 2-4 concrete next steps based on the results
 
-Be direct and clinically precise. Use ED-appropriate language. Flag any values that are immediately life-threatening.`,
+Be direct and clinically precise. Use ED-appropriate language. Flag any values that are immediately life-threatening.
+If computed values are provided (anion gap, eGFR), incorporate them into your interpretation.`,
           messages:[{ role:"user", content:prompt }],
         }),
       });
@@ -243,12 +282,12 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
     } catch {
       setAiResult("\u26a0 Interpretation failed — check connection and try again.");
     } finally { setAiLoading(false); }
-  }, [pasteText, labValues, patientAge, patientSex, chiefComplaint, allergies, vitals]);
+  }, [pasteText, labValues, patientAge, patientSex, chiefComplaint, allergies, vitals, canInterpret]);
 
   // ── Render AI result as formatted HTML ────────────────────────────────────
   const renderAI = txt =>
     txt.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/\*\*(.*?)\*\*/g, `<strong style="color:${T.teal};font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase">$1</strong>`)
+      .replace(/\*\*(.*?)\*\*/g, `<strong style="color:${T.teal};font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase">$1</strong>`)
       .replace(/\n/g,"<br>");
 
   const currentPanel = LAB_PANELS.find(p => p.id === activePanel);
@@ -270,7 +309,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
           {patientName && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.blue, background:"rgba(59,158,255,.1)", border:"1px solid rgba(59,158,255,.25)", borderRadius:4, padding:"2px 8px" }}>{patientName}</span>}
           {patientMrn && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4, background:T.up, border:`1px solid ${T.bd}`, borderRadius:4, padding:"2px 8px" }}>MRN {patientMrn}</span>}
           {criticalCount > 0 && (
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:T.coral, background:"rgba(255,107,107,.1)", border:"1px solid rgba(255,107,107,.4)", borderRadius:4, padding:"2px 10px", letterSpacing:.5 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:T.coral, background:"rgba(255,107,107,.1)", border:"1px solid rgba(255,107,107,.4)", borderRadius:4, padding:"2px 10px", letterSpacing:"0.5px" }}>
               \u26a0 {criticalCount} CRITICAL VALUE{criticalCount > 1 ? "S" : ""}
             </span>
           )}
@@ -321,7 +360,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
                   const clr = {};
                   currentPanel.fields.forEach(f => { clr[f.id] = ""; });
                   setLabValues(prev => ({ ...prev, ...clr }));
-                }} style={{ marginLeft:"auto", padding:"3px 10px", borderRadius:5, border:`1px solid ${T.bd}`, background:"transparent", color:T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:9, cursor:"pointer", letterSpacing:.5 }}>
+                }} style={{ marginLeft:"auto", padding:"3px 10px", borderRadius:5, border:`1px solid ${T.bd}`, background:"transparent", color:T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:9, cursor:"pointer", letterSpacing:"0.5px" }}>
                   CLEAR PANEL
                 </button>
               )}
@@ -350,7 +389,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
                     {(f.lo !== null || f.hi !== null) && (
                       <div style={{ marginTop:5, fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>
                         Ref: {f.lo ?? "—"} – {f.hi ?? "—"}
-                        {flag === "critical" && <span style={{ marginLeft:6, color:T.coral, fontWeight:700, letterSpacing:.5 }}>CRITICAL</span>}
+                        {flag === "critical" && <span style={{ marginLeft:6, color:T.coral, fontWeight:700, letterSpacing:"0.5px" }}>CRITICAL</span>}
                         {flag === "abnormal" && <span style={{ marginLeft:6, color:T.gold, fontWeight:600 }}>ABN</span>}
                       </div>
                     )}
@@ -486,7 +525,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
               )}
               <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
                 <button onClick={() => setImaging(prev => prev.filter(x => x.id !== img.id))}
-                  style={{ padding:"3px 10px", borderRadius:5, border:`1px solid ${T.bd}`, background:"transparent", color:T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:9, cursor:"pointer", letterSpacing:.5 }}>
+                  style={{ padding:"3px 10px", borderRadius:5, border:`1px solid ${T.bd}`, background:"transparent", color:T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:9, cursor:"pointer", letterSpacing:"0.5px" }}>
                   REMOVE
                 </button>
               </div>
@@ -568,15 +607,15 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
                     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:700, color: cx.organism ? (cx.organism.toLowerCase().includes("no growth")||cx.organism.toLowerCase().includes("negative") ? T.teal : T.orange) : T.txt4 }}>
                       {cx.organism || "Pending"}
                     </span>
-                    {cx.finalized && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.teal, background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.25)", borderRadius:3, padding:"1px 6px", letterSpacing:.5 }}>FINAL</span>}
-                    {!cx.finalized && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.gold, background:"rgba(245,200,66,.08)", border:"1px solid rgba(245,200,66,.25)", borderRadius:3, padding:"1px 6px", letterSpacing:.5 }}>PRELIM</span>}
+                    {cx.finalized && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.teal, background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.25)", borderRadius:3, padding:"1px 6px", letterSpacing:"0.5px" }}>FINAL</span>}
+                    {!cx.finalized && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.gold, background:"rgba(245,200,66,.08)", border:"1px solid rgba(245,200,66,.25)", borderRadius:3, padding:"1px 6px", letterSpacing:"0.5px" }}>PRELIM</span>}
                   </div>
                   {cx.sensitivities && (
                     <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2, lineHeight:1.6, whiteSpace:"pre-wrap" }}>{cx.sensitivities}</div>
                   )}
                 </div>
                 <button onClick={() => setCultures(prev => prev.filter(x => x.id !== cx.id))}
-                  style={{ padding:"3px 10px", borderRadius:5, border:`1px solid ${T.bd}`, background:"transparent", color:T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:9, cursor:"pointer", letterSpacing:.5, flexShrink:0 }}>
+                  style={{ padding:"3px 10px", borderRadius:5, border:`1px solid ${T.bd}`, background:"transparent", color:T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:9, cursor:"pointer", letterSpacing:"0.5px", flexShrink:0 }}>
                   REMOVE
                 </button>
               </div>
@@ -589,41 +628,84 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
       {tab === "interpret" && (
         <div style={{ padding:"16px 0", display:"flex", flexDirection:"column", gap:14, overflowY:"auto" }}>
 
+          {/* Auto-interpret shortcut — shown when lab values are entered */}
+          {hasLabValues && !aiResult && !aiLoading && (
+            <div style={{ padding:"12px 16px", borderRadius:10,
+              background:"rgba(155,109,255,.08)", border:"1px solid rgba(155,109,255,.3)",
+              borderLeft:"3px solid rgba(155,109,255,.7)",
+              display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
+              <div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+                  color:"var(--npi-purple,#9b6dff)", marginBottom:3 }}>
+                  {Object.values(labValues).filter(Boolean).length} lab value{Object.values(labValues).filter(Boolean).length > 1 ? "s" : ""} ready to interpret
+                </div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4 }}>
+                  Paste additional results below if needed, or interpret from entered values alone
+                </div>
+              </div>
+              <button onClick={runInterpret} disabled={aiLoading}
+                style={{ padding:"8px 20px", borderRadius:8, border:"none",
+                  background:"linear-gradient(135deg,#9b6dff,#7b4de0)",
+                  color:"#fff", fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                  fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+                \u2728 Interpret Now
+              </button>
+            </div>
+          )}
+
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-            {/* Paste input */}
-            <Panel title="Paste Raw Results" accent={T.purple}>
+            {/* Input panel */}
+            <Panel title="Additional Results (Optional)" accent={T.purple}>
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, lineHeight:1.6 }}>
-                  Paste any raw result text from your EMR — lab printouts, radiology reports, nursing notes. AI will extract key findings and correlate with the patient context.
+                  {hasLabValues
+                    ? "Entered lab values will be interpreted automatically. Paste imaging reports, culture results, or free-text notes here to include additional context."
+                    : "Enter lab values in the Labs tab for automatic interpretation, or paste raw result text from your EMR here."}
                 </div>
                 <textarea
-                  rows={10}
-                  placeholder={"Na 138  K 4.1  Cl 102  CO2 22  BUN 18  Cr 1.4  Glu 148\nWBC 14.2  Hgb 11.8  Hct 35  Plt 312\nTroponin 0.08\nLactate 2.8\n\nCXR: Mild pulmonary edema..."}
+                  rows={hasLabValues ? 7 : 10}
+                  placeholder={"CXR: Mild pulmonary edema, no pneumothorax\nCT Head: No acute intracranial abnormality\n\nBlood culture: Pending\nUrine: Positive nitrites, LE 3+"}
                   value={pasteText}
                   onChange={e => setPasteText(e.target.value)}
-                  style={{ width:"100%", background:T.up, border:`1px solid ${T.bd}`, borderRadius:8, padding:"10px 12px", color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12, resize:"vertical", outline:"none", lineHeight:1.6, transition:"border-color .15s" }}
+                  style={{ width:"100%", background:T.up, border:`1px solid ${T.bd}`, borderRadius:8,
+                    padding:"10px 12px", color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                    resize:"vertical", outline:"none", lineHeight:1.6, transition:"border-color .15s" }}
                   onFocus={e => e.target.style.borderColor="rgba(155,109,255,.5)"}
                   onBlur={e  => e.target.style.borderColor=T.bd}
                 />
 
                 {/* Patient context summary */}
                 <div style={{ padding:"9px 12px", borderRadius:7, background:T.up, border:`1px solid ${T.bd}` }}>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:5 }}>Patient context included</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4,
+                    letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:5 }}>
+                    Context included in interpretation
+                  </div>
                   <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt3, lineHeight:1.7 }}>
                     {[
-                      patientAge && `Age ${patientAge}`,
+                      patientAge        && `Age ${patientAge}`,
                       patientSex,
-                      chiefComplaint && `CC: ${chiefComplaint}`,
-                      allergies.length > 0 && `Allergies: ${allergies.slice(0,2).join(", ")}${allergies.length > 2 ? " +" + (allergies.length-2) : ""}`,
-                      Object.keys(labValues).filter(k => labValues[k]).length > 0 && `${Object.keys(labValues).filter(k => labValues[k]).length} entered lab value(s)`,
+                      chiefComplaint    && `CC: ${chiefComplaint}`,
+                      allergies.length  && `Allergies: ${allergies.slice(0,2).join(", ")}${allergies.length > 2 ? " +" + (allergies.length-2) : ""}`,
+                      vitals.bp         && `BP ${vitals.bp}`,
+                      vitals.hr         && `HR ${vitals.hr}`,
+                      vitals.spo2       && `SpO2 ${vitals.spo2}%`,
+                      hasLabValues      && `${Object.values(labValues).filter(Boolean).length} entered lab value(s)`,
+                      // Flag computed values that will be included
+                      (labValues.na && labValues.cl && labValues.co2) && "anion gap computed",
+                      (labValues.cr && patientAge) && "eGFR computed",
                     ].filter(Boolean).join(" \u00b7 ") || "No patient context available — enter data in other tabs"}
                   </div>
                 </div>
 
                 <button
                   onClick={runInterpret}
-                  disabled={aiLoading || (!pasteText.trim() && !Object.values(labValues).some(v => v))}
-                  style={{ padding:"10px 0", borderRadius:9, border:"none", background: aiLoading ? "rgba(155,109,255,.12)" : "linear-gradient(135deg,#9b6dff,#7b4de0)", color: aiLoading ? T.purple : "#fff", fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, cursor: aiLoading ? "not-allowed" : "pointer", transition:"all .15s", opacity: (!pasteText.trim() && !Object.values(labValues).some(v => v)) ? .5 : 1 }}>
+                  disabled={aiLoading || !canInterpret}
+                  style={{ padding:"10px 0", borderRadius:9, border:"none",
+                    background: aiLoading ? "rgba(155,109,255,.12)" : "linear-gradient(135deg,#9b6dff,#7b4de0)",
+                    color: aiLoading ? T.purple : "#fff",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700,
+                    cursor: aiLoading ? "not-allowed" : "pointer",
+                    transition:"all .15s", opacity: !canInterpret ? .5 : 1 }}>
                   {aiLoading ? "Interpreting\u2026" : "\u2728 Interpret Results"}
                 </button>
               </div>
@@ -632,15 +714,20 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
             {/* AI output */}
             <Panel title="AI Interpretation" accent={T.purple}>
               {!aiResult && !aiLoading && (
-                <div style={{ padding:"40px 10px", textAlign:"center", color:T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:12 }}>
-                  Paste results or enter lab values, then click Interpret
+                <div style={{ padding:"40px 10px", textAlign:"center", color:T.txt4,
+                  fontFamily:"'DM Sans',sans-serif", fontSize:12 }}>
+                  {hasLabValues
+                    ? "Click \u2728 Interpret Results or Interpret Now above"
+                    : "Enter lab values in the Labs tab or paste results, then click Interpret"}
                 </div>
               )}
               {aiLoading && (
-                <div style={{ padding:"30px 10px", display:"flex", flexDirection:"column", alignItems:"center", gap:12, color:T.txt4 }}>
+                <div style={{ padding:"30px 10px", display:"flex", flexDirection:"column",
+                  alignItems:"center", gap:12, color:T.txt4 }}>
                   <div style={{ display:"flex", gap:6 }}>
-                    {[0,.18,.36].map(d => (
-                      <span key={d} style={{ width:8, height:8, borderRadius:"50%", background:T.purple, opacity:.4, animation:`dot-bounce 1s ${d}s ease-in-out infinite`, display:"inline-block" }} />
+                    {[0, .18, .36].map(d => (
+                      <span key={d} style={{ width:8, height:8, borderRadius:"50%", background:T.purple,
+                        opacity:.4, animation:`dot-bounce 1s ${d}s ease-in-out infinite`, display:"inline-block" }} />
                     ))}
                   </div>
                   <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12 }}>Analyzing results\u2026</span>
@@ -655,14 +742,18 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
           </div>
 
           {/* Quick summary of entered values */}
-          {Object.values(labValues).some(v => v) && (
+          {hasLabValues && (
             <Panel title="Entered Lab Values Summary" accent={T.blue}>
               <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                 {LAB_PANELS.flatMap(p => p.fields.filter(f => labValues[f.id]).map(f => {
                   const flag = getFlag(labValues[f.id], f);
                   const col  = flagColor(flag);
                   return (
-                    <span key={f.id} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:"3px 9px", borderRadius:5, background: flag !== "normal" ? flagBg(flag) : T.up, border:`1px solid ${flag !== "normal" ? (flag==="critical"?"rgba(255,107,107,.35)":"rgba(245,200,66,.3)") : T.bd}`, color:col, whiteSpace:"nowrap" }}>
+                    <span key={f.id} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                      padding:"3px 9px", borderRadius:5,
+                      background: flag !== "normal" ? flagBg(flag) : T.up,
+                      border:`1px solid ${flag !== "normal" ? (flag==="critical"?"rgba(255,107,107,.35)":"rgba(245,200,66,.3)") : T.bd}`,
+                      color:col, whiteSpace:"nowrap" }}>
                       {f.label}: {labValues[f.id]} {f.unit}
                       {flag === "critical" && " \u26a0"}
                       {flag === "abnormal" && " \u2191"}

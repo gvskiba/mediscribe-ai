@@ -23,7 +23,7 @@ const T = {
   bg:"#050f1e", panel:"#081628", card:"#0b1e36",
   txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
   teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
-  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", red:"#ff4444", cyan:"#0dd4ff",
+  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", red:"#ff4444",
 };
 
 // ── I-PASS severity levels ────────────────────────────────────────────────────
@@ -502,9 +502,6 @@ Respond ONLY with valid JSON, no markdown fences:
     setTimeout(() => win.print(), 350);
   }, [result, format, demo, cc, registration, esiLevel, providerName,
       receivingDoc, sevConfig, pendingItems]);
-
-  // ── Context summary ─────────────────────────────────────────────────────────
-  const hasContext = Boolean(cc?.text || mdmState?.narrative || demo?.age);
 
   return (
     <div style={{ fontFamily:"'DM Sans',sans-serif", color:T.txt }}>

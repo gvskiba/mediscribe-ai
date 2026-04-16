@@ -1,310 +1,255 @@
 // CCDASmartParse.jsx
-// Accepts pasted C-CDA / CCD XML (or plain text) and extracts:
-//   demographics, allergies, medications, problem list (PMH), and vitals.
-// Two modes:
-//   1. XML mode  — pure client-side DOM parser (no AI credits) for valid C-CDA
-//   2. AI mode   — InvokeLLM fallback for non-standard / free-text CCD summaries
+// Structured clinical document import modal.
+// Accepts C-CDA / CCD XML or plain-text clinical documents.
+// Detects C-CDA format, parses sections via DOMParser,
+// then routes extracted data to the encounter via callbacks.
+// Falls back to AI extraction for unstructured text.
 //
 // Props:
-//   setDemo          (partial demo obj) => void
-//   setVitals        (partial vitals obj) => void
-//   setMedications   (string[]) => void  — merges, no duplicates
-//   setAllergies     (string[]) => void  — merges, no duplicates
-//   setPmhSelected   (obj) => void       — merges
-//   onToast          (msg, type) => void
+//   open, onClose
+//   onApplyDemographics  ({ firstName, lastName, dob, sex }) => void
+//   onApplyMedications   (string[]) => void
+//   onApplyAllergies     (string[]) => void
+//   onApplyPmh           (string[]) => void
+//   onApplyVitals        ({}) => void
+//   onToast              (msg, type) => void
 //
 // Constraints: no form, no localStorage, no router, no sonner, no alert,
 //   straight quotes only, border before borderTop/etc.
 
 import { useState, useCallback } from "react";
-import { base44 } from "@/api/base44Client";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
   bg:"#050f1e", panel:"#081628", card:"#0b1e36", up:"#0e2544",
   bd:"rgba(26,53,85,0.8)", txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
   teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
-  orange:"#ff9f43",
+  orange:"#ff9f43", purple:"#9b6dff",
 };
 
-// ── C-CDA template OIDs ───────────────────────────────────────────────────────
-const OID_ALLERGIES   = "2.16.840.1.113883.10.20.22.2.6.1";
-const OID_MEDICATIONS = "2.16.840.1.113883.10.20.22.2.1.1";
-const OID_PROBLEMS    = "2.16.840.1.113883.10.20.22.2.5.1";
-const OID_VITALS      = "2.16.840.1.113883.10.20.22.2.4.1";
-
-// LOINC vital codes → local key
-const VITAL_LOINC = {
-  "8867-4":"hr", "8480-6":"bp_sys", "8462-4":"bp_dia",
-  "9279-1":"rr",  "59408-5":"spo2", "8310-5":"temp",
-  "29463-7":"weight", "8302-2":"height",
+// ── C-CDA section LOINC codes ─────────────────────────────────────────────────
+const CCDA_SECTIONS = {
+  medications: ["10160-0"],
+  allergies:   ["48765-2"],
+  problems:    ["11450-4", "46240-8"],
+  vitals:      ["8716-3"],
+  results:     ["30954-2"],
+  social:      ["29762-2"],
+  procedures:  ["47519-4"],
+  encounters:  ["46240-8"],
 };
 
-// ── XML helpers ───────────────────────────────────────────────────────────────
-function getAttr(el, attr) { return el?.getAttribute(attr) || ""; }
-function getTag(el, tag)   { return el?.querySelector(tag) || null; }
-function getAllTags(el, tag){ return [...(el?.querySelectorAll(tag) || [])]; }
-
-function getText(el, selector) {
-  const node = el?.querySelector(selector);
-  return node?.textContent?.trim() || "";
+// ── Detect C-CDA ──────────────────────────────────────────────────────────────
+function isCCDA(text) {
+  const t = text.trim();
+  return (
+    t.startsWith("<?xml") ||
+    t.includes("<ClinicalDocument") ||
+    t.includes("urn:hl7-org:v3") ||
+    t.includes("<ContinuityOfCareDocument") ||
+    t.includes("2.16.840.1.113883")
+  );
 }
 
-function getDisplayName(el) {
-  // Try displayName attr first, then originalText, then value
-  const orig = getText(el, "originalText");
-  if (orig) return orig;
-  const disp = el?.querySelector("[displayName]");
-  return disp ? getAttr(disp, "displayName") : "";
-}
-
-// ── Parse demographics from C-CDA <recordTarget> ──────────────────────────────
-function parseDemographics(doc) {
-  const patient = doc.querySelector("recordTarget patientRole patient");
-  if (!patient) return null;
-  const nameEl    = patient.querySelector("name");
-  const firstName = [...getAllTags(nameEl, "given")].map(e => e.textContent.trim()).join(" ");
-  const lastName  = getText(nameEl, "family");
-  const dob       = getText(patient, "birthTime")?.replace(/^(\d{4})(\d{2})(\d{2}).*/, "$1-$2-$3") || "";
-  const genderCode= patient.querySelector("administrativeGenderCode")?.getAttribute("code") || "";
-  const gender    = genderCode === "M" ? "male" : genderCode === "F" ? "female" : genderCode.toLowerCase() || "";
-  const mrn       = doc.querySelector("recordTarget patientRole id")?.getAttribute("extension") || "";
-  return { firstName, lastName, dob, gender, mrn };
-}
-
-// ── Find section by templateId OID ────────────────────────────────────────────
-function findSection(doc, oid) {
-  return [...doc.querySelectorAll("section")].find(s =>
-    [...s.querySelectorAll("templateId")].some(t => getAttr(t, "root") === oid)
-  ) || null;
-}
-
-// ── Parse allergies ────────────────────────────────────────────────────────────
-function parseAllergies(doc) {
-  const sec = findSection(doc, OID_ALLERGIES);
-  if (!sec) return [];
-  return getAllTags(sec, "act").flatMap(act => {
-    const obs = act.querySelector("observation");
-    if (!obs) return [];
-    // Get substance name
-    const substanceEl = obs.querySelector("participant participantRole playingEntity");
-    const substance = getText(substanceEl, "name") || getDisplayName(obs.querySelector("participant participantRole playingEntity code")) || "";
-    if (!substance) return [];
-    // Get reaction
-    const reaction = obs.querySelector("entryRelationship observation value");
-    const reactionText = reaction ? (getAttr(reaction, "displayName") || getText(reaction.parentElement, "originalText")) : "";
-    return [reactionText ? `${substance} (${reactionText})` : substance];
-  }).filter(Boolean);
-}
-
-// ── Parse medications ──────────────────────────────────────────────────────────
-function parseMedications(doc) {
-  const sec = findSection(doc, OID_MEDICATIONS);
-  if (!sec) return [];
-  return getAllTags(sec, "substanceAdministration").map(sa => {
-    // Status check — skip completed/historical
-    const statusCode = sa.querySelector("statusCode")?.getAttribute("code") || "";
-    if (statusCode === "completed" || statusCode === "aborted") return null;
-
-    const product = sa.querySelector("manufacturedProduct manufacturedMaterial");
-    const name = getText(product, "name")
-              || getDisplayName(sa.querySelector("consumable manufacturedProduct manufacturedMaterial code"))
-              || "";
-    if (!name) return null;
-
-    // Dose
-    const dose  = sa.querySelector("doseQuantity")?.getAttribute("value") || "";
-    const unit  = sa.querySelector("doseQuantity")?.getAttribute("unit") || "";
-    const route = sa.querySelector("routeCode")?.getAttribute("displayName") || "";
-    const parts = [name];
-    if (dose) parts.push(`${dose}${unit}`);
-    if (route) parts.push(route);
-    return parts.join(" ");
-  }).filter(Boolean);
-}
-
-// ── Parse problem list ─────────────────────────────────────────────────────────
-function parseProblems(doc) {
-  const sec = findSection(doc, OID_PROBLEMS);
-  if (!sec) return [];
-  return getAllTags(sec, "observation").map(obs => {
-    // Only active
-    const status = obs.querySelector("value")?.getAttribute("code") || "";
-    // SNOMED "55561003" = Active, skip resolved (73425007)
-    if (status === "73425007") return null;
-    const valueEl = obs.querySelector("value");
-    return getAttr(valueEl, "displayName") || getText(obs, "originalText") || null;
-  }).filter(Boolean);
-}
-
-// ── Parse vitals ───────────────────────────────────────────────────────────────
-function parseVitals(doc) {
-  const sec = findSection(doc, OID_VITALS);
-  if (!sec) return {};
-
-  const result = {};
-  const bpParts = {};
-
-  // Grab the most recent organizer
-  const organizers = getAllTags(sec, "organizer");
-  const organizer  = organizers[0]; // first = most recent in sorted doc
-  if (!organizer) return result;
-
-  getAllTags(organizer, "observation").forEach(obs => {
-    const loincCode = obs.querySelector("code")?.getAttribute("code") || "";
-    const localKey  = VITAL_LOINC[loincCode];
-    if (!localKey) return;
-
-    const valEl = obs.querySelector("value");
-    const val   = valEl?.getAttribute("value") || valEl?.textContent?.trim() || "";
-    const unit  = valEl?.getAttribute("unit") || "";
-    if (!val) return;
-
-    if (localKey === "temp") {
-      // Convert C to F if needed
-      const numVal = parseFloat(val);
-      const finalVal = (unit === "Cel" || unit === "C") ? String(Math.round((numVal * 9/5 + 32) * 10) / 10) : String(Math.round(numVal * 10) / 10);
-      result.temp = finalVal;
-    } else if (localKey === "bp_sys") {
-      bpParts.sys = Math.round(parseFloat(val));
-    } else if (localKey === "bp_dia") {
-      bpParts.dia = Math.round(parseFloat(val));
-    } else if (localKey === "spo2") {
-      result.spo2 = String(Math.round(parseFloat(val)));
-    } else if (localKey === "weight") {
-      // Convert lbs to kg if needed
-      const numVal = parseFloat(val);
-      result.weight = unit === "[lb_av]" ? String(Math.round(numVal * 0.453592 * 10) / 10) : String(Math.round(numVal * 10) / 10);
-    } else {
-      result[localKey] = String(Math.round(parseFloat(val) * 10) / 10);
-    }
-  });
-
-  if (bpParts.sys && bpParts.dia) result.bp = `${bpParts.sys}/${bpParts.dia}`;
-
-  return result;
-}
-
-// ── XML parse entry point ──────────────────────────────────────────────────────
+// ── DOM-based C-CDA parser ────────────────────────────────────────────────────
 function parseCCDA(xmlText) {
-  const parser = new DOMParser();
-  const doc    = parser.parseFromString(xmlText, "application/xml");
+  let doc;
+  try {
+    doc = new DOMParser().parseFromString(xmlText, "application/xml");
+  } catch {
+    return null;
+  }
+  const parseError = doc.querySelector("parsererror");
+  if (parseError) return null;
 
-  // Check for parse error
-  if (doc.querySelector("parsererror")) {
-    throw new Error("Invalid XML — try AI mode");
+  // ── Patient demographics ────────────────────────────────────────────────
+  const patient = doc.querySelector("patient");
+  const firstName = patient?.querySelector("given")?.textContent?.trim() || "";
+  const lastName  = patient?.querySelector("family")?.textContent?.trim() || "";
+  const dob       = doc.querySelector("birthTime")?.getAttribute("value") || "";
+  const dobFormatted = dob.length >= 8
+    ? `${dob.slice(4,6)}/${dob.slice(6,8)}/${dob.slice(0,4)}`
+    : dob;
+  const genderCode  = doc.querySelector("administrativeGenderCode")?.getAttribute("code") || "";
+  const genderDisp  = doc.querySelector("administrativeGenderCode")?.getAttribute("displayName") || "";
+  const sex = genderDisp || (genderCode === "M" ? "Male" : genderCode === "F" ? "Female" : "");
+
+  // ── Section extractor ────────────────────────────────────────────────────
+  // Finds sections by LOINC code in the component/structuredBody
+  function findSection(loincs) {
+    const sections = Array.from(doc.querySelectorAll("section"));
+    return sections.find(sec => {
+      const code = sec.querySelector("code");
+      const c = code?.getAttribute("code") || "";
+      return loincs.includes(c);
+    }) || null;
   }
 
+  // ── Extract medication names ─────────────────────────────────────────────
+  const medSection = findSection(CCDA_SECTIONS.medications);
+  const medications = [];
+  if (medSection) {
+    medSection.querySelectorAll("manufacturedMaterial code").forEach(c => {
+      const name = c.getAttribute("displayName") || c.getAttribute("originalText") || "";
+      if (name && !medications.includes(name)) medications.push(name);
+    });
+    // Fallback: text content of entry items
+    if (!medications.length) {
+      medSection.querySelectorAll("entry").forEach(entry => {
+        const text = entry.querySelector("originalText, name");
+        if (text?.textContent?.trim()) medications.push(text.textContent.trim());
+      });
+    }
+  }
+
+  // ── Extract allergies ────────────────────────────────────────────────────
+  const allergySection = findSection(CCDA_SECTIONS.allergies);
+  const allergies = [];
+  if (allergySection) {
+    allergySection.querySelectorAll("participant participantRole playingEntity code").forEach(c => {
+      const name = c.getAttribute("displayName") || "";
+      if (name && !allergies.includes(name)) allergies.push(name);
+    });
+    allergySection.querySelectorAll("observation value").forEach(v => {
+      const name = v.getAttribute("displayName") || "";
+      if (name && !allergies.includes(name)) allergies.push(name);
+    });
+  }
+
+  // ── Extract problems ─────────────────────────────────────────────────────
+  const problemSection = findSection(CCDA_SECTIONS.problems);
+  const problems = [];
+  if (problemSection) {
+    problemSection.querySelectorAll("observation value").forEach(v => {
+      const name = v.getAttribute("displayName") || "";
+      if (name && !problems.includes(name)) problems.push(name);
+    });
+    // Fallback: text entries
+    if (!problems.length) {
+      problemSection.querySelectorAll("entry text, title").forEach(t => {
+        const txt = t.textContent.trim();
+        if (txt && txt.length > 3 && txt.length < 100 && !problems.includes(txt)) {
+          problems.push(txt);
+        }
+      });
+    }
+  }
+
+  // ── Extract vitals ───────────────────────────────────────────────────────
+  const vitalSection = findSection(CCDA_SECTIONS.vitals);
+  const vitals = {};
+  if (vitalSection) {
+    const VITAL_LOINC = {
+      "8867-4":"hr","85354-9":"bp","9279-1":"rr",
+      "59408-5":"spo2","8310-5":"temp","29463-7":"weight","8302-2":"height",
+    };
+    vitalSection.querySelectorAll("observation").forEach(obs => {
+      const loinc = obs.querySelector("code")?.getAttribute("code") || "";
+      const key   = VITAL_LOINC[loinc];
+      if (!key || vitals[key]) return;
+      const val = obs.querySelector("value")?.getAttribute("value") ||
+                  obs.querySelector("value")?.textContent?.trim();
+      const unit = obs.querySelector("value")?.getAttribute("unit") || "";
+      if (val) {
+        if (key === "temp" && (unit === "Cel" || unit === "C")) {
+          vitals[key] = String(Math.round((parseFloat(val) * 9/5 + 32) * 10) / 10);
+        } else {
+          vitals[key] = val;
+        }
+      }
+    });
+  }
+
+  // ── Extract most recent encounter note (for AI summary) ─────────────────
+  const narrativeBlocks = Array.from(doc.querySelectorAll("text")).slice(0, 5);
+  const narrativeText = narrativeBlocks
+    .map(el => el.textContent.replace(/\s+/g," ").trim())
+    .filter(t => t.length > 50)
+    .join("\n\n")
+    .slice(0, 2000);
+
   return {
-    demographics: parseDemographics(doc),
-    allergies:    parseAllergies(doc),
-    medications:  parseMedications(doc),
-    problems:     parseProblems(doc),
-    vitals:       parseVitals(doc),
+    demographics: { firstName, lastName, dob:dobFormatted, sex },
+    medications,
+    allergies,
+    problems,
+    vitals,
+    narrativeText,
+    hasDemographics: Boolean(firstName || lastName || dob),
+    hasMeds:        medications.length > 0,
+    hasAllergies:   allergies.length > 0,
+    hasProblems:    problems.length > 0,
+    hasVitals:      Object.keys(vitals).length > 0,
   };
 }
 
-// ── AI fallback prompt ─────────────────────────────────────────────────────────
-const AI_SCHEMA = {
-  type:"object",
-  properties:{
-    demographics:{
-      type:"object",
-      properties:{
-        firstName:{type:"string"}, lastName:{type:"string"},
-        dob:{type:"string"}, gender:{type:"string"}, mrn:{type:"string"},
-      }
-    },
-    allergies:  { type:"array", items:{type:"string"} },
-    medications:{ type:"array", items:{type:"string"} },
-    problems:   { type:"array", items:{type:"string"} },
-    vitals:{
-      type:"object",
-      properties:{
-        bp:{type:"string"}, hr:{type:"string"}, rr:{type:"string"},
-        spo2:{type:"string"}, temp:{type:"string"}, weight:{type:"string"}, height:{type:"string"},
-      }
-    },
-  }
-};
-
-async function aiParseCCDA(text) {
-  const result = await base44.integrations.Core.InvokeLLM({
-    prompt: `You are a clinical data extraction engine. Parse the following clinical summary document (C-CDA, CCD, or structured clinical text) and extract all available clinical data.
-
-Document:
-${text.slice(0, 8000)}
-
-Return a JSON object with these sections:
-- demographics: { firstName, lastName, dob (YYYY-MM-DD), gender (male/female/other), mrn }
-- allergies: array of strings like "Penicillin (hives)" or "Latex"
-- medications: array of strings like "Lisinopril 10mg daily"
-- problems: array of active problem/diagnosis strings
-- vitals: { bp ("120/80"), hr ("72"), rr ("16"), spo2 ("98"), temp ("98.6"), weight (kg), height (cm) }
-
-Only include fields you are confident about. Omit absent or unclear data.`,
-    response_json_schema: AI_SCHEMA,
+// ── AI fallback parser ────────────────────────────────────────────────────────
+async function parseWithAI(text) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      model:"claude-sonnet-4-20250514", max_tokens:900,
+      system:`Extract structured clinical data from the provided document.
+Return ONLY valid JSON with these keys (omit keys if data not present):
+{
+  "firstName": "string",
+  "lastName": "string",
+  "dob": "MM/DD/YYYY",
+  "sex": "Male|Female|Other",
+  "medications": ["med name", ...],
+  "allergies": ["allergen", ...],
+  "problems": ["condition name", ...],
+  "vitals": { "hr":"", "bp":"", "spo2":"", "temp":"", "rr":"" }
+}
+Extract only what is clearly present. Do not infer or fabricate values.`,
+      messages:[{ role:"user", content:`Extract clinical data from this document:\n\n${text.slice(0,4000)}` }],
+    }),
   });
-  return result;
+  const data = await res.json();
+  const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g,"").trim();
+  const parsed = JSON.parse(raw);
+  return {
+    demographics: { firstName:parsed.firstName||"", lastName:parsed.lastName||"", dob:parsed.dob||"", sex:parsed.sex||"" },
+    medications:  parsed.medications || [],
+    allergies:    parsed.allergies   || [],
+    problems:     parsed.problems    || [],
+    vitals:       parsed.vitals      || {},
+    hasDemographics: Boolean(parsed.firstName || parsed.lastName || parsed.dob),
+    hasMeds:        (parsed.medications||[]).length > 0,
+    hasAllergies:   (parsed.allergies||[]).length > 0,
+    hasProblems:    (parsed.problems||[]).length > 0,
+    hasVitals:      Object.keys(parsed.vitals||{}).length > 0,
+  };
 }
 
-// ── Result preview section ─────────────────────────────────────────────────────
-function PreviewSection({ icon, title, color, items }) {
-  if (!items || items.length === 0) return null;
-  return (
-    <div style={{ marginBottom:12 }}>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:color, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:6, display:"flex", alignItems:"center", gap:6 }}>
-        <span style={{ fontSize:12 }}>{icon}</span>{title} ({items.length})
-      </div>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-        {items.map((item, i) => (
-          <span key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, padding:"2px 9px", borderRadius:20, background:`${color}12`, border:`1px solid ${color}30`, color:color }}>
-            {item}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
+// ── Section preview ───────────────────────────────────────────────────────────
+function ResultSection({ icon, label, color, items, selected, onToggle }) {
+  if (!items || (Array.isArray(items) ? !items.length : !Object.keys(items).length)) return null;
+  const list   = Array.isArray(items) ? items : Object.entries(items).map(([k,v]) => `${k.toUpperCase()}: ${v}`);
+  const selCnt = list.filter(i => selected[i]).length;
 
-function VitalsPreview({ vitals, color }) {
-  const entries = Object.entries(vitals || {}).filter(([, v]) => v);
-  if (!entries.length) return null;
   return (
-    <div style={{ marginBottom:12 }}>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:color, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:6, display:"flex", alignItems:"center", gap:6 }}>
-        <span style={{ fontSize:12 }}>📊</span>Vitals ({entries.length})
+    <div style={{ marginBottom:10, borderRadius:9, background:T.card, border:`1px solid ${color}28`, borderLeft:`3px solid ${color}` }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", borderBottom:`1px solid ${T.bd}` }}>
+        <span style={{ fontSize:13 }}>{icon}</span>
+        <span style={{ fontFamily:"'Playfair Display',serif", fontSize:12, fontWeight:700, color }}>
+          {label}
+        </span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>
+          {selCnt}/{list.length}
+        </span>
+        <button onClick={() => onToggle("all", list, selCnt === list.length)}
+          style={{ marginLeft:"auto", fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, background:"transparent", border:"none", cursor:"pointer", letterSpacing:"0.5px", textTransform:"uppercase" }}>
+          {selCnt === list.length ? "Deselect all" : "Select all"}
+        </button>
       </div>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-        {entries.map(([k, v]) => (
-          <span key={k} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:"2px 9px", borderRadius:20, background:`${color}12`, border:`1px solid ${color}30`, color:color }}>
-            {k.toUpperCase()}: {v}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DemoPreview({ demo, color }) {
-  if (!demo) return null;
-  const parts = [demo.firstName, demo.lastName].filter(Boolean).join(" ");
-  if (!parts && !demo.dob && !demo.mrn) return null;
-  return (
-    <div style={{ marginBottom:12 }}>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:color, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:6, display:"flex", alignItems:"center", gap:6 }}>
-        <span style={{ fontSize:12 }}>👤</span>Demographics
-      </div>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-        {[
-          parts && `Name: ${parts}`,
-          demo.dob && `DOB: ${demo.dob}`,
-          demo.gender && `Gender: ${demo.gender}`,
-          demo.mrn && `MRN: ${demo.mrn}`,
-        ].filter(Boolean).map((item, i) => (
-          <span key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, padding:"2px 9px", borderRadius:20, background:`${color}12`, border:`1px solid ${color}30`, color:color }}>
-            {item}
-          </span>
+      <div style={{ padding:"8px 12px", display:"flex", flexDirection:"column", gap:4 }}>
+        {list.map(item => (
+          <label key={item} style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+            <input type="checkbox" checked={!!selected[item]} onChange={() => onToggle("one", [item])}
+              style={{ accentColor:color, width:13, height:13, flexShrink:0 }} />
+            <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt2 }}>{item}</span>
+          </label>
         ))}
       </div>
     </div>
@@ -313,232 +258,261 @@ function DemoPreview({ demo, color }) {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function CCDASmartParse({
-  setDemo, setVitals, setMedications, setAllergies, setPmhSelected, onToast,
+  open, onClose,
+  onApplyDemographics, onApplyMedications, onApplyAllergies,
+  onApplyPmh, onApplyVitals, onToast,
 }) {
-  const [open,    setOpen]    = useState(false);
-  const [text,    setText]    = useState("");
-  const [busy,    setBusy]    = useState(false);
-  const [mode,    setMode]    = useState("xml");   // "xml" | "ai"
-  const [parsed,  setParsed]  = useState(null);    // { demographics, allergies, medications, problems, vitals }
-  const [error,   setError]   = useState("");
+  const [rawText,  setRawText]  = useState("");
+  const [parsed,   setParsed]   = useState(null);
+  const [busy,     setBusy]     = useState(false);
+  const [error,    setError]    = useState(null);
+  const [isCCDADoc,setIsCCDADoc]= useState(false);
 
-  const close = useCallback(() => {
-    if (busy) return;
-    setOpen(false);
-    setText("");
-    setParsed(null);
-    setError("");
-  }, [busy]);
+  // selected: { meds:{...}, allergies:{...}, problems:{...}, vitals:{...} }
+  const [selected, setSelected] = useState({ meds:{}, allergies:{}, problems:{}, vitals:{} });
 
-  // ── Parse ──────────────────────────────────────────────────────────────────
-  const parse = useCallback(async () => {
-    if (!text.trim()) return;
-    setBusy(true);
-    setParsed(null);
-    setError("");
+  const toggleSection = useCallback((section, mode, items, allSelected) => {
+    setSelected(prev => {
+      const sec = { ...prev[section] };
+      if (mode === "all") {
+        items.forEach(i => { sec[i] = !allSelected; });
+      } else {
+        items.forEach(i => { sec[i] = !sec[i]; });
+      }
+      return { ...prev, [section]: sec };
+    });
+  }, []);
+
+  const handleParse = useCallback(async () => {
+    if (!rawText.trim()) return;
+    setBusy(true); setError(null); setParsed(null);
+    const cdda = isCCDA(rawText);
+    setIsCCDADoc(cdda);
     try {
       let result;
-      if (mode === "xml") {
-        result = parseCCDA(text.trim());
+      if (cdda) {
+        result = parseCCDA(rawText);
+        if (!result) {
+          // DOM parse failed — fall back to AI
+          result = await parseWithAI(rawText);
+        }
       } else {
-        result = await aiParseCCDA(text.trim());
+        result = await parseWithAI(rawText);
       }
+      setParsed(result);
 
-      const totalFields = [
-        result.demographics?.firstName || result.demographics?.lastName,
-        result.allergies?.length,
-        result.medications?.length,
-        result.problems?.length,
-        Object.keys(result.vitals || {}).length,
-      ].filter(Boolean).length;
+      // Pre-select everything
+      const meds      = Object.fromEntries((result.medications||[]).map(m => [m, true]));
+      const allergies = Object.fromEntries((result.allergies||[]).map(a => [a, true]));
+      const problems  = Object.fromEntries((result.problems||[]).map(p => [p, true]));
+      const vitals    = Object.fromEntries(Object.entries(result.vitals||{}).map(([k,v]) => [`${k.toUpperCase()}: ${v}`, true]));
+      setSelected({ meds, allergies, problems, vitals });
 
-      if (totalFields === 0) {
-        setError("No clinical data found. Try switching to AI mode or paste valid C-CDA XML.");
-      } else {
-        setParsed(result);
-      }
+      const total = (result.medications?.length||0) + (result.allergies?.length||0) + (result.problems?.length||0) + Object.keys(result.vitals||{}).length;
+      onToast?.(`${cdda ? "C-CDA" : "Document"} parsed — ${total} items extracted.`, "success");
     } catch (err) {
-      setError(err.message || "Parse failed.");
-      if (mode === "xml") {
-        setMode("ai");
-        onToast?.("XML parse failed — switching to AI mode. Click Extract again.", "error");
-      }
+      setError("Parsing failed: " + err.message);
+      onToast?.("Document parsing failed.", "error");
     } finally {
       setBusy(false);
     }
-  }, [text, mode, onToast]);
+  }, [rawText, onToast]);
 
-  // ── Apply ──────────────────────────────────────────────────────────────────
-  const apply = useCallback(() => {
+  const handleApply = useCallback(() => {
     if (!parsed) return;
-    let applied = 0;
+    let count = 0;
 
-    // Demographics
-    if (parsed.demographics) {
-      const d = parsed.demographics;
-      const patch = {};
-      if (d.firstName) patch.firstName = d.firstName;
-      if (d.lastName)  patch.lastName  = d.lastName;
-      if (d.dob)       patch.dob       = d.dob;
-      if (d.gender)    patch.gender    = d.gender;
-      if (d.mrn)       patch.mrn       = d.mrn;
-      if (Object.keys(patch).length) { setDemo?.(prev => ({ ...prev, ...patch })); applied++; }
+    // Demographics (all-or-nothing)
+    if (parsed.hasDemographics && onApplyDemographics) {
+      onApplyDemographics(parsed.demographics);
+      count++;
     }
+
+    // Medications
+    const selMeds = (parsed.medications||[]).filter(m => selected.meds[m]);
+    if (selMeds.length && onApplyMedications) { onApplyMedications(selMeds); count += selMeds.length; }
+
+    // Allergies
+    const selAllergies = (parsed.allergies||[]).filter(a => selected.allergies[a]);
+    if (selAllergies.length && onApplyAllergies) { onApplyAllergies(selAllergies); count += selAllergies.length; }
+
+    // Problems → PMH
+    const selProblems = (parsed.problems||[]).filter(p => selected.problems[p]);
+    if (selProblems.length && onApplyPmh) { onApplyPmh(selProblems); count += selProblems.length; }
 
     // Vitals
-    if (parsed.vitals && Object.keys(parsed.vitals).length > 0) {
-      setVitals?.(prev => ({ ...prev, ...parsed.vitals }));
-      applied++;
+    const selVitalsKeys = Object.entries(selected.vitals)
+      .filter(([,v]) => v)
+      .map(([k]) => k.split(":")[0].trim().toLowerCase());
+    if (selVitalsKeys.length && onApplyVitals) {
+      const vObj = Object.fromEntries(
+        selVitalsKeys.map(k => [k, parsed.vitals[k]]).filter(([,v]) => v)
+      );
+      onApplyVitals(vObj);
+      count += selVitalsKeys.length;
     }
 
-    // Allergies (merge, no duplicates)
-    if (parsed.allergies?.length) {
-      setAllergies?.(prev => {
-        const existing = new Set(prev.map(a => a.toLowerCase()));
-        const novel = parsed.allergies.filter(a => !existing.has(a.toLowerCase()));
-        return [...prev, ...novel];
-      });
-      applied++;
-    }
+    onToast?.(`${count} item${count !== 1 ? "s" : ""} applied to encounter.`, "success");
+    onClose?.();
+  }, [parsed, selected, onApplyDemographics, onApplyMedications, onApplyAllergies, onApplyPmh, onApplyVitals, onToast, onClose]);
 
-    // Medications (merge, no duplicates)
-    if (parsed.medications?.length) {
-      setMedications?.(prev => {
-        const existing = new Set(prev.map(m => m.toLowerCase()));
-        const novel = parsed.medications.filter(m => !existing.has(m.toLowerCase()));
-        return [...prev, ...novel];
-      });
-      applied++;
-    }
+  if (!open) return null;
 
-    // Problems → pmhSelected
-    if (parsed.problems?.length) {
-      const pmhPatch = {};
-      parsed.problems.forEach(p => {
-        const key = p.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 40);
-        if (key) pmhPatch[key] = true;
-      });
-      setPmhSelected?.(prev => ({ ...prev, ...pmhPatch }));
-      applied++;
-    }
-
-    if (applied > 0) {
-      onToast?.(`C-CDA data applied: demographics, ${parsed.allergies?.length || 0} allergies, ${parsed.medications?.length || 0} meds, ${parsed.problems?.length || 0} problems, vitals.`, "success");
-    }
-    close();
-  }, [parsed, setDemo, setVitals, setAllergies, setMedications, setPmhSelected, onToast, close]);
-
-  const totalItems = parsed
-    ? [
-        parsed.demographics?.firstName || parsed.demographics?.lastName ? 1 : 0,
-        parsed.allergies?.length || 0,
-        parsed.medications?.length || 0,
-        parsed.problems?.length || 0,
-        Object.keys(parsed.vitals || {}).length > 0 ? 1 : 0,
-      ].reduce((a, b) => a + b, 0)
-    : 0;
+  const totalSelected = Object.values(selected).flatMap(s => Object.values(s)).filter(Boolean).length;
+  const hasDemoApplicable = parsed?.hasDemographics;
 
   return (
     <>
-      {/* ── Trigger button ── */}
-      <button onClick={() => setOpen(true)}
-        title="Import C-CDA / CCD clinical summary document"
-        style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:7, cursor:"pointer", background:"rgba(155,109,255,0.1)", border:"1px solid rgba(155,109,255,0.3)", color:"#9b6dff", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, whiteSpace:"nowrap", transition:"all .15s" }}>
-        📋 C-CDA Import
-      </button>
+      <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:9990, background:"rgba(3,8,16,.72)", backdropFilter:"blur(4px)" }} />
+      <div style={{ position:"fixed", inset:0, zIndex:9991, display:"flex", alignItems:"center", justifyContent:"center", padding:16, pointerEvents:"none" }}>
+        <div onClick={e => e.stopPropagation()}
+          style={{ width:"100%", maxWidth:620, maxHeight:"88vh", display:"flex", flexDirection:"column", background:T.panel, border:"1px solid rgba(26,53,85,.7)", borderTop:"3px solid #9b6dff", borderRadius:14, boxShadow:"0 32px 96px rgba(0,0,0,.7)", overflow:"hidden", pointerEvents:"auto" }}>
 
-      {/* ── Modal ── */}
-      {open && (
-        <div onClick={close}
-          style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(3,8,16,0.82)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-          <div onClick={e => e.stopPropagation()}
-            style={{ background:T.panel, border:`1px solid ${T.bd}`, borderTop:`3px solid #9b6dff`, borderRadius:16, padding:"22px 26px", width:560, maxWidth:"96vw", maxHeight:"88vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 96px rgba(0,0,0,.7)" }}>
-
-            {/* Header */}
-            <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:14 }}>
+          {/* Header */}
+          <div style={{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.bd}`, flexShrink:0 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div>
-                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:700, color:T.txt }}>C-CDA Smart Import</div>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, marginTop:2, lineHeight:1.5 }}>
-                  Paste C-CDA XML or a CCD summary. Extracts demographics, allergies, medications, problems, and vitals.
+                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:700, color:T.purple }}>
+                  Import Clinical Document
+                </div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, marginTop:1 }}>
+                  C-CDA / CCD XML \u00b7 Visit summaries \u00b7 Discharge notes \u00b7 Referral letters
                 </div>
               </div>
-              <button onClick={close}
-                style={{ width:28, height:28, borderRadius:14, border:`1px solid ${T.bd}`, background:T.up, color:T.txt4, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginLeft:8 }}>
-                ✕
-              </button>
-            </div>
-
-            {/* Mode selector */}
-            <div style={{ display:"flex", gap:4, marginBottom:12 }}>
-              {[
-                { id:"xml", label:"XML Mode", hint:"Native C-CDA parser — no AI credits" },
-                { id:"ai",  label:"AI Mode",  hint:"LLM fallback for non-standard documents" },
-              ].map(m => (
-                <button key={m.id} onClick={() => { setMode(m.id); setParsed(null); setError(""); }}
-                  title={m.hint}
-                  style={{ padding:"5px 14px", borderRadius:7, border:`1px solid ${mode===m.id ? "#9b6dff88" : T.bd}`, background:mode===m.id ? "rgba(155,109,255,.12)" : "transparent", color:mode===m.id ? "#9b6dff" : T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, cursor:"pointer", transition:"all .15s" }}>
-                  {m.label}
-                </button>
-              ))}
-              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, alignSelf:"center", marginLeft:4 }}>
-                {mode === "xml" ? "Client-side — no data sent externally" : "Uses LLM integration credits"}
-              </span>
-            </div>
-
-            {/* Paste area */}
-            <textarea
-              rows={7}
-              autoFocus
-              placeholder={mode === "xml"
-                ? "Paste C-CDA / CCD XML here…\n\n<?xml version=\"1.0\"?>\n<ClinicalDocument xmlns=\"urn:hl7-org:v3\" …>"
-                : "Paste a C-CDA document, CCD summary, or any structured clinical text…"}
-              value={text}
-              onChange={e => { setText(e.target.value); setParsed(null); setError(""); }}
-              style={{ width:"100%", boxSizing:"border-box", background:T.up, border:`1px solid ${T.bd}`, borderRadius:9, padding:"10px 13px", color:T.txt, fontFamily:"'JetBrains Mono',monospace", fontSize:11, resize:"vertical", outline:"none", lineHeight:1.55, flexShrink:0 }}
-            />
-
-            {/* Error */}
-            {error && (
-              <div style={{ padding:"8px 11px", borderRadius:7, background:"rgba(255,107,107,.07)", border:"1px solid rgba(255,107,107,.25)", fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.coral, marginTop:8 }}>
-                {error}
-              </div>
-            )}
-
-            {/* Preview */}
-            {parsed && totalItems > 0 && (
-              <div style={{ marginTop:12, padding:"12px 14px", borderRadius:10, background:"rgba(155,109,255,.06)", border:"1px solid rgba(155,109,255,.22)", overflowY:"auto", maxHeight:240 }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"#9b6dff", letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:10 }}>
-                  Extracted — review before applying
-                </div>
-                <DemoPreview     demo={parsed.demographics} color="#9b6dff" />
-                <VitalsPreview   vitals={parsed.vitals}     color={T.teal} />
-                <PreviewSection  icon="🌿" title="Allergies"   color={T.coral}  items={parsed.allergies} />
-                <PreviewSection  icon="💊" title="Medications" color={T.gold}   items={parsed.medications} />
-                <PreviewSection  icon="🩺" title="Problems"    color={T.blue}   items={parsed.problems} />
-              </div>
-            )}
-
-            {/* Actions */}
-            <div style={{ display:"flex", gap:8, marginTop:14, justifyContent:"flex-end", flexShrink:0 }}>
-              <button onClick={close} disabled={busy}
-                style={{ padding:"7px 16px", borderRadius:8, cursor:busy?"not-allowed":"pointer", background:"transparent", border:`1px solid ${T.bd}`, color:T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:12 }}>
-                Cancel
-              </button>
-              {parsed && totalItems > 0 ? (
-                <button onClick={apply}
-                  style={{ padding:"7px 22px", borderRadius:8, cursor:"pointer", background:"linear-gradient(135deg,#9b6dff,#7b4fdd)", border:"none", color:"#fff", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700 }}>
-                  ✓ Apply {totalItems} Section{totalItems !== 1 ? "s" : ""}
-                </button>
-              ) : (
-                <button onClick={parse} disabled={busy || !text.trim()}
-                  style={{ padding:"7px 22px", borderRadius:8, cursor:busy||!text.trim()?"not-allowed":"pointer", background:busy||!text.trim()?"rgba(155,109,255,.06)":"rgba(155,109,255,.18)", border:"1px solid rgba(155,109,255,.35)", color:busy||!text.trim()?T.txt4:"#9b6dff", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, transition:"all .15s" }}>
-                  {busy ? "Parsing…" : mode === "xml" ? "Parse XML" : "Extract with AI"}
-                </button>
-              )}
+              <button onClick={onClose} style={{ width:27, height:27, borderRadius:13, border:`1px solid ${T.bd}`, background:T.up, color:T.txt4, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>\u2715</button>
             </div>
           </div>
+
+          {/* Body */}
+          <div style={{ overflowY:"auto", flex:1, padding:"14px 18px" }}>
+
+            {!parsed && (
+              <>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, lineHeight:1.7, marginBottom:10 }}>
+                  Paste a C-CDA XML document, CCD, visit summary, or any clinical document.
+                  <strong style={{ color:T.txt }}> C-CDA XML</strong> is parsed directly via the browser.
+                  <strong style={{ color:T.txt }}> Plain-text documents</strong> are extracted by AI.
+                </div>
+                <textarea
+                  value={rawText} onChange={e => setRawText(e.target.value)}
+                  rows={14}
+                  placeholder={"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ClinicalDocument xmlns=\"urn:hl7-org:v3\">\n  ...\n</ClinicalDocument>\n\nOR paste any clinical document, discharge summary, or referral letter."}
+                  style={{ width:"100%", background:T.up, border:`1px solid ${T.bd}`, borderRadius:8, padding:"10px 12px", color:T.txt, fontFamily:"'JetBrains Mono',monospace", fontSize:11, lineHeight:1.6, resize:"vertical", outline:"none", boxSizing:"border-box", transition:"border-color .15s" }}
+                  onFocus={e => e.target.style.borderColor="rgba(155,109,255,.5)"}
+                  onBlur={e  => e.target.style.borderColor=T.bd}
+                />
+                {rawText.trim() && (
+                  <div style={{ marginTop:8, fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>
+                    {isCCDA(rawText)
+                      ? "\u2713 C-CDA XML detected \u2014 will parse directly via DOMParser"
+                      : "Plain text detected \u2014 will extract via AI"}
+                  </div>
+                )}
+                {error && (
+                  <div style={{ marginTop:8, padding:"8px 11px", borderRadius:7, background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)", fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.coral }}>
+                    {error}
+                  </div>
+                )}
+              </>
+            )}
+
+            {busy && (
+              <div style={{ padding:"28px 16px", display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
+                <style>{`@keyframes ccda-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
+                <span style={{ fontSize:28, display:"inline-block", animation:"ccda-spin .9s linear infinite", color:T.purple }}>⟳</span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4 }}>
+                  {isCCDADoc ? "Parsing C-CDA structure\u2026" : "Extracting data with AI\u2026"}
+                </span>
+              </div>
+            )}
+
+            {parsed && !busy && (
+              <>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, padding:"9px 12px", borderRadius:8, background:"rgba(155,109,255,.07)", border:"1px solid rgba(155,109,255,.25)" }}>
+                  <span style={{ fontSize:14 }}>{isCCDADoc ? "\uD83D\uDCCB" : "\u2728"}</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.purple, fontWeight:600 }}>
+                    {isCCDADoc ? "C-CDA parsed via DOMParser" : "Extracted via AI"}
+                  </span>
+                  <button onClick={() => { setParsed(null); setRawText(""); }}
+                    style={{ marginLeft:"auto", fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, background:"transparent", border:"none", cursor:"pointer", letterSpacing:"0.5px", textTransform:"uppercase" }}>
+                    Paste New
+                  </button>
+                </div>
+
+                {/* Demographics */}
+                {hasDemoApplicable && (
+                  <div style={{ marginBottom:10, padding:"10px 12px", borderRadius:9, background:T.card, border:`1px solid rgba(59,158,255,.25)`, borderLeft:`3px solid ${T.blue}` }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:7 }}>
+                      <span style={{ fontSize:13 }}>\uD83D\uDC64</span>
+                      <span style={{ fontFamily:"'Playfair Display',serif", fontSize:12, fontWeight:700, color:T.blue }}>Demographics</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>will apply all</span>
+                    </div>
+                    <div style={{ display:"flex", gap:16, flexWrap:"wrap", fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt2 }}>
+                      {parsed.demographics.firstName && <span>First: <strong>{parsed.demographics.firstName}</strong></span>}
+                      {parsed.demographics.lastName  && <span>Last: <strong>{parsed.demographics.lastName}</strong></span>}
+                      {parsed.demographics.dob       && <span>DOB: <strong>{parsed.demographics.dob}</strong></span>}
+                      {parsed.demographics.sex       && <span>Sex: <strong>{parsed.demographics.sex}</strong></span>}
+                    </div>
+                  </div>
+                )}
+
+                <ResultSection
+                  icon="\uD83D\uDC8A" label="Medications" color={T.purple}
+                  items={parsed.medications}
+                  selected={selected.meds}
+                  onToggle={(mode, items, allSel) => toggleSection("meds", mode, items, allSel)}
+                />
+                <ResultSection
+                  icon="\u26A0\uFE0F" label="Allergies" color={T.coral}
+                  items={parsed.allergies}
+                  selected={selected.allergies}
+                  onToggle={(mode, items, allSel) => toggleSection("allergies", mode, items, allSel)}
+                />
+                <ResultSection
+                  icon="\uD83D\uDCCB" label="Problem List / PMH" color={T.gold}
+                  items={parsed.problems}
+                  selected={selected.problems}
+                  onToggle={(mode, items, allSel) => toggleSection("problems", mode, items, allSel)}
+                />
+                <ResultSection
+                  icon="\uD83D\uDCCA" label="Vitals" color={T.teal}
+                  items={Object.entries(parsed.vitals||{}).map(([k,v]) => `${k.toUpperCase()}: ${v}`)}
+                  selected={selected.vitals}
+                  onToggle={(mode, items, allSel) => toggleSection("vitals", mode, items, allSel)}
+                />
+
+                {!parsed.hasMeds && !parsed.hasAllergies && !parsed.hasProblems && !parsed.hasVitals && !hasDemoApplicable && (
+                  <div style={{ padding:"20px 16px", textAlign:"center", color:T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:12 }}>
+                    No structured data could be extracted from this document.
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div style={{ padding:"12px 18px", borderTop:`1px solid ${T.bd}`, flexShrink:0, display:"flex", gap:8, justifyContent:"space-between", alignItems:"center" }}>
+            <button onClick={onClose} style={{ padding:"8px 16px", borderRadius:7, border:`1px solid ${T.bd}`, background:"transparent", color:T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:12, cursor:"pointer" }}>
+              Cancel
+            </button>
+            {!parsed
+              ? (
+                <button onClick={handleParse} disabled={busy || !rawText.trim()}
+                  style={{ padding:"8px 22px", borderRadius:7, border:"none", background: rawText.trim() ? "linear-gradient(135deg,#9b6dff,#7b4de0)" : "rgba(42,77,114,.3)", color: rawText.trim() ? "#fff" : T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700, cursor: rawText.trim() ? "pointer" : "not-allowed" }}>
+                  {busy ? "\u22ef Parsing\u2026" : "\u2728 Parse Document"}
+                </button>
+              )
+              : (
+                <button onClick={handleApply} disabled={totalSelected === 0 && !hasDemoApplicable}
+                  style={{ padding:"8px 22px", borderRadius:7, border:"none", background: totalSelected > 0 || hasDemoApplicable ? "linear-gradient(135deg,#00e5c0,#00b4d8)" : "rgba(42,77,114,.3)", color: totalSelected > 0 || hasDemoApplicable ? "#050f1e" : T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700, cursor: totalSelected > 0 || hasDemoApplicable ? "pointer" : "not-allowed" }}>
+                  Apply to Encounter
+                  {(totalSelected > 0 || hasDemoApplicable) && ` (${totalSelected + (hasDemoApplicable ? 1 : 0)} items)`}
+                </button>
+              )
+            }
+          </div>
         </div>
-      )}
+      </div>
     </>
   );
 }

@@ -23,7 +23,7 @@ const T = {
   bg:"#050f1e", panel:"#081628", card:"#0b1e36",
   txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
   teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
-  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", red:"#ff4444", cyan:"#0dd4ff",
+  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", red:"#ff4444",
 };
 
 // ── I-PASS severity levels ────────────────────────────────────────────────────
@@ -356,8 +356,152 @@ Respond ONLY with valid JSON, no markdown fences:
   }, [result, format, demo, providerName, receivingDoc, esiLevel,
       doorTime, sevConfig, onToast]);
 
-  // ── Context summary ─────────────────────────────────────────────────────────
-  const hasContext = Boolean(cc?.text || mdmState?.narrative || demo?.age);
+  // ── Print handoff ──────────────────────────────────────────────────────────
+  const printHandoff = useCallback(() => {
+    if (!result) return;
+    const win = window.open("", "_blank", "width=760,height=960");
+    if (!win) return;
+
+    const ts       = new Date().toLocaleString("en-US", { hour12:false });
+    const demoLine = [demo?.age ? demo.age + "y" : "", demo?.sex || ""].filter(Boolean).join(" ");
+    const patLine  = [demo?.firstName, demo?.lastName].filter(Boolean).join(" ") || "Patient";
+    const sevLabel = sevConfig?.label || "";
+    const sevHex   = sevConfig?.id === "unstable" ? "#c0392b"
+                   : sevConfig?.id === "watcher"  ? "#d35400"
+                   : "#27ae60";
+
+    const headerHTML = `
+      <header>
+        <div class="brand">Notrya \u00b7 ${format === "sbar" ? "SBAR" : "I-PASS"} Handoff</div>
+        <div class="ts">${ts}</div>
+        <h1>${patLine}</h1>
+        <div class="meta">
+          ${demoLine ? `<span>${demoLine}</span>` : ""}
+          ${demo?.firstName || demo?.lastName
+            ? (registration?.mrn ? `<span>MRN ${registration.mrn}</span>` : "")
+            : ""}
+          ${esiLevel ? `<span>ESI ${esiLevel}</span>` : ""}
+          ${cc?.text ? `<span class="cc">${cc.text.replace(/</g,"&lt;")}</span>` : ""}
+          ${providerName ? `<span>${providerName} \u2192 ${receivingDoc || "Oncoming provider"}</span>` : ""}
+        </div>
+        ${sevLabel ? `<div class="sev" style="border-color:${sevHex};color:${sevHex}">&#9679; ${sevLabel}</div>` : ""}
+      </header>`;
+
+    const sectionHTML = (letter, label, color, content) =>
+      content ? `
+        <section>
+          <div class="sec-hdr" style="border-left-color:${color}">
+            <span class="letter" style="background:${color}22;color:${color};border-color:${color}55">${letter}</span>
+            <span class="sec-lbl">${label}</span>
+          </div>
+          <div class="sec-body">${content.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</div>
+        </section>` : "";
+
+    let bodyHTML = "";
+    if (format === "sbar") {
+      bodyHTML = [
+        sectionHTML("S","Situation",   "#c0392b", result.situation),
+        sectionHTML("B","Background",  "#2980b9", result.background),
+        sectionHTML("A","Assessment",  "#f39c12", result.assessment),
+        sectionHTML("R","Recommendation","#8e44ad", result.recommendation),
+      ].join("");
+    } else {
+      bodyHTML = [
+        sectionHTML("I","Illness Severity",                  sevHex,    result.i_illness_severity),
+        sectionHTML("P","Patient Summary",                   "#2980b9", result.p_patient_summary),
+        sectionHTML("A","Action List",                       "#f39c12", result.a_action_list),
+        sectionHTML("S","Situation Awareness & Contingency", "#8e44ad", result.s_situation_awareness),
+      ].join("");
+    }
+
+    // Critical values + code status blocks (I-PASS only)
+    const extraHTML = format === "ipass" ? [
+      result.critical_values ? `
+        <section class="alert-block">
+          <div class="sec-hdr" style="border-left-color:#c0392b">
+            <span class="sec-lbl" style="color:#c0392b">&#x26a0; Critical Values / Thresholds</span>
+          </div>
+          <div class="sec-body">${result.critical_values.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</div>
+        </section>` : "",
+      result.code_status ? `
+        <section>
+          <div class="sec-hdr" style="border-left-color:#555">
+            <span class="sec-lbl">Code Status</span>
+          </div>
+          <div class="sec-body">${result.code_status.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</div>
+        </section>` : "",
+    ].join("") : "";
+
+    // Synthesis / read-back (both formats)
+    const synthesisHTML = result.synthesis_note ? `
+      <section class="synthesis">
+        <div class="sec-hdr" style="border-left-color:#27ae60">
+          <span class="sec-lbl">Synthesis \u2014 Read Back</span>
+        </div>
+        <div class="sec-body italic">\u201c${result.synthesis_note.replace(/&/g,"&amp;").replace(/</g,"&lt;")}\u201d</div>
+      </section>` : "";
+
+    // Pending items table
+    const pendingHTML = pendingItems.length ? `
+      <section>
+        <div class="sec-hdr" style="border-left-color:#e67e22">
+          <span class="sec-lbl">Pending Items (${pendingItems.length})</span>
+        </div>
+        <ul class="action-list">
+          ${pendingItems.map(p => {
+            const pt = PENDING_TYPES.find(t => t.id === p.type);
+            return `<li class="action-item">
+              <span class="ptag">${pt?.label || p.type}</span>
+              ${p.text.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+              ${p.contingency ? `<span class="conting">\u2014 If: ${p.contingency.replace(/&/g,"&amp;")}</span>` : ""}
+            </li>`;
+          }).join("")}
+        </ul>
+      </section>` : "";
+
+    win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+      <title>${format === "sbar" ? "SBAR" : "I-PASS"} Handoff \u2014 ${patLine}</title>
+      <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:Georgia,serif;font-size:13px;color:#111;max-width:680px;margin:36px auto;padding:0 28px}
+        header{border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:22px}
+        .brand{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#666;margin-bottom:6px}
+        .ts{font-size:10px;color:#888;float:right;margin-top:-18px}
+        h1{font-size:22px;font-weight:700;margin-bottom:8px}
+        .meta{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:#444;margin-bottom:8px}
+        .meta span{background:#f4f4f4;border:1px solid #ddd;border-radius:4px;padding:1px 7px}
+        .meta span.cc{background:#e8f4fd;border-color:#aed6f1;color:#1a5276;font-weight:700}
+        .sev{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.5px;padding:3px 10px;border:1.5px solid;border-radius:20px;margin-top:4px}
+        section{margin-bottom:18px;break-inside:avoid}
+        .sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:9px;border-left:3px solid #333;padding-left:10px}
+        .letter{width:22px;height:22px;border-radius:11px;border:1px solid;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:11px;font-weight:700;flex-shrink:0}
+        .sec-lbl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#333}
+        .sec-body{font-size:12.5px;line-height:1.75;color:#222;padding-left:13px;white-space:pre-wrap}
+        .sec-body.italic{font-style:italic}
+        .alert-block .sec-body{color:#922;background:#fff8f8;padding:6px 12px;border-radius:4px;border-left:2px solid #c0392b}
+        .action-list{list-style:none;padding-left:13px;margin-top:2px}
+        .action-item{font-size:12px;padding:5px 0 5px 8px;border-bottom:1px solid #f0f0f0;color:#222;line-height:1.5}
+        .ptag{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;background:#f0f0f0;border:1px solid #ddd;border-radius:3px;padding:0 5px;margin-right:6px;color:#555}
+        .conting{font-size:11px;color:#888;font-style:italic;margin-left:6px}
+        .synthesis .sec-body{background:#f0faf5;padding:8px 12px;border-radius:4px}
+        footer{margin-top:28px;padding-top:10px;border-top:1px solid #ccc;font-size:10px;color:#888;line-height:1.6;display:flex;justify-content:space-between}
+        @media print{body{margin:18px 24px}section{break-inside:avoid}.ts{float:right}}
+      </style>
+    </head><body>
+      ${headerHTML}
+      ${bodyHTML}
+      ${extraHTML}
+      ${synthesisHTML}
+      ${pendingHTML}
+      <footer>
+        <span>Notrya \u00b7 ${format === "sbar" ? "SBAR" : "I-PASS"} Handoff \u00b7 Physician review required before acting on this document</span>
+        <span>${new Date().toLocaleDateString()}</span>
+      </footer>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 350);
+  }, [result, format, demo, cc, registration, esiLevel, providerName,
+      receivingDoc, sevConfig, pendingItems]);
 
   return (
     <div style={{ fontFamily:"'DM Sans',sans-serif", color:T.txt }}>
@@ -405,6 +549,15 @@ Respond ONLY with valid JSON, no markdown fences:
                 background:copied ? "rgba(61,255,160,0.1)" : "rgba(42,79,122,0.15)",
                 color:copied ? T.green : T.txt4 }}>
               {copied ? "✓ Copied" : "Copy Handoff"}
+            </button>
+            <button onClick={printHandoff}
+              style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                fontSize:11, padding:"6px 14px", borderRadius:7,
+                cursor:"pointer",
+                border:"1px solid rgba(42,79,122,0.4)",
+                background:"rgba(42,79,122,0.12)",
+                color:T.txt4 }}>
+              &#x1F5A8; Print / PDF
             </button>
             <button onClick={() => setResult(null)}
               style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,

@@ -362,7 +362,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
             {/* Anion gap calculation for BMP */}
             {activePanel === "bmp" && labValues.na && labValues.cl && labValues.co2 && (
               <div style={{ padding:"11px 14px", borderRadius:9, background:"rgba(59,158,255,.07)", border:"1px solid rgba(59,158,255,.25)", borderLeft:"3px solid rgba(59,158,255,.6)" }}>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4, letterSpacing:.08em, textTransform:"uppercase" }}>Anion Gap </span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4, letterSpacing:"0.08em", textTransform:"uppercase" }}>Anion Gap </span>
                 {(() => {
                   const ag = parseFloat(labValues.na) - (parseFloat(labValues.cl) + parseFloat(labValues.co2));
                   if (isNaN(ag)) return null;
@@ -400,7 +400,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
                   const stage = egfr >= 90 ? "G1" : egfr >= 60 ? "G2" : egfr >= 45 ? "G3a" : egfr >= 30 ? "G3b" : egfr >= 15 ? "G4" : "G5";
                   return (
                     <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4, letterSpacing:.08em, textTransform:"uppercase" }}>eGFR (CKD-EPI)</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4, letterSpacing:"0.08em", textTransform:"uppercase" }}>eGFR (CKD-EPI)</span>
                       <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:18, fontWeight:700, color:col }}>{egfr} mL/min/1.73m²</span>
                       <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:col, background:`${col}18`, border:`1px solid ${col}40`, borderRadius:4, padding:"2px 7px" }}>{stage}</span>
                     </div>
@@ -477,7 +477,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
             <Panel key={img.id} title={`${img.modality}${img.date ? " \u2014 " + img.date : ""}`} accent={T.blue}>
               {img.impression && (
                 <div style={{ marginBottom:10, padding:"9px 12px", borderRadius:8, background:"rgba(59,158,255,.07)", border:"1px solid rgba(59,158,255,.2)" }}>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.blue, letterSpacing:.08em, textTransform:"uppercase", marginBottom:4 }}>Impression</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.blue, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:4 }}>Impression</div>
                   <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12.5, color:T.txt, lineHeight:1.6 }}>{img.impression}</div>
                 </div>
               )}
@@ -608,7 +608,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
 
                 {/* Patient context summary */}
                 <div style={{ padding:"9px 12px", borderRadius:7, background:T.up, border:`1px solid ${T.bd}` }}>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:.08em, textTransform:"uppercase", marginBottom:5 }}>Patient context included</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:5 }}>Patient context included</div>
                   <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt3, lineHeight:1.7 }}>
                     {[
                       patientAge && `Age ${patientAge}`,

@@ -1,830 +1,658 @@
-// SmartDischargeHub.jsx
-// AI-powered discharge instructions with medication reconciliation,
-// Beers Criteria flagging, return precaution generation, follow-up routing,
-// and reading-level adjustment.
-//
-// Drop-in replacement for DischargeInstructionsTab.
-// Update case "discharge" in NewPatientInput to import this instead.
-//
-// Props: demo, cc, vitals, medications, allergies, pmhSelected,
-//        disposition, dispReason, dispTime, consults, sdoh,
-//        esiLevel, registration, providerName, doorTime
-//
-// Constraints: no form, no localStorage, no router, straight quotes only,
-//   single react import, border before borderTop/etc.,
-//   finally { setBusy(false) } on all async functions
+import { useState, useRef } from "react";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
+import { DC_SECTIONS, buildDCPrompt, buildSectionPrompt, DISPOSITION_OPTS, FOLLOW_UP_METHODS } from "@/components/npi/npiData";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const T = {
-  bg:"#050f1e", panel:"#081628", card:"#0b1e36",
-  b:"rgba(26,53,85,0.8)", bhi:"rgba(42,79,122,0.9)",
-  txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
-  teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
-  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", cyan:"#00d4ff",
-};
-
-// ── Beers Criteria 2023 — common ED-relevant drugs ────────────────────────────
-// Flagged when patient age >= 65
-const BEERS_TERMS = [
-  "diphenhydramine","benadryl","hydroxyzine","atarax","vistaril",
-  "diazepam","valium","lorazepam","ativan","alprazolam","xanax",
-  "clonazepam","klonopin","triazolam","zolpidem","ambien","zaleplon",
-  "eszopiclone","lunesta","temazepam","restoril","chlordiazepoxide",
-  "oxybutynin","ditropan","dicyclomine","bentyl","hyoscyamine","levsin",
-  "scopolamine","promethazine","phenergan","methocarbamol","robaxin",
-  "cyclobenzaprine","flexeril","carisoprodol","soma","orphenadrine",
-  "meperidine","demerol","pentazocine","indomethacin","indocin",
-  "ketorolac","toradol","piroxicam","meloxicam",
-  "digoxin","amiodarone","nifedipine",
-  "metoclopramide","reglan","trimethobenzamide",
-  "glyburide","diabeta","chlorpropamide","glipizide",
-  "haloperidol","haldol","thioridazine",
-  "doxylamine","unisom","nyquil",
-];
-
-function isBeersDrug(name) {
-  if (!name) return false;
-  const n = name.toLowerCase();
-  return BEERS_TERMS.some(t => n.includes(t));
-}
-
-function isAllergyConflict(name, allergies) {
-  if (!name || !allergies?.length) return false;
-  const n = name.toLowerCase();
-  return allergies.some(a => {
-    const al = (typeof a === "string" ? a : a.name || "").toLowerCase();
-    return al && al.length > 2 && (n.includes(al) || al.includes(n));
-  });
-}
-
-// ── Return precaution templates keyed by clinical category ────────────────────
-const UNIVERSAL_PRECS = [
-  "Fever greater than 101 degrees Fahrenheit (38.3 degrees Celsius)",
-  "Symptoms worsen significantly or do not improve within 24 to 48 hours",
-  "New or severe pain not controlled with prescribed medications",
-  "Inability to keep down fluids or prescribed medications",
-  "Any new concern that worries you — when in doubt, return",
-];
-
-const CATEGORY_PRECS = {
-  cardiac:[
-    "Chest pain, pressure, tightness, or heaviness at rest or with exertion",
-    "Shortness of breath that is new or worsening",
-    "Sweating, nausea, or arm/jaw pain with any discomfort",
-    "Palpitations, racing heart, or feeling that your heart is skipping beats",
-    "Dizziness, lightheadedness, or fainting",
-    "Swelling in the legs or ankles that is new or rapidly worsening",
-  ],
-  neuro:[
-    "Sudden severe headache unlike any previous headache",
-    "Weakness, numbness, or tingling in the face, arm, or leg",
-    "Difficulty speaking, understanding speech, or sudden confusion",
-    "Vision changes — blurred, double, or sudden loss",
-    "Difficulty walking, loss of balance, or coordination problems",
-    "Seizure activity — convulsions, uncontrolled shaking, loss of consciousness",
-    "Stiff neck with fever and headache together",
-  ],
-  respiratory:[
-    "Shortness of breath at rest or with minimal activity",
-    "Worsening cough, increased mucus production, or coughing up blood",
-    "Oxygen saturation below 94 percent if you have a home monitor",
-    "Wheezing or chest tightness not relieved by prescribed inhalers",
-    "High fever with worsening cough or difficulty breathing",
-  ],
-  abdominal:[
-    "Severe or rapidly worsening abdominal pain",
-    "Vomiting blood or passing black, tarry, or bloody stools",
-    "Yellowing of skin or eyes (jaundice)",
-    "Inability to keep down any fluids for more than 8 hours",
-    "Abdomen becomes rigid, board-like, or extremely tender to touch",
-    "High fever with abdominal pain",
-  ],
-  musculoskeletal:[
-    "Severe or rapidly increasing pain at the injury site",
-    "Numbness, tingling, or weakness in the fingers or toes beyond the injury",
-    "Cast or splint becomes too tight — fingers or toes cool, pale, or blue",
-    "Signs of infection at the wound site — redness, warmth, swelling, pus, or red streaks",
-    "Unable to bear weight after a previously weight-bearing injury",
-    "Loss of motion or sensation that is new or worsening",
-  ],
-  wound:[
-    "Increasing redness, swelling, warmth, or pus at the wound site",
-    "Red streaks spreading away from the wound",
-    "Wound edges pulling apart or wound reopening",
-    "Fever with wound pain",
-    "Numbness or tingling near the wound that is new",
-  ],
-  psych:[
-    "Thoughts of harming yourself or others",
-    "Inability to care for yourself or ensure your own safety",
-    "Symptoms are significantly worsening despite medications",
-    "Medication side effects that concern you",
-  ],
-};
-
-function suggestPrecautions(cc, dispReason) {
-  const text = ((cc || "") + " " + (dispReason || "")).toLowerCase();
-  const precs = [...UNIVERSAL_PRECS];
-  const seen  = new Set(UNIVERSAL_PRECS);
-  const add   = (arr) => arr.forEach(p => { if (!seen.has(p)) { precs.push(p); seen.add(p); } });
-
-  if (/chest|cardiac|heart|mi\b|acs|troponin|palpitat|syncope/.test(text)) add(CATEGORY_PRECS.cardiac);
-  if (/head|neuro|stroke|seizure|tia|altered|mental|syncope|dizz/.test(text)) add(CATEGORY_PRECS.neuro);
-  if (/breath|respiratory|pulm|copd|asthma|pneum|sob|hypox/.test(text)) add(CATEGORY_PRECS.respiratory);
-  if (/abdom|belly|nausea|vomit|bowel|gi\b|gastro|appy|colitis/.test(text)) add(CATEGORY_PRECS.abdominal);
-  if (/fractur|sprain|strain|lacerat|wound|cut|injury|ortho/.test(text)) add(CATEGORY_PRECS.musculoskeletal);
-  if (/lacerat|wound|cut|suture|repair|abscess|i.d|i&d/.test(text)) add(CATEGORY_PRECS.wound);
-  if (/psych|suicid|SI|depress|anxiety|mania|psychos/.test(text)) add(CATEGORY_PRECS.psych);
-
-  return precs;
-}
-
-// ── Collapse panel wrapper ────────────────────────────────────────────────────
-function Panel({ title, badge, badgeColor, accent, open, onToggle, children }) {
-  const ac = accent || T.teal;
-  return (
-    <div style={{ marginBottom:10 }}>
-      <button onClick={onToggle}
-        style={{ display:"flex", alignItems:"center", gap:8, width:"100%",
-          padding:"10px 14px",
-          background: open
-            ? `linear-gradient(135deg,${ac}12,rgba(8,22,40,0.92))`
-            : "rgba(8,22,40,0.65)",
-          border:`1px solid ${open ? ac+"55" : "rgba(26,53,85,0.45)"}`,
-          borderRadius: open ? "10px 10px 0 0" : 10,
-          cursor:"pointer", textAlign:"left", transition:"all .15s" }}>
-        <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
-          fontSize:13, color: open ? ac : T.txt3, flex:1 }}>{title}</span>
-        {badge && (
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            fontWeight:700, padding:"2px 8px", borderRadius:4,
-            background:`${badgeColor || ac}18`,
-            border:`1px solid ${badgeColor || ac}40`,
-            color:badgeColor || ac, letterSpacing:1,
-            textTransform:"uppercase" }}>{badge}</span>
-        )}
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-          color: open ? ac : T.txt4, letterSpacing:1, marginLeft:6 }}>
-          {open ? "▲" : "▼"}
-        </span>
-      </button>
-      {open && (
-        <div style={{ padding:"12px 14px 10px",
-          background:"rgba(8,22,40,0.65)",
-          border:`1px solid ${ac}40`,
-          borderTop:"none", borderRadius:"0 0 10px 10px" }}>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Medication row ────────────────────────────────────────────────────────────
-function MedRow({ med, onStatus, onRemove, patientAge, allergies }) {
-  const name      = med.name || med.raw || "";
-  const beers     = isBeersDrug(name) && parseInt(patientAge) >= 65;
-  const conflict  = isAllergyConflict(name, allergies);
-  const statusCol = med.status === "continue"     ? T.teal
-    : med.status === "discontinue" ? T.coral
-    : T.gold;
-
-  return (
-    <div style={{ display:"flex", alignItems:"center", gap:8,
-      padding:"7px 10px", borderRadius:8, marginBottom:4,
-      background:"rgba(14,37,68,0.55)",
-      border:`1px solid ${conflict ? T.coral+"55" : beers ? T.gold+"44" : "rgba(26,53,85,0.35)"}` }}>
-
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-            color:T.txt }}>{name}</span>
-          {med.dose && (
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-              color:T.txt4 }}>{med.dose}</span>
-          )}
-          {beers && (
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:T.gold, background:"rgba(245,200,66,0.1)",
-              border:"1px solid rgba(245,200,66,0.3)",
-              borderRadius:4, padding:"1px 6px", letterSpacing:1 }}>
-              ⚠ BEERS
-            </span>
-          )}
-          {conflict && (
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:T.coral, background:"rgba(255,107,107,0.1)",
-              border:"1px solid rgba(255,107,107,0.35)",
-              borderRadius:4, padding:"1px 6px", letterSpacing:1 }}>
-              ⛔ ALLERGY
-            </span>
-          )}
-        </div>
-        {beers && (
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-            color:T.gold, marginTop:2 }}>
-            Beers Criteria — potentially inappropriate in patients ≥65
-          </div>
-        )}
-        {conflict && (
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-            color:T.coral, marginTop:2 }}>
-            Possible allergy conflict — verify before prescribing
-          </div>
-        )}
-      </div>
-
-      {/* Status toggle */}
-      <div style={{ display:"flex", gap:4, flexShrink:0 }}>
-        {["continue","hold","discontinue"].map(s => (
-          <button key={s} onClick={() => onStatus(s)}
-            style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              padding:"3px 8px", borderRadius:5, cursor:"pointer",
-              letterSpacing:1, textTransform:"uppercase",
-              transition:"all .1s",
-              border:`1px solid ${med.status===s ? statusCol+"77" : "rgba(26,53,85,0.4)"}`,
-              background: med.status===s ? `${statusCol}18` : "transparent",
-              color: med.status===s ? statusCol : T.txt4 }}>
-            {s}
-          </button>
-        ))}
-      </div>
-
-      <button onClick={onRemove}
-        style={{ background:"none", border:"none", color:T.txt4,
-          cursor:"pointer", fontSize:12, padding:"2px 4px",
-          flexShrink:0, lineHeight:1 }}>✕</button>
-    </div>
-  );
-}
-
-// ── Precaution row ────────────────────────────────────────────────────────────
-function PrecRow({ text, onRemove }) {
-  return (
-    <div style={{ display:"flex", alignItems:"flex-start", gap:7,
-      padding:"6px 10px", borderRadius:7, marginBottom:3,
-      background:"rgba(14,37,68,0.5)",
-      border:"1px solid rgba(26,53,85,0.3)" }}>
-      <span style={{ color:T.coral, fontSize:8, marginTop:3, flexShrink:0 }}>▸</span>
-      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-        color:T.txt2, flex:1, lineHeight:1.55 }}>{text}</span>
-      <button onClick={onRemove}
-        style={{ background:"none", border:"none", color:T.txt4,
-          cursor:"pointer", fontSize:11, padding:"1px 3px",
-          flexShrink:0, lineHeight:1 }}>✕</button>
-    </div>
-  );
-}
-
-// ── Output section card ───────────────────────────────────────────────────────
-function OutputSection({ label, content, color }) {
-  if (!content) return null;
-  return (
-    <div style={{ marginBottom:10 }}>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-        color:color || T.teal, letterSpacing:1.5, textTransform:"uppercase",
-        marginBottom:5, paddingBottom:4,
-        borderBottom:`1px solid ${color || T.teal}28` }}>
-        {label}
-      </div>
-      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-        color:T.txt2, lineHeight:1.75, whiteSpace:"pre-wrap" }}>
-        {content}
-      </div>
-    </div>
-  );
-}
-
-// ── Main export ───────────────────────────────────────────────────────────────
-import DischargeReadabilityStrip from "@/components/npi/DischargeReadabilityStrip";
-
-export default function SmartDischargeHub({
+export default function DischargeInstructionsTab({
   demo, cc, vitals, medications, allergies, pmhSelected,
   disposition, dispReason, dispTime, consults, sdoh,
   esiLevel, registration, providerName, doorTime,
+  // FIX: nursing documentation now flows into discharge summary
+  nursingNotes = [], nursingInterventions = [],
 }) {
-  // ── Medication reconciliation state ──────────────────────────────────────
-  const initMeds = useMemo(() => {
-    const raw = (medications || []).map((m, i) => ({
-      id: i,
-      raw: typeof m === "string" ? m : (m.name || ""),
-      name: typeof m === "string" ? m : (m.name || ""),
-      dose: typeof m === "object" ? (m.dose || m.sig || "") : "",
-      status: "continue",
-    })).filter(m => m.name);
-    return raw;
-  }, [medications]);
+  const [content,    setContent]    = useState(() => Object.fromEntries(DC_SECTIONS.map(s => [s.key, ""])));
+  const [genState,   setGenState]   = useState("idle");
+  const [lang,       setLang]       = useState("standard");
+  const [copied,     setCopied]     = useState(false);
+  const [editingKey, setEditingKey] = useState(null);
+  const [teachback,  setTeachback]  = useState(false);
 
-  const [reconMeds,    setReconMeds]    = useState(initMeds);
-  const [newMedName,   setNewMedName]   = useState("");
-  const [newMedSig,    setNewMedSig]    = useState("");
+  // Structured follow-up (CEDR 2025 discharge coordination measure)
+  const [followUpProvider,  setFollowUpProvider]  = useState("");
+  const [followUpSpecialty, setFollowUpSpecialty] = useState("");
+  const [followUpDate,      setFollowUpDate]      = useState("");
+  const [followUpMethod,    setFollowUpMethod]    = useState("");
 
-  // ── Return precautions state ──────────────────────────────────────────────
-  const initPrecs = useMemo(() =>
-    suggestPrecautions(cc?.text || "", dispReason || ""),
-    [cc, dispReason]
-  );
-  const [precautions,  setPrecautions]  = useState(initPrecs);
-  const [newPrec,      setNewPrec]      = useState("");
+  const patientName     = [demo.firstName, demo.lastName].filter(Boolean).join(" ") || "Patient";
+  const hasContent      = DC_SECTIONS.some(s => content[s.key]);
+  const isGeneratingAll = genState === "all";
+  const anyGenerating   = genState === "all" || genState.startsWith("section:");
+  const transportRisk   = sdoh?.transport === "2";
+  const phq2Score       = parseInt(sdoh?.phq2q1||"0") + parseInt(sdoh?.phq2q2||"0");
+  const phq2Positive    = Boolean(sdoh?.phq2q1 && sdoh?.phq2q2 && phq2Score >= 3);
+  const auditcScore     = parseInt(sdoh?.auditcq1||"0") + parseInt(sdoh?.auditcq2||"0") + parseInt(sdoh?.auditcq3||"0");
+  const auditcSexLower  = (demo?.sex||"").toLowerCase();
+  const auditcThresh    = auditcSexLower === "female" || auditcSexLower === "f" ? 3 : 4;
+  const auditcPositive  = Boolean(sdoh?.auditcq1 && sdoh?.auditcq2 && sdoh?.auditcq3 && auditcScore >= auditcThresh);
+  const dispOpt         = DISPOSITION_OPTS.find(o => o.val === disposition);
+  const isGeneratingSec = key => genState === `section:${key}`;
 
-  // ── Follow-up state ───────────────────────────────────────────────────────
-  const [followupWith,  setFollowupWith]  = useState("");
-  const [followupWhen,  setFollowupWhen]  = useState("1 week");
-  const [followupNotes, setFollowupNotes] = useState("");
+  const followUp = followUpProvider
+    ? { provider: followUpProvider, specialty: followUpSpecialty, date: followUpDate, method: followUpMethod }
+    : null;
 
-  // ── Settings ──────────────────────────────────────────────────────────────
-  const [readingLevel,  setReadingLevel]  = useState("8th grade");
-  const [language,      setLanguage]      = useState("English");
+  // ── Build nursing context string ─────────────────────────────────────────
+  function buildNursingContext() {
+    const interventionLines = nursingInterventions
+      .map(n => `- Intervention: ${typeof n === "string" ? n : n.label || n.text || ""}`)
+      .filter(Boolean);
+    const noteLines = nursingNotes
+      .map(n => `- Note: ${typeof n === "string" ? n : n.text || n.note || ""}`)
+      .filter(Boolean);
+    const all = [...interventionLines, ...noteLines];
+    return all.length
+      ? `\n\nNURSING DOCUMENTATION (incorporate relevant items into home care and activity sections):\n${all.join("\n")}`
+      : "";
+  }
 
-  // ── Panel open state ─────────────────────────────────────────────────────
-  const [pMeds,    setPMeds]    = useState(true);
-  const [pPrecs,   setPPrecs]   = useState(true);
-  const [pFollowup,setPFollowup]= useState(true);
-  const [pOutput,  setPOutput]  = useState(false);
-
-  // ── AI state ──────────────────────────────────────────────────────────────
-  const [busy,     setBusy]     = useState(false);
-  const [result,   setResult]   = useState(null);
-  const [aiErr,    setAiErr]    = useState(null);
-  const [copied,   setCopied]   = useState(false);
-  const [attested, setAttested] = useState(false);
-
-  // ── Beers / conflict counts for badge ────────────────────────────────────
-  const beersCount    = reconMeds.filter(m => isBeersDrug(m.name) && parseInt(demo?.age) >= 65).length;
-  const conflictCount = reconMeds.filter(m => isAllergyConflict(m.name, allergies)).length;
-
-  // ── Medication handlers ───────────────────────────────────────────────────
-  const setMedStatus = useCallback((id, status) =>
-    setReconMeds(p => p.map(m => m.id === id ? { ...m, status } : m)), []);
-  const removeMed = useCallback((id) =>
-    setReconMeds(p => p.filter(m => m.id !== id)), []);
-  const addMed = useCallback(() => {
-    if (!newMedName.trim()) return;
-    setReconMeds(p => [...p, {
-      id: Date.now(), raw:newMedName.trim(),
-      name:newMedName.trim(), dose:newMedSig.trim(), status:"continue",
-    }]);
-    setNewMedName(""); setNewMedSig("");
-  }, [newMedName, newMedSig]);
-
-  // ── Precaution handlers ───────────────────────────────────────────────────
-  const removePrec = useCallback((i) =>
-    setPrecautions(p => p.filter((_, idx) => idx !== i)), []);
-  const addPrec = useCallback(() => {
-    if (!newPrec.trim()) return;
-    setPrecautions(p => [...p, newPrec.trim()]);
-    setNewPrec("");
-  }, [newPrec]);
-
-  // ── Build AI prompt ───────────────────────────────────────────────────────
-  const buildPrompt = useCallback(() => {
-    const contMeds = reconMeds.filter(m => m.status === "continue");
-    const holdMeds = reconMeds.filter(m => m.status === "hold");
-    const discMeds = reconMeds.filter(m => m.status === "discontinue");
-
-    const medSection = [
-      contMeds.length ? `Continue: ${contMeds.map(m => m.name + (m.dose ? " — " + m.dose : "")).join(", ")}` : "",
-      holdMeds.length ? `Hold until follow-up: ${holdMeds.map(m => m.name).join(", ")}` : "",
-      discMeds.length ? `Discontinue: ${discMeds.map(m => m.name).join(", ")}` : "",
-    ].filter(Boolean).join("\n");
-
-    return `Generate comprehensive emergency department discharge instructions.
-
-PATIENT CONTEXT:
-Age/Sex: ${demo?.age || "Unknown"}yo ${demo?.sex || ""}
-Chief Complaint / Diagnosis: ${cc?.text || dispReason || "ED visit"}
-Disposition: ${disposition || "discharge"} — ${dispReason || ""}
-ESI Level: ${esiLevel || ""}
-Provider: ${providerName || "ED Physician"}
-Allergies: ${(allergies || []).join(", ") || "NKDA"}
-PMH: ${(pmhSelected || []).join(", ") || "none documented"}
-
-MEDICATIONS:
-${medSection || "No medication changes"}
-
-RETURN PRECAUTIONS (incorporate all of these):
-${precautions.map((p, i) => `${i + 1}. ${p}`).join("\n")}
-
-FOLLOW-UP:
-With: ${followupWith || "primary care physician"}
-When: ${followupWhen}
-${followupNotes ? `Notes: ${followupNotes}` : ""}
-
-READING LEVEL: ${readingLevel}
-LANGUAGE: ${language}
-
-INSTRUCTIONS:
-Write complete, warm, and clear discharge instructions at a ${readingLevel} reading level.
-${language !== "English" ? `Write the instructions in ${language}.` : ""}
-Use plain language — avoid medical jargon without explanation.
-Format using clear section headers.
-Be empathetic and reassuring while being specific about when to return.
-
-Respond ONLY with valid JSON, no markdown fences:
-{
-  "diagnosis_summary": "Brief plain-language explanation of what happened",
-  "home_care": "Specific home care instructions",
-  "medications": "Detailed medication instructions for each listed above",
-  "activity": "Activity restrictions and recommendations",
-  "diet": "Dietary instructions if relevant",
-  "wound_care": "Wound/procedure care if applicable — omit if not relevant",
-  "return_precautions": "When to return to the ED — formatted as a readable paragraph incorporating all listed precautions",
-  "followup": "Follow-up instructions with timeframe and provider type",
-  "closing": "Brief warm closing message"
-}`;
-  }, [reconMeds, precautions, followupWith, followupWhen, followupNotes,
-      readingLevel, language, demo, cc, dispReason, disposition, esiLevel,
-      providerName, allergies, pmhSelected]);
-
-  // ── Generate instructions ──────────────────────────────────────────────────
-  const handleGenerate = useCallback(async () => {
-    setBusy(true);
-    setAiErr(null);
-    setResult(null);
+  async function generateAll(overrideLang, andCopy = false) {
+    const useLang = overrideLang || lang;
+    setGenState("all");
+    setEditingKey(null);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "anthropic-dangerous-direct-browser-access":"true",
-        },
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:2000,
-          system:"You are an emergency medicine documentation assistant generating patient discharge instructions. Always respond with valid JSON only — no markdown, no preamble.",
-          messages:[{ role:"user", content:buildPrompt() }],
-        }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      const raw    = data.content?.find(b => b.type === "text")?.text || "{}";
-      const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
-      setResult(parsed);
-      setPOutput(true);
-    } catch (e) {
-      setAiErr("Error generating instructions: " + (e.message || "Check API connectivity"));
-    } finally {
-      setBusy(false);
-    }
-  }, [buildPrompt]);
+      // Append nursing context to the base prompt
+      const basePrompt = buildDCPrompt(demo, cc, vitals, medications, allergies, pmhSelected,
+        disposition, dispReason, consults, useLang, followUp);
+      const prompt = basePrompt + buildNursingContext();
 
-  // ── Copy full instructions ────────────────────────────────────────────────
-  const copyAll = useCallback(() => {
-    if (!result) return;
-    const sections = [
-      result.diagnosis_summary  && `DIAGNOSIS\n${result.diagnosis_summary}`,
-      result.home_care          && `HOME CARE\n${result.home_care}`,
-      result.medications        && `MEDICATIONS\n${result.medications}`,
-      result.activity           && `ACTIVITY\n${result.activity}`,
-      result.diet               && `DIET\n${result.diet}`,
-      result.wound_care         && `WOUND CARE\n${result.wound_care}`,
-      result.return_precautions && `WHEN TO RETURN TO THE ED\n${result.return_precautions}`,
-      result.followup           && `FOLLOW-UP\n${result.followup}`,
-      result.closing            && result.closing,
-    ].filter(Boolean).join("\n\n");
-    navigator.clipboard.writeText(sections).then(() => {
+      const schema = {
+        type: "object",
+        properties: Object.fromEntries(DC_SECTIONS.map(s => [s.key, { type:"string" }])),
+      };
+      const res = await base44.integrations.Core.InvokeLLM({ prompt, response_json_schema: schema });
+      if (res && typeof res === "object") {
+        setContent(prev => {
+          const newContent = { ...prev, ...res };
+          // Auto-copy immediately if requested — use the fresh result directly
+          if (andCopy) {
+            const text = buildFullTextFromContent(newContent);
+            navigator.clipboard.writeText(text).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2500);
+            });
+          }
+          return newContent;
+        });
+      }
+      setGenState("done");
+    } catch(_) { setGenState("error"); }
+  }
+
+  async function regenerateSection(sec) {
+    setGenState(`section:${sec.key}`);
+    try {
+      const prompt = buildSectionPrompt(sec.key, sec.label, demo, cc, vitals, medications,
+        allergies, disposition, lang);
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: { type:"object", properties:{ [sec.key]:{ type:"string" } } },
+      });
+      if (res?.[sec.key]) setContent(prev => ({ ...prev, [sec.key]: res[sec.key] }));
+      setGenState("done");
+    } catch(_) { setGenState("done"); }
+  }
+
+  function buildFollowUpSummary() {
+    if (!followUpProvider) return "";
+    const parts = [followUpProvider];
+    if (followUpSpecialty) parts.push(`(${followUpSpecialty})`);
+    if (followUpDate) parts.push(`on ${followUpDate}`);
+    if (followUpMethod) parts.push(`— ${followUpMethod}`);
+    return parts.join(" ");
+  }
+
+  // Accepts optional content override so generateAll can copy before state settles
+  function buildFullTextFromContent(c) {
+    const date = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
+    const fuLine = buildFollowUpSummary();
+
+    const nursingItems = [
+      ...nursingInterventions.map(n => `- ${typeof n === "string" ? n : n.label || n.text || ""}`),
+      ...nursingNotes.map(n => `- ${typeof n === "string" ? n : n.text || n.note || ""}`),
+    ].filter(Boolean);
+
+    return [
+      "DISCHARGE INSTRUCTIONS",
+      `Patient: ${patientName}${demo.age ? ", " + demo.age + "y" : ""}${demo.sex ? " " + demo.sex : ""}`,
+      cc.text ? `Visit reason: ${cc.text}` : "",
+      `Date: ${date}`,
+      `Prepared by: ${providerName || "ED Provider"}`,
+      fuLine ? `Follow-up: ${fuLine}` : "",
+      "",
+      ...DC_SECTIONS
+        .filter(s => c[s.key])
+        .flatMap(s => [s.label.toUpperCase(), c[s.key], ""]),
+      // Nursing documentation section — appended if present
+      ...(nursingItems.length ? [
+        "NURSING DOCUMENTATION",
+        nursingItems.join("\n"),
+        "",
+      ] : []),
+      "If you have questions or your condition worsens, call your primary care provider or return to the Emergency Department.",
+    ].filter(l => l !== undefined && l !== "").join("\n");
+  }
+
+  function buildFullText() {
+    return buildFullTextFromContent(content);
+  }
+
+  async function copyAll() {
+    try {
+      await navigator.clipboard.writeText(buildFullText());
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    });
-  }, [result]);
+    } catch(_) {}
+  }
 
-  // ── Patient context strip ─────────────────────────────────────────────────
-  const diagnosis = cc?.text || dispReason || "ED Visit";
+  function printInstructions() {
+    const win = window.open("", "_blank", "width=720,height=920");
+    if (!win) return;
+    const date = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
+    const fuLine = buildFollowUpSummary();
+    const fuHTML = fuLine ? `<div class="fu-block"><strong>Follow-up appointment:</strong> ${fuLine.replace(/</g,"&lt;")}</div>` : "";
+    const sectionsHTML = DC_SECTIONS
+      .filter(s => content[s.key])
+      .map(s => `<section><h2>${s.icon} ${s.label}</h2><p>${(content[s.key] || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</p></section>`)
+      .join("");
+
+    const nursingItems = [
+      ...nursingInterventions.map(n => `• ${typeof n === "string" ? n : n.label || n.text || ""}`),
+      ...nursingNotes.map(n => `• ${typeof n === "string" ? n : n.text || n.note || ""}`),
+    ].filter(Boolean);
+    const nursingHTML = nursingItems.length
+      ? `<section><h2>🩺 Nursing Documentation</h2><p>${nursingItems.join("<br>")}</p></section>`
+      : "";
+
+    win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Discharge Instructions \u2014 ${patientName}</title>
+      <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;font-size:13.5px;color:#111;background:#fff;max-width:660px;margin:40px auto;padding:0 28px}header{border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:24px}h1{font-size:20px;font-weight:700;margin-bottom:6px}.meta{font-size:12px;color:#444;line-height:1.7}.fu-block{margin-top:8px;padding:7px 10px;background:#f0f8f0;border-left:3px solid #2a7d4f;font-size:12px;color:#1a4d31}section{margin-bottom:22px}h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#111;border-left:3px solid #333;padding-left:9px;margin-bottom:7px}p{line-height:1.72;white-space:pre-wrap}footer{margin-top:32px;padding-top:12px;border-top:1px solid #ccc;font-size:11px;color:#555;line-height:1.6}@media print{body{margin:20px 28px}}</style></head><body>
+      <header><h1>Discharge Instructions</h1><div class="meta"><strong>${patientName}</strong>${demo.age ? " &bull; " + demo.age + "y" : ""}${demo.sex ? " &bull; " + demo.sex : ""}${registration.mrn ? " &bull; MRN " + registration.mrn : ""}<br>${cc.text ? "Visit reason: " + cc.text.replace(/</g,"&lt;") + "<br>" : ""}Date: ${date} &bull; Prepared by: ${(providerName || "ED Provider").replace(/</g,"&lt;")}</div>${fuHTML}</header>
+      ${sectionsHTML}${nursingHTML}
+      <footer>If you have questions or your condition worsens, call your primary care provider or return to the Emergency Department. Keep this document for your records.</footer>
+      </body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 400);
+  }
+
+  const btnGhost = {
+    padding:"6px 12px", borderRadius:7,
+    border:"1px solid rgba(42,77,114,0.5)", background:"transparent",
+    fontFamily:"'DM Sans',sans-serif", fontSize:11, cursor:"pointer",
+  };
+
+  // Nursing note count for badge
+  const nursingCount = nursingInterventions.length + nursingNotes.length;
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", color:T.txt }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"100%", overflowY:"auto" }}>
 
-      {/* Context strip */}
-      <div style={{ padding:"10px 13px", borderRadius:10, marginBottom:12,
-        background:"rgba(8,22,40,0.7)",
-        border:"1px solid rgba(26,53,85,0.4)",
-        display:"flex", flexWrap:"wrap", gap:12, alignItems:"center" }}>
-        <div>
-          <div style={{ fontFamily:"'Playfair Display',serif",
-            fontWeight:700, fontSize:15, color:T.teal }}>
-            Smart Discharge Instructions
-          </div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-            color:T.txt4, marginTop:1 }}>
-            Medication reconciliation · AI-generated · Reading-level adjusted
-          </div>
-        </div>
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginLeft:"auto" }}>
-          {[
-            demo?.age && demo?.sex ? `${demo.age}yo ${demo.sex}` : null,
-            diagnosis,
-            esiLevel ? `ESI ${esiLevel}` : null,
-            providerName || null,
-          ].filter(Boolean).map(v => (
-            <span key={v} style={{ fontFamily:"'JetBrains Mono',monospace",
-              fontSize:9, color:T.txt3, background:"rgba(42,79,122,0.2)",
-              border:"1px solid rgba(42,79,122,0.35)",
-              borderRadius:5, padding:"2px 8px", letterSpacing:0.5 }}>
-              {v}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Panel 1: Medication Reconciliation ─────────────────────────────── */}
-      <Panel
-        title="Medication Reconciliation"
-        accent={beersCount || conflictCount ? T.gold : T.teal}
-        badge={
-          conflictCount ? `${conflictCount} allergy conflict${conflictCount>1?"s":""}` :
-          beersCount    ? `${beersCount} Beers flag${beersCount>1?"s":""}` :
-          `${reconMeds.filter(m=>m.status==="continue").length} continuing`
-        }
-        badgeColor={conflictCount ? T.coral : beersCount ? T.gold : T.teal}
-        open={pMeds} onToggle={() => setPMeds(p => !p)}>
-
-        {reconMeds.length === 0 && (
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-            color:T.txt4, marginBottom:8, fontStyle:"italic" }}>
-            No medications entered in this encounter — add below as needed.
-          </div>
-        )}
-
-        {reconMeds.map(m => (
-          <MedRow key={m.id} med={m}
-            onStatus={s => setMedStatus(m.id, s)}
-            onRemove={() => removeMed(m.id)}
-            patientAge={demo?.age}
-            allergies={allergies} />
-        ))}
-
-        {/* Add new med */}
-        <div style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
-          <input value={newMedName} onChange={e => setNewMedName(e.target.value)}
-            placeholder="Add medication name..."
-            onKeyDown={e => e.key === "Enter" && addMed()}
-            style={{ flex:2, minWidth:160, padding:"6px 10px",
-              background:"rgba(14,37,68,0.7)",
-              border:"1px solid rgba(42,79,122,0.4)",
-              borderRadius:7, outline:"none",
-              fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt }} />
-          <input value={newMedSig} onChange={e => setNewMedSig(e.target.value)}
-            placeholder="Sig / dose..."
-            onKeyDown={e => e.key === "Enter" && addMed()}
-            style={{ flex:1, minWidth:120, padding:"6px 10px",
-              background:"rgba(14,37,68,0.7)",
-              border:"1px solid rgba(42,79,122,0.4)",
-              borderRadius:7, outline:"none",
-              fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt }} />
-          <button onClick={addMed}
-            style={{ padding:"6px 14px", borderRadius:7, cursor:"pointer",
-              border:"1px solid rgba(0,229,192,0.4)",
-              background:"rgba(0,229,192,0.09)", color:T.teal,
-              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12 }}>
-            + Add
-          </button>
-        </div>
-
-        {(beersCount > 0 || conflictCount > 0) && (
-          <div style={{ marginTop:10, padding:"7px 10px", borderRadius:7,
-            background:"rgba(245,200,66,0.07)",
-            border:"1px solid rgba(245,200,66,0.25)",
-            fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.gold,
-            lineHeight:1.55 }}>
-            {conflictCount > 0 && `⛔ ${conflictCount} potential allergy conflict${conflictCount>1?"s":""} detected — review before discharge. `}
-            {beersCount > 0 && `⚠ ${beersCount} Beers Criteria medication${beersCount>1?"s":""} flagged for patient age ≥65 — consider alternatives or explicit indication documentation.`}
-          </div>
-        )}
-      </Panel>
-
-      {/* ── Panel 2: Return Precautions ─────────────────────────────────────── */}
-      <Panel
-        title="Return Precautions"
-        accent={T.coral}
-        badge={`${precautions.length} listed`}
-        open={pPrecs} onToggle={() => setPPrecs(p => !p)}>
-
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-          color:T.txt4, letterSpacing:1, textTransform:"uppercase",
-          marginBottom:7 }}>
-          Auto-suggested from chief complaint — remove or add as needed
-        </div>
-
-        {precautions.map((p, i) => (
-          <PrecRow key={i} text={p} onRemove={() => removePrec(i)} />
-        ))}
-
-        <div style={{ display:"flex", gap:6, marginTop:8 }}>
-          <input value={newPrec} onChange={e => setNewPrec(e.target.value)}
-            placeholder="Add custom return precaution..."
-            onKeyDown={e => e.key === "Enter" && addPrec()}
-            style={{ flex:1, padding:"6px 10px",
-              background:"rgba(14,37,68,0.7)",
-              border:"1px solid rgba(42,79,122,0.4)",
-              borderRadius:7, outline:"none",
-              fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt }} />
-          <button onClick={addPrec}
-            style={{ padding:"6px 14px", borderRadius:7, cursor:"pointer",
-              border:"1px solid rgba(255,107,107,0.4)",
-              background:"rgba(255,107,107,0.09)", color:T.coral,
-              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12 }}>
-            + Add
-          </button>
-        </div>
-      </Panel>
-
-      {/* ── Panel 3: Follow-up Plan ──────────────────────────────────────────── */}
-      <Panel
-        title="Follow-up Plan"
-        accent={T.purple}
-        open={pFollowup} onToggle={() => setPFollowup(p => !p)}>
-
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
-          <div style={{ flex:2, minWidth:180 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:T.txt4, letterSpacing:1.3, textTransform:"uppercase",
-              marginBottom:4 }}>Follow up with</div>
-            <input value={followupWith} onChange={e => setFollowupWith(e.target.value)}
-              placeholder="e.g. Primary care, Cardiology, Orthopedics"
-              style={{ width:"100%", padding:"7px 10px",
-                background:"rgba(14,37,68,0.7)",
-                border:"1px solid rgba(42,79,122,0.4)",
-                borderRadius:7, outline:"none",
-                fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt }} />
-          </div>
-          <div style={{ flex:1, minWidth:130 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:T.txt4, letterSpacing:1.3, textTransform:"uppercase",
-              marginBottom:4 }}>Timeframe</div>
-            <div style={{ position:"relative" }}>
-              <select value={followupWhen} onChange={e => setFollowupWhen(e.target.value)}
-                style={{ width:"100%", padding:"7px 28px 7px 10px",
-                  background:"rgba(14,37,68,0.7)",
-                  border:"1px solid rgba(42,79,122,0.4)",
-                  borderRadius:7, outline:"none",
-                  appearance:"none", WebkitAppearance:"none",
-                  fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt,
-                  cursor:"pointer" }}>
-                {["24–48 hours","2–3 days","1 week","2 weeks","4–6 weeks","As needed","Per specialist recommendation"].map(o => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </select>
-              <span style={{ position:"absolute", right:10, top:"50%",
-                transform:"translateY(-50%)", color:T.txt4,
-                fontSize:9, pointerEvents:"none" }}>▼</span>
+      <div style={{ padding:"11px 20px 12px", borderBottom:"1px solid rgba(26,53,85,0.4)",
+        background:"rgba(5,15,30,0.6)", flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+          flexWrap:"wrap", gap:10 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+            <div>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+                fontSize:15, color:"var(--npi-txt)" }}>Discharge Instructions</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:"var(--npi-txt4)", marginTop:1 }}>
+                {patientName}{demo.age ? ` \xb7 ${demo.age}y` : ""}{demo.sex ? ` \xb7 ${demo.sex}` : ""}
+                {registration.mrn ? ` \xb7 MRN ${registration.mrn}` : ""}
+              </div>
             </div>
+            {cc.text && (
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+                padding:"3px 9px", borderRadius:20, background:"rgba(59,158,255,0.1)",
+                border:"1px solid rgba(59,158,255,0.25)", color:"#3b9eff" }}>
+                {cc.text}
+              </span>
+            )}
+            {dispOpt && (
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                padding:"2px 8px", borderRadius:4, letterSpacing:.5, textTransform:"uppercase",
+                background:`${dispOpt.color}15`, border:`1px solid ${dispOpt.color}44`,
+                color:dispOpt.color }}>
+                {dispOpt.icon} {dispOpt.label}
+              </span>
+            )}
+            {/* Nursing documentation badge */}
+            {nursingCount > 0 && (
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                padding:"2px 8px", borderRadius:4, letterSpacing:.5,
+                background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.28)",
+                color:"var(--npi-teal)" }}>
+                \u{1F9B8} {nursingCount} nursing item{nursingCount > 1 ? "s" : ""} included
+              </span>
+            )}
           </div>
-        </div>
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color:T.txt4, letterSpacing:1.3, textTransform:"uppercase",
-            marginBottom:4 }}>Additional Follow-up Notes</div>
-          <input value={followupNotes} onChange={e => setFollowupNotes(e.target.value)}
-            placeholder="e.g. Call for appointment, results pending at follow-up, imaging to repeat"
-            style={{ width:"100%", padding:"7px 10px",
-              background:"rgba(14,37,68,0.7)",
-              border:"1px solid rgba(42,79,122,0.4)",
-              borderRadius:7, outline:"none",
-              fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt }} />
-        </div>
-      </Panel>
-
-      {/* ── Settings bar ─────────────────────────────────────────────────────── */}
-      <div style={{ padding:"10px 13px", borderRadius:10, marginBottom:12,
-        background:"rgba(8,22,40,0.65)",
-        border:"1px solid rgba(26,53,85,0.4)",
-        display:"flex", gap:16, flexWrap:"wrap", alignItems:"center" }}>
-
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color:T.txt4, letterSpacing:1.3, textTransform:"uppercase",
-            marginBottom:5 }}>Reading Level</div>
-          <div style={{ display:"flex", gap:4 }}>
-            {["6th grade","8th grade","10th grade","Professional"].map(l => (
-              <button key={l} onClick={() => setReadingLevel(l)}
-                style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  fontWeight:700, padding:"3px 10px", borderRadius:20,
-                  cursor:"pointer", letterSpacing:1, textTransform:"uppercase",
-                  transition:"all .12s",
-                  border:`1px solid ${readingLevel===l ? T.purple+"77" : "rgba(42,79,122,0.35)"}`,
-                  background:readingLevel===l ? "rgba(155,109,255,0.18)" : "transparent",
-                  color:readingLevel===l ? T.purple : T.txt4 }}>
-                {l}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color:T.txt4, letterSpacing:1.3, textTransform:"uppercase",
-            marginBottom:5 }}>Language</div>
-          <div style={{ display:"flex", gap:4 }}>
-            {["English","Spanish","French","Portuguese","Mandarin"].map(l => (
-              <button key={l} onClick={() => setLanguage(l)}
-                style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  fontWeight:700, padding:"3px 10px", borderRadius:20,
-                  cursor:"pointer", letterSpacing:1, textTransform:"uppercase",
-                  transition:"all .12s",
-                  border:`1px solid ${language===l ? T.cyan+"77" : "rgba(42,79,122,0.35)"}`,
-                  background:language===l ? "rgba(0,212,255,0.12)" : "transparent",
-                  color:language===l ? T.cyan : T.txt4 }}>
-                {l}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Generate button ───────────────────────────────────────────────────── */}
-      <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:12 }}>
-        <button onClick={handleGenerate} disabled={busy}
-          style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700,
-            fontSize:13, padding:"11px 28px", borderRadius:10,
-            cursor:busy ? "not-allowed" : "pointer",
-            border:`1px solid ${busy ? "rgba(42,79,122,0.3)" : "rgba(0,229,192,0.55)"}`,
-            background:busy
-              ? "rgba(42,79,122,0.15)"
-              : "linear-gradient(135deg,rgba(0,229,192,0.22),rgba(0,229,192,0.06))",
-            color:busy ? T.txt4 : T.teal, transition:"all .15s" }}>
-          {busy ? "⚙ Generating..." : "✨ Generate Discharge Instructions"}
-        </button>
-        {result && (
-          <>
-            <DischargeReadabilityStrip
-              text={Object.values(result).filter(v => typeof v === "string").join("\n\n")}
-              attested={attested}
-              onAttest={setAttested}
-              onCopy={copyAll}
-            />
-            <button onClick={copyAll}
-              disabled={!attested}
-              title={attested ? undefined : "Attest above to enable copy"}
-              style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
-                fontSize:12, padding:"11px 20px", borderRadius:10,
-                cursor:attested ? "pointer" : "not-allowed",
-                transition:"all .15s", opacity:attested ? 1 : 0.5,
-                border:`1px solid ${copied ? T.green+"77" : "rgba(42,79,122,0.4)"}`,
-                background:copied ? "rgba(61,255,160,0.1)" : "rgba(42,79,122,0.15)",
-                color:copied ? T.green : T.txt3 }}>
-              {copied ? "✓ Copied" : "Copy All"}
+          <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", background:"rgba(8,22,46,0.9)",
+              border:"1px solid rgba(26,53,85,0.5)", borderRadius:8, overflow:"hidden" }}>
+              {[["standard","Standard"],["simple","Plain English"]].map(([val,lbl]) => (
+                <button key={val} onClick={() => setLang(val)}
+                  style={{ padding:"5px 11px", border:"none", cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+                    background: lang===val ? "rgba(0,229,192,0.15)" : "transparent",
+                    color: lang===val ? "var(--npi-teal)" : "var(--npi-txt4)",
+                    transition:"all .12s" }}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+            {hasContent && (
+              <>
+                <button onClick={copyAll} style={{ ...btnGhost,
+                  color: copied ? "var(--npi-teal)" : "var(--npi-txt4)" }}>
+                  {copied ? "\u2713 Copied" : "Copy"}
+                </button>
+                <button onClick={printInstructions} style={{ ...btnGhost, color:"var(--npi-txt4)" }}>
+                  Print
+                </button>
+              </>
+            )}
+            <button onClick={() => generateAll()} disabled={anyGenerating}
+              style={{ padding:"7px 18px", borderRadius:9, cursor: anyGenerating ? "default" : "pointer",
+                background: anyGenerating ? "transparent" : "linear-gradient(135deg,#00e5c0,#00b4d8)",
+                border: anyGenerating ? "1px solid rgba(0,229,192,0.3)" : "none",
+                color: anyGenerating ? "var(--npi-teal)" : "#050f1e",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
+                display:"flex", alignItems:"center", gap:6 }}>
+              {isGeneratingAll ? "Generating\u2026" : `\u2728 ${hasContent ? "Regenerate All" : "Generate Instructions"}`}
             </button>
-          </>
-        )}
+          </div>
+        </div>
       </div>
 
-      {/* Error */}
-      {aiErr && (
-        <div style={{ padding:"9px 12px", borderRadius:8, marginBottom:10,
-          background:"rgba(255,107,107,0.08)",
-          border:"1px solid rgba(255,107,107,0.3)",
-          fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.coral }}>
-          {aiErr}
+      {transportRisk && (
+        <div style={{ margin:"14px 20px 0", padding:"10px 14px", borderRadius:9,
+          background:"rgba(255,159,67,0.07)", border:"1px solid rgba(255,159,67,0.3)",
+          borderLeft:"3px solid #ff9f43",
+          fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"#ffb870",
+          display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:15 }}>&#x1F697;</span>
+          <span><strong>Transportation barrier</strong> \u2014 patient reported a major transport access issue. Confirm how patient will get home before discharge.</span>
         </div>
       )}
 
-      {/* ── Output panel ─────────────────────────────────────────────────────── */}
-      {result && (
-        <Panel
-          title="Generated Discharge Instructions"
-          accent={T.teal}
-          badge={`${readingLevel} · ${language}`}
-          open={pOutput} onToggle={() => setPOutput(p => !p)}>
+      {phq2Positive && (
+        <div style={{ margin:"14px 20px 0", padding:"10px 14px", borderRadius:9,
+          background:"rgba(155,109,255,0.07)", border:"1px solid rgba(155,109,255,0.3)",
+          borderLeft:"3px solid #9b6dff",
+          fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"#c4a0ff",
+          display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:15 }}>&#x1F9E0;</span>
+          <span>
+            <strong>PHQ-2 positive (score {phq2Score}/6)</strong> \u2014 document behavioral health follow-up or referral in discharge instructions. Consider safety assessment before discharge and ensure outpatient mental health linkage is addressed in the follow-up plan.
+          </span>
+        </div>
+      )}
 
-          <div style={{ padding:"4px 0" }}>
-            <OutputSection label="Diagnosis / What Happened"
-              content={result.diagnosis_summary} color={T.blue} />
-            <OutputSection label="Home Care Instructions"
-              content={result.home_care} color={T.teal} />
-            <OutputSection label="Medications"
-              content={result.medications} color={T.purple} />
-            <OutputSection label="Activity"
-              content={result.activity} color={T.gold} />
-            {result.diet && (
-              <OutputSection label="Diet" content={result.diet} color={T.orange} />
-            )}
-            {result.wound_care && (
-              <OutputSection label="Wound / Procedure Care"
-                content={result.wound_care} color={T.coral} />
-            )}
-            <OutputSection label="When to Return to the Emergency Department"
-              content={result.return_precautions} color={T.coral} />
-            <OutputSection label="Follow-up"
-              content={result.followup} color={T.green} />
-            {result.closing && (
-              <div style={{ marginTop:10, padding:"9px 12px", borderRadius:8,
-                background:"rgba(0,229,192,0.06)",
-                border:"1px solid rgba(0,229,192,0.2)",
-                fontFamily:"'DM Sans',sans-serif", fontSize:12,
-                color:T.txt2, lineHeight:1.7, fontStyle:"italic" }}>
-                {result.closing}
+      {auditcPositive && (
+        <div style={{ margin:"14px 20px 0", padding:"10px 14px", borderRadius:9,
+          background:"rgba(255,159,67,0.07)", border:"1px solid rgba(255,159,67,0.3)",
+          borderLeft:"3px solid #ff9f43",
+          fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"#ffb870",
+          display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:15 }}>&#x1F37A;</span>
+          <span>
+            <strong>AUDIT-C positive (score {auditcScore}/12, threshold \u2265{auditcThresh})</strong> \u2014 document brief alcohol counseling or referral in discharge instructions to satisfy MIPS #431. Note follow-up resources and any referral to addiction medicine or primary care.
+          </span>
+        </div>
+      )}
+
+      {/* ── Structured Follow-up Coordination (CEDR 2025) ─────────────────── */}
+      <div style={{ margin:"14px 20px 0", padding:"13px 16px", borderRadius:10,
+        background:"rgba(14,37,68,0.7)",
+        border:"1px solid rgba(0,229,192,0.18)", borderTop:"2px solid rgba(0,229,192,0.45)" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:11, flexWrap:"wrap", gap:6 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1.5,
+              textTransform:"uppercase", color:"var(--npi-teal)" }}>
+              Follow-up Coordination
+            </span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, letterSpacing:1,
+              padding:"2px 7px", borderRadius:4, background:"rgba(0,229,192,0.08)",
+              border:"1px solid rgba(0,229,192,0.25)", color:"var(--npi-teal)" }}>
+              CEDR 2025
+            </span>
+          </div>
+          {followUpProvider && (
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+              color:"var(--npi-teal)", letterSpacing:.5 }}>
+              \u2713 Documented
+            </span>
+          )}
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--npi-txt4)",
+              letterSpacing:1, textTransform:"uppercase", marginBottom:4 }}>Provider / Clinic</div>
+            <input value={followUpProvider} onChange={e => setFollowUpProvider(e.target.value)}
+              placeholder="Dr. Smith or Primary Care Clinic"
+              style={{ width:"100%", background:"rgba(8,24,48,0.7)",
+                border:"1px solid rgba(26,53,85,0.6)", borderRadius:7,
+                padding:"6px 9px", color:"var(--npi-txt)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none",
+                boxSizing:"border-box" }} />
+          </div>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--npi-txt4)",
+              letterSpacing:1, textTransform:"uppercase", marginBottom:4 }}>Specialty</div>
+            <input value={followUpSpecialty} onChange={e => setFollowUpSpecialty(e.target.value)}
+              placeholder="e.g. Cardiology, PCP, Orthopedics"
+              style={{ width:"100%", background:"rgba(8,24,48,0.7)",
+                border:"1px solid rgba(26,53,85,0.6)", borderRadius:7,
+                padding:"6px 9px", color:"var(--npi-txt)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none",
+                boxSizing:"border-box" }} />
+          </div>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--npi-txt4)",
+              letterSpacing:1, textTransform:"uppercase", marginBottom:4 }}>Date / Timeframe</div>
+            <input value={followUpDate} onChange={e => setFollowUpDate(e.target.value)}
+              placeholder="e.g. 05/20/2025 or within 1 week"
+              style={{ width:"100%", background:"rgba(8,24,48,0.7)",
+                border:"1px solid rgba(26,53,85,0.6)", borderRadius:7,
+                padding:"6px 9px", color:"var(--npi-txt)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none",
+                boxSizing:"border-box" }} />
+          </div>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--npi-txt4)",
+              letterSpacing:1, textTransform:"uppercase", marginBottom:4 }}>Method</div>
+            <select value={followUpMethod} onChange={e => setFollowUpMethod(e.target.value)}
+              style={{ width:"100%", background:"rgba(8,24,48,0.7)",
+                border:"1px solid rgba(26,53,85,0.6)", borderRadius:7,
+                padding:"6px 9px", color: followUpMethod ? "var(--npi-txt)" : "var(--npi-txt4)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none",
+                boxSizing:"border-box", appearance:"none" }}>
+              <option value="">Select method...</option>
+              {FOLLOW_UP_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+        </div>
+        {!followUpProvider && (
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--npi-txt4)", lineHeight:1.5 }}>
+            CEDR requires a provider name, date, and communication method for the discharge coordination measure. Fill these fields before generating instructions.
+          </div>
+        )}
+      </div>
+
+      {genState === "error" && (
+        <div style={{ margin:"14px 20px 0", padding:"10px 14px", borderRadius:9,
+          background:"rgba(255,107,107,0.07)", border:"1px solid rgba(255,107,107,0.3)",
+          borderLeft:"3px solid #ff6b6b", fontFamily:"'DM Sans',sans-serif", fontSize:12,
+          color:"#ff8a8a", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+          <span>\u26a0 AI generation failed \u2014 try again or fill sections manually.</span>
+          <button onClick={() => setGenState("idle")} style={{ ...btnGhost, color:"var(--npi-txt4)", padding:"4px 10px" }}>Dismiss</button>
+        </div>
+      )}
+
+      {!hasContent && !anyGenerating && genState !== "error" && (
+        <div style={{ flex:1, display:"flex", flexDirection:"column",
+          alignItems:"center", justifyContent:"center", padding:"40px 20px", gap:16 }}>
+          <div style={{ fontSize:38 }}>&#x1F6AA;</div>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:17, fontWeight:700,
+            color:"var(--npi-txt)", textAlign:"center" }}>
+            Generate discharge instructions
+          </div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"var(--npi-txt3)",
+            textAlign:"center", maxWidth:380, lineHeight:1.65 }}>
+            AI builds patient-friendly instructions across six sections from this encounter \u2014
+            visit summary, medications, return precautions, follow-up, activity, and home care.
+            {nursingCount > 0 && ` Nursing documentation (${nursingCount} item${nursingCount > 1 ? "s" : ""}) will be incorporated.`}
+          </div>
+          {!cc.text && (
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+              color:"var(--npi-gold)", padding:"6px 12px", borderRadius:6,
+              background:"rgba(245,200,66,0.08)", border:"1px solid rgba(245,200,66,0.25)" }}>
+              \u26a0 No chief complaint set \u2014 add one in the CC tab for better results
+            </div>
+          )}
+          <div style={{ display:"flex", gap:10, marginTop:4, flexWrap:"wrap", justifyContent:"center" }}>
+            {[["standard","Standard English"],["simple","Plain English (Grade 6)"]].map(([val,lbl]) => (
+              <button key={val} onClick={() => { setLang(val); generateAll(val); }}
+                style={{ padding:"10px 22px", borderRadius:9, cursor:"pointer",
+                  border:`2px solid ${lang===val ? "rgba(0,229,192,0.55)" : "rgba(42,77,114,0.45)"}`,
+                  background: lang===val ? "rgba(0,229,192,0.1)" : "rgba(14,37,68,0.6)",
+                  color: lang===val ? "var(--npi-teal)" : "var(--npi-txt3)",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600 }}>
+                \u2728 {lbl}
+              </button>
+            ))}
+            {/* Generate & Copy — one-click discharge shortcut */}
+            <button onClick={() => { setLang(lang); generateAll(lang, true); }}
+              disabled={anyGenerating}
+              title="Generate instructions and immediately copy to clipboard"
+              style={{ padding:"10px 22px", borderRadius:9, cursor:"pointer",
+                border:"2px solid rgba(59,158,255,0.45)",
+                background:"rgba(59,158,255,0.09)",
+                color:"var(--npi-blue)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600 }}>
+              \u26a1 Generate &amp; Copy
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isGeneratingAll && (
+        <div style={{ padding:"18px 20px", display:"flex", flexDirection:"column", gap:11 }}>
+          <style>{`@keyframes dc-pulse{0%,100%{opacity:.4}50%{opacity:.9}}`}</style>
+          {DC_SECTIONS.map((s, si) => (
+            <div key={s.key} style={{ padding:"14px 16px", borderRadius:10,
+              background:"rgba(14,37,68,0.5)", border:"1px solid rgba(26,53,85,0.3)",
+              borderTop:`2px solid ${s.color}33` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:10 }}>
+                <span style={{ fontSize:14 }}>{s.icon}</span>
+                <div style={{ height:9, width:110, borderRadius:4,
+                  background:`${s.color}25`, animation:`dc-pulse 1.5s ${si*0.1}s ease-in-out infinite` }} />
               </div>
-            )}
+              {[78,55,88].map((w,i) => (
+                <div key={i} style={{ height:8, width:`${w}%`, borderRadius:3, marginBottom:6,
+                  background:"rgba(42,77,114,0.22)",
+                  animation:`dc-pulse 1.5s ${si*0.1+i*0.15}s ease-in-out infinite` }} />
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {hasContent && !isGeneratingAll && (
+        <div style={{ padding:"16px 20px", display:"flex", flexDirection:"column",
+          gap:11, paddingBottom:60 }}>
+          {DC_SECTIONS.map(sec => {
+            const text     = content[sec.key] || "";
+            const isGenSec = isGeneratingSec(sec.key);
+            const isEmpty  = !text;
+            const isEditing = editingKey === sec.key;
+            return (
+              <div key={sec.key} style={{ borderRadius:11, overflow:"hidden",
+                background:"rgba(14,37,68,0.7)",
+                border:`1px solid ${sec.color}18`, borderTop:`2px solid ${sec.color}55` }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                  padding:"9px 14px 8px", borderBottom:"1px solid rgba(26,53,85,0.35)",
+                  background:"rgba(8,18,36,0.35)" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:14 }}>{sec.icon}</span>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                      color:sec.color, letterSpacing:1.5, textTransform:"uppercase" }}>
+                      {sec.label}
+                    </span>
+                    {isEmpty && !isGenSec && (
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                        color:"var(--npi-txt4)", padding:"1px 5px", borderRadius:3,
+                        background:"rgba(42,77,114,0.2)", border:"1px solid rgba(42,77,114,0.3)", letterSpacing:.5 }}>
+                        empty
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display:"flex", gap:5 }}>
+                    {!isEmpty && !isEditing && !isGenSec && (
+                      <button onClick={() => setEditingKey(sec.key)}
+                        style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                          letterSpacing:1, textTransform:"uppercase",
+                          padding:"3px 8px", borderRadius:4, cursor:"pointer",
+                          border:"1px solid rgba(42,77,114,0.4)", background:"transparent",
+                          color:"var(--npi-txt4)" }}>
+                        Edit
+                      </button>
+                    )}
+                    {isEditing && (
+                      <button onClick={() => setEditingKey(null)}
+                        style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                          letterSpacing:1, textTransform:"uppercase",
+                          padding:"3px 8px", borderRadius:4, cursor:"pointer",
+                          border:"1px solid rgba(0,229,192,0.4)",
+                          background:"rgba(0,229,192,0.08)", color:"var(--npi-teal)" }}>
+                        Done
+                      </button>
+                    )}
+                    <button onClick={() => regenerateSection(sec)} disabled={anyGenerating}
+                      style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                        letterSpacing:1, textTransform:"uppercase",
+                        padding:"3px 9px", borderRadius:4, cursor: anyGenerating ? "default" : "pointer",
+                        border:`1px solid ${isGenSec ? sec.color+"55" : "rgba(42,77,114,0.4)"}`,
+                        background: isGenSec ? `${sec.color}12` : "transparent",
+                        color: isGenSec ? sec.color : "var(--npi-txt4)", transition:"all .12s" }}>
+                      {isGenSec ? "\u22ef" : isEmpty ? "\u2728 Generate" : "\u21ba Redo"}
+                    </button>
+                  </div>
+                </div>
+                <div style={{ padding:"11px 14px 13px" }}>
+                  {isGenSec ? (
+                    <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+                      {[75,55,85,62].map((w,i) => (
+                        <div key={i} style={{ height:8, width:`${w}%`, borderRadius:3,
+                          background:`${sec.color}18`,
+                          animation:`dc-pulse 1.2s ${i*0.15}s ease-in-out infinite` }} />
+                      ))}
+                    </div>
+                  ) : isEditing ? (
+                    <textarea value={text}
+                      onChange={e => setContent(p => ({ ...p, [sec.key]: e.target.value }))}
+                      rows={5}
+                      style={{ width:"100%", background:"rgba(8,24,48,0.75)",
+                        border:"1px solid rgba(26,53,85,0.6)", borderRadius:8,
+                        padding:"8px 10px", color:"var(--npi-txt)",
+                        fontFamily:"'DM Sans',sans-serif", fontSize:13, lineHeight:1.65,
+                        outline:"none", resize:"vertical", boxSizing:"border-box" }} />
+                  ) : isEmpty ? (
+                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                      color:"var(--npi-txt4)", fontStyle:"italic" }}>
+                      {sec.hint} \u2014 click \u2728 Generate to fill this section
+                    </div>
+                  ) : (
+                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13,
+                      color:"var(--npi-txt2)", lineHeight:1.72, whiteSpace:"pre-wrap" }}>
+                      {text}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Nursing documentation summary card — shown if nursing data present */}
+          {nursingCount > 0 && (
+            <div style={{ borderRadius:11, overflow:"hidden",
+              background:"rgba(14,37,68,0.7)",
+              border:"1px solid rgba(0,229,192,0.18)", borderTop:"2px solid rgba(0,229,192,0.55)" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8,
+                padding:"9px 14px 8px", borderBottom:"1px solid rgba(26,53,85,0.35)",
+                background:"rgba(8,18,36,0.35)" }}>
+                <span style={{ fontSize:14 }}>🩺</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  color:"var(--npi-teal)", letterSpacing:1.5, textTransform:"uppercase" }}>
+                  Nursing Documentation
+                </span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--npi-txt4)", padding:"1px 5px", borderRadius:3,
+                  background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.2)" }}>
+                  included in summary
+                </span>
+              </div>
+              <div style={{ padding:"11px 14px 13px", display:"flex", flexDirection:"column", gap:4 }}>
+                {nursingInterventions.map((n, i) => (
+                  <div key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                    color:"var(--npi-txt2)", display:"flex", gap:8 }}>
+                    <span style={{ color:"var(--npi-teal)", flexShrink:0 }}>✓</span>
+                    <span>{typeof n === "string" ? n : n.label || n.text || ""}</span>
+                  </div>
+                ))}
+                {nursingNotes.map((n, i) => (
+                  <div key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                    color:"var(--npi-txt3)", display:"flex", gap:8 }}>
+                    <span style={{ color:"var(--npi-txt4)", flexShrink:0 }}>📝</span>
+                    <span>{typeof n === "string" ? n : n.text || n.note || ""}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ padding:"10px 14px", borderRadius:9,
+            background:"rgba(8,18,36,0.6)", border:"1px solid rgba(26,53,85,0.35)",
+            display:"flex", alignItems:"center", justifyContent:"space-between",
+            flexWrap:"wrap", gap:10 }}>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              color:"var(--npi-txt4)", display:"flex", gap:16, flexWrap:"wrap" }}>
+              <span>By: <strong style={{ color:"var(--npi-txt3)" }}>{providerName || "ED Provider"}</strong></span>
+              {doorTime  && <span>Door-to-doc: <strong style={{ color:"var(--npi-txt3)" }}>{doorTime}</strong></span>}
+              {dispTime  && <span>Disposition: <strong style={{ color:"var(--npi-txt3)" }}>{dispTime}</strong></span>}
+              <span><strong style={{ color:"var(--npi-txt3)" }}>{new Date().toLocaleDateString()}</strong></span>
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={copyAll} style={{ ...btnGhost,
+                color: copied ? "var(--npi-teal)" : "var(--npi-txt4)",
+                borderColor: copied ? "rgba(0,229,192,0.4)" : undefined }}>
+                {copied ? "\u2713 Copied" : "\uD83D\uDCCB Copy All"}
+              </button>
+              <button onClick={printInstructions} style={{ ...btnGhost, color:"var(--npi-txt4)" }}>
+                \uD83D\uDDA8 Print
+              </button>
+            </div>
           </div>
 
-          <div style={{ marginTop:8,
-            fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color:"rgba(42,79,122,0.55)", letterSpacing:1 }}>
-            NOTRYA SMART DISCHARGE · {readingLevel.toUpperCase()} · {language.toUpperCase()} · AI-GENERATED — PHYSICIAN REVIEW REQUIRED BEFORE DELIVERY
-          </div>
-        </Panel>
+          {/* ── Teach-back confirmation (Joint Commission EP.5) ── */}
+          <button onClick={() => setTeachback(t => !t)}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px",
+              borderRadius:9, cursor:"pointer", textAlign:"left", width:"100%",
+              background: teachback ? "rgba(0,229,192,0.07)" : "rgba(8,18,36,0.45)",
+              border:`1px solid ${teachback ? "rgba(0,229,192,0.3)" : "rgba(26,53,85,0.35)"}`,
+              transition:"all .15s" }}>
+            <div style={{ width:16, height:16, borderRadius:4, flexShrink:0,
+              background: teachback ? "var(--npi-teal)" : "transparent",
+              border:`1.5px solid ${teachback ? "var(--npi-teal)" : "rgba(42,77,114,0.55)"}`,
+              display:"flex", alignItems:"center", justifyContent:"center" }}>
+              {teachback && <span style={{ color:"#050f1e", fontSize:11, fontWeight:900, lineHeight:1 }}>&#x2713;</span>}
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+                color: teachback ? "var(--npi-teal)" : "var(--npi-txt3)" }}>
+                Teach-back confirmed
+              </div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--npi-txt4)", marginTop:1 }}>
+                Patient verbalized understanding of key instructions \u2014 Joint Commission EP.5 &middot; CMS discharge education standard
+              </div>
+            </div>
+            {teachback && (
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, letterSpacing:1,
+                padding:"2px 7px", borderRadius:4, background:"rgba(0,229,192,0.1)",
+                border:"1px solid rgba(0,229,192,0.3)", color:"var(--npi-teal)", flexShrink:0 }}>
+                Documented
+              </span>
+            )}
+          </button>
+        </div>
       )}
     </div>
   );

@@ -88,6 +88,8 @@ import HeadacheHub from '@/pages/HeadacheHub';
 import AbdominalPainHub from '@/pages/AbdominalPainHub';
 import AMSHub from '@/pages/AMSHub';
 import DVTHub from '@/pages/DVTHub';
+import SepsisHub from '@/pages/SepsisHub';
+import AutoCoder from '@/pages/AutoCoder';
 
 
 
@@ -242,6 +244,29 @@ const AuthenticatedApp = () => {
       <Route path="/AbdominalPainHub" element={<LayoutWrapper currentPageName="AbdominalPainHub"><AbdominalPainHub /></LayoutWrapper>} />
       <Route path="/ams-hub" element={<AMSHub />} />
       <Route path="/dvt-hub" element={<DVTHub />} />
+
+      {/* ── Alias routes for updated Home.jsx hub catalog ── */}
+      <Route path="/PediatricHub" element={<PedsHub />} />
+      <Route path="/ResusHub" element={<ResusHub />} />
+      <Route path="/StrokeHub" element={<StrokeHub />} />
+      <Route path="/ECGHub" element={<ECGHub />} />
+      <Route path="/LabInterpreter" element={<LabInterpreter />} />
+      <Route path="/ScoreHub" element={<ScoreHub />} />
+      <Route path="/POCUSHub" element={<POCUSHub />} />
+      <Route path="/WeightDoseHub" element={<WeightDoseHub />} />
+      <Route path="/ToxHub" element={<ToxicologyHub />} />
+      <Route path="/PsychHub" element={<PsycheHub />} />
+      <Route path="/TriageHub" element={<TriageHub />} />
+      <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutoCoder /></LayoutWrapper>} />
+      <Route path="/SmartDischargeHub" element={<DischargeHub />} />
+      <Route path="/SepsisHub" element={<SepsisHub />} />
+      <Route path="/AMSHub" element={<AMSHub />} />
+      <Route path="/OrthoHub" element={<OrthoHub />} />
+      <Route path="/ERx" element={<LayoutWrapper currentPageName="ERx"><ERx /></LayoutWrapper>} />
+      <Route path="/WoundCareHub" element={<WoundCareHub />} />
+      <Route path="/AirwayHub" element={<AirwayHub />} />
+      <Route path="/ShockHub" element={<ShockHub />} />
+      <Route path="/SyncopeHub" element={<SyncopeHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

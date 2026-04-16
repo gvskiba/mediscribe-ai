@@ -163,7 +163,7 @@ function computeFlags(props) {
 
   const flags = [];
   const ccTxt = (cc?.text || "").toLowerCase();
-  const pmh   = (pmhSelected || []).map(p => p.toLowerCase());
+  const pmh   = (Array.isArray(pmhSelected) ? pmhSelected : []).map(p => (typeof p === "string" ? p : p.label || p.name || "").toLowerCase()).filter(Boolean);
   const meds  = (medications || [])
     .map(m => (typeof m === "string" ? m : m.name || "").toLowerCase())
     .filter(Boolean);

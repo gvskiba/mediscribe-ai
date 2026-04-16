@@ -286,13 +286,77 @@ function getFocusedPeIds(cc) {
   return ['gen','cv','resp','abd'];
 }
 
-export default function PETab({ peState, setPeState, peFindings, setPeFindings, onAdvance, extSysIdx, onSysChange, chiefComplaint }) {
+export default function PETab({ peState, setPeState, peFindings, setPeFindings, onAdvance, extSysIdx, onSysChange, chiefComplaint, onNarrative }) {
   const [examData, setExamData] = useState(initExamData);
   const [docMode,          setDocMode]          = useState('focused'); // 'focused'|'full'|'visual'
   const [remainderNormal,  setRemainderNormal]  = useState(false);
   const [visualAppearance, setVisualAppearance] = useState('');
   const [visualNotes,      setVisualNotes]      = useState('');
-  const mainRef    = useRef(null);
+  // ── Narrative generator state ──────────────────────────────────────────
+  const [peNarrative,   setPeNarrative]   = useState('');
+  const [narrativeBusy, setNarrativeBusy] = useState(false);
+  const [showNarrative, setShowNarrative] = useState(false);
+  const [narrativeCopied, setNarrativeCopied] = useState(false);
+  const mainRef = useRef(null);
+
+  // ── PE narrative generator ──────────────────────────────────────────────
+  const generatePENarrative = useCallback(async () => {
+    // Build a structured summary of all documented findings
+    const lines = [];
+    PE_SYSTEMS.forEach(sys => {
+      const data = examData[sys.id];
+      if (!data) return;
+      const normal   = sys.findings.filter(f => data.findings[f.id] === 'normal').map(f => f.label);
+      const abnormal = sys.findings.filter(f => data.findings[f.id] === 'abnormal').map(f => f.label);
+      const note     = data.note?.trim();
+      if (!normal.length && !abnormal.length && !note) return;
+      const parts = [];
+      if (normal.length)   parts.push(`Normal: ${normal.join(', ')}`);
+      if (abnormal.length) parts.push(`Abnormal: ${abnormal.join(', ')}`);
+      if (note)            parts.push(`Note: ${note}`);
+      lines.push(`${sys.label}: ${parts.join(' | ')}`);
+    });
+
+    if (remainderNormal) lines.push('Remaining systems: examined, all normal');
+
+    if (!lines.length) return;
+
+    setNarrativeBusy(true);
+    setShowNarrative(true);
+    setPeNarrative('');
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 600,
+          system: `You are an emergency physician writing a structured physical exam note.
+Convert the provided structured findings into a concise, professional physical exam narrative.
+
+Rules:
+- One sentence per organ system, in this order: General, HEENT, Neck, Cardiovascular, Respiratory, Abdomen, MSK, Neurological, Skin, Psychiatric
+- Use standard medical abbreviations (A&O x4, RRR, CTAB, S/NT/ND, etc.)
+- Omit systems with no documented findings entirely
+- Lead with normal findings, end with abnormals
+- Write as a continuous paragraph, systems separated by a period and space
+- Do not add headers, bullets, or explanations — only the exam text itself
+- Keep it under 120 words`,
+          messages: [{
+            role: 'user',
+            content: `Chief complaint: ${chiefComplaint || 'not specified'}\n\nFindings:\n${lines.join('\n')}`,
+          }],
+        }),
+      });
+      const data = await res.json();
+      setPeNarrative(data.content?.[0]?.text?.trim() || 'Generation failed — please try again.');
+      onNarrative?.(data.content?.[0]?.text?.trim() || '');
+    } catch {
+      setPeNarrative('⚠ Connection error — check network and retry.');
+    } finally {
+      setNarrativeBusy(false);
+    }
+  }, [examData, remainderNormal, chiefComplaint, onNarrative]);
 
   // ── Action handlers ──────────────────────────────────────────────────────
   const handleFindingAction = useCallback((action, sysId, findingId) => {
@@ -563,6 +627,27 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
           <div className="pe-hdr-acts">
             {docMode !== 'visual' && <button className="pe-btn-all-normal" onClick={markAllNormal}>✓ All Normal</button>}
             {docMode !== 'visual' && <button className="pe-btn-clear-all" onClick={() => { clearAll(); setRemainderNormal(false); }}>✕ Clear</button>}
+            {/* ── Generate PE narrative button ── */}
+            {docMode !== 'visual' && (() => {
+              const hasFindings = PE_SYSTEMS.some(s => {
+                const d = examData[s.id];
+                return d && Object.values(d.findings).some(v => v !== null);
+              });
+              return (
+                <button
+                  onClick={generatePENarrative}
+                  disabled={narrativeBusy || !hasFindings}
+                  title={hasFindings ? 'Generate PE prose note from checked findings' : 'Document findings first'}
+                  style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 12px', borderRadius:7, cursor: narrativeBusy || !hasFindings ? 'not-allowed' : 'pointer', background: showNarrative ? 'rgba(155,109,255,.18)' : 'rgba(155,109,255,.1)', border:`1px solid ${showNarrative ? 'rgba(155,109,255,.5)' : 'rgba(155,109,255,.3)'}`, color: narrativeBusy || !hasFindings ? 'rgba(155,109,255,.4)' : 'var(--npi-purple)', fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, transition:'all .15s', opacity: !hasFindings ? 0.5 : 1 }}
+                >
+                  {narrativeBusy
+                    ? <><span style={{ display:'inline-block', animation:'pe-spin .7s linear infinite' }}>⟳</span> Generating…</>
+                    : <>✦ PE Note</>
+                  }
+                  <style>{`@keyframes pe-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+                </button>
+              );
+            })()}
             {onAdvance && (
               <button
                 onClick={onAdvance}
@@ -719,6 +804,82 @@ export default function PETab({ peState, setPeState, peFindings, setPeFindings, 
             </div>
           )}{/* /pe-main */}
         </div>{/* /pe-body */}
+
+        {/* ── PE NARRATIVE PANEL ─────────────────────────────────────── */}
+        {showNarrative && (
+          <div style={{ borderTop:'1px solid rgba(155,109,255,.25)', background:'rgba(155,109,255,.05)', flexShrink:0, padding:'14px 18px', display:'flex', flexDirection:'column', gap:10 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{ fontFamily:"'Playfair Display',serif", fontSize:12, fontWeight:700, color:'var(--npi-txt)' }}>PE Narrative</span>
+              {!narrativeBusy && peNarrative && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:'var(--npi-purple)', background:'rgba(155,109,255,.1)', border:'1px solid rgba(155,109,255,.25)', borderRadius:3, padding:'1px 6px', letterSpacing:'0.05em' }}>AI generated</span>
+              )}
+              {narrativeBusy && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:'var(--npi-txt4)' }}>generating…</span>
+              )}
+              <div style={{ marginLeft:'auto', display:'flex', gap:6 }}>
+                {peNarrative && !narrativeBusy && (
+                  <>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard?.writeText(peNarrative).then(() => {
+                          setNarrativeCopied(true);
+                          setTimeout(() => setNarrativeCopied(false), 2000);
+                        });
+                      }}
+                      style={{ padding:'3px 10px', borderRadius:5, border:'1px solid rgba(155,109,255,.3)', background: narrativeCopied ? 'rgba(0,229,192,.1)' : 'rgba(155,109,255,.1)', color: narrativeCopied ? 'var(--npi-teal)' : 'var(--npi-purple)', fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600, cursor:'pointer', transition:'all .2s' }}>
+                      {narrativeCopied ? '✓ Copied' : '⎘ Copy'}
+                    </button>
+                    <button
+                      onClick={() => { onNarrative?.(peNarrative); setShowNarrative(false); }}
+                      style={{ padding:'3px 12px', borderRadius:5, border:'none', background:'var(--npi-purple)', color:'#fff', fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:700, cursor:'pointer' }}>
+                      Apply to Note →
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setShowNarrative(false)}
+                  style={{ padding:'3px 8px', borderRadius:5, border:'1px solid var(--npi-bd)', background:'transparent', color:'var(--npi-txt4)', fontFamily:"'DM Sans',sans-serif", fontSize:10, cursor:'pointer' }}>
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Loading skeleton */}
+            {narrativeBusy && (
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {[90, 70, 55].map(w => (
+                  <div key={w} style={{ height:10, borderRadius:4, background:`rgba(155,109,255,0.12)`, width:`${w}%`, animation:'pe-shimmer 1.4s ease-in-out infinite alternate' }} />
+                ))}
+                <style>{`@keyframes pe-shimmer{from{opacity:.4}to{opacity:.85}}`}</style>
+              </div>
+            )}
+
+            {/* Editable narrative text */}
+            {peNarrative && !narrativeBusy && (
+              <textarea
+                value={peNarrative}
+                onChange={e => setPeNarrative(e.target.value)}
+                rows={3}
+                style={{ width:'100%', background:'rgba(14,37,68,.7)', border:'1px solid rgba(155,109,255,.28)', borderRadius:8, padding:'9px 12px', color:'var(--npi-txt)', fontFamily:"'DM Sans',sans-serif", fontSize:12.5, lineHeight:1.7, resize:'vertical', outline:'none', transition:'border-color .15s', boxSizing:'border-box' }}
+                onFocus={e  => { e.target.style.borderColor='rgba(155,109,255,.55)'; }}
+                onBlur={e   => { e.target.style.borderColor='rgba(155,109,255,.28)'; }}
+              />
+            )}
+
+            {/* Regenerate link */}
+            {peNarrative && !narrativeBusy && (
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <button onClick={generatePENarrative}
+                  style={{ background:'none', border:'none', color:'var(--npi-txt4)', fontFamily:"'DM Sans',sans-serif", fontSize:10, cursor:'pointer', padding:0, textDecoration:'underline' }}>
+                  Regenerate
+                </button>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:'var(--npi-txt4)' }}>
+                  Edit inline or regenerate — Apply to Note pushes text to Clinical Note Studio
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <KbLegend isFocused={isFocused} />
       </div>

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Patient, ClinicalResult } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
+const Patient = base44.entities.Patient;
+const ClinicalResult = base44.entities.ClinicalResult;
 
 const PREFIX = "cri";
 

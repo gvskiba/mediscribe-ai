@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Patient, ClinicalResult, Order, ClinicalNote, DispositionRecord } from "@/api/entities";
-import { InvokeLLM } from "@/integrations/Core";
+import { base44 } from "@/api/base44Client";
+const Patient = base44.entities.Patient;
+const ClinicalResult = base44.entities.ClinicalResult;
+const Order = base44.entities.Order;
+const ClinicalNote = base44.entities.ClinicalNote;
+const DispositionRecord = base44.entities.DispositionRecord;
+const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
 
 const PREFIX = "cne";
 

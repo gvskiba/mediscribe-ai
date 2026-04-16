@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
-import { InvokeLLM } from "@/integrations/Core";
+import { base44 } from "@/api/base44Client";
+const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
 
 const PREFIX = "ddx";
 

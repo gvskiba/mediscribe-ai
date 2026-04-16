@@ -43,6 +43,8 @@ import NursingPanel           from "@/components/npi/NursingPanel";
 import MediaAttachmentPanel   from "@/components/npi/MediaAttachmentPanel";
 import SignCloseChecklist     from "@/components/npi/SignCloseChecklist";
 import CommunicationLog       from "@/components/npi/CommunicationLog";
+import FhirDataSync           from "@/components/npi/FhirDataSync";
+import CCDASmartParse         from "@/components/npi/CCDASmartParse";
 
 // ── Embedded page components ──────────────────────────────────────────────────
 import EDProcedureNotes        from "@/pages/EDProcedureNotes";
@@ -121,6 +123,10 @@ export default function NewPatientInput() {
 
   // ── Communication events log ────────────────────────────────────────────────
   const [communicationEvents,  setCommunicationEvents]  = useState([]);
+
+  // ── Interoperability panels ─────────────────────────────────────────────────
+  const [showFhirSync,         setShowFhirSync]         = useState(false);
+  const [showCCDA,             setShowCCDA]             = useState(false);
 
   // ── renderContent ──────────────────────────────────────────────────────────
   const renderContent = () => {
@@ -609,6 +615,8 @@ export default function NewPatientInput() {
           )}
 
           <div className="npi-top-acts">
+            <button className="npi-btn-ghost" onClick={() => setShowCCDA(true)} title="Import C-CDA or clinical document">\uD83D\uDCCB Import</button>
+            <button className="npi-btn-ghost" onClick={() => setShowFhirSync(true)} title="Sync from FHIR R4 endpoint">&#x21BA; FHIR</button>
             <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>+ Order</button>
             <button className="npi-btn-ghost" onClick={() => selectSection("consult")} title="Request consultation">&#x1F465; Consult</button>
             <button className="npi-btn-coral" onClick={() => selectSection("discharge")}>&#x1F6AA; Discharge</button>
@@ -753,7 +761,7 @@ export default function NewPatientInput() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => { sendMessage(QUICK_ACTIONS[4].prompt); toggleAI(); setCdsOpen(false); }}
+              <button onClick={() => { sendMessage(QUICK_ACTIONS[4].prompt); setAiOpen(true); setCdsOpen(false); }}
                 style={{ marginTop:8, padding:"5px 12px", borderRadius:6, border:"1px solid rgba(59,158,255,0.4)", background:"rgba(59,158,255,0.1)", color:"#3b9eff", fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, cursor:"pointer" }}>
                 \u2728 Draft MDM with AI
               </button>
@@ -907,6 +915,41 @@ export default function NewPatientInput() {
           );
         })}
       </aside>
+
+      {/* ── FHIR Data Sync modal ── */}
+      <FhirDataSync
+        open={showFhirSync}
+        onClose={() => setShowFhirSync(false)}
+        patientMrn={registration?.mrn}
+        patientFhirId={registration?.fhirId}
+        vitals={vitals} setVitals={setVitals}
+        medications={medications} setMedications={setMedications}
+        allergies={allergies} setAllergies={setAllergies}
+        pmhSelected={pmhSelected} setPmhSelected={setPmhSelected}
+        onToast={_showToast}
+      />
+
+      {/* ── C-CDA / document import modal ── */}
+      <CCDASmartParse
+        open={showCCDA}
+        onClose={() => setShowCCDA(false)}
+        onApplyDemographics={d => setDemo(prev => ({ ...prev, ...d }))}
+        onApplyMedications={meds => setMedications(prev => {
+          const existing = (prev||[]).map(m => (typeof m === "string" ? m : m.name||"").toLowerCase());
+          return [...(prev||[]), ...meds.filter(m => !existing.includes(m.toLowerCase()))];
+        })}
+        onApplyAllergies={als => setAllergies(prev => {
+          const existing = (prev||[]).map(a => (typeof a === "string" ? a : "").toLowerCase());
+          return [...(prev||[]), ...als.filter(a => !existing.includes(a.toLowerCase()))];
+        })}
+        onApplyPmh={problems => setPmhSelected(prev => {
+          const updated = { ...(prev||{}) };
+          problems.forEach(p => { updated[p] = true; });
+          return updated;
+        })}
+        onApplyVitals={v => setVitals(prev => ({ ...prev, ...v }))}
+        onToast={_showToast}
+      />
 
       {/* ── Sign & Close checklist ── */}
       <SignCloseChecklist

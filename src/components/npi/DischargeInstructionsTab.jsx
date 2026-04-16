@@ -7,6 +7,8 @@ export default function DischargeInstructionsTab({
   demo, cc, vitals, medications, allergies, pmhSelected,
   disposition, dispReason, dispTime, consults, sdoh,
   esiLevel, registration, providerName, doorTime,
+  // FIX: nursing documentation now flows into discharge summary
+  nursingNotes = [], nursingInterventions = [],
 }) {
   const [content,    setContent]    = useState(() => Object.fromEntries(DC_SECTIONS.map(s => [s.key, ""])));
   const [genState,   setGenState]   = useState("idle");
@@ -39,19 +41,49 @@ export default function DischargeInstructionsTab({
     ? { provider: followUpProvider, specialty: followUpSpecialty, date: followUpDate, method: followUpMethod }
     : null;
 
-  async function generateAll(overrideLang) {
+  // ── Build nursing context string ─────────────────────────────────────────
+  function buildNursingContext() {
+    const interventionLines = nursingInterventions
+      .map(n => `- Intervention: ${typeof n === "string" ? n : n.label || n.text || ""}`)
+      .filter(Boolean);
+    const noteLines = nursingNotes
+      .map(n => `- Note: ${typeof n === "string" ? n : n.text || n.note || ""}`)
+      .filter(Boolean);
+    const all = [...interventionLines, ...noteLines];
+    return all.length
+      ? `\n\nNURSING DOCUMENTATION (incorporate relevant items into home care and activity sections):\n${all.join("\n")}`
+      : "";
+  }
+
+  async function generateAll(overrideLang, andCopy = false) {
     const useLang = overrideLang || lang;
     setGenState("all");
     setEditingKey(null);
     try {
-      const prompt = buildDCPrompt(demo, cc, vitals, medications, allergies, pmhSelected,
+      // Append nursing context to the base prompt
+      const basePrompt = buildDCPrompt(demo, cc, vitals, medications, allergies, pmhSelected,
         disposition, dispReason, consults, useLang, followUp);
+      const prompt = basePrompt + buildNursingContext();
+
       const schema = {
         type: "object",
         properties: Object.fromEntries(DC_SECTIONS.map(s => [s.key, { type:"string" }])),
       };
       const res = await base44.integrations.Core.InvokeLLM({ prompt, response_json_schema: schema });
-      if (res && typeof res === "object") setContent(prev => ({ ...prev, ...res }));
+      if (res && typeof res === "object") {
+        setContent(prev => {
+          const newContent = { ...prev, ...res };
+          // Auto-copy immediately if requested — use the fresh result directly
+          if (andCopy) {
+            const text = buildFullTextFromContent(newContent);
+            navigator.clipboard.writeText(text).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2500);
+            });
+          }
+          return newContent;
+        });
+      }
       setGenState("done");
     } catch(_) { setGenState("error"); }
   }
@@ -79,9 +111,16 @@ export default function DischargeInstructionsTab({
     return parts.join(" ");
   }
 
-  function buildFullText() {
+  // Accepts optional content override so generateAll can copy before state settles
+  function buildFullTextFromContent(c) {
     const date = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
     const fuLine = buildFollowUpSummary();
+
+    const nursingItems = [
+      ...nursingInterventions.map(n => `- ${typeof n === "string" ? n : n.label || n.text || ""}`),
+      ...nursingNotes.map(n => `- ${typeof n === "string" ? n : n.text || n.note || ""}`),
+    ].filter(Boolean);
+
     return [
       "DISCHARGE INSTRUCTIONS",
       `Patient: ${patientName}${demo.age ? ", " + demo.age + "y" : ""}${demo.sex ? " " + demo.sex : ""}`,
@@ -91,10 +130,20 @@ export default function DischargeInstructionsTab({
       fuLine ? `Follow-up: ${fuLine}` : "",
       "",
       ...DC_SECTIONS
-        .filter(s => content[s.key])
-        .flatMap(s => [s.label.toUpperCase(), content[s.key], ""]),
+        .filter(s => c[s.key])
+        .flatMap(s => [s.label.toUpperCase(), c[s.key], ""]),
+      // Nursing documentation section — appended if present
+      ...(nursingItems.length ? [
+        "NURSING DOCUMENTATION",
+        nursingItems.join("\n"),
+        "",
+      ] : []),
       "If you have questions or your condition worsens, call your primary care provider or return to the Emergency Department.",
     ].filter(l => l !== undefined && l !== "").join("\n");
+  }
+
+  function buildFullText() {
+    return buildFullTextFromContent(content);
   }
 
   async function copyAll() {
@@ -115,10 +164,19 @@ export default function DischargeInstructionsTab({
       .filter(s => content[s.key])
       .map(s => `<section><h2>${s.icon} ${s.label}</h2><p>${(content[s.key] || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</p></section>`)
       .join("");
+
+    const nursingItems = [
+      ...nursingInterventions.map(n => `• ${typeof n === "string" ? n : n.label || n.text || ""}`),
+      ...nursingNotes.map(n => `• ${typeof n === "string" ? n : n.text || n.note || ""}`),
+    ].filter(Boolean);
+    const nursingHTML = nursingItems.length
+      ? `<section><h2>🩺 Nursing Documentation</h2><p>${nursingItems.join("<br>")}</p></section>`
+      : "";
+
     win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Discharge Instructions \u2014 ${patientName}</title>
       <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;font-size:13.5px;color:#111;background:#fff;max-width:660px;margin:40px auto;padding:0 28px}header{border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:24px}h1{font-size:20px;font-weight:700;margin-bottom:6px}.meta{font-size:12px;color:#444;line-height:1.7}.fu-block{margin-top:8px;padding:7px 10px;background:#f0f8f0;border-left:3px solid #2a7d4f;font-size:12px;color:#1a4d31}section{margin-bottom:22px}h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#111;border-left:3px solid #333;padding-left:9px;margin-bottom:7px}p{line-height:1.72;white-space:pre-wrap}footer{margin-top:32px;padding-top:12px;border-top:1px solid #ccc;font-size:11px;color:#555;line-height:1.6}@media print{body{margin:20px 28px}}</style></head><body>
       <header><h1>Discharge Instructions</h1><div class="meta"><strong>${patientName}</strong>${demo.age ? " &bull; " + demo.age + "y" : ""}${demo.sex ? " &bull; " + demo.sex : ""}${registration.mrn ? " &bull; MRN " + registration.mrn : ""}<br>${cc.text ? "Visit reason: " + cc.text.replace(/</g,"&lt;") + "<br>" : ""}Date: ${date} &bull; Prepared by: ${(providerName || "ED Provider").replace(/</g,"&lt;")}</div>${fuHTML}</header>
-      ${sectionsHTML}
+      ${sectionsHTML}${nursingHTML}
       <footer>If you have questions or your condition worsens, call your primary care provider or return to the Emergency Department. Keep this document for your records.</footer>
       </body></html>`);
     win.document.close();
@@ -130,6 +188,9 @@ export default function DischargeInstructionsTab({
     border:"1px solid rgba(42,77,114,0.5)", background:"transparent",
     fontFamily:"'DM Sans',sans-serif", fontSize:11, cursor:"pointer",
   };
+
+  // Nursing note count for badge
+  const nursingCount = nursingInterventions.length + nursingNotes.length;
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflowY:"auto" }}>
@@ -161,6 +222,15 @@ export default function DischargeInstructionsTab({
                 background:`${dispOpt.color}15`, border:`1px solid ${dispOpt.color}44`,
                 color:dispOpt.color }}>
                 {dispOpt.icon} {dispOpt.label}
+              </span>
+            )}
+            {/* Nursing documentation badge */}
+            {nursingCount > 0 && (
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                padding:"2px 8px", borderRadius:4, letterSpacing:.5,
+                background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.28)",
+                color:"var(--npi-teal)" }}>
+                \u{1F9B8} {nursingCount} nursing item{nursingCount > 1 ? "s" : ""} included
               </span>
             )}
           </div>
@@ -339,6 +409,7 @@ export default function DischargeInstructionsTab({
             textAlign:"center", maxWidth:380, lineHeight:1.65 }}>
             AI builds patient-friendly instructions across six sections from this encounter \u2014
             visit summary, medications, return precautions, follow-up, activity, and home care.
+            {nursingCount > 0 && ` Nursing documentation (${nursingCount} item${nursingCount > 1 ? "s" : ""}) will be incorporated.`}
           </div>
           {!cc.text && (
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
@@ -347,7 +418,7 @@ export default function DischargeInstructionsTab({
               \u26a0 No chief complaint set \u2014 add one in the CC tab for better results
             </div>
           )}
-          <div style={{ display:"flex", gap:10, marginTop:4 }}>
+          <div style={{ display:"flex", gap:10, marginTop:4, flexWrap:"wrap", justifyContent:"center" }}>
             {[["standard","Standard English"],["simple","Plain English (Grade 6)"]].map(([val,lbl]) => (
               <button key={val} onClick={() => { setLang(val); generateAll(val); }}
                 style={{ padding:"10px 22px", borderRadius:9, cursor:"pointer",
@@ -358,6 +429,17 @@ export default function DischargeInstructionsTab({
                 \u2728 {lbl}
               </button>
             ))}
+            {/* Generate & Copy — one-click discharge shortcut */}
+            <button onClick={() => { setLang(lang); generateAll(lang, true); }}
+              disabled={anyGenerating}
+              title="Generate instructions and immediately copy to clipboard"
+              style={{ padding:"10px 22px", borderRadius:9, cursor:"pointer",
+                border:"2px solid rgba(59,158,255,0.45)",
+                background:"rgba(59,158,255,0.09)",
+                color:"var(--npi-blue)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600 }}>
+              \u26a1 Generate &amp; Copy
+            </button>
           </div>
         </div>
       )}
@@ -478,6 +560,44 @@ export default function DischargeInstructionsTab({
               </div>
             );
           })}
+
+          {/* Nursing documentation summary card — shown if nursing data present */}
+          {nursingCount > 0 && (
+            <div style={{ borderRadius:11, overflow:"hidden",
+              background:"rgba(14,37,68,0.7)",
+              border:"1px solid rgba(0,229,192,0.18)", borderTop:"2px solid rgba(0,229,192,0.55)" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8,
+                padding:"9px 14px 8px", borderBottom:"1px solid rgba(26,53,85,0.35)",
+                background:"rgba(8,18,36,0.35)" }}>
+                <span style={{ fontSize:14 }}>🩺</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  color:"var(--npi-teal)", letterSpacing:1.5, textTransform:"uppercase" }}>
+                  Nursing Documentation
+                </span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--npi-txt4)", padding:"1px 5px", borderRadius:3,
+                  background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.2)" }}>
+                  included in summary
+                </span>
+              </div>
+              <div style={{ padding:"11px 14px 13px", display:"flex", flexDirection:"column", gap:4 }}>
+                {nursingInterventions.map((n, i) => (
+                  <div key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                    color:"var(--npi-txt2)", display:"flex", gap:8 }}>
+                    <span style={{ color:"var(--npi-teal)", flexShrink:0 }}>✓</span>
+                    <span>{typeof n === "string" ? n : n.label || n.text || ""}</span>
+                  </div>
+                ))}
+                {nursingNotes.map((n, i) => (
+                  <div key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                    color:"var(--npi-txt3)", display:"flex", gap:8 }}>
+                    <span style={{ color:"var(--npi-txt4)", flexShrink:0 }}>📝</span>
+                    <span>{typeof n === "string" ? n : n.text || n.note || ""}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={{ padding:"10px 14px", borderRadius:9,
             background:"rgba(8,18,36,0.6)", border:"1px solid rgba(26,53,85,0.35)",

@@ -230,7 +230,7 @@ export default function DischargeInstructionsTab({
                 padding:"2px 8px", borderRadius:4, letterSpacing:.5,
                 background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.28)",
                 color:"var(--npi-teal)" }}>
-                \u{1F9B8} {nursingCount} nursing item{nursingCount > 1 ? "s" : ""} included
+                🧸 {nursingCount} nursing item{nursingCount > 1 ? "s" : ""} included
               </span>
             )}
           </div>

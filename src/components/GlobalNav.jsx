@@ -189,6 +189,7 @@ export const PAGES = [
   { id:"narrative",   name:"Narrative Engine",  icon:"🧠",  color:T.purple, cat:"Workflow",   desc:"Living clinical stories",             route:"/narrative-engine"  },
   { id:"critical",    name:"Critical Inbox",    icon:"🚨",  color:T.red,    cat:"Workflow",   desc:"Cross-patient critical results",      route:"/critical-inbox"    },
   { id:"signout",     name:"Shift Sign-Out",    icon:"👋",  color:T.gold,   cat:"Workflow",   desc:"I-PASS handoff at shift change",      route:"/shift-signout"     },
+  { id:"huddle",      name:"Huddle Board",       icon:"🏥",  color:T.teal,   cat:"Workflow",   desc:"Department acuity, clocks & tasks",   route:"/huddle-board"      },
   { id:"resustimer",  name:"Resus Timer",       icon:"⏱",   color:T.red,    cat:"Workflow",   desc:"Live code — CPR cycles & drugs",     route:"/resus-hub"         },
   // AI Tools
   { id:"ddx",         name:"DDx Engine",        icon:"🔍",  color:T.purple, cat:"AI Tools",   desc:"AI-weighted differential diagnosis",  route:"/ddx-engine"        },

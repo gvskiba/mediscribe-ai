@@ -1,3 +1,4 @@
+import React, { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useNPIState } from "@/components/npi/useNPIState";
@@ -41,10 +42,9 @@ import CommandPalette         from "@/components/npi/CommandPalette";
 // VoiceHPICapture wired in HPITab.jsx — see wiring note below
 // DischargeReadabilityStrip wired in SmartDischargeHub.jsx — see that file
 
-// ── TrackBoard session bridge ─────────────────────────────────────────────────
-// registerPatient / updatePatient are exported from TrackBoardView
-// and sync this encounter into the home-page track board.
-import { registerPatient, updatePatient } from "@/components/npi/TrackBoardView";
+// TrackBoard session bridge — stubs (TrackBoardView not available in this build)
+const registerPatient = () => {};
+const updatePatient   = () => {};
 
 // ── Utility / overlay components ─────────────────────────────────────────────
 import ParseFab              from "@/components/npi/ParseFab";

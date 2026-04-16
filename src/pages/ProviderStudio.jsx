@@ -10,8 +10,7 @@ import MedsTab from "@/components/npi/MedsTab";
 import ROSTab from "@/components/npi/ROSTab";
 import PETab from "@/components/npi/PETab";
 import AutoCoderTab from "@/components/npi/AutoCoderTab";
-import MedicalDecisionMaking from "@/pages/MedicalDecisionMaking";
-import DischargePlanning from "@/pages/DischargePlanning";
+
 import NotryaApp from "@/pages/NotryaApp";
 import EDProcedureNotes from "@/pages/EDProcedureNotes";
 import EDOrders from "@/pages/EDOrders";
@@ -274,9 +273,9 @@ export default function ProviderStudio() {
       case "meds": return <MedsTab medications={medications} setMedications={setMedications} allergies={allergies} setAllergies={setAllergies} pmhSelected={pmhSelected} setPmhSelected={setPmhSelected} pmhExtra={pmhExtra} setPmhExtra={setPmhExtra} surgHx={surgHx} setSurgHx={setSurgHx} famHx={famHx} setFamHx={setFamHx} socHx={socHx} setSocHx={setSocHx} pmhExpanded={pmhExpanded} setPmhExpanded={setPmhExpanded} />;
       case "ros":  return <ROSTab />;
       case "pe":   return <PETab peState={peState} setPeState={setPeState} peFindings={peFindings} setPeFindings={setPeFindings} />;
-      case "mdm":  return <MedicalDecisionMaking embedded patientName={patientName} chiefComplaint={cc.text} />;
+      case "mdm":  return <div style={{ display:"flex", flexDirection:"column", gap:12, alignItems:"center", justifyContent:"center", height:300 }}><div style={{ fontSize:32 }}>⚖️</div><div style={{ color:"#8aaccc" }}>Medical Decision Making</div><button onClick={() => navigate("/NewPatientInput?tab=mdm")} style={{ background:"#00e5c0", color:"#050f1e", border:"none", borderRadius:8, padding:"8px 20px", fontSize:13, fontWeight:700, cursor:"pointer" }}>Open MDM Builder →</button></div>;
       case "chart":    return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "auto" }}><NotryaApp embedded={true} /></div>;
-      case "discharge": return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><DischargePlanning embedded /></div>;
+      case "discharge": return <div style={{ display:"flex", flexDirection:"column", gap:12, alignItems:"center", justifyContent:"center", height:300 }}><div style={{ fontSize:32 }}>🚪</div><div style={{ color:"#8aaccc" }}>Discharge Planning</div><button onClick={() => navigate("/discharge-hub")} style={{ background:"#00e5c0", color:"#050f1e", border:"none", borderRadius:8, padding:"8px 20px", fontSize:13, fontWeight:700, cursor:"pointer" }}>Open Discharge Hub →</button></div>;
       case "orders":   return <div style={{ margin: "-18px -28px", height: "calc(100% + 36px)", overflow: "hidden" }}><EDOrders embedded /></div>;
       case "autocoder": return <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} />;
       case "procedures": return <EDProcedureNotes embedded patientName={patientName} patientAllergies={allergies.join(", ")} physicianName="" />;

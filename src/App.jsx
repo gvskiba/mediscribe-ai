@@ -89,7 +89,6 @@ import AbdominalPainHub from '@/pages/AbdominalPainHub';
 import AMSHub from '@/pages/AMSHub';
 import DVTHub from '@/pages/DVTHub';
 import SepsisHub from '@/pages/SepsisHub';
-import AutoCoder from '@/pages/AutoCoder';
 
 
 
@@ -113,6 +112,7 @@ function GlobalCommandPalette({ navigate }) {
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
+const AutocoderHubPage = Pages["AutoCoder"] || (() => null);
 
 const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
@@ -257,7 +257,7 @@ const AuthenticatedApp = () => {
       <Route path="/ToxHub" element={<ToxicologyHub />} />
       <Route path="/PsychHub" element={<PsycheHub />} />
       <Route path="/TriageHub" element={<TriageHub />} />
-      <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutoCoder /></LayoutWrapper>} />
+      <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
       <Route path="/SmartDischargeHub" element={<DischargeHub />} />
       <Route path="/SepsisHub" element={<SepsisHub />} />
       <Route path="/AMSHub" element={<AMSHub />} />

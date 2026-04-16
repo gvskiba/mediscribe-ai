@@ -163,6 +163,127 @@ Be clinically precise. Use standard medical abbreviations. No padding.`,
   function removeAction(id) { setActions(p => p.filter(a => a.id!==id)); }
 
   const sevColor = severity==="Critical"?"var(--npi-coral)":severity==="Serious"?"var(--npi-orange)":"var(--npi-teal)";
+
+  // ── Print handoff ─────────────────────────────────────────────────────────
+  function printHandoff() {
+    const win = window.open("", "_blank", "width=760,height=960");
+    if (!win) return;
+    const ts       = new Date().toLocaleString("en-US", { hour12:false });
+    const sevLabel = severity;
+    const sevHex   = severity==="Critical"?"#c0392b":severity==="Serious"?"#d35400":"#27ae60";
+    const pending  = consults.filter(c=>c.status==="pending");
+
+    // Shared header HTML
+    const headerHTML = `
+      <header>
+        <div class="brand">Notrya · ${format === "sbar" ? "SBAR" : "I-PASS"} Handoff</div>
+        <div class="ts">${ts}</div>
+        <h1>${patientName}</h1>
+        <div class="meta">
+          ${demo.age ? `<span>${demo.age}y</span>` : ""}
+          ${demo.sex ? `<span>${demo.sex}</span>` : ""}
+          ${registration?.mrn ? `<span>MRN ${registration.mrn}</span>` : ""}
+          ${registration?.room ? `<span>Room ${registration.room}</span>` : ""}
+          ${esiLevel ? `<span>ESI ${esiLevel}</span>` : ""}
+          ${cc.text ? `<span class="cc">${cc.text.replace(/</g,"&lt;")}</span>` : ""}
+        </div>
+        <div class="sev" style="border-color:${sevHex};color:${sevHex}">&#9679; ${sevLabel}</div>
+      </header>`;
+
+    const sectionHTML = (letter, label, color, content) =>
+      content ? `
+        <section>
+          <div class="sec-hdr" style="border-left-color:${color}">
+            <span class="letter" style="background:${color}22;color:${color};border-color:${color}55">${letter}</span>
+            <span class="sec-lbl">${label}</span>
+          </div>
+          <div class="sec-body">${(content||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</div>
+        </section>` : "";
+
+    let bodyHTML = "";
+
+    if (format === "sbar") {
+      bodyHTML = [
+        sectionHTML("S","Situation","#c0392b", sbarSituation),
+        sectionHTML("B","Background","#2980b9", sbarBackground),
+        sectionHTML("A","Assessment","#f39c12", sbarAssessment),
+        sectionHTML("R","Recommendation","#8e44ad", sbarRecommendation),
+      ].join("");
+    } else {
+      // Build action list HTML from state
+      const pendingConsults = pending.map(c =>
+        `<li class="action-item pending">&#x23f3; Awaiting ${c.service} consult${c.question ? ": " + c.question.slice(0,80) : ""}</li>`
+      ).join("");
+      const actionItems = actions.map(a =>
+        `<li class="action-item${a.done ? " done" : ""}">
+          <span class="chk">${a.done ? "&#x2713;" : "&#x25a1;"}</span>${a.text.replace(/</g,"&lt;")}
+        </li>`
+      ).join("");
+
+      bodyHTML = [
+        sectionHTML("P","Patient Summary","#2980b9", patientSummary),
+        (pendingConsults || actionItems) ? `
+          <section>
+            <div class="sec-hdr" style="border-left-color:#f39c12">
+              <span class="letter" style="background:#f39c1222;color:#f39c12;border-color:#f39c1255">A</span>
+              <span class="sec-lbl">Action List</span>
+            </div>
+            <ul class="action-list">${pendingConsults}${actionItems}</ul>
+          </section>` : "",
+        sectionHTML("S","Situation Awareness &amp; Contingency","#8e44ad", situation),
+        sectionHTML("S","Synthesis — Read Back","#27ae60", synthesis),
+      ].join("");
+    }
+
+    const pendingItemsHTML = pending.length && format === "sbar" ? `
+      <section class="pending-section">
+        <div class="sec-hdr" style="border-left-color:#e67e22">
+          <span class="sec-lbl">Pending Items</span>
+        </div>
+        <ul class="action-list">
+          ${pending.map(c => `<li class="action-item pending">&#x23f3; ${c.service} consult${c.question ? ": " + c.question.slice(0,80) : ""}</li>`).join("")}
+        </ul>
+      </section>` : "";
+
+    win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+      <title>${format === "sbar" ? "SBAR" : "I-PASS"} Handoff \u2014 ${patientName}</title>
+      <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:Georgia,serif;font-size:13px;color:#111;max-width:680px;margin:36px auto;padding:0 28px}
+        header{border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:22px}
+        .brand{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#666;margin-bottom:6px}
+        .ts{font-size:10px;color:#888;float:right;margin-top:-18px}
+        h1{font-size:22px;font-weight:700;margin-bottom:8px}
+        .meta{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:#444;margin-bottom:8px}
+        .meta span{background:#f4f4f4;border:1px solid #ddd;border-radius:4px;padding:1px 7px}
+        .meta span.cc{background:#e8f4fd;border-color:#aed6f1;color:#1a5276;font-weight:700}
+        .sev{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.5px;padding:3px 10px;border:1.5px solid;border-radius:20px;margin-top:4px}
+        section{margin-bottom:18px;break-inside:avoid}
+        .sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:9px;border-left:3px solid #333;padding-left:10px}
+        .letter{width:22px;height:22px;border-radius:11px;border:1px solid;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:11px;font-weight:700;flex-shrink:0}
+        .sec-lbl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#333}
+        .sec-body{font-size:12.5px;line-height:1.75;color:#222;padding-left:13px;white-space:pre-wrap}
+        .action-list{list-style:none;padding-left:13px}
+        .action-item{font-size:12px;padding:5px 0 5px 22px;border-bottom:1px solid #f0f0f0;position:relative;color:#222;line-height:1.5}
+        .action-item.done{color:#888;text-decoration:line-through}
+        .action-item.pending{color:#6e4c00}
+        .chk{position:absolute;left:0;top:5px;font-size:12px}
+        .pending-section{margin-top:4px}
+        footer{margin-top:28px;padding-top:10px;border-top:1px solid #ccc;font-size:10px;color:#888;line-height:1.6;display:flex;justify-content:space-between}
+        @media print{body{margin:18px 24px}section{break-inside:avoid}.ts{float:right}}
+      </style>
+    </head><body>
+      ${headerHTML}
+      ${bodyHTML}
+      ${pendingItemsHTML}
+      <footer>
+        <span>Notrya \u00b7 ${format === "sbar" ? "SBAR" : "I-PASS"} Handoff \u00b7 Physician review required before acting on this document</span>
+        <span>${new Date().toLocaleDateString()}</span>
+      </footer>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 350);
+  }
   const iaBase = {
     width:"100%", background:"rgba(14,37,68,0.8)",
     border:"1px solid rgba(26,53,85,0.55)", borderRadius:9,
@@ -226,6 +347,17 @@ Be clinically precise. Use standard medical abbreviations. No padding.`,
         </div>
 
         <div style={{ flex:1 }} />
+
+        {/* Print button — always available once there is something to print */}
+        {(patientSummary || sbarSituation || actions.length > 0 || situation) && (
+          <button onClick={printHandoff}
+            style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
+              border:"1px solid rgba(42,77,114,0.45)", background:"transparent",
+              color:"var(--npi-txt4)", fontFamily:"'DM Sans',sans-serif",
+              fontSize:11, fontWeight:600 }}>
+            &#x1F5A8; Print / PDF
+          </button>
+        )}
 
         {handoffDone && (
           <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"var(--npi-green)", background:"rgba(61,255,160,0.1)", padding:"4px 10px", borderRadius:6, border:"1px solid rgba(61,255,160,0.3)" }}>

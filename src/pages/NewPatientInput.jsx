@@ -42,10 +42,6 @@ import CommandPalette         from "@/components/npi/CommandPalette";
 // VoiceHPICapture wired in HPITab.jsx — see wiring note below
 // DischargeReadabilityStrip wired in SmartDischargeHub.jsx — see that file
 
-// TrackBoard session bridge — stubs (TrackBoardView not available in this build)
-const registerPatient = () => {};
-const updatePatient   = () => {};
-
 // ── Utility / overlay components ─────────────────────────────────────────────
 import ParseFab              from "@/components/npi/ParseFab";
 import SystemProgressHeader  from "@/components/npi/SystemProgressHeader";
@@ -59,6 +55,10 @@ import MedicationReferencePage from "@/pages/MedicationReference";
 import ERPlanBuilder           from "@/pages/ERPlanBuilder";
 import ResultsViewer           from "@/pages/ResultsViewer";
 import ERxHub                  from "@/pages/ERx";
+
+// TrackBoard session bridge — stubs (TrackBoardView not available in this build)
+const registerPatient = () => {};
+const updatePatient   = () => {};
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function NewPatientInput() {

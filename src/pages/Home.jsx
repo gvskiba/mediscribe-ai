@@ -92,14 +92,14 @@ const GROUPS = [
     { id:"shock",     route:"/ShockHub",            icon:"⚡", title:"Shock Hub",            badge:"ACEP 2023",   color:T.coral,  tags:["shock","vasopressor","rush","hemodynamic"],                                 features:["4 Shock States","Vasopressor Ladder","RUSH Protocol","Endpoints"],   desc:"4 shock state profiles, vasopressor ladder with weight-based dosing, RUSH exam protocol." },
     { id:"resus",     route:"/resus-hub",           icon:"❤️", title:"Resus Hub",            badge:"ACLS·PALS",   color:"#ff4444",tags:["cardiac arrest","cpr","acls","pals","vfib","pea","rosc"],                    features:["VF / PEA / Asystole","CPR Timer","Epi Tracker","PALS Weight"],      desc:"Real-time ACLS — CPR timer, epinephrine tracker, H's & T's, post-ROSC checklist." },
     { id:"stroke",    route:"/stroke-hub",          icon:"🧠", title:"Stroke Hub",           badge:"AHA 2019",    color:T.purple, tags:["stroke","tpa","alteplase","nihss","lvo","thrombectomy","tnk"],               features:["Door-to-Needle","tPA Eligibility","Alteplase Dose","NIHSS"],         desc:"Door-to-needle timer, tPA checklist, alteplase 0.9 mg/kg, LVO simultaneous thrombectomy.", updates:["TNK ACEP 2024","Simultaneous tPA+EVT"] },
-    { id:"trauma",    route:"/TraumaHub",           icon:"🚑", title:"Trauma Hub",           badge:"ATLS 10e",    color:T.orange, tags:["trauma","atls","mtp","txa","gcs","shock","nexus","hemorrhage"],              features:["ABCDE Survey","Shock Class","MTP 1:1:1","TXA CRASH-2"],             desc:"ATLS primary survey, 4-class hemorrhagic shock, MTP 1:1:1 (PROPPR), TXA CRASH-2 dosing." },
+    { id:"trauma",    route:"/TraumaHub",           isNew:true,           icon:"🚑", title:"Trauma Hub",           badge:"ATLS 10e",    color:T.orange, tags:["trauma","atls","mtp","txa","gcs","shock","nexus","hemorrhage"],              features:["ABCDE Survey","Shock Class","MTP 1:1:1","TXA CRASH-2"],             desc:"ATLS primary survey, 4-class hemorrhagic shock, MTP 1:1:1 (PROPPR), TXA CRASH-2 dosing." },
   ]},
   { label:"Chief Complaint", color:T.blue, hubs:[
-    { id:"chestpain", route:"/ChestPainHub",        icon:"💓", title:"Chest Pain Hub",       badge:"HEART·EDACS", color:T.coral,  tags:["chest pain","heart score","acs","stemi","nstemi","troponin","edacs"],         features:["HEART Score","Serial Troponin","EDACS","ACS Protocol"],             desc:"HEART score, 0/1/3h hs-cTnI protocol, EDACS, ACS protocol, disposition matrix." },
-    { id:"dyspnea",   route:"/DyspneaHub",          icon:"💨", title:"Dyspnea Hub",          badge:"BLUE·PE",     color:T.blue,   tags:["dyspnea","sob","chf","copd","asthma","pe","blue","bnp","perc","wells"],     features:["BLUE Protocol","PE Pathway","CHF / ADHF","COPD / Pneumonia"],       desc:"BLUE protocol, PERC + Wells PE pathway, CHF BNP + diuresis, COPD/asthma, CURB-65." },
-    { id:"headache",  route:"/HeadacheHub",         icon:"🤕", title:"Headache Hub",         badge:"OTTAWA·SAH",  color:T.purple, tags:["headache","sah","migraine","ottawa","lp","xanthochromia","cluster"],          features:["SNOOP4 Red Flags","Ottawa SAH Rule","LP Interpretation","Treatment"],desc:"SNOOP4 red flags, Ottawa SAH Rule (100% sens), LP/xanthochromia, migraine cocktail." },
-    { id:"abdpain",   route:"/AbdominalPainHub",    icon:"🔴", title:"Abdominal Pain Hub",   badge:"ALVARADO",    color:T.orange, tags:["abdominal","appendicitis","alvarado","bisap","pancreatitis","gi bleed","cholecystitis"],features:["Alvarado Score","BISAP","Glasgow-Blatchford","Tokyo 2018"],  desc:"Alvarado appendicitis, BISAP pancreatitis, Glasgow-Blatchford GI bleed, Tokyo cholangitis." },
-    { id:"ams",       route:"/AMSHub",              icon:"😵‍💫",title:"AMS Hub",              badge:"AEIOU-TIPS",  color:T.purple, tags:["ams","altered mental status","delirium","cam-icu","rass","wernicke","encephalitis"],features:["AEIOU-TIPS","CAM-ICU","RASS Scale","Specific Syndromes"],       desc:"AEIOU-TIPS differential, CAM-ICU delirium, RASS, Wernicke, NCSE, PRES, hepatic encephalopathy." },
+    { id:"chestpain", route:"/ChestPainHub",        icon:"💓", title:"Chest Pain Hub",       badge:"HEART·EDACS", color:T.coral,  isNew:true, tags:["chest pain","heart score","acs","stemi","nstemi","troponin","edacs"],         features:["HEART Score","Serial Troponin","EDACS","ACS Protocol"],             desc:"HEART score, 0/1/3h hs-cTnI protocol, EDACS, ACS protocol, disposition matrix." },
+    { id:"dyspnea",   route:"/DyspneaHub",          isNew:true,          icon:"💨", title:"Dyspnea Hub",          badge:"BLUE·PE",     color:T.blue,   tags:["dyspnea","sob","chf","copd","asthma","pe","blue","bnp","perc","wells"],     features:["BLUE Protocol","PE Pathway","CHF / ADHF","COPD / Pneumonia"],       desc:"BLUE protocol, PERC + Wells PE pathway, CHF BNP + diuresis, COPD/asthma, CURB-65." },
+    { id:"headache",  route:"/HeadacheHub",         isNew:true,         icon:"🤕", title:"Headache Hub",         badge:"OTTAWA·SAH",  color:T.purple, tags:["headache","sah","migraine","ottawa","lp","xanthochromia","cluster"],          features:["SNOOP4 Red Flags","Ottawa SAH Rule","LP Interpretation","Treatment"],desc:"SNOOP4 red flags, Ottawa SAH Rule (100% sens), LP/xanthochromia, migraine cocktail." },
+    { id:"abdpain",   route:"/AbdominalPainHub",    isNew:true,    icon:"🔴", title:"Abdominal Pain Hub",   badge:"ALVARADO",    color:T.orange, tags:["abdominal","appendicitis","alvarado","bisap","pancreatitis","gi bleed","cholecystitis"],features:["Alvarado Score","BISAP","Glasgow-Blatchford","Tokyo 2018"],  desc:"Alvarado appendicitis, BISAP pancreatitis, Glasgow-Blatchford GI bleed, Tokyo cholangitis." },
+    { id:"ams",       route:"/AMSHub",              isNew:true,              icon:"😵‍💫",title:"AMS Hub",              badge:"AEIOU-TIPS",  color:T.purple, tags:["ams","altered mental status","delirium","cam-icu","rass","wernicke","encephalitis"],features:["AEIOU-TIPS","CAM-ICU","RASS Scale","Specific Syndromes"],       desc:"AEIOU-TIPS differential, CAM-ICU delirium, RASS, Wernicke, NCSE, PRES, hepatic encephalopathy." },
     { id:"syncope",   route:"/SyncopeHub",          icon:"💫", title:"Syncope Hub",          badge:"SFSR·CSRS",   color:T.gold,   tags:["syncope","faint","sfsr","canadian","csrs"],                                 features:["SFSR + CSRS","High-Risk Features","Ottawa ECG","Disposition"],      desc:"SFSR (external validation caveat), Canadian Syncope Risk Score, high-risk features, disposition.", updates:["SFSR Caveat 2023"] },
     { id:"triage",    route:"/triage-hub",          icon:"🏷️", title:"Triage Hub",           badge:"ESI v4",      color:T.gold,   tags:["triage","esi","ctas","priority"],                                           features:["ESI Algorithm","Peds Adjustments","CTAS Crosswalk","Flags"],        desc:"ESI v4 algorithm, pediatric triage adjustments, CTAS crosswalk, priority flags." },
   ]},
@@ -117,10 +117,10 @@ const GROUPS = [
     { id:"pain",      route:"/pain-hub",            icon:"🩺", title:"Pain Hub",             badge:"MULTIMODAL",  color:T.orange, tags:["pain","analgesia","opioid","nerve block","ketamine","nsaid"],               features:["Acute Pain Ladder","Opioid Dosing","Nerve Blocks","Adjuncts"],       desc:"Acute pain ladder, opioid dosing, nerve block guide, ketamine protocols." },
   ]},
   { label:"Subspecialty", color:T.rose, hubs:[
-    { id:"dvt",       route:"/DVTHub",              icon:"🩸", title:"DVT / VTE Hub",        badge:"DOAC·WELLS",  color:T.blue,   tags:["dvt","vte","wells","doac","anticoagulation","rivaroxaban","apixaban"],        features:["Wells DVT Score","DOAC Selection","Renal Dosing","IVC Filter"],      desc:"Wells DVT score, all 4 DOACs with renal dosing, IVC filter criteria, special populations." },
+    { id:"dvt",       route:"/DVTHub",              isNew:true,              icon:"🩸", title:"DVT / VTE Hub",        badge:"DOAC·WELLS",  color:T.blue,   tags:["dvt","vte","wells","doac","anticoagulation","rivaroxaban","apixaban"],        features:["Wells DVT Score","DOAC Selection","Renal Dosing","IVC Filter"],      desc:"Wells DVT score, all 4 DOACs with renal dosing, IVC filter criteria, special populations." },
     { id:"psych",     route:"/psyche-hub",          icon:"💭", title:"Psych Hub",            badge:"DROPERIDOL",  color:T.rose,   tags:["psych","agitation","si","hi","ciwa","intoxication","droperidol"],           features:["Agitation Protocol","SI/HI Risk","CIWA-Ar","9 Intox Syndromes"],   desc:"Droperidol + midazolam first-line agitation (ACEP 2023), SI/HI risk, CIWA, 9 intox syndromes.", updates:["Droperidol Level B ACEP 2023"] },
-    { id:"peds",      route:"/PediatricHub",        icon:"🧒", title:"Pediatric Hub",        badge:"PECARN",      color:T.green,  tags:["pediatric","peds","broselow","pecarn","fever","rochester","westley","croup"],features:["Broselow / Vitals","PECARN Head CT","Fever Workup","PALS Dosing"],  desc:"Broselow, age-based vitals, PECARN, Rochester fever criteria, PALS weight-based dosing." },
-    { id:"obgyn",     route:"/OBGYNHub",            icon:"🤰", title:"OB/GYN Hub",           badge:"ACOG 2020",   color:T.rose,   tags:["ectopic","pregnancy","preeclampsia","hellp","magnesium","torsion"],          features:["Ectopic / beta-hCG","Vaginal Bleeding","Preeclampsia","Torsion"],    desc:"Ectopic beta-hCG algorithm, vaginal bleeding by trimester, preeclampsia/HELLP, magnesium." },
+    { id:"peds",      route:"/PediatricHub",        isNew:true,        icon:"🧒", title:"Pediatric Hub",        badge:"PECARN",      color:T.green,  tags:["pediatric","peds","broselow","pecarn","fever","rochester","westley","croup"],features:["Broselow / Vitals","PECARN Head CT","Fever Workup","PALS Dosing"],  desc:"Broselow, age-based vitals, PECARN, Rochester fever criteria, PALS weight-based dosing." },
+    { id:"obgyn",     route:"/OBGYNHub",            isNew:true,            icon:"🤰", title:"OB/GYN Hub",           badge:"ACOG 2020",   color:T.rose,   tags:["ectopic","pregnancy","preeclampsia","hellp","magnesium","torsion"],          features:["Ectopic / beta-hCG","Vaginal Bleeding","Preeclampsia","Torsion"],    desc:"Ectopic beta-hCG algorithm, vaginal bleeding by trimester, preeclampsia/HELLP, magnesium." },
     { id:"sepAbx",    route:"/SepsisAbxHub",        icon:"💉", title:"Sepsis ABX Hub",       badge:"SOURCE-BASED", color:T.green, tags:["sepsis","antibiotics","empiric","source","pid","pneumonia"],                features:["7 Source Sets","Empiric Tiers","Resistance","De-escalation"],        desc:"7 source-based empiric antibiotic sets, resistance lookup, de-escalation guidance." },
   ]},
   { label:"Procedures", color:T.orange, hubs:[
@@ -197,12 +197,23 @@ function BgMesh() {
 
 // ── Setup card ──────────────────────────────────────────────────────────────
 function SetupCard({ onDone }) {
-  const [name, setName] = useState("");
-  const [ago,  setAgo]  = useState("0");
+  const [name,     setName]     = useState("");
+  const [ago,      setAgo]      = useState("0");
+  const [practice, setPractice] = useState("general");
+
+  const PRACTICE_DEFAULTS = {
+    general: ["chestpain","sepsis","airway"],
+    peds:    ["peds","weightdose","airway"],
+    trauma:  ["trauma","shock","airway"],
+    rural:   ["airway","resus","erx"],
+  };
+
   const submit = () => {
     _s.providerName = name.trim() || "Provider";
     _s.shiftStart   = Date.now() - parseInt(ago) * 60000;
     _s.setupDone    = true;
+    // Set practice-appropriate default pins
+    _s.favorites = new Set(PRACTICE_DEFAULTS[practice] || PRACTICE_DEFAULTS.general);
     _notify();
     onDone();
   };
@@ -237,6 +248,29 @@ function SetupCard({ onDone }) {
             ["240","4 hours ago"],["480","8 hours ago"],["720","12 hours ago"]
           ].map(([v,l]) => <option key={v} value={v}>{l}</option>)}
         </select>
+      </div>
+
+      <div style={{ marginBottom:12 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7.5,
+          color:T.txt4, letterSpacing:1, textTransform:"uppercase",
+          marginBottom:4 }}>Practice type</div>
+        <select className="nh-sel" value={practice}
+          onChange={e => setPractice(e.target.value)}
+          style={{ background:"rgba(5,20,40,0.9)",
+            border:"1px solid rgba(26,53,85,0.5)",
+            borderRadius:8, padding:"7px 11px",
+            color:T.txt, fontSize:11, width:"100%" }}>
+          {[
+            ["general","General Emergency Medicine"],
+            ["peds",   "Pediatric Emergency"],
+            ["trauma", "Trauma / Level I Center"],
+            ["rural",  "Rural / Critical Access"],
+          ].map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+          color:T.txt4, marginTop:3 }}>
+          Sets your default pinned hubs for this shift
+        </div>
       </div>
 
       <button onClick={submit}
@@ -719,18 +753,43 @@ function DashboardPanel({ patients }) {
             </span>
           </button>
           {showScratch && (
-            <textarea value={scratch}
-              onChange={e => { setScratch(e.target.value); _s.scratchpad = e.target.value; }}
-              placeholder={"Recheck K+ Rm3 at 1800\nCall cardiology re: Rm7 before 3pm\n..."}
-              style={{ width:"100%", height:88, padding:"8px 10px",
-                background:"rgba(5,20,40,0.9)",
-                border:"1px solid rgba(26,53,85,0.5)",
-                borderRadius:9, resize:"vertical",
-                fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                color:T.txt2, lineHeight:1.6,
-                transition:"border-color .15s" }}
-              onFocus={e => { e.target.style.borderColor = "rgba(59,158,255,0.5)"; }}
-              onBlur={e  => { e.target.style.borderColor = "rgba(26,53,85,0.5)"; }} />
+            <div>
+              <textarea value={scratch}
+                onChange={e => { setScratch(e.target.value); _s.scratchpad = e.target.value; }}
+                placeholder={"Recheck K+ Rm3 at 1800\nCall cardiology re: Rm7 before 3pm\n..."}
+                style={{ width:"100%", height:88, padding:"8px 10px",
+                  background:"rgba(5,20,40,0.9)",
+                  border:"1px solid rgba(26,53,85,0.5)",
+                  borderRadius:9, resize:"vertical",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                  color:T.txt2, lineHeight:1.6,
+                  transition:"border-color .15s" }}
+                onFocus={e => { e.target.style.borderColor = "rgba(59,158,255,0.5)"; }}
+                onBlur={e  => { e.target.style.borderColor = "rgba(26,53,85,0.5)"; }} />
+              {scratch.trim() && (
+                <button
+                  onClick={() => {
+                    // Append scratchpad to session handoff notes for ShiftHandoffGenerator
+                    _s.handoffNotes = (_s.handoffNotes || "") +
+                      ((_s.handoffNotes || "").trim() ? "\n\n" : "") +
+                      "--- Shift notes ---\n" + scratch.trim();
+                    _notify();
+                    window.location.href = "/NewPatientInput";
+                  }}
+                  style={{ display:"flex", alignItems:"center", gap:6,
+                    marginTop:5, padding:"5px 11px", borderRadius:7,
+                    background:"rgba(245,200,66,0.08)",
+                    border:"1px solid rgba(245,200,66,0.3)",
+                    color:T.gold, cursor:"pointer", fontSize:10,
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                    transition:"background .12s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(245,200,66,0.15)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(245,200,66,0.08)"; }}>
+                  <span style={{ fontSize:12 }}>📋</span>
+                  → Add to handoff
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -852,10 +911,17 @@ function HubCard({ hub }) {
         {hub.desc}
       </div>
 
-      {/* Update badges */}
-      {hub.updates && hub.updates.length > 0 && (
+      {/* Update badges + NEW chip */}
+      {(hub.isNew || (hub.updates && hub.updates.length > 0)) && (
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-          {hub.updates.map((u, i) => (
+          {hub.isNew && (
+            <span className="nh-badge-update"
+              style={{ color:T.green, background:T.green + "12",
+                border:`1px solid ${T.green}30` }}>
+              • NEW
+            </span>
+          )}
+          {hub.updates && hub.updates.map((u, i) => (
             <span key={i} className="nh-badge-update"
               style={{ color:T.orange, background:T.orange + "12",
                 border:`1px solid ${T.orange}30` }}>
@@ -903,6 +969,9 @@ export default function NotryaHome({ patients = [] }) {
     const h = e => {
       if (e.key === "/" && document.activeElement?.tagName !== "INPUT"
         && document.activeElement?.tagName !== "TEXTAREA") {
+        e.preventDefault(); searchRef.current?.focus();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault(); searchRef.current?.focus();
       }
       if (e.key === "Escape") setQuery("");

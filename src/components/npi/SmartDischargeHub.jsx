@@ -298,6 +298,8 @@ function OutputSection({ label, content, color }) {
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
+import DischargeReadabilityStrip from "@/components/npi/DischargeReadabilityStrip";
+
 export default function SmartDischargeHub({
   demo, cc, vitals, medications, allergies, pmhSelected,
   disposition, dispReason, dispTime, consults, sdoh,
@@ -347,6 +349,7 @@ export default function SmartDischargeHub({
   const [result,   setResult]   = useState(null);
   const [aiErr,    setAiErr]    = useState(null);
   const [copied,   setCopied]   = useState(false);
+  const [attested, setAttested] = useState(false);
 
   // ── Beers / conflict counts for badge ────────────────────────────────────
   const beersCount    = reconMeds.filter(m => isBeersDrug(m.name) && parseInt(demo?.age) >= 65).length;
@@ -744,15 +747,26 @@ Respond ONLY with valid JSON, no markdown fences:
           {busy ? "⚙ Generating..." : "✨ Generate Discharge Instructions"}
         </button>
         {result && (
-          <button onClick={copyAll}
-            style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
-              fontSize:12, padding:"11px 20px", borderRadius:10,
-              cursor:"pointer", transition:"all .15s",
-              border:`1px solid ${copied ? T.green+"77" : "rgba(42,79,122,0.4)"}`,
-              background:copied ? "rgba(61,255,160,0.1)" : "rgba(42,79,122,0.15)",
-              color:copied ? T.green : T.txt3 }}>
-            {copied ? "✓ Copied" : "Copy All"}
-          </button>
+          <>
+            <DischargeReadabilityStrip
+              text={Object.values(result).filter(v => typeof v === "string").join("\n\n")}
+              attested={attested}
+              onAttest={setAttested}
+              onCopy={copyAll}
+            />
+            <button onClick={copyAll}
+              disabled={!attested}
+              title={attested ? undefined : "Attest above to enable copy"}
+              style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                fontSize:12, padding:"11px 20px", borderRadius:10,
+                cursor:attested ? "pointer" : "not-allowed",
+                transition:"all .15s", opacity:attested ? 1 : 0.5,
+                border:`1px solid ${copied ? T.green+"77" : "rgba(42,79,122,0.4)"}`,
+                background:copied ? "rgba(61,255,160,0.1)" : "rgba(42,79,122,0.15)",
+                color:copied ? T.green : T.txt3 }}>
+              {copied ? "✓ Copied" : "Copy All"}
+            </button>
+          </>
         )}
       </div>
 

@@ -290,6 +290,74 @@ If computed values are provided (anion gap, eGFR), incorporate them into your in
       .replace(/\*\*(.*?)\*\*/g, `<strong style="color:${T.teal};font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase">$1</strong>`)
       .replace(/\n/g,"<br>");
 
+  // ── Extract lab values from paste text into structured fields ─────────────
+  // Sends paste text to AI asking for JSON matching our lab field IDs.
+  // Shows a preview diff before populating — provider confirms each value.
+  const [extractLoading,   setExtractLoading]   = useState(false);
+  const [extractPreview,   setExtractPreview]   = useState(null); // { fieldId: value }
+  const [extractSelected,  setExtractSelected]  = useState({});   // { fieldId: bool }
+
+  const runExtract = useCallback(async () => {
+    if (!pasteText.trim()) return;
+    setExtractLoading(true); setExtractPreview(null);
+    try {
+      // Build a field list so the AI knows what IDs to use
+      const fieldList = LAB_PANELS.flatMap(p =>
+        p.fields.map(f => `${f.id} = "${f.label}" (${f.unit})`)
+      ).join(", ");
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:600,
+          system:`You extract lab values from clinical text and map them to field IDs.
+Respond ONLY with valid JSON — an object mapping field IDs to numeric string values.
+Only include fields where you found a clear numeric value. Do not infer or estimate.
+Available field IDs: ${fieldList}`,
+          messages:[{ role:"user", content:`Extract lab values from this text and return JSON:\n\n${pasteText.trim()}` }],
+        }),
+      });
+      const data = await res.json();
+      const raw  = (data.content?.[0]?.text || "{}").replace(/```json|```/g,"").trim();
+      const extracted = JSON.parse(raw);
+
+      // Filter to known field IDs only, skip values already entered
+      const validFields = new Set(LAB_PANELS.flatMap(p => p.fields.map(f => f.id)));
+      const preview = Object.fromEntries(
+        Object.entries(extracted)
+          .filter(([id]) => validFields.has(id))
+          .map(([id, v]) => [id, String(v)])
+      );
+
+      if (Object.keys(preview).length === 0) {
+        setExtractPreview({});
+        return;
+      }
+      setExtractPreview(preview);
+      // Default: select values not already entered; deselect those that would overwrite
+      setExtractSelected(Object.fromEntries(
+        Object.keys(preview).map(id => [id, !labValues[id]])
+      ));
+    } catch {
+      setExtractPreview({});
+    } finally {
+      setExtractLoading(false);
+    }
+  }, [pasteText, labValues]);
+
+  const applyExtracted = useCallback(() => {
+    if (!extractPreview) return;
+    const toApply = Object.fromEntries(
+      Object.entries(extractPreview).filter(([id]) => extractSelected[id])
+    );
+    setLabValues(prev => ({ ...prev, ...toApply }));
+    const count = Object.keys(toApply).length;
+    setExtractPreview(null);
+    setExtractSelected({});
+    // Switch to labs tab so provider can see the populated values
+    if (count > 0) setTab("labs");
+  }, [extractPreview, extractSelected]);
+
   const currentPanel = LAB_PANELS.find(p => p.id === activePanel);
 
   const tabs = [
@@ -666,13 +734,97 @@ If computed values are provided (anion gap, eGFR), incorporate them into your in
                   rows={hasLabValues ? 7 : 10}
                   placeholder={"CXR: Mild pulmonary edema, no pneumothorax\nCT Head: No acute intracranial abnormality\n\nBlood culture: Pending\nUrine: Positive nitrites, LE 3+"}
                   value={pasteText}
-                  onChange={e => setPasteText(e.target.value)}
+                  onChange={e => { setPasteText(e.target.value); setExtractPreview(null); }}
                   style={{ width:"100%", background:T.up, border:`1px solid ${T.bd}`, borderRadius:8,
                     padding:"10px 12px", color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12,
                     resize:"vertical", outline:"none", lineHeight:1.6, transition:"border-color .15s" }}
                   onFocus={e => e.target.style.borderColor="rgba(155,109,255,.5)"}
                   onBlur={e  => e.target.style.borderColor=T.bd}
                 />
+
+                {/* Extract-to-fields button — shown when paste has numeric-looking content */}
+                {pasteText.trim().length > 10 && !extractPreview && (
+                  <button onClick={runExtract} disabled={extractLoading}
+                    style={{ padding:"7px 0", borderRadius:8, border:`1px solid rgba(59,158,255,.4)`,
+                      background:"rgba(59,158,255,.08)", color: extractLoading ? T.txt4 : T.blue,
+                      fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+                      cursor: extractLoading ? "not-allowed" : "pointer", transition:"all .15s" }}>
+                    {extractLoading ? "\u22ef Extracting values\u2026" : "\u2197 Extract Lab Values to Fields"}
+                  </button>
+                )}
+
+                {/* Extract preview — diff before populating */}
+                {extractPreview && (
+                  <div style={{ borderRadius:9, background:T.card, border:"1px solid rgba(59,158,255,.3)",
+                    borderTop:"2px solid rgba(59,158,255,.6)", overflow:"hidden" }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                      padding:"8px 12px", borderBottom:`1px solid ${T.bd}` }}>
+                      <span style={{ fontFamily:"'Playfair Display',serif", fontSize:12, fontWeight:700, color:T.blue }}>
+                        Extracted Values
+                      </span>
+                      <button onClick={() => setExtractPreview(null)}
+                        style={{ background:"none", border:"none", color:T.txt4, cursor:"pointer", fontSize:11 }}>
+                        \u2715
+                      </button>
+                    </div>
+                    {Object.keys(extractPreview).length === 0 ? (
+                      <div style={{ padding:"12px", fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4 }}>
+                        No recognizable lab values found in the pasted text.
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ padding:"8px 12px", display:"flex", flexDirection:"column", gap:5 }}>
+                          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
+                            letterSpacing:"1.2px", textTransform:"uppercase", marginBottom:3 }}>
+                            Select values to populate into Labs tab
+                          </div>
+                          {Object.entries(extractPreview).map(([id, val]) => {
+                            const field   = LAB_PANELS.flatMap(p => p.fields).find(f => f.id === id);
+                            const exists  = Boolean(labValues[id]);
+                            const flag    = getFlag(val, field || {});
+                            return (
+                              <label key={id} style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+                                <input type="checkbox"
+                                  checked={!!extractSelected[id]}
+                                  onChange={() => setExtractSelected(p => ({ ...p, [id]: !p[id] }))}
+                                  style={{ accentColor:T.blue, width:13, height:13, flexShrink:0 }} />
+                                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                                  color: flag === "critical" ? T.coral : flag === "abnormal" ? T.gold : T.txt2, flex:1 }}>
+                                  {field?.label || id}: <strong>{val}</strong>
+                                  {field?.unit ? ` ${field.unit}` : ""}
+                                  {flag !== "normal" && ` ${flag === "critical" ? "\u26a0" : "\u2191"}`}
+                                </span>
+                                {exists && (
+                                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                                    color:T.gold, letterSpacing:"0.5px" }}>
+                                    OVERWRITES {labValues[id]}
+                                  </span>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <div style={{ padding:"8px 12px", borderTop:`1px solid ${T.bd}`, display:"flex", gap:7, justifyContent:"flex-end" }}>
+                          <button onClick={() => setExtractPreview(null)}
+                            style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${T.bd}`,
+                              background:"transparent", color:T.txt4, fontFamily:"'DM Sans',sans-serif",
+                              fontSize:11, cursor:"pointer" }}>
+                            Discard
+                          </button>
+                          <button onClick={applyExtracted}
+                            disabled={!Object.values(extractSelected).some(Boolean)}
+                            style={{ padding:"5px 14px", borderRadius:6, border:"none",
+                              background: Object.values(extractSelected).some(Boolean) ? T.blue : "rgba(42,77,114,.3)",
+                              color: Object.values(extractSelected).some(Boolean) ? "#050f1e" : T.txt4,
+                              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700,
+                              cursor: Object.values(extractSelected).some(Boolean) ? "pointer" : "not-allowed" }}>
+                            Populate {Object.values(extractSelected).filter(Boolean).length} field{Object.values(extractSelected).filter(Boolean).length !== 1 ? "s" : ""} \u2192
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Patient context summary */}
                 <div style={{ padding:"9px 12px", borderRadius:7, background:T.up, border:`1px solid ${T.bd}` }}>
@@ -690,7 +842,6 @@ If computed values are provided (anion gap, eGFR), incorporate them into your in
                       vitals.hr         && `HR ${vitals.hr}`,
                       vitals.spo2       && `SpO2 ${vitals.spo2}%`,
                       hasLabValues      && `${Object.values(labValues).filter(Boolean).length} entered lab value(s)`,
-                      // Flag computed values that will be included
                       (labValues.na && labValues.cl && labValues.co2) && "anion gap computed",
                       (labValues.cr && patientAge) && "eGFR computed",
                     ].filter(Boolean).join(" \u00b7 ") || "No patient context available — enter data in other tabs"}

@@ -336,7 +336,7 @@ Be direct and clinically precise. Use ED-appropriate language. Flag any values t
                 return (
                   <div key={f.id} style={{ padding:"10px 12px", borderRadius:9, background: flag !== "normal" ? flagBg(flag) : "rgba(14,37,68,.5)", border:`1px solid ${flag !== "normal" ? (flag==="critical"?"rgba(255,107,107,.35)":"rgba(245,200,66,.3)") : T.bd}`, transition:"all .2s" }}>
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:T.txt4, letterSpacing:.04em }}>{f.label}</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:T.txt4, letterSpacing:"0.04em" }}>{f.label}</span>
                       <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>{f.unit}</span>
                     </div>
                     <input

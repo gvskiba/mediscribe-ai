@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useNPIState } from "@/components/npi/useNPIState";
 import { NPI_CSS } from "@/components/npi/npiStyles";
@@ -61,8 +61,9 @@ const updatePatient   = () => {};
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function NewPatientInput() {
+  const navigate = useNavigate();
   const {
-    navigate, currentTab, activeGroup,
+    currentTab, activeGroup,
     navDots, selectGroup, selectSection, getGroupBadge,
     arrivalTimeRef, doorTime,
     demo, setDemo, cc, setCC,

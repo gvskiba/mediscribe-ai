@@ -452,24 +452,6 @@ export default function GlobalNav({ alerts = 0 }) {
           </button>
         )}
 
-        {/* Inline search bar */}
-        <div style={{ position:"relative", flexShrink:0 }}>
-          <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:12, opacity:.4, pointerEvents:"none" }}>🔍</span>
-          <input
-            type="text"
-            placeholder="Search…"
-            onFocus={openPalette}
-            readOnly
-            style={{
-              width:160, padding:"5px 10px 5px 28px",
-              background:"rgba(14,37,68,.5)",
-              border:"1px solid rgba(42,79,122,.4)",
-              borderRadius:8, outline:"none", cursor:"pointer",
-              fontFamily:"DM Sans", fontSize:12, color:T.txt3,
-            }}
-          />
-        </div>
-
         {/* Hub picker toggle */}
         <button
           className={`${PREFIX}-hub-trigger`}

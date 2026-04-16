@@ -1,153 +1,51 @@
-/**
- * pages.config.js - Page routing configuration
- * 
- * This file is AUTO-GENERATED. Do not add imports or modify PAGES manually.
- * Pages are auto-registered when you create files in the ./pages/ folder.
- * 
- * THE ONLY EDITABLE VALUE: mainPage
- * This controls which page is the landing page (shown when users visit the app).
- * 
- * Example file structure:
- * 
- *   import HomePage from './pages/HomePage';
- *   import Dashboard from './pages/Dashboard';
- *   import Settings from './pages/Settings';
- *   
- *   export const PAGES = {
- *       "HomePage": HomePage,
- *       "Dashboard": Dashboard,
- *       "Settings": Settings,
- *   }
- *   
- *   export const pagesConfig = {
- *       mainPage: "HomePage",
- *       Pages: PAGES,
- *   };
- * 
- * Example with Layout (wraps all pages):
- *
- *   import Home from './pages/Home';
- *   import Settings from './pages/Settings';
- *   import __Layout from './Layout.jsx';
- *
- *   export const PAGES = {
- *       "Home": Home,
- *       "Settings": Settings,
- *   }
- *
- *   export const pagesConfig = {
- *       mainPage: "Home",
- *       Pages: PAGES,
- *       Layout: __Layout,
- *   };
- *
- * To change the main page from HomePage to Dashboard, use find_replace:
- *   Old: mainPage: "HomePage",
- *   New: mainPage: "Dashboard",
- *
- * The mainPage value must match a key in the PAGES object exactly.
- */
 import AddendumManager from './pages/AddendumManager';
-import AntibioticStewardship from './pages/AntibioticStewardship';
 import AppSettings from './pages/AppSettings';
 import AutoCoder from './pages/AutoCoder';
 import BillingDashboard from './pages/BillingDashboard';
-import CMELearningCenter from './pages/CMELearningCenter';
 import Calculators from './pages/Calculators';
 import Calendar from './pages/Calendar';
-import CantMissDiagnoses from './pages/CantMissDiagnoses';
-import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
-import ClinicalGuidelines from './pages/ClinicalGuidelines';
-
-
 import CustomTemplates from './pages/CustomTemplates';
-import Customize from './pages/Customize';
-import Dashboard from './pages/Dashboard';
 import EDProcedureNotes from './pages/EDProcedureNotes';
 import ERPlanBuilder from './pages/ERPlanBuilder';
 import ERx from './pages/ERx';
-import DiagnosticStewardship from './pages/DiagnosticStewardship';
-import DischargePlanning from './pages/DischargePlanning';
-import DrugReference from './pages/DrugReference';
 import DrugsBugs from './pages/DrugsBugs';
 import Home from './pages/Home';
 import KnowledgeBaseV2 from './pages/KnowledgeBaseV2';
-import LiveTranscription from './pages/LiveTranscription';
 import MedicalNews from './pages/MedicalNews';
 import MedicationReference from './pages/MedicationReference';
-import MedicalDecisionMaking from './pages/MedicalDecisionMaking';
-import NewNote from './pages/NewNote';
 import NewPatientInput from './pages/NewPatientInput';
-
-import NoteEditorTabs from './pages/NoteEditorTabs';
 import NoteTemplates from './pages/NoteTemplates';
 import NotesLibrary from './pages/NotesLibrary';
-import NursingFlowsheet from './pages/NursingFlowsheet';
 import OrderSetBuilder from './pages/OrderSetBuilder';
-import PatientDashboard from './pages/PatientDashboard';
 import PatientEducationGenerator from './pages/PatientEducationGenerator';
-
-import PediatricDosing from './pages/PediatricDosing';
-import Procedures from './pages/Procedures';
-import Results from './pages/Results';
 import Shift from './pages/Shift';
-import ShiftHours from './pages/ShiftHours';
-import SmartTemplates from './pages/SmartTemplates';
 import Snippets from './pages/Snippets';
-import UserPreferences from './pages/UserPreferences';
 import UserSettings from './pages/UserSettings';
 import __Layout from './Layout.jsx';
 
-
 export const PAGES = {
     "AddendumManager": AddendumManager,
-    "AntibioticStewardship": AntibioticStewardship,
     "AppSettings": AppSettings,
     "AutoCoder": AutoCoder,
     "BillingDashboard": BillingDashboard,
-    "CMELearningCenter": CMELearningCenter,
     "Calculators": Calculators,
     "Calendar": Calendar,
-    "CantMissDiagnoses": CantMissDiagnoses,
-    "ClinicalDecisionSupport": ClinicalDecisionSupport,
-    "ClinicalGuidelines": ClinicalGuidelines,
-
-
     "CustomTemplates": CustomTemplates,
-    "Customize": Customize,
-    "Dashboard": Dashboard,
-    "DiagnosticStewardship": DiagnosticStewardship,
     "EDProcedureNotes": EDProcedureNotes,
     "ERPlanBuilder": ERPlanBuilder,
     "ERx": ERx,
-    "DischargePlanning": DischargePlanning,
-    "DrugReference": DrugReference,
     "DrugsBugs": DrugsBugs,
     "Home": Home,
     "KnowledgeBaseV2": KnowledgeBaseV2,
-    "LiveTranscription": LiveTranscription,
     "MedicalNews": MedicalNews,
     "MedicationReference": MedicationReference,
-    "MedicalDecisionMaking": MedicalDecisionMaking,
-    "NewNote": NewNote,
     "NewPatientInput": NewPatientInput,
-
-    "NoteEditorTabs": NoteEditorTabs,
     "NoteTemplates": NoteTemplates,
     "NotesLibrary": NotesLibrary,
-    "NursingFlowsheet": NursingFlowsheet,
     "OrderSetBuilder": OrderSetBuilder,
-    "PatientDashboard": PatientDashboard,
     "PatientEducationGenerator": PatientEducationGenerator,
-
-    "PediatricDosing": PediatricDosing,
-    "Procedures": Procedures,
-    "Results": Results,
     "Shift": Shift,
-    "ShiftHours": ShiftHours,
-    "SmartTemplates": SmartTemplates,
     "Snippets": Snippets,
-    "UserPreferences": UserPreferences,
     "UserSettings": UserSettings,
 }
 

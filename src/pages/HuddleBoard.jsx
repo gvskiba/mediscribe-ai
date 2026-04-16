@@ -287,7 +287,10 @@ export default function HuddleBoard({
   const [privacyMode,   setPrivacyMode]= useState(false);
   const [search,        setSearch]     = useState("");
   const [sortBy,        setSortBy]     = useState("acuity");
-  const [filterESI,     setFilterESI]  = useState(null);
+  // Acuity range: null | "critical" (1-2) | "urgent" (3) | "lower" (4-5)
+  const [acuityRange,   setAcuityRange]= useState(null);
+  const [filterFlagged, setFilterFlagged] = useState(false);
+  const [longStayAlert, setLongStayAlert] = useState(false);
   const [filterDisp,    setFilterDisp] = useState(null);
   const [filterProv,    setFilterProv] = useState(providerFilter || null);
   const [showConfig,    setShowConfig] = useState(false);
@@ -344,11 +347,23 @@ export default function HuddleBoard({
     roomed.filter(p => { const e = elapsedMin(p.lastAssessedAt); return e !== null && e >= (ESI[p.esiLevel]?.windowMin||60); }).length,
     [roomed, tick]);
 
+  // Long-stay count — all patients (waiting, roomed, boarded) with door time ≥ 4 hours
+  const longStayCount = useMemo(() =>
+    source.filter(p => (elapsedMin(p.doorTime)||0) >= 240).length,
+    [source, tick]);
+
   // ── Sort + filter roomed patients ──────────────────────────────────────────
   const filteredRoomed = useMemo(() => {
     let list = [...roomed];
     if (search) { const q = search.toLowerCase(); list = list.filter(p => p.room?.toLowerCase().includes(q) || p.cc?.text?.toLowerCase().includes(q) || p.provider?.toLowerCase().includes(q)); }
-    if (filterESI)  list = list.filter(p => p.esiLevel === filterESI);
+    // Acuity range filter — clinical groupings rather than individual ESI levels
+    if (acuityRange === "critical") list = list.filter(p => p.esiLevel <= 2);
+    if (acuityRange === "urgent")   list = list.filter(p => p.esiLevel === 3);
+    if (acuityRange === "lower")    list = list.filter(p => p.esiLevel >= 4);
+    // Flagged-for-huddle filter
+    if (filterFlagged) list = list.filter(p => flagged.has(p.id));
+    // Long-stay filter — door time ≥ 4 hours (240 minutes)
+    if (longStayAlert) list = list.filter(p => (elapsedMin(p.doorTime)||0) >= 240);
     if (filterDisp) list = list.filter(p => p.disposition === filterDisp);
     if (filterProv) list = list.filter(p => p.provider === filterProv);
     list.sort((a, b) => {
@@ -368,7 +383,7 @@ export default function HuddleBoard({
       return (elapsedMin(b.doorTime)||0) - (elapsedMin(a.doorTime)||0);
     });
     return list;
-  }, [roomed, search, filterESI, filterDisp, filterProv, flagged, sortBy, tick]);
+  }, [roomed, search, acuityRange, filterFlagged, longStayAlert, filterDisp, filterProv, flagged, sortBy, tick]);
 
   // ── Shared row renderer (collapsed + expandable) ────────────────────────────
   const SortBtn = ({ id, lbl }) => (
@@ -401,6 +416,8 @@ export default function HuddleBoard({
     if (pt.vitals?.spo2 && parseFloat(pt.vitals.spo2) < 94) alerts.push({ label:`SpO2 ${pt.vitals.spo2}%`, col:T.coral });
     if (overdue && !isBoarded) alerts.push({ label:"REASSESS", col:T.coral });
     if (isBoarded) alerts.push({ label:"BOARDED", col:T.gold });
+    // Long-stay badge — shown whenever door time ≥ 4h (regardless of toggle state)
+    if (doorMin !== null && doorMin >= 240) alerts.push({ label:"4h+", col:longStayAlert ? T.coral : T.orange });
 
     // Status cell content depends on view mode
     const statusCell = viewMode === "physician" ? (
@@ -611,7 +628,7 @@ export default function HuddleBoard({
         )}
       </div>
     );
-  }, [flagged, expanded, viewMode, privacyMode, onSelectPatient, toggleFlag, toggleExpand, tick]);
+  }, [flagged, expanded, viewMode, privacyMode, onSelectPatient, toggleFlag, toggleExpand, longStayAlert, tick]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
   const isDemo = !patientsProp || patientsProp.length === 0;
@@ -708,6 +725,7 @@ export default function HuddleBoard({
           <StatCard label="ESI 1-2"   value={source.filter(p=>p.esiLevel<=2).length}   color={T.coral} sub="critical/emergent" />
           <StatCard label="Boarded"   value={boarded.length}        color={boarded.length>0?T.gold:T.teal} sub={ed2Median!==null?`med ${fmtMin(ed2Median)}`:null} />
           <StatCard label="Overdue"   value={overdueCount}          color={overdueCount>0?T.coral:T.teal} sub="reassessment" />
+          <StatCard label="> 4 Hours" value={longStayCount}          color={longStayCount>0?T.coral:T.teal} sub="total door time" small />
           <StatCard label="JC ED-1"   value={ed1Median!==null?fmtMin(ed1Median):"—"}  color={T.purple} sub="med admit LOS" small />
           <StatCard label="JC ED-2"   value={ed2Median!==null?fmtMin(ed2Median):"—"}  color={T.orange} sub="med boarding" small />
           {edwinScore !== null && (
@@ -819,21 +837,66 @@ export default function HuddleBoard({
             onChange={e => setSearch(e.target.value)}
             style={{ background:T.up, border:`1px solid ${T.bd}`, borderRadius:7, padding:"5px 11px",
               color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none", width:200 }} />
+
+          {/* Acuity range — clinical groupings (replaces individual ESI chips) */}
           <div style={{ display:"flex", gap:4 }}>
-            {[null,1,2,3,4,5].map(lv => {
-              const on = filterESI===lv; const c = lv ? ESI[lv] : null;
+            {[
+              { key:null,       lbl:"All",          col:T.txt4,   bg:"transparent",            bd:T.bd                      },
+              { key:"critical", lbl:"Critical 1–2", col:"#ff6b6b",bg:"rgba(255,107,107,.1)",   bd:"rgba(255,107,107,.45)"   },
+              { key:"urgent",   lbl:"Urgent 3",     col:T.gold,   bg:"rgba(245,200,66,.1)",    bd:"rgba(245,200,66,.45)"    },
+              { key:"lower",    lbl:"Lower 4–5",    col:T.blue,   bg:"rgba(59,158,255,.1)",    bd:"rgba(59,158,255,.4)"     },
+            ].map(({ key, lbl, col, bg, bd }) => {
+              const on = acuityRange === key;
               return (
-                <button key={String(lv)} onClick={() => setFilterESI(on?null:lv)}
-                  style={{ padding:"4px 9px", borderRadius:6, cursor:"pointer",
-                    border:`1px solid ${on&&c?c.color+"55":T.bd}`,
-                    background: on&&c ? c.bg : "transparent",
-                    color: on&&c ? c.color : T.txt4,
-                    fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight: on?700:400 }}>
-                  {lv===null?"All":`${lv}`}
+                <button key={String(key)} onClick={() => setAcuityRange(on ? null : key)}
+                  style={{ padding:"4px 10px", borderRadius:6, cursor:"pointer",
+                    border:`1px solid ${on ? bd : T.bd}`,
+                    background: on ? bg : "transparent",
+                    color: on ? col : T.txt4,
+                    fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    fontWeight: on ? 700 : 400, whiteSpace:"nowrap",
+                    transition:"all .12s" }}>
+                  {lbl}
                 </button>
               );
             })}
           </div>
+
+          {/* Flagged-for-huddle toggle */}
+          <button onClick={() => setFilterFlagged(f => !f)}
+            style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 11px",
+              borderRadius:6, cursor:"pointer", transition:"all .12s",
+              border:`1px solid ${filterFlagged ? "rgba(245,200,66,.5)" : T.bd}`,
+              background: filterFlagged ? "rgba(245,200,66,.1)" : "transparent",
+              color: filterFlagged ? T.gold : T.txt4,
+              fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              fontWeight: filterFlagged ? 700 : 400 }}>
+            <span style={{ fontSize:13, lineHeight:1 }}>{filterFlagged ? "⚑" : "⚐"}</span>
+            Flagged only
+            {filterFlagged && flagged.size > 0 && (
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                background:"rgba(245,200,66,.25)", borderRadius:3,
+                padding:"0 5px", color:T.gold }}>{flagged.size}</span>
+            )}
+          </button>
+
+          {/* Long-stay alert toggle (> 4 hours in department) */}
+          <button onClick={() => setLongStayAlert(a => !a)}
+            style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 11px",
+              borderRadius:6, cursor:"pointer", transition:"all .12s",
+              border:`1px solid ${longStayAlert ? "rgba(255,107,107,.5)" : T.bd}`,
+              background: longStayAlert ? "rgba(255,107,107,.1)" : "transparent",
+              color: longStayAlert ? T.coral : T.txt4,
+              fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              fontWeight: longStayAlert ? 700 : 400 }}>
+            <span style={{ fontSize:12, lineHeight:1 }}>\uD83D\uDD50</span>
+            &gt; 4h
+            {longStayAlert && longStayCount > 0 && (
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                background:"rgba(255,107,107,.2)", borderRadius:3,
+                padding:"0 5px", color:T.coral }}>{longStayCount}</span>
+            )}
+          </button>
           {providers.length > 1 && (
             <div style={{ position:"relative" }}>
               <select value={filterProv||""} onChange={e => setFilterProv(e.target.value||null)}

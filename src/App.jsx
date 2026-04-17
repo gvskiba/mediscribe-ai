@@ -90,6 +90,7 @@ import AMSHub from '@/pages/AMSHub';
 import DVTHub from '@/pages/DVTHub';
 import SepsisHub from '@/pages/SepsisHub';
 import HuddleBoard from '@/pages/HuddleBoard';
+import OrderGeneratorHub from '@/pages/OrderGeneratorHub';
 
 
 
@@ -262,6 +263,7 @@ const AuthenticatedApp = () => {
       <Route path="/SmartDischargeHub" element={<DischargeHub />} />
       <Route path="/SepsisHub" element={<SepsisHub />} />
       <Route path="/huddle-board" element={<HuddleBoard />} />
+      <Route path="/order-generator" element={<OrderGeneratorHub />} />
       <Route path="/AMSHub" element={<AMSHub />} />
       <Route path="/OrthoHub" element={<OrthoHub />} />
       <Route path="/ERx" element={<LayoutWrapper currentPageName="ERx"><ERx /></LayoutWrapper>} />

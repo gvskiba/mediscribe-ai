@@ -162,6 +162,7 @@ const AuthenticatedApp = () => {
           key={path}
           path={`/${path}`}
           element={
+            path === "NewPatientInput" ? <Page /> :
             <LayoutWrapper currentPageName={path}>
               <Page />
             </LayoutWrapper>

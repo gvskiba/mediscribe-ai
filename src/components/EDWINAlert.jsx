@@ -1,172 +1,249 @@
 // EDWINAlert.jsx
-// Compact alert chip / banner that communicates the current EDWIN crowding score
-// to clinical staff. Designed to match the HuddleBoard design system.
+// App-level persistent crowding alert banner.
+// Renders nothing when EDWIN < 4 (Busy is normal for an ED — no alert needed).
+// Amber bar at Overcrowded (≥4), coral bar at Severe (≥6).
+// Pulses once when tier escalates. Never dismissible.
+//
+// Mount once at the app root, above page content:
+//   <EDWINAlert
+//     patientFetcher={() => base44.query("encounters").where("status","active").get()}
+//     attendingCount={3}
+//     totalBays={20}
+//     onViewBoard={() => navigate("/HuddleBoard")}
+//   />
+//
+// Without patientFetcher the component renders nothing safely.
 //
 // Props:
-//   score          number | null  — pre-computed EDWIN score (pass null to hide)
-//   attendingCount number         — used only if score is not provided (auto-compute)
-//   totalBays      number         — used only if score is not provided (auto-compute)
-//   patients       array          — used only if score is not provided (auto-compute)
-//   variant        "chip"|"card"  — "chip" (default) = inline badge; "card" = full stat card
-//   onClick        func           — optional click handler (e.g. open config)
-//   className      string         — optional extra class
+//   patientFetcher  async ({ signal }) => { status, esiLevel }[]
+//                   — same shape as useHuddleBoardData; only status+esiLevel are read
+//   attendingCount  number  (default 3)
+//   totalBays       number  (default 20)
+//   onViewBoard     () => void — navigates to HuddleBoard
+//   pollIntervalMs  number  (default 60_000 — 60 seconds)
+//   fixed           bool    (default true — position:fixed top bar over all content)
+//
+// Exports: EDWINAlert (default), useEDWINScore (named, for use in dashboards)
 
-import { useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
-// ── Design tokens (mirror HuddleBoard) ───────────────────────────────────────
+// ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg:"#050f1e", card:"#0b1e36", up:"#0e2544",
-  bd:"rgba(26,53,85,0.8)", txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
+  panel:"#081628", bd:"rgba(26,53,85,0.8)", txt:"#f2f7ff", txt4:"#5a82a8",
   teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", orange:"#ff9f43",
 };
 
-// ── EDWIN computation (mirrors HuddleBoard) ──────────────────────────────────
-function computeEDWIN(patients = [], attendingCount = 3, totalBays = 20) {
-  const roomed   = patients.filter(p => p.status === "roomed");
-  const boarders = patients.filter(p => p.status === "boarded").length;
-  const avail    = totalBays - boarders;
-  if (!attendingCount || avail <= 0) return null;
-  const numerator = roomed.reduce((s, p) => s + (p.esiLevel || 3), 0);
-  return Math.round((numerator / (attendingCount * avail)) * 10) / 10;
-}
+// ── Tier config ───────────────────────────────────────────────────────────────
+const TIERS = {
+  severe:      { min:6, color:T.coral,  bg:"rgba(255,107,107,.13)", bd:"rgba(255,107,107,.55)", dot:"#ff6b6b",  label:"Severe",      implication:"Critical crowding \u2014 activate surge protocols" },
+  overcrowded: { min:4, color:T.orange, bg:"rgba(255,159,67,.1)",   bd:"rgba(255,159,67,.5)",   dot:"#ff9f43",  label:"Overcrowded", implication:"Department overcrowded \u2014 consider diversion protocols" },
+  busy:        { min:2, color:T.gold,   bg:"rgba(245,200,66,.08)",  bd:"rgba(245,200,66,.4)",   dot:"#f5c842",  label:"Busy",        implication:"Patient volume elevated \u2014 monitor wait times" },
+  normal:      { min:0, color:T.teal,   bg:"transparent",           bd:"transparent",           dot:"#00e5c0",  label:"Not Busy",    implication:"" },
+};
 
-function edwinColor(score) {
-  if (score === null) return T.txt4;
-  if (score >= 6)    return T.coral;
-  if (score >= 4)    return T.orange;
-  if (score >= 2)    return T.gold;
-  return T.teal;
-}
-
-function edwinLabel(score) {
-  if (score === null) return "N/A";
-  if (score >= 6)    return "Severe";
-  if (score >= 4)    return "Overcrowded";
-  if (score >= 2)    return "Busy";
-  return "Not Busy";
-}
-
-function edwinIcon(score) {
-  if (score === null) return "—";
-  if (score >= 6)    return "🚨";
-  if (score >= 4)    return "⚠️";
-  if (score >= 2)    return "📈";
-  return "✓";
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
-export default function EDWINAlert({
-  score: scoreProp = null,
-  attendingCount = 3,
-  totalBays = 20,
-  patients = [],
-  variant = "chip",
-  onClick,
-  className,
-}) {
-  const score = useMemo(
-    () => scoreProp !== null ? scoreProp : computeEDWIN(patients, attendingCount, totalBays),
-    [scoreProp, patients, attendingCount, totalBays]
-  );
-
+function getTier(score) {
   if (score === null) return null;
+  if (score >= TIERS.severe.min)      return "severe";
+  if (score >= TIERS.overcrowded.min) return "overcrowded";
+  if (score >= TIERS.busy.min)        return "busy";
+  return "normal";
+}
 
-  const color = edwinColor(score);
-  const label = edwinLabel(score);
-  const icon  = edwinIcon(score);
+// ── useEDWINScore hook ────────────────────────────────────────────────────────
+// Lightweight — only reads status and esiLevel from each patient object.
+// Compatible with the same patientFetcher used by useHuddleBoardData.
+export function useEDWINScore({
+  patientFetcher  = null,
+  attendingCount  = 3,
+  totalBays       = 20,
+  pollIntervalMs  = 60_000,
+} = {}) {
+  const [score,       setScore]       = useState(null);
+  const [isFetching,  setIsFetching]  = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const intervalRef = useRef(null);
+  const abortRef    = useRef(null);
 
-  // ── Chip variant — inline badge ─────────────────────────────────────────────
-  if (variant === "chip") {
-    return (
-      <div
-        className={className}
-        onClick={onClick}
-        title={`EDWIN Crowding Index: ${score} — ${label}. Formula: Σ(patients × ESI) / (attendings × available bays)`}
-        style={{
-          display:"inline-flex", alignItems:"center", gap:6,
-          padding:"4px 10px", borderRadius:7, cursor: onClick ? "pointer" : "default",
-          background:`${color}12`, border:`1px solid ${color}44`,
-          fontFamily:"'JetBrains Mono',monospace", userSelect:"none",
-          transition:"all .15s",
-        }}
-      >
-        <span style={{ fontSize:12, lineHeight:1 }}>{icon}</span>
-        <span style={{ fontSize:11, fontWeight:700, color, letterSpacing:"0.3px" }}>
-          EDWIN {score}
-        </span>
-        <span style={{
-          fontSize:9, color, background:`${color}20`,
-          border:`1px solid ${color}30`, borderRadius:4, padding:"1px 6px",
-          letterSpacing:"0.8px", textTransform:"uppercase",
-        }}>
-          {label}
-        </span>
-      </div>
-    );
-  }
+  const compute = useCallback(async () => {
+    if (!patientFetcher) return;
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setIsFetching(true);
+    try {
+      const raw = await patientFetcher({ signal: ctrl.signal });
+      if (ctrl.signal.aborted || !Array.isArray(raw)) return;
 
-  // ── Card variant — full stat card ───────────────────────────────────────────
+      const roomed   = raw.filter(p => p.status === "roomed");
+      const boarders = raw.filter(p => p.status === "boarded").length;
+      const avail    = totalBays - boarders;
+
+      if (!attendingCount || avail <= 0) { setScore(null); return; }
+
+      const numerator   = roomed.reduce((s, p) => s + (p.esiLevel || 3), 0);
+      const denominator = attendingCount * avail;
+      setScore(Math.round((numerator / denominator) * 10) / 10);
+      setLastUpdated(Date.now());
+    } catch (err) {
+      if (err?.name !== "AbortError") console.warn("[useEDWINScore]", err.message);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [patientFetcher, attendingCount, totalBays]);
+
+  // Mount: initial fetch + polling
+  useEffect(() => {
+    if (!patientFetcher) return;
+    compute();
+    intervalRef.current = setInterval(compute, pollIntervalMs);
+    return () => { clearInterval(intervalRef.current); abortRef.current?.abort(); };
+  }, [patientFetcher]); // eslint-disable-line
+
+  // Re-fetch on tab visibility restore
+  useEffect(() => {
+    if (!patientFetcher) return;
+    const handler = () => { if (!document.hidden) compute(); };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, [patientFetcher, compute]);
+
+  const tier = getTier(score);
+
+  return {
+    score,
+    tier,
+    tierConfig:    tier ? TIERS[tier] : null,
+    isAlertActive: tier === "overcrowded" || tier === "severe",
+    isFetching,
+    lastUpdated,
+  };
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+export default function EDWINAlert({
+  patientFetcher = null,
+  attendingCount = 3,
+  totalBays      = 20,
+  onViewBoard    = null,
+  pollIntervalMs = 60_000,
+  fixed          = true,
+}) {
+  const { score, tier, tierConfig, isAlertActive, lastUpdated } = useEDWINScore({
+    patientFetcher, attendingCount, totalBays, pollIntervalMs,
+  });
+
+  // ── Pulse once on tier escalation ─────────────────────────────────────────
+  const prevTierRef  = useRef(null);
+  const [pulsing, setPulsing] = useState(false);
+
+  useEffect(() => {
+    const prev = prevTierRef.current;
+    const tierRank = { normal:0, busy:1, overcrowded:2, severe:3 };
+    if (tier && prev && tierRank[tier] > tierRank[prev]) {
+      setPulsing(true);
+      setTimeout(() => setPulsing(false), 900);
+    }
+    prevTierRef.current = tier;
+  }, [tier]);
+
+  // Render nothing when: no fetcher, no score yet, or EDWIN below threshold
+  if (!patientFetcher || !isAlertActive || score === null) return null;
+
+  const cfg     = tierConfig;
+  const agoMins = lastUpdated ? Math.round((Date.now() - lastUpdated) / 60000) : null;
+
   return (
-    <div
-      className={className}
-      onClick={onClick}
-      title="EDWIN Crowding Index — click to configure"
-      style={{
-        padding:"12px 16px", borderRadius:10,
-        background: T.card,
-        border:`1px solid ${color}28`, borderTop:`2px solid ${color}66`,
-        minWidth:100, cursor: onClick ? "pointer" : "default",
-        transition:"background .15s",
-      }}
-    >
-      {/* Score */}
-      <div style={{
-        display:"flex", alignItems:"baseline", gap:6, marginBottom:2,
-      }}>
-        <span style={{
-          fontFamily:"'Playfair Display',serif", fontSize:26,
-          fontWeight:900, color, lineHeight:1,
-        }}>
-          {score}
-        </span>
-        <span style={{ fontSize:14, lineHeight:1 }}>{icon}</span>
-      </div>
+    <>
+      <style>{`
+        @keyframes edwin-pulse {
+          0%   { opacity:1; }
+          20%  { opacity:.4; }
+          40%  { opacity:1; }
+          60%  { opacity:.55; }
+          100% { opacity:1; }
+        }
+        @keyframes edwin-dot-beat {
+          0%,100% { transform:scale(1);   opacity:.8; }
+          50%     { transform:scale(1.5); opacity:1;  }
+        }
+      `}</style>
 
-      {/* Label row */}
       <div style={{
-        fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
-        letterSpacing:"1.2px", textTransform:"uppercase", marginBottom:2,
+        position:   fixed ? "fixed" : "relative",
+        top:        fixed ? 0 : undefined,
+        left:       fixed ? 0 : undefined,
+        right:      fixed ? 0 : undefined,
+        zIndex:     fixed ? 9990 : undefined,
+        display:    "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap:        12,
+        padding:    "7px 18px",
+        background: cfg.bg,
+        borderBottom: `2px solid ${cfg.bd}`,
+        fontFamily: "'DM Sans',sans-serif",
+        animation:  pulsing ? "edwin-pulse .9s ease-in-out" : "none",
+        flexWrap:   "wrap",
       }}>
-        EDWIN
-      </div>
-      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color, fontWeight:600 }}>
-        {label}
-      </div>
 
-      {/* Threshold guide */}
-      <div style={{
-        marginTop:8, display:"flex", flexDirection:"column", gap:3,
-      }}>
-        {[
-          { range:"< 2",  lbl:"Not Busy",   col:T.teal   },
-          { range:"2–4",  lbl:"Busy",        col:T.gold   },
-          { range:"4–6",  lbl:"Overcrowded", col:T.orange },
-          { range:"≥ 6",  lbl:"Severe",      col:T.coral  },
-        ].map(({ range, lbl, col }) => (
-          <div key={range} style={{ display:"flex", alignItems:"center", gap:5 }}>
-            <div style={{
-              width:6, height:6, borderRadius:3, flexShrink:0,
-              background: color === col ? col : `${col}50`,
-            }} />
-            <span style={{
-              fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color: color === col ? col : T.txt4, letterSpacing:"0.3px",
-            }}>
-              {range} — {lbl}
+        {/* Left: score + label + implication */}
+        <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+
+          {/* Animated dot */}
+          <div style={{
+            width:9, height:9, borderRadius:"50%", flexShrink:0,
+            background: cfg.dot,
+            animation: "edwin-dot-beat 1.8s ease-in-out infinite",
+          }} />
+
+          {/* Score */}
+          <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:18,
+              fontWeight:900, color:cfg.color, lineHeight:1 }}>
+              {score}
+            </span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+              color:cfg.color, letterSpacing:"1px", textTransform:"uppercase",
+              fontWeight:700 }}>
+              EDWIN
+            </span>
+            <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              fontWeight:700, color:cfg.color }}>
+              {cfg.label}
             </span>
           </div>
-        ))}
+
+          {/* Separator */}
+          <div style={{ width:1, height:14, background:cfg.bd }} />
+
+          {/* Implication */}
+          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+            color:T.txt, opacity:.85 }}>
+            {cfg.implication}
+          </span>
+
+          {/* Last updated */}
+          {agoMins !== null && (
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+              color:T.txt4, marginLeft:4 }}>
+              updated {agoMins === 0 ? "just now" : `${agoMins}m ago`}
+            </span>
+          )}
+        </div>
+
+        {/* Right: View Board link */}
+        {onViewBoard && (
+          <button onClick={onViewBoard}
+            style={{ display:"flex", alignItems:"center", gap:5,
+              padding:"4px 14px", borderRadius:6, cursor:"pointer",
+              border:`1px solid ${cfg.bd}`, background:`${cfg.color}18`,
+              color:cfg.color, fontFamily:"'DM Sans',sans-serif",
+              fontSize:11, fontWeight:700, flexShrink:0,
+              transition:"all .15s" }}>
+            → View Board
+          </button>
+        )}
       </div>
-    </div>
+    </>
   );
 }

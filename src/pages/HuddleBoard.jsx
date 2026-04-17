@@ -660,8 +660,13 @@ export default function HuddleBoard({
             </div>
           </div>
 
-          {/* EDWIN chip — live crowding index */}
-          <EDWINAlert score={edwinScore} variant="chip" onClick={() => setShowConfig(s => !s)} />
+          {/* EDWIN banner — live crowding alert (only shows at Overcrowded/Severe) */}
+          <EDWINAlert
+            attendingCount={config.attendingCount}
+            totalBays={config.totalBays}
+            onViewBoard={() => window.scrollTo(0,0)}
+            fixed={false}
+          />
 
           {/* Controls strip */}
           <div style={{ display:"flex", gap:7, alignItems:"center", flexWrap:"wrap" }}>

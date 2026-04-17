@@ -42,73 +42,122 @@ const T = {
   cyan:"#00d4ff",
 };
 
-// ── ANTIDOTES ─────────────────────────────────────────────────────────────────
+// ── ANTIDOTES — sorted: immediate → urgent → caution ─────────────────────────
+// quickDose: headline dose visible in collapsed card — zero taps for common cases
 const ANTIDOTES = [
-  { antidote:"N-Acetylcysteine (NAC)", toxin:"Acetaminophen (APAP)", color:T.teal, route:"IV or PO",
-    dosing:"IV: 150 mg/kg over 60 min \u2192 50 mg/kg over 4h \u2192 100 mg/kg over 16h. PO: 140 mg/kg load \u2192 70 mg/kg q4h \u00d7 17 doses.",
-    timing:"Most effective within 8\u201310h of ingestion. Still give >24h post-ingestion in fulminant failure.",
-    pearls:"Check APAP level at 4h post-ingestion. Plot on Rumack-Matthew nomogram. ALT trending up = continue NAC regardless of level.", urgency:"urgent" },
-  { antidote:"Flumazenil", toxin:"Benzodiazepines", color:T.purple, route:"IV",
-    dosing:"0.2 mg IV over 30 sec; repeat 0.2 mg q1 min to max 1 mg total.",
-    timing:"Short half-life \u2014 resedation likely within 1\u20132h. Re-dose or infusion may be needed.",
-    pearls:"CONTRAINDICATED in: chronic BZD users (precipitates seizures), mixed TCA ingestion, seizures controlled by BZD, elevated ICP. Use is rarely indicated \u2014 manage airway instead.", urgency:"caution" },
-  { antidote:"Naloxone", toxin:"Opioids", color:T.green, route:"IV / IM / IN / ETT",
-    dosing:"0.4\u20132 mg IV/IM. Titrate to respirations \u2014 NOT to full reversal. IN: 4 mg (2 mg per nostril). Infusion: 2/3 of reversal dose per hour.",
-    timing:"Onset IV 1\u20132 min, IM 5 min, IN 5\u201310 min. Half-life 60\u201390 min \u2014 shorter than most opioids.",
-    pearls:"Buprenorphine requires much higher doses (4\u20138 mg+). Methadone: prolonged monitoring required. Fentanyl analogues: may require repeated large doses.", urgency:"urgent" },
-  { antidote:"Atropine", toxin:"Organophosphates / Carbamates / Nerve agents", color:T.orange, route:"IV / IM",
-    dosing:"2\u20134 mg IV q5\u201310 min until secretions dry. No ceiling dose \u2014 titrate to bronchorrhea resolution, NOT to heart rate. Can require hundreds of mg in severe cases.",
+
+  // ── IMMEDIATE — life-threatening, give now ─────────────────────────────────
+  { antidote:"Atropine", toxin:"Organophosphates / Carbamates / Nerve agents",
+    color:T.orange, route:"IV / IM", urgency:"immediate",
+    quickDose:"2\u20134 mg IV q5\u201310 min \u2014 no ceiling, titrate to dry secretions",
+    dosing:"2\u20134 mg IV q5\u201310 min until secretions dry. No ceiling dose \u2014 titrate to bronchorrhea and bronchospasm resolution, NOT to heart rate. Can require hundreds of mg in severe cases.",
     timing:"Start immediately for symptomatic cholinergic toxidrome. Do not delay for pralidoxime.",
-    pearls:"Titration endpoint: drying of secretions, clearing breath sounds \u2014 NOT pupil dilation or heart rate. Pralidoxime (2-PAM) 1\u20132 g IV simultaneously for organophosphate (not carbamate).", urgency:"immediate" },
-  { antidote:"Pralidoxime (2-PAM)", toxin:"Organophosphates", color:T.orange, route:"IV",
-    dosing:"1\u20132 g IV over 15\u201330 min. Infusion: 200\u2013500 mg/hr. Give within 24\u201348h of exposure.",
-    timing:"Give with atropine \u2014 do not use as a substitute. Most effective before enzyme aging.",
-    pearls:"NOT for carbamate poisoning. Ineffective once aging occurs. Requires ICU admission.", urgency:"urgent" },
-  { antidote:"Digoxin-Specific Fab (Digibind / DigiFab)", toxin:"Digoxin / Digitalis glycosides", color:T.blue, route:"IV",
-    dosing:"Known dose: vials = (mg ingested \u00d7 0.8) / 0.5. Known level: vials = (level ng/mL \u00d7 wt kg) / 100. Empiric acute OD: 10\u201320 vials. Empiric chronic: 1\u20136 vials.",
-    timing:"Indicated for: life-threatening dysrhythmia, K+ >5.5, hemodynamic instability, level >15 ng/mL (acute).",
-    pearls:"Post-digibind levels are unreliable. Potassium shifts rapidly \u2014 monitor closely. Renal failure: prolonged half-life of complex.", urgency:"urgent" },
-  { antidote:"Sodium Bicarbonate", toxin:"Tricyclic antidepressants (TCA) / Sodium channel blockers", color:T.coral, route:"IV",
-    dosing:"1\u20132 mEq/kg IV bolus. Repeat until QRS <120 ms or pH 7.45\u20137.55. Infusion: 150 mEq in 1L D5W at 1.5\u00d7 maintenance.",
+    pearls:"Titration endpoint: drying of secretions, clearing breath sounds \u2014 NOT pupil dilation or heart rate. Pralidoxime (2-PAM) 1\u20132 g IV simultaneously for organophosphate (not carbamate)." },
+  { antidote:"Sodium Bicarbonate", toxin:"Tricyclic antidepressants (TCA) / Sodium channel blockers",
+    color:T.coral, route:"IV", urgency:"immediate",
+    quickDose:"1\u20132 mEq/kg IV bolus \u2192 repeat to QRS <100 ms, pH 7.45\u20137.55",
+    dosing:"1\u20132 mEq/kg IV bolus. Repeat until QRS <120 ms or pH 7.45\u20137.55. Infusion: 150 mEq in 1L D5W at 1.5\u00d7 maintenance rate.",
     timing:"Give for QRS >100 ms, ventricular dysrhythmia, or hypotension from TCA.",
-    pearls:"Target pH 7.45\u20137.55 \u2014 alkalinization is the mechanism, not just sodium loading. Also for: cocaine QRS widening, flecainide, type Ia/Ic antiarrhythmics.", urgency:"immediate" },
-  { antidote:"Calcium (Gluconate or Chloride)", toxin:"Calcium channel blockers / Beta-blockers / Hyperkalemia / Fluoride", color:T.gold, route:"IV",
-    dosing:"CCB OD: calcium gluconate 3g IV (CaCl 1g IV) over 5 min; repeat \u00d7 3. HDI: regular insulin 1 unit/kg bolus + D50 \u2192 0.5\u20131 unit/kg/hr infusion. Intralipid 1.5 mL/kg bolus for refractory CCB.",
-    timing:"Give early in CCB/BB OD \u2014 before hemodynamic collapse.",
-    pearls:"CaCl provides 3\u00d7 more elemental calcium than gluconate \u2014 use centrally. High-dose insulin (HDI) is now first-line for severe CCB toxicity along with calcium.", urgency:"urgent" },
-  { antidote:"Fomepizole (4-MP)", toxin:"Methanol / Ethylene glycol", color:T.cyan, route:"IV",
-    dosing:"15 mg/kg IV loading dose over 30 min \u2192 10 mg/kg q12h \u00d7 4 doses \u2192 15 mg/kg q12h. Continue until level <20 mg/dL and asymptomatic.",
-    timing:"Give immediately on clinical suspicion \u2014 do not wait for confirmatory levels.",
-    pearls:"Blocks alcohol dehydrogenase \u2014 prevents toxic metabolite formation. Ethanol infusion is alternative if unavailable. Dialysis removes parent compound and metabolites.", urgency:"urgent" },
-  { antidote:"Physostigmine", toxin:"Anticholinergic toxidrome (pure \u2014 not mixed TCA)", color:T.purple, route:"IV",
-    dosing:"1\u20132 mg IV over 5 min. May repeat once in 20 min if needed. Pediatric: 0.02 mg/kg (max 0.5 mg) over 5 min.",
-    timing:"Use only for pure anticholinergic toxidrome \u2014 absolutely contraindicated if TCA suspected.",
-    pearls:"CONTRAINDICATED in: TCA or other sodium channel blocker ingestion (fatal bradycardia/asystole). Not for routine use. Consult toxicology.", urgency:"caution" },
-  { antidote:"Pyridoxine (Vitamin B6)", toxin:"Isoniazid (INH) / Gyromitra mushrooms", color:T.green, route:"IV",
-    dosing:"INH: 1 mg pyridoxine per 1 mg INH ingested. Unknown dose: 5 g IV. Give simultaneously with benzodiazepines.",
-    timing:"Give immediately for INH-induced status epilepticus \u2014 BZD alone will fail without pyridoxine.",
-    pearls:"INH seizures are pyridoxine-depleted status \u2014 BZD + pyridoxine required. Phenytoin is ineffective for INH seizures.", urgency:"immediate" },
-  { antidote:"Hydroxocobalamin", toxin:"Cyanide / Smoke inhalation", color:T.red, route:"IV",
+    pearls:"Target pH 7.45\u20137.55 \u2014 alkalinization is the mechanism, not just sodium loading. Also used for: cocaine-related QRS widening, flecainide, type Ia/Ic antiarrhythmics." },
+  { antidote:"Hydroxocobalamin", toxin:"Cyanide / Smoke inhalation",
+    color:T.red, route:"IV", urgency:"immediate",
+    quickDose:"5 g IV over 15 min \u2014 repeat 5 g if unstable, max 15 g total",
     dosing:"5 g IV over 15 min (adult). Pediatric: 70 mg/kg. Repeat 5 g if hemodynamically unstable. Max 15 g total.",
-    timing:"First-line for smoke inhalation with suspected cyanide. Give empirically.",
-    pearls:"Turns urine red for 5 days. Causes false SpO2 elevations \u2014 use co-oximetry. Compatible with sodium thiosulfate.", urgency:"immediate" },
-  { antidote:"Methylene Blue", toxin:"Methemoglobinemia", color:T.blue, route:"IV",
+    timing:"First-line for smoke inhalation with suspected cyanide. Give empirically \u2014 do not wait for cyanide levels.",
+    pearls:"Turns urine red for 5 days \u2014 warn patient/staff. Causes false SpO2 elevations \u2014 use co-oximetry. Compatible with sodium thiosulfate." },
+  { antidote:"Pyridoxine (Vitamin B6)", toxin:"Isoniazid (INH) / Gyromitra mushrooms",
+    color:T.green, route:"IV", urgency:"immediate",
+    quickDose:"1 mg/mg INH ingested (unknown: 5 g IV) \u2014 give with BZD simultaneously",
+    dosing:"INH: 1 mg pyridoxine per 1 mg INH ingested. If unknown dose: 5 g IV. Give simultaneously with benzodiazepines for seizures.",
+    timing:"Give immediately for INH-induced status epilepticus \u2014 BZD alone will fail without pyridoxine.",
+    pearls:"INH seizures are pyridoxine-depleted status \u2014 BZD + pyridoxine combination is required. Phenytoin is ineffective for INH seizures." },
+
+  // ── URGENT — critical, prioritize ─────────────────────────────────────────
+  { antidote:"Naloxone", toxin:"Opioids",
+    color:T.green, route:"IV / IM / IN / ETT", urgency:"urgent",
+    quickDose:"0.4\u20132 mg IV/IM/IN \u2014 titrate to respirations, NOT to full reversal",
+    dosing:"0.4\u20132 mg IV/IM. Titrate to respirations \u2014 NOT to full reversal (precipitates withdrawal/violence). IN: 4 mg (2 mg per nostril). Infusion: 2/3 of reversal dose per hour.",
+    timing:"Onset IV 1\u20132 min, IM 5 min, IN 5\u201310 min. Half-life 60\u201390 min \u2014 shorter than most opioids. Repeat dosing expected.",
+    pearls:"Buprenorphine requires much higher doses (4\u20138 mg+). Methadone: prolonged monitoring required. Fentanyl analogues: may require repeated large doses." },
+  { antidote:"N-Acetylcysteine (NAC)", toxin:"Acetaminophen (APAP)",
+    color:T.teal, route:"IV or PO", urgency:"urgent",
+    quickDose:"150 mg/kg IV/60 min \u2192 50 mg/kg/4h \u2192 100 mg/kg/16h",
+    dosing:"IV: 150 mg/kg over 60 min \u2192 50 mg/kg over 4h \u2192 100 mg/kg over 16h (Rumack-Matthew guides). PO: 140 mg/kg load \u2192 70 mg/kg q4h \u00d7 17 doses.",
+    timing:"Most effective within 8\u201310h of ingestion. Still give >24h post-ingestion in fulminant failure.",
+    pearls:"Check APAP level at 4h post-ingestion. Plot on Rumack-Matthew nomogram. ALT trending up = continue NAC regardless of level." },
+  { antidote:"Pralidoxime (2-PAM)", toxin:"Organophosphates",
+    color:T.orange, route:"IV", urgency:"urgent",
+    quickDose:"1\u20132 g IV over 15\u201330 min \u2014 give with atropine, not instead of",
+    dosing:"1\u20132 g IV over 15\u201330 min. Infusion: 200\u2013500 mg/hr. Give within 24\u201348h of exposure \u2014 less effective after acetylcholinesterase aging.",
+    timing:"Give with atropine \u2014 do not use as a substitute. Most effective before enzyme aging (organophosphate-specific).",
+    pearls:"NOT for carbamate poisoning. Ineffective once aging occurs. Requires ICU admission for continuous infusion." },
+  { antidote:"Digoxin-Specific Fab (Digibind / DigiFab)", toxin:"Digoxin / Digitalis glycosides",
+    color:T.blue, route:"IV", urgency:"urgent",
+    quickDose:"10\u201320 vials empiric acute \u00b7 1\u20136 vials chronic \u00b7 or calculate from dose/level",
+    dosing:"Known dose: vials = (mg ingested \u00d7 0.8) / 0.5. Known level: vials = (level ng/mL \u00d7 weight kg) / 100. Empiric acute OD: 10\u201320 vials. Empiric chronic tox: 1\u20136 vials.",
+    timing:"Indicated for: life-threatening dysrhythmia, hyperkalemia >5.5, hemodynamic instability, level >15 ng/mL (acute).",
+    pearls:"Post-digibind levels are unreliable. Potassium shifts rapidly \u2014 monitor closely. Renal failure: prolonged half-life of complex." },
+  { antidote:"Calcium (Gluconate or Chloride)", toxin:"Calcium channel blockers / Beta-blockers / Hyperkalemia / Fluoride",
+    color:T.gold, route:"IV", urgency:"urgent",
+    quickDose:"Gluconate 3 g IV over 5 min (\u00d73) \u2014 HDI: insulin 1 unit/kg bolus + dextrose",
+    dosing:"CCB OD: calcium gluconate 3g IV (CaCl 1g IV) over 5 min; repeat \u00d7 3. High-dose insulin (HDI): regular insulin 1 unit/kg IV bolus + D50 1 amp \u2192 infusion 0.5\u20131 unit/kg/hr. Lipid emulsion (Intralipid) 1.5 mL/kg bolus for refractory CCB.",
+    timing:"Give early in CCB/BB OD \u2014 before hemodynamic collapse. HDI therapy is primary intervention for severe CCB toxicity.",
+    pearls:"CaCl provides 3\u00d7 more elemental calcium than gluconate \u2014 use centrally. High-dose insulin (HDI) is now first-line for severe CCB toxicity along with calcium." },
+  { antidote:"Fomepizole (4-MP)", toxin:"Methanol / Ethylene glycol",
+    color:T.cyan, route:"IV", urgency:"urgent",
+    quickDose:"15 mg/kg IV loading dose \u2014 give empirically, don\u2019t wait for levels",
+    dosing:"15 mg/kg IV loading dose over 30 min \u2192 10 mg/kg q12h \u00d7 4 doses \u2192 15 mg/kg q12h thereafter. Continue until level <20 mg/dL and asymptomatic.",
+    timing:"Give immediately on clinical suspicion \u2014 do not wait for confirmatory levels. Simultaneous HD for severe acidosis, level >50 mg/dL, or end-organ damage.",
+    pearls:"Blocks alcohol dehydrogenase \u2014 prevents toxic metabolite formation. Ethanol infusion is an alternative if fomepizole unavailable. Dialysis removes parent compound and metabolites." },
+  { antidote:"Methylene Blue", toxin:"Methemoglobinemia",
+    color:T.blue, route:"IV", urgency:"urgent",
+    quickDose:"1\u20132 mg/kg IV over 5 min \u2014 MetHb >30% or symptomatic at any level",
     dosing:"1\u20132 mg/kg IV over 5 min. Repeat 1 mg/kg in 1h if inadequate response. Max 7 mg/kg total.",
     timing:"Indicated for MetHb >30% or symptomatic at lower levels. Response expected within 30\u201360 min.",
-    pearls:"Ineffective in G6PD deficiency \u2014 exchange transfusion for G6PD patients. Common causes: dapsone, benzocaine, nitrites, primaquine. Co-oximetry required.", urgency:"urgent" },
-  { antidote:"Lipid Emulsion (Intralipid 20%)", toxin:"Lipophilic drug toxicity \u2014 local anesthetics, CCB, TCA", color:T.gold, route:"IV",
-    dosing:"1.5 mL/kg IV bolus over 1 min. Repeat \u00d72 if no response. Infusion: 0.25 mL/kg/min for 30\u201360 min. Max 10\u201312 mL/kg.",
+    pearls:"Ineffective in G6PD deficiency \u2014 exchange transfusion for G6PD patients. Common causes: dapsone, benzocaine, nitrites, primaquine. Co-oximetry required (pulse ox unreliable in MetHb)." },
+  { antidote:"Lipid Emulsion (Intralipid 20%)", toxin:"Lipophilic drug toxicity \u2014 local anesthetics, CCB, TCA",
+    color:T.gold, route:"IV", urgency:"urgent",
+    quickDose:"1.5 mL/kg IV bolus over 1 min \u2014 lipophilic drug arrest or peri-arrest",
+    dosing:"1.5 mL/kg IV bolus over 1 min. Repeat bolus \u00d72 if no response. Infusion: 0.25 mL/kg/min for 30\u201360 min. Max 10\u201312 mL/kg.",
     timing:"Cardiac arrest or peri-arrest from lipophilic drug toxicity \u2014 give when all else fails.",
-    pearls:"Mechanism: lipid sink draws drug from tissues. Used for: bupivacaine arrest, refractory CCB, TCA. Continue vasopressors. Do not use propofol as lipid source.", urgency:"urgent" },
-  { antidote:"Glucagon", toxin:"Beta-blockers / Calcium channel blockers", color:T.orange, route:"IV",
-    dosing:"3\u201310 mg IV bolus over 1\u20132 min. Infusion: effective bolus dose per hour. HDI is preferred first-line.",
+    pearls:"Mechanism: lipid sink draws drug from tissues. Used for: bupivacaine cardiac arrest, refractory CCB, TCA. May impair vasopressor binding \u2014 continue vasopressors. Do not use propofol as lipid source." },
+  { antidote:"Glucagon", toxin:"Beta-blockers / Calcium channel blockers",
+    color:T.orange, route:"IV", urgency:"urgent",
+    quickDose:"3\u201310 mg IV bolus \u2014 bridge therapy while setting up HDI",
+    dosing:"3\u201310 mg IV bolus over 1\u20132 min. Infusion: effective bolus dose per hour. High-dose insulin is preferred first-line.",
     timing:"Onset 1\u20133 min. Duration 15\u201320 min. Use while setting up HDI therapy.",
-    pearls:"Induces nausea/vomiting \u2014 have airway ready. Tachyphylaxis limits sustained use.", urgency:"urgent" },
-  { antidote:"Deferoxamine", toxin:"Iron overdose", color:T.red, route:"IV",
-    dosing:"15 mg/kg/hr IV (max 35 mg/kg/hr severe). Continue until urine clears (vin rose color resolves) and clinical improvement.",
-    timing:"Indicated for: serum iron >500 mcg/dL, symptomatic poisoning, metabolic acidosis.",
-    pearls:"Chelates free iron \u2014 urine turns rose/wine color when effective. Do not use orally. Discontinue after 24h \u2014 risk of ARDS with prolonged use.", urgency:"urgent" },
+    pearls:"Induces nausea/vomiting \u2014 have airway ready. Limited evidence but rapid onset makes it useful as bridge therapy. Tachyphylaxis limits sustained use." },
+  { antidote:"Deferoxamine", toxin:"Iron overdose",
+    color:T.red, route:"IV", urgency:"urgent",
+    quickDose:"15 mg/kg/hr IV \u2014 titrate to urine color clearing (vin ros\u00e9 = effective)",
+    dosing:"15 mg/kg/hr IV (max 35 mg/kg/hr in severe cases). Continue until urine clears (vin rose color resolves) and patient clinically improved.",
+    timing:"Indicated for: serum iron >500 mcg/dL, symptomatic iron poisoning, metabolic acidosis.",
+    pearls:"Chelates free iron \u2014 urine turns rose/wine color when effective. Do not use orally. Discontinue after 24h even if not complete \u2014 risk of ARDS with prolonged use." },
+
+  // ── CAUTION — contraindications apply, use carefully ──────────────────────
+  { antidote:"Flumazenil", toxin:"Benzodiazepines",
+    color:T.purple, route:"IV", urgency:"caution",
+    quickDose:"0.2 mg IV q1 min to max 1 mg \u2014 rarely indicated, see contraindications",
+    dosing:"0.2 mg IV over 30 sec; repeat 0.2 mg q1 min to max 1 mg total.",
+    timing:"Short half-life \u2014 resedation likely within 1\u20132h. Re-dose or infusion may be needed.",
+    pearls:"CONTRAINDICATED in: chronic BZD users (precipitates seizures), mixed TCA ingestion, seizures controlled by BZD, elevated ICP. Use is rarely indicated \u2014 manage airway instead." },
+  { antidote:"Physostigmine", toxin:"Anticholinergic toxidrome (pure \u2014 not mixed TCA)",
+    color:T.purple, route:"IV", urgency:"caution",
+    quickDose:"1\u20132 mg IV over 5 min \u2014 PURE anticholinergic ONLY, TCA = fatal",
+    dosing:"1\u20132 mg IV over 5 min. May repeat once in 20 min if needed. Pediatric: 0.02 mg/kg (max 0.5 mg) over 5 min.",
+    timing:"Use only for pure anticholinergic toxidrome \u2014 absolutely contraindicated if TCA co-ingestion suspected.",
+    pearls:"CONTRAINDICATED in: TCA or other sodium channel blocker ingestion (fatal bradycardia/asystole). Not for routine use. Consult toxicology." },
 ];
+
+
+
+// ── Urgency tier display metadata ─────────────────────────────────────────────
+const TIER_META = {
+  immediate:{ label:"Immediate", sub:"life-threatening \u2014 give now",   color:"#ff4444" },
+  urgent:   { label:"Urgent",    sub:"critical \u2014 prioritize",         color:"#ff9f43" },
+  caution:  { label:"Caution",   sub:"contraindications apply",           color:"#f5c842" },
+};
+const TIER_ORDER = ["immediate","urgent","caution"];
 
 // ── INGESTION PROTOCOLS ───────────────────────────────────────────────────────
 const PROTOCOLS = [
@@ -299,7 +348,14 @@ function AntidoteCard({ a, expanded, onToggle }) {
               {a.urgency}
             </span>
           </div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, marginTop:1 }}>
+          {/* Quick dose — scannable without expanding */}
+          {a.quickDose && (
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:600,
+              color:a.color, marginTop:4, lineHeight:1.4, opacity: expanded ? 0.5 : 1 }}>
+              {a.quickDose}
+            </div>
+          )}
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, marginTop:2 }}>
             Antidote for: {a.toxin}
           </div>
         </div>
@@ -401,6 +457,16 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
     if (!q) return ANTIDOTES;
     return ANTIDOTES.filter(a => a.antidote.toLowerCase().includes(q) || a.toxin.toLowerCase().includes(q));
   }, [search]);
+
+  // Group by urgency tier for section headers — preserves tier order even when searching
+  const groupedAntidotes = useMemo(() => {
+    const groups = {};
+    filteredAntidotes.forEach(a => {
+      if (!groups[a.urgency]) groups[a.urgency] = [];
+      groups[a.urgency].push(a);
+    });
+    return TIER_ORDER.filter(t => groups[t]?.length).map(t => ({ tier:t, items:groups[t] }));
+  }, [filteredAntidotes]);
 
   const filteredProtocols = useMemo(() => {
     const q = search.toLowerCase();
@@ -506,13 +572,42 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
           <div className="tox-fade">
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
               letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
-              {filteredAntidotes.length} antidotes \u2014 tap to expand dosing
+              {filteredAntidotes.length} antidotes
+              {!search && " \u2014 quickDose visible without expanding"}
             </div>
-            {filteredAntidotes.map(a => (
-              <AntidoteCard key={a.antidote} a={a}
-                expanded={expanded === a.antidote}
-                onToggle={() => toggle(a.antidote)} />
-            ))}
+
+            {groupedAntidotes.map(({ tier, items }) => {
+              const m = TIER_META[tier];
+              return (
+                <div key={tier}>
+                  {/* Tier section header */}
+                  <div style={{ display:"flex", alignItems:"center", gap:8,
+                    margin:"14px 0 8px" }}>
+                    <div style={{ width:3, height:16, borderRadius:2,
+                      background:m.color, flexShrink:0 }} />
+                    <span style={{ fontFamily:"'Playfair Display',serif", fontSize:12,
+                      fontWeight:700, color:m.color }}>
+                      {m.label}
+                    </span>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                      color:T.txt4 }}>
+                      \u2014 {m.sub}
+                    </span>
+                    <div style={{ flex:1, height:1, background:"rgba(26,53,85,0.5)" }} />
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      color:T.txt4 }}>
+                      {items.length}
+                    </span>
+                  </div>
+                  {items.map(a => (
+                    <AntidoteCard key={a.antidote} a={a}
+                      expanded={expanded === a.antidote}
+                      onToggle={() => toggle(a.antidote)} />
+                  ))}
+                </div>
+              );
+            })}
+
             {filteredAntidotes.length === 0 && (
               <div style={{ padding:"24px", textAlign:"center", background:"rgba(8,22,40,0.6)",
                 border:"1px solid rgba(26,53,85,0.35)", borderRadius:10,

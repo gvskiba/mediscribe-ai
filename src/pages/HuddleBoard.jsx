@@ -25,7 +25,6 @@
 //   border before borderTop/etc.
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import EDWINAlert from "@/components/EDWINAlert";
 
 // ── Font injection ────────────────────────────────────────────────────────────
 (() => {
@@ -69,6 +68,53 @@ const TASK_COLORS = {
   result:"#3b9eff", consult:"#9b6dff", imaging:"#f5c842",
   procedure:"#ff9f43", medication:"#00e5c0", other:"#82aece",
 };
+
+// ── Hub matcher ───────────────────────────────────────────────────────────────
+// Keyword matching for contextual hub suggestions in the expanded row.
+// Each entry: keywords matched against CC text (case-insensitive).
+// ageRange: [min, max] matched against patient age (inclusive). null = any age.
+// Max 3 hubs shown per patient. Silent when nothing matches — no generic fallback.
+const HUB_MATCHES = [
+  { id:"ecg",    label:"ECGHub",    color:"#ff9f43", icon:"\uD83E\uDEC0",
+    keywords:["chest pain","stemi","nstemi","cardiac","palpitation","arrhythmia","afib",
+              "atrial","tachycardia","bradycardia","heart","syncope","svt","ekgz"] },
+  { id:"sepsis", label:"SepsisHub", color:"#ff6b6b", icon:"\uD83E\uDDA0",
+    keywords:["sepsis","septic","bacteremia","infection","pneumonia","pyelonephritis",
+              "meningitis","lactic acidosis","lactate","neutropenic","hour-1"] },
+  { id:"airway", label:"AirwayHub", color:"#3b9eff", icon:"\uD83D\uDCA8",
+    keywords:["shortness of breath","sob","respiratory","dyspnea","breathing","hypoxia",
+              "intubation","copd","asthma","stridor","wheeze","respiratory failure"] },
+  { id:"trauma", label:"TraumaHub", color:"#ff6b6b", icon:"\uD83D\uDEA8",
+    keywords:["trauma","mvc","motor vehicle","gsw","gunshot","stab","fall from",
+              "head injury","blunt","penetrating","atls","mci","polytrauma"] },
+  { id:"shock",  label:"ShockHub",  color:"#ff3d3d", icon:"\u26A1",
+    keywords:["hypotension","shock","hemorrhage","hemodynamic","unstable","hypoperfusion",
+              "resuscitation","vasopressor","gi bleed","massive transfusion"] },
+  { id:"psych",  label:"PsychHub",  color:"#9b6dff", icon:"\uD83E\uDDE0",
+    keywords:["altered","ams","mental status","psychiatric","suicidal","overdose",
+              "ingestion","behavioral","psychosis","agitation","si","sib","aud"] },
+  { id:"ortho",  label:"OrthoHub",  color:"#00e5c0", icon:"\uD83E\uDDB4",
+    keywords:["fracture","dislocation","sprain","laceration","wound","orthopedic",
+              "joint","ankle","wrist","shoulder","knee","back pain","musculoskeletal"] },
+  { id:"pocus",  label:"POCUSHub",  color:"#00d4ff", icon:"\uD83D\uDD2C",
+    keywords:["fast","ultrasound","echo","pericardial","aorta","gallbladder",
+              "renal","dvt","effusion","free fluid","tamponade"] },
+  { id:"peds",   label:"PedsHub",   color:"#3b9eff", icon:"\uD83D\uDC76",
+    keywords:[], ageMax:17 },
+];
+
+// Returns up to 3 matching hubs for a given chief complaint + patient age.
+function matchHubs(ccText, age) {
+  if (!ccText && !age) return [];
+  const text = (ccText || "").toLowerCase();
+  const matches = HUB_MATCHES.filter(h => {
+    const keyMatch  = h.keywords.some(k => text.includes(k));
+    const ageMatch  = h.ageMax != null ? (age != null && age <= h.ageMax) : true;
+    // Keyword hubs: keyword must match. Age-only hubs (peds): age must match.
+    return h.keywords.length > 0 ? keyMatch : ageMatch;
+  });
+  return matches.slice(0, 3);
+}
 
 // ── Mock patients (updated) ───────────────────────────────────────────────────
 const NOW = Date.now();
@@ -226,13 +272,15 @@ function edwinLabel(score) {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-function ESIBadge({ level }) {
-  const c = ESI[level] || ESI[5];
+function ESIBadge({ level, size = "normal" }) {
+  const c  = ESI[level] || ESI[5];
+  const sz = size === "small" ? 20 : 28;
+  const fs = size === "small" ? 11 : 15;
   return (
-    <div style={{ width:30, height:30, borderRadius:7, flexShrink:0,
+    <div style={{ width:sz, height:sz, borderRadius: size === "small" ? 5 : 7, flexShrink:0,
       background:c.bg, border:`1.5px solid ${c.color}77`,
       display:"flex", alignItems:"center", justifyContent:"center",
-      fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:900, color:c.color }}>
+      fontFamily:"'Playfair Display',serif", fontSize:fs, fontWeight:900, color:c.color }}>
       {level}
     </div>
   );
@@ -251,6 +299,55 @@ function StatCard({ label, value, color, sub, small }) {
         {label}
       </div>
       {sub && <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, marginTop:1 }}>{sub}</div>}
+    </div>
+  );
+}
+
+// Primary stat card — large number, bottom accent, flex-equal width
+function PrimaryStatCard({ label, value, color, sub }) {
+  return (
+    <div style={{ flex:"1 1 100px", padding:"14px 16px 12px", borderRadius:11, background:T.card,
+      border:`1px solid ${color}22`, borderBottom:`3px solid ${color}`,
+      display:"flex", flexDirection:"column", gap:3, minWidth:90 }}>
+      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:30, fontWeight:900,
+        color, lineHeight:1 }}>
+        {value}
+      </div>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4,
+        letterSpacing:"1.4px", textTransform:"uppercase" }}>
+        {label}
+      </div>
+      {sub && (
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, lineHeight:1.4 }}>
+          {sub}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Section divider — colored left accent bar + title + ruled line
+function SectionDivider({ label, color, count, meta }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:10, margin:"18px 0 10px" }}>
+      <div style={{ width:3, height:20, borderRadius:2, background:color, flexShrink:0 }} />
+      <span style={{ fontFamily:"'Playfair Display',serif", fontSize:14, fontWeight:700,
+        color, lineHeight:1, flexShrink:0 }}>
+        {label}
+      </span>
+      {count !== undefined && (
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+          color:T.txt4, flexShrink:0 }}>
+          ({count})
+        </span>
+      )}
+      {meta && (
+        <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          color:T.txt4, flexShrink:0 }}>
+          \u00b7 {meta}
+        </span>
+      )}
+      <div style={{ flex:1, height:1, background:T.bd }} />
     </div>
   );
 }
@@ -274,10 +371,18 @@ function BoardingClock({ admitDecisionAt }) {
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function HuddleBoard({
   patients: patientsProp,
-  onSelectPatient,
+  onSelectPatient,        // (id: string, section?: string) => void
+  onNavigate,             // (path: string) => void — for hub deep links
   providerFilter = null,
   attendingCount: attendingProp = 3,
   totalBays: baysProp = 20,
+  // Service layer props — from useHuddleBoardData
+  isLoading     = false,
+  isFetching    = false,
+  fetchError    = null,
+  isStale       = false,
+  lastFetchedAt = null,
+  onRefresh     = null,
 }) {
   const source = (patientsProp && patientsProp.length > 0) ? patientsProp : MOCK_PATIENTS;
 
@@ -461,6 +566,9 @@ export default function HuddleBoard({
                 : overdue   ? "rgba(255,107,107,.2)"
                 : T.bd;
 
+    // Hub suggestions — matched from CC text + patient age
+    const matchedHubs = matchHubs(pt.cc?.text, pt.demo?.age);
+
     return (
       <div key={pt.id}>
         {/* ── Collapsed row — 7-column grid ── */}
@@ -470,7 +578,7 @@ export default function HuddleBoard({
             gap:0, alignItems:"center",
             padding:"8px 10px", borderRadius: isExpanded ? "9px 9px 0 0" : 9,
             background:rowBg, border:`1px solid ${rowBd}`,
-            borderLeft:`3px solid ${esiCfg.color}`,
+            borderLeft:`2px solid ${esiCfg.color}`,
             cursor: onSelectPatient ? "pointer" : "default", transition:"background .15s" }}>
 
           {/* Flag */}
@@ -556,6 +664,56 @@ export default function HuddleBoard({
           <div style={{ padding:"10px 14px", borderRadius:"0 0 9px 9px",
             background:"rgba(8,22,40,.85)", border:`1px solid ${rowBd}`,
             borderTop:"none", marginBottom:2 }}>
+
+            {/* ── Quick Actions strip — always first ── */}
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center",
+              paddingBottom:10, marginBottom:10, borderBottom:`1px solid ${T.bd}` }}>
+
+              {/* → Chart */}
+              <button onClick={e => { e.stopPropagation(); onSelectPatient?.(pt.id); }}
+                style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 12px",
+                  borderRadius:7, cursor:"pointer", border:`1px solid ${T.bd}`,
+                  background:T.up, color:T.txt3,
+                  fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+                  transition:"all .12s" }}>
+                \u2192 Chart
+              </button>
+
+              {/* → Orders */}
+              <button onClick={e => { e.stopPropagation(); onSelectPatient?.(pt.id, "orders"); }}
+                style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 12px",
+                  borderRadius:7, cursor:"pointer", border:`1px solid rgba(0,229,192,.3)`,
+                  background:"rgba(0,229,192,.08)", color:T.teal,
+                  fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+                  transition:"all .12s" }}>
+                + Orders
+              </button>
+
+              {/* Hub suggestion chips */}
+              {matchedHubs.length > 0 && (
+                <>
+                  <div style={{ width:1, height:18, background:T.bd, flexShrink:0 }} />
+                  {matchedHubs.map(hub => (
+                    <button key={hub.id}
+                      onClick={e => { e.stopPropagation(); onNavigate?.(hub.id); }}
+                      disabled={!onNavigate}
+                      title={onNavigate ? `Open ${hub.label}` : `${hub.label} — wire onNavigate prop to enable`}
+                      style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 11px",
+                        borderRadius:7, cursor: onNavigate ? "pointer" : "default",
+                        border:`1px solid ${hub.color}44`,
+                        background:`${hub.color}10`,
+                        color: onNavigate ? hub.color : T.txt4,
+                        fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+                        opacity: onNavigate ? 1 : 0.6,
+                        transition:"all .12s" }}>
+                      <span style={{ fontSize:12, lineHeight:1 }}>{hub.icon}</span>
+                      {hub.label}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
 
               {/* Vitals */}
@@ -629,14 +787,20 @@ export default function HuddleBoard({
         )}
       </div>
     );
-  }, [flagged, expanded, viewMode, privacyMode, onSelectPatient, toggleFlag, toggleExpand, longStayAlert, tick]);
+  }, [flagged, expanded, viewMode, privacyMode, onSelectPatient, onNavigate, toggleFlag, toggleExpand, longStayAlert, tick]);
 
-  // ─── Render ────────────────────────────────────────────────────────────────
-  const isDemo = !patientsProp || patientsProp.length === 0;
+  // ─── Render ───────────────────────────────────────────────────────────────
+  const isDemo   = !patientsProp || patientsProp.length === 0;
+  const anyFilter = Boolean(acuityRange || filterFlagged || longStayAlert || filterProv);
+
+  // Longest-waiting patient (safe sort on copy)
+  const longestWait = waiting.length > 0
+    ? fmtMin(elapsedMin(waiting.slice().sort((a,b) => (a.doorTime||0) - (b.doorTime||0))[0]?.doorTime))
+    : null;
 
   return (
     <div style={{ background:T.bg, minHeight:"100vh", color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
-      <div style={{ padding:"18px 22px 60px" }}>
+      <div style={{ padding:"18px 22px 60px", maxWidth:1400, margin:"0 auto" }}>
 
         {/* ── Header ── */}
         <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between",
@@ -660,17 +824,8 @@ export default function HuddleBoard({
             </div>
           </div>
 
-          {/* EDWIN banner — live crowding alert (only shows at Overcrowded/Severe) */}
-          <EDWINAlert
-            attendingCount={attendings}
-            totalBays={bays}
-            onViewBoard={() => window.scrollTo(0,0)}
-            fixed={false}
-          />
-
-          {/* Controls strip */}
+          {/* Controls */}
           <div style={{ display:"flex", gap:7, alignItems:"center", flexWrap:"wrap" }}>
-            {/* View toggle */}
             <div style={{ display:"flex", borderRadius:7, overflow:"hidden", border:`1px solid ${T.bd}` }}>
               {[["physician","\uD83D\uDC68\u200D\u2695\uFE0F MD"],["nurse","\uD83E\uDE7A RN"]].map(([mode, lbl]) => (
                 <button key={mode} onClick={() => setViewMode(mode)}
@@ -683,8 +838,6 @@ export default function HuddleBoard({
                 </button>
               ))}
             </div>
-
-            {/* Privacy toggle */}
             <button onClick={() => setPrivacyMode(p => !p)}
               style={{ padding:"5px 11px", borderRadius:7, cursor:"pointer",
                 border:`1px solid ${privacyMode ? "rgba(155,109,255,.45)" : T.bd}`,
@@ -693,8 +846,6 @@ export default function HuddleBoard({
                 fontFamily:"'DM Sans',sans-serif", fontSize:11 }}>
               {privacyMode ? "\uD83D\uDD12 De-ID" : "\uD83D\uDD13 Names"}
             </button>
-
-            {/* Config gear */}
             <button onClick={() => setShowConfig(s => !s)}
               style={{ width:30, height:30, borderRadius:7, border:`1px solid ${T.bd}`,
                 background: showConfig ? T.up : "transparent", color:T.txt4,
@@ -702,8 +853,87 @@ export default function HuddleBoard({
                 fontSize:15, cursor:"pointer" }}>
               ⚙
             </button>
+            {onRefresh && (
+              <button onClick={onRefresh} disabled={isFetching}
+                title={lastFetchedAt ? `Last updated ${Math.round((Date.now()-lastFetchedAt)/60000)}m ago` : "Refresh"}
+                style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 11px",
+                  borderRadius:7, cursor: isFetching ? "not-allowed" : "pointer",
+                  border:`1px solid ${T.bd}`, background:"transparent",
+                  color:T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:11 }}>
+                <span style={{ fontSize:13, animation: isFetching ? "hb-shimmer 1.2s ease-in-out infinite" : "none" }}>
+                  \u21BA
+                </span>
+                {lastFetchedAt ? Math.round((Date.now()-lastFetchedAt)/60000) + "m ago" : "Refresh"}
+              </button>
+            )}
           </div>
         </div>
+
+        {/* ── Stale banner ── */}
+        {isStale && !fetchError && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+            gap:10, padding:"8px 14px", borderRadius:9, marginBottom:14,
+            background:"rgba(245,200,66,.07)", border:"1px solid rgba(245,200,66,.35)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:13 }}>\u26A0\uFE0F</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.gold }}>
+                Board data may be outdated
+                {lastFetchedAt && <span style={{ color:T.txt4, marginLeft:8 }}>
+                  Last updated {Math.round((Date.now()-lastFetchedAt)/60000)}m ago
+                </span>}
+              </span>
+            </div>
+            {onRefresh && (
+              <button onClick={onRefresh}
+                style={{ padding:"4px 12px", borderRadius:6, cursor:"pointer",
+                  border:"1px solid rgba(245,200,66,.45)", background:"rgba(245,200,66,.1)",
+                  color:T.gold, fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600 }}>
+                \u21BA Refresh
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Error banner ── */}
+        {fetchError && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+            gap:10, padding:"8px 14px", borderRadius:9, marginBottom:14,
+            background:"rgba(255,107,107,.07)", border:"1px solid rgba(255,107,107,.35)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:13 }}>\u274C</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.coral, flex:1 }}>
+                Could not load patient data \u2014 {fetchError}
+              </span>
+            </div>
+            {onRefresh && (
+              <button onClick={onRefresh}
+                style={{ padding:"4px 12px", borderRadius:6, cursor:"pointer",
+                  border:"1px solid rgba(255,107,107,.45)", background:"rgba(255,107,107,.1)",
+                  color:T.coral, fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, flexShrink:0 }}>
+                Retry
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Loading skeleton ── */}
+        {isLoading && !patientsProp?.length && (
+          <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:16 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4,
+              letterSpacing:"1.2px", textTransform:"uppercase", marginBottom:4,
+              display:"flex", alignItems:"center", gap:8 }}>
+              <style>{`@keyframes hb-shimmer{0%{opacity:.35}50%{opacity:.7}100%{opacity:.35}}`}</style>
+              <div style={{ width:7, height:7, borderRadius:"50%", background:T.blue,
+                animation:"hb-shimmer 1.4s ease-in-out infinite" }} />
+              Loading patient census\u2026
+            </div>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} style={{ height:46, borderRadius:9, background:T.card,
+                border:`1px solid ${T.bd}`, borderLeft:`2px solid rgba(59,158,255,.3)`,
+                animation:`hb-shimmer 1.4s ease-in-out ${i * 0.12}s infinite` }} />
+            ))}
+          </div>
+        )}
 
         {/* ── Config panel ── */}
         {showConfig && (
@@ -722,63 +952,218 @@ export default function HuddleBoard({
               </div>
             ))}
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, lineHeight:1.5 }}>
-              EDWIN = Σ(patients × ESI) / (attendings × (bays − boarders))
+              EDWIN = \u03a3(patients \u00d7 ESI) / (attendings \u00d7 (bays \u2212 boarders))
             </div>
           </div>
         )}
 
-        {/* ── Department stats ── */}
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:18 }}>
-          <StatCard label="Total"     value={source.length}         color={T.blue}  />
-          <StatCard label="Waiting"   value={waiting.length}        color={waiting.some(p=>p.esiLevel<=2)?T.coral:T.gold} sub={waiting.length>0?`longest ${fmtMin(elapsedMin(waiting.sort((a,b)=>a.doorTime-b.doorTime)[0]?.doorTime))}`:null} />
-          <StatCard label="ESI 1-2"   value={source.filter(p=>p.esiLevel<=2).length}   color={T.coral} sub="critical/emergent" />
-          <StatCard label="Boarded"   value={boarded.length}        color={boarded.length>0?T.gold:T.teal} sub={ed2Median!==null?`med ${fmtMin(ed2Median)}`:null} />
-          <StatCard label="Overdue"   value={overdueCount}          color={overdueCount>0?T.coral:T.teal} sub="reassessment" />
-          <StatCard label="> 4 Hours" value={longStayCount}          color={longStayCount>0?T.coral:T.teal} sub="total door time" small />
-          <StatCard label="JC ED-1"   value={ed1Median!==null?fmtMin(ed1Median):"—"}  color={T.purple} sub="med admit LOS" small />
-          <StatCard label="JC ED-2"   value={ed2Median!==null?fmtMin(ed2Median):"—"}  color={T.orange} sub="med boarding" small />
-          {edwinScore !== null && (
-            <div style={{ padding:"11px 14px", borderRadius:10, background:T.card,
-              border:`1px solid ${edwinColor(edwinScore)}28`, borderTop:`2px solid ${edwinColor(edwinScore)}66`,
-              minWidth:90 }}>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:900,
-                color:edwinColor(edwinScore), lineHeight:1 }}>{edwinScore}</div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
-                letterSpacing:"1.2px", textTransform:"uppercase", marginTop:2 }}>EDWIN</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                color:edwinColor(edwinScore), marginTop:1 }}>{edwinLabel(edwinScore)}</div>
-            </div>
-          )}
+        {/* ═══ PRIMARY STATS ROW ═══════════════════════════════════════════════ */}
+        <div style={{ display:"flex", gap:10, marginBottom:10, flexWrap:"wrap" }}>
+          <PrimaryStatCard
+            label="Waiting"
+            value={waiting.length}
+            color={waiting.some(p => p.esiLevel <= 2) ? T.coral : waiting.length > 0 ? T.gold : T.teal}
+            sub={longestWait ? `longest wait ${longestWait}` : "no patients waiting"}
+          />
+          <PrimaryStatCard
+            label="Critical"
+            value={source.filter(p => p.esiLevel <= 2).length}
+            color={source.some(p => p.esiLevel <= 2) ? T.coral : T.teal}
+            sub="ESI 1\u20132"
+          />
+          <PrimaryStatCard
+            label="Overdue"
+            value={overdueCount}
+            color={overdueCount > 0 ? T.coral : T.teal}
+            sub="reassessment"
+          />
+          <PrimaryStatCard
+            label="> 4 Hours"
+            value={longStayCount}
+            color={longStayCount > 0 ? T.coral : T.teal}
+            sub="door time"
+          />
+          <PrimaryStatCard
+            label="Total"
+            value={source.length}
+            color={T.txt3}
+            sub={`${roomed.length} roomed`}
+          />
         </div>
 
-        {/* ── Provider workload bar (physician view) ── */}
+        {/* ═══ SECONDARY INFO BAR ══════════════════════════════════════════════ */}
+        <div style={{ display:"flex", alignItems:"stretch", marginBottom:16,
+          background:T.panel, border:`1px solid ${T.bd}`, borderRadius:9, overflow:"hidden",
+          flexWrap:"wrap" }}>
+
+          {/* ── Capacity summary — Waiting · Roomed · Boarded + occupancy bar ── */}
+          {(() => {
+            const occupied   = roomed.length + boarded.length;
+            const occPct     = bays > 0 ? Math.min((occupied / bays) * 100, 100) : 0;
+            const waitPct    = bays > 0 ? Math.min((waiting.length / bays) * 100, 100) : 0;
+            const roomPct    = bays > 0 ? Math.min((roomed.length  / bays) * 100, 100) : 0;
+            const boardPct   = bays > 0 ? Math.min((boarded.length / bays) * 100, 100) : 0;
+            const occColor   = occPct >= 90 ? T.coral : occPct >= 70 ? T.gold : T.teal;
+            return (
+              <div style={{ padding:"10px 16px", borderRight:`1px solid ${T.bd}`, flexShrink:0,
+                minWidth:220 }}>
+                {/* Label + total */}
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                  marginBottom:6 }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
+                    letterSpacing:"1px", textTransform:"uppercase" }}>Capacity</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    color:occColor, fontWeight:700 }}>
+                    {occupied}/{bays}
+                    <span style={{ color:T.txt4, fontWeight:400, marginLeft:4 }}>beds</span>
+                  </div>
+                </div>
+
+                {/* Segmented occupancy bar */}
+                <div style={{ height:8, borderRadius:4, background:T.up, overflow:"hidden",
+                  display:"flex", marginBottom:7 }}
+                  title={`${occupied} of ${bays} beds occupied (${Math.round(occPct)}%)`}>
+                  {/* Waiting — gold, comes before roomed visually */}
+                  {waitPct > 0 && (
+                    <div style={{ width:`${waitPct}%`, background:T.gold,
+                      opacity:.7, transition:"width .4s" }} />
+                  )}
+                  {/* Roomed — blue */}
+                  {roomPct > 0 && (
+                    <div style={{ width:`${roomPct}%`, background:T.blue,
+                      transition:"width .4s" }} />
+                  )}
+                  {/* Boarded — amber/coral */}
+                  {boardPct > 0 && (
+                    <div style={{ width:`${boardPct}%`, background:T.orange,
+                      transition:"width .4s" }} />
+                  )}
+                </div>
+
+                {/* Three state counts */}
+                <div style={{ display:"flex", gap:0 }}>
+                  {[
+                    { lbl:"Waiting", val:waiting.length, col:T.gold   },
+                    { lbl:"Roomed",  val:roomed.length,  col:T.blue   },
+                    { lbl:"Boarded", val:boarded.length, col:T.orange },
+                  ].map((s, i) => (
+                    <div key={s.lbl} style={{ flex:1, textAlign:"center",
+                      borderLeft: i > 0 ? `1px solid ${T.bd}` : "none",
+                      paddingTop:2 }}>
+                      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16,
+                        fontWeight:900, color:s.val > 0 ? s.col : T.txt4, lineHeight:1 }}>
+                        {s.val}
+                      </div>
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                        color:T.txt4, textTransform:"uppercase", letterSpacing:"0.5px",
+                        marginTop:2 }}>
+                        {s.lbl}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* EDWIN */}
+          {edwinScore !== null && (
+            <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 18px",
+              borderRight:`1px solid ${T.bd}`, flexShrink:0 }}
+              title="EDWIN crowding index: \u03a3(patients \u00d7 ESI) / (attendings \u00d7 (bays \u2212 boarders)). <2 Not busy \u00b7 2\u20134 Busy \u00b7 4\u20136 Overcrowded \u00b7 \u22656 Severe">
+              <div style={{ width:10, height:10, borderRadius:"50%", background:edwinColor(edwinScore), flexShrink:0 }} />
+              <div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
+                  letterSpacing:"1px", textTransform:"uppercase", marginBottom:2 }}>EDWIN</div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:7 }}>
+                  <span style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:900,
+                    color:edwinColor(edwinScore), lineHeight:1 }}>{edwinScore}</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    color:edwinColor(edwinScore), fontWeight:600 }}>{edwinLabel(edwinScore)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* JC ED-1 */}
+          <div style={{ display:"flex", alignItems:"center", padding:"10px 18px",
+            borderRight:`1px solid ${T.bd}`, flexShrink:0 }}
+            title="JC ED-1: Median time from ED arrival to departure for admitted patients">
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
+                letterSpacing:"1px", textTransform:"uppercase", marginBottom:2 }}>JC ED-1</div>
+              <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
+                <span style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:900,
+                  color:T.purple, lineHeight:1 }}>
+                  {ed1Median !== null ? fmtMin(ed1Median) : "\u2014"}
+                </span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>
+                  admit LOS
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* JC ED-2 */}
+          <div style={{ display:"flex", alignItems:"center", padding:"10px 18px", flexShrink:0 }}
+            title="JC ED-2: Median time from admit decision to ED departure (boarding time)">
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
+                letterSpacing:"1px", textTransform:"uppercase", marginBottom:2 }}>JC ED-2</div>
+              <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
+                <span style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:900,
+                  color:T.orange, lineHeight:1 }}>
+                  {ed2Median !== null ? fmtMin(ed2Median) : "\u2014"}
+                </span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>
+                  boarding
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ PROVIDER WORKLOAD (physician mode) ══════════════════════════════ */}
         {viewMode === "physician" && providers.length > 0 && (
-          <div style={{ padding:"10px 14px", borderRadius:10, background:T.panel,
-            border:`1px solid ${T.bd}`, marginBottom:14 }}>
+          <div style={{ padding:"11px 16px", borderRadius:10, background:T.panel,
+            border:`1px solid ${T.bd}`, marginBottom:16 }}>
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
-              letterSpacing:"1.2px", textTransform:"uppercase", marginBottom:8 }}>
+              letterSpacing:"1.2px", textTransform:"uppercase", marginBottom:10 }}>
               Provider Workload
             </div>
-            <div style={{ display:"flex", gap:16, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
               {providers.map(pv => {
-                const pw = providerWorkloads[pv] || { total:0, count:0 };
+                const pw       = providerWorkloads[pv] || { total:0, count:0 };
                 const maxScore = Math.max(...providers.map(p => (providerWorkloads[p]||{}).total||0), 1);
-                const pct = (pw.total / maxScore) * 100;
-                const col = pct > 75 ? T.coral : pct > 50 ? T.gold : T.teal;
+                const pct      = (pw.total / maxScore) * 100;
+                const col      = pct > 75 ? T.coral : pct > 50 ? T.gold : T.teal;
+                const shortName = pv.replace(/^Dr\.\s*/i,"");
                 return (
-                  <div key={pv} style={{ display:"flex", flexDirection:"column", gap:4, minWidth:130 }}>
+                  <div key={pv} style={{ display:"flex", flexDirection:"column", gap:5, minWidth:140 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
-                      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt2 }}>
-                        {pv.replace("Dr. ", "")}
+                      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+                        color:T.txt2 }}>
+                        {shortName}
                       </span>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
-                        color:col, fontWeight:700 }}>
-                        {pw.total} <span style={{ color:T.txt4, fontWeight:400 }}>({pw.count}pts)</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:col, fontWeight:700 }}>
+                        {pw.total}
+                        <span style={{ color:T.txt4, fontWeight:400, marginLeft:4 }}>
+                          ({pw.count} pt{pw.count !== 1 ? "s" : ""})
+                        </span>
                       </span>
                     </div>
-                    <div style={{ height:5, borderRadius:3, background:T.up, overflow:"hidden" }}>
-                      <div style={{ height:"100%", borderRadius:3, background:col,
-                        width:`${pct}%`, transition:"width .4s" }} />
+                    <div style={{ height:10, borderRadius:5, background:T.up, overflow:"hidden",
+                      position:"relative" }}>
+                      <div style={{ height:"100%", borderRadius:5, background:col,
+                        width:`${pct}%`, transition:"width .4s",
+                        display:"flex", alignItems:"center", justifyContent:"flex-end" }}>
+                        {pct > 30 && (
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                            color:"rgba(5,15,30,.85)", fontWeight:700, paddingRight:5 }}>
+                            {pw.total}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -787,52 +1172,46 @@ export default function HuddleBoard({
           </div>
         )}
 
-        {/* ── Waiting room strip ── */}
+        {/* ═══ WAITING ROOM ════════════════════════════════════════════════════ */}
         {waiting.length > 0 && (
-          <div style={{ marginBottom:14 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.gold,
-              letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:7,
-              display:"flex", alignItems:"center", gap:8 }}>
-              <div style={{ width:6, height:6, borderRadius:3, background:T.gold }} />
-              Waiting Room ({waiting.length}) — not yet roomed
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+          <div style={{ marginBottom:4 }}>
+            <SectionDivider
+              label="Waiting Room"
+              color={waiting.some(p => p.esiLevel <= 2) ? T.coral : T.gold}
+              count={waiting.length}
+              meta={longestWait ? `longest ${longestWait}` : null}
+            />
+            {/* Chip strip — compact horizontal format */}
+            <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:10 }}>
               {waiting.map(pt => {
-                const esiCfg  = ESI[pt.esiLevel] || ESI[5];
+                const esiCfg = ESI[pt.esiLevel] || ESI[5];
                 const doorMin = elapsedMin(pt.doorTime);
                 const urgent  = pt.esiLevel <= 2;
+                const timeColor = urgent && doorMin > 20 ? T.coral : doorMin > 45 ? T.gold : T.txt4;
                 return (
                   <div key={pt.id}
-                    style={{ display:"grid", gridTemplateColumns:"34px 1fr 80px 60px",
-                      gap:0, alignItems:"center", padding:"7px 12px",
-                      borderRadius:8, cursor: onSelectPatient ? "pointer" : "default",
-                      background: urgent ? "rgba(255,159,67,.06)" : T.up,
-                      border:`1px solid ${urgent ? "rgba(255,159,67,.3)" : T.bd}`,
-                      borderLeft:`3px solid ${esiCfg.color}` }}
-                    onClick={() => onSelectPatient?.(pt.id)}>
-                    <ESIBadge level={pt.esiLevel} />
-                    <div style={{ paddingLeft:10 }}>
-                      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt }}>
-                        {pt.cc?.text}
-                      </div>
-                      {pt.assignedNurse && viewMode === "nurse" && (
-                        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, marginTop:1 }}>
-                          {pt.assignedNurse}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4,
-                      textAlign:"center" }}>
-                      {[pt.demo?.age && `${pt.demo.age}y`, pt.demo?.sex].filter(Boolean).join(" ")}
-                    </div>
-                    <div style={{ textAlign:"center" }}>
-                      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:13, fontWeight:700,
-                        color: urgent && doorMin > 20 ? T.coral : doorMin > 45 ? T.gold : T.txt3, lineHeight:1 }}>
-                        {fmtMin(doorMin)}
-                      </div>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:T.txt4,
-                        textTransform:"uppercase", marginTop:2 }}>waiting</div>
-                    </div>
+                    onClick={() => onSelectPatient?.(pt.id)}
+                    style={{ display:"inline-flex", alignItems:"center", gap:7,
+                      padding:"5px 11px 5px 7px", borderRadius:22,
+                      background: urgent ? "rgba(255,107,107,.07)" : T.up,
+                      border:`1px solid ${urgent ? "rgba(255,107,107,.3)" : T.bd}`,
+                      borderLeft:`3px solid ${esiCfg.color}`,
+                      cursor: onSelectPatient ? "pointer" : "default",
+                      transition:"background .12s" }}>
+                    <ESIBadge level={pt.esiLevel} size="small" />
+                    <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt,
+                      whiteSpace:"nowrap" }}>
+                      {pt.cc?.text}
+                    </span>
+                    {!privacyMode && pt.demo?.age && (
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>
+                        \u00b7 {pt.demo.age}y {pt.demo.sex}
+                      </span>
+                    )}
+                    <span style={{ fontFamily:"'Playfair Display',serif", fontSize:12, fontWeight:700,
+                      color:timeColor }}>
+                      \u00b7 {fmtMin(doorMin)}
+                    </span>
                   </div>
                 );
               })}
@@ -840,96 +1219,142 @@ export default function HuddleBoard({
           </div>
         )}
 
-        {/* ── Filter + sort bar ── */}
-        <div style={{ display:"flex", gap:9, marginBottom:10, flexWrap:"wrap", alignItems:"center" }}>
-          <input placeholder="Room, CC, provider\u2026" value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ background:T.up, border:`1px solid ${T.bd}`, borderRadius:7, padding:"5px 11px",
-              color:T.txt, fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none", width:200 }} />
+        {/* ═══ FILTER BAR ══════════════════════════════════════════════════════ */}
+        <div style={{ display:"flex", flexDirection:"column", gap:7, marginBottom:10 }}>
 
-          {/* Acuity range — clinical groupings (replaces individual ESI chips) */}
-          <div style={{ display:"flex", gap:4 }}>
-            {[
-              { key:null,       lbl:"All",          col:T.txt4,   bg:"transparent",            bd:T.bd                      },
-              { key:"critical", lbl:"Critical 1–2", col:"#ff6b6b",bg:"rgba(255,107,107,.1)",   bd:"rgba(255,107,107,.45)"   },
-              { key:"urgent",   lbl:"Urgent 3",     col:T.gold,   bg:"rgba(245,200,66,.1)",    bd:"rgba(245,200,66,.45)"    },
-              { key:"lower",    lbl:"Lower 4–5",    col:T.blue,   bg:"rgba(59,158,255,.1)",    bd:"rgba(59,158,255,.4)"     },
-            ].map(({ key, lbl, col, bg, bd }) => {
-              const on = acuityRange === key;
-              return (
-                <button key={String(key)} onClick={() => setAcuityRange(on ? null : key)}
-                  style={{ padding:"4px 10px", borderRadius:6, cursor:"pointer",
-                    border:`1px solid ${on ? bd : T.bd}`,
-                    background: on ? bg : "transparent",
-                    color: on ? col : T.txt4,
-                    fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                    fontWeight: on ? 700 : 400, whiteSpace:"nowrap",
-                    transition:"all .12s" }}>
-                  {lbl}
-                </button>
-              );
-            })}
+          {/* Row 1 — primary: search + acuity + sort */}
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+            <input placeholder="Room, CC, provider\u2026" value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ background:T.up, border:`1px solid ${T.bd}`, borderRadius:7,
+                padding:"5px 11px", color:T.txt, fontFamily:"'DM Sans',sans-serif",
+                fontSize:12, outline:"none", width:200 }} />
+            <div style={{ display:"flex", gap:4 }}>
+              {[
+                { key:null,       lbl:"All",          col:T.txt4,    bg:"transparent",          bd:T.bd                    },
+                { key:"critical", lbl:"Critical 1\u20132", col:T.coral, bg:"rgba(255,107,107,.1)", bd:"rgba(255,107,107,.45)" },
+                { key:"urgent",   lbl:"Urgent 3",     col:T.gold,    bg:"rgba(245,200,66,.1)",   bd:"rgba(245,200,66,.45)"  },
+                { key:"lower",    lbl:"Lower 4\u20135",col:T.blue,   bg:"rgba(59,158,255,.1)",   bd:"rgba(59,158,255,.4)"   },
+              ].map(({ key, lbl, col, bg, bd }) => {
+                const on = acuityRange === key;
+                return (
+                  <button key={String(key)} onClick={() => setAcuityRange(on ? null : key)}
+                    style={{ padding:"4px 10px", borderRadius:6, cursor:"pointer",
+                      border:`1px solid ${on ? bd : T.bd}`,
+                      background: on ? bg : "transparent",
+                      color: on ? col : T.txt4,
+                      fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                      fontWeight: on ? 700 : 400, whiteSpace:"nowrap", transition:"all .12s" }}>
+                    {lbl}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ marginLeft:"auto", display:"flex", gap:3, alignItems:"center" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                color:T.txt4, letterSpacing:"1px", textTransform:"uppercase" }}>Sort:</span>
+              {[["acuity","Acuity"],["workload","Load"],["reassess","Reassess"],["room","Room"],["time","Time"]].map(([id,lbl]) => (
+                <SortBtn key={id} id={id} lbl={lbl} />
+              ))}
+            </div>
           </div>
 
-          {/* Flagged-for-huddle toggle */}
-          <button onClick={() => setFilterFlagged(f => !f)}
-            style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 11px",
-              borderRadius:6, cursor:"pointer", transition:"all .12s",
-              border:`1px solid ${filterFlagged ? "rgba(245,200,66,.5)" : T.bd}`,
-              background: filterFlagged ? "rgba(245,200,66,.1)" : "transparent",
-              color: filterFlagged ? T.gold : T.txt4,
-              fontFamily:"'DM Sans',sans-serif", fontSize:11,
-              fontWeight: filterFlagged ? 700 : 400 }}>
-            <span style={{ fontSize:13, lineHeight:1 }}>{filterFlagged ? "⚑" : "⚐"}</span>
-            Flagged only
-            {filterFlagged && flagged.size > 0 && (
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-                background:"rgba(245,200,66,.25)", borderRadius:3,
-                padding:"0 5px", color:T.gold }}>{flagged.size}</span>
+          {/* Row 2 — contextual: flags + long-stay + provider */}
+          <div style={{ display:"flex", gap:7, flexWrap:"wrap", alignItems:"center" }}>
+            <button onClick={() => setFilterFlagged(f => !f)}
+              style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 11px",
+                borderRadius:6, cursor:"pointer", transition:"all .12s",
+                border:`1px solid ${filterFlagged ? "rgba(245,200,66,.5)" : T.bd}`,
+                background: filterFlagged ? "rgba(245,200,66,.1)" : "transparent",
+                color: filterFlagged ? T.gold : T.txt4,
+                fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight: filterFlagged ? 700 : 400 }}>
+              <span style={{ fontSize:13, lineHeight:1 }}>{filterFlagged ? "\u2691" : "\u2690"}</span>
+              Flagged only
+              {filterFlagged && flagged.size > 0 && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  background:"rgba(245,200,66,.25)", borderRadius:3, padding:"0 5px", color:T.gold }}>
+                  {flagged.size}
+                </span>
+              )}
+            </button>
+            <button onClick={() => setLongStayAlert(a => !a)}
+              style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 11px",
+                borderRadius:6, cursor:"pointer", transition:"all .12s",
+                border:`1px solid ${longStayAlert ? "rgba(255,107,107,.5)" : T.bd}`,
+                background: longStayAlert ? "rgba(255,107,107,.1)" : "transparent",
+                color: longStayAlert ? T.coral : T.txt4,
+                fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight: longStayAlert ? 700 : 400 }}>
+              <span style={{ fontSize:12, lineHeight:1 }}>\uD83D\uDD50</span>
+              &gt; 4h
+              {longStayAlert && longStayCount > 0 && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  background:"rgba(255,107,107,.2)", borderRadius:3, padding:"0 5px", color:T.coral }}>
+                  {longStayCount}
+                </span>
+              )}
+            </button>
+            {providers.length > 1 && (
+              <div style={{ position:"relative" }}>
+                <select value={filterProv||""} onChange={e => setFilterProv(e.target.value||null)}
+                  style={{ background:T.up, border:`1px solid ${T.bd}`, borderRadius:7,
+                    padding:"5px 22px 5px 10px", color:filterProv?T.blue:T.txt4,
+                    fontFamily:"'DM Sans',sans-serif", fontSize:11, outline:"none",
+                    appearance:"none", WebkitAppearance:"none", cursor:"pointer" }}>
+                  <option value="">All providers</option>
+                  {providers.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <span style={{ position:"absolute", right:7, top:"50%", transform:"translateY(-50%)",
+                  color:T.txt4, fontSize:9, pointerEvents:"none" }}>▾</span>
+              </div>
             )}
-          </button>
+          </div>
 
-          {/* Long-stay alert toggle (> 4 hours in department) */}
-          <button onClick={() => setLongStayAlert(a => !a)}
-            style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 11px",
-              borderRadius:6, cursor:"pointer", transition:"all .12s",
-              border:`1px solid ${longStayAlert ? "rgba(255,107,107,.5)" : T.bd}`,
-              background: longStayAlert ? "rgba(255,107,107,.1)" : "transparent",
-              color: longStayAlert ? T.coral : T.txt4,
-              fontFamily:"'DM Sans',sans-serif", fontSize:11,
-              fontWeight: longStayAlert ? 700 : 400 }}>
-            <span style={{ fontSize:12, lineHeight:1 }}>\uD83D\uDD50</span>
-            &gt; 4h
-            {longStayAlert && longStayCount > 0 && (
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-                background:"rgba(255,107,107,.2)", borderRadius:3,
-                padding:"0 5px", color:T.coral }}>{longStayCount}</span>
-            )}
-          </button>
-          {providers.length > 1 && (
-            <div style={{ position:"relative" }}>
-              <select value={filterProv||""} onChange={e => setFilterProv(e.target.value||null)}
-                style={{ background:T.up, border:`1px solid ${T.bd}`, borderRadius:7,
-                  padding:"5px 22px 5px 10px", color:filterProv?T.blue:T.txt4,
-                  fontFamily:"'DM Sans',sans-serif", fontSize:11, outline:"none",
-                  appearance:"none", WebkitAppearance:"none", cursor:"pointer" }}>
-                <option value="">All providers</option>
-                {providers.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-              <span style={{ position:"absolute", right:7, top:"50%", transform:"translateY(-50%)",
-                color:T.txt4, fontSize:9, pointerEvents:"none" }}>▾</span>
+          {/* Active filter chip strip */}
+          {anyFilter && (
+            <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
+                letterSpacing:"1px", textTransform:"uppercase" }}>Showing:</span>
+              {[
+                acuityRange === "critical" && { k:"a", lbl:"Critical 1\u20132", col:T.coral, clear:() => setAcuityRange(null) },
+                acuityRange === "urgent"   && { k:"a", lbl:"Urgent 3",          col:T.gold,  clear:() => setAcuityRange(null) },
+                acuityRange === "lower"    && { k:"a", lbl:"Lower 4\u20135",    col:T.blue,  clear:() => setAcuityRange(null) },
+                filterFlagged              && { k:"f", lbl:"Flagged only",       col:T.gold,  clear:() => setFilterFlagged(false) },
+                longStayAlert              && { k:"l", lbl:"> 4 hours",          col:T.coral, clear:() => setLongStayAlert(false) },
+                filterProv                 && { k:"p", lbl:filterProv,           col:T.blue,  clear:() => setFilterProv(null) },
+              ].filter(Boolean).map(f => (
+                <span key={f.k} style={{ display:"inline-flex", alignItems:"center", gap:5,
+                  padding:"2px 7px 2px 10px", borderRadius:20,
+                  background:`${f.col}18`, border:`1px solid ${f.col}44`, color:f.col,
+                  fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600 }}>
+                  {f.lbl}
+                  <button onClick={f.clear}
+                    style={{ background:"none", border:"none", cursor:"pointer",
+                      color:f.col, fontSize:14, lineHeight:1, padding:"0 2px", opacity:.7 }}>
+                    \u00d7
+                  </button>
+                </span>
+              ))}
+              <button onClick={() => { setAcuityRange(null); setFilterFlagged(false); setLongStayAlert(false); setFilterProv(null); }}
+                style={{ background:"none", border:"none", cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4,
+                  textDecoration:"underline", marginLeft:2 }}>
+                Clear all
+              </button>
             </div>
           )}
-          <div style={{ marginLeft:"auto", display:"flex", gap:3, alignItems:"center" }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:T.txt4, letterSpacing:"1px", textTransform:"uppercase" }}>Sort:</span>
-            {[["acuity","Acuity"],["workload","Load"],["reassess","Reassess"],["room","Room"],["time","Time"]].map(([id,lbl]) => (
-              <SortBtn key={id} id={id} lbl={lbl} />
-            ))}
-          </div>
         </div>
 
-        {/* ── Column header ── */}
+        {/* ═══ ACTIVE PATIENTS ═════════════════════════════════════════════════ */}
+        <SectionDivider
+          label="Active Patients"
+          color={T.blue}
+          count={filteredRoomed.length}
+          meta={filteredRoomed.length !== roomed.length
+            ? `${roomed.length - filteredRoomed.length} filtered out`
+            : null}
+        />
+
+        {/* Column headers */}
         <div style={{ display:"grid", gridTemplateColumns:"24px 34px 88px 1fr 70px 70px 28px",
           gap:0, padding:"4px 10px", marginBottom:5,
           fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4,
@@ -938,56 +1363,43 @@ export default function HuddleBoard({
           <div>ESI</div>
           <div style={{ paddingLeft:8 }}>Room</div>
           <div style={{ paddingLeft:8 }}>Patient</div>
-          <div style={{ textAlign:"center" }}>{viewMode==="physician"?"Reassess":"Orders"}</div>
+          <div style={{ textAlign:"center" }}
+            title={viewMode === "physician"
+              ? "Time since last documented reassessment. Amber at 60% of window (adjusted for ~15-30m documentation lag). Overdue = red."
+              : "Pending orders: L=labs, Rx=medications, I=imaging"}>
+            {viewMode === "physician" ? "Reassess" : "Orders"}
+          </div>
           <div style={{ textAlign:"center" }}>Disp.</div>
           <div />
         </div>
 
-        {/* ── Active patients ── */}
         {filteredRoomed.length === 0 && (
           <div style={{ padding:"32px 20px", textAlign:"center", color:T.txt4,
             fontFamily:"'DM Sans',sans-serif", fontSize:13 }}>
             No patients match the current filters
           </div>
         )}
-        <div style={{ display:"flex", flexDirection:"column", gap:3, marginBottom:14 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:3, marginBottom:6 }}>
           {filteredRoomed.map(pt => renderPatientRow(pt))}
         </div>
 
-        {/* ── Boarding section ── */}
+        {/* ═══ BOARDING ════════════════════════════════════════════════════════ */}
         {boarded.length > 0 && (
-          <div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.gold,
-              letterSpacing:"1.5px", textTransform:"uppercase", margin:"16px 0 8px",
-              display:"flex", alignItems:"center", gap:8 }}>
-              <div style={{ width:6, height:6, borderRadius:3, background:T.gold }} />
-              Boarding ({boarded.length}) — admitted, awaiting inpatient bed
-              {ed2Median !== null && (
-                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                  color:T.txt4, fontWeight:400, letterSpacing:0, textTransform:"none" }}>
-                  · JC ED-2 median {fmtMin(ed2Median)}
-                </span>
-              )}
-            </div>
+          <>
+            <SectionDivider
+              label="Boarding"
+              color={T.gold}
+              count={boarded.length}
+              meta={ed2Median !== null
+                ? `JC ED-2 median ${fmtMin(ed2Median)} \u00b7 admitted, awaiting inpatient bed`
+                : "admitted, awaiting inpatient bed"}
+            />
             <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
               {boarded.map(pt => renderPatientRow(pt))}
             </div>
-          </div>
+          </>
         )}
 
-        {/* ── Legend ── */}
-        <div style={{ marginTop:22, padding:"9px 14px", borderRadius:9,
-          background:T.panel, border:`1px solid ${T.bd}`,
-          display:"flex", gap:18, flexWrap:"wrap",
-          fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, letterSpacing:"0.5px" }}>
-          <span><span style={{ color:T.teal }}>▮</span> Within window</span>
-          <span><span style={{ color:T.gold }}>▮</span> ≥60% (threshold adjusted for documentation lag)</span>
-          <span><span style={{ color:T.coral }}>▮</span> Overdue</span>
-          <span><span style={{ color:T.gold }}>⚑</span> Huddle flag</span>
-          <span>EDWIN: &lt;2 OK · 2-4 Busy · 4-6 Crowded · ≥6 Severe</span>
-          <span>Workload = ESI + L + Rx + I</span>
-          <span>Clocks refresh 30s</span>
-        </div>
       </div>
     </div>
   );

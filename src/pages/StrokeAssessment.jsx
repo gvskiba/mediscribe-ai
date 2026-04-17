@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import AcuteStrokeTab from "@/components/stroke/AcuteStrokeTab";
 
 // ─── Theme ─────────────────────────────────────────────────────────────────
 const T = {
@@ -97,6 +98,58 @@ const PED_TREATMENT = [
   {title:"Secondary prevention",text:"Aspirin 3–5 mg/kg/day (max 100 mg); address underlying etiology; SCD → chronic transfusion/hydroxyurea"},
 ];
 const SERIAL_SLOTS = ["Arrival / Triage","Post-CT (30 min)","Pre-tPA","1h post-tPA","24h NIHSS","Discharge NIHSS"];
+
+// ─── Acute Stroke Clocks / VAN / Windows / MT ───────────────────────────────
+const EXCL_3H_ACUTE = [
+  {id:"ich",       label:"Intracranial hemorrhage on CT"},
+  {id:"stroke3mo", label:"Stroke or serious head trauma within 3 months"},
+  {id:"surgery",   label:"Intracranial/intraspinal surgery within 3 months"},
+  {id:"prev_ich",  label:"History of prior intracranial hemorrhage"},
+  {id:"bleeding",  label:"Active internal bleeding (excluding menses)"},
+  {id:"aorta",     label:"Suspected aortic dissection"},
+  {id:"bp",        label:"BP >185/110 mmHg persistently despite treatment"},
+  {id:"plt",       label:"Platelet count <100,000 / mm³"},
+  {id:"heparin",   label:"Heparin within 48h with elevated aPTT"},
+  {id:"anticoag",  label:"Anticoagulants with INR >1.7 or PT >15s"},
+  {id:"noac",      label:"Direct thrombin or Xa inhibitors within 48h"},
+  {id:"glucose",   label:"Blood glucose <50 mg/dL"},
+  {id:"multilobar",label:"CT: multilobar infarction (>1/3 MCA territory)"},
+];
+const EXCL_4H_ACUTE = [
+  {id:"nihss25",   label:"NIHSS score >25"},
+  {id:"age80",     label:"Age >80 years"},
+  {id:"dm_stroke", label:"History of BOTH prior stroke AND diabetes mellitus"},
+  {id:"oral_ac",   label:"Current oral anticoagulants (regardless of INR)"},
+];
+const ASPECTS_ACUTE = [
+  {id:"C",  label:"C",  desc:"Caudate"},
+  {id:"P",  label:"P",  desc:"Putamen"},
+  {id:"IC", label:"IC", desc:"Internal Capsule"},
+  {id:"I",  label:"I",  desc:"Insula"},
+  {id:"M1", label:"M1", desc:"Ant MCA cortex"},
+  {id:"M2", label:"M2", desc:"MCA lat to insula"},
+  {id:"M3", label:"M3", desc:"Post MCA cortex"},
+  {id:"M4", label:"M4", desc:"Ant MCA sup"},
+  {id:"M5", label:"M5", desc:"Lat MCA sup"},
+  {id:"M6", label:"M6", desc:"Post MCA sup"},
+];
+
+function fmtElapsed(ms) {
+  if (!ms || ms < 0) return null;
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  if (h > 0) return `${h}h ${String(m).padStart(2,"0")}m`;
+  return `${m}m ${String(ss).padStart(2,"0")}s`;
+}
+function clockCol(elapsed, targetMs) {
+  if (!elapsed || !targetMs) return T.txt4;
+  const p = elapsed / targetMs;
+  if (p >= 1)    return T.coral;
+  if (p >= 0.75) return T.gold;
+  return T.teal;
+}
 
 // ─── TIA Data ───────────────────────────────────────────────────────────────
 const ABCD2_ITEMS = [
@@ -508,7 +561,22 @@ export default function StrokeAssessment() {
   const navigate = useNavigate();
   const [patMode,setPatMode] = useState('adult');
   const [activeTab,setActiveTab] = useState('stroke');
-  const [strokeSubTab,setStrokeSubTab] = useState('nihss');
+  const [strokeSubTab,setStrokeSubTab] = useState('acute');
+
+  // Acute clocks state
+  const [tick,        setTick]        = useState(0);
+  const [doorTime,    setDoorTime]    = useState(null);
+  const [lkwClock,    setLkwClock]    = useState(null);
+  const [acuteWeight, setAcuteWeight] = useState("");
+  const [acuteExcl3h, setAcuteExcl3h] = useState({});
+  const [acuteExcl4h, setAcuteExcl4h] = useState({});
+  const [vanScreen,   setVanScreen]   = useState({v:false,a:false,n:false});
+  const [acuteAspects,setAcuteAspects] = useState({});
+
+  useEffect(() => {
+    const iv = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(iv);
+  }, []);
 
   // NIHSS state
   const [scores,setScores] = useState({});
@@ -655,10 +723,28 @@ export default function StrokeAssessment() {
           <div>
             {/* Stroke sub-tabs */}
             <div className="sub-tabs" style={{marginBottom:20}}>
-              {[['nihss','⚡ NIHSS Scale'],['workup','🔬 Workup'],['treatment','💊 Treatment']].map(([id,lbl])=>(
+              {[['acute','⏱ Acute'],['nihss','⚡ NIHSS Scale'],['workup','🔬 Workup'],['treatment','💊 Treatment']].map(([id,lbl])=>(
                 <button key={id} className={`sub-tab${strokeSubTab===id?' on':''}`} onClick={()=>setStrokeSubTab(id)}>{lbl}</button>
               ))}
             </div>
+
+            {/* ── Stroke / Acute ── */}
+            {strokeSubTab==='acute'&&(
+              <AcuteStrokeTab
+                tick={tick}
+                doorTime={doorTime}     setDoorTime={setDoorTime}
+                lkwClock={lkwClock}     setLkwClock={setLkwClock}
+                acuteWeight={acuteWeight} setAcuteWeight={setAcuteWeight}
+                acuteExcl3h={acuteExcl3h} setAcuteExcl3h={setAcuteExcl3h}
+                acuteExcl4h={acuteExcl4h} setAcuteExcl4h={setAcuteExcl4h}
+                vanScreen={vanScreen}   setVanScreen={setVanScreen}
+                acuteAspects={acuteAspects} setAcuteAspects={setAcuteAspects}
+                nihssTotal={nihssTotal}
+                EXCL_3H_ACUTE={EXCL_3H_ACUTE}
+                EXCL_4H_ACUTE={EXCL_4H_ACUTE}
+                ASPECTS_ACUTE={ASPECTS_ACUTE}
+              />
+            )}
 
             {/* ── Stroke / NIHSS ── */}
             {strokeSubTab==='nihss'&&(

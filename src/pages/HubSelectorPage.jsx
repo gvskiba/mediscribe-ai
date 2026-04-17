@@ -968,6 +968,23 @@ const HUBS = [
     essential: false,
   },
   {
+    id: "order-generator",
+    route: "/order-generator",
+    icon: "📋",
+    abbr: "ORDERS",
+    title: "Order Generator",
+    subtitle: "Weight-based dosing · Copy-paste order text · Bundles · CPOE bridge",
+    color: "#3b9eff",
+    glow: "rgba(59,158,255,0.4)",
+    glass: "rgba(59,158,255,0.07)",
+    border: "rgba(59,158,255,0.28)",
+    accent: "#6ab8ff",
+    category: "Pharmacology",
+    stats: ["30+ Drugs", "Weight-Based", "Bundle Launch"],
+    badge: "CPOE BRIDGE",
+    priority: 41.5,
+  },
+  {
     id: "narrative",
     route: "/narrative-engine",
     icon: "✍️",
@@ -1024,6 +1041,7 @@ const LIVE_ROUTES = new Set([
   "/weight-dose", "/SepsisHub", "/LabInterpreter", "/imaging-interpreter",
   "/wound-care-hub", "/seizure-hub", "/smart-dosing",
   "/stroke-hub", "/ddx-engine", "/EDTrackingBoard", "/narrative-engine", "/ed-procedure-notes",
+  "/order-generator",
 ]);
 
 function Background() {

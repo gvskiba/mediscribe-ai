@@ -18,6 +18,7 @@
 //   finally { setBusy(false) } on async functions
 
 import { useState, useCallback } from "react";
+import { useEncounterSummary } from "@/components/npi/useEncounterSummary";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -196,6 +197,12 @@ export default function ShiftHandoffGenerator({
   esiLevel, registration, sdoh, sepsisBundle,
   providerName, doorTime, onToast,
 }) {
+  // ── Shared encounter preamble — prepended to AI call ────────────────────
+  const { buildPreamble } = useEncounterSummary({
+    demo, cc, vitals, medications, allergies,
+    pmhSelected, rosState, peState, peFindings,
+    sdoh, esiLevel, registration, disposition, providerName,
+  });
 
   // ── State: format + section selector ─────────────────────────────────────
   const [format,   setFormat]   = useState("ipass"); // "ipass" | "sbar"
@@ -275,7 +282,7 @@ export default function ShiftHandoffGenerator({
           system: format === "sbar" ? SBAR_SYSTEM_PROMPT : IPASS_SYSTEM_PROMPT,
           messages:[{
             role:"user",
-            content:`Generate ${format === "sbar" ? "SBAR" : "I-PASS"} handoff for:\n\n${buildHandoffContext(ctxProps)}`,
+            content:`Generate ${format === "sbar" ? "SBAR" : "I-PASS"} handoff for:\n\n${buildPreamble()}\n\n${buildHandoffContext(ctxProps)}`,
           }],
         }),
       });

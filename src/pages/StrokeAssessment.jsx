@@ -300,7 +300,7 @@ const CSS = `
 .sa-wrap{
   color:${T.txt};font-family:'DM Sans',sans-serif;font-size:14px;
   position:relative;z-index:1;
-  max-width:1400px;margin:0 auto;padding:24px 20px;padding-top:80px;
+  max-width:1400px;margin:0 auto;padding:24px 20px;padding-top:28px;
 }
 
 /* Glass card */

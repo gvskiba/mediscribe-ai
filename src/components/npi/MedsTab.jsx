@@ -187,14 +187,16 @@ function BeersInlineBanner({ entry }) {
 
 function SectionHeader({ icon, title, count, color, expanded, onToggle, trailing }) {
   return (
-    <button onClick={onToggle} className="mt-section-toggle"
-      style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"13px 16px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left" }}>
-      <span style={{ fontSize:16 }}>{icon}</span>
-      <span style={{ fontFamily:"Playfair Display",fontWeight:700,fontSize:14,color:T.txt,flex:1 }}>{title}</span>
-      {count > 0 && <span style={{ fontFamily:"JetBrains Mono",fontSize:10,color:color||T.teal,background:`${color||T.teal}18`,padding:"2px 8px",borderRadius:10 }}>{count}</span>}
+    <div className="mt-section-toggle"
+      style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"13px 16px",background:"transparent",cursor:"pointer",textAlign:"left" }}>
+      <div onClick={onToggle} style={{ display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0 }}>
+        <span style={{ fontSize:16 }}>{icon}</span>
+        <span style={{ fontFamily:"Playfair Display",fontWeight:700,fontSize:14,color:T.txt,flex:1 }}>{title}</span>
+        {count > 0 && <span style={{ fontFamily:"JetBrains Mono",fontSize:10,color:color||T.teal,background:`${color||T.teal}18`,padding:"2px 8px",borderRadius:10 }}>{count}</span>}
+      </div>
       {trailing}
-      <span style={{ fontFamily:"JetBrains Mono",fontSize:11,color:T.txt3,marginLeft:2 }}>{expanded ? "▲" : "▼"}</span>
-    </button>
+      <span onClick={onToggle} style={{ fontFamily:"JetBrains Mono",fontSize:11,color:T.txt3,marginLeft:2,cursor:"pointer" }}>{expanded ? "▲" : "▼"}</span>
+    </div>
   );
 }
 

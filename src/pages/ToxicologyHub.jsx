@@ -348,10 +348,10 @@ function AntidoteCard({ a, expanded, onToggle }) {
               {a.urgency}
             </span>
           </div>
-          {/* Quick dose — scannable without expanding */}
-          {a.quickDose && (
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:600,
-              color:a.color, marginTop:4, lineHeight:1.4, opacity: expanded ? 0.5 : 1 }}>
+          {/* Quick dose — visible without expanding */}
+          {!expanded && a.quickDose && (
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+              fontWeight:600, color:a.color, marginTop:3, lineHeight:1.4 }}>
               {a.quickDose}
             </div>
           )}

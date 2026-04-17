@@ -25,6 +25,7 @@
 //   border before borderTop/etc.
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import EDWINAlert from "@/components/EDWINAlert";
 
 // ── Font injection ────────────────────────────────────────────────────────────
 (() => {
@@ -658,6 +659,9 @@ export default function HuddleBoard({
               )}
             </div>
           </div>
+
+          {/* EDWIN chip — live crowding index */}
+          <EDWINAlert score={edwinScore} variant="chip" onClick={() => setShowConfig(s => !s)} />
 
           {/* Controls strip */}
           <div style={{ display:"flex", gap:7, alignItems:"center", flexWrap:"wrap" }}>

@@ -354,4 +354,4 @@ export function useHuddleBoardData({
 }
 
 // ── Named exports for testing and direct use ─────────────────────────────────
-export { defaultMapEncounter, resolveStatus, resolveDisposition, toMs };
+export { resolveStatus, resolveDisposition, toMs };

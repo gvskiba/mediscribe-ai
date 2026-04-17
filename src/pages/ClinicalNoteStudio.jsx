@@ -302,18 +302,6 @@ Encode to maximum ICD-10-CM specificity. Use encounter type A (initial) unless t
     } catch { showToast(setToasts, "ICD-10 lookup failed.", "error"); }
     finally  { setIcdLoading(false); }
   };
-      const data = await res.json();
-      const raw = (data.content?.[0]?.text || "{}").replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(raw);
-      if (parsed.icd10)          setIcd10(parsed.icd10);
-      if (parsed.differentials)  setDiff(parsed.differentials);
-      if (parsed.mdm_problem && !mdmProblems) setMdmProblems(parsed.mdm_problem);
-      if (parsed.plan_items?.length && planItems.length === 0) setPlanItems(parsed.plan_items);
-      if (parsed.return_precautions && !returnPrec) setReturnPrec(parsed.return_precautions);
-      showToast(setToasts, "Diagnosis applied — ICD-10, MDM, plan, and return precautions populated.", "success");
-    } catch { showToast(setToasts, "ICD-10 lookup failed.", "error"); }
-    finally  { setIcdLoading(false); }
-  };
 
   // ── AI: MDM generation ───────────────────────────────────────────────────
   const generateMDM = useCallback(async () => {

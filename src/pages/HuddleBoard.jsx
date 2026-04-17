@@ -662,8 +662,8 @@ export default function HuddleBoard({
 
           {/* EDWIN banner — live crowding alert (only shows at Overcrowded/Severe) */}
           <EDWINAlert
-            attendingCount={config.attendingCount}
-            totalBays={config.totalBays}
+            attendingCount={attendings}
+            totalBays={bays}
             onViewBoard={() => window.scrollTo(0,0)}
             fixed={false}
           />

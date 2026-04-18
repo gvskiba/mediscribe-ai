@@ -998,6 +998,7 @@ export default function NewPatientInput() {
         onClose={() => setShowFhirSync(false)}
         patientMrn={registration?.mrn}
         patientFhirId={registration?.fhirId}
+        demo={demo} setDemo={setDemo}
         vitals={vitals} setVitals={setVitals}
         medications={medications} setMedications={setMedications}
         allergies={allergies} setAllergies={setAllergies}

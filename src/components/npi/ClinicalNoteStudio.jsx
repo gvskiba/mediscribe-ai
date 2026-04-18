@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useState, useCallback, useEffect, useRef } from "react";
 
 // ─── SECTION CONFIG ────────────────────────────────────────────────────────────
 const SECTIONS = [

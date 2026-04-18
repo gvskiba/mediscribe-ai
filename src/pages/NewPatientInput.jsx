@@ -6,7 +6,7 @@ import { NPI_CSS } from "@/components/npi/npiStyles";
 import {
   NAV_DATA, GROUP_META, ALL_SECTIONS, SECTION_SHORTCUT, QUICK_ACTIONS,
   ROS_RAIL_SYSTEMS, PE_RAIL_SYSTEMS, BEERS_DRUGS, getCCRiskHints, buildDecisionDocPhrase,
-  SEPSIS_BUNDLE_ITEMS, computeEMLevel, EM_LEVEL_MAP, SIMPLE_HIDDEN,
+  SEPSIS_BUNDLE_ITEMS, SIMPLE_HIDDEN,
 } from "@/components/npi/npiData";
 
 // ── Already-separate tab components ──────────────────────────────────────────
@@ -68,6 +68,17 @@ const _showToast = (msg, type = "success") => {
 // is the same effective lifetime as sessionStorage for a SPA.
 let _introDismissed = false;
 
+// ── Shared style for top-bar RN / media attachment count badges ─────────────
+const BADGE_STYLE = {
+  position: "absolute", top: -5, right: -5,
+  minWidth: 14, height: 14, borderRadius: 7,
+  background: "var(--npi-teal)", color: "#050f1e",
+  fontFamily: "'JetBrains Mono',monospace",
+  fontSize: 8, fontWeight: 700,
+  display: "flex", alignItems: "center", justifyContent: "center",
+  padding: "0 3px", lineHeight: 1,
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default function NewPatientInput() {
 
@@ -81,7 +92,7 @@ export default function NewPatientInput() {
     medications, setMedications, allergies, setAllergies,
     pmhSelected, setPmhSelected, pmhExtra, setPmhExtra,
     surgHx, setSurgHx, famHx, setFamHx, socHx, setSocHx,
-    rosState, setRosState, rosSymptoms, setRosSymptoms, rosNotes, setRosNotes,
+    rosState, setRosState, rosSymptoms, setRosSymptoms, setRosNotes,
     peState, setPeState, peFindings, setPeFindings,
     selectedCC, setSelectedCC,
     parseText, setParseText, parsing,
@@ -94,7 +105,7 @@ export default function NewPatientInput() {
     railCompact, setRailCompact, showShortcuts, setShowShortcuts,
     cdsOpen, setCdsOpen,
     rosActiveSystem, setRosActiveSystem, peActiveSystem, setPeActiveSystem,
-    reassessState, setReassessState, clinicalTimeline, setClinicalTimeline,
+    setReassessState, setClinicalTimeline,
     sepsisBundle, setSepsisBundle,
     pdmpState, setPdmpState,
     isarState, setIsarState,
@@ -104,7 +115,7 @@ export default function NewPatientInput() {
     nursingNotes, setNursingNotes,
     mediaOpen, setMediaOpen, attachments, setAttachments,
     providerName, providerRole,
-    aiOpen, setAiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread, msgsRef, inputRef,
+    aiOpen, aiMsgs, aiInput, setAiInput, aiLoading, unread, msgsRef, inputRef,
     resumeSection, setResumeSection,
     patientName, patientDataBundle,
     vitalClass, getRosSysDot, getPeSysDot,
@@ -457,11 +468,25 @@ export default function NewPatientInput() {
       );
 
       case "closeout": return (
-        <DispositionTab disposition={disposition} setDisposition={setDisposition} dispReason={dispReason} setDispReason={setDispReason} dispTime={dispTime} setDispTime={setDispTime} onAdvance={() => selectSection("handoff")} />
+        <DispositionTab
+          disposition={disposition}   setDisposition={setDisposition}
+          dispReason={dispReason}     setDispReason={setDispReason}
+          dispTime={dispTime}         setDispTime={setDispTime}
+          onAdvance={() => selectSection("handoff")}
+        />
       );
 
       case "handoff": return (
-        <HandoffTab demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} peState={peState} peFindings={peFindings} esiLevel={esiLevel} registration={registration} sdoh={sdoh} consults={consults} disposition={disposition} dispReason={dispReason} onAdvance={() => selectSection("discharge")} />
+        <HandoffTab
+          demo={demo} cc={cc} vitals={vitals}
+          medications={medications} allergies={allergies}
+          pmhSelected={pmhSelected}
+          rosState={rosState} peState={peState} peFindings={peFindings}
+          esiLevel={esiLevel} registration={registration}
+          sdoh={sdoh} consults={consults}
+          disposition={disposition} dispReason={dispReason}
+          onAdvance={() => selectSection("discharge")}
+        />
       );
 
       case "comms": return (
@@ -473,7 +498,16 @@ export default function NewPatientInput() {
       );
 
       case "discharge": return (
-        <SmartDischargeHub demo={demo} cc={cc} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} disposition={disposition} dispReason={dispReason} dispTime={dispTime} consults={consults} sdoh={sdoh} esiLevel={esiLevel} registration={registration} providerName={providerName} doorTime={doorTime} nursingNotes={nursingNotes} nursingInterventions={nursingInterventions} />
+        <SmartDischargeHub
+          demo={demo} cc={cc} vitals={vitals}
+          medications={medications} allergies={allergies}
+          pmhSelected={pmhSelected}
+          disposition={disposition} dispReason={dispReason} dispTime={dispTime}
+          consults={consults} sdoh={sdoh}
+          esiLevel={esiLevel} registration={registration}
+          providerName={providerName} doorTime={doorTime}
+          nursingNotes={nursingNotes} nursingInterventions={nursingInterventions}
+        />
       );
 
       case "erx": return (
@@ -484,16 +518,36 @@ export default function NewPatientInput() {
 
       case "orders": return (
         <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}>
-          <OrdersPanel patientName={patientName} allergies={allergies} chiefComplaint={cc.text} patientAge={demo.age} patientSex={demo.sex} patientWeight={demo.weight||vitals.weight||""} />
+          <OrdersPanel
+            patientName={patientName} allergies={allergies}
+            chiefComplaint={cc.text}
+            patientAge={demo.age} patientSex={demo.sex}
+            patientWeight={demo.weight || vitals.weight || ""}
+          />
         </div>
       );
 
       case "results": return (
-        <ResultsViewer patientName={patientName} patientMrn={registration.mrn||demo.mrn} patientAge={demo.age} patientSex={demo.sex} allergies={allergies} chiefComplaint={cc.text} vitals={vitals} />
+        <ResultsViewer
+          patientName={patientName}
+          patientMrn={registration.mrn || demo.mrn}
+          patientAge={demo.age} patientSex={demo.sex}
+          allergies={allergies} chiefComplaint={cc.text}
+          vitals={vitals}
+        />
       );
 
       case "autocoder": return (
-        <AutoCoderTab patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob} patientAge={demo.age} patientGender={demo.sex} chiefComplaint={cc.text} vitals={vitals} medications={medications} allergies={allergies} pmhSelected={pmhSelected} rosState={rosState} rosSymptoms={rosSymptoms} peState={peState} peFindings={peFindings} onAdvance={() => selectSection("mdm")} />
+        <AutoCoderTab
+          patientName={patientName} patientMrn={demo.mrn} patientDob={demo.dob}
+          patientAge={demo.age} patientGender={demo.sex}
+          chiefComplaint={cc.text} vitals={vitals}
+          medications={medications} allergies={allergies}
+          pmhSelected={pmhSelected}
+          rosState={rosState} rosSymptoms={rosSymptoms}
+          peState={peState} peFindings={peFindings}
+          onAdvance={() => selectSection("mdm")}
+        />
       );
 
       case "mdm": return (
@@ -520,7 +574,13 @@ export default function NewPatientInput() {
 
       case "erplan": return (
         <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}>
-          <ERPlanBuilder embedded patientName={patientName} patientAge={demo.age} patientSex={demo.sex} patientCC={cc.text} patientVitals={vitals} patientAllergies={allergies} patientMedications={medications} />
+          <ERPlanBuilder
+            embedded
+            patientName={patientName}
+            patientAge={demo.age} patientSex={demo.sex}
+            patientCC={cc.text} patientVitals={vitals}
+            patientAllergies={allergies} patientMedications={medications}
+          />
         </div>
       );
 
@@ -549,10 +609,11 @@ export default function NewPatientInput() {
             <button className={`npi-cds-btn${cdsOpen?" open":""}${allergies.length>0?" cds-alert":medications.length>0?" cds-warn":""}`} onClick={() => setCdsOpen(o => !o)} title="Clinical Decision Support">
               <div className="npi-cds-dot" />CDS
             </button>
-            <button className={`npi-cds-btn${nursingOpen?" open":""}${(nursingInterventions.length+nursingNotes.length)>0?" cds-warn":""}`} onClick={() => setNursingOpen(o => !o)} title="Nursing Input Panel" style={{ position:"relative" }}>
+            <button className={`npi-cds-btn${nursingOpen?" open":""}${(nursingInterventions.length+nursingNotes.length)>0?" cds-warn":""}`}
+              onClick={() => setNursingOpen(o => !o)} title="Nursing Input Panel" style={{ position:"relative" }}>
               <div className="npi-cds-dot" />RN
               {(nursingInterventions.length+nursingNotes.length) > 0 && (
-                <span style={{ position:"absolute", top:-5, right:-5, minWidth:14, height:14, borderRadius:7, background:"var(--npi-teal)", color:"#050f1e", fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>
+                <span style={BADGE_STYLE}>
                   {(nursingInterventions.length+nursingNotes.length) > 9 ? "9+" : (nursingInterventions.length+nursingNotes.length)}
                 </span>
               )}
@@ -561,10 +622,11 @@ export default function NewPatientInput() {
               <div className="npi-ai-dot" /> AI
               {unread > 0 && <span className="npi-ai-badge">{unread > 9 ? "9+" : unread}</span>}
             </button>
-            <button className={`npi-cds-btn${mediaOpen?" open":""}${attachments.length>0?" cds-warn":""}`} onClick={() => setMediaOpen(o => !o)} title="Media Attachments" style={{ position:"relative" }}>
+            <button className={`npi-cds-btn${mediaOpen?" open":""}${attachments.length>0?" cds-warn":""}`}
+              onClick={() => setMediaOpen(o => !o)} title="Media Attachments" style={{ position:"relative" }}>
               <div className="npi-cds-dot" />&#x1F4CE;
               {attachments.length > 0 && (
-                <span style={{ position:"absolute", top:-5, right:-5, minWidth:14, height:14, borderRadius:7, background:"var(--npi-teal)", color:"#050f1e", fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>
+                <span style={BADGE_STYLE}>
                   {attachments.length > 9 ? "9+" : attachments.length}
                 </span>
               )}
@@ -596,9 +658,19 @@ export default function NewPatientInput() {
               return (
                 <button key={key} title={hint}
                   onClick={() => { setVisitMode(key); if (key === "critical") selectSection("sepsis"); }}
-                  style={{ padding:"3px 10px", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight: active ? 700 : 400, background: active ? `${col}18` : "transparent", color: active ? col : suggested ? col : "var(--npi-txt4)", borderLeft: key !== "simple" ? "1px solid rgba(26,53,85,0.4)" : "none", transition:"all .12s", position:"relative" }}>
+                  style={{
+                    padding: "3px 10px", border: "none", cursor: "pointer",
+                    fontFamily: "'DM Sans',sans-serif", fontSize: 10,
+                    fontWeight: active ? 700 : 400,
+                    background: active ? `${col}18` : "transparent",
+                    color: active ? col : suggested ? col : "var(--npi-txt4)",
+                    borderLeft: key !== "simple" ? "1px solid rgba(26,53,85,0.4)" : "none",
+                    transition: "all .12s", position: "relative",
+                  }}>
                   {label}
-                  {suggested && !active && <span style={{ position:"absolute", top:2, right:2, width:4, height:4, borderRadius:"50%", background:col }} />}
+                  {suggested && !active && (
+                    <span style={{ position:"absolute", top:2, right:2, width:4, height:4, borderRadius:"50%", background:col }} />
+                  )}
                 </button>
               );
             })}
@@ -765,7 +837,7 @@ export default function NewPatientInput() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => { sendMessage(QUICK_ACTIONS[4].prompt); setAiOpen(true); setCdsOpen(false); }}
+              <button onClick={() => { sendMessage(QUICK_ACTIONS[4].prompt); if (!aiOpen) toggleAI(); setCdsOpen(false); }}
                 style={{ marginTop:8, padding:"5px 12px", borderRadius:6, border:"1px solid rgba(59,158,255,0.4)", background:"rgba(59,158,255,0.1)", color:"#3b9eff", fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, cursor:"pointer" }}>
                 \u2728 Draft MDM with AI
               </button>
@@ -981,9 +1053,21 @@ export default function NewPatientInput() {
             <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, color:"#e8f0fe", marginBottom:4 }}>Welcome to Notrya</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"#4a6a8a", marginBottom:22 }}>Three features that cut documentation time in half</div>
             {[
-              { icon:"📋", color:"#3b9eff", title:"SmartParse — paste any clinical text", desc:"Tap the clipboard button (bottom-right) and paste a triage note, nursing assessment, or typed HPI. Demographics, vitals, allergies, and medications are extracted automatically." },
-              { icon:"🔍", color:"#00e5c0", title:"ROS — click Deny All first, then mark positives", desc:"Open Review of Systems and click \u2713 Deny All in the header. A 13-system ROS is complete. Then click any symptom to mark it as reported. Full keyboard navigation also available \u2014 press ? to see shortcuts." },
-              { icon:"\u2696\ufe0f", color:"#f5c842", title:"MDM Builder — Quick mode for routine visits", desc:"The MDM Builder opens in \u26A1 Quick mode. Select your E/M level in one click and hit Build Narrative. Switch to \u229e Full grid only for complex encounters that need line-by-line documentation." },
+              {
+                icon: "📋", color: "#3b9eff",
+                title: "SmartParse — paste any clinical text",
+                desc: "Tap the clipboard button (bottom-right) and paste a triage note, nursing assessment, or typed HPI. Demographics, vitals, allergies, and medications are extracted automatically.",
+              },
+              {
+                icon: "🔍", color: "#00e5c0",
+                title: "ROS — click Deny All first, then mark positives",
+                desc: "Open Review of Systems and click \u2713 Deny All in the header. A 13-system ROS is complete. Then click any symptom to mark it as reported. Full keyboard navigation also available \u2014 press ? to see shortcuts.",
+              },
+              {
+                icon: "\u2696\ufe0f", color: "#f5c842",
+                title: "MDM Builder — Quick mode for routine visits",
+                desc: "The MDM Builder opens in \u26A1 Quick mode. Select your E/M level in one click and hit Build Narrative. Switch to \u229e Full grid only for complex encounters that need line-by-line documentation.",
+              },
             ].map(({ icon, color, title, desc }) => (
               <div key={title} style={{ display:"flex", gap:14, marginBottom:18 }}>
                 <div style={{ width:38, height:38, borderRadius:10, flexShrink:0, background:`${color}15`, border:`1px solid ${color}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>{icon}</div>

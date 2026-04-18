@@ -737,7 +737,7 @@ Include 8-12 orders across relevant categories.${workingWeight ? " Include weigh
     <div style={{display:"grid",gridTemplateColumns:"56% 44%",height:"100%",background:"var(--npi-bg)"}}>
 
       {/* LEFT */}
-      <div style={{padding:"12px 14px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",borderRight:"1px solid var(--npi-bd)"}}>
+      <div style={{padding:"12px 14px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",borderRight:"1px solid var(--npi-bd)",minHeight:0}}>
 
         {renderContextBar()}
 
@@ -823,7 +823,7 @@ Include 8-12 orders across relevant categories.${workingWeight ? " Include weigh
             );
           })}
         </div>
-        <div style={{flex:1}}>{renderCategoryContent()}</div>
+        <div style={{flex:1,overflowY:"auto",minHeight:0}}>{renderCategoryContent()}</div>
       </div>
 
       {/* RIGHT — Queue */}

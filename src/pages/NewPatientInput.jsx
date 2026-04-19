@@ -478,13 +478,15 @@ export default function NewPatientInput() {
 
       case "handoff": return (
         <HandoffTab
-          demo={demo} cc={cc} vitals={vitals}
+          demo={demo} cc={cc} vitals={vitals} avpu={avpu}
           medications={medications} allergies={allergies}
           pmhSelected={pmhSelected}
           rosState={rosState} peState={peState} peFindings={peFindings}
-          esiLevel={esiLevel} registration={registration}
+          esiLevel={esiLevel} visitMode={visitMode} registration={registration}
           sdoh={sdoh} consults={consults}
+          sepsisBundle={sepsisBundle} nursingInterventions={nursingInterventions}
           disposition={disposition} dispReason={dispReason}
+          doorTime={doorTime} providerName={providerName}
           onAdvance={() => selectSection("discharge")}
         />
       );

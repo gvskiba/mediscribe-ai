@@ -35,7 +35,6 @@ import ProviderBilling from '@/pages/ProviderBilling';
 import HPI from '@/pages/HPI';
 import HPITemplateAdmin from '@/pages/HPITemplateAdmin';
 import ERx from '@/pages/ERx';
-import LabsImaging from '@/pages/LabsImaging';
 import TriageHub from '@/pages/TriageHub';
 import SurgicalAirwayHub from '@/pages/SurgicalAirwayHub';
 import RapidAssessmentHub from '@/pages/RapidAssessmentHub';
@@ -199,7 +198,6 @@ const AuthenticatedApp = () => {
       <Route path="/hpi" element={<LayoutWrapper currentPageName="HPI"><HPI /></LayoutWrapper>} />
       <Route path="/hpi-admin" element={<LayoutWrapper currentPageName="HPITemplateAdmin"><HPITemplateAdmin /></LayoutWrapper>} />
       <Route path="/erx" element={<LayoutWrapper currentPageName="ERx"><ERx /></LayoutWrapper>} />
-      <Route path="/LabsImaging" element={<LayoutWrapper currentPageName="LabsImaging"><LabsImaging /></LayoutWrapper>} />
       <Route path="/triage-hub" element={<TriageHub />} />
       <Route path="/rapid-assessment-hub" element={<RapidAssessmentHub />} />
       <Route path="/ecg-hub" element={<ECGHub />} />

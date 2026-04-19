@@ -228,6 +228,7 @@ export default function NewPatientInput() {
         <InlineHPITab
           cc={cc} setCC={setCC}
           onAdvance={() => selectSection("ros")}
+          onToast={_showToast}
           patientAge={demo.age} patientSex={demo.sex}
           vitals={vitals} medications={medications}
           allergies={allergies} pmhSelected={pmhSelected}

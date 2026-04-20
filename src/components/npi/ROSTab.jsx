@@ -250,11 +250,21 @@ function StatusBadge({ status }) {
   return <span className={`ros-badge ${cls}`}>{txt}</span>;
 }
 
-function KbLegend({ isFocused }) {
+function KbLegend({ isFocused, docMode }) {
   const keys = [
-    ['↑↓', 'navigate'], ['←→', 'system'], ['letter', 'jump'],
-    ['1–9', 'quick pick'], ['Space', 'toggle'], ['↵', 'absent'], ['X', 'present'],
-    ['⌘↵', 'deny sys'], ['⌘⇧N', 'deny all'], ['⌘F', 'mode'], ['⌘R', 'rest neg'], ['Esc', 'exit'],
+    ['↑↓',   'symptom'],
+    ['←→',   'system'],
+    ['letter','jump sys'],
+    ['1–9',  'quick pick'],
+    ['Space', 'toggle'],
+    ['↵',    'absent'],
+    ['X',    'present'],
+    ['⌘↵',   'deny sys'],
+    ['⌘⇧N',  'deny all'],
+    ['⌘F',   docMode === 'full' ? '→ focused' : '→ full'],
+    ['⌘R',   'rest denied'],
+    ['⌘→',   '→ PE'],
+    ['Esc',  isFocused ? 'exit' : '→ PE'],
   ];
   return (
     <div className={`ros-kb-bar${isFocused ? ' ros-kb-on' : ''}`}>
@@ -266,7 +276,7 @@ function KbLegend({ isFocused }) {
         </span>
       ))}
       {!isFocused && (
-        <span className="ros-kb-prompt">Click panel to enable keyboard navigation</span>
+        <span className="ros-kb-prompt">Click or Tab to panel to enable keyboard navigation</span>
       )}
     </div>
   );
@@ -392,7 +402,17 @@ export default function ROSTab({ onStateChange, onSymptomsChange, chiefComplaint
       const activeSysData = ROS_SYSTEMS[activeSystemIdx];
       const symCount      = activeSysData?.symptoms.length ?? 0;
 
-      if (k === 'Escape') { el.blur(); return; }
+      // Esc: first press blurs, second press advances to PE
+      if (k === 'Escape') {
+        if (isFocused) { el.blur(); }
+        else if (onAdvance) { onAdvance(); }
+        return;
+      }
+
+      // ⌘→ — advance to PE
+      if (cmd && k === 'ArrowRight') {
+        e.preventDefault(); if (onAdvance) onAdvance(); return;
+      }
 
       if (cmd && e.shiftKey && (k === 'N' || k === 'n')) {
         e.preventDefault(); markAllNormal(); return;
@@ -465,13 +485,15 @@ export default function ROSTab({ onStateChange, onSymptomsChange, chiefComplaint
     }
     el.addEventListener('keydown', handleKey);
     return () => el.removeEventListener('keydown', handleKey);
-  }, [activeSystemIdx, activeFindingIdx, visibleSys, handleFindingAction, markSystemNormal, markAllNormal]); // eslint-disable-line
+  }, [activeSystemIdx, activeFindingIdx, isFocused,
+      visibleSys, handleFindingAction, markSystemNormal, markAllNormal,
+      onAdvance]);
 
   // Auto-focus on mount — keyboard-first from the first render
   useEffect(() => {
     const t = setTimeout(focus, 60);
     return () => clearTimeout(t);
-  }, []); // eslint-disable-line
+  }, [focus]); // focus is a stable useCallback([], []) — safe as dep
 
   const activeSys = ROS_SYSTEMS[activeSystemIdx];
   const sysData   = rosData[activeSys?.id] || { symptoms: {} };
@@ -497,7 +519,7 @@ export default function ROSTab({ onStateChange, onSymptomsChange, chiefComplaint
       setActiveSystemIdx(extSysIdx);
       setActiveFindingIdx(-1);
     }
-  }, [extSysIdx]); // eslint-disable-line
+  }, [extSysIdx, activeSystemIdx]);
 
   // Tab → rail: when keyboard changes system, notify parent
   useEffect(() => {
@@ -666,7 +688,7 @@ export default function ROSTab({ onStateChange, onSymptomsChange, chiefComplaint
           </div>{/* /ros-main */}
         </div>{/* /ros-body */}
 
-        <KbLegend isFocused={isFocused} />
+        <KbLegend isFocused={isFocused} docMode={docMode} />
       </div>
     </>
   );

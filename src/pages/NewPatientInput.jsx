@@ -17,6 +17,7 @@ import MedsTab              from "@/components/npi/MedsTab";
 import ROSTab               from "@/components/npi/ROSTab";
 import PETab                from "@/components/npi/PETab";
 import AutoCoderTab         from "@/components/npi/AutoCoderTab";
+import DDxEngine            from "@/components/npi/DDxEngine";
 import InlineHPITab         from "@/components/npi/InlineHPITab";
 import ClinicalNoteStudio   from "@/components/npi/ClinicalNoteStudio";
 import ReassessmentTab      from "@/components/npi/ReassessmentTab";
@@ -537,6 +538,17 @@ export default function NewPatientInput() {
           patientAge={demo.age} patientSex={demo.sex}
           allergies={allergies} chiefComplaint={cc.text}
           vitals={vitals}
+        />
+      );
+
+      case "ddx": return (
+        <DDxEngine
+          initialCC={cc.text}
+          initialAge={demo.age}
+          initialSex={demo.sex}
+          initialVitals={vitals}
+          onToast={_showToast}
+          onBack={() => selectSection("hpi")}
         />
       );
 

@@ -1,8 +1,15 @@
 import { useState, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+// FIX: removed `import { useNavigate } from "react-router-dom"`
+// Notrya constraint: NO Router usage. useNavigate() requires a <Router> context
+// and throws unconditionally when rendered outside one — the primary blank-page cause.
+// Replaced with onBack prop (same pattern used across all Notrya components).
 
 // ── Font injection ─────────────────────────────────────────────────────────────
+// FIX: typeof document guard added — same fix applied to MedsTab & DDxEngine.
+// Bare document.getElementById() at module parse time throws in non-browser
+// environments, blocking the entire module from loading.
 (() => {
+  if (typeof document === "undefined") return;
   if (document.getElementById("lab-fonts")) return;
   const l = document.createElement("link");
   l.id = "lab-fonts"; l.rel = "stylesheet";
@@ -537,24 +544,28 @@ function CalcValues({ panelId, values, fio2 }) {
       color: aa > 15 ? T.orange : T.teal,
     });
 
-    const pH = parseFloat(values.pH);
+    const pH   = parseFloat(values.pH);
     const pco2 = parseFloat(values.pco2);
     const hco3 = parseFloat(values.hco3 || values.co2);
     if (!isNaN(pH) && !isNaN(pco2)) {
       let interp = "";
-      if (pH < 7.35 && pco2 > 45) interp = "Respiratory Acidosis";
+      if      (pH < 7.35 && pco2 > 45) interp = "Respiratory Acidosis";
       else if (pH < 7.35 && pco2 < 35) interp = "Metabolic Acidosis";
       else if (pH > 7.45 && pco2 < 35) interp = "Respiratory Alkalosis";
       else if (pH > 7.45 && pco2 > 45) interp = "Metabolic Alkalosis";
-      else interp = "Normal pH (may have mixed disorder)";
+      else                              interp = "Normal pH (may have mixed disorder)";
 
       if (!isNaN(hco3)) {
         if (pH < 7.35 && pco2 > 45) {
           const expectedHCO3 = 24 + 0.1 * (pco2 - 40);
-          interp += Math.abs(hco3 - expectedHCO3) < 3 ? " — appropriate metabolic compensation" : " — metabolic component present";
+          interp += Math.abs(hco3 - expectedHCO3) < 3
+            ? " — appropriate metabolic compensation"
+            : " — metabolic component present";
         } else if (pH < 7.35 && hco3 < 22) {
           const expectedPCO2 = 1.5 * hco3 + 8;
-          interp += Math.abs(pco2 - expectedPCO2) < 2 ? " — appropriate respiratory compensation (Winter's)" : " — respiratory component also present";
+          interp += Math.abs(pco2 - expectedPCO2) < 2
+            ? " — appropriate respiratory compensation (Winter's)"
+            : " — respiratory component also present";
         }
       }
 
@@ -602,11 +613,24 @@ function CalcValues({ panelId, values, fio2 }) {
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────
+// FIX: removed useNavigate — replaced with onBack prop.
+// useNavigate() requires a <Router> context. When this component is used
+// as an NPI tab (embedded=true) or in any non-Router context, useNavigate()
+// throws unconditionally at the top of the component — before any JSX is
+// evaluated — causing the entire component to render nothing.
+//
+// Props:
+//   embedded   — true when used as an NPI tab; hides the back button and
+//                standalone page chrome (header, breadcrumb, footer disclaimer)
+//   onBack     — callback for the ← Back button (only shown when !embedded)
+//                Pass () => navigate('/hub') from the parent shell if needed.
+//   demo, vitals, cc, medications, pmhSelected — NPI patient context (optional)
 export default function LabInterpreter({
   embedded = false,
+  onBack,
   demo, vitals, cc, medications, pmhSelected,
 }) {
-  const navigate = useNavigate();
+  // FIX: no useNavigate() call here
 
   const [activePanel, setActivePanel] = useState("bmp");
   const [values,      setValues]      = useState({});
@@ -732,16 +756,19 @@ export default function LabInterpreter({
 
         {!embedded && (
           <div style={{ padding:"18px 0 14px" }}>
-            <button onClick={() => navigate("/hub")}
-              style={{ marginBottom:10,
-                display:"inline-flex", alignItems:"center", gap:7,
-                fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
-                background:"rgba(14,37,68,0.7)",
-                border:"1px solid rgba(42,79,122,0.5)",
-                borderRadius:8, padding:"5px 14px",
-                color:T.txt3, cursor:"pointer" }}>
-              ← Back to Hub
-            </button>
+            {/* FIX: onBack?.() instead of navigate('/hub') */}
+            {onBack && (
+              <button onClick={onBack}
+                style={{ marginBottom:10,
+                  display:"inline-flex", alignItems:"center", gap:7,
+                  fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+                  background:"rgba(14,37,68,0.7)",
+                  border:"1px solid rgba(42,79,122,0.5)",
+                  borderRadius:8, padding:"5px 14px",
+                  color:T.txt3, cursor:"pointer" }}>
+                ← Back to Hub
+              </button>
+            )}
             <div style={{ display:"flex", alignItems:"center",
               gap:10, marginBottom:8 }}>
               <div style={{ background:"rgba(5,15,30,0.9)",

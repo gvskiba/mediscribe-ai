@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 
 // ── Font injection ─────────────────────────────────────────────────────────────
 (() => {
+  if (typeof document === "undefined") return;
   if (document.getElementById("resus-fonts")) return;
   const l = document.createElement("link");
   l.id = "resus-fonts"; l.rel = "stylesheet";
@@ -545,8 +545,7 @@ function HsTs({ checked, onToggle }) {
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────
-export default function ResusHub({ embedded = false, demo, vitals }) {
-  const navigate = useNavigate();
+export default function ResusHub({ embedded = false, onBack, demo, vitals }) {
 
   const [rhythm,     setRhythm]     = useState("vfpvt");
   const [checkState, setCheckState] = useState({});
@@ -576,7 +575,7 @@ export default function ResusHub({ embedded = false, demo, vitals }) {
 
         {!embedded && (
           <div style={{ padding:"18px 0 14px" }}>
-            <button onClick={() => navigate("/hub")}
+            <button onClick={() => onBack ? onBack() : window.history.back()}
               style={{ marginBottom:10,
                 display:"inline-flex", alignItems:"center", gap:7,
                 fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,

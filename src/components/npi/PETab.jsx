@@ -239,12 +239,22 @@ function StatusBadge({ status }) {
   return <span className={`pe-badge ${cls}`}>{txt}</span>;
 }
 
-function KbLegend({ isFocused }) {
-  const keys = [
-    ['↑↓', 'navigate'], ['←→', 'system'], ['letter', 'jump'],
-    ['1–9', 'quick pick'], ['Space', 'toggle'], ['↵', 'normal'], ['X', 'abnormal'],
-    ['⌘↵', 'sys normal'], ['⌘⇧N', 'all normal'], ['⌘F', 'mode'], ['⌘R', 'rest norm'], ['⌘V', 'visual'], ['Esc', 'exit'],
+function KbLegend({ isFocused, docMode }) {
+  const standardKeys = [
+    ['↑↓', 'finding'],    ['←→', 'system'],     ['letter', 'jump sys'],
+    ['1–9', 'quick pick'], ['Space', 'toggle'],   ['↵', 'mark normal'],
+    ['X', 'abnormal'],    ['⌘↵', 'sys normal'],  ['⌘⇧N', 'all normal'],
+    ['⌘F', docMode === 'full' ? '→ focused' : '→ full'],
+    ['⌘V', docMode === 'visual' ? '→ standard' : '→ visual'],
+    ['⌘G', 'PE note'],    ['⌘R', 'rest normal'], ['⌘→', 'next tab'],
+    ['Esc', 'exit'],
   ];
+  const visualKeys = [
+    ['←→', 'appearance'],  ['↵ / Space', 'select'],
+    ['⌘V', '→ standard'], ['⌘G', 'PE note'],
+    ['⌘→', 'next tab'],   ['Esc', 'exit'],
+  ];
+  const keys = docMode === 'visual' ? visualKeys : standardKeys;
   return (
     <div className={`pe-kb-bar${isFocused ? ' pe-kb-on' : ''}`}>
       <span className="pe-kb-ico">⌨</span>
@@ -255,7 +265,7 @@ function KbLegend({ isFocused }) {
         </span>
       ))}
       {!isFocused && (
-        <span className="pe-kb-prompt">Click panel to enable keyboard navigation</span>
+        <span className="pe-kb-prompt">Click or Tab to panel to enable keyboard navigation</span>
       )}
     </div>
   );
@@ -285,6 +295,11 @@ function getFocusedPeIds(cc) {
   }
   return ['gen','cv','resp','abd'];
 }
+
+// ── Visual mode appearance options (module-scope for keyboard handler) ────────
+const VISUAL_APPEARANCE_OPTS = [
+  'Well-appearing', 'Ill-appearing', 'Toxic-appearing', 'Uncomfortable', 'Altered',
+];
 
 export default function PETab({ peState, setPeState, peFindings, setPeFindings, onAdvance, extSysIdx, onSysChange, chiefComplaint, onNarrative }) {
   const [examData, setExamData] = useState(initExamData);
@@ -425,6 +440,7 @@ Rules:
   const [activeSystemIdx,  setActiveSystemIdx]  = useState(0);
   const [activeFindingIdx, setActiveFindingIdx] = useState(-1);
   const [isFocused,        setIsFocused]        = useState(false);
+  const [visualChipIdx,    setVisualChipIdx]    = useState(-1);  // keyboard focus in visual mode
   const panelRef = useRef(null);
 
   const focus = useCallback(() => panelRef.current?.focus(), []);
@@ -453,9 +469,14 @@ Rules:
         return;
       }
 
-      // ⌘→ — advance to MDM
+      // ⌘→ — advance to next tab
       if (cmd && k === 'ArrowRight') {
         e.preventDefault(); if (onAdvance) onAdvance(); return;
+      }
+
+      // ⌘G — generate PE narrative
+      if (cmd && (k === 'g' || k === 'G')) {
+        e.preventDefault(); generatePENarrative(); return;
       }
 
       if (cmd && e.shiftKey && (k === 'N' || k === 'n')) {
@@ -474,6 +495,32 @@ Rules:
         e.preventDefault(); setDocMode(m => m === 'visual' ? 'focused' : 'visual'); return;
       }
 
+      // ── Visual mode: arrow keys navigate appearance chips ─────────────────
+      if (docMode === 'visual') {
+        if (k === 'ArrowLeft' || k === 'ArrowUp') {
+          e.preventDefault();
+          setVisualChipIdx(i => i <= 0 ? VISUAL_APPEARANCE_OPTS.length - 1 : i - 1);
+          return;
+        }
+        if (k === 'ArrowRight' || k === 'ArrowDown') {
+          e.preventDefault();
+          setVisualChipIdx(i => i < VISUAL_APPEARANCE_OPTS.length - 1 ? i + 1 : 0);
+          return;
+        }
+        if ((k === ' ' || k === 'Enter') && visualChipIdx >= 0) {
+          e.preventDefault();
+          const opt = VISUAL_APPEARANCE_OPTS[visualChipIdx];
+          if (opt) setVisualAppearance(va => va === opt ? '' : opt);
+          return;
+        }
+        if (k === 'Escape' || k === 'x' || k === 'X') {
+          setVisualChipIdx(-1);
+          return;
+        }
+        return; // absorb all other keys in visual mode
+      }
+
+      // ── Standard mode navigation ──────────────────────────────────────────
       if (k === 'ArrowLeft') {
         e.preventDefault();
         const visCur = visiblePeSys.findIndex(s => s.id === activeSysData?.id);
@@ -533,13 +580,15 @@ Rules:
     }
     el.addEventListener('keydown', handleKey);
     return () => el.removeEventListener('keydown', handleKey);
-  }, [activeSystemIdx, activeFindingIdx, isFocused, visiblePeSys, handleFindingAction, markSystemNormal, markAllNormal, onAdvance]); // eslint-disable-line
+  }, [activeSystemIdx, activeFindingIdx, isFocused, docMode, visualChipIdx,
+      visiblePeSys, handleFindingAction, markSystemNormal, markAllNormal,
+      generatePENarrative, onAdvance]);
 
   // Auto-focus on mount — keyboard-first from the first render
   useEffect(() => {
     const t = setTimeout(focus, 60);
     return () => clearTimeout(t);
-  }, []); // eslint-disable-line
+  }, [focus]); // focus is a stable useCallback([], []) — safe as dep
 
   const activeSys  = PE_SYSTEMS[activeSystemIdx];
   const sysData    = examData[activeSys?.id] || { findings: {}, note: '' };
@@ -570,7 +619,7 @@ Rules:
       setActiveSystemIdx(extSysIdx);
       setActiveFindingIdx(-1);
     }
-  }, [extSysIdx]); // eslint-disable-line
+  }, [extSysIdx, activeSystemIdx]);
 
   useEffect(() => {
     onSysChange?.(activeSystemIdx);
@@ -687,10 +736,17 @@ Rules:
               <div className="pe-visual-section">
                 <div className="pe-visual-lbl">General appearance</div>
                 <div className="pe-visual-chips">
-                  {['Well-appearing','Ill-appearing','Toxic-appearing','Uncomfortable','Altered'].map(opt => (
+                  {VISUAL_APPEARANCE_OPTS.map((opt, idx) => (
                     <button key={opt}
-                      className={`pe-visual-chip${visualAppearance===opt?' active':''}`}
-                      onClick={() => setVisualAppearance(visualAppearance===opt ? '' : opt)}>
+                      className={[
+                        'pe-visual-chip',
+                        visualAppearance === opt   ? 'active'     : '',
+                        isFocused && visualChipIdx === idx ? 'pe-chip-kb' : '',
+                      ].filter(Boolean).join(' ')}
+                      onClick={() => { setVisualAppearance(visualAppearance === opt ? '' : opt); focus(); }}>
+                      {isFocused && visualChipIdx === idx && (
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, marginRight:4, color:'var(--npi-blue)' }}>↵</span>
+                      )}
                       {opt}
                     </button>
                   ))}
@@ -704,6 +760,9 @@ Rules:
                   placeholder="E.g. No acute distress. Moving all extremities. No obvious deformity. Abdomen soft and non-tender on visual inspection…"
                   value={visualNotes}
                   onChange={e => setVisualNotes(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Escape') { e.preventDefault(); focus(); }
+                  }}
                   style={{ minHeight:90 }}
                 />
               </div>
@@ -863,6 +922,10 @@ Rules:
                 style={{ width:'100%', background:'rgba(14,37,68,.7)', border:'1px solid rgba(155,109,255,.28)', borderRadius:8, padding:'9px 12px', color:'var(--npi-txt)', fontFamily:"'DM Sans',sans-serif", fontSize:12.5, lineHeight:1.7, resize:'vertical', outline:'none', transition:'border-color .15s', boxSizing:'border-box' }}
                 onFocus={e  => { e.target.style.borderColor='rgba(155,109,255,.55)'; }}
                 onBlur={e   => { e.target.style.borderColor='rgba(155,109,255,.28)'; }}
+                onKeyDown={e => {
+                  if (e.key === 'Escape') { e.preventDefault(); focus(); }
+                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); onAdvance?.(); }
+                }}
               />
             )}
 
@@ -881,7 +944,7 @@ Rules:
           </div>
         )}
 
-        <KbLegend isFocused={isFocused} />
+        <KbLegend isFocused={isFocused} docMode={docMode} />
       </div>
     </>
   );

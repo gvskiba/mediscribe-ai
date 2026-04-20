@@ -53,8 +53,9 @@ import EDProcedureNotes        from "@/pages/EDProcedureNotes";
 import MedicationReferencePage from "@/pages/MedicationReference";
 import ERPlanBuilder           from "@/pages/ERPlanBuilder";
 import ResultsViewer           from "@/pages/ResultsViewer";
-import ScoreHub                from "@/pages/ScoreHub";
 import ERxHub                  from "@/pages/ERx";
+import ScoreHub                from "@/pages/ScoreHub";
+import WeightDoseHub           from "@/pages/WeightDoseHub";
 
 // ── FIX #6: Toast helper at module scope — passed into useNPIState so the
 // hook can emit toasts without importing sonner directly (Base44 constraint).
@@ -557,6 +558,19 @@ export default function NewPatientInput() {
           vitals={vitals}
           pmhSelected={pmhSelected}
           cc={cc}
+        />
+      );
+
+      case "dosing": return (
+        <WeightDoseHub
+          embedded={true}
+          demo={demo}
+          vitals={vitals}
+          medications={medications}
+          allergies={allergies}
+          cc={cc}
+          showToast={_showToast}
+          onAdvance={() => selectSection("mdm")}
         />
       );
 

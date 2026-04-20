@@ -53,6 +53,7 @@ import EDProcedureNotes        from "@/pages/EDProcedureNotes";
 import MedicationReferencePage from "@/pages/MedicationReference";
 import ERPlanBuilder           from "@/pages/ERPlanBuilder";
 import ResultsViewer           from "@/pages/ResultsViewer";
+import ScoreHub                from "@/pages/ScoreHub";
 import ERxHub                  from "@/pages/ERx";
 
 // ── FIX #6: Toast helper at module scope — passed into useNPIState so the
@@ -546,6 +547,16 @@ export default function NewPatientInput() {
           cc={cc}
           medications={medications}
           pmhSelected={pmhSelected}
+        />
+      );
+
+      case "scores": return (
+        <ScoreHub
+          embedded={true}
+          demo={demo}
+          vitals={vitals}
+          pmhSelected={pmhSelected}
+          cc={cc}
         />
       );
 

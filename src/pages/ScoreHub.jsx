@@ -7,10 +7,9 @@
 //         Ottawa Ankle, Ottawa Knee, NEXUS, Canadian CT Head, GCS, ABCD2
 //
 // Constraints: no form, no localStorage, straight quotes only,
-//   single react import, border before borderTop/etc.
+//   single react import, no router dependency (onBack prop for standalone nav).
 
 import { useState, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 
 // ── Font injection ─────────────────────────────────────────────────────────────
 (() => {
@@ -717,11 +716,27 @@ function ScoreList({ activeId, onSelect, cat, onCat }) {
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────
+// Props:
+//   embedded  bool     — true when rendered inside NPI/encounter (hides standalone chrome)
+//   onBack    func     — called by standalone "Back to Hub" button; use window.history.back() if omitted
+//   demo      obj      — { age, sex } for auto-population
+//   vitals    obj      — { bp, hr, spo2, rr } for auto-population
+//   pmhSelected arr    — past medical history list
+//   cc        obj      — chief complaint
 export default function ScoreHub({
   embedded = false,
+  onBack,
   demo, vitals, pmhSelected, cc,
 }) {
-  const navigate  = useNavigate();
+  // ── no useNavigate — back nav handled via onBack prop or window.history ──
+  const handleBack = useCallback(() => {
+    if (onBack) {
+      onBack();
+    } else {
+      window.history.back();
+    }
+  }, [onBack]);
+
   const [activeId, setActiveId] = useState("heart");
   const [cat,      setCat]      = useState("all");
   const [fields,   setFields]   = useState(() => {
@@ -764,7 +779,7 @@ export default function ScoreHub({
         {/* Standalone header */}
         {!embedded && (
           <div style={{ padding:"18px 0 14px" }}>
-            <button onClick={() => navigate("/hub")}
+            <button onClick={handleBack}
               style={{ marginBottom:10, display:"inline-flex",
                 alignItems:"center", gap:7,
                 fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,

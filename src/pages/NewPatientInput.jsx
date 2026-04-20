@@ -17,7 +17,7 @@ import MedsTab              from "@/components/npi/MedsTab";
 import ROSTab               from "@/components/npi/ROSTab";
 import PETab                from "@/components/npi/PETab";
 import AutoCoderTab         from "@/components/npi/AutoCoderTab";
-import DDxEngine            from "@/pages/DDxEngine";
+import DDxEngine            from "@/components/npi/DDxEngine";
 import InlineHPITab         from "@/components/npi/InlineHPITab";
 import ClinicalNoteStudio   from "@/components/npi/ClinicalNoteStudio";
 import ReassessmentTab      from "@/components/npi/ReassessmentTab";
@@ -541,7 +541,7 @@ export default function NewPatientInput() {
         />
       );
 
-      case "ddx": return (
+      case "diff": return (
         <DDxEngine
           initialCC={cc.text}
           initialAge={demo.age}

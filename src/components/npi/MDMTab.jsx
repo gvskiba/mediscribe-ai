@@ -1,799 +1,768 @@
-import { useState, useEffect, useCallback } from "react";
-import {
-  MDM_COPA_LEVELS, MDM_DATA_CATS, MDM_RISK_LEVELS, EM_LEVEL_MAP,
-  computeEMLevel, computeDataLevel, buildMDMNarrative,
-} from "@/components/npi/npiData";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
-const RANK = { "":0, minimal:1, low:2, moderate:3, high:4 };
+// ─── MDM TAB ──────────────────────────────────────────────────────────────────
+// AI-powered Medical Decision Making documentation for Emergency Medicine.
+//
+// Sections (all collapsible):
+//   1. Orders Rationale  — labs/imaging/ECG entries with why-ordered + AI interpretation
+//   2. ED Course         — intervention timeline + response to treatment
+//   3. Impressions       — Initial & Final + AI evidence chip generation
+//   4. MDM Complexity    — AMA 2023 E&M checklist + AI complexity assessment
+//   5. MDM Note          — AI-generated full MDM narrative
+//
+// AI calls (all via base44.integrations.Core.InvokeLLM):
+//   generateRationale    — per-order rationale from CC + DDx context
+//   interpretResult      — clinical significance of entered result
+//   generateEvidence     — chart-evidence chips for initial / final impression
+//   assessComplexity     — AI E&M level + reasoning from encounter data
+//   buildMDMNote         — full MDM narrative for the chart
+//
+// Props:
+//   cc           { text, hpi }
+//   vitals       { bp, hr, spo2, temp, rr }
+//   patientAge   string
+//   patientSex   string
+//   pmhSelected  string[]
+//   medications  string[]
+//   allergies    string[]
+//   ddx          { diagnosis, likelihood, supporting, against }[]  (from InlineHPITab)
+//   onAdvance    () => void
+//   showToast    (msg, type) => void
+//
+// Constraints: no form, no localStorage, no router, no alert, no sonner direct
+//   import — uses showToast prop. straight quotes only. <1600 lines.
 
-function LevelPicker({ options, value, onChange }) {
-  return (
-    <div style={{ display:"flex", gap:6 }}>
-      {options.map(opt => {
-        const active = value === opt.key;
-        return (
-          <button key={opt.key}
-            onClick={() => onChange(active ? "" : opt.key)}
-            style={{ flex:1, padding:"7px 4px", borderRadius:8, cursor:"pointer",
-              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight: active ? 700 : 400,
-              border:`1px solid ${active ? opt.color+"88" : "rgba(42,77,114,0.35)"}`,
-              background: active ? opt.color+"1a" : "transparent",
-              color: active ? opt.color : "var(--npi-txt4)",
-              transition:"all .12s", textAlign:"center" }}>
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
+// ─── CSS ─────────────────────────────────────────────────────────────────────
+const MDM_CSS = `
+.mdm-root{display:flex;flex-direction:column;gap:0;height:100%;overflow-y:auto;padding:14px 14px 36px;background:transparent;}
+.mdm-root::-webkit-scrollbar{width:4px;}
+.mdm-root::-webkit-scrollbar-thumb{background:#1a3555;border-radius:2px;}
+
+.mdm-section{background:rgba(8,22,40,0.72);border:1px solid rgba(26,53,85,0.7);border-radius:10px;margin-bottom:10px;overflow:hidden;backdrop-filter:blur(8px);}
+.mdm-section-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(26,53,85,0.5);cursor:pointer;user-select:none;background:rgba(11,30,54,0.4);}
+.mdm-section-hdr:hover{background:rgba(14,37,68,0.6);}
+.mdm-section-icon{font-size:14px;width:22px;text-align:center;}
+.mdm-section-title{font-family:"Playfair Display",serif;font-size:13px;font-weight:600;color:#b8d0f0;flex:1;}
+.mdm-section-count{font-family:"JetBrains Mono",monospace;font-size:10px;color:#4a6a8a;padding:2px 7px;border:1px solid #1a3555;border-radius:20px;}
+.mdm-section-count.d{color:#00e5c0;border-color:#00e5c022;background:#00e5c010;}
+.mdm-section-chevron{color:#2e4a6a;font-size:11px;transition:transform 0.15s;}
+.mdm-section-chevron.open{transform:rotate(90deg);}
+.mdm-section-body{padding:14px;}
+
+.mdm-order-list{display:flex;flex-direction:column;gap:10px;}
+.mdm-order-card{background:rgba(11,30,54,0.5);border:1px solid rgba(26,53,85,0.6);border-radius:8px;overflow:hidden;}
+.mdm-order-card.abnl{border-color:rgba(255,107,107,0.3);}
+.mdm-order-top{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(26,53,85,0.4);}
+.mdm-type-badge{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:0.5px;}
+.mdm-type-badge.lab{background:#3b9eff18;color:#3b9eff;border:1px solid #3b9eff28;}
+.mdm-type-badge.imaging{background:#9b6dff18;color:#9b6dff;border:1px solid #9b6dff28;}
+.mdm-type-badge.ecg{background:#ff6b6b18;color:#ff6b6b;border:1px solid #ff6b6b28;}
+.mdm-type-badge.other{background:#f5c84218;color:#f5c842;border:1px solid #f5c84228;}
+.mdm-order-name{font-size:13px;font-weight:500;color:#e8f0fe;flex:1;}
+.mdm-abnl-tag{font-family:"JetBrains Mono",monospace;font-size:9px;color:#ff6b6b;border:1px solid #ff6b6b28;border-radius:3px;padding:1px 5px;}
+.mdm-del-btn{background:none;border:none;color:#2e4a6a;cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;line-height:1;}
+.mdm-del-btn:hover{color:#ff6b6b;background:#ff6b6b12;}
+
+.mdm-order-fields{padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+.mdm-fl{display:flex;flex-direction:column;gap:3px;}
+.mdm-lbl{font-size:10px;font-weight:600;color:#4a6a8a;text-transform:uppercase;letter-spacing:0.6px;display:flex;align-items:center;gap:6px;}
+.mdm-lbl .ai-tag{font-size:9px;color:#00e5c0;opacity:0.75;font-weight:500;text-transform:none;letter-spacing:0;}
+.mdm-ta{width:100%;background:rgba(5,15,30,0.6);border:1px solid rgba(26,53,85,0.5);border-radius:6px;color:#c8dff8;font-family:"DM Sans",sans-serif;font-size:12px;line-height:1.55;padding:7px 10px;resize:none;outline:none;transition:border-color 0.15s,box-shadow 0.15s;min-height:46px;}
+.mdm-ta:focus{border-color:rgba(59,158,255,0.4);box-shadow:0 0 0 2px rgba(59,158,255,0.08);}
+.mdm-ta.ai{border-color:rgba(0,229,192,0.3);color:#d8f8f0;}
+.mdm-in{width:100%;background:rgba(5,15,30,0.6);border:1px solid rgba(26,53,85,0.5);border-radius:6px;color:#c8dff8;font-family:"DM Sans",sans-serif;font-size:12px;padding:6px 10px;outline:none;transition:border-color 0.15s;}
+.mdm-in:focus{border-color:rgba(59,158,255,0.4);}
+
+.mdm-ai-btn{display:inline-flex;align-items:center;gap:5px;background:rgba(0,229,192,0.08);border:1px solid rgba(0,229,192,0.2);border-radius:5px;color:#00e5c0;font-family:"DM Sans",sans-serif;font-size:10px;font-weight:600;padding:4px 10px;cursor:pointer;transition:background 0.12s,border-color 0.12s;white-space:nowrap;}
+.mdm-ai-btn:hover:not(:disabled){background:rgba(0,229,192,0.16);border-color:rgba(0,229,192,0.35);}
+.mdm-ai-btn:disabled{opacity:0.45;cursor:not-allowed;}
+.mdm-ai-btn.busy{color:#8aaccc;border-color:rgba(138,172,204,0.2);background:rgba(138,172,204,0.06);}
+.mdm-dot{width:6px;height:6px;border-radius:50%;background:#00e5c0;animation:mdm-pulse 1.2s ease-in-out infinite;}
+@keyframes mdm-pulse{0%,100%{opacity:0.3;transform:scale(0.8);}50%{opacity:1;transform:scale(1.1);}}
+.mdm-spin{width:10px;height:10px;border:2px solid rgba(0,229,192,0.2);border-top-color:#00e5c0;border-radius:50%;animation:mdm-rot 0.7s linear infinite;flex-shrink:0;}
+@keyframes mdm-rot{to{transform:rotate(360deg);}}
+
+.mdm-add-bar{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.mdm-add-type-btn{background:rgba(11,30,54,0.7);border:1px dashed rgba(42,79,122,0.5);border-radius:6px;color:#4a6a8a;font-family:"DM Sans",sans-serif;font-size:11px;padding:5px 12px;cursor:pointer;transition:color 0.12s,border-color 0.12s,background 0.12s;display:flex;align-items:center;gap:5px;}
+.mdm-add-type-btn:hover{color:#8aaccc;border-color:#2a4f7a;background:rgba(14,37,68,0.5);}
+.mdm-add-row{display:flex;gap:6px;margin-top:8px;align-items:center;}
+.mdm-add-in{flex:1;background:rgba(5,15,30,0.7);border:1px solid #2a4f7a;border-radius:6px;color:#c8dff8;font-family:"DM Sans",sans-serif;font-size:12px;padding:6px 10px;outline:none;}
+.mdm-add-in:focus{border-color:#3b9eff88;}
+.mdm-add-btn{background:rgba(59,158,255,0.12);border:1px solid rgba(59,158,255,0.3);border-radius:6px;color:#3b9eff;font-size:11px;font-family:"DM Sans",sans-serif;font-weight:600;padding:6px 12px;cursor:pointer;}
+.mdm-add-btn:hover{background:rgba(59,158,255,0.2);}
+
+.mdm-timeline{display:flex;flex-direction:column;gap:0;position:relative;}
+.mdm-timeline::before{content:"";position:absolute;left:11px;top:20px;bottom:20px;width:1px;background:linear-gradient(to bottom,#1a3555,#1a3555 80%,transparent);}
+.mdm-tl-item{display:flex;gap:12px;align-items:flex-start;padding:0 0 14px;position:relative;}
+.mdm-tl-dot{width:22px;height:22px;border-radius:50%;background:rgba(14,37,68,0.9);border:1px solid #2a4f7a;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;z-index:1;margin-top:4px;}
+.mdm-tl-dot.good{border-color:#3dffa060;background:#3dffa010;}
+.mdm-tl-dot.partial{border-color:#f5c84260;background:#f5c84210;}
+.mdm-tl-dot.poor{border-color:#ff6b6b60;background:#ff6b6b10;}
+.mdm-tl-content{flex:1;}
+.mdm-tl-row1{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.mdm-tl-time{font-family:"JetBrains Mono",monospace;font-size:10px;color:#4a6a8a;white-space:nowrap;}
+.mdm-tl-action{font-size:12px;font-weight:500;color:#c8dff8;}
+.mdm-resp-badge{font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px;text-transform:uppercase;letter-spacing:0.4px;}
+.mdm-resp-badge.good{background:#3dffa014;color:#3dffa0;border:1px solid #3dffa028;}
+.mdm-resp-badge.partial{background:#f5c84214;color:#f5c842;border:1px solid #f5c84228;}
+.mdm-resp-badge.poor{background:#ff6b6b14;color:#ff6b6b;border:1px solid #ff6b6b28;}
+
+.mdm-imp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.mdm-imp-card{background:rgba(11,30,54,0.5);border-radius:8px;padding:12px;}
+.mdm-imp-card.ini{border:1px solid rgba(59,158,255,0.25);}
+.mdm-imp-card.fin{border:1px solid rgba(61,255,160,0.25);}
+.mdm-imp-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;}
+.mdm-imp-lbl.ini{color:#3b9eff88;}
+.mdm-imp-lbl.fin{color:#3dffa088;}
+.mdm-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+.mdm-chip{font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(155,109,255,0.1);border:1px solid rgba(155,109,255,0.2);color:#b899ff;cursor:pointer;}
+.mdm-chip:hover{background:rgba(255,107,107,0.1);border-color:rgba(255,107,107,0.22);color:#ff8a8a;}
+
+.mdm-cx-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
+.mdm-cx-col{background:rgba(11,30,54,0.4);border:1px solid rgba(26,53,85,0.6);border-radius:8px;padding:10px 12px;}
+.mdm-cx-col-ttl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#4a6a8a;margin-bottom:8px;}
+.mdm-cx-item{display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;cursor:pointer;}
+.mdm-cx-box{width:14px;height:14px;border-radius:3px;border:1px solid #2a4f7a;background:rgba(5,15,30,0.5);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:9px;transition:background 0.1s,border-color 0.1s;}
+.mdm-cx-box.on{background:#3b9eff22;border-color:#3b9eff60;color:#3b9eff;}
+.mdm-cx-lbl{font-size:11px;color:#8aaccc;line-height:1.4;}
+.mdm-level{display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(11,30,54,0.5);border-radius:8px;border:1px solid rgba(26,53,85,0.5);}
+.mdm-level-val{font-family:"Playfair Display",serif;font-size:26px;font-weight:700;min-width:60px;}
+.mdm-level-val.low{color:#3b9eff;}
+.mdm-level-val.mod{color:#f5c842;}
+.mdm-level-val.high{color:#ff9f43;}
+.mdm-level-val.strf{color:#ff6b6b;}
+.mdm-level-sub{font-size:11px;color:#8aaccc;}
+.mdm-level-reasoning{font-size:11px;color:#8aaccc;margin-top:4px;font-style:italic;}
+.mdm-level-code{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;color:#00e5c0;margin-left:auto;}
+
+.mdm-note-out{background:rgba(5,15,30,0.7);border:1px solid rgba(61,255,160,0.2);border-radius:8px;padding:14px;font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1.75;color:#b8e8d8;white-space:pre-wrap;min-height:80px;}
+.mdm-note-ph{color:#2e4a6a;font-family:"DM Sans",sans-serif;font-size:12px;font-style:italic;}
+.mdm-note-acts{display:flex;gap:8px;margin-top:10px;}
+
+.mdm-ghost{background:rgba(11,30,54,0.6);border:1px solid rgba(42,79,122,0.5);border-radius:6px;color:#8aaccc;font-family:"DM Sans",sans-serif;font-size:11px;font-weight:500;padding:5px 12px;cursor:pointer;transition:color 0.12s,border-color 0.12s;}
+.mdm-ghost:hover{color:#c8dff8;border-color:#2a4f7a;}
+.mdm-primary{background:rgba(0,229,192,0.1);border:1px solid rgba(0,229,192,0.28);border-radius:6px;color:#00e5c0;font-family:"DM Sans",sans-serif;font-size:11px;font-weight:700;padding:5px 14px;cursor:pointer;transition:background 0.12s;}
+.mdm-primary:hover:not(:disabled){background:rgba(0,229,192,0.18);}
+.mdm-primary:disabled{opacity:0.4;cursor:not-allowed;}
+.mdm-advance-row{display:flex;justify-content:flex-end;margin-top:4px;}
+.mdm-advance{background:rgba(59,158,255,0.12);border:1px solid rgba(59,158,255,0.3);border-radius:6px;color:#3b9eff;font-family:"DM Sans",sans-serif;font-size:11px;font-weight:700;padding:6px 16px;cursor:pointer;transition:background 0.12s;}
+.mdm-advance:hover{background:rgba(59,158,255,0.2);}
+`;
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const ORDER_TYPES = [
+  { key: "lab",     label: "Lab",     icon: "🔬" },
+  { key: "imaging", label: "Imaging", icon: "🩻" },
+  { key: "ecg",     label: "ECG",     icon: "📈" },
+  { key: "other",   label: "Other",   icon: "📋" },
+];
+
+const DX_OPTS = [
+  { id: "undiag",       label: "Undiagnosed new problem, uncertain prognosis" },
+  { id: "chronic-exac", label: "Chronic illness with exacerbation" },
+  { id: "est-worse",    label: "Established problem — worsening" },
+  { id: "new-workup",   label: "New problem — additional workup planned" },
+  { id: "new-no-wk",    label: "New problem — no workup planned" },
+  { id: "est-stable",   label: "Established problem — stable / improving" },
+];
+
+const DATA_OPTS = [
+  { id: "lab-review",   label: "Review of external labs" },
+  { id: "img-review",   label: "Independent interpretation of imaging" },
+  { id: "ecg-review",   label: "Independent ECG interpretation" },
+  { id: "rec-review",   label: "Review of external records or history" },
+  { id: "ind-hist",     label: "Independent history from 3rd party" },
+  { id: "discuss",      label: "Discussion with treating physician" },
+];
+
+const RISK_OPTS = [
+  { id: "threat",     label: "Life-threatening or severely debilitating condition" },
+  { id: "proc-major", label: "Major surgery or procedure planned" },
+  { id: "hospital",   label: "Decision regarding hospitalization" },
+  { id: "drug-high",  label: "Drug therapy requiring intensive monitoring" },
+  { id: "dx-new-tx",  label: "New diagnosis with possible treatment" },
+  { id: "rx-mgmt",    label: "Prescription drug management" },
+  { id: "otc-rx",     label: "OTC drugs or minor prescription risk" },
+];
+
+const RESP_OPTS = [
+  { key: "good",    label: "Good" },
+  { key: "partial", label: "Partial" },
+  { key: "poor",    label: "No response" },
+  { key: "na",      label: "N/A" },
+];
+
+// ─── SCHEMAS ─────────────────────────────────────────────────────────────────
+const S_RATIONALE = {
+  type: "object",
+  properties: { rationale: { type: "string" } },
+  required: ["rationale"],
+};
+const S_INTERP = {
+  type: "object",
+  properties: {
+    interpretation: { type: "string" },
+    abnormal: { type: "boolean" },
+  },
+  required: ["interpretation", "abnormal"],
+};
+const S_EVIDENCE = {
+  type: "object",
+  properties: { evidence: { type: "array", items: { type: "string" } } },
+  required: ["evidence"],
+};
+const S_COMPLEXITY = {
+  type: "object",
+  properties: {
+    level:     { type: "string", enum: ["low", "moderate", "high"] },
+    cpt:       { type: "string" },
+    reasoning: { type: "string" },
+  },
+  required: ["level", "cpt", "reasoning"],
+};
+const S_NOTE = {
+  type: "object",
+  properties: {
+    note:       { type: "string" },
+    cpt:        { type: "string" },
+    complexity: { type: "string", enum: ["low", "moderate", "high"] },
+  },
+  required: ["note"],
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function calcLevel(dx, data, risk) {
+  const ds = dx.has("undiag") || dx.has("chronic-exac") || dx.has("est-worse") ? 3
+    : dx.has("new-workup") ? 2
+    : dx.size > 0 ? 1 : 0;
+  const rs = risk.has("threat") || risk.has("proc-major") || risk.has("hospital") ? 3
+    : risk.has("drug-high") || risk.has("rx-mgmt") || risk.has("dx-new-tx") ? 2
+    : risk.size > 0 ? 1 : 0;
+  const dts = data.size >= 3 ? 3 : data.size >= 1 ? 2 : 0;
+  const score = Math.min(ds, Math.max(rs, dts));
+  if (score >= 3) return { label: "High Complexity",          code: "99285", css: "strf" };
+  if (score === 2) return { label: "Moderate Complexity",     code: "99284", css: "high" };
+  if (score === 1) return { label: "Low Complexity",          code: "99283", css: "mod"  };
+  return               { label: "Straightforward",            code: "99282", css: "low"  };
 }
 
-function SectionCard({ title, badge, badgeColor, children }) {
+function buildCtx(cc, orders, course, imps, dx, data, risk, age, sex, vitals, pmh) {
+  const v = vitals || {};
+  const vl = [v.bp && "BP " + v.bp, v.hr && "HR " + v.hr, v.spo2 && "SpO2 " + v.spo2 + "%", v.temp && "T " + v.temp].filter(Boolean).join(" | ");
+  const ol = orders.map(o => o.type.toUpperCase() + " " + o.name + ": rationale=" + (o.rationale || "none") + " result=" + (o.result || "pending") + " interp=" + (o.interpretation || "none")).join("\n");
+  const cl = course.map(c => (c.time || "?") + " — " + c.action + " (resp:" + (c.response || "na") + ") " + (c.notes || "")).join("\n");
+  return [
+    "Patient: " + (age || "?") + " yo " + (sex || ""),
+    "CC: " + (cc?.text || "Not specified"),
+    vl && "Vitals: " + vl,
+    "PMH: " + ((pmh || []).join(", ") || "None"),
+    "\nOrders:\n" + (ol || "None"),
+    "\nED Course:\n" + (cl || "None"),
+    "Initial Impression: " + (imps.initial || "Not documented"),
+    "Final Impression: " + (imps.final || "Not documented"),
+    "Dx complexity: " + ([...dx].join(", ") || "none"),
+    "Data reviewed: " + ([...data].join(", ") || "none"),
+    "Risk factors: " + ([...risk].join(", ") || "none"),
+  ].filter(Boolean).join("\n");
+}
+
+// ─── ORDER CARD ───────────────────────────────────────────────────────────────
+function OrderCard({ order, idx, cc, ddx, age, sex, vitals, onUpdate, onRemove, showToast }) {
+  const [ratBusy, setRatBusy] = useState(false);
+  const [intBusy, setIntBusy] = useState(false);
+
+  const genRationale = useCallback(async () => {
+    if (ratBusy) return;
+    setRatBusy(true);
+    try {
+      const ddxList = (ddx || []).slice(0, 4).map(d => d.diagnosis || d.name || d).join(", ");
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: "You are an emergency physician. CC: \"" + (cc?.text || "unknown") + "\". Top differentials: [" + (ddxList || "unspecified") + "]. Write a concise 1-2 sentence clinical rationale for ordering: " + order.type.toUpperCase() + " — " + order.name + ". Be specific to the CC and differentials. Use clinical language.",
+        response_json_schema: S_RATIONALE,
+      });
+      const p = typeof res === "object" ? res : JSON.parse(String(res).replace(/```json|```/g, "").trim());
+      onUpdate(idx, "rationale", p.rationale || "");
+      onUpdate(idx, "rationaleAI", true);
+    } catch (_) {
+      showToast("Could not generate rationale.", "error");
+    } finally {
+      setRatBusy(false);
+    }
+  }, [ratBusy, cc, ddx, order, idx, onUpdate, showToast]);
+
+  const genInterp = useCallback(async () => {
+    if (intBusy || !order.result) return;
+    setIntBusy(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: "You are an emergency physician. Interpret this result in 2-3 sentences. Note abnormal findings and clinical significance. Be direct and clinical.\nOrder: " + order.type.toUpperCase() + " — " + order.name + "\nResult: " + order.result + "\nPatient: " + (age || "?") + " yo " + (sex || "") + ", CC: " + (cc?.text || "unknown"),
+        response_json_schema: S_INTERP,
+      });
+      const p = typeof res === "object" ? res : JSON.parse(String(res).replace(/```json|```/g, "").trim());
+      onUpdate(idx, "interpretation", p.interpretation || "");
+      onUpdate(idx, "interpAI", true);
+      onUpdate(idx, "abnormal", p.abnormal || false);
+    } catch (_) {
+      showToast("Could not interpret result.", "error");
+    } finally {
+      setIntBusy(false);
+    }
+  }, [intBusy, order, cc, age, sex, idx, onUpdate, showToast]);
+
   return (
-    <div style={{ padding:"14px 16px", borderRadius:11,
-      background:"rgba(14,37,68,0.6)", border:"1px solid rgba(26,53,85,0.4)",
-      borderTop:`2px solid ${badgeColor||"rgba(59,158,255,0.5)"}` }}>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1.5,
-          textTransform:"uppercase", color: badgeColor||"#3b9eff" }}>
-          {title}
-        </span>
-        {badge && (
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, letterSpacing:.5,
-            padding:"1px 6px", borderRadius:4,
-            background:`${badgeColor||"#3b9eff"}18`,
-            border:`1px solid ${badgeColor||"#3b9eff"}44`,
-            color: badgeColor||"#3b9eff" }}>
-            {badge}
-          </span>
-        )}
+    <div className={"mdm-order-card" + (order.abnormal ? " abnl" : "")}>
+      <div className="mdm-order-top">
+        <span className={"mdm-type-badge " + order.type}>{order.type}</span>
+        <span className="mdm-order-name">{order.name}</span>
+        {order.abnormal && <span className="mdm-abnl-tag">ABNL</span>}
+        <button className="mdm-del-btn" onClick={() => onRemove(idx)}>✕</button>
       </div>
-      {children}
+      <div className="mdm-order-fields">
+        <div className="mdm-fl">
+          <div className="mdm-lbl">Why Ordered {order.rationaleAI && <span className="ai-tag">AI</span>}</div>
+          <textarea className={"mdm-ta" + (order.rationaleAI ? " ai" : "")} rows={2}
+            placeholder="Clinical rationale for ordering..."
+            value={order.rationale || ""} onChange={e => onUpdate(idx, "rationale", e.target.value)} />
+          <button className={"mdm-ai-btn" + (ratBusy ? " busy" : "")} onClick={genRationale} disabled={ratBusy}>
+            {ratBusy ? <><div className="mdm-spin" />Generating...</> : <><div className="mdm-dot" />Generate Rationale</>}
+          </button>
+        </div>
+        <div className="mdm-fl">
+          <div className="mdm-lbl">Result / Findings</div>
+          <textarea className="mdm-ta" rows={2}
+            placeholder="Enter result or findings..."
+            value={order.result || ""} onChange={e => onUpdate(idx, "result", e.target.value)} />
+        </div>
+        <div className="mdm-fl">
+          <div className="mdm-lbl">Clinical Interpretation {order.interpAI && <span className="ai-tag">AI</span>}</div>
+          <textarea className={"mdm-ta" + (order.interpAI ? " ai" : "")} rows={2}
+            placeholder="Clinical significance of result..."
+            value={order.interpretation || ""} onChange={e => onUpdate(idx, "interpretation", e.target.value)} />
+          <button className={"mdm-ai-btn" + (intBusy ? " busy" : "")} onClick={genInterp}
+            disabled={intBusy || !order.result} title={!order.result ? "Enter a result first" : ""}>
+            {intBusy ? <><div className="mdm-spin" />Interpreting...</> : <><div className="mdm-dot" />Interpret Result</>}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-export default function MDMBuilderTab({
-  demo, cc, vitals, medications, pmhSelected, consults,
-  sdoh, disposition, esiLevel, isarState,
-  mdmState, setMdmState,
-  mdmDataElements, setMdmDataElements,
-  onToast,
-  onAdvance,
+// ─── MAIN EXPORT ─────────────────────────────────────────────────────────────
+export default function MDMTab({
+  cc, vitals, patientAge, patientSex, pmhSelected,
+  medications, allergies, ddx,
+  onAdvance, showToast,
 }) {
-  const [copied,    setCopied]    = useState(false);
-  const [quickMode, setQuickMode] = useState(true);
+  const [open, setOpen] = useState({ orders: true, course: true, impressions: true, complexity: false, note: false });
+  const tog = useCallback(k => setOpen(p => ({ ...p, [k]: !p[k] })), []);
 
-  const patientName = [demo?.firstName, demo?.lastName].filter(Boolean).join(" ") || "Patient";
-  const patientCC   = cc?.text || "";
+  // orders
+  const [orders, setOrders]       = useState([]);
+  const [addType, setAddType]     = useState(null);
+  const [addName, setAddName]     = useState("");
+  const addRef                    = useRef(null);
 
-  // ── Derived values ─────────────────────────────────────────────────────────
-  const autoDataLevel = computeDataLevel(
-    mdmState.dataChecks?.cat1 || [],
-    mdmState.dataChecks?.cat2 || mdmDataElements.length > 0,
-    mdmState.dataChecks?.cat3 || false,
-  );
-  // Sync auto-computed dataLevel back into mdmState whenever inputs change
-  useEffect(() => {
-    if (autoDataLevel !== mdmState.dataLevel) {
-      setMdmState(p => ({ ...p, dataLevel: autoDataLevel }));
+  useEffect(() => { if (addType && addRef.current) setTimeout(() => addRef.current.focus(), 40); }, [addType]);
+
+  const updateOrder = useCallback((i, f, v) => setOrders(p => p.map((o, j) => j === i ? { ...o, [f]: v } : o)), []);
+  const removeOrder = useCallback(i => setOrders(p => p.filter((_, j) => j !== i)), []);
+  const confirmAdd = useCallback(() => {
+    if (!addType || !addName.trim()) return;
+    setOrders(p => [...p, { type: addType, name: addName.trim(), rationale: "", result: "", interpretation: "", rationaleAI: false, interpAI: false, abnormal: false }]);
+    setAddType(null); setAddName("");
+  }, [addType, addName]);
+
+  // ED course
+  const [course, setCourse]       = useState([]);
+  const [addCourse, setAddCourse] = useState(false);
+  const [nAction, setNAction]     = useState("");
+  const [nTime, setNTime]         = useState("");
+  const [nResp, setNResp]         = useState("good");
+  const [nNotes, setNNotes]       = useState("");
+  const confirmCourse = useCallback(() => {
+    if (!nAction.trim()) return;
+    setCourse(p => [...p, { action: nAction.trim(), time: nTime.trim(), response: nResp, notes: nNotes.trim() }]);
+    setNAction(""); setNTime(""); setNResp("good"); setNNotes(""); setAddCourse(false);
+  }, [nAction, nTime, nResp, nNotes]);
+  const removeCourse = useCallback(i => setCourse(p => p.filter((_, j) => j !== i)), []);
+
+  // impressions
+  const [imps, setImps]               = useState({ initial: "", final: "" });
+  const [iniEv, setIniEv]             = useState([]);
+  const [finEv, setFinEv]             = useState([]);
+  const [evBusy, setEvBusy]           = useState({ initial: false, final: false });
+
+  const genEvidence = useCallback(async (which) => {
+    const imp = which === "initial" ? imps.initial : imps.final;
+    if (!imp || evBusy[which]) return;
+    setEvBusy(p => ({ ...p, [which]: true }));
+    try {
+      const ctx = buildCtx(cc, orders, course, imps, dxChecks, dataChecks, riskChecks, patientAge, patientSex, vitals, pmhSelected);
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: "You are an emergency physician. List 4-6 specific evidence items (5-10 words each) from this chart that support the " + which + " impression: \"" + imp + "\". Cite specific findings: vitals, symptoms, labs, exam, treatment response.\n\nChart:\n" + ctx,
+        response_json_schema: S_EVIDENCE,
+      });
+      const p = typeof res === "object" ? res : JSON.parse(String(res).replace(/```json|```/g, "").trim());
+      if (which === "initial") setIniEv(p.evidence || []);
+      else setFinEv(p.evidence || []);
+    } catch (_) {
+      showToast("Could not generate evidence.", "error");
+    } finally {
+      setEvBusy(p => ({ ...p, [which]: false }));
     }
-  }, [autoDataLevel]); // eslint-disable-line
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imps, evBusy, cc, orders, course, patientAge, patientSex, vitals, pmhSelected, showToast]);
 
-  const emRank  = computeEMLevel(mdmState.copa, mdmState.dataLevel, mdmState.risk);
-  const emLevel = EM_LEVEL_MAP[emRank];
+  // complexity
+  const [dxChecks, setDxChecks]     = useState(new Set());
+  const [dataChecks, setDataChecks] = useState(new Set());
+  const [riskChecks, setRiskChecks] = useState(new Set());
+  const [cxBusy, setCxBusy]         = useState(false);
+  const [cxAI, setCxAI]             = useState(null);
 
-  // ── SDOH / PHQ-2 / AUDIT-C detection ──────────────────────────────────────
-  const sdohDomainPositive = Object.entries(sdoh||{})
-    .filter(([k]) => !k.startsWith("phq2") && !k.startsWith("auditc") && k !== "tobacco")
-    .some(([,v]) => v === "2");
-  const phq2Score    = parseInt(sdoh?.phq2q1||"0") + parseInt(sdoh?.phq2q2||"0");
-  const phq2Positive = Boolean(sdoh?.phq2q1 && sdoh?.phq2q2 && phq2Score >= 3);
-  const auditcScore   = parseInt(sdoh?.auditcq1||"0") + parseInt(sdoh?.auditcq2||"0") + parseInt(sdoh?.auditcq3||"0");
-  const auditcDone    = Boolean(sdoh?.auditcq1 !== "" && sdoh?.auditcq2 !== "" && sdoh?.auditcq3 !== "" && sdoh?.auditcq1 !== undefined);
-  const sexLower      = (demo?.sex||"").toLowerCase();
-  const auditcThresh  = sexLower === "female" || sexLower === "f" ? 3 : 4;
-  const auditcPositive = auditcDone && auditcScore >= auditcThresh;
-  const esiNum        = parseInt(esiLevel)||0;
+  const togCheck = useCallback((setter, id) => {
+    setter(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }, []);
 
-  // ── ISAR-6 detection ───────────────────────────────────────────────────────
-  const isarScore = isarState
-    ? (isarState.q1===true?1:0)+(isarState.q2===true?1:0)+
-      (isarState.q3===false?1:0)+(isarState.q4===true?1:0)+
-      (isarState.q5===true?1:0)+(isarState.q6===true?1:0)
-    : 0;
-  const isarComplete  = isarState && Object.values(isarState).every(v => v !== null);
-  const isarHighRisk  = isarComplete && isarScore >= 2;
-
-  // ── Auto-populate from encounter data ──────────────────────────────────────
-  const autoPopulate = useCallback(() => {
-    const pmhCount     = Object.values(pmhSelected||{}).filter(Boolean).length;
-    const consultsDone = (consults||[]).filter(c => c.status === "completed");
-
-    // COPA
-    let copa = "low", copaRationale = "";
-    if (esiNum <= 2) {
-      copa = "high";
-      copaRationale = `ESI ${esiNum} — acute condition posing threat to life or bodily function.`;
-    } else if (disposition === "admit") {
-      copa = "high";
-      copaRationale = "Decision for hospital admission — high-acuity condition requiring inpatient-level care.";
-    } else if (pmhCount >= 2 || consultsDone.length > 0) {
-      copa = "moderate";
-      copaRationale = consultsDone.length > 0
-        ? `Undiagnosed new problem with uncertain prognosis; specialist consultation obtained (${consultsDone.map(c=>c.service).join(", ")}).`
-        : `${pmhCount} chronic conditions on problem list — evaluated for exacerbation or progression.`;
-    } else if (pmhCount === 1) {
-      copa = "low";
-      copaRationale = "1 stable chronic condition managed in this encounter.";
-    } else {
-      copa = "low";
-      copaRationale = patientCC ? `Acute uncomplicated illness/injury: ${patientCC}.` : "Acute uncomplicated illness/injury.";
+  const assessCx = useCallback(async () => {
+    if (cxBusy) return;
+    setCxBusy(true);
+    try {
+      const ctx = buildCtx(cc, orders, course, imps, dxChecks, dataChecks, riskChecks, patientAge, patientSex, vitals, pmhSelected);
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: "You are a medical coding expert in emergency medicine (AMA 2023 E&M). Determine the MDM complexity level (low/moderate/high) and appropriate CPT code (99282-99285). Provide 1-2 sentence reasoning.\n\nEncounter:\n" + ctx,
+        response_json_schema: S_COMPLEXITY,
+      });
+      const p = typeof res === "object" ? res : JSON.parse(String(res).replace(/```json|```/g, "").trim());
+      setCxAI(p);
+    } catch (_) {
+      showToast("Could not assess complexity.", "error");
+    } finally {
+      setCxBusy(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cxBusy, cc, orders, course, imps, dxChecks, dataChecks, riskChecks, patientAge, patientSex, vitals, pmhSelected, showToast]);
 
-    // Data — Category 1 pre-checks
-    const cat1 = [];
-    if (vitals?.bp || vitals?.hr) cat1.push("orderLab");      // labs typically ordered with vital workup
-    if (cc?.text)                  cat1.push("orderRad");      // imaging typically ordered for active CC
-    if ((consults||[]).length > 0) cat1.push("extRecords");    // consult implies record review
-    const cat3 = consultsDone.length > 0;
+  // note
+  const [noteBusy, setNoteBusy] = useState(false);
+  const [noteOut, setNoteOut]   = useState("");
 
-    // Risk
-    let risk = "low", riskRationale = "";
-    if (esiNum <= 2 || disposition === "admit") {
-      risk = "high";
-      riskRationale = disposition === "admit"
-        ? "Decision for hospital admission — high-risk condition requiring inpatient-level care."
-        : `ESI ${esiNum} — life-threatening condition requiring immediate intervention.`;
-    } else if (sdohDomainPositive) {
-      risk = "moderate";
-      riskRationale = "Social determinants of health affecting management — positive SDOH screen documented (AMA CPT 2023 Table of Risk, Moderate complexity).";
-    } else if (phq2Positive) {
-      risk = "moderate";
-      riskRationale = `Mental health treatment — positive PHQ-2 screen (score ${phq2Score}/6); behavioral health management affecting medical decision making (AMA CPT 2023 Table of Risk, Moderate).`;
-    } else if (auditcPositive) {
-      risk = "moderate";
-      riskRationale = `Unhealthy alcohol use — positive AUDIT-C screen (score ${auditcScore}/12, threshold \u2265${auditcThresh}); substance use management affecting medical decision making (AMA CPT 2023 Table of Risk, Moderate).`;
-    } else if (isarHighRisk) {
-      risk = "moderate";
-      riskRationale = `Geriatric fall risk — ISAR score ${isarScore}/6 (\u22652 = high risk); anticipated functional decline and complex disposition affecting management (AMA CPT 2023 Table of Risk, Moderate).`;
-    } else if ((medications||[]).length > 0) {
-      risk = "low";
-      riskRationale = "Prescription drug management — new, adjusted, or continued medications.";
-    } else {
-      risk = "minimal";
-      riskRationale = "Self-limited problem; over-the-counter medications or self-care instructions only.";
+  const buildNote = useCallback(async () => {
+    if (noteBusy) return;
+    setNoteBusy(true);
+    setOpen(p => ({ ...p, note: true }));
+    try {
+      const ctx = buildCtx(cc, orders, course, imps, dxChecks, dataChecks, riskChecks, patientAge, patientSex, vitals, pmhSelected);
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: "You are an emergency physician completing a chart note. Write a complete, professional MDM section for the ED chart based on the data below. Include: (1) Diagnostic Workup — what was ordered and why, (2) Data Interpretation — key findings, (3) ED Course and Treatment Response, (4) Clinical Impressions initial and final, (5) MDM Complexity justification. Use standard clinical documentation language. Do not invent findings not present in the data.\n\nEncounter data:\n" + ctx,
+        response_json_schema: S_NOTE,
+      });
+      const p = typeof res === "object" ? res : JSON.parse(String(res).replace(/```json|```/g, "").trim());
+      setNoteOut(p.note || "");
+      if (p.cpt && !cxAI) setCxAI({ cpt: p.cpt, level: p.complexity || "moderate", reasoning: "Derived from MDM note generation." });
+    } catch (_) {
+      showToast("Could not generate MDM note.", "error");
+    } finally {
+      setNoteBusy(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteBusy, cc, orders, course, imps, dxChecks, dataChecks, riskChecks, patientAge, patientSex, vitals, pmhSelected, cxAI, showToast]);
 
-    setMdmState(p => ({
-      ...p, copa, copaRationale,
-      dataChecks: { cat1, cat2:false, cat3 },
-      risk, riskRationale, sdohRiskAccepted: sdohDomainPositive,
-    }));
-    onToast?.("MDM pre-populated from encounter data — review and adjust as needed.", "success");
-  }, [pmhSelected, esiNum, esiLevel, disposition, consults, vitals, cc, medications, sdohDomainPositive, phq2Positive, phq2Score, auditcPositive, auditcScore, auditcThresh, isarHighRisk, isarScore, patientCC, setMdmState]);
+  // computed level
+  const localLevel = calcLevel(dxChecks, dataChecks, riskChecks);
+  const aiLevel = cxAI ? {
+    label: cxAI.level === "high" ? "High Complexity" : cxAI.level === "moderate" ? "Moderate Complexity" : "Low Complexity",
+    code: cxAI.cpt,
+    css: cxAI.level === "high" ? "strf" : cxAI.level === "moderate" ? "high" : "mod",
+    reasoning: cxAI.reasoning,
+  } : null;
+  const lvl = aiLevel || localLevel;
 
-  // ── Narrative ──────────────────────────────────────────────────────────────
-  const handleBuildNarrative = () => {
-    const text = buildMDMNarrative(
-      { ...mdmState, dataLevel: autoDataLevel },
-      mdmDataElements, patientName, patientCC
-    );
-    setMdmState(p => ({ ...p, narrative: text }));
-  };
-
-  const handleCopy = async () => {
-    const text = mdmState.narrative || buildMDMNarrative(
-      { ...mdmState, dataLevel: autoDataLevel }, mdmDataElements, patientName, patientCC
-    );
-    try { await navigator.clipboard.writeText(text); } catch(_) {}
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
-
-  const toggleCat1 = (key) => {
-    setMdmState(p => {
-      const current = p.dataChecks?.cat1 || [];
-      const next = current.includes(key) ? current.filter(k => k!==key) : [...current, key];
-      return { ...p, dataChecks: { ...p.dataChecks, cat1: next } };
-    });
-  };
-
-  const rankColor = (rank) => {
-    if (rank >= 4) return "#ff6b6b";
-    if (rank >= 3) return "#f5c842";
-    if (rank >= 2) return "#00e5c0";
-    if (rank >= 1) return "#8892a4";
-    return "rgba(42,77,114,0.5)";
-  };
-
-  // ─── JSX ──────────────────────────────────────────────────────────────────
+  // ── render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:14, paddingBottom:32 }}>
+    <div className="mdm-root">
+      <style>{MDM_CSS}</style>
 
-      {/* ── Header ── */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-        flexWrap:"wrap", gap:10 }}>
-        <div>
-          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:700,
-            color:"var(--npi-txt)" }}>
-            MDM Builder
-          </div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--npi-txt4)", marginTop:2 }}>
-            AMA CPT 2023 — Medical Decision Making &middot; 2-of-3 column rule
-          </div>
+      {/* ── 1. ORDERS ──────────────────────────────────────────────────── */}
+      <div className="mdm-section">
+        <div className="mdm-section-hdr" onClick={() => tog("orders")}>
+          <span className="mdm-section-icon">🔬</span>
+          <span className="mdm-section-title">Diagnostic Orders</span>
+          <span className={"mdm-section-count" + (orders.length ? " d" : "")}>{orders.length}</span>
+          <span className={"mdm-section-chevron" + (open.orders ? " open" : "")}>▶</span>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          {emLevel && (
-            <div style={{ padding:"6px 14px", borderRadius:8,
-              background:`${emLevel.color}15`,
-              border:`1px solid ${emLevel.color}44` }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1.5,
-                textTransform:"uppercase", color:emLevel.color, marginBottom:1 }}>
-                E/M Level
-              </div>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:14, fontWeight:700,
-                color:emLevel.color }}>
-                {emLevel.ed}
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:400,
-                  opacity:.7, marginLeft:5 }}>(ED)</span>
-              </div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9, color:emLevel.color, opacity:.75, marginTop:1 }}>
-                {emLevel.outpatient}/{emLevel.established} office &middot; {emLevel.label}
-              </div>
-            </div>
-          )}
-          <button onClick={autoPopulate}
-            style={{ padding:"8px 16px", borderRadius:9, cursor:"pointer",
-              border:"1px solid rgba(59,158,255,0.4)", background:"rgba(59,158,255,0.07)",
-              fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
-              color:"#3b9eff", display:"flex", alignItems:"center", gap:6 }}>
-            &#x26A1; Auto-populate
-          </button>
-          <button onClick={() => setQuickMode(q => !q)}
-            style={{ padding:"8px 14px", borderRadius:9, cursor:"pointer",
-              border:`1px solid ${quickMode ? "rgba(0,229,192,0.35)" : "rgba(42,77,114,0.4)"}`,
-              background: quickMode ? "rgba(0,229,192,0.07)" : "transparent",
-              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
-              color: quickMode ? "var(--npi-teal)" : "var(--npi-txt4)" }}>
-            {quickMode ? "⚡ Quick" : "⊞ Full grid"}
-          </button>
-        </div>
-      </div>
-
-      {/* ── E/M level indicator bar ── */}
-      <div style={{ display:"flex", gap:3, height:5, borderRadius:3, overflow:"hidden" }}>
-        {[1,2,3,4].map(r => {
-          const cols  = [RANK[mdmState.copa]||0, RANK[mdmState.dataLevel]||0, RANK[mdmState.risk]||0];
-          const meetsTwo = cols.filter(v => v >= r).length >= 2;
-          return (
-            <div key={r} style={{ flex:1, borderRadius:2,
-              background: meetsTwo ? rankColor(r) : "rgba(42,77,114,0.25)",
-              transition:"background .2s" }} />
-          );
-        })}
-      </div>
-      {emLevel && (
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:emLevel.color,
-          letterSpacing:1, textAlign:"center", marginTop:-8 }}>
-          {emLevel.label} \u00b7 ED: {emLevel.ed} \u00b7 Office: {emLevel.outpatient} (new) / {emLevel.established} (est.)
-        </div>
-      )}
-
-      {/* ── Critical care advisory ── */}
-      {esiNum <= 2 && (
-        <div style={{ padding:"10px 14px", borderRadius:9,
-          background:"rgba(255,107,107,0.07)", border:"1px solid rgba(255,107,107,0.28)",
-          borderLeft:"3px solid #ff6b6b" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
-            <span style={{ fontSize:13 }}>&#x26A1;</span>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1.5,
-              textTransform:"uppercase", color:"#ff8a8a" }}>
-              ESI {esiNum} \u2014 Consider Critical Care Codes
-            </span>
-          </div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#ffb3b3", lineHeight:1.6 }}>
-            If high-complexity MDM was provided to a critically ill patient with a life-threatening condition,
-            consider <strong>99291</strong> (first 30\u201374 min) and <strong>99292</strong> (each additional 30 min)
-            instead of or in addition to the ED E/M code. Critical care requires documented time and
-            qualifies when the patient has a critical illness impairing one or more organ systems.
-          </div>
-        </div>
-      )}
-
-      {/* ── Quick MDM ─────────────────────────────────────────────────────── */}
-      {quickMode && (
-        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-          <div style={{ padding:"14px 16px", borderRadius:11,
-            background:"rgba(14,37,68,0.6)", border:"1px solid rgba(26,53,85,0.4)",
-            borderTop:"2px solid rgba(0,229,192,0.45)" }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1.5,
-              textTransform:"uppercase", color:"var(--npi-teal)", marginBottom:12 }}>
-              Select E/M Level — sets COPA + Risk together
-            </div>
-
-            {/* Level selector */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginBottom:12 }}>
-              {MDM_COPA_LEVELS.map(opt => {
-                const active = mdmState.copa === opt.key && mdmState.risk === opt.key;
-                const riskOpt = MDM_RISK_LEVELS.find(l => l.key === opt.key);
-                return (
-                  <button key={opt.key}
-                    onClick={() => {
-                      setMdmState(p => ({
-                        ...p,
-                        copa: opt.key, risk: opt.key,
-                        copaRationale: p.copaRationale || opt.desc,
-                        riskRationale: p.riskRationale || riskOpt?.examples || "",
-                      }));
-                      if (opt.key === "high") setQuickMode(false);
-                    }}
-                    style={{ padding:"10px 6px", borderRadius:9, cursor:"pointer", textAlign:"center",
-                      border:`2px solid ${active ? opt.color : "rgba(42,77,114,0.35)"}`,
-                      background: active ? opt.color+"1a" : "rgba(8,22,40,0.4)",
-                      transition:"all .13s" }}>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700,
-                      color: active ? opt.color : "var(--npi-txt3)" }}>{opt.label}</div>
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                      color: active ? opt.color : "var(--npi-txt4)", marginTop:3, opacity:.85 }}>
-                      {opt.emCodes}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Selected level description */}
-            {mdmState.copa && mdmState.copa === mdmState.risk && (
-              <div style={{ marginBottom:10, padding:"7px 10px", borderRadius:7,
-                background:"rgba(8,22,40,0.5)", border:"1px solid rgba(26,53,85,0.4)" }}>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                  color:"var(--npi-txt4)", lineHeight:1.5 }}>
-                  {MDM_COPA_LEVELS.find(l=>l.key===mdmState.copa)?.desc}
-                </div>
+        {open.orders && (
+          <div className="mdm-section-body">
+            {!orders.length && (
+              <div style={{ color: "#2e4a6a", fontSize: 12, fontStyle: "italic", marginBottom: 10 }}>
+                No orders added. Add labs, imaging, ECG, or other orders below.
               </div>
             )}
-
-            {/* Clinical linkage chips — same as full grid */}
-            {sdohDomainPositive && !mdmState.sdohRiskAccepted && (
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                marginBottom:8, padding:"7px 11px", borderRadius:8,
-                background:"rgba(245,200,66,0.07)", border:"1px solid rgba(245,200,66,0.28)",
-                borderLeft:"3px solid #f5c842", flexWrap:"wrap", gap:8 }}>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#f5c842" }}>
-                  <span style={{ fontWeight:700 }}>&#x26A0; SDOH positive</span> — Moderate Risk
-                </div>
-                <button onClick={() => setMdmState(p => ({ ...p, risk:"moderate",
-                  riskRationale:"Social determinants of health affecting management (AMA CPT 2023 Table of Risk, Moderate).",
-                  sdohRiskAccepted:true }))}
-                  style={{ padding:"4px 10px", borderRadius:5, cursor:"pointer",
-                    border:"1px solid rgba(245,200,66,0.4)", background:"rgba(245,200,66,0.1)",
-                    fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:700, color:"#f5c842" }}>
-                  Accept \u2192 Moderate
-                </button>
-              </div>
-            )}
-            {phq2Positive && mdmState.risk !== "moderate" && mdmState.risk !== "high" && (
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                marginBottom:8, padding:"7px 11px", borderRadius:8,
-                background:"rgba(155,109,255,0.07)", border:"1px solid rgba(155,109,255,0.28)",
-                borderLeft:"3px solid #9b6dff", flexWrap:"wrap", gap:8 }}>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#c4a0ff" }}>
-                  <span style={{ fontWeight:700 }}>&#x1F9E0; PHQ-2 positive ({phq2Score}/6)</span> — Moderate Risk
-                </div>
-                <button onClick={() => setMdmState(p => ({ ...p, risk:"moderate",
-                  riskRationale:`Mental health treatment — positive PHQ-2 (score ${phq2Score}/6) affecting management (AMA CPT 2023 Table of Risk, Moderate).` }))}
-                  style={{ padding:"4px 10px", borderRadius:5, cursor:"pointer",
-                    border:"1px solid rgba(155,109,255,0.4)", background:"rgba(155,109,255,0.1)",
-                    fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:700, color:"#9b6dff" }}>
-                  Accept \u2192 Moderate
-                </button>
-              </div>
-            )}
-            {auditcPositive && mdmState.risk !== "moderate" && mdmState.risk !== "high" && (
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                marginBottom:8, padding:"7px 11px", borderRadius:8,
-                background:"rgba(255,159,67,0.07)", border:"1px solid rgba(255,159,67,0.28)",
-                borderLeft:"3px solid #ff9f43", flexWrap:"wrap", gap:8 }}>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#ffb870" }}>
-                  <span style={{ fontWeight:700 }}>&#x1F37A; AUDIT-C positive ({auditcScore}/12)</span> — Moderate Risk
-                </div>
-                <button onClick={() => setMdmState(p => ({ ...p, risk:"moderate",
-                  riskRationale:`Unhealthy alcohol use — positive AUDIT-C (score ${auditcScore}/12) affecting management (AMA CPT 2023 Table of Risk, Moderate).` }))}
-                  style={{ padding:"4px 10px", borderRadius:5, cursor:"pointer",
-                    border:"1px solid rgba(255,159,67,0.4)", background:"rgba(255,159,67,0.1)",
-                    fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:700, color:"#ff9f43" }}>
-                  Accept \u2192 Moderate
-                </button>
-              </div>
-            )}
-            {isarHighRisk && mdmState.risk !== "moderate" && mdmState.risk !== "high" && (
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                marginBottom:8, padding:"7px 11px", borderRadius:8,
-                background:"rgba(126,203,255,0.07)", border:"1px solid rgba(126,203,255,0.25)",
-                borderLeft:"3px solid #7ecbff", flexWrap:"wrap", gap:8 }}>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#a8d8ff" }}>
-                  <span style={{ fontWeight:700 }}>&#x1F9D3; ISAR \u22652 ({isarScore}/6)</span> — Moderate Risk
-                </div>
-                <button onClick={() => setMdmState(p => ({ ...p, risk:"moderate",
-                  riskRationale:`Geriatric fall risk — ISAR score ${isarScore}/6; complex disposition (AMA CPT 2023 Table of Risk, Moderate).` }))}
-                  style={{ padding:"4px 10px", borderRadius:5, cursor:"pointer",
-                    border:"1px solid rgba(126,203,255,0.35)", background:"rgba(126,203,255,0.1)",
-                    fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:700, color:"#7ecbff" }}>
-                  Accept \u2192 Moderate
-                </button>
-              </div>
-            )}
-
-            {/* Single rationale override */}
-            {(mdmState.copa || mdmState.risk) && (
-              <textarea
-                value={mdmState.copaRationale}
-                onChange={e => setMdmState(p => ({ ...p, copaRationale:e.target.value }))}
-                placeholder="Optional rationale — describe specific clinical context..."
-                rows={2}
-                style={{ width:"100%", background:"rgba(8,24,48,0.7)",
-                  border:"1px solid rgba(26,53,85,0.55)", borderRadius:8,
-                  padding:"7px 10px", color:"var(--npi-txt)",
-                  fontFamily:"'DM Sans',sans-serif", fontSize:12, lineHeight:1.55,
-                  outline:"none", resize:"none", boxSizing:"border-box" }} />
-            )}
-
-            {/* Summary row */}
-            {emLevel && (
-              <div style={{ marginTop:10, padding:"6px 10px", borderRadius:7,
-                display:"flex", alignItems:"center", justifyContent:"space-between",
-                background:`${emLevel.color}0d`, border:`1px solid ${emLevel.color}33` }}>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
-                  color:emLevel.color, fontWeight:700 }}>
-                  {emLevel.ed} (ED) \u00b7 {emLevel.label}
-                </span>
-                <button onClick={() => setQuickMode(false)}
-                  style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                    background:"transparent", border:"none", color:"var(--npi-txt4)",
-                    cursor:"pointer", textDecoration:"underline", padding:0 }}>
-                  Need full documentation?
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Full grid (COPA / Data / Risk) ─────────────────────────────────── */}
-      {!quickMode && (<>
-
-      {/* ── Column 1: COPA ── */}
-      <SectionCard title="1 — Number & Complexity of Problems Addressed (COPA)"
-        badge={mdmState.copa ? MDM_COPA_LEVELS.find(l=>l.key===mdmState.copa)?.label : "Not set"}
-        badgeColor={MDM_COPA_LEVELS.find(l=>l.key===mdmState.copa)?.color || "#3b9eff"}>
-        <LevelPicker options={MDM_COPA_LEVELS} value={mdmState.copa}
-          onChange={v => setMdmState(p => ({ ...p, copa:v }))} />
-        {mdmState.copa && (
-          <div style={{ marginTop:8, padding:"6px 10px", borderRadius:7,
-            background:"rgba(8,22,40,0.5)", border:"1px solid rgba(26,53,85,0.4)" }}>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--npi-txt4)",
-              marginBottom:3 }}>
-              {MDM_COPA_LEVELS.find(l=>l.key===mdmState.copa)?.desc}
-            </div>
-          </div>
-        )}
-        <textarea
-          value={mdmState.copaRationale}
-          onChange={e => setMdmState(p => ({ ...p, copaRationale:e.target.value }))}
-          placeholder="Rationale — describe the specific problem(s) addressed this encounter..."
-          rows={2}
-          style={{ width:"100%", marginTop:9, background:"rgba(8,24,48,0.7)",
-            border:"1px solid rgba(26,53,85,0.55)", borderRadius:8,
-            padding:"7px 10px", color:"var(--npi-txt)",
-            fontFamily:"'DM Sans',sans-serif", fontSize:12, lineHeight:1.55,
-            outline:"none", resize:"vertical", boxSizing:"border-box" }} />
-      </SectionCard>
-
-      {/* ── Column 2: Data ── */}
-      <SectionCard title="2 — Amount & Complexity of Data Reviewed and Analyzed"
-        badge={autoDataLevel ? autoDataLevel.charAt(0).toUpperCase()+autoDataLevel.slice(1) : "None"}
-        badgeColor={autoDataLevel==="high"?"#ff6b6b":autoDataLevel==="moderate"?"#f5c842":autoDataLevel==="limited"?"#00e5c0":"#8892a4"}>
-
-        {/* Category 1 */}
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, letterSpacing:1.2,
-          textTransform:"uppercase", color:"var(--npi-txt4)", marginBottom:7 }}>
-          Category 1 — Tests, Documents, Independent Historian (need ≥2 for Limited, ≥3 for Moderate)
-        </div>
-        <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-          {MDM_DATA_CATS.cat1Items.map(item => {
-            const checked = (mdmState.dataChecks?.cat1||[]).includes(item.key);
-            return (
-              <button key={item.key} onClick={() => toggleCat1(item.key)}
-                style={{ display:"flex", alignItems:"center", gap:10,
-                  padding:"7px 10px", borderRadius:7, cursor:"pointer", textAlign:"left",
-                  background: checked ? "rgba(0,229,192,0.07)" : "rgba(8,22,40,0.4)",
-                  border:`1px solid ${checked ? "rgba(0,229,192,0.25)" : "rgba(26,53,85,0.35)"}`,
-                  transition:"all .12s" }}>
-                <div style={{ width:14, height:14, borderRadius:3, flexShrink:0, display:"flex",
-                  alignItems:"center", justifyContent:"center",
-                  background: checked ? "var(--npi-teal)" : "transparent",
-                  border:`1.5px solid ${checked ? "var(--npi-teal)" : "rgba(42,77,114,0.5)"}` }}>
-                  {checked && <span style={{ color:"#050f1e", fontSize:10, fontWeight:900, lineHeight:1 }}>&#x2713;</span>}
-                </div>
-                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                  color: checked ? "var(--npi-txt)" : "var(--npi-txt3)" }}>
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* CDS data elements — Category 2 feed */}
-        {mdmDataElements.length > 0 && (
-          <div style={{ marginTop:12 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, letterSpacing:1.2,
-              textTransform:"uppercase", color:"var(--npi-txt4)", marginBottom:7 }}>
-              Category 2 — Clinical Decision Rules Applied (from CDS panel)
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-              {mdmDataElements.map(el => (
-                <div key={el.id} style={{ display:"flex", alignItems:"flex-start", gap:9,
-                  padding:"8px 11px", borderRadius:8,
-                  background:"rgba(0,229,192,0.05)", border:"1px solid rgba(0,229,192,0.18)" }}>
-                  <div style={{ width:14, height:14, borderRadius:3, flexShrink:0, marginTop:1,
-                    background:"var(--npi-teal)", border:"1.5px solid var(--npi-teal)",
-                    display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    <span style={{ color:"#050f1e", fontSize:10, fontWeight:900, lineHeight:1 }}>&#x2713;</span>
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
-                      color:"var(--npi-teal)", marginBottom:2 }}>
-                      {el.score}
-                    </div>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                      color:"var(--npi-txt4)", lineHeight:1.45,
-                      overflow:"hidden", textOverflow:"ellipsis",
-                      display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
-                      {el.phrase}
-                    </div>
-                  </div>
-                  <button onClick={() => setMdmDataElements(prev => prev.filter(e => e.id !== el.id))}
-                    style={{ background:"transparent", border:"none", color:"var(--npi-txt4)",
-                      cursor:"pointer", fontSize:11, padding:"0 2px", lineHeight:1, flexShrink:0 }}>
-                    &#x2715;
-                  </button>
-                </div>
+            <div className="mdm-order-list">
+              {orders.map((o, i) => (
+                <OrderCard key={i} order={o} idx={i} cc={cc} ddx={ddx}
+                  age={patientAge} sex={patientSex} vitals={vitals}
+                  onUpdate={updateOrder} onRemove={removeOrder} showToast={showToast} />
               ))}
             </div>
+            {addType === null ? (
+              <div className="mdm-add-bar">
+                {ORDER_TYPES.map(t => (
+                  <button key={t.key} className="mdm-add-type-btn" onClick={() => setAddType(t.key)}>
+                    {t.icon} + {t.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 11, color: "#4a6a8a", marginBottom: 5 }}>
+                  Adding {ORDER_TYPES.find(t => t.key === addType)?.label}
+                </div>
+                <div className="mdm-add-row">
+                  <input ref={addRef} className="mdm-add-in"
+                    placeholder={addType === "lab" ? "e.g. BMP, CBC, Troponin" : addType === "imaging" ? "e.g. CXR, CT Head w/o contrast" : addType === "ecg" ? "12-lead ECG" : "Procedure or other order"}
+                    value={addName} onChange={e => setAddName(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") confirmAdd(); if (e.key === "Escape") { setAddType(null); setAddName(""); } }} />
+                  <button className="mdm-add-btn" onClick={confirmAdd}>Add</button>
+                  <button className="mdm-ghost" onClick={() => { setAddType(null); setAddName(""); }}>Cancel</button>
+                </div>
+              </div>
+            )}
           </div>
         )}
+      </div>
 
-        {/* Category 2 manual / Category 3 toggles */}
-        <div style={{ display:"flex", gap:8, marginTop:10 }}>
-          {[
-            { key:"cat2", label:"Cat 2 — Independent interpretation", color:"#f5c842" },
-            { key:"cat3", label:"Cat 3 — External specialist discussion", color:"#ff9f43" },
-          ].map(({ key, label, color }) => {
-            const active = mdmState.dataChecks?.[key] || false;
-            return (
-              <button key={key}
-                onClick={() => setMdmState(p => ({ ...p, dataChecks:{ ...p.dataChecks, [key]:!active } }))}
-                style={{ flex:1, padding:"7px 6px", borderRadius:7, cursor:"pointer",
-                  border:`1px solid ${active ? color+"66" : "rgba(42,77,114,0.35)"}`,
-                  background: active ? color+"12" : "transparent",
-                  fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight: active ? 600 : 400,
-                  color: active ? color : "var(--npi-txt4)", transition:"all .12s", textAlign:"center" }}>
-                {label}
+      {/* ── 2. ED COURSE ───────────────────────────────────────────────── */}
+      <div className="mdm-section">
+        <div className="mdm-section-hdr" onClick={() => tog("course")}>
+          <span className="mdm-section-icon">🏥</span>
+          <span className="mdm-section-title">ED Course &amp; Treatment</span>
+          <span className={"mdm-section-count" + (course.length ? " d" : "")}>{course.length}</span>
+          <span className={"mdm-section-chevron" + (open.course ? " open" : "")}>▶</span>
+        </div>
+        {open.course && (
+          <div className="mdm-section-body">
+            {!course.length && (
+              <div style={{ color: "#2e4a6a", fontSize: 12, fontStyle: "italic", marginBottom: 10 }}>
+                No interventions documented.
+              </div>
+            )}
+            {course.length > 0 && (
+              <div className="mdm-timeline">
+                {course.map((item, i) => (
+                  <div key={i} className="mdm-tl-item">
+                    <div className={"mdm-tl-dot " + (item.response || "na")}>
+                      {item.response === "good" ? "✓" : item.response === "poor" ? "✕" : "~"}
+                    </div>
+                    <div className="mdm-tl-content">
+                      <div className="mdm-tl-row1">
+                        {item.time && <span className="mdm-tl-time">{item.time}</span>}
+                        <span className="mdm-tl-action">{item.action}</span>
+                        {item.response && item.response !== "na" && (
+                          <span className={"mdm-resp-badge " + item.response}>
+                            {item.response === "good" ? "Good response" : item.response === "partial" ? "Partial" : "No response"}
+                          </span>
+                        )}
+                        <button className="mdm-del-btn" style={{ marginLeft: "auto" }} onClick={() => removeCourse(i)}>✕</button>
+                      </div>
+                      {item.notes && <div style={{ fontSize: 11, color: "#8aaccc", lineHeight: 1.4 }}>{item.notes}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!addCourse ? (
+              <button className="mdm-ghost" style={{ marginTop: 4 }} onClick={() => setAddCourse(true)}>
+                + Add Intervention
               </button>
-            );
-          })}
+            ) : (
+              <div style={{ background: "rgba(11,30,54,0.5)", border: "1px solid #1a3555", borderRadius: 8, padding: 12, marginTop: 6, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ width: 76 }}>
+                    <div className="mdm-lbl" style={{ marginBottom: 3 }}>Time</div>
+                    <input className="mdm-in" placeholder="HH:MM" value={nTime} onChange={e => setNTime(e.target.value)} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div className="mdm-lbl" style={{ marginBottom: 3 }}>Intervention / Action</div>
+                    <input className="mdm-in" placeholder="e.g. IV NS 1L bolus, Morphine 4mg IV, O2 via NRB"
+                      value={nAction} onChange={e => setNAction(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && confirmCourse()} />
+                  </div>
+                </div>
+                <div>
+                  <div className="mdm-lbl" style={{ marginBottom: 4 }}>Response to Treatment</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {RESP_OPTS.map(r => (
+                      <button key={r.key} className="mdm-ghost"
+                        style={nResp === r.key ? { borderColor: "#3b9eff60", color: "#3b9eff", background: "#3b9eff10" } : {}}
+                        onClick={() => setNResp(r.key)}>{r.label}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="mdm-lbl" style={{ marginBottom: 3 }}>Notes</div>
+                  <input className="mdm-in" placeholder="Optional details..." value={nNotes} onChange={e => setNNotes(e.target.value)} />
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button className="mdm-add-btn" onClick={confirmCourse}>Add</button>
+                  <button className="mdm-ghost" onClick={() => { setAddCourse(false); setNAction(""); setNTime(""); setNNotes(""); }}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── 3. IMPRESSIONS ─────────────────────────────────────────────── */}
+      <div className="mdm-section">
+        <div className="mdm-section-hdr" onClick={() => tog("impressions")}>
+          <span className="mdm-section-icon">🎯</span>
+          <span className="mdm-section-title">Clinical Impressions</span>
+          <span className={"mdm-section-count" + ((imps.initial || imps.final) ? " d" : "")}>
+            {[imps.initial, imps.final].filter(Boolean).length}/2
+          </span>
+          <span className={"mdm-section-chevron" + (open.impressions ? " open" : "")}>▶</span>
         </div>
+        {open.impressions && (
+          <div className="mdm-section-body">
+            <div className="mdm-imp-grid">
+              <div className="mdm-imp-card ini">
+                <div className="mdm-imp-lbl ini">Initial Impression</div>
+                <textarea className="mdm-ta" rows={2} placeholder="Working diagnosis on arrival..."
+                  value={imps.initial} onChange={e => setImps(p => ({ ...p, initial: e.target.value }))} />
+                {iniEv.length > 0 && (
+                  <div className="mdm-chips">
+                    {iniEv.map((ev, i) => (
+                      <span key={i} className="mdm-chip" onClick={() => setIniEv(p => p.filter((_, j) => j !== i))} title="Click to remove">{ev}</span>
+                    ))}
+                  </div>
+                )}
+                <button className={"mdm-ai-btn" + (evBusy.initial ? " busy" : "")} style={{ marginTop: 8 }}
+                  onClick={() => genEvidence("initial")} disabled={evBusy.initial || !imps.initial}
+                  title={!imps.initial ? "Enter an impression first" : ""}>
+                  {evBusy.initial ? <><div className="mdm-spin" />Finding Evidence...</> : <><div className="mdm-dot" />Find Supporting Evidence</>}
+                </button>
+              </div>
+              <div className="mdm-imp-card fin">
+                <div className="mdm-imp-lbl fin">Final Impression / Disposition</div>
+                <textarea className="mdm-ta" rows={2} placeholder="Final diagnosis and disposition..."
+                  value={imps.final} onChange={e => setImps(p => ({ ...p, final: e.target.value }))} />
+                {finEv.length > 0 && (
+                  <div className="mdm-chips">
+                    {finEv.map((ev, i) => (
+                      <span key={i} className="mdm-chip" onClick={() => setFinEv(p => p.filter((_, j) => j !== i))} title="Click to remove">{ev}</span>
+                    ))}
+                  </div>
+                )}
+                <button className={"mdm-ai-btn" + (evBusy.final ? " busy" : "")} style={{ marginTop: 8 }}
+                  onClick={() => genEvidence("final")} disabled={evBusy.final || !imps.final}
+                  title={!imps.final ? "Enter an impression first" : ""}>
+                  {evBusy.final ? <><div className="mdm-spin" />Finding Evidence...</> : <><div className="mdm-dot" />Find Supporting Evidence</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
-        <div style={{ marginTop:8, fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-          color:"var(--npi-txt4)", letterSpacing:.8 }}>
-          {(mdmState.dataChecks?.cat1||[]).length} Cat 1 item{(mdmState.dataChecks?.cat1||[]).length!==1?"s":""} checked
-          {mdmDataElements.length>0 ? ` \u00b7 ${mdmDataElements.length} CDS decision${mdmDataElements.length!==1?"s":""} (Cat 2)` : ""}
-          {mdmState.dataChecks?.cat3 ? " \u00b7 Cat 3 checked" : ""}
-          {autoDataLevel ? ` \u2192 ${autoDataLevel.charAt(0).toUpperCase()+autoDataLevel.slice(1)}` : ""}
+      {/* ── 4. MDM COMPLEXITY ──────────────────────────────────────────── */}
+      <div className="mdm-section">
+        <div className="mdm-section-hdr" onClick={() => tog("complexity")}>
+          <span className="mdm-section-icon">⚖️</span>
+          <span className="mdm-section-title">MDM Complexity &amp; E/M Level</span>
+          <span className={"mdm-section-count" + ((dxChecks.size + dataChecks.size + riskChecks.size) ? " d" : "")}>{lvl.code}</span>
+          <span className={"mdm-section-chevron" + (open.complexity ? " open" : "")}>▶</span>
         </div>
-      </SectionCard>
-
-      {/* ── Column 3: Risk ── */}
-      <SectionCard title="3 — Risk of Complications and/or Morbidity or Mortality"
-        badge={mdmState.risk ? MDM_RISK_LEVELS.find(l=>l.key===mdmState.risk)?.label : "Not set"}
-        badgeColor={MDM_RISK_LEVELS.find(l=>l.key===mdmState.risk)?.color || "#3b9eff"}>
-
-        {/* SDOH linkage chip */}
-        {sdohDomainPositive && !mdmState.sdohRiskAccepted && (
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-            marginBottom:10, padding:"8px 12px", borderRadius:8,
-            background:"rgba(245,200,66,0.07)", border:"1px solid rgba(245,200,66,0.3)",
-            borderLeft:"3px solid #f5c842", flexWrap:"wrap", gap:8 }}>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#f5c842", lineHeight:1.45 }}>
-              <span style={{ fontWeight:700 }}>&#x26A0; SDOH positive screen</span> — social determinants
-              of health affecting management qualifies as Moderate Risk (AMA CPT 2023 Table of Risk).
+        {open.complexity && (
+          <div className="mdm-section-body">
+            <div className="mdm-cx-grid">
+              <div className="mdm-cx-col">
+                <div className="mdm-cx-col-ttl">Number &amp; Complexity of Dx</div>
+                {DX_OPTS.map(o => (
+                  <div key={o.id} className="mdm-cx-item" onClick={() => togCheck(setDxChecks, o.id)}>
+                    <div className={"mdm-cx-box" + (dxChecks.has(o.id) ? " on" : "")}>{dxChecks.has(o.id) ? "✓" : ""}</div>
+                    <span className="mdm-cx-lbl">{o.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mdm-cx-col">
+                <div className="mdm-cx-col-ttl">Amount / Complexity of Data</div>
+                {DATA_OPTS.map(o => (
+                  <div key={o.id} className="mdm-cx-item" onClick={() => togCheck(setDataChecks, o.id)}>
+                    <div className={"mdm-cx-box" + (dataChecks.has(o.id) ? " on" : "")}>{dataChecks.has(o.id) ? "✓" : ""}</div>
+                    <span className="mdm-cx-lbl">{o.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mdm-cx-col">
+                <div className="mdm-cx-col-ttl">Risk of Complications</div>
+                {RISK_OPTS.map(o => (
+                  <div key={o.id} className="mdm-cx-item" onClick={() => togCheck(setRiskChecks, o.id)}>
+                    <div className={"mdm-cx-box" + (riskChecks.has(o.id) ? " on" : "")}>{riskChecks.has(o.id) ? "✓" : ""}</div>
+                    <span className="mdm-cx-lbl">{o.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <button onClick={() => setMdmState(p => ({
-                ...p,
-                risk:"moderate",
-                riskRationale:"Social determinants of health affecting management — positive SDOH screen documented (AMA CPT 2023 Table of Risk, Moderate complexity).",
-                sdohRiskAccepted:true,
-              }))}
-              style={{ padding:"5px 12px", borderRadius:6, cursor:"pointer", flexShrink:0,
-                border:"1px solid rgba(245,200,66,0.5)", background:"rgba(245,200,66,0.12)",
-                fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#f5c842" }}>
-              Accept \u2192 Moderate Risk
-            </button>
-          </div>
-        )}
-
-        {/* PHQ-2 linkage chip */}
-        {phq2Positive && mdmState.risk !== "moderate" && mdmState.risk !== "high" && (
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-            marginBottom:10, padding:"8px 12px", borderRadius:8,
-            background:"rgba(155,109,255,0.07)", border:"1px solid rgba(155,109,255,0.3)",
-            borderLeft:"3px solid #9b6dff", flexWrap:"wrap", gap:8 }}>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#c4a0ff", lineHeight:1.45 }}>
-              <span style={{ fontWeight:700 }}>&#x1F9E0; PHQ-2 positive (score {phq2Score}/6)</span> — mental
-              health treatment affecting management qualifies as Moderate Risk.
+            <div className="mdm-level">
+              <div>
+                <div className={"mdm-level-val " + lvl.css}>{lvl.label}</div>
+                <div className="mdm-level-sub">{aiLevel ? "AI-assessed" : "Calculated from checkboxes"}</div>
+                {aiLevel?.reasoning && <div className="mdm-level-reasoning">{aiLevel.reasoning}</div>}
+              </div>
+              <div className="mdm-level-code">{lvl.code}</div>
             </div>
-            <button onClick={() => setMdmState(p => ({
-                ...p,
-                risk:"moderate",
-                riskRationale:`Mental health treatment — positive PHQ-2 screen (score ${phq2Score}/6); behavioral health management affecting medical decision making (AMA CPT 2023 Table of Risk, Moderate).`,
-              }))}
-              style={{ padding:"5px 12px", borderRadius:6, cursor:"pointer", flexShrink:0,
-                border:"1px solid rgba(155,109,255,0.4)", background:"rgba(155,109,255,0.1)",
-                fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#9b6dff" }}>
-              Accept \u2192 Moderate Risk
-            </button>
-          </div>
-        )}
-
-        {/* AUDIT-C linkage chip */}
-        {auditcPositive && mdmState.risk !== "moderate" && mdmState.risk !== "high" && (
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-            marginBottom:10, padding:"8px 12px", borderRadius:8,
-            background:"rgba(255,159,67,0.07)", border:"1px solid rgba(255,159,67,0.3)",
-            borderLeft:"3px solid #ff9f43", flexWrap:"wrap", gap:8 }}>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#ffb870", lineHeight:1.45 }}>
-              <span style={{ fontWeight:700 }}>&#x1F37A; AUDIT-C positive (score {auditcScore}/12, threshold \u2265{auditcThresh})</span> — substance
-              use management affecting care qualifies as Moderate Risk.
-            </div>
-            <button onClick={() => setMdmState(p => ({
-                ...p,
-                risk:"moderate",
-                riskRationale:`Unhealthy alcohol use — positive AUDIT-C screen (score ${auditcScore}/12, threshold \u2265${auditcThresh}); substance use management affecting medical decision making (AMA CPT 2023 Table of Risk, Moderate).`,
-              }))}
-              style={{ padding:"5px 12px", borderRadius:6, cursor:"pointer", flexShrink:0,
-                border:"1px solid rgba(255,159,67,0.4)", background:"rgba(255,159,67,0.1)",
-                fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#ff9f43" }}>
-              Accept \u2192 Moderate Risk
-            </button>
-          </div>
-        )}
-
-        {/* ISAR-6 linkage chip */}
-        {isarHighRisk && mdmState.risk !== "moderate" && mdmState.risk !== "high" && (
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-            marginBottom:10, padding:"8px 12px", borderRadius:8,
-            background:"rgba(126,203,255,0.07)", border:"1px solid rgba(126,203,255,0.28)",
-            borderLeft:"3px solid #7ecbff", flexWrap:"wrap", gap:8 }}>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#a8d8ff", lineHeight:1.45 }}>
-              <span style={{ fontWeight:700 }}>&#x1F9D3; ISAR-6 high risk (score {isarScore}/6)</span> — geriatric
-              fall risk with anticipated functional decline and complex disposition qualifies as Moderate Risk
-              (AMA CPT 2023 Table of Risk).
-            </div>
-            <button onClick={() => setMdmState(p => ({
-                ...p,
-                risk:"moderate",
-                riskRationale:`Geriatric fall risk — ISAR score ${isarScore}/6 (\u22652 = high risk); anticipated functional decline and complex disposition affecting management (AMA CPT 2023 Table of Risk, Moderate).`,
-              }))}
-              style={{ padding:"5px 12px", borderRadius:6, cursor:"pointer", flexShrink:0,
-                border:"1px solid rgba(126,203,255,0.35)", background:"rgba(126,203,255,0.1)",
-                fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#7ecbff" }}>
-              Accept \u2192 Moderate Risk
-            </button>
-          </div>
-        )}
-
-        <LevelPicker options={MDM_RISK_LEVELS} value={mdmState.risk}
-          onChange={v => setMdmState(p => ({ ...p, risk:v }))} />
-        {mdmState.risk && (
-          <div style={{ marginTop:8, padding:"6px 10px", borderRadius:7,
-            background:"rgba(8,22,40,0.5)", border:"1px solid rgba(26,53,85,0.4)" }}>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--npi-txt4)" }}>
-              {MDM_RISK_LEVELS.find(l=>l.key===mdmState.risk)?.examples}
+            <div style={{ marginTop: 10 }}>
+              <button className={"mdm-ai-btn" + (cxBusy ? " busy" : "")} onClick={assessCx} disabled={cxBusy}>
+                {cxBusy ? <><div className="mdm-spin" />Assessing...</> : <><div className="mdm-dot" />AI Assess Complexity</>}
+              </button>
             </div>
           </div>
         )}
-        <textarea
-          value={mdmState.riskRationale}
-          onChange={e => setMdmState(p => ({ ...p, riskRationale:e.target.value }))}
-          placeholder="Rationale — describe the specific risk element present in this encounter..."
-          rows={2}
-          style={{ width:"100%", marginTop:9, background:"rgba(8,24,48,0.7)",
-            border:"1px solid rgba(26,53,85,0.55)", borderRadius:8,
-            padding:"7px 10px", color:"var(--npi-txt)",
-            fontFamily:"'DM Sans',sans-serif", fontSize:12, lineHeight:1.55,
-            outline:"none", resize:"vertical", boxSizing:"border-box" }} />
-      </SectionCard>
+      </div>
 
-      </>)} {/* end !quickMode full grid */}
-
-      {/* ── Narrative ── */}
-      <SectionCard title="MDM Narrative" badge="AMA CPT 2023" badgeColor="#3b9eff">
-        <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
-          <button onClick={handleBuildNarrative}
-            style={{ padding:"7px 16px", borderRadius:8, cursor:"pointer",
-              background:"linear-gradient(135deg,#00e5c0,#00b4d8)",
-              border:"none", color:"#050f1e",
-              fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700 }}>
-            &#x1F4DD; Build Narrative
-          </button>
-          {mdmState.narrative && (
-            <button onClick={handleCopy}
-              style={{ padding:"7px 14px", borderRadius:8, cursor:"pointer",
-                border:`1px solid ${copied ? "rgba(0,229,192,0.5)" : "rgba(42,77,114,0.45)"}`,
-                background: copied ? "rgba(0,229,192,0.09)" : "transparent",
-                fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
-                color: copied ? "var(--npi-teal)" : "var(--npi-txt4)" }}>
-              {copied ? "\u2713 Copied" : "\uD83D\uDCCB Copy"}
-            </button>
-          )}
-          {mdmState.narrative && (
-            <button onClick={() => setMdmState(p => ({ ...p, narrative:"" }))}
-              style={{ padding:"7px 12px", borderRadius:8, cursor:"pointer",
-                border:"1px solid rgba(42,77,114,0.35)", background:"transparent",
-                fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt4)" }}>
-              Clear
-            </button>
-          )}
+      {/* ── 5. MDM NOTE ────────────────────────────────────────────────── */}
+      <div className="mdm-section">
+        <div className="mdm-section-hdr" onClick={() => tog("note")}>
+          <span className="mdm-section-icon">📝</span>
+          <span className="mdm-section-title">MDM Note</span>
+          <span className={"mdm-section-count" + (noteOut ? " d" : "")}>{noteOut ? "Ready" : "—"}</span>
+          <span className={"mdm-section-chevron" + (open.note ? " open" : "")}>▶</span>
         </div>
-
-        {!mdmState.copa && !mdmState.risk && (
-          <div style={{ padding:"16px", borderRadius:8, background:"rgba(8,22,40,0.4)",
-            fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--npi-txt4)",
-            textAlign:"center", lineHeight:1.65 }}>
-            Select COPA and Risk levels above, or click &#x26A1; Auto-populate to seed from encounter data.
-            Then click Build Narrative to generate the MDM documentation block.
-          </div>
-        )}
-
-        {(mdmState.copa || mdmState.risk) && (
-          <div style={{ marginBottom:10, padding:"8px 11px", borderRadius:7,
-            background:"rgba(8,22,40,0.4)", border:"1px solid rgba(26,53,85,0.35)" }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--npi-txt4)",
-              letterSpacing:.8, display:"flex", gap:16, flexWrap:"wrap" }}>
-              <span>COPA: <span style={{ color:MDM_COPA_LEVELS.find(l=>l.key===mdmState.copa)?.color||"var(--npi-txt4)" }}>{mdmState.copa||"—"}</span></span>
-              <span>Data: <span style={{ color:autoDataLevel==="high"?"#ff6b6b":autoDataLevel==="moderate"?"#f5c842":autoDataLevel==="limited"?"#00e5c0":"var(--npi-txt4)" }}>{autoDataLevel||"none"}</span></span>
-              <span>Risk: <span style={{ color:MDM_RISK_LEVELS.find(l=>l.key===mdmState.risk)?.color||"var(--npi-txt4)" }}>{mdmState.risk||"—"}</span></span>
-              {emLevel && <span style={{ color:emLevel.color }}>&#x2192; {emLevel.label} ({emLevel.outpatient}/{emLevel.established})</span>}
+        {open.note && (
+          <div className="mdm-section-body">
+            <div className="mdm-note-out">
+              {noteOut
+                ? noteOut
+                : <span className="mdm-note-ph">MDM note will appear here. Fill in orders, ED course, and impressions above for best results.</span>
+              }
+            </div>
+            <div className="mdm-note-acts">
+              <button className="mdm-primary" onClick={buildNote} disabled={noteBusy}>
+                {noteBusy ? "Generating..." : noteOut ? "Regenerate MDM Note" : "Generate MDM Note"}
+              </button>
+              {noteOut && (
+                <button className="mdm-ghost"
+                  onClick={() => navigator.clipboard.writeText(noteOut)
+                    .then(() => showToast("MDM note copied.", "success"))
+                    .catch(() => showToast("Copy failed.", "error"))
+                  }>
+                  Copy
+                </button>
+              )}
+              {noteOut && <button className="mdm-ghost" onClick={() => setNoteOut("")}>Clear</button>}
             </div>
           </div>
         )}
+      </div>
 
-        <textarea
-          value={mdmState.narrative}
-          onChange={e => setMdmState(p => ({ ...p, narrative:e.target.value }))}
-          placeholder="MDM narrative will appear here after clicking Build Narrative. You can also type or edit directly."
-          rows={10}
-          style={{ width:"100%", background:"rgba(8,24,48,0.75)",
-            border:"1px solid rgba(26,53,85,0.6)", borderRadius:9,
-            padding:"10px 12px", color:"var(--npi-txt)",
-            fontFamily:"'JetBrains Mono',monospace", fontSize:11, lineHeight:1.65,
-            outline:"none", resize:"vertical", boxSizing:"border-box" }} />
-      </SectionCard>
-
-      {/* ── Advance ── */}
+      {/* ── FOOTER ─────────────────────────────────────────────────────── */}
       {onAdvance && (
-        <div style={{ display:"flex", justifyContent:"flex-end" }}>
-          <button onClick={onAdvance}
-            style={{ padding:"9px 22px", borderRadius:9,
-              background:"linear-gradient(135deg,#00e5c0,#00b4d8)",
-              border:"none", color:"#050f1e",
-              fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer",
-              display:"flex", alignItems:"center", gap:6 }}>
-            Continue to Timeline &#9654;
+        <div className="mdm-advance-row">
+          <button className="mdm-advance" onClick={onAdvance}>
+            Complete Encounter →
           </button>
         </div>
       )}

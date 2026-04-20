@@ -17,7 +17,6 @@ import MedsTab              from "@/components/npi/MedsTab";
 import ROSTab               from "@/components/npi/ROSTab";
 import PETab                from "@/components/npi/PETab";
 import AutoCoderTab         from "@/components/npi/AutoCoderTab";
-import DDxEngine            from "@/components/npi/DDxEngine";
 import InlineHPITab         from "@/components/npi/InlineHPITab";
 import ClinicalNoteStudio   from "@/components/npi/ClinicalNoteStudio";
 import ReassessmentTab      from "@/components/npi/ReassessmentTab";
@@ -47,6 +46,7 @@ import CommunicationLog       from "@/components/npi/CommunicationLog";
 import FhirDataSync           from "@/components/npi/FhirDataSync";
 import CCDASmartParse         from "@/components/npi/CCDASmartParse";
 import ConnectivityIndicator  from "@/components/npi/ConnectivityIndicator";
+import LabInterpreter         from "@/components/npi/LabInterpreter";
 
 // ── Embedded page components ──────────────────────────────────────────────────
 import EDProcedureNotes        from "@/pages/EDProcedureNotes";
@@ -229,7 +229,6 @@ export default function NewPatientInput() {
         <InlineHPITab
           cc={cc} setCC={setCC}
           onAdvance={() => selectSection("ros")}
-          onToast={_showToast}
           patientAge={demo.age} patientSex={demo.sex}
           vitals={vitals} medications={medications}
           allergies={allergies} pmhSelected={pmhSelected}
@@ -480,15 +479,13 @@ export default function NewPatientInput() {
 
       case "handoff": return (
         <HandoffTab
-          demo={demo} cc={cc} vitals={vitals} avpu={avpu}
+          demo={demo} cc={cc} vitals={vitals}
           medications={medications} allergies={allergies}
           pmhSelected={pmhSelected}
           rosState={rosState} peState={peState} peFindings={peFindings}
-          esiLevel={esiLevel} visitMode={visitMode} registration={registration}
+          esiLevel={esiLevel} registration={registration}
           sdoh={sdoh} consults={consults}
-          sepsisBundle={sepsisBundle} nursingInterventions={nursingInterventions}
           disposition={disposition} dispReason={dispReason}
-          doorTime={doorTime} providerName={providerName}
           onAdvance={() => selectSection("discharge")}
         />
       );
@@ -541,14 +538,14 @@ export default function NewPatientInput() {
         />
       );
 
-      case "diff": return (
-        <DDxEngine
-          initialCC={cc.text}
-          initialAge={demo.age}
-          initialSex={demo.sex}
-          initialVitals={vitals}
-          onToast={_showToast}
-          onBack={() => selectSection("hpi")}
+      case "labs": return (
+        <LabInterpreter
+          embedded={true}
+          demo={demo}
+          vitals={vitals}
+          cc={cc}
+          medications={medications}
+          pmhSelected={pmhSelected}
         />
       );
 
@@ -1013,7 +1010,6 @@ export default function NewPatientInput() {
         onClose={() => setShowFhirSync(false)}
         patientMrn={registration?.mrn}
         patientFhirId={registration?.fhirId}
-        demo={demo} setDemo={setDemo}
         vitals={vitals} setVitals={setVitals}
         medications={medications} setMedications={setMedications}
         allergies={allergies} setAllergies={setAllergies}

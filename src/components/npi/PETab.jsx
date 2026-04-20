@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 // ─── SYSTEM & FINDING DATA ────────────────────────────────────────────────────
 const PE_SYSTEMS = [
@@ -432,8 +432,11 @@ Rules:
   const clearAll = useCallback(() => setExamData(initExamData()), []);
 
   // ── Visible systems (focused mode filter) ────────────────────────────────
-  const focusedPeIds  = getFocusedPeIds(chiefComplaint);
-  const visiblePeSys  = docMode === 'full' ? PE_SYSTEMS : PE_SYSTEMS.filter(s => focusedPeIds.includes(s.id));
+  const focusedPeIds  = useMemo(() => getFocusedPeIds(chiefComplaint), [chiefComplaint]);
+  const visiblePeSys  = useMemo(
+    () => docMode === 'full' ? PE_SYSTEMS : PE_SYSTEMS.filter(s => focusedPeIds.includes(s.id)),
+    [docMode, focusedPeIds]
+  );
   const hiddenPeCount = PE_SYSTEMS.length - visiblePeSys.length;
 
   // ── Keyboard navigation state (useBodySystemKeyboard inlined) ─────────────
@@ -441,7 +444,11 @@ Rules:
   const [activeFindingIdx, setActiveFindingIdx] = useState(-1);
   const [isFocused,        setIsFocused]        = useState(false);
   const [visualChipIdx,    setVisualChipIdx]    = useState(-1);  // keyboard focus in visual mode
-  const panelRef = useRef(null);
+  const panelRef           = useRef(null);
+  // Ref mirror of activeSystemIdx — lets the extSysIdx effect read the current
+  // value without being in its dep array, breaking the circular reset loop.
+  const activeSystemIdxRef = useRef(0);
+  activeSystemIdxRef.current = activeSystemIdx;
 
   const focus = useCallback(() => panelRef.current?.focus(), []);
 
@@ -449,7 +456,15 @@ Rules:
     ref:      panelRef,
     tabIndex: 0,
     onFocus:  () => setIsFocused(true),
-    onBlur:   () => { setIsFocused(false); setActiveFindingIdx(-1); },
+    onBlur:   (e) => {
+      // Only treat as blur if focus is leaving the panel entirely —
+      // clicking a sidebar button (child of the panel) must not trigger
+      // the isFocused→false flash that causes visible flickering.
+      if (!panelRef.current?.contains(e.relatedTarget)) {
+        setIsFocused(false);
+        setActiveFindingIdx(-1);
+      }
+    },
     style:    { outline: 'none' },
   };
 
@@ -614,12 +629,17 @@ Rules:
   }, [examData, remainderNormal, docMode, visualAppearance, visualNotes, setPeState, setPeFindings]);
 
   // ── Two-way sync with parent rail ────────────────────────────────────────
+  // Use activeSystemIdxRef (not activeSystemIdx state) so this effect only
+  // fires when extSysIdx changes — not when internal keyboard nav moves the
+  // selection. Without the ref, adding activeSystemIdx to deps caused the
+  // effect to revert internal navigation back to extSysIdx before the parent
+  // could propagate the new value, causing visible section flicker.
   useEffect(() => {
-    if (extSysIdx !== undefined && extSysIdx !== activeSystemIdx) {
+    if (extSysIdx !== undefined && extSysIdx !== activeSystemIdxRef.current) {
       setActiveSystemIdx(extSysIdx);
       setActiveFindingIdx(-1);
     }
-  }, [extSysIdx, activeSystemIdx]);
+  }, [extSysIdx]);
 
   useEffect(() => {
     onSysChange?.(activeSystemIdx);

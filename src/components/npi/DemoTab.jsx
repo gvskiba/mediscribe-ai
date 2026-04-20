@@ -1,6 +1,9 @@
 import { useRef, useEffect, useCallback } from 'react';
 
 // ─── FIELD ORDER ──────────────────────────────────────────────────────────────
+// allRefs order: [MRN(0), Room(1), firstName(2), lastName(3), ... notes(17)]
+// REG_MRN_IDX / REG_ROOM_IDX are the leading registration fields so they are
+// reachable by Enter from the very first keystroke, before demographics.
 const FIELDS = [
   { key: 'firstName',   label: 'First Name',         placeholder: 'Jane',               type: 'text'   },
   { key: 'lastName',    label: 'Last Name',           placeholder: 'Smith',              type: 'text'   },
@@ -14,10 +17,10 @@ const FIELDS = [
   { key: 'insuranceId', label: 'Insurance ID',        placeholder: 'Policy / member #',  type: 'text'   },
   { key: 'emerg',       label: 'Emergency Contact',   placeholder: 'Name & phone',       type: 'text'   },
   { key: 'lang',        label: 'Language',            placeholder: 'English',            type: 'text'   },
-  { key: 'height',      label: 'Height',              placeholder: "5'8\" or 172 cm",   type: 'text'   },
+  { key: 'height',      label: 'Height',              placeholder: "5'8\" or 172 cm",    type: 'text'   },
   { key: 'weight',      label: 'Weight',              placeholder: 'kg or lbs',          type: 'text'   },
   { key: 'pronouns',    label: 'Pronouns',            placeholder: 'they/them',          type: 'text'   },
-  { key: 'notes',       label: 'Notes',               placeholder: 'Additional notes',   type: 'text', wide: true },
+  { key: 'notes',       label: 'Notes',               placeholder: 'Additional notes',   type: 'text',   wide: true },
 ];
 
 const SEX_OPTS = [
@@ -29,6 +32,11 @@ const SEX_OPTS = [
 
 const ESI_COLORS = { 1: '#ff6b6b', 2: '#ff9f43', 3: '#ffd93d', 4: '#00e5c0', 5: '#3b9eff' };
 const ESI_LABELS = { 1: 'Resuscitation', 2: 'Emergent', 3: 'Urgent', 4: 'Less Urgent', 5: 'Non-urgent' };
+
+// Combined Enter-chain indices
+const REG_MRN_IDX  = 0;
+const REG_ROOM_IDX = 1;
+const FIELD_OFFSET = 2;
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const S = {
@@ -52,10 +60,15 @@ export default function DemoTab({
   registration, setRegistration,
   onAdvance,
 }) {
-  const fieldRefs = useRef([]);
+  // Single ordered ref array: [MRN, Room, ...FIELDS]
+  const allRefs  = useRef([]);
+  const parseRef = useRef(null);
 
-  // Auto-focus first field on mount
-  useEffect(() => { setTimeout(() => fieldRefs.current[0]?.focus(), 80); }, []);
+  // Auto-focus first field (MRN) on mount
+  useEffect(() => {
+    const t = setTimeout(() => allRefs.current[REG_MRN_IDX]?.focus(), 80);
+    return () => clearTimeout(t);
+  }, []);
 
   // Auto-compute age when DOB changes
   useEffect(() => {
@@ -68,7 +81,7 @@ export default function DemoTab({
     if (age > 0 && age < 130) setDemo(p => ({ ...p, age: String(age) }));
   }, [demo.dob, setDemo]);
 
-  // M/F/X/U — global sex shortcut when not in an input
+  // M/F/X/U — sex shortcut when focus is not inside an input
   useEffect(() => {
     const h = (e) => {
       if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
@@ -80,7 +93,7 @@ export default function DemoTab({
     return () => window.removeEventListener('keydown', h);
   }, [setDemo]);
 
-  // 1–5 — ESI level shortcut when not in an input
+  // 1–5 — ESI shortcut when focus is not inside an input
   useEffect(() => {
     const h = (e) => {
       if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
@@ -92,8 +105,33 @@ export default function DemoTab({
     return () => window.removeEventListener('keydown', h);
   }, [setEsiLevel]);
 
+  // Cmd+Enter — advance to CC from anywhere on this tab
+  useEffect(() => {
+    const h = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        onAdvance?.();
+      }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onAdvance]);
+
+  // Cmd+P — focus SmartParse textarea
+  useEffect(() => {
+    const h = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault();
+        parseRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, []);
+
+  // Enter chain: focus next ref in allRefs; call onAdvance when past last
   const advance = useCallback((idx) => {
-    const next = fieldRefs.current.slice(idx + 1).find(r => r);
+    const next = allRefs.current.slice(idx + 1).find(r => r);
     if (next) next.focus();
     else onAdvance?.();
   }, [onAdvance]);
@@ -114,7 +152,7 @@ export default function DemoTab({
           Demographics
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <KbdLegend items={[['Enter','Next field'],['M/F/X/U','Set sex'],['1–5','Set ESI']]} />
+          <KbdLegend items={[['Enter','Next field'],['M/F/X/U','Set sex'],['1–5','Set ESI'],['⌘↵','→ CC'],['⌘P','SmartParse']]} />
           {onAdvance && <AdvBtn onClick={onAdvance} label="Next: CC →" />}
         </div>
       </div>
@@ -123,9 +161,11 @@ export default function DemoTab({
       <div style={{ background: 'rgba(59,158,255,.05)', border: '1px solid rgba(59,158,255,.18)', borderRadius: 10, padding: '12px 16px' }}>
         <div style={{ fontSize: 10, color: 'var(--npi-blue)', fontFamily: "'JetBrains Mono',monospace", letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>
           ✦ Smart Parse — paste any triage note, EMS runsheet, or referral letter
+          <span style={{ fontWeight: 400, color: '#64748b', marginLeft: 8 }}>(⌘P to focus)</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <textarea
+            ref={parseRef}
             value={parseText}
             onChange={e => setParseText(e.target.value)}
             placeholder="Paste text to auto-extract patient data..."
@@ -143,14 +183,29 @@ export default function DemoTab({
       </div>
 
       {/* ── Registration + ESI ─────────────────────────────────────────── */}
+      {/* MRN and Room are allRefs[0] and [1] — first stops in the Enter chain */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12 }}>
         <div>
           <div style={S.label}>Registration MRN</div>
-          <input value={registration.mrn || ''} onChange={e => setReg('mrn', e.target.value)} placeholder="Auto / manual" style={S.input} />
+          <input
+            ref={el => { allRefs.current[REG_MRN_IDX] = el; }}
+            value={registration.mrn || ''}
+            onChange={e => setReg('mrn', e.target.value)}
+            onKeyDown={e => onFieldKey(e, REG_MRN_IDX)}
+            placeholder="Auto / manual"
+            style={S.input}
+          />
         </div>
         <div>
           <div style={S.label}>Room / Bay</div>
-          <input value={registration.room || ''} onChange={e => setReg('room', e.target.value)} placeholder="e.g. Trauma 2" style={S.input} />
+          <input
+            ref={el => { allRefs.current[REG_ROOM_IDX] = el; }}
+            value={registration.room || ''}
+            onChange={e => setReg('room', e.target.value)}
+            onKeyDown={e => onFieldKey(e, REG_ROOM_IDX)}
+            placeholder="e.g. Trauma 2"
+            style={S.input}
+          />
         </div>
         <div>
           <div style={S.label}>ESI Triage Level <Hint>(press 1–5)</Hint></div>
@@ -199,16 +254,17 @@ export default function DemoTab({
       </div>
 
       {/* ── Main fields grid ───────────────────────────────────────────── */}
+      {/* allRefs[FIELD_OFFSET + i] continues the Enter chain after MRN/Room */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {FIELDS.map((f, i) => (
           <div key={f.key} style={{ gridColumn: f.wide ? '1 / -1' : undefined }}>
             <div style={S.label}>{f.label}</div>
             <input
-              ref={el => { fieldRefs.current[i] = el; }}
+              ref={el => { allRefs.current[FIELD_OFFSET + i] = el; }}
               type={f.type || 'text'}
               value={demo[f.key] || ''}
               onChange={e => set(f.key, e.target.value)}
-              onKeyDown={e => onFieldKey(e, i)}
+              onKeyDown={e => onFieldKey(e, FIELD_OFFSET + i)}
               placeholder={f.placeholder}
               style={S.input}
             />
@@ -216,19 +272,34 @@ export default function DemoTab({
         ))}
       </div>
 
-      <KbdLegend items={[['Enter','Advance to next field'],['Tab','Browser-native focus'],['M/F/X/U','Set sex (anywhere)'],['1–5','Set ESI (anywhere)'],['↓','→ CC when last field done']]} wide />
+      <KbdLegend
+        items={[
+          ['Enter',    'Next field — MRN → Room → First Name → … → Notes → CC'],
+          ['Tab',      'Browser-native focus'],
+          ['M/F/X/U', 'Set sex (anywhere on this tab)'],
+          ['1–5',      'Set ESI level (anywhere on this tab)'],
+          ['⌘↵',       'Skip ahead to CC tab immediately'],
+          ['⌘P',       'Jump to SmartParse paste box'],
+        ]}
+        wide
+      />
     </div>
   );
 }
 
 // ─── SMALL PRIMITIVES ─────────────────────────────────────────────────────────
 function Hint({ children }) {
-  return <span style={{ fontWeight: 400, color: '#64748b', textTransform: 'none', letterSpacing: 0 }}>{children}</span>;
+  return (
+    <span style={{ fontWeight: 400, color: '#64748b', textTransform: 'none', letterSpacing: 0 }}>
+      {children}
+    </span>
+  );
 }
 
 function AdvBtn({ onClick, label }) {
   return (
-    <button onClick={onClick} style={{ padding: '5px 14px', borderRadius: 7, background: 'var(--npi-teal)', color: '#050f1e', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", whiteSpace: 'nowrap' }}>
+    <button onClick={onClick}
+      style={{ padding: '5px 14px', borderRadius: 7, background: 'var(--npi-teal)', color: '#050f1e', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", whiteSpace: 'nowrap' }}>
       {label}
     </button>
   );

@@ -1,42 +1,57 @@
 import { useState, useCallback, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
+
+// ─── DDx ENGINE ───────────────────────────────────────────────────────────────
+// AI differential diagnosis generator + 9 embedded clinical decision rules.
+// Designed to run as an embedded NPI tab, NOT a standalone page.
+//
+// Props (all optional — gracefully empty if not passed):
+//   initialCC      — pre-populate from NPI cc.text
+//   initialAge     — pre-populate from NPI demo.age
+//   initialSex     — pre-populate from NPI demo.sex
+//   initialVitals  — pre-populate from NPI vitals { hr, bp, rr, spo2, temp }
+//   onBack         — navigate back (not required when embedded in NPI shell)
+//   onToast        — (msg, type) => void  (falls back to local toast)
+//
+// Constraints: no form, no localStorage, no router, no alert, no sonner,
+//   straight quotes only, finally { setBusy(false) } on async.
 
 const PREFIX = "ddx";
 
-(() => {
+// ── Font + keyframe injection (runs once at import time) ──────────────────────
+// Defensive: only touches document if it exists (SSR safety).
+if (typeof document !== "undefined") {
   const fontId = `${PREFIX}-fonts`;
-  if (document.getElementById(fontId)) return;
-  const l = document.createElement("link");
-  l.id = fontId; l.rel = "stylesheet";
-  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
-  document.head.appendChild(l);
-  const s = document.createElement("style"); s.id = `${PREFIX}-css`;
-  s.textContent = `
-    * { box-sizing:border-box; margin:0; padding:0; }
-    ::-webkit-scrollbar { width:3px; height:3px; }
-    ::-webkit-scrollbar-track { background:transparent; }
-    ::-webkit-scrollbar-thumb { background:rgba(42,79,122,.5); border-radius:2px; }
-    @keyframes ${PREFIX}fade  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes ${PREFIX}shim  { 0%,100%{background-position:-200% center} 50%{background-position:200% center} }
-    @keyframes ${PREFIX}orb0  { 0%,100%{transform:translate(-50%,-50%) scale(1)}    50%{transform:translate(-50%,-50%) scale(1.1)} }
-    @keyframes ${PREFIX}orb1  { 0%,100%{transform:translate(-50%,-50%) scale(1.07)} 50%{transform:translate(-50%,-50%) scale(.92)} }
-    @keyframes ${PREFIX}orb2  { 0%,100%{transform:translate(-50%,-50%) scale(.95)}  50%{transform:translate(-50%,-50%) scale(1.09)} }
-    @keyframes ${PREFIX}pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    @keyframes ${PREFIX}spin  { to{transform:rotate(360deg)} }
-    .${PREFIX}-fade  { animation:${PREFIX}fade  .25s ease both; }
-    .${PREFIX}-pulse { animation:${PREFIX}pulse 1.8s ease-in-out infinite; }
-    .${PREFIX}-spin  { animation:${PREFIX}spin  1s linear infinite; }
-    .${PREFIX}-shim  {
-      background:linear-gradient(90deg,#f2f7ff 0%,#fff 25%,#00e5c0 50%,#3b9eff 75%,#f2f7ff 100%);
-      background-size:250% auto; -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent; background-clip:text;
-      animation:${PREFIX}shim 6s linear infinite;
-    }
-  `;
-  document.head.appendChild(s);
-})();
+  if (!document.getElementById(fontId)) {
+    const l = document.createElement("link");
+    l.id = fontId; l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+    document.head.appendChild(l);
+    const s = document.createElement("style");
+    s.id = `${PREFIX}-css`;
+    s.textContent = `
+      @keyframes ${PREFIX}fade  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+      @keyframes ${PREFIX}shim  { 0%,100%{background-position:-200% center} 50%{background-position:200% center} }
+      @keyframes ${PREFIX}pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+      @keyframes ${PREFIX}spin  { to{transform:rotate(360deg)} }
+      .${PREFIX}-fade  { animation:${PREFIX}fade  .25s ease both; }
+      .${PREFIX}-pulse { animation:${PREFIX}pulse 1.8s ease-in-out infinite; }
+      .${PREFIX}-spin  { animation:${PREFIX}spin  1s linear infinite; }
+      .${PREFIX}-shim  {
+        background:linear-gradient(90deg,#f2f7ff 0%,#fff 25%,#00e5c0 50%,#3b9eff 75%,#f2f7ff 100%);
+        background-size:250% auto; -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent; background-clip:text;
+        animation:${PREFIX}shim 6s linear infinite;
+      }
+      ::-webkit-scrollbar { width:3px; height:3px; }
+      ::-webkit-scrollbar-track { background:transparent; }
+      ::-webkit-scrollbar-thumb { background:rgba(42,79,122,.5); border-radius:2px; }
+    `;
+    document.head.appendChild(s);
+  }
+}
 
+// ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
   bg:"#050f1e", txt:"#ffffff", txt2:"#d8ecff", txt3:"#a8ccee", txt4:"#7aaace",
   teal:"#00e5c0", gold:"#f5c842", red:"#ff4444", green:"#3dffa0",
@@ -48,7 +63,7 @@ const glass = {
   background:"rgba(8,22,40,0.78)", border:"1px solid rgba(42,79,122,0.35)", borderRadius:14,
 };
 
-// ── TIER CONFIG ───────────────────────────────────────────────────────
+// ── Tier config ───────────────────────────────────────────────────────────────
 const TIER = {
   must_rule_out: { label:"Must Rule Out", color:T.red,    icon:"🚨", rank:0 },
   high:          { label:"High",          color:T.orange, icon:"🔴", rank:1 },
@@ -56,7 +71,7 @@ const TIER = {
   low:           { label:"Low",           color:T.teal,   icon:"🟢", rank:3 },
 };
 
-// ── QUICK CC PRESETS ──────────────────────────────────────────────────
+// ── Quick CC presets ──────────────────────────────────────────────────────────
 const CC_QUICK = [
   "Chest Pain", "Shortness of Breath", "Abdominal Pain", "Headache",
   "Syncope", "Altered Mental Status", "Back Pain", "Leg Pain/Swelling",
@@ -64,8 +79,7 @@ const CC_QUICK = [
   "Ankle/Foot Injury", "Knee Injury", "Weakness/Numbness",
 ];
 
-// ── CLINICAL DECISION RULES ───────────────────────────────────────────
-// criteria type: "bool" (0 or points) | "choice" (options with different points)
+// ── Clinical decision rules ───────────────────────────────────────────────────
 const RULES = [
   {
     id:"heart", name:"HEART Score", icon:"❤️",
@@ -85,24 +99,24 @@ const RULES = [
       ]},
       { id:"age", label:"Age", type:"choice", choices:[
         {l:"< 45",  p:0},
-        {l:"45–64", p:1},
-        {l:"≥ 65",  p:2},
+        {l:"45-64", p:1},
+        {l:">= 65", p:2},
       ]},
       { id:"risk", label:"Risk Factors", type:"choice", choices:[
         {l:"No known risk factors",                    p:0},
-        {l:"1–2 risk factors or obesity or smoker",    p:1},
-        {l:"≥ 3 RFs or hx atherosclerosis or DM",      p:2},
+        {l:"1-2 risk factors or obesity or smoker",    p:1},
+        {l:">= 3 RFs or hx atherosclerosis or DM",     p:2},
       ]},
       { id:"trop", label:"Troponin", type:"choice", choices:[
-        {l:"≤ normal limit",   p:0},
-        {l:"1–3× normal",      p:1},
-        {l:"> 3× normal",      p:2},
+        {l:"<= normal limit",   p:0},
+        {l:"1-3x normal",       p:1},
+        {l:"> 3x normal",       p:2},
       ]},
     ],
     interpret(score) {
-      if (score <= 3) return { label:"Low Risk", color:T.green,  action:"0.9–1.7% MACE — Consider early discharge with outpatient follow-up" };
-      if (score <= 6) return { label:"Moderate Risk", color:T.gold, action:"12–16.6% MACE — Admit for observation; serial troponins; stress test or cath" };
-      return           { label:"High Risk", color:T.red,   action:"50–65% MACE — Early invasive strategy; cardiology consult" };
+      if (score <= 3) return { label:"Low Risk",      color:T.green,  action:"0.9-1.7% MACE — Consider early discharge with outpatient follow-up" };
+      if (score <= 6) return { label:"Moderate Risk", color:T.gold,   action:"12-16.6% MACE — Admit for observation; serial troponins; stress test or cath" };
+      return                 { label:"High Risk",     color:T.red,    action:"50-65% MACE — Early invasive strategy; cardiology consult" };
     },
   },
   {
@@ -111,21 +125,21 @@ const RULES = [
     desc:"Pre-test probability for deep vein thrombosis.",
     cite:"Wells et al., 1997",
     criteria:[
-      { id:"cancer",     label:"Active cancer (treatment or palliation within 6mo)", type:"bool", points:1 },
-      { id:"paralysis",  label:"Paralysis, paresis, or recent plaster immobilization", type:"bool", points:1 },
-      { id:"bedridden",  label:"Recently bedridden >3d or major surgery <12 weeks",  type:"bool", points:1 },
-      { id:"tenderness", label:"Localized tenderness along deep venous system",       type:"bool", points:1 },
-      { id:"leg_swollen",label:"Entire leg swollen",                                  type:"bool", points:1 },
-      { id:"calf",       label:"Calf swelling >3cm compared with other leg",          type:"bool", points:1 },
-      { id:"pitting",    label:"Pitting edema (greater in symptomatic leg)",          type:"bool", points:1 },
-      { id:"collateral", label:"Collateral superficial veins (nonvaricose)",          type:"bool", points:1 },
-      { id:"prev_dvt",   label:"Previously documented DVT",                          type:"bool", points:1 },
-      { id:"alt_dx",     label:"Alternative diagnosis at least as likely as DVT",    type:"bool", points:-2 },
+      { id:"cancer",      label:"Active cancer (treatment or palliation within 6mo)",      type:"bool", points:1  },
+      { id:"paralysis",   label:"Paralysis, paresis, or recent plaster immobilization",    type:"bool", points:1  },
+      { id:"bedridden",   label:"Recently bedridden >3d or major surgery <12 weeks",       type:"bool", points:1  },
+      { id:"tenderness",  label:"Localized tenderness along deep venous system",           type:"bool", points:1  },
+      { id:"leg_swollen", label:"Entire leg swollen",                                      type:"bool", points:1  },
+      { id:"calf",        label:"Calf swelling >3cm compared with other leg",              type:"bool", points:1  },
+      { id:"pitting",     label:"Pitting edema (greater in symptomatic leg)",              type:"bool", points:1  },
+      { id:"collateral",  label:"Collateral superficial veins (nonvaricose)",              type:"bool", points:1  },
+      { id:"prev_dvt",    label:"Previously documented DVT",                               type:"bool", points:1  },
+      { id:"alt_dx",      label:"Alternative diagnosis at least as likely as DVT",        type:"bool", points:-2 },
     ],
     interpret(score) {
-      if (score <= 1) return { label:"Low Probability", color:T.green,  action:"DVT unlikely. D-dimer if negative rules out DVT; no imaging needed if PERC met" };
-      if (score <= 2) return { label:"Moderate Probability", color:T.gold, action:"DVT possible. Obtain compression ultrasound" };
-      return           { label:"High Probability", color:T.red,   action:"DVT likely. Compression ultrasound; consider anticoagulation before imaging" };
+      if (score <= 1) return { label:"Low Probability",      color:T.green, action:"DVT unlikely. D-dimer if negative rules out DVT; no imaging needed if PERC met" };
+      if (score <= 2) return { label:"Moderate Probability", color:T.gold,  action:"DVT possible. Obtain compression ultrasound" };
+      return                 { label:"High Probability",     color:T.red,   action:"DVT likely. Compression ultrasound; consider anticoagulation before imaging" };
     },
   },
   {
@@ -134,18 +148,18 @@ const RULES = [
     desc:"Pre-test clinical probability for pulmonary embolism.",
     cite:"Wells et al., 2000",
     criteria:[
-      { id:"dvt_sx",   label:"Clinical signs/symptoms of DVT",                          type:"bool", points:3   },
-      { id:"alt_less", label:"PE is #1 diagnosis OR equally likely",                    type:"bool", points:3   },
-      { id:"hr100",    label:"Heart rate > 100 bpm",                                    type:"bool", points:1.5 },
-      { id:"immob",    label:"Immobilization ≥3d or surgery in previous 4 weeks",       type:"bool", points:1.5 },
-      { id:"prev_pe",  label:"Previous DVT or PE",                                      type:"bool", points:1.5 },
-      { id:"hemopt",   label:"Hemoptysis",                                              type:"bool", points:1   },
-      { id:"malig",    label:"Malignancy (treated within 6mo or palliative)",           type:"bool", points:1   },
+      { id:"dvt_sx",   label:"Clinical signs/symptoms of DVT",                        type:"bool", points:3   },
+      { id:"alt_less", label:"PE is #1 diagnosis OR equally likely",                  type:"bool", points:3   },
+      { id:"hr100",    label:"Heart rate > 100 bpm",                                  type:"bool", points:1.5 },
+      { id:"immob",    label:"Immobilization >=3d or surgery in previous 4 weeks",    type:"bool", points:1.5 },
+      { id:"prev_pe",  label:"Previous DVT or PE",                                    type:"bool", points:1.5 },
+      { id:"hemopt",   label:"Hemoptysis",                                            type:"bool", points:1   },
+      { id:"malig",    label:"Malignancy (treated within 6mo or palliative)",         type:"bool", points:1   },
     ],
     interpret(score) {
-      if (score < 2)  return { label:"Low Probability", color:T.green,  action:"~2% PE prevalence. If PERC criteria all absent → rule out PE. Otherwise D-dimer" };
-      if (score <= 6) return { label:"Moderate Probability", color:T.gold, action:"~17% PE prevalence. D-dimer if ≤4; if elevated → CT-PA. Consider PERC if borderline" };
-      return           { label:"High Probability", color:T.red,   action:"~65% PE prevalence. Proceed directly to CT-PA. Consider anticoagulation before imaging" };
+      if (score < 2)  return { label:"Low Probability",      color:T.green, action:"~2% PE prevalence. If PERC criteria all absent -> rule out PE. Otherwise D-dimer" };
+      if (score <= 6) return { label:"Moderate Probability", color:T.gold,  action:"~17% PE prevalence. D-dimer if <=4; if elevated -> CT-PA. Consider PERC if borderline" };
+      return                 { label:"High Probability",     color:T.red,   action:"~65% PE prevalence. Proceed directly to CT-PA. Consider anticoagulation before imaging" };
     },
   },
   {
@@ -154,18 +168,18 @@ const RULES = [
     desc:"Rules out PE if ALL 8 criteria are absent AND pre-test probability is low (Wells <2).",
     cite:"Kline et al., 2004",
     criteria:[
-      { id:"age50",    label:"Age ≥ 50",                          type:"bool", points:1 },
-      { id:"hr100",    label:"Heart rate ≥ 100 bpm",              type:"bool", points:1 },
-      { id:"spo2",     label:"SpO₂ < 95% on room air",            type:"bool", points:1 },
-      { id:"leg_sx",   label:"Unilateral leg swelling",           type:"bool", points:1 },
-      { id:"hemopt",   label:"Hemoptysis",                        type:"bool", points:1 },
-      { id:"surgery",  label:"Recent surgery or trauma within 4 weeks", type:"bool", points:1 },
-      { id:"prev_pe",  label:"Prior PE or DVT",                   type:"bool", points:1 },
-      { id:"hormone",  label:"Exogenous estrogen use",            type:"bool", points:1 },
+      { id:"age50",   label:"Age >= 50",                           type:"bool", points:1 },
+      { id:"hr100",   label:"Heart rate >= 100 bpm",               type:"bool", points:1 },
+      { id:"spo2",    label:"SpO2 < 95% on room air",              type:"bool", points:1 },
+      { id:"leg_sx",  label:"Unilateral leg swelling",             type:"bool", points:1 },
+      { id:"hemopt",  label:"Hemoptysis",                          type:"bool", points:1 },
+      { id:"surgery", label:"Recent surgery or trauma within 4 weeks", type:"bool", points:1 },
+      { id:"prev_pe", label:"Prior PE or DVT",                     type:"bool", points:1 },
+      { id:"hormone", label:"Exogenous estrogen use",              type:"bool", points:1 },
     ],
     interpret(score) {
-      if (score === 0) return { label:"PERC Negative", color:T.green,  action:"PE ruled out — no further workup if low pre-test probability (Wells <2). ~0.3% miss rate" };
-      return           { label:"PERC Positive", color:T.red,   action:"PERC not met — obtain D-dimer and apply Wells criteria. Further workup required" };
+      if (score === 0) return { label:"PERC Negative", color:T.green, action:"PE ruled out — no further workup if low pre-test probability (Wells <2). ~0.3% miss rate" };
+      return                  { label:"PERC Positive", color:T.red,   action:"PERC not met — obtain D-dimer and apply Wells criteria. Further workup required" };
     },
   },
   {
@@ -174,15 +188,15 @@ const RULES = [
     desc:"Cervical spine imaging decision rule. All 5 criteria must be ABSENT to clear.",
     cite:"Hoffman et al., 2000",
     criteria:[
-      { id:"midline",    label:"Midline cervical tenderness",                          type:"bool", points:1 },
-      { id:"focal_neuro",label:"Focal neurological deficit",                           type:"bool", points:1 },
-      { id:"altered",    label:"Altered level of alertness",                           type:"bool", points:1 },
-      { id:"intox",      label:"Evidence of intoxication",                             type:"bool", points:1 },
-      { id:"distract",   label:"Presence of a painful, distracting injury",           type:"bool", points:1 },
+      { id:"midline",     label:"Midline cervical tenderness",                       type:"bool", points:1 },
+      { id:"focal_neuro", label:"Focal neurological deficit",                        type:"bool", points:1 },
+      { id:"altered",     label:"Altered level of alertness",                        type:"bool", points:1 },
+      { id:"intox",       label:"Evidence of intoxication",                          type:"bool", points:1 },
+      { id:"distract",    label:"Presence of a painful, distracting injury",        type:"bool", points:1 },
     ],
     interpret(score) {
-      if (score === 0) return { label:"Low Risk — C-Spine Cleared", color:T.green,  action:"No imaging required. 99.6% sensitivity for clinically significant injury" };
-      return           { label:"Imaging Required", color:T.red,   action:"≥1 criterion present — obtain CT C-spine. Consider MRI if neurological deficit" };
+      if (score === 0) return { label:"Low Risk — C-Spine Cleared", color:T.green, action:"No imaging required. 99.6% sensitivity for clinically significant injury" };
+      return                  { label:"Imaging Required",            color:T.red,   action:">=1 criterion present — obtain CT C-spine. Consider MRI if neurological deficit" };
     },
   },
   {
@@ -191,16 +205,15 @@ const RULES = [
     desc:"Indicates need for ankle/foot X-ray after acute ankle injury.",
     cite:"Stiell et al., 1992",
     criteria:[
-      { id:"lat_mal",  label:"Bone tenderness at posterior edge or tip of lateral malleolus",  type:"bool", points:1 },
-      { id:"med_mal",  label:"Bone tenderness at posterior edge or tip of medial malleolus",   type:"bool", points:1 },
-      { id:"wt_bear_a",label:"Unable to bear weight (4 steps) immediately and in ED",          type:"bool", points:1 },
-      { id:"5th_met",  label:"Bone tenderness at base of 5th metatarsal (foot zone)",          type:"bool", points:1 },
-      { id:"navic",    label:"Bone tenderness at navicular bone (foot zone)",                   type:"bool", points:1 },
+      { id:"lat_mal",   label:"Bone tenderness at posterior edge or tip of lateral malleolus",  type:"bool", points:1 },
+      { id:"med_mal",   label:"Bone tenderness at posterior edge or tip of medial malleolus",   type:"bool", points:1 },
+      { id:"wt_bear_a", label:"Unable to bear weight (4 steps) immediately and in ED",         type:"bool", points:1 },
+      { id:"5th_met",   label:"Bone tenderness at base of 5th metatarsal (foot zone)",         type:"bool", points:1 },
+      { id:"navic",     label:"Bone tenderness at navicular bone (foot zone)",                  type:"bool", points:1 },
     ],
     interpret(score) {
-      const ankle = score >= 1;
-      if (!ankle) return { label:"No X-ray Indicated", color:T.green, action:"Ottawa negative — X-ray not required. 97-99% sensitive for fracture" };
-      return             { label:"X-ray Indicated",    color:T.gold,  action:"One or more criteria met — obtain ankle ± foot X-ray series" };
+      if (!score) return { label:"No X-ray Indicated", color:T.green, action:"Ottawa negative — X-ray not required. 97-99% sensitive for fracture" };
+      return             { label:"X-ray Indicated",    color:T.gold,  action:"One or more criteria met — obtain ankle +/- foot X-ray series" };
     },
   },
   {
@@ -209,15 +222,15 @@ const RULES = [
     desc:"Indicates need for knee X-ray after acute knee injury.",
     cite:"Stiell et al., 1995",
     criteria:[
-      { id:"age55",   label:"Age ≥ 55",                                 type:"bool", points:1 },
+      { id:"age55",   label:"Age >= 55",                                 type:"bool", points:1 },
       { id:"pat",     label:"Isolated tenderness of the patella",        type:"bool", points:1 },
       { id:"fibula",  label:"Tenderness at head of fibula",              type:"bool", points:1 },
-      { id:"flex90",  label:"Inability to flex knee to 90°",             type:"bool", points:1 },
+      { id:"flex90",  label:"Inability to flex knee to 90 degrees",      type:"bool", points:1 },
       { id:"wt_bear", label:"Inability to bear weight (4 steps) in ED", type:"bool", points:1 },
     ],
     interpret(score) {
-      if (score === 0) return { label:"No X-ray Indicated", color:T.green, action:"Ottawa Knee negative — X-ray not required. 97% sensitivity for fracture" };
-      return           { label:"X-ray Indicated",    color:T.gold,  action:"≥1 criterion present — obtain knee X-ray (AP and lateral)" };
+      if (!score) return { label:"No X-ray Indicated", color:T.green, action:"Ottawa Knee negative — X-ray not required. 97% sensitivity for fracture" };
+      return             { label:"X-ray Indicated",    color:T.gold,  action:">=1 criterion present — obtain knee X-ray (AP and lateral)" };
     },
   },
   {
@@ -226,47 +239,69 @@ const RULES = [
     desc:"Pediatric head CT decision rule. Apply to children after head trauma.",
     cite:"Kuppermann et al., 2009",
     criteria:[
-      { id:"age_lt2",    label:"Patient age < 2 years",                              type:"bool", points:0 },
-      { id:"gcs_lt15",   label:"GCS < 15",                                           type:"bool", points:2 },
-      { id:"palpable_fx",label:"Palpable skull fracture",                            type:"bool", points:2 },
-      { id:"ams",        label:"Altered mental status (agitation, somnolence, slow response)", type:"bool", points:2 },
-      { id:"hematoma",   label:"Occipital/parietal/temporal scalp hematoma (if <2yo)", type:"bool", points:1 },
-      { id:"loc_5s",     label:"LOC ≥ 5 seconds",                                   type:"bool", points:1 },
-      { id:"mech",       label:"Severe mechanism (MVA, fall >1.5m/<2yo or >3ft/>2yo, struck by high-force object)", type:"bool", points:1 },
-      { id:"acting",     label:"Not acting normally per parent (if <2yo)",           type:"bool", points:1 },
-      { id:"vomiting",   label:"Vomiting (if ≥2yo)",                               type:"bool", points:1 },
-      { id:"headache",   label:"Severe headache (if ≥2yo)",                         type:"bool", points:1 },
+      { id:"gcs_lt15",    label:"GCS < 15",                                                           type:"bool", points:2 },
+      { id:"palpable_fx", label:"Palpable skull fracture",                                            type:"bool", points:2 },
+      { id:"ams",         label:"Altered mental status (agitation, somnolence, slow response)",       type:"bool", points:2 },
+      { id:"hematoma",    label:"Occipital/parietal/temporal scalp hematoma (if <2yo)",              type:"bool", points:1 },
+      { id:"loc_5s",      label:"LOC >= 5 seconds",                                                   type:"bool", points:1 },
+      { id:"mech",        label:"Severe mechanism (MVA, fall >1.5m/<2yo or >3ft/>2yo)",              type:"bool", points:1 },
+      { id:"acting",      label:"Not acting normally per parent (if <2yo)",                          type:"bool", points:1 },
+      { id:"vomiting",    label:"Vomiting (if >=2yo)",                                               type:"bool", points:1 },
+      { id:"headache",    label:"Severe headache (if >=2yo)",                                        type:"bool", points:1 },
     ],
     interpret(score) {
-      const highItems = ["gcs_lt15","palpable_fx","ams"];
-      if (score >= 2) return { label:"High Risk — CT Indicated",    color:T.red,    action:"High-risk features present. CT head indicated. Risk of ciTBI >4%" };
-      if (score === 1) return { label:"Intermediate — Observe/CT", color:T.gold,   action:"Intermediate risk. Shared decision: observation vs CT. ciTBI risk ~0.9–1.5%" };
-      return                  { label:"Low Risk — CT Not Indicated", color:T.green, action:"Very low risk (<0.02–0.05% ciTBI). CT not routinely indicated. Observe and discharge" };
+      if (score >= 2) return { label:"High Risk — CT Indicated",    color:T.red,   action:"High-risk features present. CT head indicated. Risk of ciTBI >4%" };
+      if (score === 1) return { label:"Intermediate — Observe/CT",  color:T.gold,  action:"Intermediate risk. Shared decision: observation vs CT. ciTBI risk ~0.9-1.5%" };
+      return                  { label:"Low Risk — CT Not Indicated", color:T.green, action:"Very low risk (<0.02-0.05% ciTBI). CT not routinely indicated. Observe and discharge" };
     },
   },
   {
     id:"canadian_head", name:"Canadian CT Head", icon:"🧠",
     cc:["Trauma — Head","Headache","Altered Mental Status"],
-    desc:"Indicates CT for adults with minor head injury (LOC, amnesia, or confusion). GCS 13–15.",
+    desc:"Indicates CT for adults with minor head injury (LOC, amnesia, or confusion). GCS 13-15.",
     cite:"Stiell et al., 2001",
     criteria:[
-      { id:"gcs_2h",    label:"GCS score < 15 at 2 hours after injury",             type:"bool", points:2 },
-      { id:"open_fx",   label:"Suspected open or depressed skull fracture",          type:"bool", points:2 },
+      { id:"gcs_2h",    label:"GCS score < 15 at 2 hours after injury",                                                                type:"bool", points:2 },
+      { id:"open_fx",   label:"Suspected open or depressed skull fracture",                                                            type:"bool", points:2 },
       { id:"basal_fx",  label:"Any sign of basal skull fracture (raccoon eyes, hemotympanum, CSF otorrhea/rhinorrhea, Battle's sign)", type:"bool", points:2 },
-      { id:"vomiting",  label:"Vomiting ≥ 2 episodes",                              type:"bool", points:2 },
-      { id:"age65",     label:"Age ≥ 65",                                           type:"bool", points:2 },
-      { id:"amnesia30", label:"Amnesia before impact ≥ 30 minutes",                type:"bool", points:1 },
-      { id:"dangerous", label:"Dangerous mechanism (pedestrian, ejection, fall >3 feet)", type:"bool", points:1 },
+      { id:"vomiting",  label:"Vomiting >= 2 episodes",                                                                               type:"bool", points:2 },
+      { id:"age65",     label:"Age >= 65",                                                                                            type:"bool", points:2 },
+      { id:"amnesia30", label:"Amnesia before impact >= 30 minutes",                                                                  type:"bool", points:1 },
+      { id:"dangerous", label:"Dangerous mechanism (pedestrian, ejection, fall >3 feet)",                                            type:"bool", points:1 },
     ],
     interpret(score) {
-      if (score >= 2) return { label:"High Risk — CT Required",    color:T.red,   action:"High-risk features for neurological intervention or brain injury. CT head indicated" };
+      if (score >= 2) return { label:"High Risk — CT Required",   color:T.red,   action:"High-risk features for neurological intervention or brain injury. CT head indicated" };
       if (score === 1) return { label:"Medium Risk — CT Required", color:T.gold,  action:"Medium-risk features. CT head recommended to detect brain injury (may not need intervention)" };
-      return           { label:"Low Risk — CT Not Required",color:T.green, action:"No high or medium risk criteria. CT not required. 100% sensitive for neurosurgical intervention" };
+      return                  { label:"Low Risk — CT Not Required",color:T.green, action:"No high or medium risk criteria. CT not required. 100% sensitive for neurosurgical intervention" };
     },
   },
 ];
 
-// ── HELPERS ───────────────────────────────────────────────────────────
+// ── DDx JSON schema for InvokeLLM ─────────────────────────────────────────────
+const DDX_SCHEMA = {
+  type: "object",
+  properties: {
+    differentials: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          rank:       { type: "number" },
+          diagnosis:  { type: "string" },
+          tier:       { type: "string" },
+          rationale:  { type: "string" },
+          keyNext:    { type: "array", items: { type: "string" } },
+          rules:      { type: "array", items: { type: "string" } },
+        },
+      },
+    },
+    redFlags:       { type: "array", items: { type: "string" } },
+    suggestedRules: { type: "array", items: { type: "string" } },
+    insight:        { type: "string" },
+  },
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function calcScore(rule, values) {
   return rule.criteria.reduce((sum, c) => {
     if (c.type === "bool")   return sum + (values[c.id] ? c.points : 0);
@@ -278,36 +313,11 @@ function calcScore(rule, values) {
   }, 0);
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  MODULE-SCOPE PRIMITIVES
-// ══════════════════════════════════════════════════════════════════════
-
-function AmbientBg() {
-  return (
-    <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0 }}>
-      {[
-        { l:"10%", t:"15%", r:300, c:"rgba(0,229,192,0.05)"   },
-        { l:"88%", t:"10%", r:260, c:"rgba(59,158,255,0.05)"  },
-        { l:"75%", t:"78%", r:340, c:"rgba(155,109,255,0.04)" },
-        { l:"20%", t:"78%", r:220, c:"rgba(245,200,66,0.04)"  },
-      ].map((o,i) => (
-        <div key={i} style={{
-          position:"absolute", left:o.l, top:o.t,
-          width:o.r*2, height:o.r*2, borderRadius:"50%",
-          background:`radial-gradient(circle,${o.c} 0%,transparent 68%)`,
-          transform:"translate(-50%,-50%)",
-          animation:`${PREFIX}orb${i%3} ${8+i*1.3}s ease-in-out infinite`,
-        }}/>
-      ))}
-    </div>
-  );
-}
-
+// ── Sub-components ────────────────────────────────────────────────────────────
 function HubBadge({ onBack }) {
   return (
     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:9 }}>
       <div style={{
-        backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)",
         background:"rgba(5,15,30,0.9)", border:"1px solid rgba(42,79,122,0.6)",
         borderRadius:10, padding:"5px 12px", display:"flex", alignItems:"center", gap:8,
       }}>
@@ -321,26 +331,29 @@ function HubBadge({ onBack }) {
           fontFamily:"DM Sans", fontSize:11, fontWeight:600, padding:"5px 14px",
           borderRadius:8, cursor:"pointer", border:"1px solid rgba(42,79,122,0.5)",
           background:"rgba(14,37,68,0.6)", color:T.txt3,
-        }}>← Hub</button>
+        }}>
+          Back
+        </button>
       )}
     </div>
   );
 }
 
-function Toast({ msg }) {
+function LocalToast({ msg }) {
+  if (!msg) return null;
   return (
     <div style={{
       position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)",
       background:"rgba(8,22,40,0.96)", border:"1px solid rgba(0,229,192,0.4)",
-      borderRadius:10, padding:"10px 20px", fontFamily:"DM Sans", fontWeight:600,
-      fontSize:13, color:T.teal, zIndex:99999, pointerEvents:"none",
+      borderRadius:10, padding:"10px 20px",
+      fontFamily:"DM Sans", fontWeight:600, fontSize:13, color:T.teal,
+      zIndex:99999, pointerEvents:"none",
       animation:`${PREFIX}fade .2s ease both`,
     }}>{msg}</div>
   );
 }
 
-// ── DDx Result Card ───────────────────────────────────────────────────
-function DxCard({ dx, index, suggestedRules, onRule }) {
+function DxCard({ dx, index, onRule }) {
   const [open, setOpen] = useState(index === 0);
   const t = TIER[dx.tier] || TIER.moderate;
   const linked = (dx.rules || []).filter(r => RULES.find(rl => rl.name === r || rl.id === r));
@@ -378,7 +391,9 @@ function DxCard({ dx, index, suggestedRules, onRule }) {
                   fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700,
                   padding:"2px 7px", borderRadius:20, cursor:"pointer",
                   background:`${T.blue}12`, border:`1px solid ${T.blue}30`, color:T.blue,
-                }}>📐 {r}</button>
+                }}>
+                  📐 {r}
+                </button>
               ))}
             </div>
           </div>
@@ -387,7 +402,9 @@ function DxCard({ dx, index, suggestedRules, onRule }) {
       </div>
 
       {open && (
-        <div className={`${PREFIX}-fade`} style={{ borderTop:"1px solid rgba(42,79,122,0.22)", padding:"10px 13px 12px" }}>
+        <div className={`${PREFIX}-fade`} style={{
+          borderTop:"1px solid rgba(42,79,122,0.22)", padding:"10px 13px 12px",
+        }}>
           {dx.rationale && (
             <div style={{ marginBottom:9 }}>
               <div style={{
@@ -399,8 +416,8 @@ function DxCard({ dx, index, suggestedRules, onRule }) {
               </div>
             </div>
           )}
-          {dx.keyNext && dx.keyNext.length > 0 && (
-            <div style={{ marginBottom:9 }}>
+          {dx.keyNext?.length > 0 && (
+            <div>
               <div style={{
                 fontFamily:"JetBrains Mono", fontSize:7, fontWeight:700, color:T.teal,
                 letterSpacing:1.5, textTransform:"uppercase", marginBottom:5,
@@ -423,11 +440,10 @@ function DxCard({ dx, index, suggestedRules, onRule }) {
   );
 }
 
-// ── Rule Calculator ───────────────────────────────────────────────────
 function RuleCalc({ rule }) {
   const [values, setValues] = useState({});
   const score  = useMemo(() => calcScore(rule, values), [rule, values]);
-  const result = useMemo(() => rule.interpret(score), [rule, score, values]);
+  const result = useMemo(() => rule.interpret(score), [rule, score]);
   const maxPossible = rule.criteria.reduce((s, c) => {
     if (c.type === "bool")   return s + Math.max(0, c.points);
     if (c.type === "choice") return s + Math.max(...c.choices.map(ch => ch.p));
@@ -438,7 +454,6 @@ function RuleCalc({ rule }) {
 
   return (
     <div className={`${PREFIX}-fade`} style={{ display:"flex", flexDirection:"column", gap:10 }}>
-      {/* Header */}
       <div style={{
         ...glass, padding:"12px 14px",
         borderLeft:`3px solid ${T.blue}`, background:`${T.blue}07`,
@@ -459,7 +474,6 @@ function RuleCalc({ rule }) {
         </div>
       </div>
 
-      {/* Criteria */}
       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
         {rule.criteria.map(c => (
           <div key={c.id} style={{
@@ -468,10 +482,8 @@ function RuleCalc({ rule }) {
             border:`1px solid ${values[c.id] ? T.teal+"28" : "rgba(42,79,122,0.3)"}`,
           }}>
             {c.type === "bool" ? (
-              <div
-                onClick={() => setVal(c.id, !values[c.id])}
-                style={{ display:"flex", alignItems:"flex-start", gap:10, cursor:"pointer" }}
-              >
+              <div onClick={() => setVal(c.id, !values[c.id])}
+                style={{ display:"flex", alignItems:"flex-start", gap:10, cursor:"pointer" }}>
                 <div style={{
                   width:18, height:18, borderRadius:5, flexShrink:0, marginTop:1,
                   border:`2px solid ${values[c.id] ? T.teal : "rgba(42,79,122,0.5)"}`,
@@ -479,19 +491,20 @@ function RuleCalc({ rule }) {
                   display:"flex", alignItems:"center", justifyContent:"center",
                   transition:"all .12s",
                 }}>
-                  {values[c.id] && <span style={{ fontSize:10, color:"#050f1e", fontWeight:700 }}>✓</span>}
+                  {values[c.id] && (
+                    <span style={{ fontSize:10, color:"#050f1e", fontWeight:700 }}>✓</span>
+                  )}
                 </div>
                 <div style={{ flex:1 }}>
-                  <span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt, fontWeight:values[c.id] ? 600 : 400 }}>
-                    {c.label}
-                  </span>
+                  <span style={{
+                    fontFamily:"DM Sans", fontSize:12, color:T.txt,
+                    fontWeight: values[c.id] ? 600 : 400,
+                  }}>{c.label}</span>
                 </div>
                 <span style={{
                   fontFamily:"JetBrains Mono", fontSize:10, fontWeight:700,
                   color: c.points < 0 ? T.red : T.teal, flexShrink:0,
-                }}>
-                  {c.points > 0 ? `+${c.points}` : c.points}
-                </span>
+                }}>{c.points > 0 ? `+${c.points}` : c.points}</span>
               </div>
             ) : (
               <div>
@@ -500,17 +513,13 @@ function RuleCalc({ rule }) {
                 }}>{c.label}</div>
                 <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                   {c.choices.map((ch, i) => (
-                    <div
-                      key={i}
-                      onClick={() => setVal(c.id, i)}
-                      style={{
-                        display:"flex", alignItems:"center", justifyContent:"space-between",
-                        padding:"6px 10px", borderRadius:8, cursor:"pointer",
-                        border:`1px solid ${(values[c.id]??0)===i ? T.teal+"45" : "rgba(42,79,122,0.25)"}`,
-                        background: (values[c.id]??0)===i ? `${T.teal}12` : "rgba(14,37,68,0.3)",
-                        transition:"all .1s",
-                      }}
-                    >
+                    <div key={i} onClick={() => setVal(c.id, i)} style={{
+                      display:"flex", alignItems:"center", justifyContent:"space-between",
+                      padding:"6px 10px", borderRadius:8, cursor:"pointer",
+                      border:`1px solid ${(values[c.id]??0)===i ? T.teal+"45" : "rgba(42,79,122,0.25)"}`,
+                      background: (values[c.id]??0)===i ? `${T.teal}12` : "rgba(14,37,68,0.3)",
+                      transition:"all .1s",
+                    }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                         <div style={{
                           width:12, height:12, borderRadius:"50%", flexShrink:0,
@@ -537,11 +546,9 @@ function RuleCalc({ rule }) {
         ))}
       </div>
 
-      {/* Result banner */}
       <div style={{
         ...glass, padding:"12px 14px",
-        borderLeft:`3px solid ${result.color}`,
-        background:`${result.color}0d`,
+        borderLeft:`3px solid ${result.color}`, background:`${result.color}0d`,
         display:"flex", alignItems:"center", justifyContent:"space-between", gap:12,
       }}>
         <div style={{ flex:1 }}>
@@ -566,54 +573,72 @@ function RuleCalc({ rule }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  MAIN EXPORT
-// ══════════════════════════════════════════════════════════════════════
+// ── Main export ───────────────────────────────────────────────────────────────
+export default function DDxEngine({
+  // FIX 5: Accept NPI patient data as initial values — pre-populate inputs
+  initialCC     = "",
+  initialAge    = "",
+  initialSex    = "M",
+  initialVitals = {},
+  onBack,
+  onToast,
+}) {
+  // Local inputs — initialized from NPI props; user can override
+  const [cc,      setCc]      = useState(initialCC);
+  const [age,     setAge]     = useState(initialAge || "");
+  const [sex,     setSex]     = useState(initialSex || "M");
+  const [vitals,  setVitals]  = useState({
+    hr:   initialVitals.hr   || "",
+    sbp:  (initialVitals.bp  || "").split("/")[0] || "",
+    dbp:  (initialVitals.bp  || "").split("/")[1] || "",
+    rr:   initialVitals.rr   || "",
+    spo2: initialVitals.spo2 || "",
+    temp: initialVitals.temp || "",
+  });
+  const [context, setContext] = useState("");
 
-export default function DDxEngine({ onBack }) {
-  // — inputs
-  const [cc,       setCc]       = useState("");
-  const [age,      setAge]      = useState("");
-  const [sex,      setSex]      = useState("M");
-  const [vitals,   setVitals]   = useState({ hr:"", sbp:"", dbp:"", rr:"", spo2:"", temp:"" });
-  const [context,  setContext]  = useState("");
-  // — state
-  const [tab,      setTab]      = useState("ddx");
-  const [busy,     setBusy]     = useState(false);
-  const [result,   setResult]   = useState(null);
-  const [error,    setError]    = useState("");
-  const [activeRule,setActiveRule] = useState(null);
-  const [toast,    setToast]    = useState("");
+  const [tab,        setTab]        = useState("ddx");
+  const [busy,       setBusy]       = useState(false);
+  const [result,     setResult]     = useState(null);
+  const [error,      setError]      = useState("");
+  const [activeRule, setActiveRule] = useState(null);
+  const [localToast, setLocalToast] = useState("");
 
-  const showToast = useCallback((msg) => { setToast(msg); setTimeout(()=>setToast(""),2200); }, []);
+  // Toast: prefer onToast prop; fall back to local float
+  const showToast = useCallback((msg, type = "success") => {
+    if (onToast) { onToast(msg, type); return; }
+    setLocalToast(msg);
+    setTimeout(() => setLocalToast(""), 2200);
+  }, [onToast]);
 
-  function setVital(k, v) { setVitals(prev => ({ ...prev, [k]:v })); }
+  function setVital(k, v) { setVitals(prev => ({ ...prev, [k]: v })); }
 
-  // ── Suggested rules for current CC ───────────────────────────────
   const suggestedRules = useMemo(() => {
     if (!cc) return [];
-    return RULES.filter(r => r.cc.some(c => cc.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(cc.toLowerCase())));
+    return RULES.filter(r =>
+      r.cc.some(c => cc.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(cc.toLowerCase()))
+    );
   }, [cc]);
 
-  // ── Navigate to a rule from a DDx card ───────────────────────────
   function handleRuleLink(ruleName) {
     const r = RULES.find(rl => rl.name === ruleName || rl.id === ruleName);
     if (r) { setActiveRule(r.id); setTab("rules"); }
   }
 
-  // ── Generate DDx ─────────────────────────────────────────────────
-  async function handleGenerate() {
+  // FIX 3+4: removed add_context_from_previous_calls; added response_json_schema
+  const handleGenerate = useCallback(async () => {
     if (!cc.trim()) return;
     setBusy(true);
     setResult(null);
     setError("");
     try {
       const vStr = Object.entries(vitals)
-        .filter(([,v]) => v)
-        .map(([k,v]) => `${k.toUpperCase()}: ${v}`)
+        .filter(([, v]) => v)
+        .map(([k, v]) => `${k.toUpperCase()}: ${v}`)
         .join(", ");
 
       const ruleNames = RULES.map(r => r.name).join(", ");
+      const ruleIds   = RULES.map(r => r.id).join(", ");
 
       const prompt = `You are an expert emergency medicine physician. Generate a structured differential diagnosis.
 
@@ -624,50 +649,47 @@ PATIENT:
 - Clinical context: ${context || "none provided"}
 
 INSTRUCTIONS:
-Return ONLY valid JSON (no markdown, no backticks, no preamble). Schema:
-{
-  "differentials": [
-    {
-      "rank": 1,
-      "diagnosis": "string",
-      "tier": "must_rule_out|high|moderate|low",
-      "rationale": "2-3 sentences explaining why this fits the presentation",
-      "keyNext": ["workup step 1", "workup step 2", "workup step 3"],
-      "rules": ["rule name if applicable from: ${ruleNames}"]
-    }
-  ],
-  "redFlags": ["immediate concern 1", "immediate concern 2"],
-  "suggestedRules": ["rule id from: ${RULES.map(r=>r.id).join(", ")}"],
-  "insight": "One key clinical pearl for this presentation"
-}
+Return structured JSON matching the schema. Include 6-10 differentials.
+tier values: "must_rule_out" | "high" | "moderate" | "low"
+Always include life-threatening diagnoses in must_rule_out tier even if less likely.
+rules field: reference rule names from this list only: ${ruleNames}
+suggestedRules field: reference rule IDs from: ${ruleIds}
+Be specific and clinically accurate.
 
 TIER DEFINITIONS:
-- must_rule_out: Life-threatening diagnoses that must be excluded even if low probability
+- must_rule_out: Life-threatening — must be excluded even if low probability
 - high: Most likely given the clinical picture
 - moderate: Reasonable possibility warranting workup
-- low: On the differential but less supported by the presentation
+- low: On the differential but less supported by the presentation`;
 
-Include 6-10 differentials. Be specific and clinically accurate. Always include life-threatening diagnoses in must_rule_out tier even if less likely.`;
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: DDX_SCHEMA,
+      });
 
-      const raw = await InvokeLLM({ prompt, add_context_from_previous_calls: false });
-      const text = typeof raw === "string" ? raw : raw?.content || "";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
+      // Handle both object (schema-enforced) and string (legacy) responses
+      const parsed = typeof res === "object" && res !== null
+        ? res
+        : JSON.parse(String(res).replace(/```json|```/g, "").trim());
+
       setResult(parsed);
       if (parsed.suggestedRules?.length) {
         const first = RULES.find(r => parsed.suggestedRules.includes(r.id));
         if (first) setActiveRule(first.id);
       }
-    } catch {
+      showToast(`${parsed.differentials?.length || 0} differentials generated.`);
+    } catch(_) {
       setError("Could not generate DDx. Check your inputs and try again.");
     } finally {
       setBusy(false);
     }
-  }
+  }, [cc, age, sex, vitals, context, showToast]);
 
   const rulesByCC = useMemo(() => {
     if (!cc) return RULES;
-    const matched = RULES.filter(r => r.cc.some(c => cc.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(cc.toLowerCase())));
+    const matched = RULES.filter(r =>
+      r.cc.some(c => cc.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(cc.toLowerCase()))
+    );
     const rest = RULES.filter(r => !matched.includes(r));
     return [...matched, ...rest];
   }, [cc]);
@@ -675,8 +697,8 @@ Include 6-10 differentials. Be specific and clinically accurate. Always include 
   const activeRuleObj = useMemo(() => RULES.find(r => r.id === activeRule), [activeRule]);
 
   const TABS = [
-    { id:"ddx",   label:"DDx Generator",   icon:"🧠" },
-    { id:"rules", label:"Decision Rules",   icon:"📐" },
+    { id:"ddx",   label:"DDx Generator", icon:"🧠" },
+    { id:"rules", label:"Decision Rules", icon:"📐" },
   ];
 
   const inputStyle = {
@@ -685,34 +707,36 @@ Include 6-10 differentials. Be specific and clinically accurate. Always include 
     color:T.txt, outline:"none", width:"100%", transition:"border-color .12s",
   };
 
+  // ── FIX 2: removed minHeight:"100vh" and AmbientBg (position:fixed incompatible
+  // with NPI shell). Content fills whatever height the NPI shell provides.
   return (
     <div style={{
-      fontFamily:"DM Sans, sans-serif", background:T.bg, minHeight:"100vh",
-      position:"relative", overflowX:"hidden", color:T.txt,
+      fontFamily:"DM Sans, sans-serif", background:T.bg,
+      color:T.txt, display:"flex", flexDirection:"column", height:"100%",
     }}>
-      <AmbientBg/>
-      {toast && <Toast msg={toast}/>}
+      {localToast && <LocalToast msg={localToast}/>}
 
-      <div style={{ position:"relative", zIndex:1, maxWidth:1400, margin:"0 auto", padding:"0 16px" }}>
+      <div style={{ flex:1, overflowY:"auto", padding:"16px 0" }}>
 
         {/* Header */}
-        <div style={{ padding:"18px 0 14px" }}>
+        <div style={{ padding:"0 0 14px" }}>
           <HubBadge onBack={onBack}/>
           <h1 className={`${PREFIX}-shim`} style={{
-            fontFamily:"Playfair Display", fontSize:"clamp(22px,3.5vw,36px)",
+            fontFamily:"Playfair Display", fontSize:"clamp(20px,3vw,30px)",
             fontWeight:900, letterSpacing:-1, lineHeight:1.1, marginBottom:4,
           }}>DDx Engine</h1>
           <p style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt3 }}>
-            AI-powered differential · weighted probability tiers · {RULES.length} embedded decision rules · no manual reference lookup
+            AI differential · probability tiers · {RULES.length} embedded decision rules
           </p>
         </div>
 
-        {/* Tabs */}
+        {/* Tab bar */}
         <div style={{ ...glass, padding:"5px", display:"flex", gap:4, marginBottom:14 }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               flex:"1 1 auto", fontFamily:"DM Sans", fontWeight:600, fontSize:12,
-              padding:"9px 8px", borderRadius:9, cursor:"pointer", textAlign:"center", transition:"all .15s",
+              padding:"9px 8px", borderRadius:9, cursor:"pointer", textAlign:"center",
+              transition:"all .15s",
               border:`1px solid ${tab===t.id ? T.purple+"50" : "transparent"}`,
               background: tab===t.id ? `linear-gradient(135deg,${T.purple}16,${T.purple}06)` : "transparent",
               color: tab===t.id ? T.purple : T.txt3,
@@ -720,7 +744,7 @@ Include 6-10 differentials. Be specific and clinically accurate. Always include 
           ))}
         </div>
 
-        {/* ── DDX GENERATOR TAB ──────────────────────────────────── */}
+        {/* ── DDx Generator tab ── */}
         {tab === "ddx" && (
           <div className={`${PREFIX}-fade`}>
             <div style={{
@@ -728,6 +752,7 @@ Include 6-10 differentials. Be specific and clinically accurate. Always include 
               gridTemplateColumns: result ? "1fr 1.6fr" : "1fr",
               gap:14, marginBottom:24, alignItems:"start",
             }}>
+
               {/* Input panel */}
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                 <div style={{ ...glass, padding:"14px" }}>
@@ -740,7 +765,6 @@ Include 6-10 differentials. Be specific and clinically accurate. Always include 
                     placeholder="e.g. Chest pain, Shortness of breath..."
                     style={{ ...inputStyle, border:`1px solid ${cc ? T.purple+"45" : "rgba(42,79,122,0.4)"}`, marginBottom:8 }}
                   />
-                  {/* Quick CC */}
                   <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
                     {CC_QUICK.map(q => (
                       <button key={q} onClick={() => setCc(q)} style={{
@@ -762,15 +786,16 @@ Include 6-10 differentials. Be specific and clinically accurate. Always include 
                   }}>Patient & Vitals</div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:8 }}>
                     {[
-                      { k:"hr",  ph:"HR",     u:"bpm"   },
-                      { k:"sbp", ph:"SBP",    u:"mmHg"  },
-                      { k:"rr",  ph:"RR",     u:"/min"  },
-                      { k:"spo2",ph:"SpO₂",   u:"%"     },
-                      { k:"temp",ph:"Temp",   u:"°F"    },
-                      { k:"dbp", ph:"DBP",    u:"mmHg"  },
+                      { k:"hr",   ph:"HR",   u:"bpm"  },
+                      { k:"sbp",  ph:"SBP",  u:"mmHg" },
+                      { k:"rr",   ph:"RR",   u:"/min" },
+                      { k:"spo2", ph:"SpO2", u:"%"    },
+                      { k:"temp", ph:"Temp", u:"F"    },
+                      { k:"dbp",  ph:"DBP",  u:"mmHg" },
                     ].map(({ k, ph, u }) => (
                       <div key={k} style={{ position:"relative" }}>
-                        <input type="number" value={vitals[k]} onChange={e => setVital(k, e.target.value)}
+                        <input type="number" value={vitals[k]}
+                          onChange={e => setVital(k, e.target.value)}
                           placeholder={ph}
                           style={{ ...inputStyle, paddingRight:36, fontSize:11 }}
                         />
@@ -783,12 +808,20 @@ Include 6-10 differentials. Be specific and clinically accurate. Always include 
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:7 }}>
                     <div>
-                      <div style={{ fontFamily:"JetBrains Mono", fontSize:7, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase", marginBottom:3 }}>Age</div>
-                      <input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Age"
-                        style={inputStyle}/>
+                      <div style={{
+                        fontFamily:"JetBrains Mono", fontSize:7, color:T.txt4,
+                        letterSpacing:1.5, textTransform:"uppercase", marginBottom:3,
+                      }}>Age</div>
+                      <input type="number" value={age}
+                        onChange={e => setAge(e.target.value)}
+                        placeholder="Age" style={inputStyle}
+                      />
                     </div>
                     <div>
-                      <div style={{ fontFamily:"JetBrains Mono", fontSize:7, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase", marginBottom:3 }}>Sex</div>
+                      <div style={{
+                        fontFamily:"JetBrains Mono", fontSize:7, color:T.txt4,
+                        letterSpacing:1.5, textTransform:"uppercase", marginBottom:3,
+                      }}>Sex</div>
                       <div style={{ display:"flex", gap:4 }}>
                         {["M","F"].map(s => (
                           <button key={s} onClick={() => setSex(s)} style={{
@@ -812,14 +845,12 @@ Include 6-10 differentials. Be specific and clinically accurate. Always include 
                   }}>Clinical Context</div>
                   <textarea
                     value={context} onChange={e => setContext(e.target.value)} rows={5}
-                    placeholder="Symptoms, exam findings, PMH, meds, risk factors, onset/duration, associated symptoms...
-
-Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoretic, onset 45min ago. PMH: HTN, DM2, smoker. Meds: metoprolol, lisinopril. EKG pending. No prior cardiac hx."
+                    placeholder="Symptoms, exam findings, PMH, meds, risk factors, onset/duration, associated symptoms..."
                     style={{ ...inputStyle, resize:"vertical", lineHeight:1.55 }}
                   />
                 </div>
 
-                {/* Suggested rules based on CC */}
+                {/* Suggested rules */}
                 {suggestedRules.length > 0 && (
                   <div style={{ ...glass, padding:"12px 14px", background:`${T.blue}06` }}>
                     <div style={{
@@ -838,19 +869,16 @@ Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoreti
                   </div>
                 )}
 
-                <button
-                  onClick={handleGenerate}
-                  disabled={!cc.trim() || busy}
-                  style={{
-                    fontFamily:"DM Sans", fontWeight:800, fontSize:14,
-                    padding:"14px", borderRadius:10,
-                    cursor: cc.trim() && !busy ? "pointer" : "not-allowed",
-                    border:`1px solid ${T.purple}50`,
-                    background: cc.trim() ? `${T.purple}1c` : "rgba(14,37,68,0.4)",
-                    color: cc.trim() ? T.purple : T.txt4,
-                    opacity: busy ? 0.7 : 1, transition:"all .12s",
-                    display:"flex", alignItems:"center", justifyContent:"center", gap:10,
-                  }}>
+                <button onClick={handleGenerate} disabled={!cc.trim() || busy} style={{
+                  fontFamily:"DM Sans", fontWeight:800, fontSize:14,
+                  padding:"14px", borderRadius:10,
+                  cursor: cc.trim() && !busy ? "pointer" : "not-allowed",
+                  border:`1px solid ${T.purple}50`,
+                  background: cc.trim() ? `${T.purple}1c` : "rgba(14,37,68,0.4)",
+                  color: cc.trim() ? T.purple : T.txt4,
+                  opacity: busy ? 0.7 : 1, transition:"all .12s",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:10,
+                }}>
                   {busy
                     ? <><span className={`${PREFIX}-spin`} style={{ display:"inline-block", fontSize:16 }}>⚙️</span> Generating Differential...</>
                     : "🧠 Generate Differential"}
@@ -859,8 +887,7 @@ Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoreti
                 {error && (
                   <div style={{
                     ...glass, padding:"10px 14px", borderLeft:`3px solid ${T.red}`,
-                    background:`${T.red}0a`,
-                    fontFamily:"DM Sans", fontSize:12, color:T.coral,
+                    background:`${T.red}0a`, fontFamily:"DM Sans", fontSize:12, color:T.coral,
                   }}>{error}</div>
                 )}
               </div>
@@ -868,8 +895,6 @@ Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoreti
               {/* Results panel */}
               {result && (
                 <div className={`${PREFIX}-fade`} style={{ display:"flex", flexDirection:"column", gap:10 }}>
-
-                  {/* Red flags */}
                   {result.redFlags?.length > 0 && (
                     <div style={{
                       ...glass, padding:"10px 13px",
@@ -891,7 +916,6 @@ Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoreti
                     </div>
                   )}
 
-                  {/* Clinical insight */}
                   {result.insight && (
                     <div style={{
                       ...glass, padding:"9px 13px",
@@ -902,7 +926,6 @@ Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoreti
                     </div>
                   )}
 
-                  {/* Tier groups */}
                   {["must_rule_out","high","moderate","low"].map(tier => {
                     const items = result.differentials?.filter(d => d.tier === tier) || [];
                     if (!items.length) return null;
@@ -916,20 +939,13 @@ Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoreti
                         }}>{tc.icon} {tc.label} ({items.length})</div>
                         <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                           {items.map((dx, i) => (
-                            <DxCard
-                              key={dx.rank || i}
-                              dx={dx}
-                              index={i}
-                              suggestedRules={result.suggestedRules || []}
-                              onRule={handleRuleLink}
-                            />
+                            <DxCard key={dx.rank || i} dx={dx} index={i} onRule={handleRuleLink}/>
                           ))}
                         </div>
                       </div>
                     );
                   })}
 
-                  {/* Suggested rules from AI */}
                   {result.suggestedRules?.length > 0 && (
                     <div style={{ ...glass, padding:"11px 13px", background:`${T.blue}07` }}>
                       <div style={{
@@ -952,24 +968,17 @@ Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoreti
                   )}
                 </div>
               )}
-
-              {/* Empty state */}
-              {!result && !busy && (
-                <div style={{ display:"none" }}/>
-              )}
-
             </div>
           </div>
         )}
 
-        {/* ── DECISION RULES TAB ─────────────────────────────────── */}
+        {/* ── Decision Rules tab ── */}
         {tab === "rules" && (
           <div className={`${PREFIX}-fade`} style={{
             display:"grid", gridTemplateColumns:"220px 1fr",
             gap:14, marginBottom:24, alignItems:"start",
           }}>
-            {/* Rule selector */}
-            <div style={{ display:"flex", flexDirection:"column", gap:5, position:"sticky", top:16 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               {rulesByCC.map(r => {
                 const isSuggested = suggestedRules.some(sr => sr.id === r.id);
                 return (
@@ -979,8 +988,7 @@ Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoreti
                     border:`1px solid ${activeRule===r.id ? T.blue+"55" : isSuggested ? T.blue+"25" : "rgba(42,79,122,0.3)"}`,
                     background: activeRule===r.id ? `${T.blue}14` : isSuggested ? `${T.blue}07` : "rgba(8,22,40,0.5)",
                     color: activeRule===r.id ? T.blue : isSuggested ? T.txt2 : T.txt3,
-                    display:"flex", alignItems:"center", gap:8,
-                    transition:"all .12s",
+                    display:"flex", alignItems:"center", gap:8, transition:"all .12s",
                   }}>
                     <span style={{ fontSize:14, flexShrink:0 }}>{r.icon}</span>
                     <span style={{ flex:1, lineHeight:1.3 }}>{r.name}</span>
@@ -995,7 +1003,6 @@ Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoreti
               })}
             </div>
 
-            {/* Active rule calculator */}
             <div>
               {activeRuleObj
                 ? <RuleCalc key={activeRuleObj.id} rule={activeRuleObj}/>
@@ -1005,22 +1012,23 @@ Example: 57M sudden-onset crushing chest pain 10/10 radiating to jaw, diaphoreti
                     display:"flex", flexDirection:"column", alignItems:"center", gap:10,
                   }}>
                     <span style={{ fontSize:32 }}>📐</span>
-                    <span style={{ fontFamily:"DM Sans", fontSize:14, color:T.txt2, fontWeight:600 }}>Select a decision rule</span>
-                    <span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt4 }}>Rules relevant to your CC are highlighted</span>
+                    <span style={{ fontFamily:"DM Sans", fontSize:14, color:T.txt2, fontWeight:600 }}>
+                      Select a decision rule
+                    </span>
+                    <span style={{ fontFamily:"DM Sans", fontSize:12, color:T.txt4 }}>
+                      Rules relevant to your CC are highlighted
+                    </span>
                   </div>
-                )
-              }
+                )}
             </div>
           </div>
         )}
 
-        {/* Footer */}
-        <div style={{ textAlign:"center", paddingBottom:24 }}>
+        <div style={{ textAlign:"center", paddingBottom:16 }}>
           <span style={{ fontFamily:"JetBrains Mono", fontSize:9, color:T.txt4, letterSpacing:1.5 }}>
-            NOTRYA · DDX ENGINE · AI-ASSISTED — CLINICAL JUDGMENT REQUIRED · NOT A SUBSTITUTE FOR PHYSICIAN ASSESSMENT
+            NOTRYA DDX ENGINE · AI-ASSISTED — CLINICAL JUDGMENT REQUIRED
           </span>
         </div>
-
       </div>
     </div>
   );

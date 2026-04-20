@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 // ─── SYSTEM & SYMPTOM DATA ────────────────────────────────────────────────────
 const ROS_SYSTEMS = [
@@ -373,15 +373,20 @@ export default function ROSTab({ onStateChange, onSymptomsChange, chiefComplaint
   const clearAll = useCallback(() => setRosData(initRosData()), []);
 
   // ── Visible systems (focused mode filter) ────────────────────────────────
-  const focusedIds  = getFocusedIds(chiefComplaint);
-  const visibleSys  = docMode === 'full' ? ROS_SYSTEMS : ROS_SYSTEMS.filter(s => focusedIds.includes(s.id));
+  const focusedIds  = useMemo(() => getFocusedIds(chiefComplaint), [chiefComplaint]);
+  const visibleSys  = useMemo(
+    () => docMode === 'full' ? ROS_SYSTEMS : ROS_SYSTEMS.filter(s => focusedIds.includes(s.id)),
+    [docMode, focusedIds]
+  );
   const hiddenCount = ROS_SYSTEMS.length - visibleSys.length;
 
   // ── Keyboard navigation state (useBodySystemKeyboard inlined) ─────────────
   const [activeSystemIdx,  setActiveSystemIdx]  = useState(0);
   const [activeFindingIdx, setActiveFindingIdx] = useState(-1);
   const [isFocused,        setIsFocused]        = useState(false);
-  const panelRef = useRef(null);
+  const panelRef           = useRef(null);
+  const activeSystemIdxRef = useRef(0);
+  activeSystemIdxRef.current = activeSystemIdx;
 
   const focus = useCallback(() => panelRef.current?.focus(), []);
 
@@ -389,7 +394,12 @@ export default function ROSTab({ onStateChange, onSymptomsChange, chiefComplaint
     ref:      panelRef,
     tabIndex: 0,
     onFocus:  () => setIsFocused(true),
-    onBlur:   () => { setIsFocused(false); setActiveFindingIdx(-1); },
+    onBlur:   (e) => {
+      if (!panelRef.current?.contains(e.relatedTarget)) {
+        setIsFocused(false);
+        setActiveFindingIdx(-1);
+      }
+    },
     style:    { outline: 'none' },
   };
 
@@ -513,13 +523,18 @@ export default function ROSTab({ onStateChange, onSymptomsChange, chiefComplaint
   }, [rosData, remainderNeg, docMode, onStateChange, onSymptomsChange]);
 
   // ── Two-way sync with parent rail ────────────────────────────────────────
-  // Rail → tab: when rail clicks a system, update internal keyboard state
+  // Rail → tab: when rail clicks a system, update internal keyboard state.
+  // Uses activeSystemIdxRef (not state) so this effect only fires when extSysIdx
+  // changes — not when internal keyboard nav moves the selection. Without the
+  // ref, having activeSystemIdx in deps caused the effect to revert keyboard
+  // navigation back to extSysIdx before the parent could propagate the new
+  // value, producing visible section flicker.
   useEffect(() => {
-    if (extSysIdx !== undefined && extSysIdx !== activeSystemIdx) {
+    if (extSysIdx !== undefined && extSysIdx !== activeSystemIdxRef.current) {
       setActiveSystemIdx(extSysIdx);
       setActiveFindingIdx(-1);
     }
-  }, [extSysIdx, activeSystemIdx]);
+  }, [extSysIdx]);
 
   // Tab → rail: when keyboard changes system, notify parent
   useEffect(() => {

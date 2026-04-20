@@ -680,7 +680,10 @@ export default function LabInterpreter({
     const lines = [];
     if (demo?.age || demo?.sex) lines.push(`${demo?.age || ""}yo ${demo?.sex || ""}`.trim());
     if (cc?.text) lines.push(`CC: ${cc.text}`);
-    const pmh = (pmhSelected || []).slice(0, 5);
+    const pmhArr = Array.isArray(pmhSelected)
+      ? pmhSelected
+      : Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]);
+    const pmh = pmhArr.slice(0, 5);
     if (pmh.length) lines.push(`PMH: ${pmh.join(", ")}`);
     const meds = (medications || []).map(m => typeof m === "string" ? m : m.name || "").filter(Boolean).slice(0, 5);
     if (meds.length) lines.push(`Meds: ${meds.join(", ")}`);

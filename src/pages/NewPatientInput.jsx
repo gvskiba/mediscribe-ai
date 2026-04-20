@@ -56,6 +56,7 @@ import ResultsViewer           from "@/pages/ResultsViewer";
 import ERxHub                  from "@/pages/ERx";
 import ScoreHub                from "@/pages/ScoreHub";
 import WeightDoseHub           from "@/pages/WeightDoseHub";
+import ResusHub                from "@/pages/ResusHub";
 
 // ── FIX #6: Toast helper at module scope — passed into useNPIState so the
 // hook can emit toasts without importing sonner directly (Base44 constraint).
@@ -571,6 +572,14 @@ export default function NewPatientInput() {
           cc={cc}
           showToast={_showToast}
           onAdvance={() => selectSection("mdm")}
+        />
+      );
+
+      case "resus": return (
+        <ResusHub
+          embedded={true}
+          demo={demo}
+          vitals={vitals}
         />
       );
 

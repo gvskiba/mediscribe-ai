@@ -1,6 +1,8 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 
+// FIX: SSR guard added — IIFE now safe in non-browser environments
 (() => {
+  if (typeof document === "undefined") return;
   if (document.getElementById("meds-tab-fonts")) return;
   const l = document.createElement("link"); l.id = "meds-tab-fonts";
   l.rel = "stylesheet";
@@ -33,7 +35,6 @@ const inp   = (focus,err) => ({width:"100%",background:"rgba(14,37,68,0.8)",bord
 const row   = (x={}) => ({display:"flex",alignItems:"center",gap:8,...x});
 const col   = (x={}) => ({display:"flex",flexDirection:"column",gap:6,...x});
 
-// ── Controlled substance keywords for PDMP trigger ─────────────────
 const CONTROLLED_KEYWORDS = [
   "morphine","oxycodone","hydrocodone","hydromorphone","fentanyl","codeine","tramadol",
   "buprenorphine","methadone","dilaudid","percocet","vicodin","oxycontin","norco",
@@ -162,6 +163,7 @@ function parseSocHxStr(str) {
 }
 function socHxToStr(obj) { return JSON.stringify(obj); }
 
+// ─── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 function Badge({ label, color, size }) {
   const fs = size === "sm" ? 9 : 10;
   return (
@@ -217,6 +219,7 @@ function SelectField({ value, onChange, options }) {
   );
 }
 
+// ─── MAIN EXPORT ─────────────────────────────────────────────────────────────
 export default function MedsTab({
   medications, setMedications,
   allergies, setAllergies,
@@ -248,17 +251,61 @@ export default function MedsTab({
   const [soc, setSoc] = useState(() => parseSocHxStr(socHx));
   const [ageInput, setAgeInput] = useState(patientAge || "");
 
+  // ── FIX: refs for focus management ───────────────────────────────────────
+  const allergyRef = useRef(null);
+  const drugRef    = useRef(null);
+  const pasteRef   = useRef(null);
+
+  // ── FIX: auto-focus allergy input on mount ────────────────────────────────
+  useEffect(() => {
+    const t = setTimeout(() => allergyRef.current?.focus(), 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ── FIX: Cmd+Enter → advance (unless paste textarea is focused → parse) ──
+  useEffect(() => {
+    const h = (e) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key !== "Enter") return;
+      e.preventDefault();
+      // If paste panel is open and its textarea is focused → parse instead
+      if (pasteOpen && document.activeElement === pasteRef.current) {
+        setParsedPaste(parsePastedMeds(pasteText));
+        return;
+      }
+      onAdvance?.();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [pasteOpen, pasteText, onAdvance]);
+
+  // ── FIX: Cmd+M → toggle add-med panel and focus drug input ───────────────
+  useEffect(() => {
+    const h = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "m" || e.key === "M")) {
+        e.preventDefault();
+        setAddMedOpen(v => {
+          const next = !v;
+          if (next) {
+            setPasteOpen(false);
+            setTimeout(() => drugRef.current?.focus(), 60);
+          }
+          return next;
+        });
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
+
   const isGeriatric = parseInt(ageInput) >= 65;
 
-  // ── pmhSelected is an object {conditionName: true/false} ──────────
   const pmhList  = Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]);
   const pmhCount = pmhList.length;
 
-  const beersWarning   = useMemo(() => isGeriatric ? matchBeers(drugInput) : null, [drugInput, isGeriatric]);
-  const allergyWarning = useMemo(() => matchAllergyMed(drugInput, allergies), [drugInput, allergies]);
+  const beersWarning      = useMemo(() => isGeriatric ? matchBeers(drugInput) : null, [drugInput, isGeriatric]);
+  const allergyWarning    = useMemo(() => matchAllergyMed(drugInput, allergies), [drugInput, allergies]);
   const controlledWarning = useMemo(() => matchControlled(drugInput), [drugInput]);
 
-  // ── Detect controlled substances in current med list ───────────────
   const controlledInList = useMemo(() =>
     medications.filter(m => matchControlled(m)),
   [medications]);
@@ -288,7 +335,6 @@ export default function MedsTab({
     setAllergies(prev => prev.filter((_,j) => j !== i));
   }, [setAllergies]);
 
-  // ── PMH uses object pattern: { "HTN": true, "DM Type 2": true } ───
   const handleTogglePMH = useCallback((cond) => {
     setPmhSelected(prev => ({ ...(prev||{}), [cond]: !(prev||{})[cond] }));
   }, [setPmhSelected]);
@@ -321,9 +367,24 @@ export default function MedsTab({
     medications.filter(m => matchAllergyMed(m, allergies)).length,
   [medications, allergies]);
 
+  // ── FIX: handlePasteKeyDown now catches both Ctrl+Enter and Cmd+Enter ─────
+  // Note: Cmd+Enter is intercepted by the global handler above; this catches
+  // the case where focus is in the textarea and the global handler calls
+  // handlePasteParse for us. We only need Ctrl here for non-Mac users.
   function handlePasteKeyDown(e) {
-    if (e.key === "Enter" && e.ctrlKey) handlePasteParse();
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handlePasteParse();
   }
+
+  // ── FIX: PMH category keyboard navigation ─────────────────────────────────
+  const handlePmhCatKey = useCallback((e, idx) => {
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      setActivePmhCat(i => Math.min(i + 1, PMH_CATS.length - 1));
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      setActivePmhCat(i => Math.max(i - 1, 0));
+    }
+  }, []);
 
   return (
     <div style={{ display:"flex",flexDirection:"column",gap:0,height:"100%",overflowY:"auto",padding:"0 0 80px 0" }}>
@@ -363,9 +424,9 @@ export default function MedsTab({
                   style={{ padding:"3px 9px",borderRadius:7,background:pasteOpen?"rgba(59,158,255,0.15)":"rgba(26,53,85,0.5)",border:`1px solid ${pasteOpen?"rgba(59,158,255,0.5)":"rgba(42,77,114,0.4)"}`,color:pasteOpen?T.blue:T.txt3,fontFamily:"DM Sans",fontWeight:600,fontSize:10.5,cursor:"pointer",whiteSpace:"nowrap" }}>
                   📋 Paste
                 </button>
-                <button onClick={e=>{e.stopPropagation();setAddMedOpen(v=>!v);setPasteOpen(false);}}
-                  style={{ padding:"3px 9px",borderRadius:7,background:addMedOpen?"rgba(0,229,192,0.15)":"rgba(26,53,85,0.5)",border:`1px solid ${addMedOpen?"rgba(0,229,192,0.5)":"rgba(42,77,114,0.4)"}`,color:addMedOpen?T.teal:T.txt3,fontFamily:"DM Sans",fontWeight:600,fontSize:10.5,cursor:"pointer" }}>
-                  + Add
+                <button onClick={e=>{e.stopPropagation();setAddMedOpen(v=>!v);setPasteOpen(false);setTimeout(()=>drugRef.current?.focus(),60);}}
+                  style={{ padding:"3px 9px",borderRadius:7,background:addMedOpen?"rgba(0,229,192,0.15)":"rgba(26,53,85,0.5)",border:`1px solid ${addMedOpen?"rgba(0,229,192,0.5)":"rgba(42,77,114,0.4)"}`,color:addMedOpen?T.teal:T.txt3,fontFamily:"DM Sans",fontWeight:600,fontSize:10.5,cursor:"pointer",display:"flex",alignItems:"center",gap:4 }}>
+                  + Add <span style={{ fontFamily:"JetBrains Mono",fontSize:8,color:addMedOpen?T.teal:T.txt4,opacity:.7 }}>⌘M</span>
                 </button>
               </div>
             }
@@ -374,8 +435,8 @@ export default function MedsTab({
             <div style={{ padding:"0 16px 14px" }}>
               {pasteOpen && (
                 <div className="mt-in" style={{ display:"flex",flexDirection:"column",gap:8,padding:"12px 14px",background:"rgba(59,158,255,0.06)",border:"1px solid rgba(59,158,255,0.2)",borderRadius:10,marginBottom:10 }}>
-                  <div style={{ fontFamily:"DM Sans",fontSize:11.5,color:T.txt3 }}>Paste a medication list — one med per line, or semicolons. Ctrl+Enter to parse.</div>
-                  <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} onKeyDown={handlePasteKeyDown} rows={5}
+                  <div style={{ fontFamily:"DM Sans",fontSize:11.5,color:T.txt3 }}>Paste a medication list — one med per line, or semicolons. Ctrl/Cmd+Enter to parse.</div>
+                  <textarea ref={pasteRef} value={pasteText} onChange={e=>setPasteText(e.target.value)} onKeyDown={handlePasteKeyDown} rows={5}
                     placeholder={"Metformin 500mg BID\nLisinopril 10mg daily\nAtorvastatin 40mg nightly"}
                     style={{ ...inp(!!pasteText),resize:"vertical",lineHeight:1.6,fontFamily:"JetBrains Mono",fontSize:12 }} />
                   <div style={{ display:"flex",alignItems:"center",gap:8 }}>
@@ -401,8 +462,9 @@ export default function MedsTab({
                   <div style={{ display:"grid",gridTemplateColumns:"1fr auto",gap:8 }}>
                     <div>
                       <FieldLabel required>Drug Name</FieldLabel>
-                      <input value={drugInput} onChange={e=>setDrugInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&drugInput.trim()&&handleAddMed()}
-                        placeholder="e.g., Metformin, Lisinopril 10mg..." style={inp(!!drugInput)} autoFocus />
+                      {/* FIX: ref added; focus is handled by Cmd+M useEffect and the + Add button click */}
+                      <input ref={drugRef} value={drugInput} onChange={e=>setDrugInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&drugInput.trim()&&handleAddMed()}
+                        placeholder="e.g., Metformin, Lisinopril 10mg..." style={inp(!!drugInput)} />
                     </div>
                     <div style={{ display:"flex",flexDirection:"column",justifyContent:"flex-end" }}>
                       <button onClick={handleAddMed} disabled={!drugInput.trim()}
@@ -435,7 +497,7 @@ export default function MedsTab({
                 </div>
               )}
               {medications.length === 0 ? (
-                <div style={{ padding:"20px 12px",textAlign:"center",color:T.txt4,fontFamily:"DM Sans",fontSize:13 }}>No medications added — use Add or Paste above</div>
+                <div style={{ padding:"20px 12px",textAlign:"center",color:T.txt4,fontFamily:"DM Sans",fontSize:13 }}>No medications added — use Add (⌘M) or Paste above</div>
               ) : (
                 <div style={{ display:"flex",flexWrap:"wrap",gap:7 }}>
                   {medications.map((m, i) => {
@@ -464,7 +526,7 @@ export default function MedsTab({
                 </div>
               )}
 
-              {/* ── PDMP Documentation ────────────────────────────────── */}
+              {/* ── PDMP Documentation ── */}
               {pdmpRequired && (
                 <div className="mt-in" style={{ marginTop:12,padding:"12px 14px",background:pdmpState?.checked?"rgba(0,229,192,0.06)":"rgba(255,159,67,0.07)",border:`1px solid ${pdmpState?.checked?"rgba(0,229,192,0.25)":"rgba(255,159,67,0.3)"}`,borderLeft:`3px solid ${pdmpState?.checked?"var(--npi-teal, #00e5c0)":"#ff9f43"}`,borderRadius:10 }}>
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8 }}>
@@ -517,7 +579,8 @@ export default function MedsTab({
           {allergyOpen && (
             <div style={{ padding:"0 16px 14px",display:"flex",flexDirection:"column",gap:10 }}>
               <div style={{ display:"flex",gap:8 }}>
-                <input value={allergyInput} onChange={e=>setAllergyInput(e.target.value)}
+                {/* FIX: ref added for auto-focus on mount */}
+                <input ref={allergyRef} value={allergyInput} onChange={e=>setAllergyInput(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&allergyInput.trim()&&handleAddAllergy()}
                   placeholder="Add allergy (e.g., penicillin, NSAIDs, latex, shellfish, contrast)..."
                   style={{ ...inp(!!allergyInput),flex:1 }} />
@@ -561,9 +624,11 @@ export default function MedsTab({
           <SectionHeader icon="📋" title="Past Medical History" count={pmhCount} color={T.blue} expanded={pmhExpanded} onToggle={()=>setPmhExpanded(v=>!v)} />
           {pmhExpanded && (
             <div style={{ padding:"0 16px 14px" }}>
+              {/* FIX: PMH category tabs — ArrowLeft/Right navigate between categories */}
               <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginBottom:12 }}>
                 {PMH_CATS.map((cat, i) => (
                   <button key={i} onClick={()=>setActivePmhCat(i)}
+                    onKeyDown={e=>handlePmhCatKey(e, i)}
                     style={{ padding:"4px 10px",borderRadius:20,background:activePmhCat===i?`${cat.color}22`:"transparent",border:`1px solid ${activePmhCat===i?cat.color+"55":"rgba(42,77,114,0.3)"}`,color:activePmhCat===i?cat.color:T.txt3,fontFamily:"DM Sans",fontWeight:600,fontSize:11,cursor:"pointer",whiteSpace:"nowrap",transition:"all .13s" }}>
                     {cat.icon} {cat.label}
                   </button>
@@ -669,9 +734,26 @@ export default function MedsTab({
           )}
         </div>
 
+        {/* ── FIX: Keyboard legend ──────────────────────────────────────────── */}
+        <div style={{ display:"flex",flexWrap:"wrap",gap:12,padding:"8px 12px",background:"rgba(14,37,68,.5)",border:"1px solid rgba(26,53,85,0.4)",borderRadius:8 }}>
+          {[
+            ["Enter",   "Add allergy / med (in input)"],
+            ["⌘M",      "Open / close Add Med panel"],
+            ["⌘↵",      "→ SDOH (from anywhere)"],
+            ["⌘/Ctrl+↵","Parse paste list (in paste box)"],
+            ["←→",      "Navigate PMH categories (on tab)"],
+          ].map(([k, d]) => (
+            <div key={k} style={{ display:"flex",alignItems:"center",gap:5,fontSize:11,color:"var(--npi-txt4, #5a82a8)" }}>
+              <kbd style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,background:"rgba(14,37,68,.8)",border:"1px solid rgba(42,77,114,0.5)",borderRadius:3,padding:"0 5px",color:"var(--npi-blue, #3b9eff)" }}>{k}</kbd>
+              {d}
+            </div>
+          ))}
+        </div>
+
         <button onClick={onAdvance}
           style={{ alignSelf:"flex-end",padding:"11px 28px",borderRadius:12,background:`linear-gradient(135deg,${T.teal},#00b4d8)`,border:"none",color:"#050f1e",fontFamily:"DM Sans",fontWeight:700,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,229,192,0.25)" }}>
-          Continue to SDOH ▶
+          Continue to SDOH
+          <kbd style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,background:"rgba(5,15,30,.3)",borderRadius:4,padding:"0 6px",color:"rgba(5,15,30,.8)" }}>⌘↵</kbd>
         </button>
       </div>
     </div>

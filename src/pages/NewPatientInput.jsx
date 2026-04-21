@@ -57,7 +57,7 @@ import ERxHub                  from "@/pages/ERx";
 import ScoreHub                from "@/pages/ScoreHub";
 import WeightDoseHub           from "@/pages/WeightDoseHub";
 import ResusHub                from "@/pages/ResusHub";
-import StrokeHub               from "@/pages/StrokeHub";
+import StrokeHub               from "@/pages/StrokeAssessment";
 
 // ── FIX #6: Toast helper at module scope — passed into useNPIState so the
 // hook can emit toasts without importing sonner directly (Base44 constraint).

@@ -57,7 +57,8 @@ import ERxHub                  from "@/pages/ERx";
 import ScoreHub                from "@/pages/ScoreHub";
 import WeightDoseHub           from "@/pages/WeightDoseHub";
 import ResusHub                from "@/pages/ResusHub";
-import StrokeHub               from "@/pages/StrokeAssessment";
+import StrokeHub               from "@/pages/StrokeHub";
+import ToxicologyHub           from "@/pages/ToxicologyHub";
 
 // ── FIX #6: Toast helper at module scope — passed into useNPIState so the
 // hook can emit toasts without importing sonner directly (Base44 constraint).
@@ -586,6 +587,16 @@ export default function NewPatientInput() {
 
       case "stroke": return (
         <StrokeHub
+          embedded={true}
+          onBack={() => selectSection("hubs")}
+          demo={demo}
+          vitals={vitals}
+          cc={cc}
+        />
+      );
+
+      case "tox": return (
+        <ToxicologyHub
           embedded={true}
           onBack={() => selectSection("hubs")}
           demo={demo}

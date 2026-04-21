@@ -131,6 +131,7 @@ const GROUPS = [
     { id:"surgical",  route:"/surgical-airway-hub", icon:"✂️", title:"Surgical Airway",    badge:"CRIC",        color:T.red,    tags:["cric","cricothyrotomy","surgical airway","cico"],                           features:["Rapid Cric","Surgical Technique","Landmark Guide","Equipment"],      desc:"Cricothyrotomy — rapid and surgical technique, landmark identification, equipment checklist." },
   ]},
   { label:"Workflow", color:T.teal, hubs:[
+    { id:"derm",      route:"/derm-hub",          icon:"🩺",  title:"Derm Hub",             badge:"ABCDE·DDx",   color:"#00e5c0", tags:["dermatology","rash","skin","lesion","abcde","melanoma","dermnet","VisualDx","eczema","psoriasis"], features:["8 Characteristic Categories","ABCDE Melanoma Check","Life-Threatening Alert","DermNet · AAD · VisualDx"], desc:"Skin characteristic selector → AI searches DermNet, AAD, VisualDx → differential with images. ABCDE melanoma checker, life-threatening derm alert." },
     { id:"huddle",    route:"/huddle-board",     icon:"🏥",  title:"Huddle Board",         badge:"REAL-TIME",   color:T.teal,   tags:["huddle","board","department","acuity","census","tasks","reassessment"], features:["Acuity Overview","Reassessment Timers","Task Tracking","Disposition Status"], desc:"Real-time department-level view of active patients, acuity, reassessment clocks, and task management." },
   ]},
   { label:"Documentation & Tools", color:T.purple, hubs:[

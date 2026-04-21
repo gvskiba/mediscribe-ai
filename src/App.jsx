@@ -17,7 +17,7 @@ import NPIDemo from '@/pages/NPIDemo';
 import BaseTemplate from '@/pages/BaseTemplate';
 import EDProcedureNotesNew from '@/pages/EDProcedureNotes';
 import PediatricDosingCalculator from '@/pages/PediatricDosingCalculator';
-import StrokeAssessment from '@/pages/StrokeAssessment';
+import StrokeHub from '@/pages/StrokeAssessment';
 import EDOrders from '@/pages/EDOrders';
 import NotryaApp from '@/pages/NotryaApp';
 import NotryaACS from '@/pages/NotryaACS';
@@ -73,7 +73,7 @@ import EDTrackingBoard from '@/pages/EDTrackingBoard';
 import DischargeDisposition from '@/pages/DischargeDisposition';
 import ScoreHub from '@/pages/ScoreHub';
 import WeightDoseHub from '@/pages/WeightDoseHub';
-import StrokeHub from '@/pages/StrokeHub';
+
 import EDProcedureNotesStandalone from '@/pages/EDProcedureNotes';
 import PainHub from '@/pages/PainHub';
 import SyncopeHub from '@/pages/SyncopeHub';
@@ -179,7 +179,7 @@ const AuthenticatedApp = () => {
       <Route path="/npidemo" element={<NPIDemo />} />
       <Route path="/basetemplate" element={<BaseTemplate />} />
       <Route path="/PediatricDosingCalculator" element={<LayoutWrapper currentPageName="PediatricDosing"><PediatricDosingCalculator /></LayoutWrapper>} />
-      <Route path="/StrokeAssessment" element={<LayoutWrapper currentPageName="StrokeAssessment"><StrokeAssessment /></LayoutWrapper>} />
+      <Route path="/StrokeAssessment" element={<StrokeHub />} />
       <Route path="/EDOrders" element={<LayoutWrapper currentPageName="EDOrders"><EDOrders /></LayoutWrapper>} />
       <Route path="/NotryaApp" element={<NotryaApp />} />
       <Route path="/NotryaACS" element={<NotryaACS />} />
@@ -232,6 +232,7 @@ const AuthenticatedApp = () => {
       <Route path="/score-hub" element={<ScoreHub />} />
       <Route path="/weight-dose" element={<WeightDoseHub />} />
       <Route path="/stroke-hub" element={<StrokeHub />} />
+      <Route path="/StrokeHub" element={<StrokeHub />} />
       <Route path="/ed-procedure-notes" element={<EDProcedureNotesStandalone />} />
       <Route path="/pain-hub" element={<PainHub />} />
       <Route path="/syncope-hub" element={<SyncopeHub />} />

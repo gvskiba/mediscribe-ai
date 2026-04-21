@@ -557,7 +557,7 @@ const NIHSSCard = React.memo(({ item, score, time, onScore, onTime, nowFn }) => 
 });
 
 // ─── Main Component ─────────────────────────────────────────────────────────
-export default function StrokeAssessment() {
+export default function StrokeHub() {
   const navigate = useNavigate();
   const [patMode,setPatMode] = useState('adult');
   const [activeTab,setActiveTab] = useState('stroke');

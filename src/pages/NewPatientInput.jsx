@@ -59,6 +59,7 @@ import WeightDoseHub           from "@/pages/WeightDoseHub";
 import ResusHub                from "@/pages/ResusHub";
 import StrokeHub               from "@/pages/StrokeHub";
 import ToxicologyHub           from "@/pages/ToxicologyHub";
+import ImagingInterpreter      from "@/pages/ImagingInterpreter";
 
 // ── FIX #6: Toast helper at module scope — passed into useNPIState so the
 // hook can emit toasts without importing sonner directly (Base44 constraint).
@@ -603,6 +604,19 @@ export default function NewPatientInput() {
           vitals={vitals}
           cc={cc}
         />
+      );
+
+      case "imaging": return (
+        <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"auto" }}>
+          <ImagingInterpreter
+            embedded
+            demo={demo}
+            vitals={vitals}
+            cc={cc}
+            pmhSelected={pmhSelected}
+            medications={medications}
+          />
+        </div>
       );
 
       case "autocoder": return (

@@ -1,0 +1,58 @@
+{
+  "name": "StrokeQualityLog",
+  "type": "object",
+  "properties": {
+    "encounter_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "nihss_score": {
+      "type": "number"
+    },
+    "nihss_severity": {
+      "type": "string"
+    },
+    "nihss_items_scored": {
+      "type": "number"
+    },
+    "tpa_given": {
+      "type": "boolean"
+    },
+    "tpa_time": {
+      "type": "string"
+    },
+    "tpa_eligible": {
+      "type": "string"
+    },
+    "arrival_time": {
+      "type": "string"
+    },
+    "consult_time": {
+      "type": "string"
+    },
+    "neurology_consulted": {
+      "type": "boolean"
+    },
+    "dtn_minutes": {
+      "type": "number"
+    },
+    "dtn_goal_met": {
+      "type": "boolean"
+    },
+    "workup_tasks_completed": {
+      "type": "number"
+    },
+    "workup_tasks_total": {
+      "type": "number"
+    },
+    "consult_items_completed": {
+      "type": "number"
+    },
+    "provider_notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "encounter_date"
+  ]
+}

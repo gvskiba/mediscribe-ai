@@ -3,7 +3,7 @@
 // No router · no localStorage · no form/alert · straight quotes · <1600 lines
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { StrokeQualityLog } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
 
 // ─── KEYBOARD HINT BAR ────────────────────────────────────────────────────────
 function KbHints({ hints }) {
@@ -702,7 +702,7 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
       };
       // Strip undefined fields
       const clean = Object.fromEntries(Object.entries(record).filter(([, v]) => v !== undefined));
-      await StrokeQualityLog.create(clean);
+      await base44.entities.StrokeQualityLog.create(clean);
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 4000);
     } catch {

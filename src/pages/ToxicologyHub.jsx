@@ -756,7 +756,7 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
               <div style={{ padding:"12px 14px",borderRadius:10,marginBottom:12,background:"rgba(255,159,67,0.07)",border:"1px solid rgba(255,159,67,0.3)" }}>
                 <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:T.orange,marginBottom:4 }}>Rumack-Matthew Nomogram</div>
                 <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt3,lineHeight:1.6 }}>
-                  For acute single-ingestion APAP OD only. Level must be >=4h post-ingestion. NOT valid for: chronic, extended-release (ER), staggered, or unknown ingestion time.
+                  For acute single-ingestion APAP OD only. Level must be {">="} 4h post-ingestion. NOT valid for: chronic, extended-release (ER), staggered, or unknown ingestion time.
                 </div>
               </div>
 

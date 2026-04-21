@@ -1,10 +1,9 @@
-// ImagingInterpreter.jsx  v3
+// ImagingInterpreter.jsx  v4
 // Evidence-based upgrades (literature review):
-//   1. Anti-Satisfaction-of-Search prompting     6. PE risk stratification (massive/submassive/low)
-//   2. Alliterative / anchoring bias guard       7. Stroke time-window flag (tPA/thrombectomy)
-//   3. AI confidence flagging per finding        8. CT scout image reminder
-//   4. Expanded X-ray don't-miss checklist       9. ACR Appropriateness Criteria alignment
-//   5. Incidental findings tracker + follow-up  10. Fatigue flag (5 pm–7 am shift alert)
+//   1-10. All prior evidence-based recs (anti-SOS, confidence, incidentals, PE tier, etc.)
+//   NEW: Image upload / paste mode — drag-drop, click, or Ctrl+V clipboard paste of PACS
+//        screenshots → Anthropic vision API direct interpretation (JPEG/PNG/WebP)
+//   NEW: Keyboard-first — Cmd/Ctrl+Enter submits, M cycles modes, C copies-to-chart
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -569,6 +568,98 @@ function ImagingResult({ result, panel }) {
   );
 }
 
+// ─── IMAGE UPLOAD PANE ────────────────────────────────────────────────────────
+function ImageUploadPane({ panel, imageData, onImage, onClear, onSubmit, busy, panelColor }) {
+  const fileRef  = useRef();
+  const [drag, setDrag] = useState(false);
+
+  const loadFile = (file) => {
+    if (!file) return;
+    const ok = ["image/jpeg","image/png","image/webp","image/gif"].includes(file.type);
+    if (!ok) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target.result;
+      onImage({ base64:dataUrl.split(",")[1], mimeType:file.type, name:file.name, previewUrl:dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        color:panelColor, letterSpacing:1.5, textTransform:"uppercase", marginBottom:2 }}>
+        {panel.icon} {panel.label} — Image Analysis
+      </div>
+
+      {!imageData ? (
+        <div
+          onClick={() => fileRef.current?.click()}
+          onDrop={e => { e.preventDefault(); setDrag(false); loadFile(e.dataTransfer.files[0]); }}
+          onDragOver={e => { e.preventDefault(); setDrag(true); }}
+          onDragLeave={() => setDrag(false)}
+          style={{ border:`2px dashed ${drag ? panelColor : "rgba(42,79,122,.5)"}`,
+            borderRadius:12, padding:"32px 20px", textAlign:"center", cursor:"pointer",
+            transition:"all .15s",
+            background:drag ? `${panelColor}08` : "rgba(14,37,68,.4)" }}>
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp"
+            style={{ display:"none" }}
+            onChange={e => loadFile(e.target.files?.[0])} />
+          <div style={{ fontSize:28, marginBottom:8 }}>🩻</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:13,
+            color:"var(--img-txt2)", marginBottom:6 }}>
+            Drop image · Click to browse · Ctrl+V to paste
+          </div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+            color:"var(--img-txt4)", letterSpacing:.5 }}>
+            JPEG · PNG · WebP — PACS export or screenshot
+          </div>
+        </div>
+      ) : (
+        <div style={{ borderRadius:10, overflow:"hidden",
+          border:`1px solid ${panelColor}44`, position:"relative" }}>
+          <img src={imageData.previewUrl} alt="Study"
+            style={{ width:"100%", maxHeight:280, objectFit:"contain",
+              display:"block", background:"#000" }} />
+          <div style={{ padding:"7px 10px", background:"rgba(5,15,30,.85)",
+            display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+              color:"var(--img-txt4)", letterSpacing:.3 }}>
+              {imageData.name}
+            </span>
+            <button onClick={onClear}
+              style={{ background:"transparent", border:"1px solid rgba(255,68,68,.4)",
+                color:"var(--img-coral)", borderRadius:5, padding:"2px 8px",
+                cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:8 }}>
+              Remove
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ padding:"7px 10px", borderRadius:7,
+        background:"rgba(245,200,66,.07)", border:"1px solid rgba(245,200,66,.25)",
+        fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--img-gold)",
+        lineHeight:1.55 }}>
+        AI image interpretation is <b>experimental</b> and less reliable than text report
+        interpretation. LLM hallucination rates for direct image analysis are higher than
+        for report text. Always confirm with formal radiologist read.
+      </div>
+
+      <button onClick={onSubmit} disabled={busy || !imageData}
+        style={{ padding:"10px 0", borderRadius:10,
+          cursor:busy || !imageData ? "not-allowed" : "pointer",
+          border:`1px solid ${!imageData ? "rgba(42,79,122,.3)" : panelColor+"66"}`,
+          background:!imageData ? "rgba(42,79,122,.15)"
+            : `linear-gradient(135deg,${panelColor}18,${panelColor}06)`,
+          color:!imageData ? "var(--img-txt4)" : panelColor,
+          fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:13, transition:"all .15s" }}>
+        {busy ? "Analyzing image..." : `Analyze ${panel.label} Image`}
+      </button>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function ImagingInterpreter({
   embedded = false,
@@ -580,6 +671,7 @@ export default function ImagingInterpreter({
   const [reports,     setReports]     = useState({});
   const [selections,  setSelections]  = useState({});
   const [textInputs,  setTextInputs]  = useState({});
+  const [images,      setImages]      = useState({});  // panelId → {base64,mimeType,name,previewUrl}
   const [results,     setResults]     = useState({});
   const [busy,        setBusy]        = useState({});
   const [errors,      setErrors]      = useState({});
@@ -591,18 +683,72 @@ export default function ImagingInterpreter({
 
   const panel     = PANELS.find(p => p.id === activePanel);
   const panelMode = mode[activePanel] || "paste";
+  const MODES     = ["paste", "structured", "image"];
 
-  // Keyboard panel switching 1-7
+  // Keyboard: 1-7 panels · M cycle mode · C copy-to-chart
   useEffect(() => {
     const fn = e => {
       const tag = document.activeElement?.tagName?.toLowerCase();
-      if (tag === "input" || tag === "textarea") return;
+      const inInput = tag === "input" || tag === "textarea";
+      // Cmd/Ctrl+Enter — submit from textarea
+      if (inInput && (e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (panelMode === "paste" && reports[activePanel]?.trim() && !busy[activePanel])
+          handleInterpret(activePanel);
+        return;
+      }
+      if (inInput) return;
+      // 1-7 panel switch
       const n = parseInt(e.key);
-      if (!isNaN(n) && n >= 1 && n <= PANELS.length) { e.preventDefault(); setActivePanel(PANELS[n-1].id); }
+      if (!isNaN(n) && n >= 1 && n <= PANELS.length) { e.preventDefault(); setActivePanel(PANELS[n-1].id); return; }
+      // M — cycle mode
+      if ((e.key === "m" || e.key === "M") && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setMode(prev => {
+          const cur = prev[activePanel] || "paste";
+          const next = MODES[(MODES.indexOf(cur) + 1) % MODES.length];
+          return { ...prev, [activePanel]: next };
+        });
+        return;
+      }
+      // C — copy to chart
+      if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && results[activePanel]) {
+        e.preventDefault();
+        copyResult(activePanel);
+      }
     };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, []);
+  }, [activePanel, panelMode, reports, busy, results, MODES]);  // eslint-disable-line
+
+  // Window paste — capture clipboard image when in image mode
+  useEffect(() => {
+    const fn = e => {
+      if (panelMode !== "image") return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (!file) continue;
+          const reader = new FileReader();
+          reader.onload = ev => {
+            const dataUrl = ev.target.result;
+            setImages(prev => ({
+              ...prev,
+              [activePanel]: { base64:dataUrl.split(",")[1], mimeType:file.type, name:"clipboard-image.png", previewUrl:dataUrl },
+            }));
+            setResults(p => ({ ...p, [activePanel]:null }));
+            setErrors(p  => ({ ...p, [activePanel]:null }));
+          };
+          reader.readAsDataURL(file);
+          break;
+        }
+      }
+    };
+    window.addEventListener("paste", fn);
+    return () => window.removeEventListener("paste", fn);
+  }, [activePanel, panelMode]);
 
   const patientCtx = useMemo(
     () => buildPatientCtx(demo, vitals, cc, pmhSelected, medications),
@@ -670,6 +816,42 @@ export default function ImagingInterpreter({
     handleInterpret(panelId, composeStructuredReport(p, selections[panelId]||{}, textInputs[panelId]||{}));
   }, [selections, textInputs, handleInterpret]);
 
+  // Image mode — Anthropic vision API (InvokeLLM is text-only)
+  const handleImageInterpret = useCallback(async (panelId) => {
+    const img = images[panelId];
+    const p   = PANELS.find(x => x.id === panelId);
+    if (!img || !p) return;
+    setBusy(prev  => ({ ...prev, [panelId]:true }));
+    setErrors(prev => ({ ...prev, [panelId]:null }));
+    setResults(prev=> ({ ...prev, [panelId]:null }));
+    try {
+      const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:2000,
+          messages:[{
+            role:"user",
+            content:[
+              { type:"image", source:{ type:"base64", media_type:img.mimeType, data:img.base64 } },
+              { type:"text",  text:`PATIENT CONTEXT:\n${patientCtx||"Not provided"}\n\nSYSTEM INSTRUCTIONS:\n${p.sys}\n\nYou are directly analyzing this radiology image. Before interpreting, systematically describe ALL visible anatomic structures and findings (do not skip peripheral structures — this is the anti-satisfaction-of-search pass). Then apply the panel-specific checklist. Return ONLY valid JSON with no markdown fences matching the schema in the system instructions.` },
+            ],
+          }],
+        }),
+      });
+      if (!apiRes.ok) throw new Error(`Vision API ${apiRes.status}: ${apiRes.statusText}`);
+      const data  = await apiRes.json();
+      const raw   = data.content?.find(b => b.type === "text")?.text || "";
+      const clean = raw.replace(/^```(?:json)?\s*/,"").replace(/\s*```$/,"").trim();
+      setResults(prev => ({ ...prev, [panelId]:JSON.parse(clean) }));
+    } catch (e) {
+      setErrors(prev => ({ ...prev, [panelId]:"Image analysis error: " + (e.message || "Check connectivity") }));
+    } finally {
+      setBusy(prev => ({ ...prev, [panelId]:false }));
+    }
+  }, [images, patientCtx]);
+
   const copyResult = useCallback((panelId) => {
     const r = results[panelId];
     if (!r) return;
@@ -708,12 +890,15 @@ export default function ImagingInterpreter({
     setErrors(p     => ({ ...p, [panelId]:null }));
     setSelections(p => ({ ...p, [panelId]:{} }));
     setTextInputs(p => ({ ...p, [panelId]:{} }));
+    setImages(p     => ({ ...p, [panelId]:null }));
   }, []);
 
   const hasResult = Boolean(results[activePanel]);
   const isBusy    = Boolean(busy[activePanel]);
   const hasReport = panelMode === "paste"
     ? Boolean(reports[activePanel]?.trim())
+    : panelMode === "image"
+    ? Boolean(images[activePanel]?.base64)
     : Object.values(selections[activePanel]||{}).some(Boolean) ||
       Object.values(textInputs[activePanel]||{}).some(v => v?.trim());
   const hasError = Boolean(errors[activePanel]);
@@ -753,7 +938,7 @@ export default function ImagingInterpreter({
             </h1>
             <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
               color:"var(--img-txt4)", marginTop:4, marginBottom:0 }}>
-              7 Panels · Anti-SOS Prompting · Confidence Flags · Incidental Tracker · PE Risk Tier · Stroke Time-Window · ACR Alignment
+              7 Panels · Paste · Structured · Image AI · Keys 1-7 · M cycle · Cmd+Enter submit · C copy
             </p>
           </div>
         )}
@@ -765,7 +950,7 @@ export default function ImagingInterpreter({
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
               color:"var(--img-txt4)", letterSpacing:1.5, textTransform:"uppercase",
               background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.25)",
-              borderRadius:4, padding:"2px 7px" }}>7 Panels · Keys 1-7 · v3</span>
+              borderRadius:4, padding:"2px 7px" }}>7 Panels · Keys 1-7 · Image AI · v4</span>
           </div>
         )}
 
@@ -818,17 +1003,36 @@ export default function ImagingInterpreter({
         {/* Mode + action bar */}
         <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:12,
           flexWrap:"wrap" }} className="no-print">
-          {["paste","structured"].map(m => (
-            <button key={m} onClick={() => setMode(prev => ({ ...prev, [activePanel]:m }))}
+          {[
+            { id:"paste",      label:"Paste Report",     hint:"" },
+            { id:"structured", label:"Structured Entry", hint:"" },
+            { id:"image",      label:"Image Upload",     hint:"" },
+          ].map(m => (
+            <button key={m.id} onClick={() => setMode(prev => ({ ...prev, [activePanel]:m.id }))}
               style={{ padding:"5px 13px", borderRadius:7, cursor:"pointer", transition:"all .15s",
                 fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1,
                 textTransform:"uppercase",
-                border:`1px solid ${panelMode === m ? "rgba(0,229,192,.45)" : "var(--img-bd)"}`,
-                background:panelMode === m ? "rgba(0,229,192,.09)" : "transparent",
-                color:panelMode === m ? "var(--img-teal)" : "var(--img-txt4)" }}>
-              {m === "paste" ? "Paste Report" : "Structured Entry"}
+                border:`1px solid ${panelMode === m.id
+                  ? m.id === "image" ? `${panel?.color||"#00e5c0"}66` : "rgba(0,229,192,.45)"
+                  : "var(--img-bd)"}`,
+                background:panelMode === m.id
+                  ? m.id === "image" ? `${panel?.color||"#00e5c0"}12` : "rgba(0,229,192,.09)"
+                  : "transparent",
+                color:panelMode === m.id
+                  ? m.id === "image" ? (panel?.color||"var(--img-teal)") : "var(--img-teal)"
+                  : "var(--img-txt4)" }}>
+              {m.label}
             </button>
           ))}
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:"var(--img-txt4)", letterSpacing:.5, alignSelf:"center",
+            display:"flex", gap:6 }}>
+            <span title="Cycle modes">M</span>
+            <span style={{ color:"rgba(90,130,168,.4)" }}>|</span>
+            <span title="Submit">Cmd+Enter</span>
+            <span style={{ color:"rgba(90,130,168,.4)" }}>|</span>
+            <span title="Copy to chart">C</span>
+          </span>
           <div style={{ flex:1 }} />
           {hasResult && <>
             <button onClick={() => copyResult(activePanel)}
@@ -837,7 +1041,7 @@ export default function ImagingInterpreter({
                 border:`1px solid ${copied[activePanel] ? "rgba(61,255,160,.5)" : "var(--img-bd)"}`,
                 background:copied[activePanel] ? "rgba(61,255,160,.1)" : "transparent",
                 color:copied[activePanel] ? "var(--img-green)" : "var(--img-txt3)" }}>
-              {copied[activePanel] ? "Copied" : "Copy to Chart"}
+              {copied[activePanel] ? "Copied [C]" : "Copy to Chart [C]"}
             </button>
             <button onClick={() => window.print()}
               style={{ padding:"5px 13px", borderRadius:7, cursor:"pointer", transition:"all .15s",
@@ -884,6 +1088,12 @@ export default function ImagingInterpreter({
                   onChange={e => setReport(activePanel, e.target.value)}
                   rows={embedded ? 8 : 12}
                   placeholder={panel?.ph || "Paste radiology report here..."}
+                  onKeyDown={e => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                      e.preventDefault();
+                      if (reports[activePanel]?.trim() && !isBusy) handleInterpret(activePanel);
+                    }
+                  }}
                   style={{ width:"100%", resize:"vertical", boxSizing:"border-box",
                     background:"rgba(14,37,68,.75)",
                     border:`1px solid ${hasReport ? (panel?.color||"#00e5c0")+"44" : "rgba(42,79,122,.35)"}`,
@@ -898,9 +1108,23 @@ export default function ImagingInterpreter({
                       : `linear-gradient(135deg,${panel?.color||"#00e5c0"}18,${panel?.color||"#00e5c0"}06)`,
                     color:!hasReport ? "var(--img-txt4)" : (panel?.color||"var(--img-teal)"),
                     fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:13, transition:"all .15s" }}>
-                  {isBusy ? "Interpreting..." : `Interpret ${panel?.label}`}
+                  {isBusy ? "Interpreting..." : `Interpret ${panel?.label} [Cmd+Enter]`}
                 </button>
               </div>
+            ) : panelMode === "image" ? (
+              <ImageUploadPane
+                panel={panel}
+                imageData={images[activePanel] || null}
+                onImage={imgData => {
+                  setImages(p => ({ ...p, [activePanel]:imgData }));
+                  setResults(p => ({ ...p, [activePanel]:null }));
+                  setErrors(p  => ({ ...p, [activePanel]:null }));
+                }}
+                onClear={() => setImages(p => ({ ...p, [activePanel]:null }))}
+                onSubmit={() => handleImageInterpret(activePanel)}
+                busy={isBusy}
+                panelColor={panel?.color || "#00e5c0"}
+              />
             ) : (
               <StructuredEntry panel={panel}
                 selections={selections[activePanel] || {}}
@@ -927,11 +1151,13 @@ export default function ImagingInterpreter({
                 </div>
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
                   color:"var(--img-txt4)", lineHeight:1.65 }}>
-                  Paste the full radiology report including findings and impression.
-                  Structured mode uses guided fields with arrow-key navigation.
-                  Keys 1-7 switch panels. Results include per-finding confidence ratings,
-                  incidental follow-up tracker, PE risk stratification, stroke time-windows,
-                  expanded X-ray don't-miss checklist, and ACR-aligned imaging recommendations.
+                  <b style={{ color:"var(--img-txt3)" }}>Paste:</b> full radiology report text.{" "}
+                  <b style={{ color:"var(--img-txt3)" }}>Structured:</b> guided fields with arrow keys.{" "}
+                  <b style={{ color:"var(--img-txt3)" }}>Image:</b> drag-drop, click, or Ctrl+V to paste a PACS screenshot directly — interpreted by vision AI.{" "}
+                  Keys <b style={{ color:"var(--img-teal)", fontFamily:"'JetBrains Mono',monospace" }}>1-7</b> panels,{" "}
+                  <b style={{ color:"var(--img-teal)", fontFamily:"'JetBrains Mono',monospace" }}>M</b> cycle mode,{" "}
+                  <b style={{ color:"var(--img-teal)", fontFamily:"'JetBrains Mono',monospace" }}>Cmd+Enter</b> submit,{" "}
+                  <b style={{ color:"var(--img-teal)", fontFamily:"'JetBrains Mono',monospace" }}>C</b> copy to chart.
                 </div>
               </div>
             )}

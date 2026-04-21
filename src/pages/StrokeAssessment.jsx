@@ -3,6 +3,7 @@
 // No router · no localStorage · no form/alert · straight quotes · <1600 lines
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { StrokeQualityLog } from "@/api/entities";
 
 // ─── KEYBOARD HINT BAR ────────────────────────────────────────────────────────
 function KbHints({ hints }) {
@@ -618,9 +619,10 @@ const CONSULT_ITEMS = [
   "Stroke unit / ICU bed confirmed",
 ];
 
-function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecked, times, setTimes, notes, setNotes }) {
+function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecked, times, setTimes, notes, setNotes, workupChecked, txChecked }) {
   const [focusIdx, setFocusIdx] = useState(0);
   const [inputActive, setInputActive] = useState(false);
+  const [saveState, setSaveState] = useState("idle"); // idle | saving | saved | error
   const checked = consultChecked;
   const setChecked = setConsultChecked;
   const panelRef = useRef(null);
@@ -649,6 +651,8 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
   }, 0);
   const sev = nihssSeverity(nihssScore);
 
+  const nihssItemsScored = NIHSS_ITEMS.filter(item => nihss?.[item.id] !== undefined).length;
+
   const dtn = (() => {
     if (!times.arrival || !times.tpa) return null;
     const p = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
@@ -657,6 +661,55 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
   })();
 
   const done = Object.values(checked).filter(Boolean).length;
+
+  // Derive tPA eligibility from txChecked state
+  const tpaEligibility = (() => {
+    if (!txChecked) return "incomplete";
+    const INCL_COUNT = 5;
+    const ABS_COUNT  = 12;
+    const inclMet    = Array.from({ length: INCL_COUNT }, (_, i) => txChecked["incl-" + i]).every(Boolean);
+    const exclAbsMet = Array.from({ length: ABS_COUNT  }, (_, i) => txChecked["abs-"  + i]).some(Boolean);
+    const exclRelMet = Array.from({ length: 9 },           (_, i) => txChecked["rel-"  + i]).some(Boolean);
+    if (!inclMet)    return "incomplete";
+    if (exclAbsMet) return "contraindicated";
+    if (exclRelMet) return "relative";
+    return "eligible";
+  })();
+
+  const workupDone  = workupChecked ? Object.keys(workupChecked).length : 0;
+  const workupTotal = 25; // total tasks across all 4 time windows
+
+  const saveRecord = useCallback(async () => {
+    setSaveState("saving");
+    try {
+      const record = {
+        encounter_date:          new Date().toISOString().split("T")[0],
+        nihss_score:             nihssScore > 0 ? nihssScore : undefined,
+        nihss_severity:          nihssScore > 0 ? sev.label : undefined,
+        nihss_items_scored:      nihssItemsScored > 0 ? nihssItemsScored : undefined,
+        tpa_given:               !!times.tpa,
+        tpa_time:                times.tpa || undefined,
+        tpa_eligible:            tpaEligibility,
+        arrival_time:            times.arrival || undefined,
+        consult_time:            times.consult || undefined,
+        neurology_consulted:     !!times.consult,
+        dtn_minutes:             dtn !== null ? dtn : undefined,
+        dtn_goal_met:            dtn !== null ? dtn <= 60 : undefined,
+        workup_tasks_completed:  workupDone,
+        workup_tasks_total:      workupTotal,
+        consult_items_completed: done,
+        provider_notes:          notes || undefined,
+      };
+      // Strip undefined fields
+      const clean = Object.fromEntries(Object.entries(record).filter(([, v]) => v !== undefined));
+      await StrokeQualityLog.create(clean);
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 4000);
+    } catch {
+      setSaveState("error");
+      setTimeout(() => setSaveState("idle"), 4000);
+    }
+  }, [nihssScore, sev, nihssItemsScored, times, tpaEligibility, dtn, workupDone, done, notes]);
 
   const summary = [
     demo?.age ? (demo.age + (demo.sex ? " " + demo.sex : "") + " with acute stroke.") : null,
@@ -756,6 +809,70 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
         { key: "N", label: "jump to notes" },
         { key: "Esc", label: "back to checklist" },
       ]} />
+
+      {/* ── Save to Quality Log ────────────────────────────────────────────── */}
+      <div style={{
+        marginTop: 16, padding: "14px 18px", borderRadius: 12,
+        background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 14, color: "#f1f5f9" }}>
+              Save to Quality Log
+            </div>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#4b5563", marginTop: 3 }}>
+              De-identified record — NIHSS, DTN, tPA status, checklist completion. No patient identifiers stored.
+            </div>
+          </div>
+          <button
+            onClick={saveRecord}
+            disabled={saveState === "saving" || saveState === "saved"}
+            style={{
+              fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13,
+              padding: "10px 22px", borderRadius: 9, cursor: saveState === "saving" ? "wait" : saveState === "saved" ? "default" : "pointer",
+              transition: "all .2s",
+              background: saveState === "saved"  ? "linear-gradient(135deg,rgba(74,222,128,0.25),rgba(74,222,128,0.12))"
+                        : saveState === "error"  ? "linear-gradient(135deg,rgba(248,113,113,0.25),rgba(248,113,113,0.12))"
+                        : saveState === "saving" ? "rgba(255,255,255,0.05)"
+                        : "linear-gradient(135deg,rgba(20,184,166,0.25),rgba(20,184,166,0.12))",
+              border: saveState === "saved"  ? "1px solid rgba(74,222,128,0.5)"
+                    : saveState === "error"  ? "1px solid rgba(248,113,113,0.5)"
+                    : "1px solid rgba(20,184,166,0.4)",
+              color: saveState === "saved"  ? "#4ade80"
+                   : saveState === "error"  ? "#f87171"
+                   : saveState === "saving" ? "#64748b"
+                   : "#2dd4bf",
+            }}>
+            {saveState === "saving" ? "Saving..." : saveState === "saved" ? "✓ Saved" : saveState === "error" ? "✗ Error — retry" : "Save to Quality Log"}
+          </button>
+        </div>
+
+        {/* What will be saved preview */}
+        <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {[
+            nihssScore > 0         && { label: "NIHSS",     val: nihssScore + " — " + sev.label,       color: "#2dd4bf" },
+            times.tpa              && { label: "tPA",        val: "Given " + times.tpa,                 color: "#4ade80" },
+            !times.tpa             && { label: "tPA",        val: "Not given",                          color: "#64748b" },
+            dtn !== null           && { label: "DTN",        val: dtn + " min " + (dtn <= 60 ? "✓" : "✗ >60"), color: dtn <= 60 ? "#4ade80" : "#f87171" },
+            tpaEligibility !== "incomplete" && { label: "Eligibility", val: tpaEligibility,              color: tpaEligibility === "eligible" ? "#4ade80" : tpaEligibility === "contraindicated" ? "#f87171" : "#fbbf24" },
+            workupDone > 0         && { label: "Workup",    val: workupDone + " / " + workupTotal + " tasks", color: "#94a3b8" },
+            done > 0               && { label: "Consult",   val: done + " / " + CONSULT_ITEMS.length + " items", color: "#94a3b8" },
+          ].filter(Boolean).map((item, i) => (
+            <div key={i} style={{
+              background: item.color + "12", border: "1px solid " + item.color + "35",
+              borderRadius: 7, padding: "4px 10px",
+            }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "#64748b", marginRight: 5 }}>{item.label}</span>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: item.color, fontWeight: 700 }}>{item.val}</span>
+            </div>
+          ))}
+          {nihssScore === 0 && !times.arrival && !times.tpa && (
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#4b5563" }}>
+              Complete NIHSS, times, or tPA fields to generate a meaningful log entry.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -851,7 +968,9 @@ export default function StrokeHub({
         {tab === 3 && <NeuroConsultTab demo={demo} vitals={vitals} nihss={nihss}
           consultChecked={consultChecked} setConsultChecked={setConsultChecked}
           times={times} setTimes={setTimes}
-          notes={notes} setNotes={setNotes} />}
+          notes={notes} setNotes={setNotes}
+          workupChecked={workupChecked}
+          txChecked={txChecked} />}
       </div>
     </div>
   );

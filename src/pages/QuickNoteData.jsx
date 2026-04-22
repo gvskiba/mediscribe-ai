@@ -94,3 +94,25 @@ export const CC_HUB_MAP = {
     ],
   },
 };
+
+// ─── CONTEXT-AWARE BLANK OPTIONS ─────────────────────────────────────────────
+// Keys = lowercase word immediately before ___ in template text.
+// Values = option array shown as buttons instead of free-text input.
+// Unrecognized blanks fall back to the free-text popup (existing behavior).
+export const BLANK_OPTIONS = {
+  "severity":     ["1–3", "4–6", "7–8", "9–10"],
+  "side":         ["Left", "Right", "Bilateral"],
+  "onset":        ["Sudden", "Gradual", "Progressive", "Intermittent"],
+  "character":    ["Sharp", "Dull", "Pressure", "Burning", "Tearing", "Crampy"],
+  "mechanism":    ["Fall", "MVA", "Sports injury", "Direct blow", "Unknown"],
+  "distribution": ["RUE", "LUE", "RLE", "LLE", "Face", "Trunk", "Diffuse"],
+  "radiation":    ["None", "Left arm", "Jaw", "Right arm", "Back", "Shoulder"],
+  "frequency":    ["Once", "2–3x today", "Constant", "Episodic"],
+  "prodrome":     ["None", "Lightheadedness", "Nausea", "Diaphoresis", "Palpitations"],
+  "injuries":     ["None identified", "Laceration", "Contusion", "Fracture suspected"],
+  "baseline":     ["Alert/oriented", "Mild dementia", "Non-verbal at baseline"],
+  "tmax":         ["37.5–38°C", "38–38.9°C", "39–39.9°C", "≥40°C"],
+  "quantity":     ["Spotting", "Light", "Moderate", "Heavy", "Clots"],
+  "duration":     ["<1 min", "1–5 min", "5–30 min", ">30 min"],
+  "type":         ["Focal", "Generalized", "Focal with secondary generalization"],
+};

@@ -202,7 +202,7 @@ export const PAGES = [
   { id:"shock",       name:"ShockHub",           icon:"💉",  color:T.red,    cat:"Reference",  desc:"Hemodynamic profiles, pressors",      route:"/shock-hub"         },
   { id:"psych",       name:"PsychHub",           icon:"💭",  color:T.purple, cat:"Reference",  desc:"Agitation, SI, intoxication",         route:"/psyche-hub"        },
   { id:"antidote",    name:"AntidoteHub",        icon:"🧪",  color:T.teal,   cat:"Reference",  desc:"20 antidotes with dosing",            route:"/antidote-hub"      },
-  { id:"labs",        name:"LabsInterpreter",    icon:"📊",  color:T.blue,   cat:"Reference",  desc:"47 labs & imaging patterns",          route:"/LabsImaging"       },
+  { id:"labs",        name:"LabsInterpreter",    icon:"📊",  color:T.blue,   cat:"Reference",  desc:"47 labs & imaging patterns",          route:"/lab-interpreter"   },
   { id:"erx",         name:"ERxHub",             icon:"📝",  color:T.teal,   cat:"Reference",  desc:"ED prescriptions & PDMP",            route:"/erx"               },
   { id:"knowledge",   name:"Guidelines",         icon:"📚",  color:T.gold,   cat:"Reference",  desc:"17 clinical guidelines & studies",    route:"/KnowledgeBaseV2"   },
   // Platform

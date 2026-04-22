@@ -458,8 +458,9 @@ export default function NotryaFloatingAI() {
       if (!aiOpen) setUnread(n => n + 1);
     } catch (e) {
       setAiMsgs(prev => [...prev, { role: "sys", text: "⚠ Error — please try again." }]);
+    } finally {
+      setAiLoading(false);
     }
-    setAiLoading(false);
   };
 
   const openAI = () => {

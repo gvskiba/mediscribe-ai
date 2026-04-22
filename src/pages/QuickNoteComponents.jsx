@@ -38,6 +38,7 @@ function SectionLabel({ children, color, style: extraStyle }) {
   );
 }
 
+
 // Safe string coercion — prevents React Error #31 when AI returns unexpected objects
 function s(val) {
   if (val === null || val === undefined) return "";
@@ -162,14 +163,6 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
   const color = type === "ros" ? "var(--qn-teal)" : "var(--qn-purple)";
   const colorRgb = type === "ros" ? "0,229,192" : "155,109,255";
 
-  const handleSelect = (n) => {
-    const tpl = templates.find(t => t.id === n);
-    if (!tpl) return;
-    if (hasContent && confirmIdx !== n) { setConfirmIdx(n); return; }
-    onInsert(tpl.text);
-    onClose();
-  };
-
   useEffect(() => {
     const fn = e => {
       if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
@@ -179,6 +172,14 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
   }, [hasContent, confirmIdx, onInsert, onClose]);
+
+  const handleSelect = (n) => {
+    const tpl = templates.find(t => t.id === n);
+    if (!tpl) return;
+    if (hasContent && confirmIdx !== n) { setConfirmIdx(n); return; }
+    onInsert(tpl.text);
+    onClose();
+  };
 
   return (
     <div style={{ position:"absolute", zIndex:100, left:0, right:0, bottom:"calc(100% + 4px)",
@@ -507,7 +508,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
             color:"var(--qn-txt2)", lineHeight:1.5 }}>
             {[result.problem_complexity, result.data_complexity, result.risk_tier]
-              .filter(Boolean).map(s).join("  ·  ")}
+              .filter(Boolean).join("  ·  ")}
           </div>
         </div>
       </div>
@@ -550,7 +551,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
               <span key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
                 color:"var(--qn-coral)", background:"rgba(255,68,68,.1)",
                 border:"1px solid rgba(255,68,68,.28)", borderRadius:6,
-                padding:"2px 9px" }}>{s(f)}</span>
+                padding:"2px 9px" }}>{f}</span>
             ))}
           </div>
         </div>
@@ -604,7 +605,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                     flexWrap:"wrap", marginBottom:3 }}>
                     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                       fontWeight:700, color:evColor,
-                      background:evBg, border:`1px solid ${evBd}`,
+                      background:`${evColor}18`, border:`1px solid ${evBd}`,
                       borderRadius:4, padding:"1px 7px", letterSpacing:.8,
                       textTransform:"uppercase", flexShrink:0 }}>
                       {s(t.evidence_level)}
@@ -615,7 +616,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                     </span>
                   </div>
                   <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                    color:"var(--qn-txt3)", lineHeight:1.5, marginBottom:(t.guideline_ref || t.notes) ? 4 : 0 }}>
+                    color:"var(--qn-txt3)", lineHeight:1.5, marginBottom:t.guideline_ref || t.notes ? 4 : 0 }}>
                     {s(t.indication)}
                   </div>
                   {t.guideline_ref && (
@@ -714,7 +715,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
 
       {/* Related Hubs — derived from working diagnosis */}
       {(() => {
-        const dx = s(result.working_diagnosis).toLowerCase();
+        const dx = (result.working_diagnosis || "").toLowerCase();
         const catId =
           /chest|cardiac|acs|mi|stemi|nstemi|angina|pe|embol|syncope|palpit/.test(dx) ? "cardiac" :
           /abdom|appy|pancreat|bowel|obstruct|gall|biliary|bleed|gi|hepat|renal|uro/.test(dx) ? "abdominal" :
@@ -730,11 +731,11 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
 
 // ─── LAB FLAGS CARD ──────────────────────────────────────────────────────────
 function labFlagColor(status) {
-  const st = (status || "").toLowerCase();
-  if (st === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)"];
-  if (st === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)"];
-  if (st === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)"];
-  if (st === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)"];
+  const s = (status || "").toLowerCase();
+  if (s === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)"];
+  if (s === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)"];
+  if (s === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)"];
+  if (s === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)"];
   return                         ["var(--qn-purple)", "rgba(155,109,255,.07)","rgba(155,109,255,.28)"];
 }
 
@@ -757,7 +758,7 @@ function LabFlagsCard({ flags }) {
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
                   color:"var(--qn-txt)", fontWeight:600 }}>{s(f.value)}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:c, background:bg, border:`1px solid ${bd}`,
+                  color:c, background:`${c}18`, border:`1px solid ${bd}`,
                   borderRadius:4, padding:"1px 7px", textTransform:"uppercase",
                   letterSpacing:.8, fontWeight:700 }}>{s(f.status)}</span>
                 {f.guideline_citation && (
@@ -868,7 +869,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={result.result_flags} />
+      <LabFlagsCard flags={s(result.result_flags)} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (
@@ -877,7 +878,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
             <SectionLabel color="var(--qn-blue)" style={{ marginBottom:0, flex:1 }}>
               ED Reevaluation — Chart-Ready
             </SectionLabel>
-            <button onClick={() => copyWith(s(result.reevaluation_note), setCopiedReeval)}
+            <button onClick={() => copyWith(result.reevaluation_note, setCopiedReeval)}
               style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
                 fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
                 border:`1px solid ${copiedReeval ? "rgba(61,255,160,.5)" : "rgba(59,158,255,.35)"}`,
@@ -901,7 +902,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
             <SectionLabel color="var(--qn-purple)" style={{ marginBottom:0, flex:1 }}>
               Plan — Chart-Ready
             </SectionLabel>
-            <button onClick={() => copyWith(s(result.plan_summary), setCopiedPlan)}
+            <button onClick={() => copyWith(result.plan_summary, setCopiedPlan)}
               style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
                 fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
                 border:`1px solid ${copiedPlan ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.35)"}`,

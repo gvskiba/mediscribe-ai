@@ -162,6 +162,14 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
   const color = type === "ros" ? "var(--qn-teal)" : "var(--qn-purple)";
   const colorRgb = type === "ros" ? "0,229,192" : "155,109,255";
 
+  const handleSelect = (n) => {
+    const tpl = templates.find(t => t.id === n);
+    if (!tpl) return;
+    if (hasContent && confirmIdx !== n) { setConfirmIdx(n); return; }
+    onInsert(tpl.text);
+    onClose();
+  };
+
   useEffect(() => {
     const fn = e => {
       if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
@@ -170,15 +178,7 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
     };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, [hasContent, confirmIdx]);
-
-  const handleSelect = (n) => {
-    const tpl = templates.find(t => t.id === n);
-    if (!tpl) return;
-    if (hasContent && confirmIdx !== n) { setConfirmIdx(n); return; }
-    onInsert(tpl.text);
-    onClose();
-  };
+  }, [hasContent, confirmIdx, onInsert, onClose]);
 
   return (
     <div style={{ position:"absolute", zIndex:100, left:0, right:0, bottom:"calc(100% + 4px)",
@@ -877,7 +877,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
             <SectionLabel color="var(--qn-blue)" style={{ marginBottom:0, flex:1 }}>
               ED Reevaluation — Chart-Ready
             </SectionLabel>
-            <button onClick={() => copyWith(result.reevaluation_note, setCopiedReeval)}
+            <button onClick={() => copyWith(s(result.reevaluation_note), setCopiedReeval)}
               style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
                 fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
                 border:`1px solid ${copiedReeval ? "rgba(61,255,160,.5)" : "rgba(59,158,255,.35)"}`,
@@ -901,7 +901,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
             <SectionLabel color="var(--qn-purple)" style={{ marginBottom:0, flex:1 }}>
               Plan — Chart-Ready
             </SectionLabel>
-            <button onClick={() => copyWith(result.plan_summary, setCopiedPlan)}
+            <button onClick={() => copyWith(s(result.plan_summary), setCopiedPlan)}
               style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
                 fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
                 border:`1px solid ${copiedPlan ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.35)"}`,

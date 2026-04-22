@@ -163,6 +163,15 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
   const color = type === "ros" ? "var(--qn-teal)" : "var(--qn-purple)";
   const colorRgb = type === "ros" ? "0,229,192" : "155,109,255";
 
+  // handleSelect defined BEFORE useEffect so the closure is never stale
+  const handleSelect = (n) => {
+    const tpl = templates.find(t => t.id === n);
+    if (!tpl) return;
+    if (hasContent && confirmIdx !== n) { setConfirmIdx(n); return; }
+    onInsert(tpl.text);
+    onClose();
+  };
+
   useEffect(() => {
     const fn = e => {
       if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
@@ -173,18 +182,12 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
     return () => window.removeEventListener("keydown", fn);
   }, [hasContent, confirmIdx, onInsert, onClose]);
 
-  const handleSelect = (n) => {
-    const tpl = templates.find(t => t.id === n);
-    if (!tpl) return;
-    if (hasContent && confirmIdx !== n) { setConfirmIdx(n); return; }
-    onInsert(tpl.text);
-    onClose();
-  };
-
   return (
-    <div style={{ position:"absolute", zIndex:100, left:0, right:0, bottom:"calc(100% + 4px)",
+    // top: calc(100% + 4px) — picker opens BELOW field so id:1 (Normal) is immediately visible
+    <div style={{ position:"absolute", zIndex:100, left:0, right:0, top:"calc(100% + 4px)",
       background:"rgba(8,22,40,.97)", border:`1px solid rgba(${colorRgb},.4)`,
-      borderRadius:10, padding:"10px 12px", boxShadow:"0 8px 32px rgba(0,0,0,.6)" }}>
+      borderRadius:10, padding:"10px 12px", boxShadow:"0 8px 32px rgba(0,0,0,.6)",
+      maxHeight:380, overflowY:"auto" }}>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
           color, letterSpacing:1.5, textTransform:"uppercase" }}>
@@ -586,12 +589,6 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                 t.evidence_level === "Class IIb"       ? "var(--qn-gold)"   :
                 t.evidence_level === "Class III"       ? "var(--qn-coral)"  :
                                                          "var(--qn-blue)";
-              const evColorHex =
-                t.evidence_level === "Class I"         ? "#3dffa0" :
-                t.evidence_level === "Class IIa"       ? "#00e5c0" :
-                t.evidence_level === "Class IIb"       ? "#f5c842" :
-                t.evidence_level === "Class III"       ? "#ff6b6b" :
-                                                         "#3b9eff";
               const evBg =
                 t.evidence_level === "Class I"         ? "rgba(61,255,160,.08)"   :
                 t.evidence_level === "Class IIa"       ? "rgba(0,229,192,.06)"    :
@@ -611,7 +608,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                     flexWrap:"wrap", marginBottom:3 }}>
                     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                       fontWeight:700, color:evColor,
-                      background:`${evColorHex}18`, border:`1px solid ${evBd}`,
+                      background:`${evColor}18`, border:`1px solid ${evBd}`,
                       borderRadius:4, padding:"1px 7px", letterSpacing:.8,
                       textTransform:"uppercase", flexShrink:0 }}>
                       {s(t.evidence_level)}
@@ -758,12 +755,12 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
 
 // ─── LAB FLAGS CARD ──────────────────────────────────────────────────────────
 function labFlagColor(status) {
-  const st = (status || "").toLowerCase();
-  if (st === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)",   "#ff4444"];
-  if (st === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)","#ff6b6b"];
-  if (st === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)", "#3b9eff"];
-  if (st === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)",  "#f5c842"];
-  return                          ["var(--qn-purple)", "rgba(155,109,255,.07)","rgba(155,109,255,.28)","#9b6dff"];
+  const s = (status || "").toLowerCase();
+  if (s === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)"];
+  if (s === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)"];
+  if (s === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)"];
+  if (s === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)"];
+  return                         ["var(--qn-purple)", "rgba(155,109,255,.07)","rgba(155,109,255,.28)"];
 }
 
 function LabFlagsCard({ flags }) {
@@ -774,7 +771,7 @@ function LabFlagsCard({ flags }) {
       <SectionLabel color="var(--qn-gold)">Lab & Imaging Interpretation</SectionLabel>
       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
         {flags.map((f, i) => {
-          const [c, bg, bd, cHex] = labFlagColor(f.status);
+          const [c, bg, bd] = labFlagColor(f.status);
           return (
             <div key={i} style={{ padding:"8px 10px", borderRadius:8,
               background:bg, border:`1px solid ${bd}` }}>
@@ -785,7 +782,7 @@ function LabFlagsCard({ flags }) {
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
                   color:"var(--qn-txt)", fontWeight:600 }}>{s(f.value)}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:c, background:`${cHex}18`, border:`1px solid ${bd}`,
+                  color:c, background:`${c}18`, border:`1px solid ${bd}`,
                   borderRadius:4, padding:"1px 7px", textTransform:"uppercase",
                   letterSpacing:.8, fontWeight:700 }}>{s(f.status)}</span>
                 {f.guideline_citation && (
@@ -896,7 +893,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={Array.isArray(result.result_flags) ? result.result_flags : []} />
+      <LabFlagsCard flags={s(result.result_flags)} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (

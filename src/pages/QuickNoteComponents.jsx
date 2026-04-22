@@ -38,6 +38,15 @@ function SectionLabel({ children, color, style: extraStyle }) {
   );
 }
 
+// Safe string coercion — prevents React Error #31 when AI returns unexpected objects
+function s(val) {
+  if (val === null || val === undefined) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "number") return String(val);
+  if (typeof val === "object") return JSON.stringify(val);
+  return String(val);
+}
+
 // ─── STEP PROGRESS ────────────────────────────────────────────────────────────
 export function StepProgress({ phase1Done, phase2Done, p2Open }) {
   const steps = [
@@ -486,7 +495,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
           <div className="qn-section-lbl" style={{ color:lc, marginBottom:2 }}>MDM Complexity</div>
           <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
             fontSize:20, color:lc, letterSpacing:-.3 }}>
-            {result.mdm_level || "—"}
+            {s(result.mdm_level) || "—"}
           </div>
         </div>
         <div style={{ width:1, height:36, background:`${lc}30`, flexShrink:0 }} />
@@ -498,7 +507,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
             color:"var(--qn-txt2)", lineHeight:1.5 }}>
             {[result.problem_complexity, result.data_complexity, result.risk_tier]
-              .filter(Boolean).join("  ·  ")}
+              .filter(Boolean).map(s).join("  ·  ")}
           </div>
         </div>
       </div>
@@ -523,7 +532,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                   <span style={{ color:"var(--qn-txt4)", fontFamily:"'JetBrains Mono',monospace",
                     fontSize:9, marginTop:2, flexShrink:0 }}>{i + 1}.</span>
                   <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                    color:"var(--qn-txt2)" }}>{d}</span>
+                    color:"var(--qn-txt2)" }}>{s(d)}</span>
                 </div>
               ))}
             </div>
@@ -557,7 +566,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
               <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:"var(--qn-teal)", flexShrink:0, minWidth:16 }}>{i + 1}.</span>
               <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                color:"var(--qn-txt2)", lineHeight:1.5 }}>{a}</span>
+                color:"var(--qn-txt2)", lineHeight:1.5 }}>{s(a)}</span>
             </div>
           ))}
         </div>
@@ -598,21 +607,21 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                       background:evBg, border:`1px solid ${evBd}`,
                       borderRadius:4, padding:"1px 7px", letterSpacing:.8,
                       textTransform:"uppercase", flexShrink:0 }}>
-                      {t.evidence_level}
+                      {s(t.evidence_level)}
                     </span>
                     <span style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700,
                       fontSize:12, color:"var(--qn-txt)", flex:1 }}>
-                      {t.intervention}
+                      {s(t.intervention)}
                     </span>
                   </div>
                   <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
                     color:"var(--qn-txt3)", lineHeight:1.5, marginBottom:(t.guideline_ref || t.notes) ? 4 : 0 }}>
-                    {t.indication}
+                    {s(t.indication)}
                   </div>
                   {t.guideline_ref && (
                     <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                       color:"var(--qn-blue)", letterSpacing:.3, marginBottom:t.notes ? 2 : 0 }}>
-                      {t.guideline_ref}
+                      {s(t.guideline_ref)}
                     </div>
                   )}
                   {t.notes && (
@@ -620,7 +629,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                       <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                         color:"var(--qn-gold)", flexShrink:0 }}>⚠</span>
                       <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                        color:"var(--qn-gold)", lineHeight:1.5 }}>{t.notes}</span>
+                        color:"var(--qn-gold)", lineHeight:1.5 }}>{s(t.notes)}</span>
                     </div>
                   )}
                 </div>
@@ -640,7 +649,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
               <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:"var(--qn-blue)", flexShrink:0, minWidth:16 }}>{i + 1}.</span>
               <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                color:"var(--qn-txt2)", lineHeight:1.5 }}>{a}</span>
+                color:"var(--qn-txt2)", lineHeight:1.5 }}>{s(a)}</span>
             </div>
           ))}
         </div>
@@ -668,7 +677,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
           </div>
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
             color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
-            {result.mdm_narrative}
+            {s(result.mdm_narrative)}
           </div>
         </div>
       )}
@@ -679,14 +688,14 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
           <div className="qn-card">
             <SectionLabel>Data Reviewed</SectionLabel>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-              color:"var(--qn-txt3)", lineHeight:1.6 }}>{result.data_reviewed}</div>
+              color:"var(--qn-txt3)", lineHeight:1.6 }}>{s(result.data_reviewed)}</div>
           </div>
         )}
         {result.risk_rationale && (
           <div className="qn-card">
             <SectionLabel>Risk Rationale</SectionLabel>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-              color:"var(--qn-txt3)", lineHeight:1.6 }}>{result.risk_rationale}</div>
+              color:"var(--qn-txt3)", lineHeight:1.6 }}>{s(result.risk_rationale)}</div>
           </div>
         )}
       </div>
@@ -699,7 +708,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
             ACEP Policy:{" "}
           </span>
           <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-            color:"var(--qn-txt2)" }}>{result.acep_policy_ref}</span>
+            color:"var(--qn-txt2)" }}>{s(result.acep_policy_ref)}</span>
         </div>
       )}
 
@@ -744,30 +753,30 @@ function LabFlagsCard({ flags }) {
               <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4,
                 flexWrap:"wrap" }}>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700,
-                  fontSize:11, color:c }}>{f.parameter}</span>
+                  fontSize:11, color:c }}>{s(f.parameter)}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
-                  color:"var(--qn-txt)", fontWeight:600 }}>{f.value}</span>
+                  color:"var(--qn-txt)", fontWeight:600 }}>{s(f.value)}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                   color:c, background:bg, border:`1px solid ${bd}`,
                   borderRadius:4, padding:"1px 7px", textTransform:"uppercase",
-                  letterSpacing:.8, fontWeight:700 }}>{f.status}</span>
+                  letterSpacing:.8, fontWeight:700 }}>{s(f.status)}</span>
                 {f.guideline_citation && (
                   <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                     color:"var(--qn-blue)", letterSpacing:.3, marginLeft:"auto" }}>
-                    {f.guideline_citation}
+                    {s(f.guideline_citation)}
                   </span>
                 )}
               </div>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
                 color:"var(--qn-txt2)", lineHeight:1.5, marginBottom:f.recommendation ? 4 : 0 }}>
-                {f.clinical_significance}
+                {s(f.clinical_significance)}
               </div>
               {f.recommendation && (
                 <div style={{ display:"flex", gap:6, alignItems:"flex-start" }}>
                   <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                     color:c, flexShrink:0, marginTop:1 }}>→</span>
                   <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                    fontWeight:600, color:c, lineHeight:1.5 }}>{f.recommendation}</span>
+                    fontWeight:600, color:c, lineHeight:1.5 }}>{s(f.recommendation)}</span>
                 </div>
               )}
             </div>
@@ -807,7 +816,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
           <div className="qn-section-lbl" style={{ color:dc, marginBottom:2 }}>Disposition</div>
           <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
             fontSize:20, color:dc, letterSpacing:-.3 }}>
-            {result.disposition || "—"}
+            {s(result.disposition) || "—"}
           </div>
         </div>
         {result.admission_service && (
@@ -817,7 +826,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:"var(--qn-txt4)", letterSpacing:1, marginBottom:2 }}>SERVICE</div>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
-                fontSize:13, color:"var(--qn-txt)" }}>{result.admission_service}</div>
+                fontSize:13, color:"var(--qn-txt)" }}>{s(result.admission_service)}</div>
             </div>
           </>
         )}
@@ -828,7 +837,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:"var(--qn-txt4)", letterSpacing:1, marginBottom:2 }}>RESPONSE</div>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
-                fontSize:12, color:"var(--qn-txt2)" }}>{result.treatment_response}</div>
+                fontSize:12, color:"var(--qn-txt2)" }}>{s(result.treatment_response)}</div>
             </div>
           </>
         )}
@@ -840,7 +849,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
           <SectionLabel color="var(--qn-teal)">Final Impression</SectionLabel>
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
             fontSize:13, color:"var(--qn-txt)", lineHeight:1.5 }}>
-            {result.final_diagnosis}
+            {s(result.final_diagnosis)}
           </div>
         </div>
       )}
@@ -854,7 +863,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
             color:"var(--qn-teal)", letterSpacing:1, textTransform:"uppercase",
             flexShrink:0, marginTop:1 }}>Updated:</span>
           <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-            color:"var(--qn-txt2)", lineHeight:1.6 }}>{result.updated_impression}</span>
+            color:"var(--qn-txt2)", lineHeight:1.6 }}>{s(result.updated_impression)}</span>
         </div>
       )}
 
@@ -880,7 +889,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
           </div>
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
             color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
-            {result.reevaluation_note}
+            {s(result.reevaluation_note)}
           </div>
         </div>
       )}
@@ -904,7 +913,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
           </div>
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
             color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
-            {result.plan_summary}
+            {s(result.plan_summary)}
           </div>
         </div>
       )}
@@ -931,7 +940,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
                 <span style={{ color:"var(--qn-teal)", fontFamily:"'JetBrains Mono',monospace",
                   fontSize:9, flexShrink:0, marginTop:2 }}>▸</span>
                 <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                  color:"var(--qn-txt2)", lineHeight:1.55 }}>{o}</span>
+                  color:"var(--qn-txt2)", lineHeight:1.55 }}>{s(o)}</span>
               </div>
             ))}
           </div>
@@ -975,7 +984,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
                 WHAT YOU HAVE
               </div>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-                color:"var(--qn-txt2)", lineHeight:1.7 }}>{di.diagnosis_explanation}</div>
+                color:"var(--qn-txt2)", lineHeight:1.7 }}>{s(di.diagnosis_explanation)}</div>
             </div>
           )}
 
@@ -989,7 +998,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
                     <span style={{ color:"var(--qn-gold)", fontFamily:"'JetBrains Mono',monospace",
                       fontSize:9, flexShrink:0, marginTop:2 }}>▸</span>
                     <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                      color:"var(--qn-txt2)", lineHeight:1.5 }}>{m}</span>
+                      color:"var(--qn-txt2)", lineHeight:1.5 }}>{s(m)}</span>
                   </div>
                 ))}
               </div>
@@ -1000,7 +1009,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
                   <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                     color:"var(--qn-txt4)", letterSpacing:.8, marginBottom:4 }}>ACTIVITY</div>
                   <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                    color:"var(--qn-txt2)", lineHeight:1.55, marginBottom:8 }}>{di.activity}</div>
+                    color:"var(--qn-txt2)", lineHeight:1.55, marginBottom:8 }}>{s(di.activity)}</div>
                 </>
               )}
               {di.diet && (
@@ -1008,7 +1017,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
                   <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                     color:"var(--qn-txt4)", letterSpacing:.8, marginBottom:4 }}>DIET</div>
                   <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                    color:"var(--qn-txt2)", lineHeight:1.55 }}>{di.diet}</div>
+                    color:"var(--qn-txt2)", lineHeight:1.55 }}>{s(di.diet)}</div>
                 </>
               )}
             </div>
@@ -1026,7 +1035,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
                   <span style={{ color:"var(--qn-coral)", fontFamily:"'JetBrains Mono',monospace",
                     fontSize:10, flexShrink:0, marginTop:1 }}>!</span>
                   <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                    color:"var(--qn-txt2)", lineHeight:1.5 }}>{rp}</span>
+                    color:"var(--qn-txt2)", lineHeight:1.5 }}>{s(rp)}</span>
                 </div>
               ))}
             </div>
@@ -1041,7 +1050,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
                 <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                   color:"var(--qn-blue)", letterSpacing:.8, marginBottom:2 }}>FOLLOW-UP</div>
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                  color:"var(--qn-txt2)", lineHeight:1.55 }}>{di.followup}</div>
+                  color:"var(--qn-txt2)", lineHeight:1.55 }}>{s(di.followup)}</div>
               </div>
             </div>
           )}
@@ -1052,7 +1061,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
               <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:"var(--qn-blue)", letterSpacing:.8 }}>ACEP: </span>
               <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                color:"var(--qn-txt3)" }}>{di.acep_policy_ref}</span>
+                color:"var(--qn-txt3)" }}>{s(di.acep_policy_ref)}</span>
             </div>
           )}
         </div>
@@ -1063,7 +1072,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
         <div className="qn-card" style={{ marginBottom:10 }}>
           <SectionLabel>Disposition Rationale</SectionLabel>
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-            color:"var(--qn-txt2)", lineHeight:1.7 }}>{result.disposition_rationale}</div>
+            color:"var(--qn-txt2)", lineHeight:1.7 }}>{s(result.disposition_rationale)}</div>
         </div>
       )}
     </div>

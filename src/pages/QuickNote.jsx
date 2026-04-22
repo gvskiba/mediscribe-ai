@@ -1,16 +1,17 @@
-// QuickNote.jsx  v7
+// QuickNote.jsx  v8
 // Two-phase ED documentation: Phase 1 -> MDM | Phase 2 -> Reevaluation, Plan, Disposition, Discharge Rx
 // Grounded in AMA/CMS 2023 E&M MDM table + ACEP Clinical Policy guidelines
 // Keyboard: Tab advances | Cmd+Enter submit | T template/CC picker | 1-8 select | Esc close
 //           Alt+H/R/E/L field jump | C copy full note | Cmd+Shift+C copy section | P print
 //
-// v7 new features:
-//   1. Chief Complaint selector — 5-category two-tier picker, T key to open,
-//      inserts structured phrase with documentation blanks, consistent with T·Template pattern
-//   2. Recommended Actions — new MDM section between Critical Actions and Narrative;
-//      schema-enforced; "THIS VISIT" tier distinct from critical (do-now) actions
-//   3. Copy Full MDM Block — single button copies entire MDM as structured chart-ready text
-//      (level, complexity, differential, critical + recommended actions, narrative, rationale)
+// v8 new features:
+//   1. SmartFill bar — parses ___ and option/option tokens from inserted templates,
+//      renders inline fill chips; click to fill blank or toggle choice in place
+//   2. Problem + Data complexity prompt fix — explicit enumerated values force AI output
+//   3. Detailed lab recommendations — recommended_actions prompt instructs specific
+//      test name, indication, timing (STAT/routine/Xh), and decision threshold
+//   4. Hub links — CC picker shows Suggested Hubs strip; MDM result shows Related Hubs
+//      card based on working diagnosis; navigates via window.location.href
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
@@ -169,7 +170,15 @@ HPI: ${hpi || "Not provided"}
 ROS: ${ros || "Not provided"}
 Physical Exam: ${exam || "Not provided"}
 
-Generate the MDM assessment. For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-4 alternative diagnoses ranked by clinical probability. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For recommended_actions list clinical actions to complete during this visit that are not immediately time-critical — serial assessments, conditional next steps, monitoring parameters, required documentation; return an empty array if none. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies (chest pain, headache, syncope, dyspnea, fever, abdominal pain, etc.) — otherwise return an empty string.
+Generate the MDM assessment. Use ONLY the following exact values for each field:
+
+problem_complexity — pick the single best match:
+"1 self-limited or minor problem" | "1 stable chronic illness" | "2+ self-limited problems" | "1+ chronic illness with exacerbation" | "Undiagnosed new problem with uncertain prognosis" | "Acute illness with systemic symptoms" | "Acute or chronic illness posing threat to life or function"
+
+data_complexity — pick the single best match:
+"Minimal or none" | "Limited — ordering or reviewing tests" | "Moderate — independent interpretation of results" | "Moderate — discussion with treating provider" | "Extensive — independent interpretation and provider discussion"
+
+For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-4 alternative diagnoses ranked by clinical probability. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For recommended_actions list clinical actions to complete during this visit that are not immediately time-critical; for each recommended lab or test include: specific test name, clinical indication, timing (STAT / routine / in Xh), and the decision threshold — e.g. "Repeat troponin in 3h — if delta >0.04 ng/mL, initiate ACS protocol"; return an empty array if none. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies — otherwise return an empty string.
 
 Respond ONLY in valid JSON, no markdown fences.`;
 }
@@ -306,40 +315,7 @@ function StepProgress({ phase1Done, phase2Done, p2Open }) {
 import { ROS_TEMPLATES, PE_TEMPLATES } from "./QuickNoteTemplates";
 
 // ─── CHIEF COMPLAINT CATEGORIES ─────────────────────────────────────────────
-const CC_CATEGORIES = [
-  { id:"cardiac", label:"Cardiac / Pulm", color:"#ff6b6b", ccs:[
-    { label:"Chest pain",            text:"Chest pain — onset: ___, character: ___, severity: ___/10, radiation: ___" },
-    { label:"Shortness of breath",   text:"Shortness of breath — onset: ___, severity: mild/moderate/severe, exertional: yes/no" },
-    { label:"Palpitations",          text:"Palpitations — onset: ___, duration: ___, associated syncope: yes/no" },
-    { label:"Syncope",               text:"Syncope — onset: ___, prodrome: ___, duration of LOC: ___, injuries: ___" },
-  ]},
-  { id:"abdominal", label:"Abdominal", color:"#ff9f43", ccs:[
-    { label:"Abdominal pain",        text:"Abdominal pain — location: ___, onset: ___, character: ___, severity: ___/10" },
-    { label:"Nausea / vomiting",     text:"Nausea and vomiting — onset: ___, frequency: ___, blood in emesis: yes/no, last PO: ___" },
-    { label:"GI bleed",              text:"GI bleeding — hematemesis/melena/hematochezia: ___, onset: ___, hemodynamically stable: yes/no" },
-    { label:"Flank pain",            text:"Flank pain — side: L/R, onset: ___, radiation to groin: yes/no, hematuria: yes/no" },
-  ]},
-  { id:"neuro", label:"Neuro / Psych", color:"#9b6dff", ccs:[
-    { label:"Headache",              text:"Headache — onset: ___, character: ___, severity: ___/10, thunderclap: yes/no, fever/meningismus: yes/no" },
-    { label:"Dizziness",             text:"Dizziness — vertigo vs presyncope: ___, onset: ___, positional: yes/no" },
-    { label:"Weakness / numbness",   text:"Focal weakness/numbness — onset: ___, distribution: ___, last known well: ___, facial droop: yes/no" },
-    { label:"Altered mental status", text:"Altered mental status — baseline: ___, onset: ___, fever: yes/no, recent medication change: yes/no" },
-    { label:"Seizure",               text:"Seizure — type: focal/generalized, duration: ___, post-ictal: yes/no, prior seizures: yes/no" },
-  ]},
-  { id:"msk", label:"MSK / Trauma", color:"#f5c842", ccs:[
-    { label:"Extremity pain / injury", text:"Extremity pain/injury — location: ___, mechanism: ___, weight-bearing: yes/no, neurovascular intact: yes/no" },
-    { label:"Back pain",             text:"Back pain — onset: ___, mechanism: ___, radiation: ___, bowel/bladder changes: yes/no" },
-    { label:"Neck pain",             text:"Neck pain — mechanism: ___, onset: ___, radiation: ___, midline tenderness: yes/no" },
-    { label:"Fall",                  text:"Fall — mechanism: ___, LOC: yes/no, anticoagulation: yes/no, injuries identified: ___" },
-  ]},
-  { id:"other", label:"Other", color:"#3b9eff", ccs:[
-    { label:"Fever",                 text:"Fever — Tmax: ___, onset: ___, localizing symptoms: ___, immunocompromised: yes/no" },
-    { label:"Urinary symptoms",      text:"Urinary symptoms — dysuria/frequency/urgency/hematuria: ___, onset: ___, CVA tenderness: yes/no" },
-    { label:"Rash",                  text:"Rash — distribution: ___, onset: ___, pruritic: yes/no, fever: yes/no, new medications: yes/no" },
-    { label:"Vaginal bleeding",      text:"Vaginal bleeding — LMP: ___, quantity: ___, pregnancy test: positive/negative/pending" },
-    { label:"Swelling",              text:"Swelling — location: ___, onset: ___, unilateral/bilateral: ___, pain/erythema/warmth: yes/no" },
-  ]},
-];
+import { CC_CATEGORIES, CC_HUB_MAP } from "./QuickNoteData";
 
 // ─── CC PICKER ────────────────────────────────────────────────────────────────
 function CCPicker({ onInsert, onClose }) {
@@ -395,6 +371,7 @@ function CCPicker({ onInsert, onClose }) {
           </button>
         ))}
       </div>
+      <HubStrip catId={activeCat} label="Suggested Hubs" />
     </div>
   );
 }
@@ -469,8 +446,107 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
   );
 }
 
+// ─── SMARTFILL ────────────────────────────────────────────────────────────────
+// Parses ___ blanks and option/option toggles from template text.
+// Returns array of token objects: { idx, raw, type:"blank"|"toggle", options?[] }
+function parseTokens(text) {
+  const tokens = [];
+  // Match ___ blanks and word/word toggle patterns
+  const re = /(___|[a-z][a-z ]*(?:\/[a-z][a-z ]*)+)/gi;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const raw = m[0];
+    if (raw === "___") {
+      tokens.push({ idx: m.index, raw, type:"blank" });
+    } else if (raw.includes("/")) {
+      tokens.push({ idx: m.index, raw, type:"toggle", options: raw.split("/") });
+    }
+  }
+  return tokens;
+}
+
+function SmartFillBar({ value, onChange }) {
+  const tokens = useMemo(() => parseTokens(value), [value]);
+  const [activeBlank, setActiveBlank] = useState(null);
+  const [blankInput,  setBlankInput]  = useState("");
+  const inputRef = useRef();
+
+  if (!tokens.length) return null;
+
+  const replaceToken = (raw, replacement) => {
+    // Replace only first occurrence of this exact raw token
+    onChange(value.replace(raw, replacement));
+  };
+
+  const handleBlankSubmit = (raw) => {
+    if (blankInput.trim()) { replaceToken(raw, blankInput.trim()); }
+    setActiveBlank(null); setBlankInput("");
+  };
+
+  return (
+    <div style={{ display:"flex", flexWrap:"wrap", gap:5, padding:"6px 8px",
+      borderRadius:8, marginBottom:5,
+      background:"rgba(0,229,192,.05)", border:"1px solid rgba(0,229,192,.2)" }}>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        color:"var(--qn-teal)", letterSpacing:1, textTransform:"uppercase",
+        alignSelf:"center", flexShrink:0 }}>Fill:</span>
+      {tokens.map((tok, i) => (
+        <span key={i} style={{ position:"relative", display:"inline-flex" }}>
+          {tok.type === "toggle" ? (
+            <span style={{ display:"inline-flex", borderRadius:5, overflow:"hidden",
+              border:"1px solid rgba(0,229,192,.3)" }}>
+              {tok.options.map((opt, oi) => (
+                <button key={oi} onClick={() => replaceToken(tok.raw, opt)}
+                  style={{ padding:"2px 7px", cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
+                    background:"rgba(14,37,68,.7)", border:"none",
+                    borderRight: oi < tok.options.length - 1 ? "1px solid rgba(0,229,192,.2)" : "none",
+                    color:"var(--qn-txt3)", transition:"all .1s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,229,192,.15)"; e.currentTarget.style.color = "var(--qn-teal)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,37,68,.7)"; e.currentTarget.style.color = "var(--qn-txt3)"; }}>
+                  {opt}
+                </button>
+              ))}
+            </span>
+          ) : (
+            activeBlank === i ? (
+              <span style={{ display:"inline-flex", gap:3 }}>
+                <input ref={inputRef} value={blankInput}
+                  onChange={e => setBlankInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") { e.preventDefault(); handleBlankSubmit(tok.raw); }
+                    if (e.key === "Escape") { setActiveBlank(null); setBlankInput(""); }
+                  }}
+                  style={{ width:80, padding:"2px 6px", borderRadius:5,
+                    background:"rgba(14,37,68,.8)", border:"1px solid rgba(0,229,192,.5)",
+                    color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                    outline:"none" }}
+                  autoFocus
+                  placeholder="type + Enter" />
+                <button onClick={() => handleBlankSubmit(tok.raw)}
+                  style={{ padding:"2px 7px", borderRadius:5, cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    background:"rgba(0,229,192,.15)", border:"1px solid rgba(0,229,192,.4)",
+                    color:"var(--qn-teal)" }}>✓</button>
+              </span>
+            ) : (
+              <button onClick={() => { setActiveBlank(i); setBlankInput(""); }}
+                style={{ padding:"2px 9px", borderRadius:5, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+                  background:"rgba(245,200,66,.08)", border:"1px solid rgba(245,200,66,.3)",
+                  color:"var(--qn-gold)", letterSpacing:.3 }}>
+                ___
+              </button>
+            )
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // ─── INPUT ZONE ───────────────────────────────────────────────────────────────
-function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown, copyable, templateType }) {
+function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown, copyable, templateType, smartfill }) {
   const inputRef = useRef();
   const [copiedField, setCopiedField] = useState(false);
   const [showPicker,  setShowPicker]  = useState(false);
@@ -533,6 +609,7 @@ function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref
           onClose={() => setShowPicker(false)}
         />
       )}
+      {smartfill && <SmartFillBar value={value} onChange={onChange} />}
       <textarea
         ref={inputRef}
         className={`qn-ta${phaseClass}`}
@@ -543,6 +620,41 @@ function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref
         placeholder={placeholder}
         onKeyDown={handleKeyDown}
       />
+    </div>
+  );
+}
+
+// ─── HUB STRIP ────────────────────────────────────────────────────────────────
+function HubStrip({ catId, label }) {
+  const hubs = CC_HUB_MAP[catId];
+  if (!hubs) return null;
+  const all = [...(hubs.primary || []), ...(hubs.secondary || [])];
+  return (
+    <div style={{ marginTop:8, padding:"7px 10px", borderRadius:8,
+      background:"rgba(8,22,40,.7)", border:"1px solid rgba(42,79,122,.35)" }}>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        color:"var(--qn-txt4)", letterSpacing:1.2, textTransform:"uppercase",
+        marginBottom:6 }}>
+        {label || "Suggested Hubs"}
+      </div>
+      <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+        {all.map((h, i) => (
+          <button key={i} onClick={() => { window.location.href = h.route; }}
+            style={{ display:"inline-flex", alignItems:"center", gap:5,
+              padding:"4px 10px", borderRadius:7, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+              border:`1px solid ${h.color}44`,
+              background:`${h.color}0e`,
+              color:h.color, transition:"all .15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = h.color + "20"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = h.color + "0e"; }}>
+            <span style={{ fontSize:13 }}>{h.icon}</span>
+            {h.label}
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              opacity:.5 }}>→</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -711,6 +823,19 @@ function MDMResult({ result, copiedMDM, setCopiedMDM }) {
             color:"var(--qn-txt2)" }}>{result.acep_policy_ref}</span>
         </div>
       )}
+
+      {/* Related Hubs — derived from working diagnosis */}
+      {(() => {
+        const dx = (result.working_diagnosis || "").toLowerCase();
+        const catId =
+          /chest|cardiac|acs|mi|stemi|nstemi|angina|pe|embol|syncope|palpit/.test(dx) ? "cardiac" :
+          /abdom|appy|pancreat|bowel|obstruct|gall|biliary|bleed|gi|hepat|renal|uro/.test(dx) ? "abdominal" :
+          /stroke|tia|seizure|headache|neuro|ams|dement|psych|enceph|altered/.test(dx) ? "neuro" :
+          /fracture|disloc|sprain|msk|ortho|back|spine|fall|trauma|wound/.test(dx) ? "msk" :
+          /sepsis|fever|infect|pneumonia|uti|cellulit|abscess|rash/.test(dx) ? "other" : null;
+        if (!catId) return null;
+        return <HubStrip catId={catId} label="Related Hubs" />;
+      })()}
     </div>
   );
 }
@@ -1423,7 +1548,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
               color:"var(--qn-txt4)", letterSpacing:1.5, textTransform:"uppercase",
               background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.25)",
               borderRadius:4, padding:"2px 7px" }}>
-              MDM · Disposition · Discharge Rx · v7
+              MDM · Disposition · Discharge Rx · v8
             </span>
           </div>
         )}
@@ -1527,7 +1652,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
           {/* CC + Vitals row */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <InputZone label="Chief Complaint" value={cc} onChange={setCC} phase={1}
-              rows={2} templateType="cc"
+              rows={2} templateType="cc" smartfill
               placeholder="e.g. Chest pain, sharp, onset 2h ago — or press T to select"
               onRef={setRef(0)}
               onKeyDown={makeKeyDown(0, false, runMDM)} />
@@ -1550,12 +1675,12 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
           {/* ROS + Exam row */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
             <InputZone label="Review of Systems" value={ros} onChange={setRos} phase={1}
-              rows={4} copyable templateType="ros"
+              rows={4} copyable templateType="ros" smartfill
               placeholder="Paste ROS, or press T to insert a template..."
               onRef={setRef(3)}
               onKeyDown={makeKeyDown(3, false, runMDM)} />
             <InputZone label="Physical Exam" value={exam} onChange={setExam} phase={1}
-              rows={4} copyable templateType="pe"
+              rows={4} copyable templateType="pe" smartfill
               placeholder="Paste physical exam, or press T to insert a template..."
               onRef={setRef(4)}
               onKeyDown={makeKeyDown(4, true, runMDM)} />
@@ -1822,7 +1947,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
           <div style={{ textAlign:"center", padding:"24px 0 8px",
             fontFamily:"'JetBrains Mono',monospace", fontSize:8,
             color:"var(--qn-txt4)", letterSpacing:1.5 }} className="no-print">
-            NOTRYA QUICKNOTE v7 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+            NOTRYA QUICKNOTE v8 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}

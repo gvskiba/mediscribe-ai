@@ -604,10 +604,10 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setTimeout(() => { fieldRefs.current[5]?.current?.focus(); }, 80);
     }
   }, [p2Open]);
+  const hasAnyResult = Boolean(mdmResult || dispResult);
+
   const isFatigueRisk = useMemo(() => { const h = new Date().getHours(); return h >= 17 || h <= 7; }, []);
   const [fatigueDismissed, setFatigueDismissed] = useState(false);
-
-  const hasAnyResult = Boolean(mdmResult || dispResult);
 
   return (
     <div style={{ fontFamily:"'DM Sans',sans-serif",

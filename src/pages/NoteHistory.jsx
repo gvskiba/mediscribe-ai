@@ -73,12 +73,24 @@ function Label({ children, color }) {
   );
 }
 
+// Map CSS variable names to hex so alpha suffixes work correctly
+const COLOR_HEX = {
+  "var(--nh-teal)":   "#00e5c0",
+  "var(--nh-purple)": "#9b6dff",
+  "var(--nh-blue)":   "#3b9eff",
+  "var(--nh-green)":  "#3dffa0",
+  "var(--nh-gold)":   "#f5c842",
+  "var(--nh-coral)":  "#ff6b6b",
+  "var(--nh-red)":    "#ff4444",
+};
+
 function Badge({ text, color }) {
   if (!text) return null;
+  const hex = COLOR_HEX[color] || color;
   return (
     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
       padding:"2px 8px", borderRadius:20,
-      background: `${color}18`, border:`1px solid ${color}44`,
+      background: `${hex}18`, border:`1px solid ${hex}44`,
       color: color, letterSpacing:.5, textTransform:"uppercase", whiteSpace:"nowrap" }}>
       {text}
     </span>

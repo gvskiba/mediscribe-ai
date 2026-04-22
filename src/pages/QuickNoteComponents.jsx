@@ -595,7 +595,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                     flexWrap:"wrap", marginBottom:3 }}>
                     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                       fontWeight:700, color:evColor,
-                      background:`${evColor}18`, border:`1px solid ${evBd}`,
+                      background:evBg, border:`1px solid ${evBd}`,
                       borderRadius:4, padding:"1px 7px", letterSpacing:.8,
                       textTransform:"uppercase", flexShrink:0 }}>
                       {t.evidence_level}
@@ -748,7 +748,7 @@ function LabFlagsCard({ flags }) {
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
                   color:"var(--qn-txt)", fontWeight:600 }}>{f.value}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:c, background:`${c}18`, border:`1px solid ${bd}`,
+                  color:c, background:bg, border:`1px solid ${bd}`,
                   borderRadius:4, padding:"1px 7px", textTransform:"uppercase",
                   letterSpacing:.8, fontWeight:700 }}>{f.status}</span>
                 {f.guideline_citation && (

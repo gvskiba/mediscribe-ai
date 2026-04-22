@@ -826,7 +826,6 @@ export default function NewPatientInput() {
       )}
       {/* Spacer so top bar isn't covered by import banner */}
       {qnHandoff && !qnDismissed && <div style={{ height:qnHandoff.hpi_raw ? 0 : 58 }} />}
-      </div>
 
       {/* ── Top bar ── */}
       <header className="npi-top-bar">

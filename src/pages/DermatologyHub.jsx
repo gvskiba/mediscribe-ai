@@ -21,7 +21,7 @@ import { useNavigate } from "react-router-dom";
   s.textContent = `
     :root{
       --derm-bg:#050f1e;--derm-panel:#081628;--derm-card:#0b1e36;
-      --derm-txt:#f2f7ff;--derm-txt2:#b8d4f0;--derm-txt3:#82aece;--derm-txt4:#5a82a8;
+      --derm-txt:#f2f7ff;--derm-txt2:#b8d4f0;--derm-txt3:#82aece;--derm-txt4:#6b9ec8;
       --derm-teal:#00e5c0;--derm-gold:#f5c842;--derm-coral:#ff6b6b;--derm-blue:#3b9eff;
       --derm-orange:#ff9f43;--derm-purple:#9b6dff;--derm-green:#3dffa0;--derm-red:#ff4444;
       --derm-bd:rgba(42,79,122,0.4);--derm-up:rgba(14,37,68,0.75);
@@ -502,7 +502,7 @@ function ABCDEPanel() {
 function DiagnosisCard({ dx, image, imgLoading }) {
   const [exp, setExp] = useState(false);
   const lc = dx.likelihood==="most_likely" ? "#ff9f43" : dx.likelihood==="likely" ? "#f5c842"
-    : dx.likelihood==="possible" ? "#3b9eff" : "#5a82a8";
+    : dx.likelihood==="possible" ? "#3b9eff" : "#6b9ec8";
   const rc = dx.referral_urgency==="emergent" ? "var(--derm-red)"
     : dx.referral_urgency==="urgent" ? "var(--derm-orange)"
     : dx.referral_urgency==="soon" ? "var(--derm-gold)" : "var(--derm-txt4)";
@@ -650,7 +650,7 @@ function LRINECCalculator({ vals, onChange }) {
           <div key={f.k}>
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
               color:"var(--derm-txt4)", marginBottom:3 }}>
-              {f.label} <span style={{ color:"rgba(90,130,168,.6)", fontSize:7 }}>({f.hint})</span>
+              {f.label} <span style={{ color:"rgba(107,158,200,.6)", fontSize:7 }}>({f.hint})</span>
             </div>
             <input type="number" className="d2-num" value={vals[f.k]}
               onChange={e => onChange({ ...vals, [f.k]:e.target.value })}

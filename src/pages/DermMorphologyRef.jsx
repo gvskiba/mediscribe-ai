@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
   s.textContent = `
     :root{
       --dmr-bg:#050f1e;--dmr-panel:#081628;
-      --dmr-txt:#f2f7ff;--dmr-txt2:#b8d4f0;--dmr-txt3:#82aece;--dmr-txt4:#5a82a8;
+      --dmr-txt:#f2f7ff;--dmr-txt2:#b8d4f0;--dmr-txt3:#82aece;--dmr-txt4:#6b9ec8;
       --dmr-teal:#00e5c0;--dmr-gold:#f5c842;--dmr-coral:#ff6b6b;--dmr-blue:#3b9eff;
       --dmr-orange:#ff9f43;--dmr-purple:#9b6dff;--dmr-green:#3dffa0;--dmr-red:#ff4444;
       --dmr-bd:rgba(42,79,122,0.4);--dmr-up:rgba(14,37,68,0.75);
@@ -263,7 +263,7 @@ const MORPHOLOGIES = [
     workup:"KOH prep for tinea if toe web involved. Culture if infected.",
     differentials:["Tinea pedis","Psoriasis","Eczema craquele","Anal fissure","Angular cheilitis from candida"],
     wiki:["Fissure (dermatology)","Angular cheilitis","Anal fissure"],
-    color:"#5a82a8",
+    color:"#6b9ec8",
   },
   {
     id:"scale", name:"Scale", icon:"≋",
@@ -315,7 +315,7 @@ const MORPHOLOGIES = [
     workup:"Skin biopsy. ANA/SCL-70 for systemic sclerosis. Urinalysis for lichen sclerosus workup.",
     differentials:["Steroid atrophy","Lichen sclerosus","Morphea","Systemic sclerosis","Lipodermatosclerosis"],
     wiki:["Striae","Lichen sclerosus","Morphea"],
-    color:"#5a82a8",
+    color:"#6b9ec8",
   },
   {
     id:"excoriation", name:"Excoriation", icon:"∕∕",
@@ -376,7 +376,7 @@ const URGENCY_META = {
   emergent:  { label:"Emergent",  color:"#ff4444", bg:"rgba(255,68,68,.15)",  bd:"rgba(255,68,68,.5)"  },
   urgent:    { label:"Urgent",    color:"#ff9f43", bg:"rgba(255,159,67,.12)", bd:"rgba(255,159,67,.45)" },
   common:    { label:"Common ED", color:"#f5c842", bg:"rgba(245,200,66,.10)", bd:"rgba(245,200,66,.4)"  },
-  reference: { label:"Reference", color:"#5a82a8", bg:"rgba(42,79,122,.2)",   bd:"rgba(42,79,122,.45)" },
+  reference: { label:"Reference", color:"#6b9ec8", bg:"rgba(42,79,122,.2)",   bd:"rgba(42,79,122,.45)" },
 };
 
 const CAT_LABELS = {

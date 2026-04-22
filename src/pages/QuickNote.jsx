@@ -1,22 +1,18 @@
-// QuickNote.jsx  v8
+// QuickNote.jsx  v9
 // Two-phase ED documentation: Phase 1 -> MDM | Phase 2 -> Reevaluation, Plan, Disposition, Discharge Rx
 // Grounded in AMA/CMS 2023 E&M MDM table + ACEP Clinical Policy guidelines
 // Keyboard: Tab advances | Cmd+Enter submit | T template/CC picker | 1-8 select | Esc close
 //           Alt+H/R/E/L field jump | C copy full note | Cmd+Shift+C copy section | P print
 //
-// v8 new features:
-//   1. SmartFill bar — parses ___ and option/option tokens from inserted templates,
-//      renders inline fill chips; click to fill blank or toggle choice in place
-//   2. Problem + Data complexity prompt fix — explicit enumerated values force AI output
-//   3. Detailed lab recommendations — recommended_actions prompt instructs specific
-//      test name, indication, timing (STAT/routine/Xh), and decision threshold
-//   4. Hub links — CC picker shows Suggested Hubs strip; MDM result shows Related Hubs
-//      card based on working diagnosis; navigates via window.location.href
+// v9 new feature:
+//   Context-aware SmartFill — ___ blanks now show option buttons when the preceding
+//   word matches a known context key (severity, onset, character, mechanism, side, etc.)
+//   from BLANK_OPTIONS in QuickNoteData.js. Unrecognized blanks fall back to
+//   free-text popup. All option sets editable in QuickNoteData.js without touching
+//   the main component.
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { ROS_TEMPLATES, PE_TEMPLATES } from "./QuickNoteTemplates";
-import { CC_CATEGORIES, CC_HUB_MAP } from "./QuickNoteData";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
@@ -313,6 +309,12 @@ function StepProgress({ phase1Done, phase2Done, p2Open }) {
   );
 }
 
+// ─── ROS / PE TEMPLATES ──────────────────────────────────────────────────────
+import { ROS_TEMPLATES, PE_TEMPLATES } from "./QuickNoteTemplates";
+
+// ─── CHIEF COMPLAINT CATEGORIES ─────────────────────────────────────────────
+import { CC_CATEGORIES, CC_HUB_MAP, BLANK_OPTIONS } from "./QuickNoteData";
+
 // ─── CC PICKER ────────────────────────────────────────────────────────────────
 function CCPicker({ onInsert, onClose }) {
   const [activeCat, setActiveCat] = useState(CC_CATEGORIES[0].id);
@@ -444,16 +446,26 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
 
 // ─── SMARTFILL ────────────────────────────────────────────────────────────────
 // Parses ___ blanks and option/option toggles from template text.
-// Returns array of token objects: { idx, raw, type:"blank"|"toggle", options?[] }
+// For ___ blanks, extracts the word immediately before to look up BLANK_OPTIONS.
+// Returns array: { idx, raw, type:"blank"|"options"|"toggle", options?[], context? }
 function parseTokens(text) {
   const tokens = [];
-  // Match ___ blanks and word/word toggle patterns
-  const re = /(___|[a-z][a-z ]*(?:\/[a-z][a-z ]*)+)/gi;
+  const re = /(___|(?<!\w)([a-z][a-z -]*)(?:\/[a-z][a-z -]*)+(?!\w))/gi;
   let m;
   while ((m = re.exec(text)) !== null) {
     const raw = m[0];
     if (raw === "___") {
-      tokens.push({ idx: m.index, raw, type:"blank" });
+      // Extract word before the blank: look back for last word token
+      const before = text.slice(0, m.index).trimEnd();
+      const ctxMatch = before.match(/([a-z]+)[^a-z]*$/i);
+      const ctx = ctxMatch ? ctxMatch[1].toLowerCase() : null;
+      const opts = ctx && BLANK_OPTIONS[ctx] ? BLANK_OPTIONS[ctx] : null;
+      tokens.push({
+        idx: m.index, raw,
+        type: opts ? "options" : "blank",
+        options: opts,
+        context: ctx,
+      });
     } else if (raw.includes("/")) {
       tokens.push({ idx: m.index, raw, type:"toggle", options: raw.split("/") });
     }
@@ -465,12 +477,10 @@ function SmartFillBar({ value, onChange }) {
   const tokens = useMemo(() => parseTokens(value), [value]);
   const [activeBlank, setActiveBlank] = useState(null);
   const [blankInput,  setBlankInput]  = useState("");
-  const inputRef = useRef();
 
   if (!tokens.length) return null;
 
   const replaceToken = (raw, replacement) => {
-    // Replace only first occurrence of this exact raw token
     onChange(value.replace(raw, replacement));
   };
 
@@ -486,9 +496,38 @@ function SmartFillBar({ value, onChange }) {
       <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
         color:"var(--qn-teal)", letterSpacing:1, textTransform:"uppercase",
         alignSelf:"center", flexShrink:0 }}>Fill:</span>
+
       {tokens.map((tok, i) => (
         <span key={i} style={{ position:"relative", display:"inline-flex" }}>
-          {tok.type === "toggle" ? (
+
+          {/* Known-context options — rendered as button row */}
+          {tok.type === "options" && (
+            <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}>
+              {tok.context && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-txt4)", marginRight:1 }}>{tok.context}:</span>
+              )}
+              <span style={{ display:"inline-flex", borderRadius:5, overflow:"hidden",
+                border:"1px solid rgba(245,200,66,.35)" }}>
+                {tok.options.map((opt, oi) => (
+                  <button key={oi} onClick={() => replaceToken(tok.raw, opt)}
+                    style={{ padding:"2px 8px", cursor:"pointer",
+                      fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
+                      background:"rgba(14,37,68,.7)", border:"none",
+                      borderRight: oi < tok.options.length - 1
+                        ? "1px solid rgba(245,200,66,.2)" : "none",
+                      color:"var(--qn-gold)", transition:"all .1s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(245,200,66,.18)"; e.currentTarget.style.color = "#fff"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,37,68,.7)"; e.currentTarget.style.color = "var(--qn-gold)"; }}>
+                    {opt}
+                  </button>
+                ))}
+              </span>
+            </span>
+          )}
+
+          {/* Toggle options (yes/no, mild/moderate/severe, L/R, etc.) */}
+          {tok.type === "toggle" && (
             <span style={{ display:"inline-flex", borderRadius:5, overflow:"hidden",
               border:"1px solid rgba(0,229,192,.3)" }}>
               {tok.options.map((opt, oi) => (
@@ -496,7 +535,8 @@ function SmartFillBar({ value, onChange }) {
                   style={{ padding:"2px 7px", cursor:"pointer",
                     fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
                     background:"rgba(14,37,68,.7)", border:"none",
-                    borderRight: oi < tok.options.length - 1 ? "1px solid rgba(0,229,192,.2)" : "none",
+                    borderRight: oi < tok.options.length - 1
+                      ? "1px solid rgba(0,229,192,.2)" : "none",
                     color:"var(--qn-txt3)", transition:"all .1s" }}
                   onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,229,192,.15)"; e.currentTarget.style.color = "var(--qn-teal)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,37,68,.7)"; e.currentTarget.style.color = "var(--qn-txt3)"; }}>
@@ -504,10 +544,13 @@ function SmartFillBar({ value, onChange }) {
                 </button>
               ))}
             </span>
-          ) : (
+          )}
+
+          {/* Unrecognized blank — free-text popup (fallback) */}
+          {tok.type === "blank" && (
             activeBlank === i ? (
               <span style={{ display:"inline-flex", gap:3 }}>
-                <input ref={inputRef} value={blankInput}
+                <input value={blankInput}
                   onChange={e => setBlankInput(e.target.value)}
                   onKeyDown={e => {
                     if (e.key === "Enter") { e.preventDefault(); handleBlankSubmit(tok.raw); }
@@ -535,6 +578,7 @@ function SmartFillBar({ value, onChange }) {
               </button>
             )
           )}
+
         </span>
       ))}
     </div>
@@ -897,10 +941,10 @@ function LabFlagsCard({ flags }) {
 
 // ─── DISPOSITION RESULT DISPLAY ───────────────────────────────────────────────
 function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
+  if (!result) return null;
   const [copiedReeval, setCopiedReeval] = useState(false);
   const [copiedPlan,   setCopiedPlan]   = useState(false);
   const [copiedOrders, setCopiedOrders] = useState(false);
-  if (!result) return null;
   const copyWith = (text, setter) => {
     navigator.clipboard.writeText(text).then(() => {
       setter(true); setTimeout(() => setter(false), 2000);
@@ -1544,7 +1588,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
               color:"var(--qn-txt4)", letterSpacing:1.5, textTransform:"uppercase",
               background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.25)",
               borderRadius:4, padding:"2px 7px" }}>
-              MDM · Disposition · Discharge Rx · v8
+              MDM · Disposition · Discharge Rx · v9
             </span>
           </div>
         )}
@@ -1943,7 +1987,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
           <div style={{ textAlign:"center", padding:"24px 0 8px",
             fontFamily:"'JetBrains Mono',monospace", fontSize:8,
             color:"var(--qn-txt4)", letterSpacing:1.5 }} className="no-print">
-            NOTRYA QUICKNOTE v8 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+            NOTRYA QUICKNOTE v9 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}

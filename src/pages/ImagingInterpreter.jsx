@@ -426,17 +426,25 @@ function ImagingResult({ result, panel }) {
               if (!val) return null;
               const absent   = /absent|normal|none|no |negative|reviewed/i.test(String(val));
               const critical = /present|tension|positive|type a|rupture|perforation|torsion|infarct|hemorrhage|aaa|ectopic|fat pad|segond|maisonneuve|lisfranc|jones/i.test(String(val));
-              const dot = absent ? "var(--img-green)" : critical ? "var(--img-red)" : "var(--img-gold)";
+              // Shape + color redundant coding (WCAG SC 1.4.1 — not color alone)
+              // absent  = green circle ●  (normal finding)
+              // critical= red diamond ◆   (colorblind-safe: shape differs from circle)
+              // warning = gold dash  ▬    (intermediate / cannot exclude)
+              const dotColor = absent ? "var(--img-green)" : critical ? "var(--img-red)" : "var(--img-gold)";
+              const dotShape = absent
+                ? { width:7, height:7, borderRadius:"50%",  background:dotColor, flexShrink:0, marginTop:3 }
+                : critical
+                ? { width:7, height:7, borderRadius:1, background:dotColor, flexShrink:0, marginTop:3, transform:"rotate(45deg)" }
+                : { width:9, height:3,  borderRadius:2, background:dotColor, flexShrink:0, marginTop:5 };
               const label = key.replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
               return (
                 <div key={key} style={{ display:"flex", alignItems:"flex-start", gap:7,
                   padding:"4px 7px", borderRadius:6,
                   background:critical ? "rgba(255,68,68,.07)" : "transparent" }}>
-                  <div style={{ width:7, height:7, borderRadius:"50%",
-                    background:dot, flexShrink:0, marginTop:3 }} />
+                  <div style={dotShape} />
                   <div style={{ flex:1 }}>
                     <span style={{ fontFamily:"'JetBrains Mono',monospace",
-                      fontSize:8, color:"var(--img-txt4)", letterSpacing:.5 }}>
+                      fontSize:10, color:"var(--img-txt4)", letterSpacing:.5 }}>
                       {label}{": "}
                     </span>
                     <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,

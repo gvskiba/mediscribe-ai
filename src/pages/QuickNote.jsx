@@ -13,6 +13,8 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+import { ROS_TEMPLATES, PE_TEMPLATES } from "./QuickNoteTemplates";
+import { CC_CATEGORIES, CC_HUB_MAP, BLANK_OPTIONS } from "./QuickNoteData";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
@@ -308,12 +310,6 @@ function StepProgress({ phase1Done, phase2Done, p2Open }) {
     </div>
   );
 }
-
-// ─── ROS / PE TEMPLATES ──────────────────────────────────────────────────────
-import { ROS_TEMPLATES, PE_TEMPLATES } from "./QuickNoteTemplates";
-
-// ─── CHIEF COMPLAINT CATEGORIES ─────────────────────────────────────────────
-import { CC_CATEGORIES, CC_HUB_MAP, BLANK_OPTIONS } from "./QuickNoteData";
 
 // ─── CC PICKER ────────────────────────────────────────────────────────────────
 function CCPicker({ onInsert, onClose }) {
@@ -941,10 +937,10 @@ function LabFlagsCard({ flags }) {
 
 // ─── DISPOSITION RESULT DISPLAY ───────────────────────────────────────────────
 function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
-  if (!result) return null;
   const [copiedReeval, setCopiedReeval] = useState(false);
   const [copiedPlan,   setCopiedPlan]   = useState(false);
   const [copiedOrders, setCopiedOrders] = useState(false);
+  if (!result) return null;
   const copyWith = (text, setter) => {
     navigator.clipboard.writeText(text).then(() => {
       setter(true); setTimeout(() => setter(false), 2000);

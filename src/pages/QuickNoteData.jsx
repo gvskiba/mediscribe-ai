@@ -40,6 +40,24 @@ export const CC_CATEGORIES = [
   ]},
 ];
 
+// ─── BLANK OPTIONS ───────────────────────────────────────────────────────────
+// Context-keyed option lists for SmartFill ___ blanks.
+// Key = last word before the blank (lowercase). Value = array of options.
+export const BLANK_OPTIONS = {
+  onset:       ["sudden", "gradual", "minutes ago", "hours ago", "days ago"],
+  character:   ["sharp", "dull", "pressure", "burning", "cramping", "tearing", "throbbing"],
+  severity:    ["1/10", "2/10", "3/10", "4/10", "5/10", "6/10", "7/10", "8/10", "9/10", "10/10"],
+  radiation:   ["none", "to left arm", "to jaw", "to back", "to groin", "to right shoulder"],
+  mechanism:   ["ground level fall", "MVC", "direct blow", "twisting injury", "lifting", "unknown"],
+  side:        ["left", "right", "bilateral"],
+  location:    ["RUQ", "RLQ", "LUQ", "LLQ", "epigastric", "periumbilical", "diffuse", "suprapubic"],
+  distribution:["unilateral", "bilateral", "dermatomal", "generalized", "focal"],
+  type:        ["focal", "generalized", "tonic-clonic", "absence", "complex partial"],
+  baseline:    ["alert", "confused at baseline", "demented", "non-verbal"],
+  frequency:   ["once", "2-3 times", "multiple times", "continuous"],
+  quantity:    ["spotting", "light", "moderate", "heavy", "clots"],
+};
+
 // ─── HUB ROUTING MAP ─────────────────────────────────────────────────────────
 // Maps CC category IDs and specific CC labels to relevant Notrya hubs
 // route must match App.jsx routes exactly
@@ -93,26 +111,4 @@ export const CC_HUB_MAP = {
       { icon:"🩻", label:"Imaging",           route:"/imaging-interpreter",color:"#82aece" },
     ],
   },
-};
-
-// ─── CONTEXT-AWARE BLANK OPTIONS ─────────────────────────────────────────────
-// Keys = lowercase word immediately before ___ in template text.
-// Values = option array shown as buttons instead of free-text input.
-// Unrecognized blanks fall back to the free-text popup (existing behavior).
-export const BLANK_OPTIONS = {
-  "severity":     ["1–3", "4–6", "7–8", "9–10"],
-  "side":         ["Left", "Right", "Bilateral"],
-  "onset":        ["Sudden", "Gradual", "Progressive", "Intermittent"],
-  "character":    ["Sharp", "Dull", "Pressure", "Burning", "Tearing", "Crampy"],
-  "mechanism":    ["Fall", "MVA", "Sports injury", "Direct blow", "Unknown"],
-  "distribution": ["RUE", "LUE", "RLE", "LLE", "Face", "Trunk", "Diffuse"],
-  "radiation":    ["None", "Left arm", "Jaw", "Right arm", "Back", "Shoulder"],
-  "frequency":    ["Once", "2–3x today", "Constant", "Episodic"],
-  "prodrome":     ["None", "Lightheadedness", "Nausea", "Diaphoresis", "Palpitations"],
-  "injuries":     ["None identified", "Laceration", "Contusion", "Fracture suspected"],
-  "baseline":     ["Alert/oriented", "Mild dementia", "Non-verbal at baseline"],
-  "tmax":         ["37.5–38°C", "38–38.9°C", "39–39.9°C", "≥40°C"],
-  "quantity":     ["Spotting", "Light", "Moderate", "Heavy", "Clots"],
-  "duration":     ["<1 min", "1–5 min", "5–30 min", ">30 min"],
-  "type":         ["Focal", "Generalized", "Focal with secondary generalization"],
 };

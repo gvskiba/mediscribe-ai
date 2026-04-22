@@ -586,6 +586,12 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                 t.evidence_level === "Class IIb"       ? "var(--qn-gold)"   :
                 t.evidence_level === "Class III"       ? "var(--qn-coral)"  :
                                                          "var(--qn-blue)";
+              const evColorHex =
+                t.evidence_level === "Class I"         ? "#3dffa0" :
+                t.evidence_level === "Class IIa"       ? "#00e5c0" :
+                t.evidence_level === "Class IIb"       ? "#f5c842" :
+                t.evidence_level === "Class III"       ? "#ff6b6b" :
+                                                         "#3b9eff";
               const evBg =
                 t.evidence_level === "Class I"         ? "rgba(61,255,160,.08)"   :
                 t.evidence_level === "Class IIa"       ? "rgba(0,229,192,.06)"    :
@@ -605,7 +611,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                     flexWrap:"wrap", marginBottom:3 }}>
                     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                       fontWeight:700, color:evColor,
-                      background:`${evColor}18`, border:`1px solid ${evBd}`,
+                      background:`${evColorHex}18`, border:`1px solid ${evBd}`,
                       borderRadius:4, padding:"1px 7px", letterSpacing:.8,
                       textTransform:"uppercase", flexShrink:0 }}>
                       {s(t.evidence_level)}

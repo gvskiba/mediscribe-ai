@@ -490,6 +490,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     });
   }, [cc, vitals, hpi, ros, exam, mdmResult, labs, imaging, newVitals, dispResult]);
 
+  const hasAnyResult = Boolean(mdmResult || dispResult);
+
   // Save note to ClinicalNote entity
   const saveNote = useCallback(async () => {
     if (saving || !hasAnyResult) return;
@@ -604,7 +606,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setTimeout(() => { fieldRefs.current[5]?.current?.focus(); }, 80);
     }
   }, [p2Open]);
-  const hasAnyResult = Boolean(mdmResult || dispResult);
 
   const isFatigueRisk = useMemo(() => { const h = new Date().getHours(); return h >= 17 || h <= 7; }, []);
   const [fatigueDismissed, setFatigueDismissed] = useState(false);

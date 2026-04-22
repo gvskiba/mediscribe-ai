@@ -77,6 +77,24 @@ const HUBS = [
     essential: true,
   },
   {
+    id: "quicknote",
+    route: "/QuickNote",
+    icon: "📋",
+    abbr: "QUICKNOTE",
+    title: "QuickNote",
+    subtitle: "Paste-to-MDM · ACEP Disposition · Discharge Rx · 2-phase AI workflow",
+    color: "#00e5c0",
+    glow: "rgba(0,229,192,0.4)",
+    glass: "rgba(0,229,192,0.07)",
+    border: "rgba(0,229,192,0.28)",
+    accent: "#33eccc",
+    category: "Tools",
+    stats: ["MDM · 2023 E&M", "ACEP Disposition", "Discharge Rx"],
+    badge: "AI-Powered",
+    priority: 4.5,
+    essential: true,
+  },
+  {
     id: "autocoder",
     route: "/AutoCoder",
     icon: "🤖",
@@ -467,14 +485,14 @@ const HUBS = [
     icon: "🩻",
     abbr: "RADIOLOGY",
     title: "Radiology Hub",
-    subtitle: "CXR · CT Head · CT Abdomen — Systematic Approach · Classic Patterns · Don’t-Miss Dx",
+    subtitle: "CXR · CT Head · CT Abdomen — Systematic Approach · Classic Patterns · Don't-Miss Dx",
     color: "#00d4ff",
     glow: "rgba(0,212,255,0.4)",
     glass: "rgba(0,212,255,0.07)",
     border: "rgba(0,212,255,0.28)",
     accent: "#33deff",
     category: "Tools",
-    stats: ["CXR A–F System", "CT Head Patterns", "CT Abd Patterns"],
+    stats: ["CXR A-F System", "CT Head Patterns", "CT Abd Patterns"],
     badge: "Live",
     priority: 26,
     essential: false,
@@ -1021,7 +1039,6 @@ const HUBS = [
     essential: false,
   },
 ];
-
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
 
 const CATEGORIES = ["All", "Essential", "Critical Care", "Chief Complaint", "Specialty", "Procedures", "Diagnostics", "Pharmacology", "Tools"];
@@ -1041,7 +1058,7 @@ const LIVE_ROUTES = new Set([
   "/weight-dose", "/SepsisHub", "/LabInterpreter", "/imaging-interpreter",
   "/wound-care-hub", "/seizure-hub", "/smart-dosing",
   "/stroke-hub", "/ddx-engine", "/EDTrackingBoard", "/narrative-engine", "/ed-procedure-notes",
-  "/order-generator",
+  "/order-generator", "/QuickNote",
 ]);
 
 function Background() {
@@ -1140,7 +1157,6 @@ function HubCard({ hub, onNavigate, index, size = "normal", isEssential = false,
         ))}
       </div>
 
-      {/* Essential toggle star */}
       <div
         onClick={e => { e.stopPropagation(); onToggleEssential && onToggleEssential(hub.id); }}
         title={isEssential ? "Remove from Essential" : "Add to Essential"}
@@ -1226,7 +1242,7 @@ export default function HubSelectorPage() {
   });
 
   const handleNavigate = (route) => {
-    if (!LIVE_ROUTES.has(route)) return; // silently ignore unimplemented hubs
+    if (!LIVE_ROUTES.has(route)) return;
     const hub = HUBS.find(h => h.route === route);
     if (hub) {
       const updated = [hub.id, ...recents.map(r => r.id).filter(id => id !== hub.id)].slice(0, 4);
@@ -1288,7 +1304,6 @@ export default function HubSelectorPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#050f1e", fontFamily: "'DM Sans',sans-serif", position: "relative", display: "flex" }}>
-      {/* Left Sidebar */}
       <div style={{ width: 80, flexShrink: 0, background: "#040d19", borderRight: "1px solid rgba(26,53,85,0.6)", display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0", gap: 2 }}>
         {sidebarItems.map(item => {
           const isActive = window.location.pathname === item.to;
@@ -1297,34 +1312,16 @@ export default function HubSelectorPage() {
               key={item.to}
               onClick={() => navigate(item.to)}
               style={{
-                width: 56,
-                height: 56,
-                borderRadius: 12,
+                width: 56, height: 56, borderRadius: 12,
                 border: isActive ? "1px solid rgba(0,229,192,0.4)" : "1px solid transparent",
                 background: isActive ? "rgba(0,229,192,0.1)" : "transparent",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 4,
-                cursor: "pointer",
+                display: "flex", flexDirection: "column", alignItems: "center",
+                justifyContent: "center", gap: 4, cursor: "pointer",
                 transition: "all 0.2s ease",
                 color: isActive ? "#00e5c0" : "#d0e8ff",
               }}
-              onMouseEnter={e => {
-                if (!isActive) {
-                  e.currentTarget.style.background = "rgba(14,37,68,0.5)";
-                  e.currentTarget.style.borderColor = "rgba(26,53,85,0.8)";
-                  e.currentTarget.style.color = "#ffffff";
-                }
-              }}
-              onMouseLeave={e => {
-                if (!isActive) {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.borderColor = "transparent";
-                  e.currentTarget.style.color = "#d0e8ff";
-                }
-              }}
+              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = "rgba(14,37,68,0.5)"; e.currentTarget.style.borderColor = "rgba(26,53,85,0.8)"; e.currentTarget.style.color = "#ffffff"; } }}
+              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.color = "#d0e8ff"; } }}
               title={item.label}
             >
               <span style={{ fontSize: 24 }}>{item.icon}</span>
@@ -1335,32 +1332,10 @@ export default function HubSelectorPage() {
         <div style={{ flex: 1 }} />
         <button
           onClick={() => navigate("/AppSettings")}
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 12,
-            border: "1px solid transparent",
-            background: "transparent",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 4,
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            color: "#8aaccc",
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = "rgba(14,37,68,0.5)";
-            e.currentTarget.style.borderColor = "rgba(26,53,85,0.8)";
-            e.currentTarget.style.color = "#ffffff";
-            }}
-            onMouseLeave={e => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.borderColor = "transparent";
-            e.currentTarget.style.color = "#d0e8ff";
-            }}
-            title="Settings"
+          style={{ width: 56, height: 56, borderRadius: 12, border: "1px solid transparent", background: "transparent", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", transition: "all 0.2s ease", color: "#8aaccc" }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(14,37,68,0.5)"; e.currentTarget.style.borderColor = "rgba(26,53,85,0.8)"; e.currentTarget.style.color = "#ffffff"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.color = "#d0e8ff"; }}
+          title="Settings"
         >
           <span style={{ fontSize: 24 }}>⚙️</span>
           <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: ".05em" }}>Settings</span>
@@ -1371,11 +1346,9 @@ export default function HubSelectorPage() {
 
       <div style={{ position: "relative", zIndex: 1, padding: "32px 36px 48px", flex: 1 }}>
 
-        {/* Hero Header */}
         <div style={{ borderRadius: 22, padding: "28px 32px 24px", background: "rgba(5,15,30,0.82)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", border: "1px solid rgba(42,79,122,0.5)", marginBottom: 24, position: "relative", overflow: "hidden", animation: "hub-appear 0.5s ease both", boxShadow: "0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2.5, borderRadius: "22px 22px 0 0", background: "linear-gradient(90deg,#ff6b6b,#ff9f43,#f5c842,#00e5c0,#3b9eff,#9b6dff,#ff6b9d)" }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(108deg, rgba(0,229,192,0.04) 0%, transparent 55%, rgba(155,109,255,0.04) 100%)", pointerEvents: "none" }} />
-
           <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
             <div style={{ width: 64, height: 64, borderRadius: 18, flexShrink: 0, background: "linear-gradient(135deg, rgba(0,229,192,0.18), rgba(59,158,255,0.12))", border: "1px solid rgba(0,229,192,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, position: "relative", boxShadow: "0 0 24px rgba(0,229,192,0.2)", animation: "hb 2.2s ease-in-out infinite" }}>
               ⚕
@@ -1401,7 +1374,6 @@ export default function HubSelectorPage() {
           </div>
         </div>
 
-        {/* Search + Filter */}
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 20, flexWrap: "wrap", animation: "hub-appear 0.5s ease both 0.1s" }}>
           <SearchBar value={search} onChange={setSearch} />
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1417,12 +1389,10 @@ export default function HubSelectorPage() {
           </span>
         </div>
 
-        {/* Recently Used */}
         <div style={{ animation: "hub-appear 0.5s ease both 0.12s" }}>
           <RecentStrip recents={recents} onNavigate={handleNavigate} />
         </div>
 
-        {/* Essential section — shown above featured when All + no search */}
         {!search && activeCategory === "All" && (
           <div style={{ marginBottom: 24, animation: "hub-appear 0.5s ease both 0.13s" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -1437,11 +1407,9 @@ export default function HubSelectorPage() {
           </div>
         )}
 
-        {/* Default view: featured + rest */}
         {!search && activeCategory === "All" && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, animation: "hub-appear 0.5s ease both 0.14s" }}>
-
               <div style={{ height: 1, width: 24, background: "rgba(0,229,192,0.4)", borderRadius: 1 }} />
               <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#00e5c0", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>Featured</span>
               <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(0,229,192,0.2), transparent)" }} />
@@ -1457,7 +1425,7 @@ export default function HubSelectorPage() {
                   <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(42,79,122,0.4), transparent)" }} />
                   <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                     <span style={{ fontSize: 10, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace" }}>Sort:</span>
-                    {[{id:"priority",label:"Default"},{id:"alpha",label:"A–Z"},{id:"category",label:"Category"},{id:"live",label:"Live First"}].map(opt => (
+                    {[{id:"priority",label:"Default"},{id:"alpha",label:"A-Z"},{id:"category",label:"Category"},{id:"live",label:"Live First"}].map(opt => (
                       <button key={opt.id} onClick={() => setSortBy(opt.id)}
                         style={{ padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: sortBy === opt.id ? "rgba(155,109,255,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${sortBy === opt.id ? "rgba(155,109,255,0.45)" : "rgba(42,79,122,0.5)"}`, color: sortBy === opt.id ? "#9b6dff" : "#c8d8ee", backdropFilter: "blur(12px)" }}>
                         {opt.label}
@@ -1473,7 +1441,6 @@ export default function HubSelectorPage() {
           </>
         )}
 
-        {/* Search / filtered results */}
         {(search || activeCategory !== "All") && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>

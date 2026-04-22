@@ -741,10 +741,6 @@ export default function NewPatientInput() {
     <div>
       <style>{NPI_CSS}</style>
 
-  return (
-    <div>
-      <style>{NPI_CSS}</style>
-
       {/* ── QuickNote Handoff Import Banner ── */}
       {qnHandoff && !qnDismissed && (
         <div style={{

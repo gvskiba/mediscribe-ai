@@ -12,7 +12,6 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { dispColor, StepProgress, InputZone, MDMResult, DispositionResult } from "./QuickNoteComponents";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
@@ -423,6 +422,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [copiedMDMFull, setCopiedMDMFull] = useState(false);
   const [savedNote,     setSavedNote]     = useState(false);
   const [saving,        setSaving]        = useState(false);
+  const [sentToNPI,     setSentToNPI]     = useState(false);
+  const [sendingNPI,    setSendingNPI]    = useState(false);
   const [fatigueDismissed, setFatigueDismissed] = useState(false);
 
   const phase1Ready = Boolean(cc.trim() || hpi.trim() || exam.trim());
@@ -532,6 +533,41 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     }
   }, [saving, hasAnyResult, cc, vitals, hpi, ros, exam, labs, imaging,
       newVitals, mdmResult, dispResult, demo]);
+
+  // Send clinical inputs to NPI for pre-population
+  const sendToNPI = useCallback(async () => {
+    if (sendingNPI) return;
+    setSendingNPI(true);
+    try {
+      // Supersede any prior pending handoffs
+      const prior = await base44.entities.ClinicalNote.list({ sort:"-created_date", limit:5 }).catch(() => []);
+      const stale = (prior || []).filter(r => r.source === "QN-Handoff" && r.status === "pending");
+      await Promise.all(stale.map(r => base44.entities.ClinicalNote.update(r.id, { status:"superseded" }).catch(() => null)));
+
+      await base44.entities.ClinicalNote.create({
+        source:            "QN-Handoff",
+        status:            "pending",
+        encounter_date:    new Date().toISOString().split("T")[0],
+        cc:                cc || "",
+        full_note_text:    vitals || "",
+        hpi_raw:           hpi || "",
+        ros_raw:           ros || "",
+        exam_raw:          exam || "",
+        labs_raw:          labs || "",
+        imaging_raw:       imaging || "",
+        working_diagnosis: mdmResult?.working_diagnosis || "",
+        mdm_level:         mdmResult?.mdm_level || "",
+        mdm_narrative:     mdmResult?.mdm_narrative || "",
+        patient_identifier: demo?.mrn || "",
+      });
+      setSentToNPI(true);
+      setTimeout(() => { window.location.href = "/NewPatientInput"; }, 1200);
+    } catch (e) {
+      console.error("Send to NPI failed:", e);
+      setSendingNPI(false);
+    }
+  }, [sendingNPI, cc, vitals, hpi, ros, exam, labs, imaging, mdmResult, demo]);
+
   useEffect(() => {
     const fn = e => {
       const tag = document.activeElement?.tagName?.toLowerCase();
@@ -607,7 +643,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setTimeout(() => { fieldRefs.current[5]?.current?.focus(); }, 80);
     }
   }, [p2Open]);
-
   const isFatigueRisk = useMemo(() => { const h = new Date().getHours(); return h >= 17 || h <= 7; }, []);
 
   return (
@@ -1022,6 +1057,15 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
                 border:"1px solid rgba(42,79,122,.4)", background:"rgba(14,37,68,.6)",
                 color:"var(--qn-txt3)", transition:"all .15s" }}>
               Note History →
+            </button>
+            <button onClick={sendToNPI} disabled={sendingNPI}
+              style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                border:`1px solid ${sentToNPI ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.4)"}`,
+                background:sentToNPI ? "rgba(61,255,160,.1)" : "rgba(14,37,68,.6)",
+                color:sentToNPI ? "var(--qn-green)" : "var(--qn-purple)",
+                opacity: sendingNPI ? .6 : 1, transition:"all .15s" }}>
+              {sendingNPI ? "Sending…" : sentToNPI ? "✓ Sent — opening NPI…" : "Send to NPI →"}
             </button>
             <button onClick={() => window.print()}
               style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",

@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 import { useNPIState } from "@/components/npi/useNPIState";
 import { NPI_CSS } from "@/components/npi/npiStyles";
 import {
@@ -130,6 +131,60 @@ export default function NewPatientInput() {
     toggleAI, addVitalsSnapshot, handleSaveChart, smartParse,
     sendMessage, handleAIKey, renderMsg,
   } = useNPIState(_showToast); // FIX #6
+
+  // ── QuickNote handoff import ───────────────────────────────────────────────
+  const [qnHandoff,    setQnHandoff]    = useState(null);
+  const [qnDismissed,  setQnDismissed]  = useState(false);
+  const [qnImporting,  setQnImporting]  = useState(false);
+
+  // Parse vitals string "HR 102 BP 148/92 RR 18 SpO2 96% T 37.4" into object
+  const parseVitalsString = (str) => {
+    if (!str) return {};
+    const out = {};
+    const hr   = str.match(/HR\s*(\d+)/i);
+    const bp   = str.match(/BP\s*([\d]+\/[\d]+)/i);
+    const rr   = str.match(/RR\s*(\d+)/i);
+    const spo2 = str.match(/SpO2\s*(\d+)/i);
+    const temp = str.match(/T\s*([\d.]+)/i);
+    if (hr)   out.hr   = hr[1];
+    if (bp)   out.bp   = bp[1];
+    if (rr)   out.rr   = rr[1];
+    if (spo2) out.spo2 = spo2[1];
+    if (temp) out.temp = temp[1];
+    return out;
+  };
+
+  useEffect(() => {
+    base44.entities.ClinicalNote.list({ sort:"-created_date", limit:5 })
+      .then(results => {
+        const handoff = (results || []).find(r => r.source === "QN-Handoff" && r.status === "pending");
+        if (handoff) setQnHandoff(handoff);
+      })
+      .catch(() => null);
+  }, []);
+
+  const applyHandoff = useCallback(async () => {
+    if (!qnHandoff || qnImporting) return;
+    setQnImporting(true);
+    try {
+      // Apply CC — NPI cc is { text: string }
+      if (qnHandoff.cc) setCC({ text: qnHandoff.cc });
+      // Apply vitals — parse raw string stored in full_note_text field
+      const parsedVitals = parseVitalsString(qnHandoff.full_note_text);
+      if (Object.keys(parsedVitals).length) {
+        setVitals(prev => ({ ...prev, ...parsedVitals }));
+      }
+      // Mark handoff as consumed
+      await base44.entities.ClinicalNote.update(qnHandoff.id, { status:"imported" }).catch(() => null);
+      setQnHandoff(null);
+      setQnDismissed(true);
+      toast.success("QuickNote data imported — CC and vitals pre-filled");
+    } catch (e) {
+      console.error("Handoff import failed:", e);
+    } finally {
+      setQnImporting(false);
+    }
+  }, [qnHandoff, qnImporting, setCC, setVitals]);
 
   // ── FIX #5: Onboarding — no sessionStorage ─────────────────────────────────
   const [showOnboarding, setShowOnboarding] = useState(() => !_introDismissed);
@@ -685,6 +740,97 @@ export default function NewPatientInput() {
   return (
     <div>
       <style>{NPI_CSS}</style>
+
+  return (
+    <div>
+      <style>{NPI_CSS}</style>
+
+      {/* ── QuickNote Handoff Import Banner ── */}
+      {qnHandoff && !qnDismissed && (
+        <div style={{
+          position:"fixed", top:0, left:0, right:0, zIndex:9999,
+          background:"linear-gradient(135deg,rgba(5,15,30,.97),rgba(8,22,40,.97))",
+          borderBottom:"2px solid rgba(155,109,255,.5)",
+          padding:"10px 20px", display:"flex", alignItems:"flex-start",
+          gap:14, boxShadow:"0 4px 24px rgba(0,0,0,.5)"
+        }}>
+          <div style={{ fontSize:20, flexShrink:0, marginTop:2 }}>📋</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:4, flexWrap:"wrap" }}>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:13,
+                color:"#f2f7ff" }}>QuickNote data ready to import</span>
+              {qnHandoff.cc && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  color:"#9b6dff", background:"rgba(155,109,255,.12)",
+                  border:"1px solid rgba(155,109,255,.35)", borderRadius:4,
+                  padding:"2px 8px", letterSpacing:.5 }}>
+                  CC: {qnHandoff.cc.slice(0, 60)}{qnHandoff.cc.length > 60 ? "…" : ""}
+                </span>
+              )}
+              {qnHandoff.mdm_level && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  color:"#00e5c0", background:"rgba(0,229,192,.08)",
+                  border:"1px solid rgba(0,229,192,.25)", borderRadius:4,
+                  padding:"2px 8px", letterSpacing:.5 }}>
+                  MDM: {qnHandoff.mdm_level}
+                </span>
+              )}
+            </div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+              color:"rgba(130,174,206,.7)", letterSpacing:.3 }}>
+              Will pre-fill: Chief Complaint · Vitals
+              {qnHandoff.hpi_raw ? " · HPI reference" : ""}
+              {qnHandoff.ros_raw ? " · ROS reference" : ""}
+              {qnHandoff.exam_raw ? " · PE reference" : ""}
+            </div>
+            {/* Reference text panel — HPI/ROS/PE shown for manual copy */}
+            {(qnHandoff.hpi_raw || qnHandoff.ros_raw || qnHandoff.exam_raw) && (
+              <details style={{ marginTop:6 }}>
+                <summary style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  color:"rgba(155,109,255,.8)", cursor:"pointer", letterSpacing:.5,
+                  textTransform:"uppercase", userSelect:"none" }}>
+                  View HPI / ROS / PE reference text ▸
+                </summary>
+                <div style={{ marginTop:6, display:"flex", flexDirection:"column", gap:6 }}>
+                  {[["HPI", qnHandoff.hpi_raw], ["ROS", qnHandoff.ros_raw],
+                    ["PE", qnHandoff.exam_raw], ["Labs", qnHandoff.labs_raw],
+                    ["Imaging", qnHandoff.imaging_raw]].filter(([,v]) => v).map(([label, text]) => (
+                    <div key={label} style={{ background:"rgba(14,37,68,.6)",
+                      border:"1px solid rgba(42,79,122,.4)", borderRadius:6, padding:"6px 10px" }}>
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                        color:"rgba(155,109,255,.8)", letterSpacing:1, marginBottom:4,
+                        textTransform:"uppercase" }}>{label}</div>
+                      <pre style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                        color:"rgba(184,212,240,.8)", margin:0, whiteSpace:"pre-wrap",
+                        lineHeight:1.6, maxHeight:100, overflowY:"auto" }}>{text}</pre>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
+          <div style={{ display:"flex", gap:7, flexShrink:0, alignItems:"flex-start" }}>
+            <button onClick={applyHandoff} disabled={qnImporting}
+              style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
+                border:"1px solid rgba(155,109,255,.5)",
+                background:"rgba(155,109,255,.15)", color:"#9b6dff",
+                opacity: qnImporting ? .6 : 1, whiteSpace:"nowrap" }}>
+              {qnImporting ? "Importing…" : "Import from QuickNote"}
+            </button>
+            <button onClick={() => { setQnDismissed(true); setQnHandoff(null); }}
+              style={{ padding:"7px 12px", borderRadius:7, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12,
+                border:"1px solid rgba(42,79,122,.4)", background:"transparent",
+                color:"rgba(130,174,206,.7)" }}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Spacer so top bar isn't covered by import banner */}
+      {qnHandoff && !qnDismissed && <div style={{ height:qnHandoff.hpi_raw ? 0 : 58 }} />}
+      </div>
 
       {/* ── Top bar ── */}
       <header className="npi-top-bar">

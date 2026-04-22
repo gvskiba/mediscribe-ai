@@ -6,7 +6,6 @@
 //   NEW: Keyboard-first — Cmd/Ctrl+Enter submits, M cycles modes, C copies-to-chart
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
 // ─── STYLE INJECTION ──────────────────────────────────────────────────────────
@@ -673,7 +672,6 @@ export default function ImagingInterpreter({
   embedded = false,
   demo, vitals, cc, pmhSelected, medications,
 }) {
-  const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState("cxr");
   const [mode,        setMode]        = useState({});
   const [reports,     setReports]     = useState({});
@@ -920,7 +918,7 @@ export default function ImagingInterpreter({
         {/* Standalone header */}
         {!embedded && (
           <div style={{ padding:"18px 0 14px" }} className="no-print">
-            <button onClick={() => navigate("/hub")}
+            <button onClick={() => window.history.back()}
               style={{ marginBottom:10, display:"inline-flex", alignItems:"center", gap:7,
                 fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
                 background:"rgba(14,37,68,.7)", border:"1px solid rgba(42,79,122,.5)",
@@ -1036,9 +1034,9 @@ export default function ImagingInterpreter({
             color:"var(--img-txt4)", letterSpacing:.5, alignSelf:"center",
             display:"flex", gap:6 }}>
             <span title="Cycle modes">M</span>
-            <span style={{ color:"rgba(107,158,200,.4)" }}>|</span>
+            <span style={{ color:"rgba(90,130,168,.4)" }}>|</span>
             <span title="Submit">Cmd+Enter</span>
-            <span style={{ color:"rgba(107,158,200,.4)" }}>|</span>
+            <span style={{ color:"rgba(90,130,168,.4)" }}>|</span>
             <span title="Copy to chart">C</span>
           </span>
           <div style={{ flex:1 }} />

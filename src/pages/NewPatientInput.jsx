@@ -34,6 +34,7 @@ import PatientSummaryTab        from "@/components/npi/PatientSummaryTab";
 import HandoffTab               from "@/components/npi/HandoffTab";
 import SmartDischargeHub         from "@/components/npi/SmartDischargeHub";
 import MDMBuilderTab            from "@/components/npi/MDMBuilderTab";
+import CapacityAMAModule        from "@/components/npi/CapacityAMAModule";
 
 // ── Utility / overlay components ─────────────────────────────────────────────
 import ParseFab               from "@/components/npi/ParseFab";
@@ -663,6 +664,17 @@ export default function NewPatientInput() {
             onToast={_showToast}
           />
         </div>
+      );
+
+      case "capacity": return (
+        <CapacityAMAModule
+          demo={demo}
+          cc={cc}
+          vitals={vitals}
+          mdmState={mdmState}
+          providerName={providerName}
+          onToast={_showToast}
+        />
       );
 
       default: return null;

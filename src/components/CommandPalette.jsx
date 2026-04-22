@@ -182,10 +182,13 @@ function ResultItem({ cmd, active, onSelect, query }) {
 
   const highlighted = useMemo(() => {
     if (!query) return cmd.label;
-    const re    = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")})`, "gi");
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+    const re    = new RegExp(`(${escaped})`, "gi");
     const parts = cmd.label.split(re);
+    // Use a fresh regex (no g flag) for testing each part to avoid lastIndex state
+    const reTest = new RegExp(`^${escaped}$`, "i");
     return parts.map((p, i) =>
-      re.test(p)
+      reTest.test(p)
         ? <mark key={i} style={{ background:`${tm.color}30`, color:tm.color,
             borderRadius:2, padding:"0 1px" }}>{p}</mark>
         : p
@@ -363,8 +366,6 @@ export default function CommandPalette({
     );
   }
 
-  let globalIdx = 0;
-
   return (
     <>
       {/* Backdrop */}
@@ -454,7 +455,7 @@ export default function CommandPalette({
                     </div>
                   )}
                   {group.items.map(cmd => {
-                    const idx = globalIdx++;
+                    const idx = results.indexOf(cmd);
                     return (
                       <ResultItem
                         key={cmd.id}

@@ -606,7 +606,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                     </span>
                   </div>
                   <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                    color:"var(--qn-txt3)", lineHeight:1.5, marginBottom:t.guideline_ref || t.notes ? 4 : 0 }}>
+                    color:"var(--qn-txt3)", lineHeight:1.5, marginBottom:(t.guideline_ref || t.notes) ? 4 : 0 }}>
                     {t.indication}
                   </div>
                   {t.guideline_ref && (

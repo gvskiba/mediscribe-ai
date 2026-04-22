@@ -1,0 +1,71 @@
+/* notryaAccessibility.css
+ * Global accessibility fixes — import once in App.jsx
+ * Fixes: WCAG 2.1 SC 2.3.3 (animations), minimum font size, prefers-reduced-motion
+ * Import: import "./notryaAccessibility.css"; at top of App.jsx
+ */
+
+/* ── Fix 3: Minimum label font size (8px → 10px globally) ───────────────────
+ * Overrides all inline fontSize:8 labels by targeting the JetBrains Mono
+ * elements at that size. Preserves uppercase + letterSpacing aesthetic.
+ * Note: inline styles have higher specificity, so this targets class-based
+ * elements. For the inline-style instances, use the Base44 AI find-replace
+ * in Step 2 below.
+ */
+[style*="font-size: 8px"],
+[style*="fontSize: 8"],
+[style*="fontSize:8"] {
+  font-size: 10px !important;
+}
+
+/* ── Fix 4: Respect prefers-reduced-motion for all Notrya animations ─────────
+ * Covers all shimmer variants (img3shim, d2shim, dmrshim, npi shimmer)
+ * Covers all pulse variants (d2-pulse, dmr-pulse, npi-bounce, img3fade)
+ * Covers the tab/panel fade-in animations
+ * WCAG 2.1 SC 2.3.3 — Animation from Interactions
+ */
+@media (prefers-reduced-motion: reduce) {
+
+  /* Shimmer title animations */
+  .img3-shim,
+  .d2-shim,
+  .dmr-shim,
+  .shimmer-text,
+  [class*="shim"] {
+    animation: none !important;
+    background: #f2f7ff !important;
+    -webkit-text-fill-color: #f2f7ff !important;
+    background-clip: unset !important;
+    -webkit-background-clip: unset !important;
+  }
+
+  /* Pulse / loading animations */
+  .d2-pulse,
+  .dmr-pulse,
+  .derm-pulse,
+  [class*="pulse"] {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Fade-in / slide-up entrance animations */
+  .img3-fade,
+  .d2-fade,
+  .dmr-fade,
+  .derm-fade,
+  [class*="fade"] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* NPI bounce dots (AI loading indicator) */
+  .npi-n-dots span {
+    animation: none !important;
+    opacity: 0.7 !important;
+  }
+
+  /* Any remaining infinite animations */
+  *[style*="animation"] {
+    animation-iteration-count: 1 !important;
+  }
+}

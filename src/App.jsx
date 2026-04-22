@@ -74,7 +74,6 @@ import EDTrackingBoard from '@/pages/EDTrackingBoard';
 import DischargeDisposition from '@/pages/DischargeDisposition';
 import ScoreHub from '@/pages/ScoreHub';
 import WeightDoseHub from '@/pages/WeightDoseHub';
-
 import EDProcedureNotesStandalone from '@/pages/EDProcedureNotes';
 import PainHub from '@/pages/PainHub';
 import SyncopeHub from '@/pages/SyncopeHub';
@@ -92,6 +91,7 @@ import HuddleBoard from '@/pages/HuddleBoard';
 import OrderGeneratorHub from '@/pages/OrderGeneratorHub';
 import DermatologyHub from '@/pages/DermatologyHub';
 import DermMorphologyRef from '@/pages/DermMorphologyRef';
+import QuickNote from '@/pages/QuickNote';
 
 
 
@@ -125,7 +125,6 @@ const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const routerNavigate = useNavigate();
 
-  // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
@@ -134,18 +133,15 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
       navigateToLogin();
       return null;
     }
   }
 
-  // Render the main app
   return (
     <>
       <GlobalNav />
@@ -275,6 +271,7 @@ const AuthenticatedApp = () => {
       <Route path="/AirwayHub" element={<AirwayHub />} />
       <Route path="/ShockHub" element={<ShockHub />} />
       <Route path="/SyncopeHub" element={<SyncopeHub />} />
+      <Route path="/QuickNote" element={<QuickNote />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>
@@ -284,7 +281,6 @@ const AuthenticatedApp = () => {
 
 
 function App() {
-
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>

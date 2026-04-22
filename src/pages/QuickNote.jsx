@@ -12,6 +12,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+import { dispColor, StepProgress, InputZone, MDMResult, DispositionResult } from "./QuickNoteComponents";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
@@ -503,16 +504,21 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       );
       await base44.entities.ClinicalNote.create({
         source:             "QuickNote",
-        created_date:       new Date().toISOString(),
         encounter_date:     new Date().toISOString().split("T")[0],
         cc:                 cc || "",
+        chief_complaint:    cc || "",
+        raw_note:           fullText,
+        full_note_text:     fullText,
         working_diagnosis:  mdmResult?.working_diagnosis || dispResult?.final_diagnosis || "",
         mdm_level:          mdmResult?.mdm_level || "",
         mdm_narrative:      mdmResult?.mdm_narrative || "",
+        mdm:                mdmResult?.mdm_narrative || "",
         disposition:        dispResult?.disposition || "",
-        full_note_text:     fullText,
+        disposition_plan:   dispResult?.disposition || "",
         provider_name:      user?.full_name || user?.email || "",
         patient_identifier: demo?.mrn || "",
+        patient_id:         demo?.mrn || "",
+        status:             "finalized",
       });
       setSavedNote(true);
       setTimeout(() => setSavedNote(false), 3000);

@@ -177,16 +177,13 @@
         "type": "object",
         "properties": {
           "test_name": {
-            "type": "string",
-            "description": "Name of the lab test"
+            "type": "string"
           },
           "result": {
-            "type": "string",
-            "description": "Test result or value"
+            "type": "string"
           },
           "reference_range": {
-            "type": "string",
-            "description": "Normal reference range"
+            "type": "string"
           },
           "status": {
             "type": "string",
@@ -194,12 +191,10 @@
               "normal",
               "abnormal",
               "critical"
-            ],
-            "description": "Status of the result"
+            ]
           },
           "unit": {
-            "type": "string",
-            "description": "Unit of measurement"
+            "type": "string"
           }
         }
       },
@@ -212,20 +207,16 @@
         "type": "object",
         "properties": {
           "study_type": {
-            "type": "string",
-            "description": "Type of imaging (e.g., X-ray, CT, MRI, Ultrasound)"
+            "type": "string"
           },
           "location": {
-            "type": "string",
-            "description": "Body part or area imaged"
+            "type": "string"
           },
           "findings": {
-            "type": "string",
-            "description": "Detailed findings from the imaging study"
+            "type": "string"
           },
           "impression": {
-            "type": "string",
-            "description": "Radiologist's impression or conclusion"
+            "type": "string"
           }
         }
       },
@@ -241,7 +232,7 @@
     },
     "mdm": {
       "type": "string",
-      "description": "Medical Decision Making - documentation of clinical reasoning, risk analysis, and decision complexity"
+      "description": "Medical Decision Making narrative"
     },
     "clinical_impression": {
       "type": "string",
@@ -270,7 +261,6 @@
     },
     "section_references": {
       "type": "array",
-      "description": "Cross-references between note sections",
       "items": {
         "type": "object",
         "properties": {
@@ -303,25 +293,20 @@
     },
     "linked_guidelines": {
       "type": "array",
-      "description": "Guidelines referenced in this note",
       "items": {
         "type": "object",
         "properties": {
           "guideline_query_id": {
-            "type": "string",
-            "description": "Reference to GuidelineQuery entity"
+            "type": "string"
           },
           "condition": {
-            "type": "string",
-            "description": "Condition this guideline addresses"
+            "type": "string"
           },
           "incorporated": {
-            "type": "boolean",
-            "description": "Whether guideline was incorporated into plan"
+            "type": "boolean"
           },
           "adherence_notes": {
-            "type": "string",
-            "description": "Notes on guideline adherence"
+            "type": "string"
           }
         }
       }
@@ -362,6 +347,47 @@
     "specialty": {
       "type": "string",
       "description": "Medical specialty"
+    },
+    "source": {
+      "type": "string",
+      "description": "Source app that created this note (e.g. QuickNote, NPI)"
+    },
+    "cc": {
+      "type": "string",
+      "description": "Chief complaint (QuickNote shorthand)"
+    },
+    "working_diagnosis": {
+      "type": "string",
+      "description": "Working diagnosis from MDM"
+    },
+    "mdm_level": {
+      "type": "string",
+      "description": "MDM complexity level (Straightforward/Low/Moderate/High)"
+    },
+    "mdm_narrative": {
+      "type": "string",
+      "description": "Chart-ready MDM narrative paragraph"
+    },
+    "disposition": {
+      "type": "string",
+      "description": "Final disposition (Discharge, Admit, etc.)"
+    },
+    "full_note_text": {
+      "type": "string",
+      "description": "Complete formatted note text for clipboard/EMR paste"
+    },
+    "provider_name": {
+      "type": "string",
+      "description": "Provider who generated the note"
+    },
+    "patient_identifier": {
+      "type": "string",
+      "description": "Patient MRN or identifier"
+    },
+    "encounter_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the encounter"
     }
   },
   "required": [

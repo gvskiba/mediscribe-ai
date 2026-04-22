@@ -268,13 +268,18 @@ export default function NoteHistoryPage() {
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - parseInt(filterDays || "999"));
-      const query = filterDays !== "All"
-        ? { created_date: { $gte: cutoff.toISOString() } } : {};
-      const result = await base44.entities.ClinicalNote.list({
-        sort: "-created_date", limit: 200, ...query,
-      });
+      let result;
+      if (filterDays !== "All") {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - parseInt(filterDays));
+        result = await base44.entities.ClinicalNote.filter(
+          { created_date: { $gte: cutoff.toISOString() } },
+          "-created_date",
+          200
+        );
+      } else {
+        result = await base44.entities.ClinicalNote.list("-created_date", 200);
+      }
       setNotes(result || []);
     } catch (e) {
       setError("Failed to load notes: " + (e.message || "unknown error"));

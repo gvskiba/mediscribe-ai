@@ -400,7 +400,7 @@ function MorphCard({ m, image, imageLoading, onClick }) {
             <div className="dmr-pulse" style={{ fontFamily:"'Playfair Display',serif",
               fontWeight:900, fontSize:36, color:m.color, opacity:.4 }}>{m.icon}</div>
             <div className="dmr-pulse" style={{ fontFamily:"'JetBrains Mono',monospace",
-              fontSize:8, color:"var(--dmr-txt4)" }}>loading image...</div>
+              fontSize:10, color:"var(--dmr-txt4)" }}>loading image...</div>
           </div>
         ) : image ? (
           <img src={image} alt={m.name}
@@ -428,7 +428,7 @@ function MorphCard({ m, image, imageLoading, onClick }) {
           fontSize:15, color:"var(--dmr-txt)", marginBottom:3 }}>
           {m.name}
         </div>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
           color:m.color, letterSpacing:.5, marginBottom:5 }}>{m.size}</div>
         <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
           color:"var(--dmr-txt4)", lineHeight:1.45,
@@ -470,12 +470,12 @@ function MorphDrawer({ m, image, onClose }) {
             <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:900,
               fontSize:22, color:"var(--dmr-txt)" }}>{m.name}</div>
             <div style={{ display:"flex", gap:7, marginTop:4, flexWrap:"wrap" }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:urg.color, background:urg.bg, border:`1px solid ${urg.bd}`,
                 borderRadius:5, padding:"2px 8px", letterSpacing:.8, textTransform:"uppercase" }}>
                 {urg.label}
               </span>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--dmr-txt4)", background:"rgba(42,79,122,.3)",
                 borderRadius:5, padding:"2px 8px" }}>
                 {CAT_LABELS[m.category]}
@@ -486,7 +486,7 @@ function MorphDrawer({ m, image, onClose }) {
 
         <div style={{ padding:"16px" }}>
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--dmr-teal)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>
               Definition
             </div>
@@ -496,7 +496,7 @@ function MorphDrawer({ m, image, onClose }) {
 
           <div style={{ padding:"9px 12px", borderRadius:8, marginBottom:14,
             background:"rgba(0,229,192,.07)", border:"1px solid rgba(0,229,192,.3)" }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--dmr-teal)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:4 }}>
               Key Clinical Feature
             </div>
@@ -506,7 +506,7 @@ function MorphDrawer({ m, image, onClose }) {
 
           {m.ed_significance && (
             <div style={{ marginBottom:14 }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--dmr-gold)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>
                 ED Significance
               </div>
@@ -518,7 +518,7 @@ function MorphDrawer({ m, image, onClose }) {
           {m.urgent_if && m.urgency !== "reference" && (
             <div style={{ padding:"9px 12px", borderRadius:8, marginBottom:14,
               background:"rgba(255,68,68,.08)", border:"1px solid rgba(255,68,68,.3)" }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--dmr-red)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:4 }}>
                 Act If...
               </div>
@@ -528,7 +528,7 @@ function MorphDrawer({ m, image, onClose }) {
           )}
 
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--dmr-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>
               Clinical Examples
             </div>
@@ -544,7 +544,7 @@ function MorphDrawer({ m, image, onClose }) {
 
           {m.workup && (
             <div style={{ marginBottom:14 }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--dmr-blue)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>
                 Workup
               </div>
@@ -555,7 +555,7 @@ function MorphDrawer({ m, image, onClose }) {
 
           {m.differentials?.length > 0 && (
             <div style={{ marginBottom:16 }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--dmr-purple)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>
                 Key Differentials
               </div>
@@ -575,7 +575,7 @@ function MorphDrawer({ m, image, onClose }) {
             ].map(([lbl,href,c]) => (
               <a key={lbl} href={href} target="_blank" rel="noopener noreferrer"
                 style={{ padding:"5px 12px", borderRadius:7,
-                  fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                   background:`${c.includes("blue") ? "rgba(59,158,255,.1)" : "rgba(155,109,255,.1)"}`,
                   border:`1px solid ${c.includes("blue") ? "rgba(59,158,255,.3)" : "rgba(155,109,255,.3)"}`,
                   color:c, textDecoration:"none", letterSpacing:.5 }}>
@@ -697,11 +697,11 @@ export default function DermMorphologyRef({ embedded = false, onBack }) {
           {Object.entries(URGENCY_META).map(([k, v]) => (
             <div key={k} style={{ display:"flex", alignItems:"center", gap:5 }}>
               <div style={{ width:8, height:8, borderRadius:"50%", background:v.color }} />
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--dmr-txt4)", letterSpacing:.5 }}>{v.label}</span>
             </div>
           ))}
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
             color:"var(--dmr-txt4)", marginLeft:"auto" }}>
             Press / to search · Esc to close
           </span>
@@ -741,7 +741,7 @@ export default function DermMorphologyRef({ embedded = false, onBack }) {
 
         {!embedded && (
           <div style={{ textAlign:"center", padding:"16px 0 24px",
-            fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            fontFamily:"'JetBrains Mono',monospace", fontSize:10,
             color:"var(--dmr-txt4)", letterSpacing:1.5 }}>
             NOTRYA MORPHOLOGY REFERENCE · {MORPHOLOGIES.filter(m=>m.urgency==="emergent").length} EMERGENT ·
             {" "}{MORPHOLOGIES.filter(m=>m.urgency==="urgent").length} URGENT ·

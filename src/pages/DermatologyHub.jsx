@@ -275,7 +275,7 @@ function CharSelector({ selections, onToggle, freeText, onFreeText, fitzpatrick,
     <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
       {/* Fitzpatrick */}
       <div>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--derm-txt4)",
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"var(--derm-txt4)",
           letterSpacing:1.5, textTransform:"uppercase", marginBottom:7 }}>
           Fitzpatrick Skin Type
         </div>
@@ -314,13 +314,13 @@ function CharSelector({ selections, onToggle, freeText, onFreeText, fitzpatrick,
                 border:`1px solid ${isActive ? "rgba(0,229,192,.4)" : "rgba(42,79,122,.4)"}` }}>
                 {cat.n}
               </span>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:isActive ? "var(--derm-teal)" : "var(--derm-txt4)",
                 letterSpacing:1.4, textTransform:"uppercase" }}>
                 {cat.icon} {cat.label}
               </span>
               {count > 0 && (
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                   color:"var(--derm-teal)", background:"rgba(0,229,192,.1)",
                   borderRadius:9, padding:"0 7px", border:"1px solid rgba(0,229,192,.25)" }}>
                   {count}
@@ -355,7 +355,7 @@ function CharSelector({ selections, onToggle, freeText, onFreeText, fitzpatrick,
 
       {/* Free text */}
       <div>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--derm-txt4)",
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"var(--derm-txt4)",
           letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>
           Additional Clinical Notes
         </div>
@@ -373,7 +373,7 @@ function LifeThreatAlert({ conditions, rmsfTrigger }) {
     <div className="d2-fade" style={{ borderRadius:10, marginBottom:12,
       background:"rgba(255,68,68,.13)", border:"2px solid rgba(255,68,68,.55)" }}>
       <div style={{ padding:"10px 14px 6px" }}>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
           color:"var(--derm-red)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>
           Exclude These Life-Threatening Conditions
         </div>
@@ -394,7 +394,7 @@ function LifeThreatAlert({ conditions, rmsfTrigger }) {
       {/* Rec 5 — NF antibiotic protocol */}
       <div style={{ borderTop:"1px solid rgba(255,68,68,.3)", padding:"8px 14px 6px",
         background:"rgba(5,15,30,.3)" }}>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
           color:"var(--derm-gold)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>
           NF Antibiotic Protocol — 2024 Canadian ED Guidelines (Triple Therapy)
         </div>
@@ -415,7 +415,7 @@ function LifeThreatAlert({ conditions, rmsfTrigger }) {
       {rmsfTrigger && (
         <div style={{ borderTop:"1px solid rgba(255,68,68,.3)", padding:"8px 14px",
           background:"rgba(255,68,68,.06)" }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
             color:"var(--derm-red)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:4 }}>
             RMSF Alert — 60-75% Misdiagnosed at First Visit
           </div>
@@ -439,7 +439,7 @@ function ABCDEPanel() {
     <div className="d2-fade" style={{ borderRadius:9, marginBottom:12,
       background:"rgba(155,109,255,.08)", border:"1px solid rgba(155,109,255,.35)" }}>
       <div style={{ padding:"10px 13px 6px" }}>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
           color:"var(--derm-purple)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
           ABCDE Melanoma Checklist — Pigmented Lesion Alert
         </div>
@@ -456,7 +456,7 @@ function ABCDEPanel() {
               borderTop:item.l==="E" ? "2px solid rgba(155,109,255,.6)" : undefined }}>
               <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:900,
                 fontSize:18, color:"var(--derm-purple)", lineHeight:1 }}>{item.l}</div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--derm-txt3)", marginTop:2 }}>{item.t}</div>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9,
                 color:"var(--derm-txt4)", marginTop:3, lineHeight:1.4 }}>{item.d}</div>
@@ -467,14 +467,14 @@ function ABCDEPanel() {
       {/* Nodular + amelanotic alert */}
       <div style={{ borderTop:"1px solid rgba(155,109,255,.25)", padding:"8px 13px",
         background:"rgba(5,15,30,.25)" }}>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
           color:"var(--derm-orange)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>
           ABCDE-Negative Melanoma Variants — Frequently Missed
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
           <div style={{ padding:"6px 9px", borderRadius:7,
             background:"rgba(255,159,67,.08)", border:"1px solid rgba(255,159,67,.25)" }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--derm-orange)", marginBottom:3 }}>Nodular Melanoma</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
               color:"var(--derm-txt3)", lineHeight:1.5 }}>
@@ -484,7 +484,7 @@ function ABCDEPanel() {
           </div>
           <div style={{ padding:"6px 9px", borderRadius:7,
             background:"rgba(255,159,67,.08)", border:"1px solid rgba(255,159,67,.25)" }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--derm-orange)", marginBottom:3 }}>Amelanotic Melanoma</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
               color:"var(--derm-txt3)", lineHeight:1.5 }}>
@@ -517,7 +517,7 @@ function DiagnosisCard({ dx, image, imgLoading }) {
           <div style={{ height:140, display:"flex", alignItems:"center", justifyContent:"center",
             background:"rgba(14,37,68,.8)" }}>
             <span className="d2-pulse" style={{ fontFamily:"'JetBrains Mono',monospace",
-              fontSize:8, color:"var(--derm-txt4)" }}>loading image...</span>
+              fontSize:10, color:"var(--derm-txt4)" }}>loading image...</span>
           </div>
         ) : image ? (
           <img src={image} alt={dx.name} className="d2-card-img"
@@ -529,12 +529,12 @@ function DiagnosisCard({ dx, image, imgLoading }) {
             <span style={{ fontSize:28 }}>🩺</span>
             <div style={{ display:"flex", gap:8 }}>
               <a href={dermUrl} target="_blank" rel="noopener noreferrer"
-                style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                   color:"var(--derm-blue)", background:"rgba(59,158,255,.1)",
                   border:"1px solid rgba(59,158,255,.3)", borderRadius:5,
                   padding:"2px 8px", textDecoration:"none" }}>DermNet</a>
               <a href={aadUrl} target="_blank" rel="noopener noreferrer"
-                style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                   color:"var(--derm-purple)", background:"rgba(155,109,255,.1)",
                   border:"1px solid rgba(155,109,255,.3)", borderRadius:5,
                   padding:"2px 8px", textDecoration:"none" }}>AAD</a>
@@ -542,14 +542,14 @@ function DiagnosisCard({ dx, image, imgLoading }) {
           </div>
         )}
         <div style={{ position:"absolute", top:8, left:8,
-          fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:lc,
+          fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:lc,
           background:"rgba(5,15,30,.85)", border:`1px solid ${lc}55`,
           borderRadius:5, padding:"2px 8px", letterSpacing:.8, textTransform:"uppercase" }}>
           {dx.likelihood?.replace(/_/g," ")}
         </div>
         {dx.referral_urgency && dx.referral_urgency!=="not_indicated" && (
           <div style={{ position:"absolute", top:8, right:8,
-            fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:rc,
+            fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:rc,
             background:"rgba(5,15,30,.85)", border:`1px solid ${rc}55`,
             borderRadius:5, padding:"2px 8px", letterSpacing:.5 }}>
             {dx.referral_urgency} referral
@@ -567,7 +567,7 @@ function DiagnosisCard({ dx, image, imgLoading }) {
               {dx.name}
             </div>
             {dx.icd10 && (
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--derm-txt4)", background:"rgba(42,79,122,.25)",
                 borderRadius:4, padding:"1px 6px", letterSpacing:.5 }}>{dx.icd10}</span>
             )}
@@ -590,7 +590,7 @@ function DiagnosisCard({ dx, image, imgLoading }) {
         <div style={{ padding:"10px 13px 13px" }}>
           {dx.distinguishing_features && (
             <div style={{ marginBottom:8 }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--derm-txt4)", letterSpacing:1.4, textTransform:"uppercase", marginBottom:4 }}>
                 Distinguishing Features</div>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
@@ -600,7 +600,7 @@ function DiagnosisCard({ dx, image, imgLoading }) {
           {dx.ed_management && (
             <div style={{ marginBottom:8, padding:"7px 10px", borderRadius:7,
               background:"rgba(0,229,192,.06)", border:"1px solid rgba(0,229,192,.2)" }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--derm-teal)", letterSpacing:1.4, textTransform:"uppercase", marginBottom:3 }}>
                 ED Management</div>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
@@ -614,7 +614,7 @@ function DiagnosisCard({ dx, image, imgLoading }) {
             ].map(([lbl,href,c]) => (
               <a key={lbl} href={href} target="_blank" rel="noopener noreferrer"
                 style={{ padding:"3px 10px", borderRadius:6,
-                  fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                   background:`${c.replace("var(--derm-","").replace(")","") === "gold" ? "rgba(245,200,66,.1)" : c.includes("blue") ? "rgba(59,158,255,.1)" : "rgba(155,109,255,.1)"}`,
                   border:`1px solid ${c.includes("gold") ? "rgba(245,200,66,.3)" : c.includes("blue") ? "rgba(59,158,255,.3)" : "rgba(155,109,255,.3)"}`,
                   color:c, textDecoration:"none", letterSpacing:.5 }}>{lbl}</a>
@@ -641,14 +641,14 @@ function LRINECCalculator({ vals, onChange }) {
   return (
     <div style={{ padding:"10px 12px", borderRadius:9,
       background:"rgba(8,22,40,.7)", border:"1px solid rgba(42,79,122,.4)" }}>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
         color:"var(--derm-gold)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
         LRINEC Calculator — Necrotizing Fasciitis Risk
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
         {fields.map(f => (
           <div key={f.k}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--derm-txt4)", marginBottom:3 }}>
               {f.label} <span style={{ color:"rgba(107,158,200,.6)", fontSize:7 }}>({f.hint})</span>
             </div>
@@ -694,7 +694,7 @@ function BSACalculator({ selected, onToggle }) {
   return (
     <div style={{ padding:"10px 12px", borderRadius:9,
       background:"rgba(8,22,40,.7)", border:"1px solid rgba(255,68,68,.35)" }}>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
         color:"var(--derm-red)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
         BSA Calculator — SJS / TEN Differentiation
       </div>
@@ -736,7 +736,7 @@ function DrugRiskPanel() {
   return (
     <div style={{ padding:"10px 12px", borderRadius:9,
       background:"rgba(255,68,68,.07)", border:"1px solid rgba(255,68,68,.35)" }}>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
         color:"var(--derm-coral)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:4 }}>
         High-Risk Drugs — New Medication Detected
       </div>
@@ -749,7 +749,7 @@ function DrugRiskPanel() {
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
         {[["SJS / TEN", DRUG_RISKS.sjsten],["DRESS", DRUG_RISKS.dress]].map(([lbl,list]) => (
           <div key={lbl}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--derm-orange)", letterSpacing:1, textTransform:"uppercase",
               marginBottom:5 }}>{lbl}</div>
             {list.map(d => (
@@ -773,7 +773,7 @@ function TopicalSteroidGuide() {
   return (
     <div style={{ padding:"10px 12px", borderRadius:9,
       background:"rgba(0,229,192,.05)", border:"1px solid rgba(0,229,192,.3)" }}>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
         color:"var(--derm-teal)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>
         Topical Corticosteroid Prescribing Guide — AAD/AAAAI 2023
       </div>
@@ -791,11 +791,11 @@ function TopicalSteroidGuide() {
             border:"1px solid rgba(42,79,122,.25)" }}>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
               color:"var(--derm-txt2)", fontWeight:600 }}>{row.region}</div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color: row.potency.includes("LOW") ? "var(--derm-teal)"
                 : row.potency.includes("HIGH") ? "var(--derm-red)" : "var(--derm-gold)",
               letterSpacing:.5 }}>{row.potency}</div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--derm-txt4)" }}>Max: {row.max}</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9,
               color:"var(--derm-txt4)", lineHeight:1.35 }}>
@@ -1026,7 +1026,7 @@ export default function DermatologyHub({
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
             <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
               fontSize:15, color:"var(--derm-teal)" }}>Dermatology Hub</span>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--derm-txt4)", letterSpacing:1.5, textTransform:"uppercase",
               background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.25)",
               borderRadius:4, padding:"2px 7px" }}>v2 · AAD/ACEP Guidelines</span>
@@ -1036,7 +1036,7 @@ export default function DermatologyHub({
         {/* Kbd hints */}
         <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
           {["1-8 jump category","Cmd+Enter submit","C copy to chart"].map(h => (
-            <span key={h} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <span key={h} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--derm-txt4)", background:"rgba(42,79,122,.15)",
               borderRadius:5, padding:"2px 8px", border:"1px solid rgba(42,79,122,.3)" }}>{h}</span>
           ))}
@@ -1062,7 +1062,7 @@ export default function DermatologyHub({
         {patientCtx && (
           <div style={{ padding:"7px 11px", borderRadius:8, marginBottom:12,
             background:"rgba(0,229,192,.06)", border:"1px solid rgba(0,229,192,.2)" }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
               color:"var(--derm-teal)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:3 }}>
               Patient Context
             </div>
@@ -1136,7 +1136,7 @@ export default function DermatologyHub({
                   style={{ padding:"11px 14px", borderRadius:11, cursor:"pointer",
                     border:"1px solid var(--derm-bd)", background:"transparent",
                     color:"var(--derm-txt4)", fontFamily:"'JetBrains Mono',monospace",
-                    fontSize:8, letterSpacing:1, textTransform:"uppercase" }}>Clear</button>
+                    fontSize:10, letterSpacing:1, textTransform:"uppercase" }}>Clear</button>
               )}
             </div>
 
@@ -1151,7 +1151,7 @@ export default function DermatologyHub({
             {!hasSelections && !busy && (
               <div style={{ marginTop:10, padding:"9px 12px", borderRadius:8,
                 background:"rgba(42,79,122,.08)", border:"1px solid rgba(42,79,122,.25)" }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                   color:"var(--derm-txt4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>
                   How to Use</div>
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
@@ -1181,11 +1181,11 @@ export default function DermatologyHub({
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
                 marginBottom:12, flexWrap:"wrap", gap:8 }}>
                 <div>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                     color:"var(--derm-teal)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:3 }}>
                     Differential Diagnosis</div>
                   {result.sources_searched?.length > 0 && (
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                       color:"var(--derm-txt4)", letterSpacing:.5 }}>
                       Sources: {result.sources_searched.join(" · ")}
                     </div>
@@ -1217,7 +1217,7 @@ export default function DermatologyHub({
                   {result.red_flags?.length > 0 && (
                     <div style={{ padding:"10px 12px", borderRadius:9,
                       background:"rgba(255,68,68,.06)", border:"1px solid rgba(255,68,68,.25)" }}>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                         color:"var(--derm-red)", letterSpacing:1.5, textTransform:"uppercase",
                         marginBottom:7 }}>Red Flags</div>
                       {result.red_flags.map((f, i) => (
@@ -1232,7 +1232,7 @@ export default function DermatologyHub({
                   {result.further_workup?.length > 0 && (
                     <div style={{ padding:"10px 12px", borderRadius:9,
                       background:"rgba(59,158,255,.06)", border:"1px solid rgba(59,158,255,.25)" }}>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                         color:"var(--derm-blue)", letterSpacing:1.5, textTransform:"uppercase",
                         marginBottom:7 }}>Further Workup</div>
                       {result.further_workup.map((w, i) => (
@@ -1247,7 +1247,7 @@ export default function DermatologyHub({
                   {result.pearls && (
                     <div style={{ padding:"10px 12px", borderRadius:9,
                       background:"rgba(155,109,255,.07)", border:"1px solid rgba(155,109,255,.25)" }}>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                         color:"var(--derm-purple)", letterSpacing:1.5, textTransform:"uppercase",
                         marginBottom:5 }}>Clinical Pearl</div>
                       <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
@@ -1261,7 +1261,7 @@ export default function DermatologyHub({
               {showPIH && result.pih_note && (
                 <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:12,
                   background:"rgba(155,109,255,.07)", border:"1px solid rgba(155,109,255,.3)" }}>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                     color:"var(--derm-purple)", letterSpacing:1.5, textTransform:"uppercase",
                     marginBottom:5 }}>Post-Inflammatory Hyperpigmentation — Patient Counseling</div>
                   <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
@@ -1274,7 +1274,7 @@ export default function DermatologyHub({
                   fontFamily:"'DM Sans',sans-serif", fontSize:11,
                   color:"var(--derm-txt3)", lineHeight:1.55 }}>
                   <b style={{ color:"var(--derm-purple)", fontFamily:"'JetBrains Mono',monospace",
-                    fontSize:8, letterSpacing:1, textTransform:"uppercase" }}>PIH Note (FST {fitzpatrick}): </b>
+                    fontSize:10, letterSpacing:1, textTransform:"uppercase" }}>PIH Note (FST {fitzpatrick}): </b>
                   Post-inflammatory hyperpigmentation is more prominent and persistent in Fitzpatrick III-VI.
                   Treating the underlying inflammatory condition is the most effective prevention.
                   Avoid high-potency steroids that may worsen pigment irregularity.
@@ -1286,7 +1286,7 @@ export default function DermatologyHub({
 
         {!embedded && (
           <div style={{ textAlign:"center", padding:"24px 0 16px",
-            fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            fontFamily:"'JetBrains Mono',monospace", fontSize:10,
             color:"var(--derm-txt4)", letterSpacing:1.5 }} className="no-print">
             NOTRYA DERMATOLOGY HUB v2 · AAD / ACEP / 2024 CANADIAN ED GUIDELINES ·
             AI CLINICAL DECISION SUPPORT · NOT A SUBSTITUTE FOR DERMATOLOGIST EVALUATION

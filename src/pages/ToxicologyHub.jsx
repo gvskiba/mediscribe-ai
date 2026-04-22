@@ -368,8 +368,8 @@ function AntidoteCard({ a, focused, expanded, onToggle }) {
         <div style={{ flex:1 }}>
           <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
             <span style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:13,color:a.color }}>{a.antidote}</span>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:urgCol,letterSpacing:1,textTransform:"uppercase",background:`${urgCol}12`,border:`1px solid ${urgCol}35`,borderRadius:4,padding:"1px 6px" }}>{a.urgency}</span>
-            {a.evidence && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:evidCol,letterSpacing:0.8,textTransform:"uppercase",background:`${evidCol}12`,border:`1px solid ${evidCol}35`,borderRadius:4,padding:"1px 6px" }}>{a.evidence}</span>}
+            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:urgCol,letterSpacing:1,textTransform:"uppercase",background:`${urgCol}12`,border:`1px solid ${urgCol}35`,borderRadius:4,padding:"1px 6px" }}>{a.urgency}</span>
+            {a.evidence && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:evidCol,letterSpacing:0.8,textTransform:"uppercase",background:`${evidCol}12`,border:`1px solid ${evidCol}35`,borderRadius:4,padding:"1px 6px" }}>{a.evidence}</span>}
           </div>
           {!expanded && a.quickDose && <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:600,color:a.color,marginTop:3,lineHeight:1.4 }}>{a.quickDose}</div>}
           <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4,marginTop:2 }}>{a.toxin}</div>
@@ -381,18 +381,18 @@ function AntidoteCard({ a, focused, expanded, onToggle }) {
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8 }}>
             {[{ label:"Route",val:a.route,color:T.blue },{ label:"Dosing",val:a.dosing,color:a.color },{ label:"Timing",val:a.timing,color:T.gold }].map(f => (
               <div key={f.label} style={{ padding:"7px 9px",borderRadius:7,background:`${f.color}08`,border:`1px solid ${f.color}22`,gridColumn:f.label==="Dosing"?"1/-1":"auto" }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:f.color,letterSpacing:1,textTransform:"uppercase",marginBottom:4 }}>{f.label}</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:f.color,letterSpacing:1,textTransform:"uppercase",marginBottom:4 }}>{f.label}</div>
                 <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2,lineHeight:1.6 }}>{f.val}</div>
               </div>
             ))}
           </div>
           <div style={{ padding:"7px 10px",borderRadius:7,background:`${T.purple}08`,border:`1px solid ${T.purple}22` }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.purple,letterSpacing:1,textTransform:"uppercase" }}>Pearl: </span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.purple,letterSpacing:1,textTransform:"uppercase" }}>Pearl: </span>
             <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2 }}>{a.pearls}</span>
           </div>
           {a.peds && (
             <div style={{ padding:"6px 10px",borderRadius:7,marginTop:6,background:`${T.teal}08`,border:`1px solid ${T.teal}22` }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.teal,letterSpacing:1,textTransform:"uppercase" }}>Peds: </span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.teal,letterSpacing:1,textTransform:"uppercase" }}>Peds: </span>
               <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2 }}>{a.peds}</span>
             </div>
           )}
@@ -419,19 +419,19 @@ function ProtocolCard({ proto, focused, expanded, onToggle }) {
       {expanded && (
         <div style={{ padding:"0 12px 12px" }}>
           <div style={{ padding:"7px 10px",borderRadius:7,marginBottom:10,background:`${T.red}08`,border:`1px solid ${T.red}28` }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.red,letterSpacing:1,textTransform:"uppercase" }}>Alert: </span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.red,letterSpacing:1,textTransform:"uppercase" }}>Alert: </span>
             <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2 }}>{proto.alert}</span>
           </div>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8 }}>
             {proto.sections.map((sec, i) => (
               <div key={i} style={{ padding:"8px 10px",borderRadius:8,background:`${sec.color}08`,border:`1px solid ${sec.color}22` }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:sec.color,letterSpacing:1.3,textTransform:"uppercase",marginBottom:6,paddingBottom:4,borderBottom:`1px solid ${sec.color}22` }}>{sec.label}</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:sec.color,letterSpacing:1.3,textTransform:"uppercase",marginBottom:6,paddingBottom:4,borderBottom:`1px solid ${sec.color}22` }}>{sec.label}</div>
                 {sec.items.map((item, j) => <Bullet key={j} text={item} color={sec.color} />)}
               </div>
             ))}
           </div>
           <div style={{ padding:"7px 10px",borderRadius:7,background:`${T.gold}08`,border:`1px solid ${T.gold}22` }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.gold,letterSpacing:1,textTransform:"uppercase" }}>Pearl: </span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.gold,letterSpacing:1,textTransform:"uppercase" }}>Pearl: </span>
             <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2 }}>{proto.pearl}</span>
           </div>
         </div>
@@ -471,7 +471,7 @@ function DoseCalcTab() {
   return (
     <div>
       <div style={{ marginBottom:14,padding:"10px 14px",borderRadius:10,background:"rgba(20,184,166,0.06)",border:"1px solid rgba(20,184,166,0.2)" }}>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4 }}>Patient Weight · press W</div>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4 }}>Patient Weight · press W</div>
         <div style={{ display:"flex",gap:10,flexWrap:"wrap" }}>
           <div style={{ flex:"0 0 130px" }}>
             <input ref={weightRef} style={inputStyle} value={weight} onChange={e => setWeight(e.target.value)}
@@ -480,7 +480,7 @@ function DoseCalcTab() {
           </div>
           {calc?.custom && (
             <div style={{ flex:"0 0 160px" }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4 }}>Dig Level (ng/mL) · press L</div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4 }}>Dig Level (ng/mL) · press L</div>
               <input ref={levelRef} style={{ ...inputStyle,fontSize:16 }} value={level} onChange={e => setLevel(e.target.value)}
                 onFocus={() => setInputActive(true)} onBlur={() => { setInputActive(false); setTimeout(() => panelRef.current?.focus(), 50); }}
                 placeholder="ng/mL" />
@@ -492,7 +492,7 @@ function DoseCalcTab() {
       <div ref={panelRef} tabIndex={0} onKeyDown={handleKey} style={{ outline:"none",display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:12 }}>
         {/* Drug selector */}
         <div style={{ background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,overflow:"hidden" }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",padding:"8px 12px",borderBottom:"1px solid rgba(255,255,255,0.05)" }}>Select Agent</div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",padding:"8px 12px",borderBottom:"1px solid rgba(255,255,255,0.05)" }}>Select Agent</div>
           {DOSE_CALCS.map(d => (
             <div key={d.id} onClick={() => setSelectedId(d.id)}
               style={{ padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid rgba(255,255,255,0.04)",
@@ -665,7 +665,7 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
           <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:12 }}>
             {onBack && <button onClick={onBack} style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.5)",borderRadius:8,padding:"4px 12px",color:T.txt3,cursor:"pointer" }}>Back</button>}
             <span style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:T.coral }}>Toxicology Reference</span>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",background:"rgba(255,107,107,0.1)",border:"1px solid rgba(255,107,107,0.25)",borderRadius:4,padding:"2px 7px" }}>{ANTIDOTES.length} antidotes</span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",background:"rgba(255,107,107,0.1)",border:"1px solid rgba(255,107,107,0.25)",borderRadius:4,padding:"2px 7px" }}>{ANTIDOTES.length} antidotes</span>
           </div>
         )}
 
@@ -705,7 +705,7 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
         {/* ANTIDOTES */}
         {mainTab === "antidotes" && (
           <div className="tox-fade">
-            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8 }}>
               {filteredAntidotes.length} antidotes — quickDose visible without expanding
             </div>
             <div ref={panelRef} tabIndex={0} onKeyDown={handleListKey} style={{ outline:"none" }}>
@@ -718,7 +718,7 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
                       <span style={{ fontFamily:"'Playfair Display',serif",fontSize:12,fontWeight:700,color:m.color }}>{m.label}</span>
                       <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4 }}>— {m.sub}</span>
                       <div style={{ flex:1,height:1,background:"rgba(26,53,85,0.5)" }} />
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4 }}>{items.length}</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4 }}>{items.length}</span>
                     </div>
                     {items.map(a => {
                       const gi = filteredAntidotes.indexOf(a);
@@ -736,7 +736,7 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
         {/* PROTOCOLS */}
         {mainTab === "protocols" && (
           <div className="tox-fade">
-            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8 }}>{filteredProtocols.length} protocols</div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8 }}>{filteredProtocols.length} protocols</div>
             <div ref={panelRef} tabIndex={0} onKeyDown={handleListKey} style={{ outline:"none" }}>
               {filteredProtocols.map((p, idx) => (
                 <ProtocolCard key={p.id} proto={p} focused={focusIdx===idx} expanded={expanded===p.id} onToggle={() => { setFocusIdx(idx); toggle(p.id); }} />
@@ -761,7 +761,7 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
               </div>
 
               <div style={{ padding:"10px 14px",borderRadius:9,marginBottom:12,background:"rgba(248,113,113,0.07)",border:"1px solid rgba(248,113,113,0.3)" }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.red,letterSpacing:1,textTransform:"uppercase",marginBottom:4 }}>Extended-Release APAP — Nomogram is Invalid</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.red,letterSpacing:1,textTransform:"uppercase",marginBottom:4 }}>Extended-Release APAP — Nomogram is Invalid</div>
                 <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt3,lineHeight:1.6 }}>
                   Check APAP levels at BOTH 4h and 8h post-ingestion. Treat if either level plots above the treatment line. If both below the line but concern remains, check a third level at 12-16h. Do not apply the nomogram to ER products — it was derived from immediate-release formulations only.
                 </div>
@@ -769,14 +769,14 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
 
               <div style={{ display:"flex",gap:10,flexWrap:"wrap",marginBottom:12 }}>
                 <div style={{ flex:1,minWidth:150 }}>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>Hours Since Ingestion · press H</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>Hours Since Ingestion · press H</div>
                   <input ref={hoursRef} type="number" value={apapHours} onChange={e => setApapHours(e.target.value)}
                     onFocus={() => setInputActive(true)} onBlur={() => { setInputActive(false); setTimeout(() => panelRef.current?.focus(), 50); }}
                     placeholder="e.g. 6" min="4" max="24"
                     style={{ ...inputSt,width:"100%",fontSize:18,fontWeight:700,color:T.orange }} />
                 </div>
                 <div style={{ flex:1,minWidth:150 }}>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>APAP Level (mcg/mL) · press L</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>APAP Level (mcg/mL) · press L</div>
                   <input ref={levelRef} type="number" value={apapLevel} onChange={e => setApapLevel(e.target.value)}
                     onFocus={() => setInputActive(true)} onBlur={() => { setInputActive(false); setTimeout(() => panelRef.current?.focus(), 50); }}
                     placeholder="e.g. 180"
@@ -808,11 +808,11 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
               )}
 
               <div style={{ padding:"10px 14px",borderRadius:10,background:"rgba(8,22,40,0.7)",border:"1px solid rgba(26,53,85,0.4)" }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8 }}>Treatment Line Reference</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8 }}>Treatment Line Reference</div>
                 <div style={{ display:"flex",flexWrap:"wrap",gap:6 }}>
                   {[[4,150],[6,99],[8,70],[10,51],[12,38],[16,21],[20,12],[24,7]].map(([h,l]) => (
                     <div key={h} style={{ padding:"5px 10px",borderRadius:6,background:"rgba(255,159,67,0.08)",border:"1px solid rgba(255,159,67,0.22)",textAlign:"center" }}>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4 }}>{h}h</div>
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4 }}>{h}h</div>
                       <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700,color:T.orange }}>{l}</div>
                       <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:T.txt4 }}>mcg/mL</div>
                     </div>
@@ -828,7 +828,7 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
         {/* TOXIDROMES */}
         {mainTab === "toxidromes" && (
           <div className="tox-fade">
-            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10 }}>Classic Toxidrome Recognition</div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10 }}>Classic Toxidrome Recognition</div>
             {TOXIDROMES.map(tox => (
               <div key={tox.name} style={{ marginBottom:7,padding:"10px 13px",borderRadius:9,background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,0.4)",borderLeft:`4px solid ${tox.color}` }}>
                 <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:7,flexWrap:"wrap" }}>
@@ -845,7 +845,7 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
                 </div>
                 {tox.name === "Cardiac Toxicology" && (
                   <div style={{ marginTop:8,padding:"6px 10px",borderRadius:7,background:`${T.orange}08`,border:`1px solid ${T.orange}22` }}>
-                    <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.orange,letterSpacing:1,textTransform:"uppercase" }}>Cardiac Pearl: </span>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.orange,letterSpacing:1,textTransform:"uppercase" }}>Cardiac Pearl: </span>
                     <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2 }}>{CARDIAC_TOX_PEARL}</span>
                   </div>
                 )}
@@ -874,10 +874,10 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
               </div>
             ))}
             <div style={{ padding:"10px 13px",borderRadius:9,marginTop:4,background:"rgba(8,22,40,0.6)",border:"1px solid rgba(26,53,85,0.35)" }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:7 }}>Critical Antidote Availability — Verify in Your Pharmacy</div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:7 }}>Critical Antidote Availability — Verify in Your Pharmacy</div>
               <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
                 {["NAC (IV)","Fomepizole","Hydroxocobalamin","Digibind/DigiFab","Physostigmine","Intralipid 20%","Pralidoxime (2-PAM)","Methylene Blue","Atropine (large supply)","Glucagon","Deferoxamine","Protamine","Cyproheptadine"].map(drug => (
-                  <span key={drug} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,padding:"3px 9px",borderRadius:4,background:"rgba(42,79,122,0.2)",border:"1px solid rgba(42,79,122,0.35)",color:T.txt4 }}>{drug}</span>
+                  <span key={drug} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,padding:"3px 9px",borderRadius:4,background:"rgba(42,79,122,0.2)",border:"1px solid rgba(42,79,122,0.35)",color:T.txt4 }}>{drug}</span>
                 ))}
               </div>
             </div>
@@ -886,7 +886,7 @@ export default function ToxicologyHub({ embedded = false, onBack, demo, cc, vita
         )}
 
         {!embedded && (
-          <div style={{ textAlign:"center",padding:"24px 0 16px",fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5 }}>
+          <div style={{ textAlign:"center",padding:"24px 0 16px",fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4,letterSpacing:1.5 }}>
             NOTRYA TOX HUB · FOR CLINICAL DECISION SUPPORT ONLY · VERIFY WITH POISON CONTROL AND TOXICOLOGY · LOCAL PROTOCOLS MAY DIFFER
           </div>
         )}

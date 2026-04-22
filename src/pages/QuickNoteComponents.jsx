@@ -520,7 +520,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
               <SectionLabel>Working Diagnosis</SectionLabel>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
                 fontSize:13, color:"var(--qn-txt)", lineHeight:1.45 }}>
-                {result.working_diagnosis}
+                {s(result.working_diagnosis)}
               </div>
             </div>
           )}
@@ -550,7 +550,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
               <span key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
                 color:"var(--qn-coral)", background:"rgba(255,68,68,.1)",
                 border:"1px solid rgba(255,68,68,.28)", borderRadius:6,
-                padding:"2px 9px" }}>{f}</span>
+                padding:"2px 9px" }}>{s(f)}</span>
             ))}
           </div>
         </div>

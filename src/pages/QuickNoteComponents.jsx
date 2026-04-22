@@ -759,11 +759,11 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
 // ─── LAB FLAGS CARD ──────────────────────────────────────────────────────────
 function labFlagColor(status) {
   const s = (status || "").toLowerCase();
-  if (s === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)"];
-  if (s === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)"];
-  if (s === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)"];
-  if (s === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)"];
-  return                         ["var(--qn-purple)", "rgba(155,109,255,.07)","rgba(155,109,255,.28)"];
+  if (s === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)",   "#ff4444"];
+  if (s === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)","#ff6b6b"];
+  if (s === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)", "#3b9eff"];
+  if (s === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)",  "#f5c842"];
+  return                         ["var(--qn-purple)", "rgba(155,109,255,.07)","rgba(155,109,255,.28)","#9b6dff"];
 }
 
 function LabFlagsCard({ flags }) {
@@ -774,7 +774,7 @@ function LabFlagsCard({ flags }) {
       <SectionLabel color="var(--qn-gold)">Lab & Imaging Interpretation</SectionLabel>
       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
         {flags.map((f, i) => {
-          const [c, bg, bd] = labFlagColor(f.status);
+          const [c, bg, bd, cHex] = labFlagColor(f.status);
           return (
             <div key={i} style={{ padding:"8px 10px", borderRadius:8,
               background:bg, border:`1px solid ${bd}` }}>
@@ -785,7 +785,7 @@ function LabFlagsCard({ flags }) {
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
                   color:"var(--qn-txt)", fontWeight:600 }}>{s(f.value)}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:c, background:`${c}18`, border:`1px solid ${bd}`,
+                  color:c, background:`${cHex}18`, border:`1px solid ${bd}`,
                   borderRadius:4, padding:"1px 7px", textTransform:"uppercase",
                   letterSpacing:.8, fontWeight:700 }}>{s(f.status)}</span>
                 {f.guideline_citation && (
@@ -896,7 +896,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={s(result.result_flags)} />
+      <LabFlagsCard flags={Array.isArray(result.result_flags) ? result.result_flags : []} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (

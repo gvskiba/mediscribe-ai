@@ -423,6 +423,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [copiedMDMFull, setCopiedMDMFull] = useState(false);
   const [savedNote,     setSavedNote]     = useState(false);
   const [saving,        setSaving]        = useState(false);
+  const [fatigueDismissed, setFatigueDismissed] = useState(false);
 
   const phase1Ready = Boolean(cc.trim() || hpi.trim() || exam.trim());
   const phase2Ready = Boolean(mdmResult && (labs.trim() || imaging.trim() || newVitals.trim()));
@@ -608,7 +609,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   }, [p2Open]);
 
   const isFatigueRisk = useMemo(() => { const h = new Date().getHours(); return h >= 17 || h <= 7; }, []);
-  const [fatigueDismissed, setFatigueDismissed] = useState(false);
 
   return (
     <div style={{ fontFamily:"'DM Sans',sans-serif",

@@ -741,11 +741,14 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
       {(() => {
         const dx = (result.working_diagnosis || "").toLowerCase();
         const catId =
-          /chest|cardiac|acs|mi|stemi|nstemi|angina|pe|embol|syncope|palpit/.test(dx) ? "cardiac" :
-          /abdom|appy|pancreat|bowel|obstruct|gall|biliary|bleed|gi|hepat|renal|uro/.test(dx) ? "abdominal" :
-          /stroke|tia|seizure|headache|neuro|ams|dement|psych|enceph|altered/.test(dx) ? "neuro" :
-          /fracture|disloc|sprain|msk|ortho|back|spine|fall|trauma|wound/.test(dx) ? "msk" :
-          /sepsis|fever|infect|pneumonia|uti|cellulit|abscess|rash/.test(dx) ? "other" : null;
+          /chest|cardiac|acs|mi|stemi|nstemi|angina|pe|embol|syncope|palpit|dvt|hemoptysis/.test(dx) ? "cardiac" :
+          /abdom|appy|pancreat|bowel|obstruct|gall|biliary|bleed|gi|hepat|jaundice|diarrhea/.test(dx) ? "abdominal" :
+          /stroke|tia|seizure|headache|ams|dement|psych|enceph|altered|vertigo|vision/.test(dx) ? "neuro" :
+          /fracture|disloc|sprain|msk|ortho|back|spine|fall|trauma|wound|laceration/.test(dx) ? "msk" :
+          /eye|ocular|ear|otitis|pharyngit|tonsil|epistaxis|dental|peritonsillar|facial/.test(dx) ? "ent" :
+          /pregnan|ectopic|pelvic|ovarian|uterine|vaginal|cervical|scrotal|torsion|uti|renal/.test(dx) ? "obgyn" :
+          /overdose|ingestion|toxic|poison|withdrawal|anaphylaxis|allergic|envenomation/.test(dx) ? "tox" :
+          /cellulitis|abscess|rash|derm|hypoglyc|diabetic|dka|hyperglycemia|sepsis|fever|infect|pneumonia/.test(dx) ? "derm" : null;
         if (!catId) return null;
         return <HubStrip catId={catId} label="Related Hubs" />;
       })()}

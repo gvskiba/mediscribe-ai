@@ -694,10 +694,10 @@ function LabFlagsCard({ flags }) {
 
 // ─── DISPOSITION RESULT DISPLAY ───────────────────────────────────────────────
 function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
-  if (!result) return null;
   const [copiedReeval, setCopiedReeval] = useState(false);
   const [copiedPlan,   setCopiedPlan]   = useState(false);
   const [copiedOrders, setCopiedOrders] = useState(false);
+  if (!result) return null;
   const copyWith = (text, setter) => {
     navigator.clipboard.writeText(text).then(() => {
       setter(true); setTimeout(() => setter(false), 2000);

@@ -1,0 +1,1040 @@
+// QuickNoteComponents.jsx
+// Extracted UI components for QuickNote.jsx
+// Imports data from QuickNoteData.js and QuickNoteTemplates.js
+// Exported: dispColor, StepProgress, InputZone, MDMResult, DispositionResult
+
+import { useState, useEffect, useRef, useMemo } from "react";
+import { CC_CATEGORIES, CC_HUB_MAP, BLANK_OPTIONS } from "./QuickNoteData";
+import { ROS_TEMPLATES, PE_TEMPLATES } from "./QuickNoteTemplates";
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function mdmLevelColor(level) {
+  if (!level) return "#6b9ec8";
+  const l = level.toLowerCase();
+  if (l.includes("high"))           return "#ff4444";
+  if (l.includes("moderate"))       return "#ff9f43";
+  if (l.includes("low"))            return "#f5c842";
+  if (l.includes("straightforward")) return "#3dffa0";
+  return "#3b9eff";
+}
+
+export function dispColor(disp) {
+  if (!disp) return "#6b9ec8";
+  const d = disp.toLowerCase();
+  if (d.includes("icu"))        return "#ff4444";
+  if (d.includes("admit"))      return "#ff6b6b";
+  if (d.includes("obs"))        return "#ff9f43";
+  if (d.includes("transfer"))   return "#9b6dff";
+  if (d.includes("precaution")) return "#f5c842";
+  return "#3dffa0";
+}
+
+function SectionLabel({ children, color, style: extraStyle }) {
+  return (
+    <div className="qn-section-lbl"
+      style={{ ...(color ? { color } : {}), ...(extraStyle || {}) }}>
+      {children}
+    </div>
+  );
+}
+
+// ─── STEP PROGRESS ────────────────────────────────────────────────────────────
+export function StepProgress({ phase1Done, phase2Done, p2Open }) {
+  const steps = [
+    { n:1, label:"Initial Assessment", sub:"CC · Vitals · HPI · ROS · Exam", done:phase1Done },
+    { n:2, label:"Workup & Disposition", sub:"Labs · Imaging · Recheck Vitals", done:phase2Done },
+  ];
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:14,
+      padding:"10px 14px", borderRadius:10,
+      background:"rgba(8,22,40,.6)", border:"1px solid rgba(42,79,122,.3)" }}
+      className="no-print">
+      {steps.map((step, i) => {
+        const isActive = step.n === 1 ? !phase1Done : p2Open;
+        const color = step.done ? "var(--qn-green)" : isActive ? "var(--qn-teal)" : "var(--qn-txt4)";
+        return (
+          <div key={step.n} style={{ display:"flex", alignItems:"center", flex: i === 0 ? "0 0 auto" : 1 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:26, height:26, borderRadius:"50%", flexShrink:0,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                background: step.done ? "rgba(61,255,160,.15)" : isActive ? "rgba(0,229,192,.12)" : "rgba(42,79,122,.2)",
+                border:`1.5px solid ${step.done ? "rgba(61,255,160,.5)" : isActive ? "rgba(0,229,192,.4)" : "rgba(42,79,122,.4)"}`,
+                fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, color }}>
+                {step.done ? "✓" : step.n}
+              </div>
+              <div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                  fontSize:12, color, lineHeight:1.2 }}>{step.label}</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-txt4)", letterSpacing:.5 }}>{step.sub}</div>
+              </div>
+            </div>
+            {i === 0 && (
+              <div style={{ flex:1, height:1.5, margin:"0 14px",
+                background: phase1Done
+                  ? "linear-gradient(90deg,rgba(61,255,160,.5),rgba(0,229,192,.3))"
+                  : "rgba(42,79,122,.3)",
+                borderRadius:1, minWidth:24 }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── CC PICKER ────────────────────────────────────────────────────────────────
+function CCPicker({ onInsert, onClose }) {
+  const [activeCat, setActiveCat] = useState(CC_CATEGORIES[0].id);
+  const cat = CC_CATEGORIES.find(c => c.id === activeCat);
+
+  useEffect(() => {
+    const fn = e => { if (e.key === "Escape") { e.preventDefault(); onClose(); } };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, []);
+
+  return (
+    <div style={{ position:"absolute", zIndex:100, left:0, right:0, bottom:"calc(100% + 4px)",
+      background:"rgba(8,22,40,.97)", border:"1px solid rgba(59,158,255,.4)",
+      borderRadius:10, padding:"10px 12px", boxShadow:"0 8px 32px rgba(0,0,0,.6)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+          color:"var(--qn-blue)", letterSpacing:1.5, textTransform:"uppercase" }}>
+          Chief Complaint
+        </span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color:"var(--qn-txt4)", letterSpacing:.5 }}>Click to insert · Esc to close</span>
+        <div style={{ flex:1 }} />
+        <button onClick={onClose}
+          style={{ background:"transparent", border:"none", cursor:"pointer",
+            color:"var(--qn-txt4)", fontFamily:"'JetBrains Mono',monospace", fontSize:11 }}>✕</button>
+      </div>
+      <div style={{ display:"flex", gap:4, marginBottom:8, flexWrap:"wrap" }}>
+        {CC_CATEGORIES.map(c => (
+          <button key={c.id} onClick={() => setActiveCat(c.id)}
+            style={{ padding:"3px 10px", borderRadius:6, cursor:"pointer", transition:"all .12s",
+              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+              border:`1px solid ${activeCat === c.id ? c.color + "66" : "rgba(42,79,122,.35)"}`,
+              background:activeCat === c.id ? c.color + "14" : "transparent",
+              color:activeCat === c.id ? c.color : "var(--qn-txt3)" }}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 }}>
+        {cat.ccs.map((cc, i) => (
+          <button key={i} onClick={() => { onInsert(cc.text); onClose(); }}
+            style={{ padding:"6px 10px", borderRadius:7, cursor:"pointer", textAlign:"left",
+              transition:"all .12s",
+              border:`1px solid ${cat.color}22`,
+              background:`${cat.color}06`,
+              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:500,
+              color:"var(--qn-txt2)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = cat.color + "18"; e.currentTarget.style.borderColor = cat.color + "55"; e.currentTarget.style.color = "var(--qn-txt)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = cat.color + "06"; e.currentTarget.style.borderColor = cat.color + "22"; e.currentTarget.style.color = "var(--qn-txt2)"; }}>
+            {cc.label}
+          </button>
+        ))}
+      </div>
+      <HubStrip catId={activeCat} label="Suggested Hubs" />
+    </div>
+  );
+}
+
+// ─── TEMPLATE PICKER ─────────────────────────────────────────────────────────
+function TemplatePicker({ type, onInsert, onClose, hasContent }) {
+  const templates = type === "ros" ? ROS_TEMPLATES : PE_TEMPLATES;
+  const [confirmIdx, setConfirmIdx] = useState(null);
+  const color = type === "ros" ? "var(--qn-teal)" : "var(--qn-purple)";
+  const colorRgb = type === "ros" ? "0,229,192" : "155,109,255";
+
+  useEffect(() => {
+    const fn = e => {
+      if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
+      const n = parseInt(e.key);
+      if (n >= 1 && n <= 8) { e.preventDefault(); handleSelect(n); }
+    };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, [hasContent, confirmIdx]);
+
+  const handleSelect = (n) => {
+    const tpl = templates.find(t => t.id === n);
+    if (!tpl) return;
+    if (hasContent && confirmIdx !== n) { setConfirmIdx(n); return; }
+    onInsert(tpl.text);
+    onClose();
+  };
+
+  return (
+    <div style={{ position:"absolute", zIndex:100, left:0, right:0, bottom:"calc(100% + 4px)",
+      background:"rgba(8,22,40,.97)", border:`1px solid rgba(${colorRgb},.4)`,
+      borderRadius:10, padding:"10px 12px", boxShadow:"0 8px 32px rgba(0,0,0,.6)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+          color, letterSpacing:1.5, textTransform:"uppercase" }}>
+          {type === "ros" ? "ROS" : "PE"} Templates
+        </span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color:"var(--qn-txt4)", letterSpacing:.5 }}>1-8 to insert · Esc to close</span>
+        <div style={{ flex:1 }} />
+        <button onClick={onClose}
+          style={{ background:"transparent", border:"none", cursor:"pointer",
+            color:"var(--qn-txt4)", fontFamily:"'JetBrains Mono',monospace", fontSize:11 }}>✕</button>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 }}>
+        {templates.map(t => (
+          <button key={t.id} onClick={() => handleSelect(t.id)}
+            style={{ display:"flex", alignItems:"center", gap:7, padding:"5px 8px",
+              borderRadius:6, cursor:"pointer", textAlign:"left", transition:"all .12s",
+              border:`1px solid ${confirmIdx === t.id ? "rgba(255,159,67,.6)" : `rgba(${colorRgb},.2)`}`,
+              background:confirmIdx === t.id ? "rgba(255,159,67,.12)" : `rgba(${colorRgb},.04)` }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+              color:confirmIdx === t.id ? "var(--qn-orange)" : color,
+              flexShrink:0, minWidth:14 }}>{t.id}</span>
+            <div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+                color: confirmIdx === t.id ? "var(--qn-orange)" : "var(--qn-txt2)" }}>
+                {t.label}
+              </div>
+              {confirmIdx === t.id && (
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-orange)", letterSpacing:.3 }}>
+                  Overwrites current text — press {t.id} again to confirm
+                </div>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── SMARTFILL ────────────────────────────────────────────────────────────────
+function parseTokens(text) {
+  const tokens = [];
+  const re = /(___|(?<!\w)([a-z][a-z -]*)(?:\/[a-z][a-z -]*)+(?!\w))/gi;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const raw = m[0];
+    if (raw === "___") {
+      const before = text.slice(0, m.index).trimEnd();
+      const ctxMatch = before.match(/([a-z]+)[^a-z]*$/i);
+      const ctx = ctxMatch ? ctxMatch[1].toLowerCase() : null;
+      const opts = ctx && BLANK_OPTIONS[ctx] ? BLANK_OPTIONS[ctx] : null;
+      tokens.push({ idx: m.index, raw, type: opts ? "options" : "blank", options: opts, context: ctx });
+    } else if (raw.includes("/")) {
+      tokens.push({ idx: m.index, raw, type:"toggle", options: raw.split("/") });
+    }
+  }
+  return tokens;
+}
+
+function SmartFillBar({ value, onChange }) {
+  const tokens = useMemo(() => parseTokens(value), [value]);
+  const [activeBlank, setActiveBlank] = useState(null);
+  const [blankInput,  setBlankInput]  = useState("");
+
+  if (!tokens.length) return null;
+
+  const replaceToken = (raw, replacement) => { onChange(value.replace(raw, replacement)); };
+  const handleBlankSubmit = (raw) => {
+    if (blankInput.trim()) { replaceToken(raw, blankInput.trim()); }
+    setActiveBlank(null); setBlankInput("");
+  };
+
+  return (
+    <div style={{ display:"flex", flexWrap:"wrap", gap:5, padding:"6px 8px",
+      borderRadius:8, marginBottom:5,
+      background:"rgba(0,229,192,.05)", border:"1px solid rgba(0,229,192,.2)" }}>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        color:"var(--qn-teal)", letterSpacing:1, textTransform:"uppercase",
+        alignSelf:"center", flexShrink:0 }}>Fill:</span>
+
+      {tokens.map((tok, i) => (
+        <span key={i} style={{ position:"relative", display:"inline-flex" }}>
+          {tok.type === "options" && (
+            <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}>
+              {tok.context && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-txt4)", marginRight:1 }}>{tok.context}:</span>
+              )}
+              <span style={{ display:"inline-flex", borderRadius:5, overflow:"hidden",
+                border:"1px solid rgba(245,200,66,.35)" }}>
+                {tok.options.map((opt, oi) => (
+                  <button key={oi} onClick={() => replaceToken(tok.raw, opt)}
+                    style={{ padding:"2px 8px", cursor:"pointer",
+                      fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
+                      background:"rgba(14,37,68,.7)", border:"none",
+                      borderRight: oi < tok.options.length - 1 ? "1px solid rgba(245,200,66,.2)" : "none",
+                      color:"var(--qn-gold)", transition:"all .1s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(245,200,66,.18)"; e.currentTarget.style.color = "#fff"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,37,68,.7)"; e.currentTarget.style.color = "var(--qn-gold)"; }}>
+                    {opt}
+                  </button>
+                ))}
+              </span>
+            </span>
+          )}
+          {tok.type === "toggle" && (
+            <span style={{ display:"inline-flex", borderRadius:5, overflow:"hidden",
+              border:"1px solid rgba(0,229,192,.3)" }}>
+              {tok.options.map((opt, oi) => (
+                <button key={oi} onClick={() => replaceToken(tok.raw, opt)}
+                  style={{ padding:"2px 7px", cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
+                    background:"rgba(14,37,68,.7)", border:"none",
+                    borderRight: oi < tok.options.length - 1 ? "1px solid rgba(0,229,192,.2)" : "none",
+                    color:"var(--qn-txt3)", transition:"all .1s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,229,192,.15)"; e.currentTarget.style.color = "var(--qn-teal)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,37,68,.7)"; e.currentTarget.style.color = "var(--qn-txt3)"; }}>
+                  {opt}
+                </button>
+              ))}
+            </span>
+          )}
+          {tok.type === "blank" && (
+            activeBlank === i ? (
+              <span style={{ display:"inline-flex", gap:3 }}>
+                <input value={blankInput}
+                  onChange={e => setBlankInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") { e.preventDefault(); handleBlankSubmit(tok.raw); }
+                    if (e.key === "Escape") { setActiveBlank(null); setBlankInput(""); }
+                  }}
+                  style={{ width:80, padding:"2px 6px", borderRadius:5,
+                    background:"rgba(14,37,68,.8)", border:"1px solid rgba(0,229,192,.5)",
+                    color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                    outline:"none" }}
+                  autoFocus placeholder="type + Enter" />
+                <button onClick={() => handleBlankSubmit(tok.raw)}
+                  style={{ padding:"2px 7px", borderRadius:5, cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    background:"rgba(0,229,192,.15)", border:"1px solid rgba(0,229,192,.4)",
+                    color:"var(--qn-teal)" }}>✓</button>
+              </span>
+            ) : (
+              <button onClick={() => { setActiveBlank(i); setBlankInput(""); }}
+                style={{ padding:"2px 9px", borderRadius:5, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+                  background:"rgba(245,200,66,.08)", border:"1px solid rgba(245,200,66,.3)",
+                  color:"var(--qn-gold)", letterSpacing:.3 }}>
+                ___
+              </button>
+            )
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ─── INPUT ZONE ───────────────────────────────────────────────────────────────
+export function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown, copyable, templateType, smartfill }) {
+  const inputRef = useRef();
+  const [copiedField, setCopiedField] = useState(false);
+  const [showPicker,  setShowPicker]  = useState(false);
+  useEffect(() => { if (onRef) onRef(inputRef); }, []);
+  const phaseClass = phase === 1 ? " active-phase" : phase === 2 ? " p2-active" : "";
+  const handleCopy = () => {
+    if (!value.trim()) return;
+    navigator.clipboard.writeText(value.trim()).then(() => {
+      setCopiedField(true);
+      setTimeout(() => setCopiedField(false), 2000);
+    });
+  };
+  const handleKeyDown = e => {
+    if (templateType && (e.key === "t" || e.key === "T") && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault(); setShowPicker(p => !p); return;
+    }
+    if (onKeyDown) onKeyDown(e);
+  };
+  return (
+    <div style={{ position:"relative" }}>
+      <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+        <SectionLabel color={phase === 2 ? "var(--qn-blue)" : undefined}
+          style={{ marginBottom:0, flex:1 }}>{label}</SectionLabel>
+        <div style={{ display:"flex", gap:5 }}>
+          {templateType && (
+            <button onClick={() => setShowPicker(p => !p)}
+              style={{ padding:"1px 8px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${showPicker ? "rgba(0,229,192,.5)" : "rgba(42,79,122,.4)"}`,
+                background:showPicker ? "rgba(0,229,192,.1)" : "rgba(14,37,68,.5)",
+                color:showPicker ? "var(--qn-teal)" : "var(--qn-txt4)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {templateType === "cc" ? "T · CC" : "T · Template"}
+            </button>
+          )}
+          {copyable && value.trim() && (
+            <button onClick={handleCopy}
+              style={{ padding:"1px 8px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedField ? "rgba(61,255,160,.5)" : "rgba(42,79,122,.4)"}`,
+                background:copiedField ? "rgba(61,255,160,.08)" : "rgba(14,37,68,.5)",
+                color:copiedField ? "var(--qn-green)" : "var(--qn-txt4)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedField ? "✓" : "Copy"}
+            </button>
+          )}
+        </div>
+      </div>
+      {showPicker && templateType === "cc" && (
+        <CCPicker
+          onInsert={text => { onChange(text); inputRef.current?.focus(); }}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+      {showPicker && templateType !== "cc" && (
+        <TemplatePicker
+          type={templateType}
+          hasContent={Boolean(value.trim())}
+          onInsert={text => { onChange(text); inputRef.current?.focus(); }}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+      {smartfill && <SmartFillBar value={value} onChange={onChange} />}
+      <textarea
+        ref={inputRef}
+        className={`qn-ta${phaseClass}`}
+        data-phase={phase || 1}
+        rows={rows || 4}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        onKeyDown={handleKeyDown}
+      />
+    </div>
+  );
+}
+
+// ─── HUB STRIP ────────────────────────────────────────────────────────────────
+function HubStrip({ catId, label }) {
+  const hubs = CC_HUB_MAP[catId];
+  if (!hubs) return null;
+  const all = [...(hubs.primary || []), ...(hubs.secondary || [])];
+  return (
+    <div style={{ marginTop:8, padding:"7px 10px", borderRadius:8,
+      background:"rgba(8,22,40,.7)", border:"1px solid rgba(42,79,122,.35)" }}>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        color:"var(--qn-txt4)", letterSpacing:1.2, textTransform:"uppercase",
+        marginBottom:6 }}>
+        {label || "Suggested Hubs"}
+      </div>
+      <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+        {all.map((h, i) => (
+          <button key={i} onClick={() => { window.location.href = h.route; }}
+            style={{ display:"inline-flex", alignItems:"center", gap:5,
+              padding:"4px 10px", borderRadius:7, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+              border:`1px solid ${h.color}44`,
+              background:`${h.color}0e`,
+              color:h.color, transition:"all .15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = h.color + "20"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = h.color + "0e"; }}>
+            <span style={{ fontSize:13 }}>{h.icon}</span>
+            {h.label}
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, opacity:.5 }}>→</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── MDM RESULT DISPLAY ───────────────────────────────────────────────────────
+export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
+  if (!result) return null;
+  const lc = mdmLevelColor(result.mdm_level);
+  return (
+    <div className="qn-fade">
+
+      {/* Level badge */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12,
+        padding:"11px 14px", borderRadius:10,
+        background:`${lc}10`, border:`2px solid ${lc}44` }}>
+        <div>
+          <div className="qn-section-lbl" style={{ color:lc, marginBottom:2 }}>MDM Complexity</div>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+            fontSize:20, color:lc, letterSpacing:-.3 }}>
+            {result.mdm_level || "—"}
+          </div>
+        </div>
+        <div style={{ width:1, height:36, background:`${lc}30`, flexShrink:0 }} />
+        <div style={{ flex:1 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+            color:"var(--qn-txt4)", letterSpacing:1, marginBottom:3 }}>
+            PROBLEM · DATA · RISK
+          </div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+            color:"var(--qn-txt2)", lineHeight:1.5 }}>
+            {[result.problem_complexity, result.data_complexity, result.risk_tier]
+              .filter(Boolean).join("  ·  ")}
+          </div>
+        </div>
+      </div>
+
+      {/* Working Dx + Differential */}
+      {(result.working_diagnosis || result.differential?.length > 0) && (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+          {result.working_diagnosis && (
+            <div className="qn-card">
+              <SectionLabel>Working Diagnosis</SectionLabel>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                fontSize:13, color:"var(--qn-txt)", lineHeight:1.45 }}>
+                {result.working_diagnosis}
+              </div>
+            </div>
+          )}
+          {result.differential?.length > 0 && (
+            <div className="qn-card">
+              <SectionLabel>Differential</SectionLabel>
+              {result.differential.map((d, i) => (
+                <div key={i} style={{ display:"flex", gap:6, alignItems:"flex-start", marginBottom:3 }}>
+                  <span style={{ color:"var(--qn-txt4)", fontFamily:"'JetBrains Mono',monospace",
+                    fontSize:9, marginTop:2, flexShrink:0 }}>{i + 1}.</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    color:"var(--qn-txt2)" }}>{d}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Red flags */}
+      {result.red_flags?.length > 0 && (
+        <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:10,
+          background:"rgba(255,68,68,.08)", border:"1px solid rgba(255,68,68,.35)" }}>
+          <SectionLabel color="var(--qn-red)">Red Flags Identified</SectionLabel>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+            {result.red_flags.map((f, i) => (
+              <span key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:"var(--qn-coral)", background:"rgba(255,68,68,.1)",
+                border:"1px solid rgba(255,68,68,.28)", borderRadius:6,
+                padding:"2px 9px" }}>{f}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Critical actions */}
+      {result.critical_actions?.length > 0 && (
+        <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:10,
+          background:"rgba(0,229,192,.06)", border:"1px solid rgba(0,229,192,.28)" }}>
+          <SectionLabel color="var(--qn-teal)">Critical Actions</SectionLabel>
+          {result.critical_actions.map((a, i) => (
+            <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:4 }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--qn-teal)", flexShrink:0, minWidth:16 }}>{i + 1}.</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:"var(--qn-txt2)", lineHeight:1.5 }}>{a}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Treatment Recommendations */}
+      {result.treatment_recommendations?.length > 0 && (
+        <div style={{ padding:"10px 12px", borderRadius:9, marginBottom:10,
+          background:"rgba(8,22,40,.7)", border:"1px solid rgba(42,79,122,.45)" }}>
+          <SectionLabel color="var(--qn-teal)">Treatment Recommendations</SectionLabel>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {result.treatment_recommendations.map((t, i) => {
+              const evColor =
+                t.evidence_level === "Class I"   ? "var(--qn-green)"  :
+                t.evidence_level === "Class IIa" ? "var(--qn-teal)"   :
+                t.evidence_level === "Class IIb" ? "var(--qn-gold)"   :
+                t.evidence_level === "Class III" ? "var(--qn-coral)"  :
+                                                   "var(--qn-blue)";
+              const evBg =
+                t.evidence_level === "Class I"   ? "rgba(61,255,160,.08)"  :
+                t.evidence_level === "Class IIa" ? "rgba(0,229,192,.06)"   :
+                t.evidence_level === "Class IIb" ? "rgba(245,200,66,.07)"  :
+                t.evidence_level === "Class III" ? "rgba(255,107,107,.07)" :
+                                                   "rgba(59,158,255,.06)";
+              const evBd =
+                t.evidence_level === "Class I"   ? "rgba(61,255,160,.3)"   :
+                t.evidence_level === "Class IIa" ? "rgba(0,229,192,.28)"   :
+                t.evidence_level === "Class IIb" ? "rgba(245,200,66,.3)"   :
+                t.evidence_level === "Class III" ? "rgba(255,107,107,.3)"  :
+                                                   "rgba(59,158,255,.28)";
+              return (
+                <div key={i} style={{ padding:"8px 10px", borderRadius:8,
+                  background:evBg, border:`1px solid ${evBd}` }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:7,
+                    flexWrap:"wrap", marginBottom:3 }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      fontWeight:700, color:evColor,
+                      background:`${evColor}18`, border:`1px solid ${evBd}`,
+                      borderRadius:4, padding:"1px 7px", letterSpacing:.8,
+                      textTransform:"uppercase", flexShrink:0 }}>
+                      {t.evidence_level}
+                    </span>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+                      fontSize:12, color:"var(--qn-txt)", flex:1 }}>
+                      {t.intervention}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    color:"var(--qn-txt3)", lineHeight:1.5, marginBottom:t.guideline_ref || t.notes ? 4 : 0 }}>
+                    {t.indication}
+                  </div>
+                  {t.guideline_ref && (
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      color:"var(--qn-blue)", letterSpacing:.3, marginBottom:t.notes ? 2 : 0 }}>
+                      {t.guideline_ref}
+                    </div>
+                  )}
+                  {t.notes && (
+                    <div style={{ display:"flex", gap:5, alignItems:"flex-start" }}>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                        color:"var(--qn-gold)", flexShrink:0 }}>⚠</span>
+                      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                        color:"var(--qn-gold)", lineHeight:1.5 }}>{t.notes}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Recommended Actions */}
+      {result.recommended_actions?.length > 0 && (
+        <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:10,
+          background:"rgba(59,158,255,.06)", border:"1px solid rgba(59,158,255,.28)" }}>
+          <SectionLabel color="var(--qn-blue)">Recommended Actions — This Visit</SectionLabel>
+          {result.recommended_actions.map((a, i) => (
+            <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:4 }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--qn-blue)", flexShrink:0, minWidth:16 }}>{i + 1}.</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:"var(--qn-txt2)", lineHeight:1.5 }}>{a}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* MDM Narrative */}
+      {result.mdm_narrative && (
+        <div className="qn-card" style={{ marginBottom:10 }}>
+          <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+            <SectionLabel color="var(--qn-purple)" style={{ marginBottom:0 }}>MDM Narrative — Chart-Ready</SectionLabel>
+            <div style={{ flex:1 }} />
+            <button onClick={() => {
+              navigator.clipboard.writeText(result.mdm_narrative);
+              setCopiedMDM(true);
+              setTimeout(() => setCopiedMDM(false), 2000);
+            }}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedMDM ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.35)"}`,
+                background:copiedMDM ? "rgba(61,255,160,.1)" : "rgba(155,109,255,.08)",
+                color:copiedMDM ? "var(--qn-green)" : "var(--qn-purple)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedMDM ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+            color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
+            {result.mdm_narrative}
+          </div>
+        </div>
+      )}
+
+      {/* Data reviewed + Risk rationale */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+        {result.data_reviewed && (
+          <div className="qn-card">
+            <SectionLabel>Data Reviewed</SectionLabel>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              color:"var(--qn-txt3)", lineHeight:1.6 }}>{result.data_reviewed}</div>
+          </div>
+        )}
+        {result.risk_rationale && (
+          <div className="qn-card">
+            <SectionLabel>Risk Rationale</SectionLabel>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              color:"var(--qn-txt3)", lineHeight:1.6 }}>{result.risk_rationale}</div>
+          </div>
+        )}
+      </div>
+
+      {result.acep_policy_ref && (
+        <div style={{ padding:"7px 11px", borderRadius:8,
+          background:"rgba(59,158,255,.07)", border:"1px solid rgba(59,158,255,.25)" }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+            color:"var(--qn-blue)", letterSpacing:1, textTransform:"uppercase" }}>
+            ACEP Policy:{" "}
+          </span>
+          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+            color:"var(--qn-txt2)" }}>{result.acep_policy_ref}</span>
+        </div>
+      )}
+
+      {/* Related Hubs */}
+      {(() => {
+        const dx = (result.working_diagnosis || "").toLowerCase();
+        const catId =
+          /chest|cardiac|acs|mi|stemi|nstemi|angina|pe|embol|syncope|palpit/.test(dx) ? "cardiac" :
+          /abdom|appy|pancreat|bowel|obstruct|gall|biliary|bleed|gi|hepat|renal|uro/.test(dx) ? "abdominal" :
+          /stroke|tia|seizure|headache|neuro|ams|dement|psych|enceph|altered/.test(dx) ? "neuro" :
+          /fracture|disloc|sprain|msk|ortho|back|spine|fall|trauma|wound/.test(dx) ? "msk" :
+          /sepsis|fever|infect|pneumonia|uti|cellulit|abscess|rash/.test(dx) ? "other" : null;
+        if (!catId) return null;
+        return <HubStrip catId={catId} label="Related Hubs" />;
+      })()}
+    </div>
+  );
+}
+
+// ─── LAB/RESULT FLAGS CARD ───────────────────────────────────────────────────
+function labFlagColor(status) {
+  const s = (status || "").toLowerCase();
+  if (s === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)"];
+  if (s === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)"];
+  if (s === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)"];
+  if (s === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)"];
+  return                         ["var(--qn-purple)", "rgba(155,109,255,.07)","rgba(155,109,255,.28)"];
+}
+
+function LabFlagsCard({ flags }) {
+  if (!flags?.length) return null;
+  return (
+    <div style={{ padding:"10px 12px", borderRadius:10, marginBottom:10,
+      background:"rgba(8,22,40,.7)", border:"1px solid rgba(42,79,122,.4)" }}>
+      <SectionLabel color="var(--qn-gold)">Lab & Imaging Interpretation</SectionLabel>
+      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+        {flags.map((f, i) => {
+          const [c, bg, bd] = labFlagColor(f.status);
+          return (
+            <div key={i} style={{ padding:"8px 10px", borderRadius:8,
+              background:bg, border:`1px solid ${bd}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4, flexWrap:"wrap" }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700,
+                  fontSize:11, color:c }}>{f.parameter}</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                  color:"var(--qn-txt)", fontWeight:600 }}>{f.value}</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:c, background:`${c}18`, border:`1px solid ${bd}`,
+                  borderRadius:4, padding:"1px 7px", textTransform:"uppercase",
+                  letterSpacing:.8, fontWeight:700 }}>{f.status}</span>
+                {f.guideline_citation && (
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:"var(--qn-blue)", letterSpacing:.3, marginLeft:"auto" }}>
+                    {f.guideline_citation}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:"var(--qn-txt2)", lineHeight:1.5, marginBottom:f.recommendation ? 4 : 0 }}>
+                {f.clinical_significance}
+              </div>
+              {f.recommendation && (
+                <div style={{ display:"flex", gap:6, alignItems:"flex-start" }}>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    color:c, flexShrink:0, marginTop:1 }}>→</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    fontWeight:600, color:c, lineHeight:1.5 }}>{f.recommendation}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── DISPOSITION RESULT DISPLAY ───────────────────────────────────────────────
+export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
+  const [copiedReeval, setCopiedReeval] = useState(false);
+  const [copiedPlan,   setCopiedPlan]   = useState(false);
+  const [copiedOrders, setCopiedOrders] = useState(false);
+  if (!result) return null;
+  const copyWith = (text, setter) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setter(true); setTimeout(() => setter(false), 2000);
+    });
+  };
+  const dc = dispColor(result.disposition);
+  const isAdmit = result.disposition?.toLowerCase().includes("admit") ||
+                  result.disposition?.toLowerCase().includes("icu")   ||
+                  result.disposition?.toLowerCase().includes("obs")   ||
+                  result.disposition?.toLowerCase().includes("transfer");
+  const di = result.discharge_instructions;
+
+  return (
+    <div className="qn-fade">
+
+      {/* Disposition badge */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12,
+        padding:"11px 14px", borderRadius:10,
+        background:`${dc}10`, border:`2px solid ${dc}44` }}>
+        <div>
+          <div className="qn-section-lbl" style={{ color:dc, marginBottom:2 }}>Disposition</div>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+            fontSize:20, color:dc, letterSpacing:-.3 }}>
+            {result.disposition || "—"}
+          </div>
+        </div>
+        {result.admission_service && (
+          <>
+            <div style={{ width:1, height:36, background:`${dc}30`, flexShrink:0 }} />
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--qn-txt4)", letterSpacing:1, marginBottom:2 }}>SERVICE</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                fontSize:13, color:"var(--qn-txt)" }}>{result.admission_service}</div>
+            </div>
+          </>
+        )}
+        {result.treatment_response && (
+          <>
+            <div style={{ width:1, height:36, background:`${dc}30`, flexShrink:0 }} />
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--qn-txt4)", letterSpacing:1, marginBottom:2 }}>RESPONSE</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                fontSize:12, color:"var(--qn-txt2)" }}>{result.treatment_response}</div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Final Dx */}
+      {result.final_diagnosis && (
+        <div className="qn-card" style={{ marginBottom:10 }}>
+          <SectionLabel color="var(--qn-teal)">Final Impression</SectionLabel>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+            fontSize:13, color:"var(--qn-txt)", lineHeight:1.5 }}>
+            {result.final_diagnosis}
+          </div>
+        </div>
+      )}
+
+      {/* Updated impression */}
+      {result.updated_impression && (
+        <div style={{ padding:"8px 12px", borderRadius:8, marginBottom:10,
+          background:"rgba(0,229,192,.06)", border:"1px solid rgba(0,229,192,.2)",
+          display:"flex", alignItems:"flex-start", gap:8 }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+            color:"var(--qn-teal)", letterSpacing:1, textTransform:"uppercase",
+            flexShrink:0, marginTop:1 }}>Updated:</span>
+          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+            color:"var(--qn-txt2)", lineHeight:1.6 }}>{result.updated_impression}</span>
+        </div>
+      )}
+
+      <LabFlagsCard flags={result.result_flags} />
+
+      {/* Reevaluation note */}
+      {result.reevaluation_note && (
+        <div className="qn-card" style={{ marginBottom:10 }}>
+          <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+            <SectionLabel color="var(--qn-blue)" style={{ marginBottom:0, flex:1 }}>
+              ED Reevaluation — Chart-Ready
+            </SectionLabel>
+            <button onClick={() => copyWith(result.reevaluation_note, setCopiedReeval)}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedReeval ? "rgba(61,255,160,.5)" : "rgba(59,158,255,.35)"}`,
+                background:copiedReeval ? "rgba(61,255,160,.1)" : "rgba(59,158,255,.08)",
+                color:copiedReeval ? "var(--qn-green)" : "var(--qn-blue)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedReeval ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+            color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
+            {result.reevaluation_note}
+          </div>
+        </div>
+      )}
+
+      {/* Plan */}
+      {result.plan_summary && (
+        <div className="qn-card" style={{ marginBottom:10 }}>
+          <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+            <SectionLabel color="var(--qn-purple)" style={{ marginBottom:0, flex:1 }}>
+              Plan — Chart-Ready
+            </SectionLabel>
+            <button onClick={() => copyWith(result.plan_summary, setCopiedPlan)}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedPlan ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.35)"}`,
+                background:copiedPlan ? "rgba(61,255,160,.1)" : "rgba(155,109,255,.08)",
+                color:copiedPlan ? "var(--qn-green)" : "var(--qn-purple)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedPlan ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+            color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
+            {result.plan_summary}
+          </div>
+        </div>
+      )}
+
+      {/* Orders */}
+      {result.orders?.length > 0 && (
+        <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:10,
+          background:"rgba(0,229,192,.05)", border:"1px solid rgba(0,229,192,.25)" }}>
+          <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+            <SectionLabel color="var(--qn-teal)" style={{ marginBottom:0, flex:1 }}>Orders</SectionLabel>
+            <button onClick={() => copyWith(result.orders.map(o => "- " + o).join("\n"), setCopiedOrders)}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedOrders ? "rgba(61,255,160,.5)" : "rgba(0,229,192,.3)"}`,
+                background:copiedOrders ? "rgba(61,255,160,.1)" : "rgba(0,229,192,.06)",
+                color:copiedOrders ? "var(--qn-green)" : "var(--qn-teal)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedOrders ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"3px 16px" }}>
+            {result.orders.map((o, i) => (
+              <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start" }}>
+                <span style={{ color:"var(--qn-teal)", fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:9, flexShrink:0, marginTop:2 }}>▸</span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                  color:"var(--qn-txt2)", lineHeight:1.55 }}>{o}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Discharge instructions */}
+      {!isAdmit && di && (
+        <div style={{ padding:"12px 14px", borderRadius:12, marginTop:4,
+          background:"rgba(61,255,160,.04)", border:"1px solid rgba(61,255,160,.25)" }}>
+          <div style={{ display:"flex", alignItems:"center", marginBottom:8 }}>
+            <SectionLabel color="var(--qn-green)" style={{ marginBottom:0 }}>Discharge Instructions</SectionLabel>
+            <div style={{ flex:1 }} />
+            <button onClick={() => {
+              const lines = [];
+              if (di.diagnosis_explanation) lines.push(di.diagnosis_explanation);
+              if (di.medications?.length) { lines.push(""); lines.push("Medications:"); di.medications.forEach(m => lines.push("  - " + m)); }
+              if (di.activity) lines.push("Activity: " + di.activity);
+              if (di.diet)     lines.push("Diet: " + di.diet);
+              if (di.return_precautions?.length) { lines.push(""); lines.push("Return to ED if:"); di.return_precautions.forEach(r => lines.push("  ! " + r)); }
+              if (di.followup) lines.push("Follow-up: " + di.followup);
+              navigator.clipboard.writeText(lines.join("\n"));
+              setCopiedDisch(true);
+              setTimeout(() => setCopiedDisch(false), 2000);
+            }}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedDisch ? "rgba(61,255,160,.7)" : "rgba(61,255,160,.35)"}`,
+                background:copiedDisch ? "rgba(61,255,160,.2)" : "rgba(61,255,160,.08)",
+                color:"var(--qn-green)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedDisch ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
+
+          {di.diagnosis_explanation && (
+            <div style={{ marginBottom:10, padding:"8px 10px", borderRadius:8,
+              background:"rgba(61,255,160,.05)", border:"1px solid rgba(61,255,160,.15)" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--qn-green)", letterSpacing:.8, marginBottom:4 }}>WHAT YOU HAVE</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                color:"var(--qn-txt2)", lineHeight:1.7 }}>{di.diagnosis_explanation}</div>
+            </div>
+          )}
+
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+            {di.medications?.length > 0 && (
+              <div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  color:"var(--qn-gold)", letterSpacing:.8, marginBottom:5 }}>MEDICATIONS</div>
+                {di.medications.map((m, i) => (
+                  <div key={i} style={{ display:"flex", gap:6, alignItems:"flex-start", marginBottom:4 }}>
+                    <span style={{ color:"var(--qn-gold)", fontFamily:"'JetBrains Mono',monospace",
+                      fontSize:9, flexShrink:0, marginTop:2 }}>▸</span>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                      color:"var(--qn-txt2)", lineHeight:1.5 }}>{m}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div>
+              {di.activity && (
+                <>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    color:"var(--qn-txt4)", letterSpacing:.8, marginBottom:4 }}>ACTIVITY</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    color:"var(--qn-txt2)", lineHeight:1.55, marginBottom:8 }}>{di.activity}</div>
+                </>
+              )}
+              {di.diet && (
+                <>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    color:"var(--qn-txt4)", letterSpacing:.8, marginBottom:4 }}>DIET</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    color:"var(--qn-txt2)", lineHeight:1.55 }}>{di.diet}</div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {di.return_precautions?.length > 0 && (
+            <div style={{ padding:"9px 11px", borderRadius:9, marginBottom:10,
+              background:"rgba(255,107,107,.07)", border:"1px solid rgba(255,107,107,.28)" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--qn-coral)", letterSpacing:.8, marginBottom:6 }}>
+                RETURN TO ED IF —
+              </div>
+              {di.return_precautions.map((rp, i) => (
+                <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:4 }}>
+                  <span style={{ color:"var(--qn-coral)", fontFamily:"'JetBrains Mono',monospace",
+                    fontSize:10, flexShrink:0, marginTop:1 }}>!</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    color:"var(--qn-txt2)", lineHeight:1.5 }}>{rp}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {di.followup && (
+            <div style={{ display:"flex", gap:8, alignItems:"flex-start",
+              padding:"7px 10px", borderRadius:8,
+              background:"rgba(59,158,255,.07)", border:"1px solid rgba(59,158,255,.25)" }}>
+              <span style={{ fontSize:14, flexShrink:0 }}>📅</span>
+              <div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  color:"var(--qn-blue)", letterSpacing:.8, marginBottom:2 }}>FOLLOW-UP</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                  color:"var(--qn-txt2)", lineHeight:1.55 }}>{di.followup}</div>
+              </div>
+            </div>
+          )}
+
+          {di.acep_policy_ref && (
+            <div style={{ marginTop:8, padding:"5px 10px", borderRadius:7,
+              background:"rgba(59,158,255,.06)", border:"1px solid rgba(59,158,255,.2)" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--qn-blue)", letterSpacing:.8 }}>ACEP: </span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                color:"var(--qn-txt3)" }}>{di.acep_policy_ref}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Disposition rationale */}
+      {result.disposition_rationale && (
+        <div className="qn-card" style={{ marginBottom:10 }}>
+          <SectionLabel>Disposition Rationale</SectionLabel>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+            color:"var(--qn-txt2)", lineHeight:1.7 }}>{result.disposition_rationale}</div>
+        </div>
+      )}
+    </div>
+  );
+}

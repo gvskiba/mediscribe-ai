@@ -1,15 +1,16 @@
-// QuickNote.jsx  v6
+// QuickNote.jsx  v7
 // Two-phase ED documentation: Phase 1 -> MDM | Phase 2 -> Reevaluation, Plan, Disposition, Discharge Rx
 // Grounded in AMA/CMS 2023 E&M MDM table + ACEP Clinical Policy guidelines
-// Keyboard: Tab advances | Cmd+Enter submit | T open template picker | 1-8 select | Esc close
-//           Alt+H/R/E/L field jump | C copy full note | Cmd+Shift+C copy focused section | P print
+// Keyboard: Tab advances | Cmd+Enter submit | T template/CC picker | 1-8 select | Esc close
+//           Alt+H/R/E/L field jump | C copy full note | Cmd+Shift+C copy section | P print
 //
-// v6 new features:
-//   1. ROS templates — 8 chief-complaint-based templates, T key to open, 1-8 to insert
-//   2. PE templates  — 8 focused exam templates, same keyboard pattern
-//   3. Template picker — compact overlay, keyboard-first, warns before overwriting existing text
-//   4. Alt+H/R/E/L field jump shortcuts (HPI, ROS, Exam, Labs)
-//   5. Cmd+Shift+C copies the currently focused result section to clipboard
+// v7 new features:
+//   1. Chief Complaint selector — 5-category two-tier picker, T key to open,
+//      inserts structured phrase with documentation blanks, consistent with T·Template pattern
+//   2. Recommended Actions — new MDM section between Critical Actions and Narrative;
+//      schema-enforced; "THIS VISIT" tier distinct from critical (do-now) actions
+//   3. Copy Full MDM Block — single button copies entire MDM as structured chart-ready text
+//      (level, complexity, differential, critical + recommended actions, narrative, rationale)
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
@@ -96,6 +97,7 @@ const MDM_SCHEMA = {
     differential:          { type: "array", items: { type: "string" }, minItems: 2, maxItems: 4 },
     red_flags:             { type: "array", items: { type: "string" }, maxItems: 6 },
     critical_actions:      { type: "array", items: { type: "string" }, maxItems: 5 },
+    recommended_actions:   { type: "array", items: { type: "string" }, maxItems: 6 },
     data_reviewed:         { type: "string" },
     risk_rationale:        { type: "string" },
     acep_policy_ref:       { type: "string" },
@@ -167,7 +169,7 @@ HPI: ${hpi || "Not provided"}
 ROS: ${ros || "Not provided"}
 Physical Exam: ${exam || "Not provided"}
 
-Generate the MDM assessment. For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-4 alternative diagnoses ranked by clinical probability. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies (chest pain, headache, syncope, dyspnea, fever, abdominal pain, etc.) — otherwise return an empty string.
+Generate the MDM assessment. For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-4 alternative diagnoses ranked by clinical probability. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For recommended_actions list clinical actions to complete during this visit that are not immediately time-critical — serial assessments, conditional next steps, monitoring parameters, required documentation; return an empty array if none. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies (chest pain, headache, syncope, dyspnea, fever, abdominal pain, etc.) — otherwise return an empty string.
 
 Respond ONLY in valid JSON, no markdown fences.`;
 }
@@ -301,43 +303,101 @@ function StepProgress({ phase1Done, phase2Done, p2Open }) {
 }
 
 // ─── ROS / PE TEMPLATES ──────────────────────────────────────────────────────
-const ROS_TEMPLATES = [
-  { id:1, label:"Chest Pain",     short:"CP",
-    text:"Constitutional: Denies fever, chills, diaphoresis.\nCardiovascular: Chest pain as described; denies palpitations, syncope, orthopnea, PND, leg swelling.\nRespiratory: Denies dyspnea at rest, cough, hemoptysis.\nGI: Denies nausea, vomiting, abdominal pain.\nMusculoskeletal: Denies wall tenderness, arm/jaw pain.\nNeuro: Denies dizziness, headache, focal weakness." },
-  { id:2, label:"Dyspnea",        short:"SOB",
-    text:"Constitutional: Denies fever, chills, night sweats.\nRespiratory: Shortness of breath as described; denies hemoptysis, wheezing.\nCardiovascular: Denies chest pain, palpitations, orthopnea, PND, leg swelling.\nAllergy: Denies new exposures, urticaria.\nNeuro: Denies dizziness, syncope." },
-  { id:3, label:"Abdominal Pain", short:"Abd",
-    text:"Constitutional: Denies fever, chills, anorexia, weight loss.\nGI: Abdominal pain as described; denies hematemesis, melena, hematochezia, diarrhea, constipation, jaundice.\nGU: Denies dysuria, hematuria, vaginal/penile discharge.\nGyn: Denies vaginal bleeding, LMP ____.\nNeuro: Denies dizziness." },
-  { id:4, label:"Headache",       short:"HA",
-    text:"Constitutional: Denies fever, neck stiffness, photophobia.\nNeuro: Headache as described; denies diplopia, focal weakness, numbness, speech changes, ataxia, seizure.\nCardiovascular: Denies palpitations, syncope.\nENT: Denies visual changes, rhinorrhea, ear pain.\nMSK: Denies neck pain, jaw claudication." },
-  { id:5, label:"Syncope",        short:"Sync",
-    text:"Constitutional: Denies fever, chills.\nCardiovascular: Denies palpitations, chest pain, prior syncope; prodrome of ____.\nNeuro: Denies focal weakness, post-ictal confusion, tongue biting, incontinence.\nRespiratory: Denies dyspnea.\nGI: Denies nausea, vomiting, diarrhea (vasovagal prodrome)." },
-  { id:6, label:"AMS",            short:"AMS",
-    text:"Constitutional: Denies fever, chills; baseline mental status: ____.\nNeuro: Altered mentation as described; denies focal weakness, seizure, headache.\nCardiovascular: Denies palpitations.\nGI: Denies nausea, vomiting.\nPsychiatric: Denies SI/HI; psychiatric history: ____.\nToxicology: Substance use: ____." },
-  { id:7, label:"Extremity",      short:"Ext",
-    text:"Constitutional: Denies fever, chills.\nMSK: Pain/injury as described; denies deformity, crepitus, neurovascular symptoms distal.\nVascular: Denies calf swelling, redness, cord-like tenderness (DVT symptoms).\nNeuro: Denies numbness, tingling, weakness distal to injury.\nSkin: Denies lacerations, open wounds, signs of infection." },
-  { id:8, label:"Fever / Sepsis", short:"Sepsis",
-    text:"Constitutional: Fever as described; denies rigors, weight loss.\nRespiratory: Denies cough, dyspnea, pleuritic pain.\nGU: Denies dysuria, frequency, flank pain.\nGI: Denies nausea, vomiting, diarrhea, abdominal pain.\nSkin: Denies rash, wound, cellulitis.\nNeuro: Denies headache, neck stiffness, photophobia, focal deficit." },
+import { ROS_TEMPLATES, PE_TEMPLATES } from "./QuickNoteTemplates";
+
+// ─── CHIEF COMPLAINT CATEGORIES ─────────────────────────────────────────────
+const CC_CATEGORIES = [
+  { id:"cardiac", label:"Cardiac / Pulm", color:"#ff6b6b", ccs:[
+    { label:"Chest pain",            text:"Chest pain — onset: ___, character: ___, severity: ___/10, radiation: ___" },
+    { label:"Shortness of breath",   text:"Shortness of breath — onset: ___, severity: mild/moderate/severe, exertional: yes/no" },
+    { label:"Palpitations",          text:"Palpitations — onset: ___, duration: ___, associated syncope: yes/no" },
+    { label:"Syncope",               text:"Syncope — onset: ___, prodrome: ___, duration of LOC: ___, injuries: ___" },
+  ]},
+  { id:"abdominal", label:"Abdominal", color:"#ff9f43", ccs:[
+    { label:"Abdominal pain",        text:"Abdominal pain — location: ___, onset: ___, character: ___, severity: ___/10" },
+    { label:"Nausea / vomiting",     text:"Nausea and vomiting — onset: ___, frequency: ___, blood in emesis: yes/no, last PO: ___" },
+    { label:"GI bleed",              text:"GI bleeding — hematemesis/melena/hematochezia: ___, onset: ___, hemodynamically stable: yes/no" },
+    { label:"Flank pain",            text:"Flank pain — side: L/R, onset: ___, radiation to groin: yes/no, hematuria: yes/no" },
+  ]},
+  { id:"neuro", label:"Neuro / Psych", color:"#9b6dff", ccs:[
+    { label:"Headache",              text:"Headache — onset: ___, character: ___, severity: ___/10, thunderclap: yes/no, fever/meningismus: yes/no" },
+    { label:"Dizziness",             text:"Dizziness — vertigo vs presyncope: ___, onset: ___, positional: yes/no" },
+    { label:"Weakness / numbness",   text:"Focal weakness/numbness — onset: ___, distribution: ___, last known well: ___, facial droop: yes/no" },
+    { label:"Altered mental status", text:"Altered mental status — baseline: ___, onset: ___, fever: yes/no, recent medication change: yes/no" },
+    { label:"Seizure",               text:"Seizure — type: focal/generalized, duration: ___, post-ictal: yes/no, prior seizures: yes/no" },
+  ]},
+  { id:"msk", label:"MSK / Trauma", color:"#f5c842", ccs:[
+    { label:"Extremity pain / injury", text:"Extremity pain/injury — location: ___, mechanism: ___, weight-bearing: yes/no, neurovascular intact: yes/no" },
+    { label:"Back pain",             text:"Back pain — onset: ___, mechanism: ___, radiation: ___, bowel/bladder changes: yes/no" },
+    { label:"Neck pain",             text:"Neck pain — mechanism: ___, onset: ___, radiation: ___, midline tenderness: yes/no" },
+    { label:"Fall",                  text:"Fall — mechanism: ___, LOC: yes/no, anticoagulation: yes/no, injuries identified: ___" },
+  ]},
+  { id:"other", label:"Other", color:"#3b9eff", ccs:[
+    { label:"Fever",                 text:"Fever — Tmax: ___, onset: ___, localizing symptoms: ___, immunocompromised: yes/no" },
+    { label:"Urinary symptoms",      text:"Urinary symptoms — dysuria/frequency/urgency/hematuria: ___, onset: ___, CVA tenderness: yes/no" },
+    { label:"Rash",                  text:"Rash — distribution: ___, onset: ___, pruritic: yes/no, fever: yes/no, new medications: yes/no" },
+    { label:"Vaginal bleeding",      text:"Vaginal bleeding — LMP: ___, quantity: ___, pregnancy test: positive/negative/pending" },
+    { label:"Swelling",              text:"Swelling — location: ___, onset: ___, unilateral/bilateral: ___, pain/erythema/warmth: yes/no" },
+  ]},
 ];
 
-const PE_TEMPLATES = [
-  { id:1, label:"Normal Multisystem", short:"Normal",
-    text:"General: Alert, oriented x3, no acute distress, well-appearing.\nVitals: As documented.\nHEENT: Normocephalic, atraumatic; PERRL, EOMI; oropharynx clear.\nNeck: Supple, no JVD, no lymphadenopathy, no meningismus.\nCV: RRR, no murmurs/rubs/gallops; distal pulses intact bilaterally.\nRespiratory: CTAB, no wheeze/rales/rhonchi; no respiratory distress.\nAbdomen: Soft, non-tender, non-distended; normoactive bowel sounds.\nExtremities: No cyanosis, clubbing, or edema; no calf tenderness.\nSkin: Warm, dry, no rash.\nNeuro: A&Ox3, CN II-XII grossly intact, strength 5/5 all extremities, sensation intact." },
-  { id:2, label:"Chest Pain",        short:"CP",
-    text:"General: Alert, in mild distress secondary to pain.\nVitals: As documented.\nHEENT: No diaphoresis, JVP ____.\nCV: RRR, no murmurs/rubs/gallops; no S3/S4; peripheral pulses equal bilaterally.\nRespiratory: CTAB, no wheeze; no crackles suggesting pulmonary edema.\nAbdomen: Soft, non-tender, non-distended.\nExtremities: No calf tenderness; no lower extremity edema.\nSkin: No mottling, no diaphoresis.\nNeuro: Alert, no focal deficits." },
-  { id:3, label:"Abdominal",         short:"Abd",
-    text:"General: Alert, uncomfortable; lying still [or] writhing.\nVitals: As documented.\nAbdomen: Soft [or] Rigid; tender in ____ quadrant(s); no guarding, no rebound [or] guarding/rebound present; Murphy sign negative [or] positive; McBurney tenderness negative [or] positive; bowel sounds normoactive [or] diminished.\nGU: No CVA tenderness bilaterally.\nPelvic (if applicable): ____.\nExtremities: No peripheral edema.\nSkin: No jaundice, no rash." },
-  { id:4, label:"Neuro / Stroke",    short:"Neuro",
-    text:"General: Alert [or] altered; oriented x____.\nVitals: As documented.\nHEENT: PERRL ____/____ mm; EOMI [or] gaze deviation to ____; facial droop ____ present/absent.\nSpeech: Clear [or] dysarthric/aphasic.\nMotor: Drift absent [or] drift present in ____; strength ____ upper extremity, ____ lower extremity.\nSensory: Intact bilaterally [or] deficit in ____.\nCoordination: Finger-nose intact [or] dysmetria ____.\nGait: Steady [or] ataxic.\nReflexes: Symmetric; Babinski negative [or] positive ____.\nNeglect: Absent [or] present ____." },
-  { id:5, label:"Extremity / MSK",   short:"MSK",
-    text:"General: Alert, ambulatory [or] non-weight-bearing.\nVitals: As documented.\nAffected Extremity: Inspection — swelling/ecchymosis/deformity absent [or] present; tenderness over ____; ROM limited [or] full active/passive; neurovascular exam distal — sensation intact, cap refill <2s, pulses 2+ ____.\nContralateral Extremity: Normal for comparison.\nSkin: Intact, no open wounds, no lacerations.\nSpecial Tests: ____." },
-  { id:6, label:"Trauma Primary",    short:"Trauma",
-    text:"Airway: Patent; self-maintained [or] assisted.\nBreathing: Spontaneous, symmetric chest rise; breath sounds bilateral; trachea midline.\nCirculation: Radial pulses palpable; skin warm/cool; no external hemorrhage identified.\nDisability: GCS ____; pupils ____/____ reactive; moving all extremities.\nExposure: Logrolled — no step-off, no midline tenderness. HEENT: ____. Chest: ____. Abdomen: ____. Pelvis: ____. Extremities: ____. Skin: ____." },
-  { id:7, label:"Respiratory",       short:"Resp",
-    text:"General: Alert; speaking in full sentences [or] labored speech; using accessory muscles? No [or] Yes.\nVitals: As documented; SpO2 ____ on ____.\nHEENT: No stridor, no lip cyanosis.\nNeck: No JVD, no tracheal deviation.\nCV: RRR, no murmurs.\nRespiratory: Inspection — ____ retractions; Percussion — resonant [or] dull ____; Auscultation — CTAB [or] decreased at ____, wheeze present [or] absent, crackles present [or] absent.\nExtremities: No peripheral edema, no clubbing." },
-  { id:8, label:"Psychiatric",       short:"Psych",
-    text:"General: Alert, cooperative [or] agitated; dressed ____, hygiene ____.\nBehavior: Calm [or] restless/pacing; eye contact appropriate [or] poor.\nSpeech: Normal rate and volume [or] ____.\nMood: Patient reports ____; affect ____.\nThought Process: Linear and goal-directed [or] ____.\nThought Content: No SI/HI [or] SI present — plan/intent ____.\nPerception: No AH/VH reported [or] ____.\nCognition: A&Ox3; judgment and insight ____.\nCV/Resp: No acute distress; vitals as documented." },
-];
+// ─── CC PICKER ────────────────────────────────────────────────────────────────
+function CCPicker({ onInsert, onClose }) {
+  const [activeCat, setActiveCat] = useState(CC_CATEGORIES[0].id);
+  const cat = CC_CATEGORIES.find(c => c.id === activeCat);
+
+  useEffect(() => {
+    const fn = e => { if (e.key === "Escape") { e.preventDefault(); onClose(); } };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, []);
+
+  return (
+    <div style={{ position:"absolute", zIndex:100, left:0, right:0, bottom:"calc(100% + 4px)",
+      background:"rgba(8,22,40,.97)", border:"1px solid rgba(59,158,255,.4)",
+      borderRadius:10, padding:"10px 12px", boxShadow:"0 8px 32px rgba(0,0,0,.6)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+          color:"var(--qn-blue)", letterSpacing:1.5, textTransform:"uppercase" }}>
+          Chief Complaint
+        </span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color:"var(--qn-txt4)", letterSpacing:.5 }}>Click to insert · Esc to close</span>
+        <div style={{ flex:1 }} />
+        <button onClick={onClose}
+          style={{ background:"transparent", border:"none", cursor:"pointer",
+            color:"var(--qn-txt4)", fontFamily:"'JetBrains Mono',monospace", fontSize:11 }}>✕</button>
+      </div>
+      <div style={{ display:"flex", gap:4, marginBottom:8, flexWrap:"wrap" }}>
+        {CC_CATEGORIES.map(c => (
+          <button key={c.id} onClick={() => setActiveCat(c.id)}
+            style={{ padding:"3px 10px", borderRadius:6, cursor:"pointer", transition:"all .12s",
+              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+              border:`1px solid ${activeCat === c.id ? c.color + "66" : "rgba(42,79,122,.35)"}`,
+              background:activeCat === c.id ? c.color + "14" : "transparent",
+              color:activeCat === c.id ? c.color : "var(--qn-txt3)" }}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 }}>
+        {cat.ccs.map((cc, i) => (
+          <button key={i} onClick={() => { onInsert(cc.text); onClose(); }}
+            style={{ padding:"6px 10px", borderRadius:7, cursor:"pointer", textAlign:"left",
+              transition:"all .12s",
+              border:`1px solid ${cat.color}22`,
+              background:`${cat.color}06`,
+              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:500,
+              color:"var(--qn-txt2)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = cat.color + "18"; e.currentTarget.style.borderColor = cat.color + "55"; e.currentTarget.style.color = "var(--qn-txt)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = cat.color + "06"; e.currentTarget.style.borderColor = cat.color + "22"; e.currentTarget.style.color = "var(--qn-txt2)"; }}>
+            {cc.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ─── TEMPLATE PICKER ─────────────────────────────────────────────────────────
 function TemplatePicker({ type, onInsert, onClose, hasContent }) {
@@ -443,7 +503,7 @@ function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref
                 background:showPicker ? "rgba(0,229,192,.1)" : "rgba(14,37,68,.5)",
                 color:showPicker ? "var(--qn-teal)" : "var(--qn-txt4)",
                 letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-              T · Template
+              {templateType === "cc" ? "T · CC" : "T · Template"}
             </button>
           )}
           {copyable && value.trim() && (
@@ -459,7 +519,13 @@ function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref
           )}
         </div>
       </div>
-      {showPicker && (
+      {showPicker && templateType === "cc" && (
+        <CCPicker
+          onInsert={text => { onChange(text); inputRef.current?.focus(); }}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+      {showPicker && templateType !== "cc" && (
         <TemplatePicker
           type={templateType}
           hasContent={Boolean(value.trim())}
@@ -566,6 +632,22 @@ function MDMResult({ result, copiedMDM, setCopiedMDM }) {
             <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:4 }}>
               <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:"var(--qn-teal)", flexShrink:0, minWidth:16 }}>{i + 1}.</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:"var(--qn-txt2)", lineHeight:1.5 }}>{a}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Recommended Actions — this-visit tier */}
+      {result.recommended_actions?.length > 0 && (
+        <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:10,
+          background:"rgba(59,158,255,.06)", border:"1px solid rgba(59,158,255,.28)" }}>
+          <SectionLabel color="var(--qn-blue)">Recommended Actions — This Visit</SectionLabel>
+          {result.recommended_actions.map((a, i) => (
+            <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:4 }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--qn-blue)", flexShrink:0, minWidth:16 }}>{i + 1}.</span>
               <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
                 color:"var(--qn-txt2)", lineHeight:1.5 }}>{a}</span>
             </div>
@@ -694,10 +776,10 @@ function LabFlagsCard({ flags }) {
 
 // ─── DISPOSITION RESULT DISPLAY ───────────────────────────────────────────────
 function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
+  if (!result) return null;
   const [copiedReeval, setCopiedReeval] = useState(false);
   const [copiedPlan,   setCopiedPlan]   = useState(false);
   const [copiedOrders, setCopiedOrders] = useState(false);
-  if (!result) return null;
   const copyWith = (text, setter) => {
     navigator.clipboard.writeText(text).then(() => {
       setter(true); setTimeout(() => setter(false), 2000);
@@ -984,6 +1066,36 @@ function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
   );
 }
 
+// ─── MDM BLOCK BUILDER ───────────────────────────────────────────────────────
+function buildMDMBlock(mdm) {
+  if (!mdm) return "";
+  const lines = [
+    `MEDICAL DECISION MAKING — ${new Date().toLocaleString()}`, "",
+    `MDM Level: ${mdm.mdm_level || "—"}`,
+    `Problem Complexity: ${mdm.problem_complexity || "—"}`,
+    `Data Complexity: ${mdm.data_complexity || "—"}`,
+    `Risk: ${mdm.risk_tier || "—"}`,
+  ];
+  if (mdm.working_diagnosis) lines.push(`\nWorking Diagnosis: ${mdm.working_diagnosis}`);
+  if (mdm.differential?.length)
+    lines.push(`Differential: ${mdm.differential.map((d,i) => `(${i+1}) ${d}`).join(", ")}`);
+  if (mdm.red_flags?.length)
+    lines.push(`\nRed Flags: ${mdm.red_flags.join("; ")}`);
+  if (mdm.critical_actions?.length) {
+    lines.push("\nCRITICAL ACTIONS (Do Now):");
+    mdm.critical_actions.forEach((a, i) => lines.push(`  ${i+1}. ${a}`));
+  }
+  if (mdm.recommended_actions?.length) {
+    lines.push("\nRECOMMENDED ACTIONS (This Visit):");
+    mdm.recommended_actions.forEach((a, i) => lines.push(`  ${i+1}. ${a}`));
+  }
+  if (mdm.data_reviewed) lines.push(`\nData Reviewed: ${mdm.data_reviewed}`);
+  if (mdm.risk_rationale)  lines.push(`Risk Rationale: ${mdm.risk_rationale}`);
+  if (mdm.mdm_narrative)   lines.push(`\nMDM NARRATIVE:\n${mdm.mdm_narrative}`);
+  if (mdm.acep_policy_ref) lines.push(`\nACEP Policy: ${mdm.acep_policy_ref}`);
+  return lines.join("\n");
+}
+
 // ─── COPY-TO-CHART BUILDER ────────────────────────────────────────────────────
 function buildFullNote(p1, mdm, p2, disp) {
   const ts = new Date().toLocaleString();
@@ -1012,6 +1124,10 @@ function buildFullNote(p1, mdm, p2, disp) {
     if (mdm.critical_actions?.length) {
       lines.push(`Critical Actions:`);
       mdm.critical_actions.forEach((a, i) => lines.push(`  ${i+1}. ${a}`));
+    }
+    if (mdm.recommended_actions?.length) {
+      lines.push(`Recommended Actions:`);
+      mdm.recommended_actions.forEach((a, i) => lines.push(`  ${i+1}. ${a}`));
     }
     if (mdm.data_reviewed) lines.push(`Data Reviewed: ${mdm.data_reviewed}`);
     if (mdm.risk_rationale) lines.push(`Risk Rationale: ${mdm.risk_rationale}`);
@@ -1106,6 +1222,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [confirmClear, setConfirmClear] = useState(false);
   const [copiedMDM,    setCopiedMDM]    = useState(false);
   const [copiedDisch,  setCopiedDisch]  = useState(false);
+  const [copiedMDMFull, setCopiedMDMFull] = useState(false);
 
   const phase1Ready = Boolean(cc.trim() || hpi.trim() || exam.trim());
   const phase2Ready = Boolean(mdmResult && (labs.trim() || imaging.trim() || newVitals.trim()));
@@ -1306,7 +1423,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
               color:"var(--qn-txt4)", letterSpacing:1.5, textTransform:"uppercase",
               background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.25)",
               borderRadius:4, padding:"2px 7px" }}>
-              MDM · Disposition · Discharge Rx · v6
+              MDM · Disposition · Discharge Rx · v7
             </span>
           </div>
         )}
@@ -1410,8 +1527,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
           {/* CC + Vitals row */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <InputZone label="Chief Complaint" value={cc} onChange={setCC} phase={1}
-              rows={2}
-              placeholder="e.g. Chest pain, sharp, onset 2h ago, 8/10 severity"
+              rows={2} templateType="cc"
+              placeholder="e.g. Chest pain, sharp, onset 2h ago — or press T to select"
               onRef={setRef(0)}
               onKeyDown={makeKeyDown(0, false, runMDM)} />
             <InputZone label="Triage Vitals" value={vitals} onChange={setVitals} phase={1}
@@ -1486,6 +1603,20 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
                 background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.2)",
                 borderRadius:4, padding:"2px 7px" }}>AMA/CMS 2023 · ACEP</span>
               <div style={{ flex:1 }} />
+              <button onClick={() => {
+                navigator.clipboard.writeText(buildMDMBlock(mdmResult)).then(() => {
+                  setCopiedMDMFull(true);
+                  setTimeout(() => setCopiedMDMFull(false), 2000);
+                });
+              }}
+                style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                  border:`1px solid ${copiedMDMFull ? "rgba(61,255,160,.5)" : "rgba(0,229,192,.35)"}`,
+                  background:copiedMDMFull ? "rgba(61,255,160,.1)" : "rgba(0,229,192,.07)",
+                  color:copiedMDMFull ? "var(--qn-green)" : "var(--qn-teal)",
+                  transition:"all .15s" }}>
+                {copiedMDMFull ? "✓ MDM Copied" : "Copy MDM"}
+              </button>
               <button onClick={() => { setMdmResult(null); setDispResult(null); setP2Open(false); setConfirmClear(false); }}
                 style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
                   fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
@@ -1691,7 +1822,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
           <div style={{ textAlign:"center", padding:"24px 0 8px",
             fontFamily:"'JetBrains Mono',monospace", fontSize:8,
             color:"var(--qn-txt4)", letterSpacing:1.5 }} className="no-print">
-            NOTRYA QUICKNOTE v6 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+            NOTRYA QUICKNOTE v7 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}

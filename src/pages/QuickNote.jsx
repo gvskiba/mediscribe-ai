@@ -1,7 +1,7 @@
 // QuickNote.jsx  v10
 // Two-phase ED documentation: Phase 1 -> MDM | Phase 2 -> Reevaluation, Plan, Disposition, Discharge Rx
 // Grounded in AMA/CMS 2023 E&M MDM table + ACEP Clinical Policy guidelines
-// Keyboard: Tab advances | Cmd+Enter submit | T template/CC picker | 1-8 select | Esc close
+// Keyboard: Tab advances | Cmd+Enter submit | Ctrl+T template/CC picker | 1-9 select | Esc close
 //           Alt+H/R/E/L field jump | C copy full note | Cmd+Shift+C copy section | P print
 //
 // v10 new feature:
@@ -12,7 +12,6 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { dispColor, StepProgress, InputZone, MDMResult, DispositionResult } from "./QuickNoteComponents";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
@@ -190,7 +189,7 @@ problem_complexity — pick the single best match:
 data_complexity — pick the single best match:
 "Minimal or none" | "Limited — ordering or reviewing tests" | "Moderate — independent interpretation of results" | "Moderate — discussion with treating provider" | "Extensive — independent interpretation and provider discussion"
 
-For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-4 alternative diagnoses ranked by clinical probability. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For recommended_actions list clinical actions to complete during this visit that are not immediately time-critical; for each recommended lab or test include: specific test name, clinical indication, timing (STAT / routine / in Xh), and the decision threshold — e.g. "Repeat troponin in 3h — if delta >0.04 ng/mL, initiate ACS protocol"; return an empty array if none. For treatment_recommendations provide evidence-based in-ED treatment interventions for the working diagnosis. For each item: intervention = specific treatment with dose/route/frequency where applicable; indication = clinical indication or threshold; evidence_level = exactly one of "Class I" / "Class IIa" / "Class IIb" / "Class III" / "Expert consensus" per ACC/AHA classification — use "Expert consensus" if unsure; guideline_ref = cite ONLY if highly confident (ACEP Clinical Policy, ACC/AHA, SSC, etc.) — return empty string if uncertain, never fabricate; notes = cautions or contraindications (optional). Prioritize highest-evidence interventions. Do NOT duplicate items already in critical_actions. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies — otherwise return an empty string.
+For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-4 alternative diagnoses ranked by clinical probability. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For recommended_actions return an array of plain-text strings ONLY — each item must be a single complete sentence, NOT a JSON object or structured data. For lab/test recommendations use this exact format: "Test name in Xh — if [result], then [action]". Example: "Repeat troponin at 3h — if delta >0.04 ng/mL, initiate ACS protocol and cardiology consult." Example: "Urinalysis with reflex culture — if positive, initiate antibiotic therapy." Each string must stand alone as readable chart text. Return an empty array if none. Do NOT return objects, do NOT use keys like test_name or indication. For treatment_recommendations provide evidence-based in-ED treatment interventions for the working diagnosis. For each item: intervention = specific treatment with dose/route/frequency where applicable; indication = clinical indication or threshold; evidence_level = exactly one of "Class I" / "Class IIa" / "Class IIb" / "Class III" / "Expert consensus" per ACC/AHA classification — use "Expert consensus" if unsure; guideline_ref = cite ONLY if highly confident (ACEP Clinical Policy, ACC/AHA, SSC, etc.) — return empty string if uncertain, never fabricate; notes = cautions or contraindications (optional). Prioritize highest-evidence interventions. Do NOT duplicate items already in critical_actions. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies — otherwise return an empty string.
 
 Respond ONLY in valid JSON, no markdown fences.`;
 }
@@ -607,7 +606,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
             </h1>
             <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
               color:"var(--qn-txt4)", margin:0 }}>
-              Paste · Cmd+Enter generate MDM · Complete workup · Cmd+Enter disposition · C copy · T template · Alt+H/R/E/L jump
+              Paste · Cmd+Enter generate MDM · Complete workup · Cmd+Enter disposition · C copy · Ctrl+T template · Alt+H/R/E/L jump
             </p>
           </div>
         )}

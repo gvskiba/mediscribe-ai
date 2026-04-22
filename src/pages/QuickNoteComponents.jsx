@@ -83,6 +83,10 @@ export function StepProgress({ phase1Done, phase2Done, p2Open }) {
   );
 }
 
+// ─── ROS / PE TEMPLATES ──────────────────────────────────────────────────────
+
+// ─── CHIEF COMPLAINT CATEGORIES ─────────────────────────────────────────────
+
 // ─── CC PICKER ────────────────────────────────────────────────────────────────
 function CCPicker({ onInsert, onClose }) {
   const [activeCat, setActiveCat] = useState(CC_CATEGORIES[0].id);
@@ -213,6 +217,9 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
 }
 
 // ─── SMARTFILL ────────────────────────────────────────────────────────────────
+// Parses ___ blanks and option/option toggles from template text.
+// For ___ blanks, extracts the word immediately before to look up BLANK_OPTIONS.
+// Returns array: { idx, raw, type:"blank"|"options"|"toggle", options?[], context? }
 function parseTokens(text) {
   const tokens = [];
   const re = /(___|(?<!\w)([a-z][a-z -]*)(?:\/[a-z][a-z -]*)+(?!\w))/gi;
@@ -220,11 +227,17 @@ function parseTokens(text) {
   while ((m = re.exec(text)) !== null) {
     const raw = m[0];
     if (raw === "___") {
+      // Extract word before the blank: look back for last word token
       const before = text.slice(0, m.index).trimEnd();
       const ctxMatch = before.match(/([a-z]+)[^a-z]*$/i);
       const ctx = ctxMatch ? ctxMatch[1].toLowerCase() : null;
       const opts = ctx && BLANK_OPTIONS[ctx] ? BLANK_OPTIONS[ctx] : null;
-      tokens.push({ idx: m.index, raw, type: opts ? "options" : "blank", options: opts, context: ctx });
+      tokens.push({
+        idx: m.index, raw,
+        type: opts ? "options" : "blank",
+        options: opts,
+        context: ctx,
+      });
     } else if (raw.includes("/")) {
       tokens.push({ idx: m.index, raw, type:"toggle", options: raw.split("/") });
     }
@@ -239,7 +252,10 @@ function SmartFillBar({ value, onChange }) {
 
   if (!tokens.length) return null;
 
-  const replaceToken = (raw, replacement) => { onChange(value.replace(raw, replacement)); };
+  const replaceToken = (raw, replacement) => {
+    onChange(value.replace(raw, replacement));
+  };
+
   const handleBlankSubmit = (raw) => {
     if (blankInput.trim()) { replaceToken(raw, blankInput.trim()); }
     setActiveBlank(null); setBlankInput("");
@@ -255,6 +271,8 @@ function SmartFillBar({ value, onChange }) {
 
       {tokens.map((tok, i) => (
         <span key={i} style={{ position:"relative", display:"inline-flex" }}>
+
+          {/* Known-context options — rendered as button row */}
           {tok.type === "options" && (
             <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}>
               {tok.context && (
@@ -268,7 +286,8 @@ function SmartFillBar({ value, onChange }) {
                     style={{ padding:"2px 8px", cursor:"pointer",
                       fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
                       background:"rgba(14,37,68,.7)", border:"none",
-                      borderRight: oi < tok.options.length - 1 ? "1px solid rgba(245,200,66,.2)" : "none",
+                      borderRight: oi < tok.options.length - 1
+                        ? "1px solid rgba(245,200,66,.2)" : "none",
                       color:"var(--qn-gold)", transition:"all .1s" }}
                     onMouseEnter={e => { e.currentTarget.style.background = "rgba(245,200,66,.18)"; e.currentTarget.style.color = "#fff"; }}
                     onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,37,68,.7)"; e.currentTarget.style.color = "var(--qn-gold)"; }}>
@@ -278,6 +297,8 @@ function SmartFillBar({ value, onChange }) {
               </span>
             </span>
           )}
+
+          {/* Toggle options (yes/no, mild/moderate/severe, L/R, etc.) */}
           {tok.type === "toggle" && (
             <span style={{ display:"inline-flex", borderRadius:5, overflow:"hidden",
               border:"1px solid rgba(0,229,192,.3)" }}>
@@ -286,7 +307,8 @@ function SmartFillBar({ value, onChange }) {
                   style={{ padding:"2px 7px", cursor:"pointer",
                     fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
                     background:"rgba(14,37,68,.7)", border:"none",
-                    borderRight: oi < tok.options.length - 1 ? "1px solid rgba(0,229,192,.2)" : "none",
+                    borderRight: oi < tok.options.length - 1
+                      ? "1px solid rgba(0,229,192,.2)" : "none",
                     color:"var(--qn-txt3)", transition:"all .1s" }}
                   onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,229,192,.15)"; e.currentTarget.style.color = "var(--qn-teal)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,37,68,.7)"; e.currentTarget.style.color = "var(--qn-txt3)"; }}>
@@ -295,6 +317,8 @@ function SmartFillBar({ value, onChange }) {
               ))}
             </span>
           )}
+
+          {/* Unrecognized blank — free-text popup (fallback) */}
           {tok.type === "blank" && (
             activeBlank === i ? (
               <span style={{ display:"inline-flex", gap:3 }}>
@@ -308,7 +332,8 @@ function SmartFillBar({ value, onChange }) {
                     background:"rgba(14,37,68,.8)", border:"1px solid rgba(0,229,192,.5)",
                     color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:10,
                     outline:"none" }}
-                  autoFocus placeholder="type + Enter" />
+                  autoFocus
+                  placeholder="type + Enter" />
                 <button onClick={() => handleBlankSubmit(tok.raw)}
                   style={{ padding:"2px 7px", borderRadius:5, cursor:"pointer",
                     fontFamily:"'JetBrains Mono',monospace", fontSize:8,
@@ -325,6 +350,7 @@ function SmartFillBar({ value, onChange }) {
               </button>
             )
           )}
+
         </span>
       ))}
     </div>
@@ -436,7 +462,8 @@ function HubStrip({ catId, label }) {
             onMouseLeave={e => { e.currentTarget.style.background = h.color + "0e"; }}>
             <span style={{ fontSize:13 }}>{h.icon}</span>
             {h.label}
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, opacity:.5 }}>→</span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              opacity:.5 }}>→</span>
           </button>
         ))}
       </div>
@@ -536,7 +563,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
         </div>
       )}
 
-      {/* Treatment Recommendations */}
+      {/* Treatment Recommendations — evidence-based in-ED treatments */}
       {result.treatment_recommendations?.length > 0 && (
         <div style={{ padding:"10px 12px", borderRadius:9, marginBottom:10,
           background:"rgba(8,22,40,.7)", border:"1px solid rgba(42,79,122,.45)" }}>
@@ -544,23 +571,23 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
           <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
             {result.treatment_recommendations.map((t, i) => {
               const evColor =
-                t.evidence_level === "Class I"   ? "var(--qn-green)"  :
-                t.evidence_level === "Class IIa" ? "var(--qn-teal)"   :
-                t.evidence_level === "Class IIb" ? "var(--qn-gold)"   :
-                t.evidence_level === "Class III" ? "var(--qn-coral)"  :
-                                                   "var(--qn-blue)";
+                t.evidence_level === "Class I"         ? "var(--qn-green)"  :
+                t.evidence_level === "Class IIa"       ? "var(--qn-teal)"   :
+                t.evidence_level === "Class IIb"       ? "var(--qn-gold)"   :
+                t.evidence_level === "Class III"       ? "var(--qn-coral)"  :
+                                                         "var(--qn-blue)";
               const evBg =
-                t.evidence_level === "Class I"   ? "rgba(61,255,160,.08)"  :
-                t.evidence_level === "Class IIa" ? "rgba(0,229,192,.06)"   :
-                t.evidence_level === "Class IIb" ? "rgba(245,200,66,.07)"  :
-                t.evidence_level === "Class III" ? "rgba(255,107,107,.07)" :
-                                                   "rgba(59,158,255,.06)";
+                t.evidence_level === "Class I"         ? "rgba(61,255,160,.08)"   :
+                t.evidence_level === "Class IIa"       ? "rgba(0,229,192,.06)"    :
+                t.evidence_level === "Class IIb"       ? "rgba(245,200,66,.07)"   :
+                t.evidence_level === "Class III"       ? "rgba(255,107,107,.07)"  :
+                                                         "rgba(59,158,255,.06)";
               const evBd =
-                t.evidence_level === "Class I"   ? "rgba(61,255,160,.3)"   :
-                t.evidence_level === "Class IIa" ? "rgba(0,229,192,.28)"   :
-                t.evidence_level === "Class IIb" ? "rgba(245,200,66,.3)"   :
-                t.evidence_level === "Class III" ? "rgba(255,107,107,.3)"  :
-                                                   "rgba(59,158,255,.28)";
+                t.evidence_level === "Class I"         ? "rgba(61,255,160,.3)"    :
+                t.evidence_level === "Class IIa"       ? "rgba(0,229,192,.28)"    :
+                t.evidence_level === "Class IIb"       ? "rgba(245,200,66,.3)"    :
+                t.evidence_level === "Class III"       ? "rgba(255,107,107,.3)"   :
+                                                         "rgba(59,158,255,.28)";
               return (
                 <div key={i} style={{ padding:"8px 10px", borderRadius:8,
                   background:evBg, border:`1px solid ${evBd}` }}>
@@ -603,7 +630,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
         </div>
       )}
 
-      {/* Recommended Actions */}
+      {/* Recommended Actions — this-visit tier */}
       {result.recommended_actions?.length > 0 && (
         <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:10,
           background:"rgba(59,158,255,.06)", border:"1px solid rgba(59,158,255,.28)" }}>
@@ -676,7 +703,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
         </div>
       )}
 
-      {/* Related Hubs */}
+      {/* Related Hubs — derived from working diagnosis */}
       {(() => {
         const dx = (result.working_diagnosis || "").toLowerCase();
         const catId =
@@ -692,7 +719,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
   );
 }
 
-// ─── LAB/RESULT FLAGS CARD ───────────────────────────────────────────────────
+// ─── LAB FLAGS CARD ──────────────────────────────────────────────────────────
 function labFlagColor(status) {
   const s = (status || "").toLowerCase();
   if (s === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)"];
@@ -714,7 +741,8 @@ function LabFlagsCard({ flags }) {
           return (
             <div key={i} style={{ padding:"8px 10px", borderRadius:8,
               background:bg, border:`1px solid ${bd}` }}>
-              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4, flexWrap:"wrap" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4,
+                flexWrap:"wrap" }}>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700,
                   fontSize:11, color:c }}>{f.parameter}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
@@ -752,10 +780,10 @@ function LabFlagsCard({ flags }) {
 
 // ─── DISPOSITION RESULT DISPLAY ───────────────────────────────────────────────
 export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
+  if (!result) return null;
   const [copiedReeval, setCopiedReeval] = useState(false);
   const [copiedPlan,   setCopiedPlan]   = useState(false);
   const [copiedOrders, setCopiedOrders] = useState(false);
-  if (!result) return null;
   const copyWith = (text, setter) => {
     navigator.clipboard.writeText(text).then(() => {
       setter(true); setTimeout(() => setter(false), 2000);
@@ -830,9 +858,10 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
         </div>
       )}
 
+      {/* Lab & Imaging Flags */}
       <LabFlagsCard flags={result.result_flags} />
 
-      {/* Reevaluation note */}
+      {/* Reevaluation note — full width */}
       {result.reevaluation_note && (
         <div className="qn-card" style={{ marginBottom:10 }}>
           <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
@@ -856,7 +885,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
         </div>
       )}
 
-      {/* Plan */}
+      {/* Plan — full width */}
       {result.plan_summary && (
         <div className="qn-card" style={{ marginBottom:10 }}>
           <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
@@ -909,7 +938,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
         </div>
       )}
 
-      {/* Discharge instructions */}
+      {/* Discharge instructions — only if truly discharged */}
       {!isAdmit && di && (
         <div style={{ padding:"12px 14px", borderRadius:12, marginTop:4,
           background:"rgba(61,255,160,.04)", border:"1px solid rgba(61,255,160,.25)" }}>
@@ -942,7 +971,9 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
             <div style={{ marginBottom:10, padding:"8px 10px", borderRadius:8,
               background:"rgba(61,255,160,.05)", border:"1px solid rgba(61,255,160,.15)" }}>
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-                color:"var(--qn-green)", letterSpacing:.8, marginBottom:4 }}>WHAT YOU HAVE</div>
+                color:"var(--qn-green)", letterSpacing:.8, marginBottom:4 }}>
+                WHAT YOU HAVE
+              </div>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
                 color:"var(--qn-txt2)", lineHeight:1.7 }}>{di.diagnosis_explanation}</div>
             </div>
@@ -1027,7 +1058,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
         </div>
       )}
 
-      {/* Disposition rationale */}
+      {/* Disposition rationale — all dispositions */}
       {result.disposition_rationale && (
         <div className="qn-card" style={{ marginBottom:10 }}>
           <SectionLabel>Disposition Rationale</SectionLabel>

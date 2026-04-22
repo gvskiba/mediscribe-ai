@@ -1,7 +1,19 @@
-// QuickNote.jsx  v1
+// QuickNote.jsx  v4
 // Two-phase ED documentation: Phase 1 -> MDM | Phase 2 -> Reevaluation, Plan, Disposition, Discharge Rx
 // Grounded in AMA/CMS 2023 E&M MDM table + ACEP Clinical Policy guidelines
 // Keyboard: Tab advances zones | Cmd+Enter fires active phase | C copies full note | P print
+//
+// v4 fixes:
+//   1.  Version strings updated to v4
+//   2.  SectionLabel accepts optional style prop — copy button rows no longer misaligned
+//   3.  confirmClear reset when Re-run MDM is clicked — no phantom confirm dialog
+//   4.  buildFullNote discharge exclusion covers Observation + Transfer
+//   5.  p1Busy blocks Phase 2 button during active MDM generation
+//   6.  Disposition prompt includes red_flags + critical_actions from MDM result
+//   7.  Obs/Transfer explicitly excluded from discharge instructions in prompt
+//   8.  Schema array constraints (minItems/maxItems) + discharge_instructions required sub-fields
+//   9.  Per-card copy buttons show feedback state (✓ Copied)
+//  10.  Phase 2 Labs field auto-focuses when Phase 2 opens
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
@@ -77,6 +89,7 @@ const SYS_BIAS = `COGNITIVE BIAS PREVENTION — apply before generating output:
 
 const MDM_SCHEMA = {
   type: "object",
+  required: ["mdm_level", "mdm_narrative", "working_diagnosis", "differential", "risk_tier"],
   properties: {
     problem_complexity:    { type: "string" },
     data_complexity:       { type: "string" },
@@ -84,9 +97,9 @@ const MDM_SCHEMA = {
     mdm_level:             { type: "string" },
     mdm_narrative:         { type: "string" },
     working_diagnosis:     { type: "string" },
-    differential:          { type: "array", items: { type: "string" } },
-    red_flags:             { type: "array", items: { type: "string" } },
-    critical_actions:      { type: "array", items: { type: "string" } },
+    differential:          { type: "array", items: { type: "string" }, minItems: 2, maxItems: 4 },
+    red_flags:             { type: "array", items: { type: "string" }, maxItems: 6 },
+    critical_actions:      { type: "array", items: { type: "string" }, maxItems: 5 },
     data_reviewed:         { type: "string" },
     risk_rationale:        { type: "string" },
     acep_policy_ref:       { type: "string" },
@@ -95,6 +108,7 @@ const MDM_SCHEMA = {
 
 const DISP_SCHEMA = {
   type: "object",
+  required: ["disposition", "reevaluation_note", "final_diagnosis", "updated_impression", "plan_summary"],
   properties: {
     reevaluation_note:       { type: "string" },
     treatment_response:      { type: "string" },
@@ -104,15 +118,16 @@ const DISP_SCHEMA = {
     disposition_rationale:   { type: "string" },
     admission_service:       { type: "string" },
     plan_summary:            { type: "string" },
-    orders:                  { type: "array", items: { type: "string" } },
+    orders:                  { type: "array", items: { type: "string" }, maxItems: 12 },
     discharge_instructions: {
       type: "object",
+      required: ["diagnosis_explanation", "return_precautions", "followup"],
       properties: {
         diagnosis_explanation: { type: "string" },
-        medications:           { type: "array", items: { type: "string" } },
+        medications:           { type: "array", items: { type: "string" }, maxItems: 8 },
         activity:              { type: "string" },
         diet:                  { type: "string" },
-        return_precautions:    { type: "array", items: { type: "string" } },
+        return_precautions:    { type: "array", items: { type: "string" }, minItems: 5, maxItems: 5 },
         followup:              { type: "string" },
         acep_policy_ref:       { type: "string" },
       },
@@ -140,15 +155,21 @@ HPI: ${hpi || "Not provided"}
 ROS: ${ros || "Not provided"}
 Physical Exam: ${exam || "Not provided"}
 
-Generate the MDM assessment. For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one applies (chest pain, headache, syncope, dyspnea, fever, abdominal pain, etc.) — otherwise leave blank.
+Generate the MDM assessment. For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-4 alternative diagnoses ranked by clinical probability. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies (chest pain, headache, syncope, dyspnea, fever, abdominal pain, etc.) — otherwise return an empty string.
 
 Respond ONLY in valid JSON, no markdown fences.`;
 }
 
-function buildDispPrompt(mdmResult, labs, imaging, newVitals, cc) {
+function buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam) {
   const mdmSummary = mdmResult
     ? `Working Dx: ${mdmResult.working_diagnosis || "?"}  |  MDM Level: ${mdmResult.mdm_level || "?"}  |  Risk: ${mdmResult.risk_tier || "?"}`
     : "Not available";
+  const redFlags = mdmResult?.red_flags?.length
+    ? `Red Flags: ${mdmResult.red_flags.join("; ")}`
+    : "";
+  const critActions = mdmResult?.critical_actions?.length
+    ? `Critical Actions: ${mdmResult.critical_actions.join("; ")}`
+    : "";
   return `${SYS_BIAS}
 
 You are a board-certified emergency physician generating the ED reevaluation, disposition decision, and discharge instructions for a patient after workup is complete.
@@ -161,7 +182,13 @@ ACEP GUIDANCE ON DISPOSITION:
 
 ORIGINAL PRESENTATION:
 Chief Complaint: ${cc || "Not provided"}
-Prior MDM Summary: ${mdmSummary}
+Triage Vitals: ${vitals || "Not provided"}
+HPI: ${hpi || "Not provided"}
+ROS: ${ros || "Not provided"}
+Physical Exam: ${exam || "Not provided"}
+
+PHASE 1 MDM SUMMARY:
+${mdmSummary}${redFlags ? "\n" + redFlags : ""}${critActions ? "\n" + critActions : ""}
 
 WORKUP RESULTS:
 Labs: ${labs || "Not provided / not ordered"}
@@ -170,15 +197,16 @@ Re-check Vitals: ${newVitals || "Not documented"}
 
 INSTRUCTIONS:
 - reevaluation_note: 2-3 sentence clinical reevaluation note suitable for EMR charting, describing interval change and response to treatment
+- updated_impression: one concise sentence updating the clinical impression based on workup findings
 - treatment_response: brief phrase (e.g. "Improved with IVF and antiemetics", "No significant change", "Worsening")
 - disposition: one of "Discharge" / "Discharge with precautions" / "Observation" / "Admit" / "Admit to ICU" / "Transfer"
 - disposition_rationale: 1-2 sentences clinical justification referencing specific findings
 - plan_summary: 2-3 sentence overall plan narrative
-- orders: array of specific discharge or admission orders as brief action items
+- orders: array of specific discharge or admission orders as brief action items (max 12)
 - discharge_instructions.diagnosis_explanation: plain-language explanation for patient (2-3 sentences)
 - discharge_instructions.return_precautions: exactly 5 specific, actionable return precautions per ACEP standard (fever, worsening, new symptoms, medication issues, follow-up failure)
-- discharge_instructions.acep_policy_ref: reference applicable ACEP Clinical Policy if one exists, else blank
-- For admitted patients, populate admission_service and leave discharge_instructions fields as empty strings/arrays
+- discharge_instructions.acep_policy_ref: reference applicable ACEP Clinical Policy if one exists, else empty string
+- For Admit, Admit to ICU, Observation, and Transfer dispositions: populate admission_service and return discharge_instructions with all fields as empty strings or empty arrays
 
 Respond ONLY in valid JSON, no markdown fences.`;
 }
@@ -197,23 +225,70 @@ function mdmLevelColor(level) {
 function dispColor(disp) {
   if (!disp) return "#6b9ec8";
   const d = disp.toLowerCase();
-  if (d.includes("icu"))       return "#ff4444";
-  if (d.includes("admit"))     return "#ff6b6b";
-  if (d.includes("obs"))       return "#ff9f43";
-  if (d.includes("transfer"))  return "#9b6dff";
+  if (d.includes("icu"))        return "#ff4444";
+  if (d.includes("admit"))      return "#ff6b6b";
+  if (d.includes("obs"))        return "#ff9f43";
+  if (d.includes("transfer"))   return "#9b6dff";
+  if (d.includes("precaution")) return "#f5c842";
   return "#3dffa0";
 }
 
-function SectionLabel({ children, color }) {
+function SectionLabel({ children, color, style: extraStyle }) {
   return (
-    <div className="qn-section-lbl" style={color ? { color } : {}}>
+    <div className="qn-section-lbl"
+      style={{ ...(color ? { color } : {}), ...(extraStyle || {}) }}>
       {children}
     </div>
   );
 }
 
+// ─── STEP PROGRESS ────────────────────────────────────────────────────────────
+function StepProgress({ phase1Done, phase2Done, p2Open }) {
+  const steps = [
+    { n:1, label:"Initial Assessment", sub:"CC · Vitals · HPI · ROS · Exam", done:phase1Done },
+    { n:2, label:"Workup & Disposition", sub:"Labs · Imaging · Recheck Vitals", done:phase2Done },
+  ];
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:14,
+      padding:"10px 14px", borderRadius:10,
+      background:"rgba(8,22,40,.6)", border:"1px solid rgba(42,79,122,.3)" }}
+      className="no-print">
+      {steps.map((step, i) => {
+        const isActive = step.n === 1 ? !phase1Done : p2Open;
+        const color = step.done ? "var(--qn-green)" : isActive ? "var(--qn-teal)" : "var(--qn-txt4)";
+        return (
+          <div key={step.n} style={{ display:"flex", alignItems:"center", flex: i === 0 ? "0 0 auto" : 1 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:26, height:26, borderRadius:"50%", flexShrink:0,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                background: step.done ? "rgba(61,255,160,.15)" : isActive ? "rgba(0,229,192,.12)" : "rgba(42,79,122,.2)",
+                border:`1.5px solid ${step.done ? "rgba(61,255,160,.5)" : isActive ? "rgba(0,229,192,.4)" : "rgba(42,79,122,.4)"}`,
+                fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, color }}>
+                {step.done ? "✓" : step.n}
+              </div>
+              <div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                  fontSize:12, color, lineHeight:1.2 }}>{step.label}</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-txt4)", letterSpacing:.5 }}>{step.sub}</div>
+              </div>
+            </div>
+            {i === 0 && (
+              <div style={{ flex:1, height:1.5, margin:"0 14px",
+                background: phase1Done
+                  ? "linear-gradient(90deg,rgba(61,255,160,.5),rgba(0,229,192,.3))"
+                  : "rgba(42,79,122,.3)",
+                borderRadius:1, minWidth:24 }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── INPUT ZONE ───────────────────────────────────────────────────────────────
-function InputZone({ label, value, onChange, placeholder, rows, phase, onRef, onKeyDown }) {
+function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown }) {
   const inputRef = useRef();
   useEffect(() => { if (onRef) onRef(inputRef); }, []);
   const phaseClass = phase === 1 ? " active-phase" : phase === 2 ? " p2-active" : "";
@@ -223,6 +298,7 @@ function InputZone({ label, value, onChange, placeholder, rows, phase, onRef, on
       <textarea
         ref={inputRef}
         className={`qn-ta${phaseClass}`}
+        data-phase={phase || 1}
         rows={rows || 4}
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -234,7 +310,7 @@ function InputZone({ label, value, onChange, placeholder, rows, phase, onRef, on
 }
 
 // ─── MDM RESULT DISPLAY ───────────────────────────────────────────────────────
-function MDMResult({ result }) {
+function MDMResult({ result, copiedMDM, setCopiedMDM }) {
   if (!result) return null;
   const lc = mdmLevelColor(result.mdm_level);
   return (
@@ -328,7 +404,23 @@ function MDMResult({ result }) {
       {/* MDM Narrative */}
       {result.mdm_narrative && (
         <div className="qn-card" style={{ marginBottom:10 }}>
-          <SectionLabel color="var(--qn-purple)">MDM Narrative — Chart-Ready</SectionLabel>
+          <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+            <SectionLabel color="var(--qn-purple)" style={{ marginBottom:0 }}>MDM Narrative — Chart-Ready</SectionLabel>
+            <div style={{ flex:1 }} />
+            <button onClick={() => {
+              navigator.clipboard.writeText(result.mdm_narrative);
+              setCopiedMDM(true);
+              setTimeout(() => setCopiedMDM(false), 2000);
+            }}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedMDM ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.35)"}`,
+                background:copiedMDM ? "rgba(61,255,160,.1)" : "rgba(155,109,255,.08)",
+                color:copiedMDM ? "var(--qn-green)" : "var(--qn-purple)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedMDM ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
             color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
             {result.mdm_narrative}
@@ -370,11 +462,12 @@ function MDMResult({ result }) {
 }
 
 // ─── DISPOSITION RESULT DISPLAY ───────────────────────────────────────────────
-function DispositionResult({ result }) {
+function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
   if (!result) return null;
   const dc = dispColor(result.disposition);
   const isAdmit = result.disposition?.toLowerCase().includes("admit") ||
-                  result.disposition?.toLowerCase().includes("icu") ||
+                  result.disposition?.toLowerCase().includes("icu")   ||
+                  result.disposition?.toLowerCase().includes("obs")   ||
                   result.disposition?.toLowerCase().includes("transfer");
   const di = result.discharge_instructions;
 
@@ -427,27 +520,38 @@ function DispositionResult({ result }) {
         </div>
       )}
 
-      {/* Updated impression + Reevaluation note */}
-      {(result.updated_impression || result.reevaluation_note) && (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
-          {result.reevaluation_note && (
-            <div className="qn-card">
-              <SectionLabel color="var(--qn-blue)">ED Reevaluation — Chart-Ready</SectionLabel>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
-                {result.reevaluation_note}
-              </div>
-            </div>
-          )}
-          {result.plan_summary && (
-            <div className="qn-card">
-              <SectionLabel color="var(--qn-purple)">Plan — Chart-Ready</SectionLabel>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
-                {result.plan_summary}
-              </div>
-            </div>
-          )}
+      {/* Updated impression */}
+      {result.updated_impression && (
+        <div style={{ padding:"8px 12px", borderRadius:8, marginBottom:10,
+          background:"rgba(0,229,192,.06)", border:"1px solid rgba(0,229,192,.2)",
+          display:"flex", alignItems:"flex-start", gap:8 }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+            color:"var(--qn-teal)", letterSpacing:1, textTransform:"uppercase",
+            flexShrink:0, marginTop:1 }}>Updated:</span>
+          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+            color:"var(--qn-txt2)", lineHeight:1.6 }}>{result.updated_impression}</span>
+        </div>
+      )}
+
+      {/* Reevaluation note — full width */}
+      {result.reevaluation_note && (
+        <div className="qn-card" style={{ marginBottom:10 }}>
+          <SectionLabel color="var(--qn-blue)">ED Reevaluation — Chart-Ready</SectionLabel>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+            color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
+            {result.reevaluation_note}
+          </div>
+        </div>
+      )}
+
+      {/* Plan — full width */}
+      {result.plan_summary && (
+        <div className="qn-card" style={{ marginBottom:10 }}>
+          <SectionLabel color="var(--qn-purple)">Plan — Chart-Ready</SectionLabel>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+            color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
+            {result.plan_summary}
+          </div>
         </div>
       )}
 
@@ -469,11 +573,34 @@ function DispositionResult({ result }) {
         </div>
       )}
 
-      {/* Discharge instructions — only if discharged */}
+      {/* Discharge instructions — only if truly discharged */}
       {!isAdmit && di && (
         <div style={{ padding:"12px 14px", borderRadius:12, marginTop:4,
           background:"rgba(61,255,160,.04)", border:"1px solid rgba(61,255,160,.25)" }}>
-          <SectionLabel color="var(--qn-green)">Discharge Instructions</SectionLabel>
+          <div style={{ display:"flex", alignItems:"center", marginBottom:8 }}>
+            <SectionLabel color="var(--qn-green)" style={{ marginBottom:0 }}>Discharge Instructions</SectionLabel>
+            <div style={{ flex:1 }} />
+            <button onClick={() => {
+              const lines = [];
+              if (di.diagnosis_explanation) lines.push(di.diagnosis_explanation);
+              if (di.medications?.length) { lines.push(""); lines.push("Medications:"); di.medications.forEach(m => lines.push("  - " + m)); }
+              if (di.activity) lines.push("Activity: " + di.activity);
+              if (di.diet)     lines.push("Diet: " + di.diet);
+              if (di.return_precautions?.length) { lines.push(""); lines.push("Return to ED if:"); di.return_precautions.forEach(r => lines.push("  ! " + r)); }
+              if (di.followup) lines.push("Follow-up: " + di.followup);
+              navigator.clipboard.writeText(lines.join("\n"));
+              setCopiedDisch(true);
+              setTimeout(() => setCopiedDisch(false), 2000);
+            }}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedDisch ? "rgba(61,255,160,.7)" : "rgba(61,255,160,.35)"}`,
+                background:copiedDisch ? "rgba(61,255,160,.2)" : "rgba(61,255,160,.08)",
+                color:"var(--qn-green)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedDisch ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
 
           {di.diagnosis_explanation && (
             <div style={{ marginBottom:10, padding:"8px 10px", borderRadius:8,
@@ -566,9 +693,9 @@ function DispositionResult({ result }) {
         </div>
       )}
 
-      {/* Admit disposition rationale */}
-      {isAdmit && result.disposition_rationale && (
-        <div className="qn-card" style={{ marginTop:8 }}>
+      {/* Disposition rationale — all dispositions */}
+      {result.disposition_rationale && (
+        <div className="qn-card" style={{ marginBottom:10 }}>
           <SectionLabel>Disposition Rationale</SectionLabel>
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
             color:"var(--qn-txt2)", lineHeight:1.7 }}>{result.disposition_rationale}</div>
@@ -579,9 +706,20 @@ function DispositionResult({ result }) {
 }
 
 // ─── COPY-TO-CHART BUILDER ────────────────────────────────────────────────────
-function buildFullNote(p1, mdm, p2, disp, cc) {
+function buildFullNote(p1, mdm, p2, disp) {
   const ts = new Date().toLocaleString();
+  const cc = p1.cc || "";
   const lines = [`ED QUICK NOTE — ${ts}`, `Chief Complaint: ${cc || "—"}`, ""];
+
+  // ── Raw clinical inputs ──
+  if (p1.vitals) lines.push(`Vitals: ${p1.vitals}`);
+  if (p1.hpi)    { lines.push(""); lines.push("HPI:"); lines.push(p1.hpi); }
+  if (p1.ros)    { lines.push(""); lines.push("ROS:"); lines.push(p1.ros); }
+  if (p1.exam)   { lines.push(""); lines.push("Physical Exam:"); lines.push(p1.exam); }
+  if (p2?.labs)      { lines.push(""); lines.push(`Labs: ${p2.labs}`); }
+  if (p2?.imaging)   { lines.push(`Imaging: ${p2.imaging}`); }
+  if (p2?.newVitals) { lines.push(`Recheck Vitals: ${p2.newVitals}`); }
+  lines.push("");
 
   if (mdm) {
     lines.push(`=== MEDICAL DECISION MAKING ===`);
@@ -618,7 +756,9 @@ function buildFullNote(p1, mdm, p2, disp, cc) {
       disp.orders.forEach(o => lines.push(`  - ${o}`));
     }
     const di = disp.discharge_instructions;
-    if (di && !disp.disposition?.toLowerCase().includes("admit")) {
+    const dispLower = disp.disposition?.toLowerCase() || "";
+    const isDischargedNote = !["admit", "icu", "obs", "transfer"].some(w => dispLower.includes(w));
+    if (di && isDischargedNote) {
       lines.push(`\n=== DISCHARGE INSTRUCTIONS ===`);
       if (di.diagnosis_explanation) lines.push(di.diagnosis_explanation);
       if (di.medications?.length) {
@@ -644,9 +784,17 @@ function buildFullNote(p1, mdm, p2, disp, cc) {
 export default function QuickNote({ embedded = false, demo, vitals: initVitals, cc: initCC }) {
   // Phase 1 inputs
   const [cc,     setCC]     = useState(initCC?.text || "");
-  const [vitals, setVitals] = useState(
-    initVitals ? `HR ${initVitals.hr || "—"} BP ${initVitals.bp || "—"} RR ${initVitals.rr || "—"} SpO2 ${initVitals.spo2 || "—"}% T ${initVitals.temp || "—"}` : ""
-  );
+  const [vitals, setVitals] = useState(() => {
+    if (!initVitals) return "";
+    const parts = [
+      initVitals.hr   ? `HR ${initVitals.hr}`          : null,
+      initVitals.bp   ? `BP ${initVitals.bp}`          : null,
+      initVitals.rr   ? `RR ${initVitals.rr}`          : null,
+      initVitals.spo2 ? `SpO2 ${initVitals.spo2}%`     : null,
+      initVitals.temp ? `T ${initVitals.temp}`          : null,
+    ].filter(Boolean);
+    return parts.join("  ");
+  });
   const [hpi,    setHpi]    = useState("");
   const [ros,    setRos]    = useState("");
   const [exam,   setExam]   = useState("");
@@ -667,8 +815,12 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [p2Error,  setP2Error]  = useState(null);
   const [copied,   setCopied]   = useState(false);
   const [p2Open,   setP2Open]   = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [copiedMDM,    setCopiedMDM]    = useState(false);
+  const [copiedDisch,  setCopiedDisch]  = useState(false);
 
   const phase1Ready = Boolean(cc.trim() || hpi.trim() || exam.trim());
+  const phase2Ready = Boolean(mdmResult && (labs.trim() || imaging.trim() || newVitals.trim()));
 
   // Refs for Tab navigation
   const fieldRefs = useRef([]);
@@ -708,7 +860,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     setDispResult(null);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildDispPrompt(mdmResult, labs, imaging, newVitals, cc),
+        prompt: buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam),
         response_json_schema: DISP_SCHEMA,
       });
       setDispResult(res);
@@ -717,7 +869,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     } finally {
       setP2Busy(false);
     }
-  }, [mdmResult, labs, imaging, newVitals, cc, p2Busy]);
+  }, [mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, p2Busy]);
 
   // Copy full note
   const copyNote = useCallback(() => {
@@ -725,8 +877,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       { cc, vitals, hpi, ros, exam },
       mdmResult,
       { labs, imaging, newVitals },
-      dispResult,
-      cc
+      dispResult
     );
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -740,10 +891,11 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       const tag = document.activeElement?.tagName?.toLowerCase();
       const inInput = tag === "textarea" || tag === "input";
 
-      // Cmd/Ctrl+Enter — fire active phase
+      // Cmd/Ctrl+Enter — fire correct phase based on which textarea has focus
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
-        if (p2Open && (labs.trim() || imaging.trim() || newVitals.trim())) {
+        const activePhase = parseInt(document.activeElement?.dataset?.phase || "1");
+        if (p2Open && activePhase === 2) {
           runDisposition();
         } else {
           runMDM();
@@ -765,7 +917,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, [p2Open, labs, imaging, newVitals, mdmResult, dispResult, runMDM, runDisposition, copyNote]);
+  }, [p2Open, mdmResult, dispResult, runMDM, runDisposition, copyNote]);
 
   const makeKeyDown = useCallback((idx, isLast, onEnterSubmit) => (e) => {
     if (e.key === "Tab" && !e.shiftKey) {
@@ -778,6 +930,12 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     }
   }, [advanceFocus]);
 
+  // Auto-focus Labs when Phase 2 opens
+  useEffect(() => {
+    if (p2Open) {
+      setTimeout(() => { fieldRefs.current[5]?.current?.focus(); }, 80);
+    }
+  }, [p2Open]);
   const isFatigueRisk = useMemo(() => { const h = new Date().getHours(); return h >= 17 || h <= 7; }, []);
   const [fatigueDismissed, setFatigueDismissed] = useState(false);
 
@@ -831,12 +989,48 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
             className="no-print">
             <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
               fontSize:15, color:"var(--qn-teal)" }}>QuickNote</span>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
               color:"var(--qn-txt4)", letterSpacing:1.5, textTransform:"uppercase",
               background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.25)",
               borderRadius:4, padding:"2px 7px" }}>
-              MDM · Disposition · Discharge Rx · v1
+              MDM · Disposition · Discharge Rx · v4
             </span>
+          </div>
+        )}
+
+        {/* Patient banner — shown when demo context passed from NPI */}
+        {demo && (demo.firstName || demo.lastName || demo.age) && (
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10,
+            padding:"8px 13px", borderRadius:9,
+            background:"rgba(22,45,79,.5)", border:"1px solid rgba(42,79,122,.45)" }}
+            className="no-print">
+            <span style={{ fontSize:13, flexShrink:0 }}>👤</span>
+            <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", flex:1 }}>
+              {(demo.firstName || demo.lastName) && (
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+                  fontSize:13, color:"var(--qn-txt)" }}>
+                  {[demo.firstName, demo.lastName].filter(Boolean).join(" ")}
+                </span>
+              )}
+              {demo.age && (
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                  color:"var(--qn-txt3)" }}>
+                  {demo.age}yo{demo.sex ? " " + demo.sex : ""}
+                </span>
+              )}
+              {demo.dob && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  color:"var(--qn-txt4)", letterSpacing:.3 }}>DOB {demo.dob}</span>
+              )}
+              {demo.mrn && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  color:"var(--qn-txt4)", letterSpacing:.3 }}>MRN {demo.mrn}</span>
+              )}
+            </div>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase",
+              background:"rgba(0,229,192,.08)", border:"1px solid rgba(0,229,192,.2)",
+              borderRadius:4, padding:"2px 7px", flexShrink:0 }}>From NPI</span>
           </div>
         )}
 
@@ -856,6 +1050,13 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
                 fontSize:11, padding:"0 4px" }}>✕</button>
           </div>
         )}
+
+        {/* Step progress */}
+        <StepProgress
+          phase1Done={Boolean(mdmResult)}
+          phase2Done={Boolean(dispResult)}
+          p2Open={p2Open}
+        />
 
         {/* ── PHASE 1 ─────────────────────────────────────────────────────── */}
         <div style={{ marginBottom:14,
@@ -967,12 +1168,21 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
             <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:14 }}>
               <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
                 fontSize:15, color:"var(--qn-teal)" }}>Medical Decision Making</span>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                 color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase",
                 background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.2)",
                 borderRadius:4, padding:"2px 7px" }}>AMA/CMS 2023 · ACEP</span>
+              <div style={{ flex:1 }} />
+              <button onClick={() => { setMdmResult(null); setDispResult(null); setP2Open(false); setConfirmClear(false); }}
+                style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                  border:"1px solid rgba(245,200,66,.35)",
+                  background:"rgba(245,200,66,.07)", color:"var(--qn-gold)",
+                  transition:"all .15s" }}>
+                ↩ Re-run MDM
+              </button>
             </div>
-            <MDMResult result={mdmResult} />
+            <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM} />
           </div>
         )}
 
@@ -992,7 +1202,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
               <div>
                 <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
                   fontSize:15, color:"var(--qn-blue)" }}>
-                  Workup &amp; Disposition
+                  Workup & Disposition
                 </div>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                   color:"var(--qn-txt4)", letterSpacing:.8 }}>
@@ -1038,15 +1248,26 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
                 onKeyDown={makeKeyDown(7, true, runDisposition)} />
             </div>
 
+            {/* Workup warning — shown when MDM done but no workup data yet */}
+            {!phase2Ready && mdmResult && (
+              <div style={{ marginBottom:12, padding:"7px 11px", borderRadius:8,
+                background:"rgba(245,200,66,.07)", border:"1px solid rgba(245,200,66,.3)",
+                fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-gold)",
+                display:"flex", alignItems:"center", gap:7 }}>
+                <span style={{ flexShrink:0 }}>⚠</span>
+                No workup data entered. Enter at least one result above for a workup-informed disposition, or generate now for a clinical-impression-only assessment.
+              </div>
+            )}
+
             {/* Generate disposition button */}
             <button className="qn-btn" onClick={runDisposition}
-              disabled={p2Busy || !mdmResult}
+              disabled={p2Busy || !mdmResult || p1Busy}
               style={{ width:"100%",
-                border:`1px solid ${p2Busy ? "rgba(42,79,122,.3)" : "rgba(59,158,255,.5)"}`,
-                background:p2Busy
+                border:`1px solid ${p2Busy || p1Busy ? "rgba(42,79,122,.3)" : "rgba(59,158,255,.5)"}`,
+                background:p2Busy || p1Busy
                   ? "rgba(14,37,68,.5)"
                   : "linear-gradient(135deg,rgba(59,158,255,.15),rgba(59,158,255,.04))",
-                color:p2Busy ? "var(--qn-txt4)" : "var(--qn-blue)" }}>
+                color:p2Busy || p1Busy ? "var(--qn-txt4)" : "var(--qn-blue)" }}>
               {p2Busy ? (
                 <>
                   <span className="qn-busy-dot">●</span>
@@ -1079,12 +1300,12 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
                 fontSize:15, color:dispColor(dispResult.disposition) }}>
                 Reevaluation &amp; Disposition
               </span>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                 color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase",
                 background:"rgba(59,158,255,.1)", border:"1px solid rgba(59,158,255,.2)",
                 borderRadius:4, padding:"2px 7px" }}>ACEP Guidelines</span>
             </div>
-            <DispositionResult result={dispResult} />
+            <DispositionResult result={dispResult} copiedDisch={copiedDisch} setCopiedDisch={setCopiedDisch} />
           </div>
         )}
 
@@ -1110,21 +1331,41 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
                 color:"var(--qn-txt3)", transition:"all .15s" }}>
               Print / Export
             </button>
-            <button onClick={() => {
-              setCC(""); setVitals(""); setHpi(""); setRos(""); setExam("");
-              setLabs(""); setImaging(""); setNewVitals("");
-              setMdmResult(null); setDispResult(null);
-              setP1Error(null); setP2Error(null); setP2Open(false);
-            }}
-              style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
-                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                border:"1px solid rgba(255,107,107,.3)", background:"rgba(14,37,68,.6)",
-                color:"var(--qn-coral)", transition:"all .15s" }}>
-              New Encounter
-            </button>
+            {!confirmClear ? (
+              <button onClick={() => setConfirmClear(true)}
+                style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                  border:"1px solid rgba(255,107,107,.3)", background:"rgba(14,37,68,.6)",
+                  color:"var(--qn-coral)", transition:"all .15s" }}>
+                New Encounter
+              </button>
+            ) : (
+              <div style={{ display:"flex", alignItems:"center", gap:6,
+                padding:"5px 10px", borderRadius:7,
+                background:"rgba(255,68,68,.1)", border:"1px solid rgba(255,68,68,.4)" }}>
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                  color:"var(--qn-coral)" }}>Clear all data?</span>
+                <button onClick={() => {
+                  setCC(""); setVitals(""); setHpi(""); setRos(""); setExam("");
+                  setLabs(""); setImaging(""); setNewVitals("");
+                  setMdmResult(null); setDispResult(null);
+                  setP1Error(null); setP2Error(null); setP2Open(false);
+                  setConfirmClear(false);
+                }}
+                  style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:11,
+                    border:"1px solid rgba(255,68,68,.5)", background:"rgba(255,68,68,.2)",
+                    color:"var(--qn-red)" }}>Yes, clear</button>
+                <button onClick={() => setConfirmClear(false)}
+                  style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                    border:"1px solid rgba(42,79,122,.4)", background:"rgba(14,37,68,.6)",
+                    color:"var(--qn-txt4)" }}>Cancel</button>
+              </div>
+            )}
             <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"flex-end",
               gap:8 }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                 color:"var(--qn-txt4)", letterSpacing:.5 }}>
                 C copy · P print
               </span>
@@ -1135,9 +1376,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         {/* Footer */}
         {!embedded && (
           <div style={{ textAlign:"center", padding:"24px 0 8px",
-            fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+            fontFamily:"'JetBrains Mono',monospace", fontSize:8,
             color:"var(--qn-txt4)", letterSpacing:1.5 }} className="no-print">
-            NOTRYA QUICKNOTE v1 · AMA/CMS 2023 E&amp;M · ACEP CLINICAL POLICY ALIGNED ·
+            NOTRYA QUICKNOTE v4 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}

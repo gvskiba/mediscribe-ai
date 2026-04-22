@@ -116,7 +116,7 @@ const DISP_SCHEMA = {
     admission_service:       { type: "string" },
     plan_summary:            { type: "string" },
     orders:                  { type: "array", items: { type: "string" }, maxItems: 12 },
-    lab_flags: {
+    result_flags: {
       type: "array",
       maxItems: 16,
       items: {
@@ -217,14 +217,14 @@ Imaging: ${imaging || "Not provided / not ordered"}
 Re-check Vitals: ${newVitals || "Not documented"}
 
 INSTRUCTIONS:
-- reevaluation_note: 2-3 sentence clinical reevaluation note suitable for EMR charting, describing interval change and response to treatment
-- updated_impression: one concise sentence updating the clinical impression based on workup findings
+- reevaluation_note: 2-3 sentence clinical reevaluation note suitable for EMR charting. MUST explicitly incorporate imaging findings if imaging was provided — state the specific study, key finding, and how it affects the clinical picture. Describe interval change and response to treatment.
+- updated_impression: one concise sentence updating the clinical impression based on ALL workup findings including imaging.
 - treatment_response: brief phrase (e.g. "Improved with IVF and antiemetics", "No significant change", "Worsening")
 - disposition: one of "Discharge" / "Discharge with precautions" / "Observation" / "Admit" / "Admit to ICU" / "Transfer"
-- disposition_rationale: 1-2 sentences clinical justification referencing specific findings
-- plan_summary: 2-3 sentence overall plan narrative
+- disposition_rationale: 1-2 sentences clinical justification referencing specific lab AND imaging findings by name
+- plan_summary: 2-3 sentence overall plan narrative that incorporates imaging results — if imaging was provided, the plan must reference the specific study and finding
 - orders: array of specific discharge or admission orders as brief action items (max 12)
-- lab_flags: review ALL values in the Labs and Imaging fields. For each abnormal, critical, or clinically notable value, create one entry: parameter (name + units), value (reported value), status (one of "critical" / "high" / "low" / "borderline" / "notable"), clinical_significance (1 sentence explaining why it matters in this clinical context), recommendation (specific actionable next step), guideline_citation (specific guideline name + year only when confident — e.g. "KDIGO 2012 AKI Criteria", "AHA 2022 Heart Failure Guidelines", "Fleischner Society 2017" — return empty string if uncertain). Only flag values that warrant clinical attention. Do NOT list normal values.
+- result_flags: review ALL Labs AND Imaging/Radiology results provided. For EACH abnormal lab value AND for EACH significant imaging finding, create one entry. For imaging: parameter = study type (e.g. "CXR", "CT Head"), value = key finding, status based on urgency. For labs: parameter = test name with units. status = one of "critical" / "high" / "low" / "borderline" / "notable". clinical_significance: 1 sentence why it matters in this clinical context. recommendation: specific actionable next step. guideline_citation: specific guideline name + year if confident, else empty string. Only flag values and findings that warrant clinical attention — do NOT list normal results.
 - discharge_instructions.diagnosis_explanation: plain-language explanation for patient (2-3 sentences)
 - discharge_instructions.return_precautions: exactly 5 specific, actionable return precautions per ACEP standard (fever, worsening, new symptoms, medication issues, follow-up failure)
 - discharge_instructions.acep_policy_ref: reference applicable ACEP Clinical Policy if one exists, else empty string
@@ -1020,7 +1020,7 @@ function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={result.lab_flags} />
+      <LabFlagsCard flags={result.result_flags} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (
@@ -1315,9 +1315,9 @@ function buildFullNote(p1, mdm, p2, disp) {
       lines.push(`\nOrders:`);
       disp.orders.forEach(o => lines.push(`  - ${o}`));
     }
-    if (disp.lab_flags?.length) {
+    if (disp.result_flags?.length) {
       lines.push(`\nLAB & IMAGING FLAGS:`);
-      disp.lab_flags.forEach(f => {
+      disp.result_flags.forEach(f => {
         lines.push(`  [${(f.status||"").toUpperCase()}] ${f.parameter}: ${f.value}`);
         if (f.clinical_significance) lines.push(`    → ${f.clinical_significance}`);
         if (f.recommendation)        lines.push(`    Rec: ${f.recommendation}`);

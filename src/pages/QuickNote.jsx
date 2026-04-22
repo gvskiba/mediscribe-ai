@@ -1,19 +1,15 @@
-// QuickNote.jsx  v4
+// QuickNote.jsx  v6
 // Two-phase ED documentation: Phase 1 -> MDM | Phase 2 -> Reevaluation, Plan, Disposition, Discharge Rx
 // Grounded in AMA/CMS 2023 E&M MDM table + ACEP Clinical Policy guidelines
-// Keyboard: Tab advances zones | Cmd+Enter fires active phase | C copies full note | P print
+// Keyboard: Tab advances | Cmd+Enter submit | T open template picker | 1-8 select | Esc close
+//           Alt+H/R/E/L field jump | C copy full note | Cmd+Shift+C copy focused section | P print
 //
-// v4 fixes:
-//   1.  Version strings updated to v4
-//   2.  SectionLabel accepts optional style prop — copy button rows no longer misaligned
-//   3.  confirmClear reset when Re-run MDM is clicked — no phantom confirm dialog
-//   4.  buildFullNote discharge exclusion covers Observation + Transfer
-//   5.  p1Busy blocks Phase 2 button during active MDM generation
-//   6.  Disposition prompt includes red_flags + critical_actions from MDM result
-//   7.  Obs/Transfer explicitly excluded from discharge instructions in prompt
-//   8.  Schema array constraints (minItems/maxItems) + discharge_instructions required sub-fields
-//   9.  Per-card copy buttons show feedback state (✓ Copied)
-//  10.  Phase 2 Labs field auto-focuses when Phase 2 opens
+// v6 new features:
+//   1. ROS templates — 8 chief-complaint-based templates, T key to open, 1-8 to insert
+//   2. PE templates  — 8 focused exam templates, same keyboard pattern
+//   3. Template picker — compact overlay, keyboard-first, warns before overwriting existing text
+//   4. Alt+H/R/E/L field jump shortcuts (HPI, ROS, Exam, Labs)
+//   5. Cmd+Shift+C copies the currently focused result section to clipboard
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
@@ -119,6 +115,22 @@ const DISP_SCHEMA = {
     admission_service:       { type: "string" },
     plan_summary:            { type: "string" },
     orders:                  { type: "array", items: { type: "string" }, maxItems: 12 },
+    lab_flags: {
+      type: "array",
+      maxItems: 16,
+      items: {
+        type: "object",
+        required: ["parameter", "value", "status", "clinical_significance", "recommendation"],
+        properties: {
+          parameter:            { type: "string" },
+          value:                { type: "string" },
+          status:               { type: "string" },
+          clinical_significance:{ type: "string" },
+          recommendation:       { type: "string" },
+          guideline_citation:   { type: "string" },
+        },
+      },
+    },
     discharge_instructions: {
       type: "object",
       required: ["diagnosis_explanation", "return_precautions", "followup"],
@@ -203,6 +215,7 @@ INSTRUCTIONS:
 - disposition_rationale: 1-2 sentences clinical justification referencing specific findings
 - plan_summary: 2-3 sentence overall plan narrative
 - orders: array of specific discharge or admission orders as brief action items (max 12)
+- lab_flags: review ALL values in the Labs and Imaging fields. For each abnormal, critical, or clinically notable value, create one entry: parameter (name + units), value (reported value), status (one of "critical" / "high" / "low" / "borderline" / "notable"), clinical_significance (1 sentence explaining why it matters in this clinical context), recommendation (specific actionable next step), guideline_citation (specific guideline name + year only when confident — e.g. "KDIGO 2012 AKI Criteria", "AHA 2022 Heart Failure Guidelines", "Fleischner Society 2017" — return empty string if uncertain). Only flag values that warrant clinical attention. Do NOT list normal values.
 - discharge_instructions.diagnosis_explanation: plain-language explanation for patient (2-3 sentences)
 - discharge_instructions.return_precautions: exactly 5 specific, actionable return precautions per ACEP standard (fever, worsening, new symptoms, medication issues, follow-up failure)
 - discharge_instructions.acep_policy_ref: reference applicable ACEP Clinical Policy if one exists, else empty string
@@ -287,14 +300,173 @@ function StepProgress({ phase1Done, phase2Done, p2Open }) {
   );
 }
 
+// ─── ROS / PE TEMPLATES ──────────────────────────────────────────────────────
+const ROS_TEMPLATES = [
+  { id:1, label:"Chest Pain",     short:"CP",
+    text:"Constitutional: Denies fever, chills, diaphoresis.\nCardiovascular: Chest pain as described; denies palpitations, syncope, orthopnea, PND, leg swelling.\nRespiratory: Denies dyspnea at rest, cough, hemoptysis.\nGI: Denies nausea, vomiting, abdominal pain.\nMusculoskeletal: Denies wall tenderness, arm/jaw pain.\nNeuro: Denies dizziness, headache, focal weakness." },
+  { id:2, label:"Dyspnea",        short:"SOB",
+    text:"Constitutional: Denies fever, chills, night sweats.\nRespiratory: Shortness of breath as described; denies hemoptysis, wheezing.\nCardiovascular: Denies chest pain, palpitations, orthopnea, PND, leg swelling.\nAllergy: Denies new exposures, urticaria.\nNeuro: Denies dizziness, syncope." },
+  { id:3, label:"Abdominal Pain", short:"Abd",
+    text:"Constitutional: Denies fever, chills, anorexia, weight loss.\nGI: Abdominal pain as described; denies hematemesis, melena, hematochezia, diarrhea, constipation, jaundice.\nGU: Denies dysuria, hematuria, vaginal/penile discharge.\nGyn: Denies vaginal bleeding, LMP ____.\nNeuro: Denies dizziness." },
+  { id:4, label:"Headache",       short:"HA",
+    text:"Constitutional: Denies fever, neck stiffness, photophobia.\nNeuro: Headache as described; denies diplopia, focal weakness, numbness, speech changes, ataxia, seizure.\nCardiovascular: Denies palpitations, syncope.\nENT: Denies visual changes, rhinorrhea, ear pain.\nMSK: Denies neck pain, jaw claudication." },
+  { id:5, label:"Syncope",        short:"Sync",
+    text:"Constitutional: Denies fever, chills.\nCardiovascular: Denies palpitations, chest pain, prior syncope; prodrome of ____.\nNeuro: Denies focal weakness, post-ictal confusion, tongue biting, incontinence.\nRespiratory: Denies dyspnea.\nGI: Denies nausea, vomiting, diarrhea (vasovagal prodrome)." },
+  { id:6, label:"AMS",            short:"AMS",
+    text:"Constitutional: Denies fever, chills; baseline mental status: ____.\nNeuro: Altered mentation as described; denies focal weakness, seizure, headache.\nCardiovascular: Denies palpitations.\nGI: Denies nausea, vomiting.\nPsychiatric: Denies SI/HI; psychiatric history: ____.\nToxicology: Substance use: ____." },
+  { id:7, label:"Extremity",      short:"Ext",
+    text:"Constitutional: Denies fever, chills.\nMSK: Pain/injury as described; denies deformity, crepitus, neurovascular symptoms distal.\nVascular: Denies calf swelling, redness, cord-like tenderness (DVT symptoms).\nNeuro: Denies numbness, tingling, weakness distal to injury.\nSkin: Denies lacerations, open wounds, signs of infection." },
+  { id:8, label:"Fever / Sepsis", short:"Sepsis",
+    text:"Constitutional: Fever as described; denies rigors, weight loss.\nRespiratory: Denies cough, dyspnea, pleuritic pain.\nGU: Denies dysuria, frequency, flank pain.\nGI: Denies nausea, vomiting, diarrhea, abdominal pain.\nSkin: Denies rash, wound, cellulitis.\nNeuro: Denies headache, neck stiffness, photophobia, focal deficit." },
+];
+
+const PE_TEMPLATES = [
+  { id:1, label:"Normal Multisystem", short:"Normal",
+    text:"General: Alert, oriented x3, no acute distress, well-appearing.\nVitals: As documented.\nHEENT: Normocephalic, atraumatic; PERRL, EOMI; oropharynx clear.\nNeck: Supple, no JVD, no lymphadenopathy, no meningismus.\nCV: RRR, no murmurs/rubs/gallops; distal pulses intact bilaterally.\nRespiratory: CTAB, no wheeze/rales/rhonchi; no respiratory distress.\nAbdomen: Soft, non-tender, non-distended; normoactive bowel sounds.\nExtremities: No cyanosis, clubbing, or edema; no calf tenderness.\nSkin: Warm, dry, no rash.\nNeuro: A&Ox3, CN II-XII grossly intact, strength 5/5 all extremities, sensation intact." },
+  { id:2, label:"Chest Pain",        short:"CP",
+    text:"General: Alert, in mild distress secondary to pain.\nVitals: As documented.\nHEENT: No diaphoresis, JVP ____.\nCV: RRR, no murmurs/rubs/gallops; no S3/S4; peripheral pulses equal bilaterally.\nRespiratory: CTAB, no wheeze; no crackles suggesting pulmonary edema.\nAbdomen: Soft, non-tender, non-distended.\nExtremities: No calf tenderness; no lower extremity edema.\nSkin: No mottling, no diaphoresis.\nNeuro: Alert, no focal deficits." },
+  { id:3, label:"Abdominal",         short:"Abd",
+    text:"General: Alert, uncomfortable; lying still [or] writhing.\nVitals: As documented.\nAbdomen: Soft [or] Rigid; tender in ____ quadrant(s); no guarding, no rebound [or] guarding/rebound present; Murphy sign negative [or] positive; McBurney tenderness negative [or] positive; bowel sounds normoactive [or] diminished.\nGU: No CVA tenderness bilaterally.\nPelvic (if applicable): ____.\nExtremities: No peripheral edema.\nSkin: No jaundice, no rash." },
+  { id:4, label:"Neuro / Stroke",    short:"Neuro",
+    text:"General: Alert [or] altered; oriented x____.\nVitals: As documented.\nHEENT: PERRL ____/____ mm; EOMI [or] gaze deviation to ____; facial droop ____ present/absent.\nSpeech: Clear [or] dysarthric/aphasic.\nMotor: Drift absent [or] drift present in ____; strength ____ upper extremity, ____ lower extremity.\nSensory: Intact bilaterally [or] deficit in ____.\nCoordination: Finger-nose intact [or] dysmetria ____.\nGait: Steady [or] ataxic.\nReflexes: Symmetric; Babinski negative [or] positive ____.\nNeglect: Absent [or] present ____." },
+  { id:5, label:"Extremity / MSK",   short:"MSK",
+    text:"General: Alert, ambulatory [or] non-weight-bearing.\nVitals: As documented.\nAffected Extremity: Inspection — swelling/ecchymosis/deformity absent [or] present; tenderness over ____; ROM limited [or] full active/passive; neurovascular exam distal — sensation intact, cap refill <2s, pulses 2+ ____.\nContralateral Extremity: Normal for comparison.\nSkin: Intact, no open wounds, no lacerations.\nSpecial Tests: ____." },
+  { id:6, label:"Trauma Primary",    short:"Trauma",
+    text:"Airway: Patent; self-maintained [or] assisted.\nBreathing: Spontaneous, symmetric chest rise; breath sounds bilateral; trachea midline.\nCirculation: Radial pulses palpable; skin warm/cool; no external hemorrhage identified.\nDisability: GCS ____; pupils ____/____ reactive; moving all extremities.\nExposure: Logrolled — no step-off, no midline tenderness. HEENT: ____. Chest: ____. Abdomen: ____. Pelvis: ____. Extremities: ____. Skin: ____." },
+  { id:7, label:"Respiratory",       short:"Resp",
+    text:"General: Alert; speaking in full sentences [or] labored speech; using accessory muscles? No [or] Yes.\nVitals: As documented; SpO2 ____ on ____.\nHEENT: No stridor, no lip cyanosis.\nNeck: No JVD, no tracheal deviation.\nCV: RRR, no murmurs.\nRespiratory: Inspection — ____ retractions; Percussion — resonant [or] dull ____; Auscultation — CTAB [or] decreased at ____, wheeze present [or] absent, crackles present [or] absent.\nExtremities: No peripheral edema, no clubbing." },
+  { id:8, label:"Psychiatric",       short:"Psych",
+    text:"General: Alert, cooperative [or] agitated; dressed ____, hygiene ____.\nBehavior: Calm [or] restless/pacing; eye contact appropriate [or] poor.\nSpeech: Normal rate and volume [or] ____.\nMood: Patient reports ____; affect ____.\nThought Process: Linear and goal-directed [or] ____.\nThought Content: No SI/HI [or] SI present — plan/intent ____.\nPerception: No AH/VH reported [or] ____.\nCognition: A&Ox3; judgment and insight ____.\nCV/Resp: No acute distress; vitals as documented." },
+];
+
+// ─── TEMPLATE PICKER ─────────────────────────────────────────────────────────
+function TemplatePicker({ type, onInsert, onClose, hasContent }) {
+  const templates = type === "ros" ? ROS_TEMPLATES : PE_TEMPLATES;
+  const [confirmIdx, setConfirmIdx] = useState(null);
+  const color = type === "ros" ? "var(--qn-teal)" : "var(--qn-purple)";
+  const colorRgb = type === "ros" ? "0,229,192" : "155,109,255";
+
+  useEffect(() => {
+    const fn = e => {
+      if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
+      const n = parseInt(e.key);
+      if (n >= 1 && n <= 8) { e.preventDefault(); handleSelect(n); }
+    };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, [hasContent, confirmIdx]);
+
+  const handleSelect = (n) => {
+    const tpl = templates.find(t => t.id === n);
+    if (!tpl) return;
+    if (hasContent && confirmIdx !== n) { setConfirmIdx(n); return; }
+    onInsert(tpl.text);
+    onClose();
+  };
+
+  return (
+    <div style={{ position:"absolute", zIndex:100, left:0, right:0, bottom:"calc(100% + 4px)",
+      background:"rgba(8,22,40,.97)", border:`1px solid rgba(${colorRgb},.4)`,
+      borderRadius:10, padding:"10px 12px", boxShadow:"0 8px 32px rgba(0,0,0,.6)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+          color, letterSpacing:1.5, textTransform:"uppercase" }}>
+          {type === "ros" ? "ROS" : "PE"} Templates
+        </span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color:"var(--qn-txt4)", letterSpacing:.5 }}>1-8 to insert · Esc to close</span>
+        <div style={{ flex:1 }} />
+        <button onClick={onClose}
+          style={{ background:"transparent", border:"none", cursor:"pointer",
+            color:"var(--qn-txt4)", fontFamily:"'JetBrains Mono',monospace", fontSize:11 }}>✕</button>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 }}>
+        {templates.map(t => (
+          <button key={t.id} onClick={() => handleSelect(t.id)}
+            style={{ display:"flex", alignItems:"center", gap:7, padding:"5px 8px",
+              borderRadius:6, cursor:"pointer", textAlign:"left", transition:"all .12s",
+              border:`1px solid ${confirmIdx === t.id ? "rgba(255,159,67,.6)" : `rgba(${colorRgb},.2)`}`,
+              background:confirmIdx === t.id ? "rgba(255,159,67,.12)" : `rgba(${colorRgb},.04)` }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+              color:confirmIdx === t.id ? "var(--qn-orange)" : color,
+              flexShrink:0, minWidth:14 }}>{t.id}</span>
+            <div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+                color: confirmIdx === t.id ? "var(--qn-orange)" : "var(--qn-txt2)" }}>
+                {t.label}
+              </div>
+              {confirmIdx === t.id && (
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-orange)", letterSpacing:.3 }}>
+                  Overwrites current text — press {t.id} again to confirm
+                </div>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── INPUT ZONE ───────────────────────────────────────────────────────────────
-function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown }) {
+function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown, copyable, templateType }) {
   const inputRef = useRef();
+  const [copiedField, setCopiedField] = useState(false);
+  const [showPicker,  setShowPicker]  = useState(false);
   useEffect(() => { if (onRef) onRef(inputRef); }, []);
   const phaseClass = phase === 1 ? " active-phase" : phase === 2 ? " p2-active" : "";
+  const handleCopy = () => {
+    if (!value.trim()) return;
+    navigator.clipboard.writeText(value.trim()).then(() => {
+      setCopiedField(true);
+      setTimeout(() => setCopiedField(false), 2000);
+    });
+  };
+  const handleKeyDown = e => {
+    if (templateType && (e.key === "t" || e.key === "T") && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault(); setShowPicker(p => !p); return;
+    }
+    if (onKeyDown) onKeyDown(e);
+  };
   return (
-    <div>
-      <SectionLabel color={phase === 2 ? "var(--qn-blue)" : undefined}>{label}</SectionLabel>
+    <div style={{ position:"relative" }}>
+      <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+        <SectionLabel color={phase === 2 ? "var(--qn-blue)" : undefined}
+          style={{ marginBottom:0, flex:1 }}>{label}</SectionLabel>
+        <div style={{ display:"flex", gap:5 }}>
+          {templateType && (
+            <button onClick={() => setShowPicker(p => !p)}
+              style={{ padding:"1px 8px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${showPicker ? "rgba(0,229,192,.5)" : "rgba(42,79,122,.4)"}`,
+                background:showPicker ? "rgba(0,229,192,.1)" : "rgba(14,37,68,.5)",
+                color:showPicker ? "var(--qn-teal)" : "var(--qn-txt4)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              T · Template
+            </button>
+          )}
+          {copyable && value.trim() && (
+            <button onClick={handleCopy}
+              style={{ padding:"1px 8px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedField ? "rgba(61,255,160,.5)" : "rgba(42,79,122,.4)"}`,
+                background:copiedField ? "rgba(61,255,160,.08)" : "rgba(14,37,68,.5)",
+                color:copiedField ? "var(--qn-green)" : "var(--qn-txt4)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedField ? "✓" : "Copy"}
+            </button>
+          )}
+        </div>
+      </div>
+      {showPicker && (
+        <TemplatePicker
+          type={templateType}
+          hasContent={Boolean(value.trim())}
+          onInsert={text => { onChange(text); inputRef.current?.focus(); }}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
       <textarea
         ref={inputRef}
         className={`qn-ta${phaseClass}`}
@@ -303,7 +475,7 @@ function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        onKeyDown={onKeyDown}
+        onKeyDown={handleKeyDown}
       />
     </div>
   );
@@ -461,9 +633,76 @@ function MDMResult({ result, copiedMDM, setCopiedMDM }) {
   );
 }
 
+// ─── LAB FLAGS CARD ──────────────────────────────────────────────────────────
+function labFlagColor(status) {
+  const s = (status || "").toLowerCase();
+  if (s === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)"];
+  if (s === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)"];
+  if (s === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)"];
+  if (s === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)"];
+  return                         ["var(--qn-purple)", "rgba(155,109,255,.07)","rgba(155,109,255,.28)"];
+}
+
+function LabFlagsCard({ flags }) {
+  if (!flags?.length) return null;
+  return (
+    <div style={{ padding:"10px 12px", borderRadius:10, marginBottom:10,
+      background:"rgba(8,22,40,.7)", border:"1px solid rgba(42,79,122,.4)" }}>
+      <SectionLabel color="var(--qn-gold)">Lab & Imaging Interpretation</SectionLabel>
+      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+        {flags.map((f, i) => {
+          const [c, bg, bd] = labFlagColor(f.status);
+          return (
+            <div key={i} style={{ padding:"8px 10px", borderRadius:8,
+              background:bg, border:`1px solid ${bd}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4,
+                flexWrap:"wrap" }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700,
+                  fontSize:11, color:c }}>{f.parameter}</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                  color:"var(--qn-txt)", fontWeight:600 }}>{f.value}</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:c, background:`${c}18`, border:`1px solid ${bd}`,
+                  borderRadius:4, padding:"1px 7px", textTransform:"uppercase",
+                  letterSpacing:.8, fontWeight:700 }}>{f.status}</span>
+                {f.guideline_citation && (
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:"var(--qn-blue)", letterSpacing:.3, marginLeft:"auto" }}>
+                    {f.guideline_citation}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:"var(--qn-txt2)", lineHeight:1.5, marginBottom:f.recommendation ? 4 : 0 }}>
+                {f.clinical_significance}
+              </div>
+              {f.recommendation && (
+                <div style={{ display:"flex", gap:6, alignItems:"flex-start" }}>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    color:c, flexShrink:0, marginTop:1 }}>→</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    fontWeight:600, color:c, lineHeight:1.5 }}>{f.recommendation}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── DISPOSITION RESULT DISPLAY ───────────────────────────────────────────────
 function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
   if (!result) return null;
+  const [copiedReeval, setCopiedReeval] = useState(false);
+  const [copiedPlan,   setCopiedPlan]   = useState(false);
+  const [copiedOrders, setCopiedOrders] = useState(false);
+  const copyWith = (text, setter) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setter(true); setTimeout(() => setter(false), 2000);
+    });
+  };
   const dc = dispColor(result.disposition);
   const isAdmit = result.disposition?.toLowerCase().includes("admit") ||
                   result.disposition?.toLowerCase().includes("icu")   ||
@@ -533,10 +772,26 @@ function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
         </div>
       )}
 
+      {/* Lab & Imaging Flags */}
+      <LabFlagsCard flags={result.lab_flags} />
+
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (
         <div className="qn-card" style={{ marginBottom:10 }}>
-          <SectionLabel color="var(--qn-blue)">ED Reevaluation — Chart-Ready</SectionLabel>
+          <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+            <SectionLabel color="var(--qn-blue)" style={{ marginBottom:0, flex:1 }}>
+              ED Reevaluation — Chart-Ready
+            </SectionLabel>
+            <button onClick={() => copyWith(result.reevaluation_note, setCopiedReeval)}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedReeval ? "rgba(61,255,160,.5)" : "rgba(59,158,255,.35)"}`,
+                background:copiedReeval ? "rgba(61,255,160,.1)" : "rgba(59,158,255,.08)",
+                color:copiedReeval ? "var(--qn-green)" : "var(--qn-blue)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedReeval ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
             color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
             {result.reevaluation_note}
@@ -547,7 +802,20 @@ function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       {/* Plan — full width */}
       {result.plan_summary && (
         <div className="qn-card" style={{ marginBottom:10 }}>
-          <SectionLabel color="var(--qn-purple)">Plan — Chart-Ready</SectionLabel>
+          <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+            <SectionLabel color="var(--qn-purple)" style={{ marginBottom:0, flex:1 }}>
+              Plan — Chart-Ready
+            </SectionLabel>
+            <button onClick={() => copyWith(result.plan_summary, setCopiedPlan)}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedPlan ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.35)"}`,
+                background:copiedPlan ? "rgba(61,255,160,.1)" : "rgba(155,109,255,.08)",
+                color:copiedPlan ? "var(--qn-green)" : "var(--qn-purple)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedPlan ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
             color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
             {result.plan_summary}
@@ -559,7 +827,18 @@ function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       {result.orders?.length > 0 && (
         <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:10,
           background:"rgba(0,229,192,.05)", border:"1px solid rgba(0,229,192,.25)" }}>
-          <SectionLabel color="var(--qn-teal)">Orders</SectionLabel>
+          <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+            <SectionLabel color="var(--qn-teal)" style={{ marginBottom:0, flex:1 }}>Orders</SectionLabel>
+            <button onClick={() => copyWith(result.orders.map(o => "- " + o).join("\n"), setCopiedOrders)}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedOrders ? "rgba(61,255,160,.5)" : "rgba(0,229,192,.3)"}`,
+                background:copiedOrders ? "rgba(61,255,160,.1)" : "rgba(0,229,192,.06)",
+                color:copiedOrders ? "var(--qn-green)" : "var(--qn-teal)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedOrders ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"3px 16px" }}>
             {result.orders.map((o, i) => (
               <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start" }}>
@@ -755,6 +1034,15 @@ function buildFullNote(p1, mdm, p2, disp) {
       lines.push(`\nOrders:`);
       disp.orders.forEach(o => lines.push(`  - ${o}`));
     }
+    if (disp.lab_flags?.length) {
+      lines.push(`\nLAB & IMAGING FLAGS:`);
+      disp.lab_flags.forEach(f => {
+        lines.push(`  [${(f.status||"").toUpperCase()}] ${f.parameter}: ${f.value}`);
+        if (f.clinical_significance) lines.push(`    → ${f.clinical_significance}`);
+        if (f.recommendation)        lines.push(`    Rec: ${f.recommendation}`);
+        if (f.guideline_citation)    lines.push(`    Ref: ${f.guideline_citation}`);
+      });
+    }
     const di = disp.discharge_instructions;
     const dispLower = disp.disposition?.toLowerCase() || "";
     const isDischargedNote = !["admit", "icu", "obs", "transfer"].some(w => dispLower.includes(w));
@@ -891,6 +1179,19 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       const tag = document.activeElement?.tagName?.toLowerCase();
       const inInput = tag === "textarea" || tag === "input";
 
+      // Cmd/Ctrl+Shift+C — copy focused result section
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "c") {
+        e.preventDefault();
+        const active = document.activeElement;
+        if (active?.dataset?.copySection) {
+          const txt = active.dataset.copySection;
+          navigator.clipboard.writeText(txt);
+        } else {
+          copyNote();
+        }
+        return;
+      }
+
       // Cmd/Ctrl+Enter — fire correct phase based on which textarea has focus
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
@@ -902,9 +1203,21 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         }
         return;
       }
+
+      // Alt+H/R/E/L — jump to field
+      if (e.altKey && !e.metaKey) {
+        const jumpMap = { h:2, r:3, e:4, l:5 };
+        const idx = jumpMap[e.key.toLowerCase()];
+        if (idx !== undefined) {
+          e.preventDefault();
+          fieldRefs.current[idx]?.current?.focus();
+          return;
+        }
+      }
+
       if (inInput) return;
 
-      // C — copy
+      // C — copy full note
       if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && (mdmResult || dispResult)) {
         e.preventDefault();
         copyNote();
@@ -979,7 +1292,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
             </h1>
             <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
               color:"var(--qn-txt4)", margin:0 }}>
-              Paste · Cmd+Enter generate MDM · Complete workup · Cmd+Enter disposition · C copy
+              Paste · Cmd+Enter generate MDM · Complete workup · Cmd+Enter disposition · C copy · T template · Alt+H/R/E/L jump
             </p>
           </div>
         )}
@@ -993,7 +1306,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
               color:"var(--qn-txt4)", letterSpacing:1.5, textTransform:"uppercase",
               background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.25)",
               borderRadius:4, padding:"2px 7px" }}>
-              MDM · Disposition · Discharge Rx · v4
+              MDM · Disposition · Discharge Rx · v6
             </span>
           </div>
         )}
@@ -1111,7 +1424,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
           {/* HPI */}
           <div style={{ marginBottom:12 }}>
             <InputZone label="HPI" value={hpi} onChange={setHpi} phase={1}
-              rows={5}
+              rows={5} copyable
               placeholder="Paste HPI from nurse note or EHR — onset, location, quality, severity, duration, modifying factors, associated symptoms..."
               onRef={setRef(2)}
               onKeyDown={makeKeyDown(2, false, runMDM)} />
@@ -1120,13 +1433,13 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
           {/* ROS + Exam row */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
             <InputZone label="Review of Systems" value={ros} onChange={setRos} phase={1}
-              rows={4}
-              placeholder="Paste ROS — system by system, positives and pertinent negatives..."
+              rows={4} copyable templateType="ros"
+              placeholder="Paste ROS, or press T to insert a template..."
               onRef={setRef(3)}
               onKeyDown={makeKeyDown(3, false, runMDM)} />
             <InputZone label="Physical Exam" value={exam} onChange={setExam} phase={1}
-              rows={4}
-              placeholder="Paste physical exam — general, vitals, HEENT, CV, Pulm, Abdomen, Neuro, Skin..."
+              rows={4} copyable templateType="pe"
+              placeholder="Paste physical exam, or press T to insert a template..."
               onRef={setRef(4)}
               onKeyDown={makeKeyDown(4, true, runMDM)} />
           </div>
@@ -1378,7 +1691,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
           <div style={{ textAlign:"center", padding:"24px 0 8px",
             fontFamily:"'JetBrains Mono',monospace", fontSize:8,
             color:"var(--qn-txt4)", letterSpacing:1.5 }} className="no-print">
-            NOTRYA QUICKNOTE v4 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+            NOTRYA QUICKNOTE v6 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}

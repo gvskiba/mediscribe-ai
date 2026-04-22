@@ -15,6 +15,8 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+import { ROS_TEMPLATES, PE_TEMPLATES } from "./QuickNoteTemplates";
+import { CC_CATEGORIES, CC_HUB_MAP } from "./QuickNoteData";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
@@ -310,12 +312,6 @@ function StepProgress({ phase1Done, phase2Done, p2Open }) {
     </div>
   );
 }
-
-// ─── ROS / PE TEMPLATES ──────────────────────────────────────────────────────
-import { ROS_TEMPLATES, PE_TEMPLATES } from "./QuickNoteTemplates";
-
-// ─── CHIEF COMPLAINT CATEGORIES ─────────────────────────────────────────────
-import { CC_CATEGORIES, CC_HUB_MAP } from "./QuickNoteData";
 
 // ─── CC PICKER ────────────────────────────────────────────────────────────────
 function CCPicker({ onInsert, onClose }) {

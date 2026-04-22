@@ -12,7 +12,6 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { dispColor, StepProgress, InputZone, MDMResult, DispositionResult } from "./QuickNoteComponents";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
@@ -421,6 +420,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [copiedMDM,    setCopiedMDM]    = useState(false);
   const [copiedDisch,  setCopiedDisch]  = useState(false);
   const [copiedMDMFull, setCopiedMDMFull] = useState(false);
+  const [savedNote,     setSavedNote]     = useState(false);
+  const [saving,        setSaving]        = useState(false);
 
   const phase1Ready = Boolean(cc.trim() || hpi.trim() || exam.trim());
   const phase2Ready = Boolean(mdmResult && (labs.trim() || imaging.trim() || newVitals.trim()));
@@ -488,7 +489,40 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     });
   }, [cc, vitals, hpi, ros, exam, mdmResult, labs, imaging, newVitals, dispResult]);
 
-  // Global keyboard handler
+  // Save note to ClinicalNote entity
+  const saveNote = useCallback(async () => {
+    if (saving || !hasAnyResult) return;
+    setSaving(true);
+    try {
+      const user = await base44.auth.me().catch(() => null);
+      const fullText = buildFullNote(
+        { cc, vitals, hpi, ros, exam },
+        mdmResult,
+        { labs, imaging, newVitals },
+        dispResult
+      );
+      await base44.entities.ClinicalNote.create({
+        source:             "QuickNote",
+        created_date:       new Date().toISOString(),
+        encounter_date:     new Date().toISOString().split("T")[0],
+        cc:                 cc || "",
+        working_diagnosis:  mdmResult?.working_diagnosis || dispResult?.final_diagnosis || "",
+        mdm_level:          mdmResult?.mdm_level || "",
+        mdm_narrative:      mdmResult?.mdm_narrative || "",
+        disposition:        dispResult?.disposition || "",
+        full_note_text:     fullText,
+        provider_name:      user?.full_name || user?.email || "",
+        patient_identifier: demo?.mrn || "",
+      });
+      setSavedNote(true);
+      setTimeout(() => setSavedNote(false), 3000);
+    } catch (e) {
+      console.error("Save failed:", e);
+    } finally {
+      setSaving(false);
+    }
+  }, [saving, hasAnyResult, cc, vitals, hpi, ros, exam, labs, imaging,
+      newVitals, mdmResult, dispResult, demo]);
   useEffect(() => {
     const fn = e => {
       const tag = document.activeElement?.tagName?.toLowerCase();
@@ -965,6 +999,22 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
                 background:copied ? "rgba(61,255,160,.1)" : "rgba(14,37,68,.6)",
                 color:copied ? "var(--qn-green)" : "var(--qn-txt3)" }}>
               {copied ? "✓ Copied to clipboard" : "Copy Full Note"}
+            </button>
+            <button onClick={saveNote} disabled={saving || !hasAnyResult}
+              style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                border:`1px solid ${savedNote ? "rgba(61,255,160,.5)" : "rgba(0,229,192,.35)"}`,
+                background:savedNote ? "rgba(61,255,160,.1)" : "rgba(14,37,68,.6)",
+                color:savedNote ? "var(--qn-green)" : "var(--qn-teal)",
+                opacity: saving ? .6 : 1, transition:"all .15s" }}>
+              {saving ? "Saving…" : savedNote ? "✓ Note Saved" : "Save Note"}
+            </button>
+            <button onClick={() => window.location.href = "/NoteHistory"}
+              style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                border:"1px solid rgba(42,79,122,.4)", background:"rgba(14,37,68,.6)",
+                color:"var(--qn-txt3)", transition:"all .15s" }}>
+              Note History →
             </button>
             <button onClick={() => window.print()}
               style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",

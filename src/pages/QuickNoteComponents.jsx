@@ -167,7 +167,7 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
     const fn = e => {
       if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
       const n = parseInt(e.key);
-      if (n >= 1 && n <= 8) { e.preventDefault(); handleSelect(n); }
+      if (n >= 1 && n <= 9) { e.preventDefault(); handleSelect(n); }
     };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
@@ -191,7 +191,7 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
           {type === "ros" ? "ROS" : "PE"} Templates
         </span>
         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-          color:"var(--qn-txt4)", letterSpacing:.5 }}>1-8 to insert · Esc to close</span>
+          color:"var(--qn-txt4)", letterSpacing:.5 }}>1-9 to insert · Esc to close</span>
         <div style={{ flex:1 }} />
         <button onClick={onClose}
           style={{ background:"transparent", border:"none", cursor:"pointer",
@@ -382,7 +382,7 @@ export function InputZone({ label, value, onChange, placeholder, rows, phase, re
     });
   };
   const handleKeyDown = e => {
-    if (templateType && (e.key === "t" || e.key === "T") && !e.metaKey && !e.ctrlKey) {
+    if (templateType && e.ctrlKey && (e.key === "t" || e.key === "T") && !e.metaKey) {
       e.preventDefault(); setShowPicker(p => !p); return;
     }
     if (onKeyDown) onKeyDown(e);
@@ -401,7 +401,7 @@ export function InputZone({ label, value, onChange, placeholder, rows, phase, re
                 background:showPicker ? "rgba(0,229,192,.1)" : "rgba(14,37,68,.5)",
                 color:showPicker ? "var(--qn-teal)" : "var(--qn-txt4)",
                 letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-              {templateType === "cc" ? "T · CC" : "T · Template"}
+              {templateType === "cc" ? "Ctrl+T · CC" : "Ctrl+T · Template"}
             </button>
           )}
           {copyable && value.trim() && (
@@ -586,12 +586,6 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                 t.evidence_level === "Class IIb"       ? "var(--qn-gold)"   :
                 t.evidence_level === "Class III"       ? "var(--qn-coral)"  :
                                                          "var(--qn-blue)";
-              const evColorHex =
-                t.evidence_level === "Class I"         ? "#3dffa0"  :
-                t.evidence_level === "Class IIa"       ? "#00e5c0"  :
-                t.evidence_level === "Class IIb"       ? "#f5c842"  :
-                t.evidence_level === "Class III"       ? "#ff6b6b"  :
-                                                         "#3b9eff";
               const evBg =
                 t.evidence_level === "Class I"         ? "rgba(61,255,160,.08)"   :
                 t.evidence_level === "Class IIa"       ? "rgba(0,229,192,.06)"    :
@@ -611,7 +605,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                     flexWrap:"wrap", marginBottom:3 }}>
                     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                       fontWeight:700, color:evColor,
-                      background:`${evColorHex}18`, border:`1px solid ${evBd}`,
+                      background:`${evColor}18`, border:`1px solid ${evBd}`,
                       borderRadius:4, padding:"1px 7px", letterSpacing:.8,
                       textTransform:"uppercase", flexShrink:0 }}>
                       {s(t.evidence_level)}
@@ -651,14 +645,35 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
         <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:10,
           background:"rgba(59,158,255,.06)", border:"1px solid rgba(59,158,255,.28)" }}>
           <SectionLabel color="var(--qn-blue)">Recommended Actions — This Visit</SectionLabel>
-          {result.recommended_actions.map((a, i) => (
-            <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:4 }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-                color:"var(--qn-blue)", flexShrink:0, minWidth:16 }}>{i + 1}.</span>
-              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                color:"var(--qn-txt2)", lineHeight:1.5 }}>{s(a)}</span>
-            </div>
-          ))}
+          {result.recommended_actions.map((a, i) => {
+            // Defensive: if AI returns an object instead of a string, format it gracefully
+            let text;
+            if (typeof a === "string") {
+              text = a;
+            } else if (a && typeof a === "object") {
+              // Extract meaningful fields in priority order
+              const parts = [];
+              const f = a;
+              if (f.test_name || f.name)   parts.push(f.test_name || f.name);
+              if (f.timing)                 parts.push("in " + f.timing);
+              if (f.indication)             parts.push(f.indication);
+              if (f.decision_threshold || f.threshold)
+                parts.push("→ " + (f.decision_threshold || f.threshold));
+              if (f.action)                 parts.push(f.action);
+              if (f.recommendation)         parts.push(f.recommendation);
+              text = parts.length ? parts.join(" — ") : JSON.stringify(a);
+            } else {
+              text = String(a);
+            }
+            return (
+              <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:4 }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  color:"var(--qn-blue)", flexShrink:0, minWidth:16 }}>{i + 1}.</span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                  color:"var(--qn-txt2)", lineHeight:1.5 }}>{text}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -737,12 +752,12 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
 
 // ─── LAB FLAGS CARD ──────────────────────────────────────────────────────────
 function labFlagColor(status) {
-  const st = (status || "").toLowerCase();
-  if (st === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)",   "#ff4444"];
-  if (st === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)","#ff6b6b"];
-  if (st === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)", "#3b9eff"];
-  if (st === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)",  "#f5c842"];
-  return                          ["var(--qn-purple)", "rgba(155,109,255,.07)","rgba(155,109,255,.28)","#9b6dff"];
+  const s = (status || "").toLowerCase();
+  if (s === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)"];
+  if (s === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)"];
+  if (s === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)"];
+  if (s === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)"];
+  return                         ["var(--qn-purple)", "rgba(155,109,255,.07)","rgba(155,109,255,.28)"];
 }
 
 function LabFlagsCard({ flags }) {
@@ -753,7 +768,7 @@ function LabFlagsCard({ flags }) {
       <SectionLabel color="var(--qn-gold)">Lab & Imaging Interpretation</SectionLabel>
       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
         {flags.map((f, i) => {
-          const [c, bg, bd, cHex] = labFlagColor(f.status);
+          const [c, bg, bd] = labFlagColor(f.status);
           return (
             <div key={i} style={{ padding:"8px 10px", borderRadius:8,
               background:bg, border:`1px solid ${bd}` }}>
@@ -764,7 +779,7 @@ function LabFlagsCard({ flags }) {
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
                   color:"var(--qn-txt)", fontWeight:600 }}>{s(f.value)}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:c, background:`${cHex}18`, border:`1px solid ${bd}`,
+                  color:c, background:`${c}18`, border:`1px solid ${bd}`,
                   borderRadius:4, padding:"1px 7px", textTransform:"uppercase",
                   letterSpacing:.8, fontWeight:700 }}>{s(f.status)}</span>
                 {f.guideline_citation && (
@@ -875,7 +890,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={result.result_flags} />
+      <LabFlagsCard flags={s(result.result_flags)} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (

@@ -164,6 +164,8 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
   const [loadingUser, setLoadingUser] = useState(true);
   const [confirmKey,  setConfirmKey]  = useState(null);
   const [activeTag,   setActiveTag]   = useState(null);
+  const [searchQ,     setSearchQ]     = useState("");
+  const searchRef = useRef();
   const color    = type === "ros" ? "var(--qn-teal)" : "var(--qn-purple)";
   const colorRgb = type === "ros" ? "0,229,192" : "155,109,255";
 
@@ -180,6 +182,13 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
       .catch(() => {})
       .finally(() => setLoadingUser(false));
   }, [type]);
+
+  // Auto-focus search when enough templates exist
+  useEffect(() => {
+    if (!loadingUser && userTpls.length >= 5) {
+      setTimeout(() => searchRef.current?.focus(), 60);
+    }
+  }, [loadingUser, userTpls.length]);
 
   const handleInsert = (text, key) => {
     if (hasContent && confirmKey !== key) { setConfirmKey(key); return; }
@@ -234,6 +243,41 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
             borderBottom:`1px solid rgba(${colorRgb},.15)` }}>
             My Templates ({userTpls.length})
           </div>
+
+          {/* Search input — visible when 5+ templates */}
+          {userTpls.length >= 5 && (
+            <div style={{ marginBottom:7, position:"relative" }}>
+              <input
+                ref={searchRef}
+                value={searchQ}
+                onChange={e => setSearchQ(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Escape") { e.preventDefault(); setSearchQ(""); onClose(); }
+                  if (e.key === "Tab") { e.preventDefault(); /* let Tab fall to template buttons */ }
+                }}
+                placeholder="Search templates…"
+                style={{ width:"100%", padding:"5px 10px 5px 28px",
+                  borderRadius:7, background:"rgba(14,37,68,.8)",
+                  border:`1px solid rgba(${colorRgb},.3)`,
+                  color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif",
+                  fontSize:11, outline:"none", boxSizing:"border-box",
+                  transition:"border-color .15s" }}
+                onFocus={e => e.target.style.borderColor = `rgba(${colorRgb},.6)`}
+                onBlur={e  => e.target.style.borderColor = `rgba(${colorRgb},.3)`}
+              />
+              <span style={{ position:"absolute", left:9, top:"50%",
+                transform:"translateY(-50%)", fontSize:11,
+                color:`rgba(${colorRgb},.5)`, pointerEvents:"none" }}>🔍</span>
+              {searchQ && (
+                <button onClick={() => setSearchQ("")}
+                  style={{ position:"absolute", right:7, top:"50%",
+                    transform:"translateY(-50%)", background:"transparent",
+                    border:"none", cursor:"pointer", fontSize:12,
+                    color:`rgba(${colorRgb},.5)`, padding:"0 2px",
+                    lineHeight:1 }}>×</button>
+              )}
+            </div>
+          )}
           {/* Tag filter chips — only shown when templates have tags */}
           {(() => {
             const pickerTags = [...new Set(userTpls.flatMap(t => parseTags(t.category)))];
@@ -261,46 +305,63 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
               </div>
             ) : null;
           })()}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 }}>
-            {userTpls
+          {(() => {
+            const visible = userTpls
               .filter(t => !activeTag || parseTags(t.category).includes(activeTag))
-              .map(t => (
-              <button key={t.id} onClick={() => handleInsert(t.text, "u-"+t.id)}
-                style={{ display:"flex", alignItems:"center", gap:7, padding:"5px 8px",
-                  borderRadius:6, cursor:"pointer", textAlign:"left", transition:"all .12s",
-                  border:`1px solid ${confirmKey === "u-"+t.id ? "rgba(255,159,67,.6)" : `rgba(${colorRgb},.2)`}`,
-                  background:confirmKey === "u-"+t.id ? "rgba(255,159,67,.12)" : `rgba(${colorRgb},.04)` }}>
-                {t.is_default && (
-                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                    color:"var(--qn-gold)", flexShrink:0 }}>★</span>
-                )}
-                <div style={{ minWidth:0 }}>
-                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
-                    color:confirmKey === "u-"+t.id ? "var(--qn-orange)" : "var(--qn-txt2)",
-                    overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                    {t.name}
-                  </div>
-                  {parseTags(t.category).length > 0 && confirmKey !== "u-"+t.id && (
-                    <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginTop:2 }}>
-                      {parseTags(t.category).map(tag => (
-                        <span key={tag} style={{ fontFamily:"'JetBrains Mono',monospace",
-                          fontSize:7, color:`rgba(${colorRgb},.6)`,
-                          background:`rgba(${colorRgb},.07)`,
-                          border:`1px solid rgba(${colorRgb},.2)`,
-                          borderRadius:10, padding:"1px 5px" }}>{tag}</span>
-                      ))}
+              .filter(t => {
+                if (!searchQ.trim()) return true;
+                const q = searchQ.toLowerCase();
+                return t.name?.toLowerCase().includes(q) ||
+                       (t.short || "").toLowerCase().includes(q) ||
+                       parseTags(t.category).some(tag => tag.includes(q));
+              });
+            if (!visible.length) return (
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:"var(--qn-txt4)", padding:"8px 4px", textAlign:"center" }}>
+                {searchQ ? `No templates matching "${searchQ}"` : "No templates in this tag"}
+              </div>
+            );
+            return (
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 }}>
+                {visible.map(t => (
+                  <button key={t.id} onClick={() => handleInsert(t.text, "u-"+t.id)}
+                    style={{ display:"flex", alignItems:"center", gap:7, padding:"5px 8px",
+                      borderRadius:6, cursor:"pointer", textAlign:"left", transition:"all .12s",
+                      border:`1px solid ${confirmKey === "u-"+t.id ? "rgba(255,159,67,.6)" : `rgba(${colorRgb},.2)`}`,
+                      background:confirmKey === "u-"+t.id ? "rgba(255,159,67,.12)" : `rgba(${colorRgb},.04)` }}>
+                    {t.is_default && (
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                        color:"var(--qn-gold)", flexShrink:0 }}>★</span>
+                    )}
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+                        color:confirmKey === "u-"+t.id ? "var(--qn-orange)" : "var(--qn-txt2)",
+                        overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {t.name}
+                      </div>
+                      {parseTags(t.category).length > 0 && confirmKey !== "u-"+t.id && (
+                        <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginTop:2 }}>
+                          {parseTags(t.category).map(tag => (
+                            <span key={tag} style={{ fontFamily:"'JetBrains Mono',monospace",
+                              fontSize:7, color:`rgba(${colorRgb},.6)`,
+                              background:`rgba(${colorRgb},.07)`,
+                              border:`1px solid rgba(${colorRgb},.2)`,
+                              borderRadius:10, padding:"1px 5px" }}>{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                      {confirmKey === "u-"+t.id && (
+                        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                          color:"var(--qn-orange)", letterSpacing:.3 }}>
+                          Overwrites text — click again to confirm
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {confirmKey === "u-"+t.id && (
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                      color:"var(--qn-orange)", letterSpacing:.3 }}>
-                      Overwrites text — click again to confirm
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
       {loadingUser && (

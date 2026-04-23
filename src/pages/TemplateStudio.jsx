@@ -412,7 +412,7 @@ export default function TemplateStudio() {
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const result = await base44.entities.NoteTemplate.list({ sort:"-created_date", limit:200 });
+      const result = await base44.entities.NoteTemplate.list("-created_date", 200);
       setTemplates(result || []);
     } catch (e) {
       setError("Failed to load templates: " + (e.message || "unknown error"));

@@ -167,7 +167,7 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
   const colorRgb = type === "ros" ? "0,229,192" : "155,109,255";
 
   useEffect(() => {
-    base44.entities.NoteTemplate.list({ sort:"-created_date", limit:50 })
+    base44.entities.NoteTemplate.list("-created_date", 50)
       .then(res => {
         const filtered = (res || []).filter(t => t.type === type);
         filtered.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
@@ -857,7 +857,7 @@ function LabFlagsCard({ flags }) {
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
                   color:"var(--qn-txt)", fontWeight:600 }}>{s(f.value)}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:c, background:`${c}18`, border:`1px solid ${bd}`,
+                  color:c, background:bg, border:`1px solid ${bd}`,
                   borderRadius:4, padding:"1px 7px", textTransform:"uppercase",
                   letterSpacing:.8, fontWeight:700 }}>{s(f.status)}</span>
                 {f.guideline_citation && (

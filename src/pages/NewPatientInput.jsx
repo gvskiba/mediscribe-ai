@@ -925,7 +925,7 @@ export default function NewPatientInput() {
           )}
 
           <div className="npi-top-acts">
-            <button className="npi-btn-ghost" onClick={() => setShowCCDA(true)} title="Import C-CDA or clinical document">\uD83D\uDCCB Import</button>
+            <button className="npi-btn-ghost" onClick={() => setShowCCDA(true)} title="Import C-CDA or clinical document">📋 Import</button>
             <button className="npi-btn-ghost" onClick={() => setShowFhirSync(true)} title="Sync from FHIR R4 endpoint">&#x21BA; FHIR</button>
             <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>+ Order</button>
             <button className="npi-btn-ghost" onClick={() => selectSection("consult")} title="Request consultation">&#x1F465; Consult</button>

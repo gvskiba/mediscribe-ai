@@ -92,6 +92,7 @@ import OrderGeneratorHub from '@/pages/OrderGeneratorHub';
 import DermatologyHub from '@/pages/DermatologyHub';
 import DermMorphologyRef from '@/pages/DermMorphologyRef';
 import QuickNote from '@/pages/QuickNote';
+import AIFlagReview from '@/pages/AIFlagReview';
 
 
 
@@ -272,6 +273,7 @@ const AuthenticatedApp = () => {
       <Route path="/ShockHub" element={<ShockHub />} />
       <Route path="/SyncopeHub" element={<SyncopeHub />} />
       <Route path="/QuickNote" element={<QuickNote />} />
+      <Route path="/AIFlagReview" element={<AIFlagReview />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

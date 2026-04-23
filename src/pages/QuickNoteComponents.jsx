@@ -345,9 +345,11 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
   );
 }
 
-// ─── SMARTFILL ────────────────────────────────────────────────────────────────
-// Parses ___ blanks and option/option toggles from template text.
-// For ___ blanks, extracts the word immediately before to look up BLANK_OPTIONS.
+// ─── SMARTFILL (Sequential Guided Mode) ──────────────────────────────────────
+// One token at a time. Active token highlighted with context label.
+// Keyboard: 1–N selects option · Tab/→ skips · Escape exits · Enter confirms text input
+
+// Parse ___ blanks and option/option toggles from template text
 // Returns array: { idx, raw, type:"blank"|"options"|"toggle", options?[], context? }
 function parseTokens(text) {
   const tokens = [];
@@ -356,19 +358,13 @@ function parseTokens(text) {
   while ((m = re.exec(text)) !== null) {
     const raw = m[0];
     if (raw === "___") {
-      // Extract word before the blank: look back for last word token
       const before = text.slice(0, m.index).trimEnd();
       const ctxMatch = before.match(/([a-z]+)[^a-z]*$/i);
       const ctx = ctxMatch ? ctxMatch[1].toLowerCase() : null;
       const opts = ctx && BLANK_OPTIONS[ctx] ? BLANK_OPTIONS[ctx] : null;
-      tokens.push({
-        idx: m.index, raw,
-        type: opts ? "options" : "blank",
-        options: opts,
-        context: ctx,
-      });
+      tokens.push({ idx:m.index, raw, type:opts ? "options" : "blank", options:opts, context:ctx });
     } else if (raw.includes("/")) {
-      tokens.push({ idx: m.index, raw, type:"toggle", options: raw.split("/") });
+      tokens.push({ idx:m.index, raw, type:"toggle", options:raw.split("/") });
     }
   }
   return tokens;
@@ -376,118 +372,156 @@ function parseTokens(text) {
 
 function SmartFillBar({ value, onChange }) {
   const tokens = useMemo(() => parseTokens(value), [value]);
-  const [activeBlank, setActiveBlank] = useState(null);
-  const [blankInput,  setBlankInput]  = useState("");
+  const [cursor,     setCursor]     = useState(0);   // index into tokens array
+  const [textInput,  setTextInput]  = useState("");
+  const [exited,     setExited]     = useState(false);
+  const inputRef = useRef();
 
-  if (!tokens.length) return null;
+  // Reset cursor when tokens change (new template inserted)
+  const prevLength = useRef(tokens.length);
+  useEffect(() => {
+    if (tokens.length !== prevLength.current) {
+      setCursor(0); setTextInput(""); setExited(false);
+      prevLength.current = tokens.length;
+    }
+  }, [tokens.length]);
 
-  const replaceToken = (raw, replacement) => {
+  // Auto-focus text input when blank token becomes active
+  useEffect(() => {
+    if (!exited && tokens[cursor]?.type === "blank") {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [cursor, exited, tokens]);
+
+  if (!tokens.length || exited) return null;
+
+  const tok = tokens[cursor];
+  if (!tok) return null;
+
+  const total   = tokens.length;
+  const remaining = total - cursor;
+
+  const replaceAndAdvance = (raw, replacement) => {
     onChange(value.replace(raw, replacement));
+    // Advance or exit
+    if (cursor + 1 >= total) {
+      setExited(true);
+    } else {
+      setCursor(cursor + 1);
+      setTextInput("");
+    }
   };
 
-  const handleBlankSubmit = (raw) => {
-    if (blankInput.trim()) { replaceToken(raw, blankInput.trim()); }
-    setActiveBlank(null); setBlankInput("");
+  const skip = () => {
+    if (cursor + 1 >= total) { setExited(true); }
+    else { setCursor(cursor + 1); setTextInput(""); }
   };
+
+  const exit = () => setExited(true);
+
+  const handleTextSubmit = () => {
+    if (textInput.trim()) { replaceAndAdvance(tok.raw, textInput.trim()); }
+    else skip();
+  };
+
+  // Bar color by token type
+  const barColor    = tok.type === "toggle" ? "rgba(0,229,192,.25)"    : "rgba(245,200,66,.25)";
+  const barBg       = tok.type === "toggle" ? "rgba(0,229,192,.06)"    : "rgba(245,200,66,.06)";
+  const labelColor  = tok.type === "toggle" ? "var(--qn-teal)"         : "var(--qn-gold)";
+  const optColor    = tok.type === "options" ? "var(--qn-gold)"        : "var(--qn-teal)";
+  const optBd       = tok.type === "options" ? "rgba(245,200,66,.35)"  : "rgba(0,229,192,.3)";
+  const optHoverBg  = tok.type === "options" ? "rgba(245,200,66,.18)"  : "rgba(0,229,192,.15)";
 
   return (
-    <div style={{ display:"flex", flexWrap:"wrap", gap:5, padding:"6px 8px",
-      borderRadius:8, marginBottom:5,
-      background:"rgba(0,229,192,.05)", border:"1px solid rgba(0,229,192,.2)" }}>
-      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-        color:"var(--qn-teal)", letterSpacing:1, textTransform:"uppercase",
-        alignSelf:"center", flexShrink:0 }}>Fill:</span>
+    <div style={{ padding:"8px 10px", borderRadius:8, marginBottom:6,
+      background:barBg, border:`1px solid ${barColor}`,
+      display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
 
-      {tokens.map((tok, i) => (
-        <span key={i} style={{ position:"relative", display:"inline-flex" }}>
+      {/* Progress + context label */}
+      <div style={{ display:"flex", flexDirection:"column", flexShrink:0, minWidth:90 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color:"var(--qn-txt4)", letterSpacing:.8, marginBottom:2 }}>
+          FILL {cursor + 1} OF {total}
+        </div>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+          fontWeight:700, color:labelColor, letterSpacing:.5 }}>
+          {tok.context
+            ? tok.context.toUpperCase()
+            : tok.type === "toggle"
+              ? tok.raw
+              : "TYPE VALUE"}
+        </div>
+      </div>
 
-          {/* Known-context options — rendered as button row */}
-          {tok.type === "options" && (
-            <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}>
-              {tok.context && (
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:"var(--qn-txt4)", marginRight:1 }}>{tok.context}:</span>
-              )}
-              <span style={{ display:"inline-flex", borderRadius:5, overflow:"hidden",
-                border:"1px solid rgba(245,200,66,.35)" }}>
-                {tok.options.map((opt, oi) => (
-                  <button key={oi} onClick={() => replaceToken(tok.raw, opt)}
-                    style={{ padding:"2px 8px", cursor:"pointer",
-                      fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
-                      background:"rgba(14,37,68,.7)", border:"none",
-                      borderRight: oi < tok.options.length - 1
-                        ? "1px solid rgba(245,200,66,.2)" : "none",
-                      color:"var(--qn-gold)", transition:"all .1s" }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(245,200,66,.18)"; e.currentTarget.style.color = "#fff"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,37,68,.7)"; e.currentTarget.style.color = "var(--qn-gold)"; }}>
-                    {opt}
-                  </button>
-                ))}
-              </span>
-            </span>
-          )}
+      {/* Divider */}
+      <div style={{ width:1, height:32, background:"rgba(42,79,122,.4)", flexShrink:0 }} />
 
-          {/* Toggle options (yes/no, mild/moderate/severe, L/R, etc.) */}
-          {tok.type === "toggle" && (
-            <span style={{ display:"inline-flex", borderRadius:5, overflow:"hidden",
-              border:"1px solid rgba(0,229,192,.3)" }}>
-              {tok.options.map((opt, oi) => (
-                <button key={oi} onClick={() => replaceToken(tok.raw, opt)}
-                  style={{ padding:"2px 7px", cursor:"pointer",
-                    fontFamily:"'DM Sans',sans-serif", fontSize:10, fontWeight:600,
-                    background:"rgba(14,37,68,.7)", border:"none",
-                    borderRight: oi < tok.options.length - 1
-                      ? "1px solid rgba(0,229,192,.2)" : "none",
-                    color:"var(--qn-txt3)", transition:"all .1s" }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,229,192,.15)"; e.currentTarget.style.color = "var(--qn-teal)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,37,68,.7)"; e.currentTarget.style.color = "var(--qn-txt3)"; }}>
-                  {opt}
-                </button>
-              ))}
-            </span>
-          )}
+      {/* Option buttons */}
+      <div style={{ display:"flex", gap:5, flexWrap:"wrap", flex:1 }}>
+        {(tok.type === "options" || tok.type === "toggle") && tok.options.map((opt, oi) => (
+          <button key={oi} onClick={() => replaceAndAdvance(tok.raw, opt)}
+            style={{ padding:"4px 12px", borderRadius:6, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700,
+              border:`1px solid ${optBd}`,
+              background:"rgba(14,37,68,.7)", color:optColor,
+              transition:"all .12s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = optHoverBg; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,37,68,.7)"; e.currentTarget.style.color = optColor; }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              opacity:.6, marginRight:4 }}>{oi + 1}</span>
+            {opt}
+          </button>
+        ))}
 
-          {/* Unrecognized blank — free-text popup (fallback) */}
-          {tok.type === "blank" && (
-            activeBlank === i ? (
-              <span style={{ display:"inline-flex", gap:3 }}>
-                <input value={blankInput}
-                  onChange={e => setBlankInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === "Enter") { e.preventDefault(); handleBlankSubmit(tok.raw); }
-                    if (e.key === "Escape") { setActiveBlank(null); setBlankInput(""); }
-                  }}
-                  style={{ width:80, padding:"2px 6px", borderRadius:5,
-                    background:"rgba(14,37,68,.8)", border:"1px solid rgba(0,229,192,.5)",
-                    color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                    outline:"none" }}
-                  autoFocus
-                  placeholder="type + Enter" />
-                <button onClick={() => handleBlankSubmit(tok.raw)}
-                  style={{ padding:"2px 7px", borderRadius:5, cursor:"pointer",
-                    fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                    background:"rgba(0,229,192,.15)", border:"1px solid rgba(0,229,192,.4)",
-                    color:"var(--qn-teal)" }}>✓</button>
-              </span>
-            ) : (
-              <button onClick={() => { setActiveBlank(i); setBlankInput(""); }}
-                style={{ padding:"2px 9px", borderRadius:5, cursor:"pointer",
-                  fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
-                  background:"rgba(245,200,66,.08)", border:"1px solid rgba(245,200,66,.3)",
-                  color:"var(--qn-gold)", letterSpacing:.3 }}>
-                ___
-              </button>
-            )
-          )}
+        {tok.type === "blank" && (
+          <span style={{ display:"inline-flex", gap:5, alignItems:"center" }}>
+            <input ref={inputRef} value={textInput}
+              onChange={e => setTextInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter")  { e.preventDefault(); handleTextSubmit(); }
+                if (e.key === "Tab")    { e.preventDefault(); skip(); }
+                if (e.key === "Escape") { e.preventDefault(); exit(); }
+              }}
+              placeholder="Type value · Enter to confirm"
+              style={{ padding:"4px 10px", borderRadius:6,
+                background:"rgba(14,37,68,.8)", border:"1px solid rgba(245,200,66,.45)",
+                color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                outline:"none", minWidth:160 }} />
+            <button onClick={handleTextSubmit}
+              style={{ padding:"4px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                background:"rgba(245,200,66,.12)", border:"1px solid rgba(245,200,66,.4)",
+                color:"var(--qn-gold)" }}>✓</button>
+          </span>
+        )}
+      </div>
 
-        </span>
-      ))}
+      {/* Nav controls */}
+      <div style={{ display:"flex", gap:5, flexShrink:0, alignItems:"center" }}>
+        {cursor > 0 && (
+          <button onClick={() => { setCursor(cursor - 1); setTextInput(""); }}
+            style={{ padding:"3px 8px", borderRadius:5, cursor:"pointer",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              border:"1px solid rgba(42,79,122,.4)", background:"transparent",
+              color:"var(--qn-txt4)" }}>← Back</button>
+        )}
+        <button onClick={skip}
+          style={{ padding:"3px 8px", borderRadius:5, cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            border:"1px solid rgba(42,79,122,.4)", background:"transparent",
+            color:"var(--qn-txt4)" }}>Skip →</button>
+        <button onClick={exit}
+          style={{ padding:"3px 8px", borderRadius:5, cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            border:"1px solid rgba(42,79,122,.4)", background:"transparent",
+            color:"var(--qn-txt4)" }}>✕ Done</button>
+      </div>
     </div>
   );
 }
 
 // ─── INPUT ZONE ───────────────────────────────────────────────────────────────
-export function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown, copyable, templateType, smartfill }) {
+export function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown, copyable, templateType, smartfill, kbdHint }) {
   const inputRef = useRef();
   const [copiedField, setCopiedField] = useState(false);
   const [showPicker,  setShowPicker]  = useState(false);
@@ -510,7 +544,18 @@ export function InputZone({ label, value, onChange, placeholder, rows, phase, re
     <div style={{ position:"relative" }}>
       <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
         <SectionLabel color={phase === 2 ? "var(--qn-blue)" : undefined}
-          style={{ marginBottom:0, flex:1 }}>{label}</SectionLabel>
+          style={{ marginBottom:0, flex:1 }}>
+          {label}
+          {kbdHint && (
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:"rgba(107,158,200,.5)", background:"rgba(42,79,122,.2)",
+              border:"1px solid rgba(42,79,122,.35)", borderRadius:4,
+              padding:"1px 6px", marginLeft:7, letterSpacing:.5,
+              verticalAlign:"middle" }}>
+              {kbdHint}
+            </span>
+          )}
+        </SectionLabel>
         <div style={{ display:"flex", gap:5 }}>
           {templateType && (
             <button onClick={() => setShowPicker(p => !p)}
@@ -615,6 +660,13 @@ function MDMNarrativeCard({ narrative, copiedMDM, setCopiedMDM, onEdit }) {
       prevNarrative.current = narrative;
     }
   }, [narrative]);
+
+  // E key opens edit mode from anywhere on the page
+  useEffect(() => {
+    const fn = () => { if (!editing) { setDraftText(narrative); setEditing(true); } };
+    window.addEventListener("qn-edit-narrative", fn);
+    return () => window.removeEventListener("qn-edit-narrative", fn);
+  }, [editing, narrative]);
 
   const handleSave = () => {
     if (onEdit) onEdit(draftText);

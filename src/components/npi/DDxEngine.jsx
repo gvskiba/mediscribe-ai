@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 
 // ─── DDx ENGINE ───────────────────────────────────────────────────────────────
@@ -6,35 +6,34 @@ import { base44 } from "@/api/base44Client";
 
 const PREFIX = "ddx";
 
-if (typeof document !== "undefined") {
+function injectDDxStyles() {
   const fontId = `${PREFIX}-fonts`;
-  if (!document.getElementById(fontId)) {
-    const l = document.createElement("link");
-    l.id = fontId; l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
-    document.head.appendChild(l);
-    const s = document.createElement("style");
-    s.id = `${PREFIX}-css`;
-    s.textContent = `
-      @keyframes ${PREFIX}fade  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-      @keyframes ${PREFIX}shim  { 0%,100%{background-position:-200% center} 50%{background-position:200% center} }
-      @keyframes ${PREFIX}pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-      @keyframes ${PREFIX}spin  { to{transform:rotate(360deg)} }
-      .${PREFIX}-fade  { animation:${PREFIX}fade  .25s ease both; }
-      .${PREFIX}-pulse { animation:${PREFIX}pulse 1.8s ease-in-out infinite; }
-      .${PREFIX}-spin  { animation:${PREFIX}spin  1s linear infinite; }
-      .${PREFIX}-shim  {
-        background:linear-gradient(90deg,#f2f7ff 0%,#fff 25%,#00e5c0 50%,#3b9eff 75%,#f2f7ff 100%);
-        background-size:250% auto; -webkit-background-clip:text;
-        -webkit-text-fill-color:transparent; background-clip:text;
-        animation:${PREFIX}shim 6s linear infinite;
-      }
-      ::-webkit-scrollbar { width:3px; height:3px; }
-      ::-webkit-scrollbar-track { background:transparent; }
-      ::-webkit-scrollbar-thumb { background:rgba(42,79,122,.5); border-radius:2px; }
-    `;
-    document.head.appendChild(s);
-  }
+  if (document.getElementById(fontId)) return;
+  const l = document.createElement("link");
+  l.id = fontId; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  document.head.appendChild(l);
+  const s = document.createElement("style");
+  s.id = `${PREFIX}-css`;
+  s.textContent = `
+    @keyframes ${PREFIX}fade  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes ${PREFIX}shim  { 0%,100%{background-position:-200% center} 50%{background-position:200% center} }
+    @keyframes ${PREFIX}pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    @keyframes ${PREFIX}spin  { to{transform:rotate(360deg)} }
+    .${PREFIX}-fade  { animation:${PREFIX}fade  .25s ease both; }
+    .${PREFIX}-pulse { animation:${PREFIX}pulse 1.8s ease-in-out infinite; }
+    .${PREFIX}-spin  { animation:${PREFIX}spin  1s linear infinite; }
+    .${PREFIX}-shim  {
+      background:linear-gradient(90deg,#f2f7ff 0%,#fff 25%,#00e5c0 50%,#3b9eff 75%,#f2f7ff 100%);
+      background-size:250% auto; -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent; background-clip:text;
+      animation:${PREFIX}shim 6s linear infinite;
+    }
+    ::-webkit-scrollbar { width:3px; height:3px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(42,79,122,.5); border-radius:2px; }
+  `;
+  document.head.appendChild(s);
 }
 
 const T = {
@@ -560,6 +559,8 @@ export default function DDxEngine({
   onBack,
   onToast,
 }) {
+  useEffect(() => { injectDDxStyles(); }, []);
+
   const [cc,      setCc]      = useState(initialCC);
   const [age,     setAge]     = useState(initialAge || "");
   const [sex,     setSex]     = useState(initialSex || "M");

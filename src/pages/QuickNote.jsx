@@ -544,7 +544,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       { label:"HISTORY OF PRESENT ILLNESS", text:hpi },
       { label:"REVIEW OF SYSTEMS",  text:ros },
       { label:"PHYSICAL EXAM",      text:exam },
-    ].filter(s => s.text?.trim());
+    ].filter(sec => sec.text?.trim());
 
     if (!sections.length) return;
 

@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
-function injectTSStyles() {
+(() => {
   if (document.getElementById("ts-css")) return;
   const s = document.createElement("style"); s.id = "ts-css";
   s.textContent = `
@@ -49,7 +49,7 @@ function injectTSStyles() {
     l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
     document.head.appendChild(l);
   }
-}
+})();
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const TYPES = [
@@ -61,12 +61,12 @@ const TYPES = [
 const TYPE_MAP = Object.fromEntries(TYPES.map(t => [t.id, t]));
 
 const BLANK_HELPERS = [
-  { label:"Blank ___",            insert:"___" },
-  { label:"yes/no",               insert:"yes/no" },
-  { label:"L/R",                  insert:"L/R" },
+  { label:"Blank ___",       insert:"___" },
+  { label:"yes/no",          insert:"yes/no" },
+  { label:"L/R",             insert:"L/R" },
   { label:"mild/moderate/severe", insert:"mild/moderate/severe" },
-  { label:"present/absent",       insert:"present/absent" },
-  { label:"positive/negative",    insert:"positive/negative" },
+  { label:"present/absent",  insert:"present/absent" },
+  { label:"positive/negative", insert:"positive/negative" },
 ];
 
 const PLACEHOLDER_BY_TYPE = {
@@ -76,7 +76,108 @@ const PLACEHOLDER_BY_TYPE = {
   cc:  "___ — onset: ___, character: ___, severity: ___/10",
 };
 
-// ─── TEMPLATE CARD ────────────────────────────────────────────────────────────
+// ─── TAG HELPERS ─────────────────────────────────────────────────────────────
+// Tags stored as comma-separated string in category field — backwards compatible
+const parseTags  = (str) => (str || "").split(",").map(t => t.trim()).filter(Boolean);
+const serializeTags = (arr) => arr.join(", ");
+
+const AUTO_TAG_SUGGESTIONS = [
+  "cardiac", "pulm", "neuro", "abdominal", "msk", "trauma",
+  "sepsis", "peds", "tox", "ob-gyn", "psych", "ent", "derm",
+  "chest-pain", "stroke", "ams", "normal", "shift-handoff",
+];
+
+// ─── TAG CHIP INPUT ───────────────────────────────────────────────────────────
+function TagChipInput({ tags, onChange, existingTags }) {
+  const [inputVal, setInputVal] = useState("");
+  const [showSugg, setShowSugg] = useState(false);
+  const inputRef = useRef();
+
+  const allSuggestions = [
+    ...new Set([...AUTO_TAG_SUGGESTIONS, ...existingTags]),
+  ].filter(s => !tags.includes(s));
+
+  const filtered = inputVal.trim()
+    ? allSuggestions.filter(s => s.includes(inputVal.toLowerCase()))
+    : allSuggestions.slice(0, 12);
+
+  const addTag = (tag) => {
+    const t = tag.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!t || tags.includes(t) || tags.length >= 3) return;
+    onChange([...tags, t]);
+    setInputVal("");
+    setShowSugg(false);
+    inputRef.current?.focus();
+  };
+
+  const removeTag = (tag) => onChange(tags.filter(t => t !== tag));
+
+  const handleKey = (e) => {
+    if ((e.key === "Enter" || e.key === ",") && inputVal.trim()) {
+      e.preventDefault(); addTag(inputVal);
+    }
+    if (e.key === "Backspace" && !inputVal && tags.length) {
+      removeTag(tags[tags.length - 1]);
+    }
+    if (e.key === "Escape") setShowSugg(false);
+  };
+
+  return (
+    <div style={{ position:"relative" }}>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:5, alignItems:"center",
+        background:"rgba(14,37,68,.75)", border:"1px solid rgba(42,79,122,.5)",
+        borderRadius:8, padding:"6px 10px", minHeight:36, cursor:"text" }}
+        onClick={() => inputRef.current?.focus()}>
+        {tags.map(tag => (
+          <span key={tag} style={{ display:"inline-flex", alignItems:"center", gap:4,
+            fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:600,
+            color:"var(--ts-teal)", background:"rgba(0,229,192,.1)",
+            border:"1px solid rgba(0,229,192,.3)", borderRadius:20,
+            padding:"2px 8px", letterSpacing:.3 }}>
+            {tag}
+            <span onClick={e => { e.stopPropagation(); removeTag(tag); }}
+              style={{ cursor:"pointer", opacity:.7, fontSize:10, lineHeight:1 }}>×</span>
+          </span>
+        ))}
+        {tags.length < 3 && (
+          <input ref={inputRef} value={inputVal}
+            onChange={e => { setInputVal(e.target.value); setShowSugg(true); }}
+            onKeyDown={handleKey}
+            onFocus={() => setShowSugg(true)}
+            onBlur={() => setTimeout(() => setShowSugg(false), 150)}
+            placeholder={tags.length === 0 ? "Add tags (max 3)…" : ""}
+            style={{ background:"transparent", border:"none", outline:"none",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+              color:"var(--ts-txt)", flex:1, minWidth:80 }} />
+        )}
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color: tags.length >= 3 ? "var(--ts-coral)" : "var(--ts-txt4)",
+          marginLeft:"auto", flexShrink:0 }}>
+          {tags.length}/3
+        </span>
+      </div>
+      {showSugg && filtered.length > 0 && (
+        <div style={{ position:"absolute", top:"calc(100% + 3px)", left:0, right:0,
+          zIndex:50, background:"rgba(8,22,40,.97)",
+          border:"1px solid rgba(42,79,122,.5)", borderRadius:8,
+          padding:"6px", boxShadow:"0 8px 24px rgba(0,0,0,.5)",
+          display:"flex", flexWrap:"wrap", gap:4 }}>
+          {filtered.map(s => (
+            <button key={s} onMouseDown={() => addTag(s)}
+              style={{ padding:"2px 9px", borderRadius:20, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                border:"1px solid rgba(42,79,122,.4)", background:"rgba(14,37,68,.7)",
+                color:"var(--ts-txt3)", transition:"all .1s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,229,192,.4)"; e.currentTarget.style.color = "var(--ts-teal)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(42,79,122,.4)"; e.currentTarget.style.color = "var(--ts-txt3)"; }}>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 function TemplateCard({ tpl, onEdit, onDelete }) {
   const [confirmDel, setConfirmDel] = useState(false);
   const [deleting,   setDeleting]   = useState(false);
@@ -115,11 +216,12 @@ function TemplateCard({ tpl, onEdit, onDelete }) {
           )}
           <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
             fontSize:14, color:"var(--ts-txt)", flex:1 }}>{tpl.name}</span>
-          {tpl.category && (
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:"var(--ts-txt4)", background:"rgba(42,79,122,.2)",
-              borderRadius:4, padding:"2px 7px" }}>{tpl.category}</span>
-          )}
+          {parseTags(tpl.category).map(tag => (
+            <span key={tag} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:"var(--ts-teal)", background:"rgba(0,229,192,.08)",
+              border:"1px solid rgba(0,229,192,.25)",
+              borderRadius:20, padding:"2px 8px", letterSpacing:.3 }}>{tag}</span>
+          ))}
           {tpl.created_by && (
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
               color:"var(--ts-txt4)" }}>{tpl.created_by}</span>
@@ -185,11 +287,11 @@ function TemplateCard({ tpl, onEdit, onDelete }) {
 }
 
 // ─── EDITOR ───────────────────────────────────────────────────────────────────
-function TemplateEditor({ initial, onSave, onCancel }) {
+function TemplateEditor({ initial, onSave, onCancel, existingTags = [] }) {
   const [name,       setName]       = useState(initial?.name || "");
   const [type,       setType]       = useState(initial?.type || "ros");
   const [text,       setText]       = useState(initial?.text || "");
-  const [category,   setCategory]   = useState(initial?.category || "");
+  const [tags,       setTags]       = useState(parseTags(initial?.category || ""));
   const [shortLabel, setShortLabel] = useState(initial?.short || "");
   const [isDefault,  setIsDefault]  = useState(initial?.is_default || false);
   const [saving,     setSaving]     = useState(false);
@@ -224,7 +326,7 @@ function TemplateEditor({ initial, onSave, onCancel }) {
         name: name.trim(),
         type,
         text: text.trim(),
-        category: category.trim(),
+        category: serializeTags(tags),
         short: shortLabel.trim() || name.trim().slice(0, 12),
         is_default: isDefault,
         created_by: user?.full_name || user?.email || "",
@@ -301,13 +403,12 @@ function TemplateEditor({ initial, onSave, onCancel }) {
         </div>
       </div>
 
-      {/* Category */}
+      {/* Tags */}
       <div style={{ marginBottom:12 }}>
         <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
           color:"var(--ts-txt4)", letterSpacing:1.2, marginBottom:5,
-          textTransform:"uppercase" }}>Category (optional)</div>
-        <input className="ts-input" value={category} onChange={e => setCategory(e.target.value)}
-          placeholder="e.g. Cardiac, Trauma, Pediatric" style={{ maxWidth:280 }} />
+          textTransform:"uppercase" }}>Tags <span style={{ color:"rgba(107,158,200,.5)" }}>(max 3 · Enter or comma to add)</span></div>
+        <TagChipInput tags={tags} onChange={setTags} existingTags={existingTags} />
       </div>
 
       {/* Text editor */}
@@ -401,18 +502,22 @@ function TemplateEditor({ initial, onSave, onCancel }) {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function TemplateStudio() {
-  const [templates,  setTemplates]  = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState(null);
-  const [editing,    setEditing]    = useState(null);   // null | "new" | template object
-  const [filterType, setFilterType] = useState("all");
+  const [templates,   setTemplates]  = useState([]);
+  const [loading,     setLoading]    = useState(true);
+  const [error,       setError]      = useState(null);
+  const [editing,     setEditing]    = useState(null);   // null | "new" | template object
+  const [filterType,  setFilterType] = useState("all");
+  const [filterTag,   setFilterTag]  = useState(null);
 
-  useEffect(() => { injectTSStyles(); }, []);
+  // Derive all unique tags across saved templates for suggestions + filter chips
+  const allTags = [...new Set(
+    templates.flatMap(t => parseTags(t.category))
+  )].sort();
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const result = await base44.entities.NoteTemplate.list("-created_date", 200);
+      const result = await base44.entities.NoteTemplate.list({ sort:"-created_date", limit:200 });
       setTemplates(result || []);
     } catch (e) {
       setError("Failed to load templates: " + (e.message || "unknown error"));
@@ -437,9 +542,9 @@ export default function TemplateStudio() {
     setTemplates(prev => prev.filter(t => t.id !== id));
   };
 
-  const filtered = filterType === "all"
-    ? templates
-    : templates.filter(t => t.type === filterType);
+  const filtered = templates
+    .filter(t => filterType === "all" || t.type === filterType)
+    .filter(t => !filterTag || parseTags(t.category).includes(filterTag));
 
   const countByType = Object.fromEntries(
     TYPES.map(t => [t.id, templates.filter(x => x.type === t.id).length])
@@ -492,6 +597,7 @@ export default function TemplateStudio() {
               initial={editing === "new" ? null : editing}
               onSave={handleSaved}
               onCancel={() => setEditing(null)}
+              existingTags={allTags}
             />
           </div>
         )}
@@ -524,6 +630,38 @@ export default function TemplateStudio() {
             {filtered.length} template{filtered.length !== 1 ? "s" : ""}
           </span>
         </div>
+
+        {/* Tag filter strip — only shown when tags exist */}
+        {allTags.length > 0 && (
+          <div style={{ display:"flex", gap:5, flexWrap:"wrap", alignItems:"center",
+            padding:"8px 14px", borderRadius:10, marginBottom:12,
+            background:"rgba(8,22,40,.4)", border:"1px solid rgba(42,79,122,.2)" }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:"var(--ts-txt4)", letterSpacing:1, textTransform:"uppercase",
+              flexShrink:0 }}>Tags:</span>
+            <button onClick={() => setFilterTag(null)}
+              style={{ padding:"3px 10px", borderRadius:20, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:600,
+                border:`1px solid ${!filterTag ? "rgba(0,229,192,.45)" : "rgba(42,79,122,.4)"}`,
+                background:!filterTag ? "rgba(0,229,192,.12)" : "transparent",
+                color:!filterTag ? "var(--ts-teal)" : "var(--ts-txt4)",
+                transition:"all .15s" }}>All</button>
+            {allTags.map(tag => {
+              const count = templates.filter(t => parseTags(t.category).includes(tag)).length;
+              return (
+                <button key={tag} onClick={() => setFilterTag(filterTag === tag ? null : tag)}
+                  style={{ padding:"3px 10px", borderRadius:20, cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:600,
+                    transition:"all .15s",
+                    border:`1px solid ${filterTag === tag ? "rgba(0,229,192,.5)" : "rgba(42,79,122,.35)"}`,
+                    background:filterTag === tag ? "rgba(0,229,192,.14)" : "transparent",
+                    color:filterTag === tag ? "var(--ts-teal)" : "var(--ts-txt4)" }}>
+                  {tag} <span style={{ opacity:.6 }}>({count})</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Template list */}
         {loading ? (

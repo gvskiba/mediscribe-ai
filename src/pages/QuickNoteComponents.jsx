@@ -1615,7 +1615,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={s(result.result_flags)} />
+      <LabFlagsCard flags={result.result_flags} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (

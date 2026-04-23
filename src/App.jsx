@@ -93,6 +93,7 @@ import DermatologyHub from '@/pages/DermatologyHub';
 import DermMorphologyRef from '@/pages/DermMorphologyRef';
 import QuickNote from '@/pages/QuickNote';
 import AIFlagReview from '@/pages/AIFlagReview';
+import TemplateStudio from '@/pages/TemplateStudio';
 
 
 
@@ -274,6 +275,7 @@ const AuthenticatedApp = () => {
       <Route path="/SyncopeHub" element={<SyncopeHub />} />
       <Route path="/QuickNote" element={<QuickNote />} />
       <Route path="/AIFlagReview" element={<AIFlagReview />} />
+      <Route path="/TemplateStudio" element={<TemplateStudio />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -600,8 +600,128 @@ function HubStrip({ catId, label }) {
   );
 }
 
+// ─── MDM NARRATIVE CARD (editable) ───────────────────────────────────────────
+function MDMNarrativeCard({ narrative, copiedMDM, setCopiedMDM, onEdit }) {
+  const [editing,   setEditing]   = useState(false);
+  const [draftText, setDraftText] = useState(narrative);
+  const [saved,     setSaved]     = useState(false);
+
+  // Sync if parent narrative changes (re-run MDM)
+  const prevNarrative = useRef(narrative);
+  useEffect(() => {
+    if (narrative !== prevNarrative.current) {
+      setDraftText(narrative);
+      setEditing(false);
+      prevNarrative.current = narrative;
+    }
+  }, [narrative]);
+
+  const handleSave = () => {
+    if (onEdit) onEdit(draftText);
+    setEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleCancel = () => {
+    setDraftText(narrative);
+    setEditing(false);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(editing ? draftText : narrative);
+    setCopiedMDM(true);
+    setTimeout(() => setCopiedMDM(false), 2000);
+  };
+
+  return (
+    <div className="qn-card" style={{ marginBottom:10 }}>
+      <div style={{ display:"flex", alignItems:"center", marginBottom:6, gap:6 }}>
+        <SectionLabel color="var(--qn-purple)" style={{ marginBottom:0 }}>
+          MDM Narrative — Chart-Ready
+        </SectionLabel>
+        {saved && (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:"var(--qn-green)", letterSpacing:.5 }}>✓ Saved</span>
+        )}
+        <div style={{ flex:1 }} />
+        {!editing ? (
+          <>
+            <button onClick={() => { setDraftText(narrative); setEditing(true); }}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:"1px solid rgba(155,109,255,.35)",
+                background:"rgba(155,109,255,.08)", color:"var(--qn-purple)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              ✎ Edit
+            </button>
+            <button onClick={handleCopy}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${copiedMDM ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.35)"}`,
+                background:copiedMDM ? "rgba(61,255,160,.1)" : "rgba(155,109,255,.08)",
+                color:copiedMDM ? "var(--qn-green)" : "var(--qn-purple)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {copiedMDM ? "✓ Copied" : "Copy"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button onClick={handleSave}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:"1px solid rgba(61,255,160,.5)",
+                background:"rgba(61,255,160,.1)", color:"var(--qn-green)",
+                letterSpacing:.5, textTransform:"uppercase" }}>
+              ✓ Done
+            </button>
+            <button onClick={handleCancel}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:"1px solid rgba(42,79,122,.4)",
+                background:"transparent", color:"var(--qn-txt4)",
+                letterSpacing:.5, textTransform:"uppercase" }}>
+              Cancel
+            </button>
+          </>
+        )}
+      </div>
+
+      {editing ? (
+        <div>
+          <textarea
+            value={draftText}
+            onChange={e => setDraftText(e.target.value)}
+            rows={6}
+            style={{ background:"rgba(14,37,68,.7)",
+              border:"1px solid rgba(155,109,255,.45)",
+              borderRadius:8, padding:"10px 12px",
+              color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif",
+              fontSize:12, lineHeight:1.75, outline:"none",
+              width:"100%", boxSizing:"border-box", resize:"vertical",
+              transition:"border-color .15s" }}
+            onFocus={e => e.target.style.borderColor = "rgba(155,109,255,.7)"}
+            onBlur={e => e.target.style.borderColor = "rgba(155,109,255,.45)"}
+            autoFocus
+          />
+          <div style={{ marginTop:5, fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:"var(--qn-txt4)", letterSpacing:.5 }}>
+            Editing physician narrative · Changes update Copy MDM and Copy Full Note ·
+            Re-run MDM resets to AI version
+          </div>
+        </div>
+      ) : (
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+          color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
+          {narrative}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── MDM RESULT DISPLAY ───────────────────────────────────────────────────────
-export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
+export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) {
   if (!result) return null;
   const lc = mdmLevelColor(result.mdm_level);
   return (
@@ -798,29 +918,12 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
 
       {/* MDM Narrative */}
       {result.mdm_narrative && (
-        <div className="qn-card" style={{ marginBottom:10 }}>
-          <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
-            <SectionLabel color="var(--qn-purple)" style={{ marginBottom:0 }}>MDM Narrative — Chart-Ready</SectionLabel>
-            <div style={{ flex:1 }} />
-            <button onClick={() => {
-              navigator.clipboard.writeText(result.mdm_narrative);
-              setCopiedMDM(true);
-              setTimeout(() => setCopiedMDM(false), 2000);
-            }}
-              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
-                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
-                border:`1px solid ${copiedMDM ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.35)"}`,
-                background:copiedMDM ? "rgba(61,255,160,.1)" : "rgba(155,109,255,.08)",
-                color:copiedMDM ? "var(--qn-green)" : "var(--qn-purple)",
-                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-              {copiedMDM ? "✓ Copied" : "Copy"}
-            </button>
-          </div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-            color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>
-            {s(result.mdm_narrative)}
-          </div>
-        </div>
+        <MDMNarrativeCard
+          narrative={s(result.mdm_narrative)}
+          copiedMDM={copiedMDM}
+          setCopiedMDM={setCopiedMDM}
+          onEdit={onNarrativeEdit}
+        />
       )}
 
       {/* Data reviewed + Risk rationale */}

@@ -838,13 +838,8 @@ Respond ONLY in valid JSON, no markdown fences.`;
         return;
       }
 
-      // C — copy full note
-      if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && (mdmResult || dispResult)) {
-        e.preventDefault();
-        copyNote();
-      }
       // C — copy full note · Shift+C — copy clinical inputs (CC/Vitals/HPI/ROS/PE)
-      if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && (mdmResult || dispResult || e.shiftKey)) {
+      if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey) {
         if (e.shiftKey) {
           e.preventDefault(); copyClinicalInputs(); return;
         }

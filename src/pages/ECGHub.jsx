@@ -457,9 +457,9 @@ function STEMILocalizer({ leadStates, setLeadStates }) {
       <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,marginBottom:10}}>
         Tap each lead to cycle:
         <span style={{color:T.red,fontWeight:700}}> STE</span>
-        <span style={{color:T.txt4}}> -> </span>
+        <span style={{color:T.txt4}}> {"->"} </span>
         <span style={{color:T.blue,fontWeight:700}}>STD</span>
-        <span style={{color:T.txt4}}> -> Normal</span>
+        <span style={{color:T.txt4}}> {"->"} Normal</span>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:6,marginBottom:10}}>
         {LEADS_LIST.map(lead => {

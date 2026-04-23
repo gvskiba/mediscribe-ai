@@ -12,10 +12,9 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { dispColor, StepProgress, InputZone, MDMResult, DispositionResult } from "./QuickNoteComponents";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
-function injectQNStyles() {
+(() => {
   if (document.getElementById("qn-css")) return;
   const s = document.createElement("style"); s.id = "qn-css";
   s.textContent = `
@@ -74,7 +73,7 @@ function injectQNStyles() {
     l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
     document.head.appendChild(l);
   }
-}
+})();
 
 // ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
 const SYS_BIAS = `COGNITIVE BIAS PREVENTION — apply before generating output:
@@ -427,8 +426,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [sendingNPI,    setSendingNPI]    = useState(false);
   const [fatigueDismissed, setFatigueDismissed] = useState(false);
 
-  useEffect(() => { injectQNStyles(); }, []);
-
   const phase1Ready = Boolean(cc.trim() || hpi.trim() || exam.trim());
   const phase2Ready = Boolean(mdmResult && (labs.trim() || imaging.trim() || newVitals.trim()));
 
@@ -526,6 +523,11 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         patient_identifier: demo?.mrn || "",
         patient_id:         demo?.mrn || "",
         status:             "finalized",
+        flag_reviewed:      false,
+        patient_active:     true,
+        result_flags_json:  dispResult?.result_flags?.length
+                              ? JSON.stringify(dispResult.result_flags)
+                              : "",
       });
       setSavedNote(true);
       setTimeout(() => setSavedNote(false), 3000);

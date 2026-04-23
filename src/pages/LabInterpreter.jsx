@@ -181,50 +181,76 @@ function calcAaDO2(pH, pco2, po2, fio2) {
 // ── Paste parser ──────────────────────────────────────────────────────────────
 function parsePastedLabs(text, panelFields) {
   const result = {};
-  const lines = text.split(/[\n,;|\t]/);
+
+  // Single-key mappings (label alias → field key)
   const labelMap = {
     "sodium":"na","na":"na","na+":"na",
     "potassium":"k","k":"k","k+":"k",
     "chloride":"cl","cl":"cl","cl-":"cl",
-    "bicarb":"co2","co2":"co2","hco3":"hco3","bicarbonate":"co2",
-    "bun":"bun","urea nitrogen":"bun",
-    "creatinine":"cr","cr":"cr","crea":"cr",
+    "bicarb":"co2","co2":"co2","bicarbonate":"co2",
+    "bun":"bun","urea nitrogen":"bun","blood urea nitrogen":"bun",
+    "creatinine":"cr","cr":"cr","crea":"cr","creat":"cr",
     "glucose":"glu","glu":"glu","gluc":"glu",
     "calcium":"ca","ca":"ca",
     "magnesium":"mg","mg":"mg",
-    "phosphorus":"phos","phos":"phos","po4":"phos",
-    "wbc":"wbc","white blood cell":"wbc",
+    "phosphorus":"phos","phos":"phos","po4":"phos","phosphate":"phos",
+    "wbc":"wbc","white blood cell":"wbc","white blood cells":"wbc","leukocytes":"wbc",
     "hemoglobin":"hgb","hgb":"hgb","hb":"hgb",
     "hematocrit":"hct","hct":"hct",
-    "platelets":"plt","plt":"plt","plts":"plt",
+    "platelets":"plt","plt":"plt","plts":"plt","platelet count":"plt",
     "mcv":"mcv",
-    "alt":"alt","sgpt":"alt",
-    "ast":"ast","sgot":"ast",
-    "alk phos":"alkp","alkaline phosphatase":"alkp","alkp":"alkp",
+    "alt":"alt","sgpt":"alt","alanine aminotransferase":"alt",
+    "ast":"ast","sgot":"ast","aspartate aminotransferase":"ast",
+    "alk phos":"alkp","alkaline phosphatase":"alkp","alkp":"alkp","alp":"alkp",
     "bilirubin":"tbili","total bilirubin":"tbili","tbili":"tbili","t bili":"tbili",
-    "direct bilirubin":"dbili","dbili":"dbili",
+    "direct bilirubin":"dbili","dbili":"dbili","direct bili":"dbili",
     "albumin":"albumin",
-    "pt":"pt","prothrombin":"pt",
-    "inr":"inr",
+    "pt":"pt","prothrombin time":"pt",
+    "inr":"inr","pt/inr":"inr",
     "ptt":"ptt","aptt":"ptt","ptt/aptt":"ptt",
     "fibrinogen":"fibrinogen",
-    "d-dimer":"ddimer","ddimer":"ddimer",
+    "d-dimer":"ddimer","ddimer":"ddimer","d dimer":"ddimer",
     "ph":"pH",
     "pco2":"pco2","paco2":"pco2",
     "po2":"po2","pao2":"po2",
-    "base excess":"be","be":"be",
-    "sao2":"sao2","o2 sat":"sao2",
-    "lactate":"lactate","lactic acid":"lactate",
+    "base excess":"be","be":"be","base excess/deficit":"be",
+    "sao2":"sao2","o2 sat":"sao2","o2sat":"sao2",
+    "lactate":"lactate","lactic acid":"lactate","lact":"lactate",
   };
-  lines.forEach(line => {
-    const clean = line.trim();
-    if (!clean) return;
-    const m = clean.match(/^([a-zA-Z][a-zA-Z0-9\s/+-]*?)\s*:?\s*([\d.]+)/);
-    if (m) {
-      const key = labelMap[m[1].trim().toLowerCase()];
-      if (key && panelFields.includes(key)) result[key] = m[2];
+
+  // Dual-context mappings — try each key in order, use first that fits the active panel.
+  // hco3/bicarbonate: ABG panel uses "hco3" field; BMP panel uses "co2" field.
+  const dualMap = {
+    "hco3":        ["hco3","co2"],
+    "bicarbonate": ["hco3","co2"],
+  };
+
+  function insert(rawLabel, val) {
+    const alias = rawLabel.trim().toLowerCase();
+    const candidates = dualMap[alias]
+      ? dualMap[alias]
+      : labelMap[alias] ? [labelMap[alias]] : [];
+    for (const key of candidates) {
+      if (panelFields.includes(key) && !result[key]) { result[key] = val; break; }
+    }
+  }
+
+  // Strategy A — Tab-delimited lines (Cerner, Meditech): "Label\tValue\tUnit..."
+  // Splitting on \t first was the primary bug — it destroyed label/value pairing.
+  text.split(/\n/).forEach(line => {
+    const parts = line.split(/\t+/);
+    if (parts.length >= 2) {
+      const numMatch = parts[1].trim().match(/^([\d.]+)/);
+      if (numMatch) insert(parts[0], numMatch[1]);
     }
   });
+
+  // Strategy B — Colon-delimited anywhere in text (Epic, CSV, freeform).
+  // Global regex — no ^ anchor, finds all "label: value" matches across the whole string.
+  const re = /([a-zA-Z][a-zA-Z0-9 /+-]*?)\s*:\s*([\d.]+)/g;
+  let m;
+  while ((m = re.exec(text)) !== null) insert(m[1], m[2]);
+
   return result;
 }
 
@@ -660,10 +686,17 @@ export default function LabInterpreter({
   const handleParse = useCallback(() => {
     if (!pasteText.trim()) return;
     const parsed = parsePastedLabs(pasteText, panel.fields);
-    setValues(parsed);
+    const count = Object.keys(parsed).length;
+    if (count === 0) {
+      setError("No matching fields found. Try a format like 'Na: 138, K: 4.2' or paste tab-delimited results.");
+      return;
+    }
+    // Merge — preserve any manually entered values not overwritten by paste
+    setValues(prev => ({ ...prev, ...parsed }));
     setPasteText("");
     setShowPaste(false);
     setResult(null);
+    setError(null);
   }, [pasteText, panel.fields]);
 
   const enteredCount = panel.fields.filter(f => values[f] !== undefined && values[f] !== "").length;
@@ -680,10 +713,7 @@ export default function LabInterpreter({
     const lines = [];
     if (demo?.age || demo?.sex) lines.push(`${demo?.age || ""}yo ${demo?.sex || ""}`.trim());
     if (cc?.text) lines.push(`CC: ${cc.text}`);
-    const pmhArr = Array.isArray(pmhSelected)
-      ? pmhSelected
-      : Object.keys(pmhSelected || {}).filter(k => pmhSelected[k]);
-    const pmh = pmhArr.slice(0, 5);
+    const pmh = (pmhSelected || []).slice(0, 5);
     if (pmh.length) lines.push(`PMH: ${pmh.join(", ")}`);
     const meds = (medications || []).map(m => typeof m === "string" ? m : m.name || "").filter(Boolean).slice(0, 5);
     if (meds.length) lines.push(`Meds: ${meds.join(", ")}`);

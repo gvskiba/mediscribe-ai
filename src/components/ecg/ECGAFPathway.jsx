@@ -61,7 +61,7 @@ const AF_RESULTS = {
     label:"Immediate Electrical Cardioversion",
     color:T.red, urgency:"Immediate",
     cardioversion:"Synchronized cardioversion at 120-200J biphasic (Class 1). Do NOT delay for anticoagulation in an unstable patient -- cardioversion takes priority. Procedural sedation (ketamine, propofol, etomidate) if hemodynamics allow. If WPW suspected, proceed with cardioversion regardless.",
-    anticoag:"Anticoagulate as soon as hemodynamically stable. Heparin IV immediately post-cardioversion. Long-term OAC per CHA2DS2-VASc. TEE or ≥ 3 weeks of OAC required before any planned elective repeat cardioversion.",
+    anticoag:"Anticoagulate as soon as hemodynamically stable. Heparin IV immediately post-cardioversion. Long-term OAC per CHA2DS2-VASc. TEE or >= 3 weeks of OAC required before any planned elective repeat cardioversion.",
     source:"2023 ACC/AHA/ACCP/HRS AF Guideline (Class 1 cardioversion)",
   },
   rhythm_lt48: {

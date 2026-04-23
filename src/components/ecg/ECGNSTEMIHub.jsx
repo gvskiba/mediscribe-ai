@@ -22,10 +22,6 @@ const T = {
   teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
   orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", red:"#ff4444",
 };
-const glass = {
-  background:"rgba(8,22,40,0.75)",border:"1px solid rgba(42,79,122,0.35)",borderRadius:16,
-};
-
 // TIMI Risk Score criteria (Antman et al.) -- 7 points total
 const TIMI_ITEMS = [
   {key:"age65",    label:"Age >= 65 years",                                                    pts:1, color:T.orange},
@@ -83,7 +79,7 @@ export default function ECGNSTEMIHub({ embedded = false, onBack }) {
   const res    = hasAny ? timiResult(score) : null;
 
   const tabBtn = (id, label, icon, activeColor) => (
-    <button key={id} onClick={() => setSection(id)}
+    <button onClick={() => setSection(id)}
       style={{padding:"7px 14px",borderRadius:8,cursor:"pointer",whiteSpace:"nowrap",
         fontFamily:"DM Sans",fontWeight:600,fontSize:12,transition:"all .12s",
         border:`1px solid ${section===id?`${activeColor}55`:"rgba(42,79,122,0.3)"}`,

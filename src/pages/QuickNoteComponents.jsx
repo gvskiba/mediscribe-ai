@@ -163,11 +163,15 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
   const [userTpls,    setUserTpls]    = useState([]);
   const [loadingUser, setLoadingUser] = useState(true);
   const [confirmKey,  setConfirmKey]  = useState(null);
+  const [activeTag,   setActiveTag]   = useState(null);
   const color    = type === "ros" ? "var(--qn-teal)" : "var(--qn-purple)";
   const colorRgb = type === "ros" ? "0,229,192" : "155,109,255";
 
+  // Parse comma-separated category into tags array
+  const parseTags = (str) => (str || "").split(",").map(t => t.trim()).filter(Boolean);
+
   useEffect(() => {
-    base44.entities.NoteTemplate.list("-created_date", 50)
+    base44.entities.NoteTemplate.list({ sort:"-created_date", limit:50 })
       .then(res => {
         const filtered = (res || []).filter(t => t.type === type);
         filtered.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
@@ -230,8 +234,37 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
             borderBottom:`1px solid rgba(${colorRgb},.15)` }}>
             My Templates ({userTpls.length})
           </div>
+          {/* Tag filter chips — only shown when templates have tags */}
+          {(() => {
+            const pickerTags = [...new Set(userTpls.flatMap(t => parseTags(t.category)))];
+            return pickerTags.length > 0 ? (
+              <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:7 }}>
+                <button onClick={() => setActiveTag(null)}
+                  style={{ padding:"2px 8px", borderRadius:20, cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    border:`1px solid ${!activeTag ? `rgba(${colorRgb},.5)` : "rgba(42,79,122,.4)"}`,
+                    background:!activeTag ? `rgba(${colorRgb},.12)` : "transparent",
+                    color:!activeTag ? color : "var(--qn-txt4)", transition:"all .12s" }}>
+                  All
+                </button>
+                {pickerTags.map(tag => (
+                  <button key={tag} onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+                    style={{ padding:"2px 8px", borderRadius:20, cursor:"pointer",
+                      fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      border:`1px solid ${activeTag === tag ? `rgba(${colorRgb},.5)` : "rgba(42,79,122,.35)"}`,
+                      background:activeTag === tag ? `rgba(${colorRgb},.12)` : "transparent",
+                      color:activeTag === tag ? color : "var(--qn-txt4)",
+                      transition:"all .12s" }}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            ) : null;
+          })()}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 }}>
-            {userTpls.map(t => (
+            {userTpls
+              .filter(t => !activeTag || parseTags(t.category).includes(activeTag))
+              .map(t => (
               <button key={t.id} onClick={() => handleInsert(t.text, "u-"+t.id)}
                 style={{ display:"flex", alignItems:"center", gap:7, padding:"5px 8px",
                   borderRadius:6, cursor:"pointer", textAlign:"left", transition:"all .12s",
@@ -247,6 +280,17 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
                     overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                     {t.name}
                   </div>
+                  {parseTags(t.category).length > 0 && confirmKey !== "u-"+t.id && (
+                    <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginTop:2 }}>
+                      {parseTags(t.category).map(tag => (
+                        <span key={tag} style={{ fontFamily:"'JetBrains Mono',monospace",
+                          fontSize:7, color:`rgba(${colorRgb},.6)`,
+                          background:`rgba(${colorRgb},.07)`,
+                          border:`1px solid rgba(${colorRgb},.2)`,
+                          borderRadius:10, padding:"1px 5px" }}>{tag}</span>
+                      ))}
+                    </div>
+                  )}
                   {confirmKey === "u-"+t.id && (
                     <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                       color:"var(--qn-orange)", letterSpacing:.3 }}>
@@ -680,7 +724,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM }) {
                     flexWrap:"wrap", marginBottom:3 }}>
                     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                       fontWeight:700, color:evColor,
-                      background:evBg, border:`1px solid ${evBd}`,
+                      background:`${evColor}18`, border:`1px solid ${evBd}`,
                       borderRadius:4, padding:"1px 7px", letterSpacing:.8,
                       textTransform:"uppercase", flexShrink:0 }}>
                       {s(t.evidence_level)}
@@ -857,7 +901,7 @@ function LabFlagsCard({ flags }) {
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
                   color:"var(--qn-txt)", fontWeight:600 }}>{s(f.value)}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:c, background:bg, border:`1px solid ${bd}`,
+                  color:c, background:`${c}18`, border:`1px solid ${bd}`,
                   borderRadius:4, padding:"1px 7px", textTransform:"uppercase",
                   letterSpacing:.8, fontWeight:700 }}>{s(f.status)}</span>
                 {f.guideline_citation && (
@@ -968,7 +1012,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={Array.isArray(result.result_flags) ? result.result_flags : []} />
+      <LabFlagsCard flags={s(result.result_flags)} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (

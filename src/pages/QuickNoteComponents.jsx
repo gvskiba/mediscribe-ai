@@ -313,7 +313,7 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
           color:"var(--qn-txt4)", letterSpacing:1.2, textTransform:"uppercase",
           marginBottom:5, paddingBottom:4,
           borderBottom:"1px solid rgba(42,79,122,.25)" }}>
-          Built-in · Press 1–9
+          Built-in · Press 1–9 to insert
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 }}>
           {builtIns.map(t => (
@@ -353,7 +353,8 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
 // Returns array: { idx, raw, type:"blank"|"options"|"toggle", options?[], context? }
 function parseTokens(text) {
   const tokens = [];
-  const re = /(___|(?<!\w)([a-z][a-z -]*)(?:\/[a-z][a-z -]*)+(?!\w))/gi;
+  // Match: ___ blanks, [or] toggles (e.g. "soft [or] Rigid"), and word/word toggles
+  const re = /(___|(?:[^\]]+?)\[or\](?:[^\[]+?)(?=\s*(?:\[or\]|___|$|\n))|(?<!\w)([a-z][a-z -]*)(?:\/[a-z][a-z -]*)+(?!\w))/gi;
   let m;
   while ((m = re.exec(text)) !== null) {
     const raw = m[0];
@@ -363,6 +364,10 @@ function parseTokens(text) {
       const ctx = ctxMatch ? ctxMatch[1].toLowerCase() : null;
       const opts = ctx && BLANK_OPTIONS[ctx] ? BLANK_OPTIONS[ctx] : null;
       tokens.push({ idx:m.index, raw, type:opts ? "options" : "blank", options:opts, context:ctx });
+    } else if (raw.includes("[or]")) {
+      // Split on [or] and trim each option
+      const options = raw.split("[or]").map(o => o.trim()).filter(Boolean);
+      if (options.length >= 2) tokens.push({ idx:m.index, raw, type:"toggle", options });
     } else if (raw.includes("/")) {
       tokens.push({ idx:m.index, raw, type:"toggle", options:raw.split("/") });
     }

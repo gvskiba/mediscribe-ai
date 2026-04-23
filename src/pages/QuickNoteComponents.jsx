@@ -202,10 +202,10 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
   }, [hasContent, confirmKey, onInsert, onClose]);
 
   return (
-    <div style={{ position:"absolute", zIndex:100, left:0, right:0, top:"calc(100% + 4px)",
+    <div style={{ position:"absolute", zIndex:100, left:0, right:0, bottom:"calc(100% + 4px)",
       background:"rgba(8,22,40,.97)", border:`1px solid rgba(${colorRgb},.4)`,
-      borderRadius:10, padding:"10px 12px", boxShadow:"0 8px 32px rgba(0,0,0,.6)",
-      maxHeight:420, overflowY:"auto" }}>
+      borderRadius:10, padding:"10px 12px", boxShadow:"0 -8px 32px rgba(0,0,0,.6)",
+      maxHeight:520, overflowY:"auto" }}>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
           color, letterSpacing:1.5, textTransform:"uppercase" }}>

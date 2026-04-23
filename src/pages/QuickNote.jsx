@@ -659,6 +659,14 @@ Respond with the HPI paragraph only — no explanation, no preamble, no quotatio
 
       if (inInput) return;
 
+      // E — open MDM narrative edit (when MDM result is visible)
+      if ((e.key === "e" || e.key === "E") && !e.ctrlKey && !e.metaKey && mdmResult) {
+        e.preventDefault();
+        // Dispatch a custom event that MDMNarrativeCard listens for
+        window.dispatchEvent(new CustomEvent("qn-edit-narrative"));
+        return;
+      }
+
       // C — copy full note
       if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && (mdmResult || dispResult)) {
         e.preventDefault();
@@ -849,7 +857,7 @@ Respond with the HPI paragraph only — no explanation, no preamble, no quotatio
           {/* CC + Vitals row */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <InputZone label="Chief Complaint" value={cc} onChange={setCC} phase={1}
-              rows={2} templateType="cc" smartfill
+              rows={2} templateType="cc" smartfill kbdHint="Alt+H"
               placeholder="e.g. Chest pain, sharp, onset 2h ago — or press T to select"
               onRef={setRef(0)}
               onKeyDown={makeKeyDown(0, false, runMDM)} />
@@ -863,7 +871,7 @@ Respond with the HPI paragraph only — no explanation, no preamble, no quotatio
           {/* HPI */}
           <div style={{ marginBottom:12 }}>
             <InputZone label="HPI" value={hpi} onChange={setHpi} phase={1}
-              rows={5} copyable
+              rows={5} copyable kbdHint="Alt+H"
               placeholder="Paste HPI from nurse note or EHR — onset, location, quality, severity, duration, modifying factors, associated symptoms..."
               onRef={setRef(2)}
               onKeyDown={makeKeyDown(2, false, runMDM)} />
@@ -951,12 +959,12 @@ Respond with the HPI paragraph only — no explanation, no preamble, no quotatio
           {/* ROS + Exam row */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
             <InputZone label="Review of Systems" value={ros} onChange={setRos} phase={1}
-              rows={4} copyable templateType="ros" smartfill
+              rows={4} copyable templateType="ros" smartfill kbdHint="Alt+R"
               placeholder="Paste ROS, or press T to insert a template..."
               onRef={setRef(3)}
               onKeyDown={makeKeyDown(3, false, runMDM)} />
             <InputZone label="Physical Exam" value={exam} onChange={setExam} phase={1}
-              rows={4} copyable templateType="pe" smartfill
+              rows={4} copyable templateType="pe" smartfill kbdHint="Alt+E"
               placeholder="Paste physical exam, or press T to insert a template..."
               onRef={setRef(4)}
               onKeyDown={makeKeyDown(4, true, runMDM)} />
@@ -1073,7 +1081,7 @@ Respond with the HPI paragraph only — no explanation, no preamble, no quotatio
             {/* Labs + Imaging row */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
               <InputZone label="Labs" value={labs} onChange={setLabs} phase={2}
-                rows={4}
+                rows={4} kbdHint="Alt+L"
                 placeholder="Paste lab results — CBC, BMP, troponin, lactate, UA, coags..."
                 onRef={setRef(5)}
                 onKeyDown={makeKeyDown(5, false, runDisposition)} />

@@ -313,7 +313,7 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
           color:"var(--qn-txt4)", letterSpacing:1.2, textTransform:"uppercase",
           marginBottom:5, paddingBottom:4,
           borderBottom:"1px solid rgba(42,79,122,.25)" }}>
-          Built-in · Press 1–9 to insert
+          Built-in · Press 1–9
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 }}>
           {builtIns.map(t => (
@@ -353,8 +353,7 @@ function TemplatePicker({ type, onInsert, onClose, hasContent }) {
 // Returns array: { idx, raw, type:"blank"|"options"|"toggle", options?[], context? }
 function parseTokens(text) {
   const tokens = [];
-  // Match: ___ blanks, [or] toggles (e.g. "soft [or] Rigid"), and word/word toggles
-  const re = /(___|(?:[^\]]+?)\[or\](?:[^\[]+?)(?=\s*(?:\[or\]|___|$|\n))|(?<!\w)([a-z][a-z -]*)(?:\/[a-z][a-z -]*)+(?!\w))/gi;
+  const re = /(___|(?<!\w)([a-z][a-z -]*)(?:\/[a-z][a-z -]*)+(?!\w))/gi;
   let m;
   while ((m = re.exec(text)) !== null) {
     const raw = m[0];
@@ -364,10 +363,6 @@ function parseTokens(text) {
       const ctx = ctxMatch ? ctxMatch[1].toLowerCase() : null;
       const opts = ctx && BLANK_OPTIONS[ctx] ? BLANK_OPTIONS[ctx] : null;
       tokens.push({ idx:m.index, raw, type:opts ? "options" : "blank", options:opts, context:ctx });
-    } else if (raw.includes("[or]")) {
-      // Split on [or] and trim each option
-      const options = raw.split("[or]").map(o => o.trim()).filter(Boolean);
-      if (options.length >= 2) tokens.push({ idx:m.index, raw, type:"toggle", options });
     } else if (raw.includes("/")) {
       tokens.push({ idx:m.index, raw, type:"toggle", options:raw.split("/") });
     }
@@ -1032,6 +1027,364 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) 
   );
 }
 
+// ─── DIAGNOSIS CODING CARD ────────────────────────────────────────────────────
+const CODE_TYPE_COLOR = {
+  primary:     "var(--qn-teal)",
+  secondary:   "var(--qn-blue)",
+  comorbidity: "var(--qn-purple)",
+  symptom:     "var(--qn-gold)",
+};
+
+export function DiagnosisCodingCard({
+  finalDiagnosis, suggestions, selected, searching, error,
+  onSearch, onSelect, onRemove,
+}) {
+  const [searched, setSearched] = useState(false);
+
+  const handleSearch = () => { setSearched(true); onSearch(); };
+
+  return (
+    <div style={{ marginBottom:14, padding:"14px 16px",
+      background:"rgba(8,22,40,.5)", border:"1px solid rgba(0,229,192,.25)",
+      borderRadius:14 }}>
+
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:12 }}>
+        <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+          fontSize:15, color:"var(--qn-teal)" }}>Final Diagnosis &amp; ICD-10</span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase",
+          background:"rgba(0,229,192,.08)", border:"1px solid rgba(0,229,192,.2)",
+          borderRadius:4, padding:"2px 7px" }}>Physician confirms</span>
+        <div style={{ flex:1 }} />
+        <button onClick={handleSearch} disabled={searching}
+          style={{ padding:"5px 14px", borderRadius:7, cursor:"pointer",
+            fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+            border:`1px solid ${searching ? "rgba(42,79,122,.3)" : "rgba(0,229,192,.4)"}`,
+            background:searching ? "rgba(14,37,68,.4)" : "rgba(0,229,192,.1)",
+            color:searching ? "var(--qn-txt4)" : "var(--qn-teal)",
+            transition:"all .15s" }}>
+          {searching ? "Searching…" : searched ? "↺ Re-search" : "🔍 Find ICD-10 Codes"}
+        </button>
+      </div>
+
+      {/* Final diagnosis display */}
+      {finalDiagnosis && (
+        <div style={{ marginBottom:10, padding:"8px 12px", borderRadius:8,
+          background:"rgba(0,229,192,.06)", border:"1px solid rgba(0,229,192,.2)" }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+            color:"var(--qn-teal)", letterSpacing:1, textTransform:"uppercase",
+            marginBottom:3 }}>Diagnosis for coding</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+            fontSize:13, color:"var(--qn-txt)" }}>{s(finalDiagnosis)}</div>
+        </div>
+      )}
+
+      {/* Selected codes */}
+      {selected.length > 0 && (
+        <div style={{ marginBottom:10 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+            color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase",
+            marginBottom:6 }}>Confirmed Codes</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+            {selected.map((c, i) => (
+              <div key={c.code} style={{ display:"flex", alignItems:"center", gap:8,
+                padding:"7px 10px", borderRadius:8,
+                background:`${CODE_TYPE_COLOR[c.type] || "var(--qn-blue)"}10`,
+                border:`1px solid ${CODE_TYPE_COLOR[c.type] || "var(--qn-blue)"}33` }}>
+                {i === 0 && (
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                    color:"var(--qn-gold)", background:"rgba(245,200,66,.12)",
+                    border:"1px solid rgba(245,200,66,.3)", borderRadius:3,
+                    padding:"1px 5px", flexShrink:0 }}>PRIMARY</span>
+                )}
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700,
+                  fontSize:12, color:CODE_TYPE_COLOR[c.type] || "var(--qn-blue)",
+                  flexShrink:0 }}>{s(c.code)}</span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                  color:"var(--qn-txt2)", flex:1 }}>{s(c.description)}</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-txt4)", flexShrink:0, textTransform:"uppercase" }}>
+                  {s(c.type)}
+                </span>
+                <button onClick={() => onRemove(c.code)}
+                  style={{ background:"transparent", border:"none", cursor:"pointer",
+                    color:"var(--qn-txt4)", fontSize:12, padding:"0 2px", flexShrink:0 }}>×</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Suggestions */}
+      {suggestions.length > 0 && (
+        <div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+            color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase",
+            marginBottom:6 }}>Suggested Codes — Click to Add</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+            {suggestions.map(c => {
+              const alreadySelected = selected.find(s => s.code === c.code);
+              const tc = CODE_TYPE_COLOR[c.type] || "var(--qn-blue)";
+              return (
+                <div key={c.code}
+                  onClick={() => !alreadySelected && onSelect(c)}
+                  style={{ display:"flex", alignItems:"flex-start", gap:9,
+                    padding:"8px 10px", borderRadius:8, transition:"all .15s",
+                    cursor:alreadySelected ? "default" : "pointer",
+                    opacity:alreadySelected ? .45 : 1,
+                    background:alreadySelected ? "rgba(42,79,122,.1)" : `${tc}08`,
+                    border:`1px solid ${alreadySelected ? "rgba(42,79,122,.3)" : tc + "28"}` }}
+                  onMouseEnter={e => { if (!alreadySelected) e.currentTarget.style.background = tc + "14"; }}
+                  onMouseLeave={e => { if (!alreadySelected) e.currentTarget.style.background = tc + "08"; }}>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700,
+                    fontSize:12, color:tc, flexShrink:0, minWidth:56 }}>{s(c.code)}</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                      color:alreadySelected ? "var(--qn-txt4)" : "var(--qn-txt2)",
+                      lineHeight:1.3, marginBottom:2 }}>{s(c.description)}</div>
+                    {c.specificity_note && (
+                      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                        color:"var(--qn-txt4)", letterSpacing:.3, lineHeight:1.4 }}>
+                        {s(c.specificity_note)}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:tc, background:`${tc}14`, border:`1px solid ${tc}30`,
+                    borderRadius:4, padding:"2px 6px", flexShrink:0,
+                    textTransform:"uppercase" }}>{s(c.type)}</span>
+                  {alreadySelected && (
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                      color:"var(--qn-green)", flexShrink:0 }}>✓</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div style={{ marginTop:8, padding:"7px 10px", borderRadius:7,
+          background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)",
+          fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-coral)" }}>
+          {error}
+        </div>
+      )}
+
+      {!searching && !suggestions.length && !selected.length && (
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          color:"var(--qn-txt4)", textAlign:"center", padding:"12px 0" }}>
+          Click "Find ICD-10 Codes" to get AI-suggested codes for this diagnosis.
+          Always verify and select — codes are never auto-applied.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── INTERVENTIONS CARD ───────────────────────────────────────────────────────
+const INT_TYPE_CONFIG = {
+  medication: { icon:"💊", color:"var(--qn-blue)",   label:"Medication" },
+  procedure:  { icon:"🔧", color:"var(--qn-purple)", label:"Procedure"  },
+  iv_access:  { icon:"💉", color:"var(--qn-teal)",   label:"IV Access"  },
+  monitoring: { icon:"📈", color:"var(--qn-gold)",   label:"Monitoring" },
+  imaging:    { icon:"🩻", color:"var(--qn-coral)",  label:"Imaging"    },
+  lab:        { icon:"🧪", color:"var(--qn-green)",  label:"Lab"        },
+  other:      { icon:"📋", color:"var(--qn-txt3)",   label:"Other"      },
+};
+
+function AddInterventionRow({ onAdd }) {
+  const [type,    setType]    = useState("medication");
+  const [name,    setName]    = useState("");
+  const [dose,    setDose]    = useState("");
+  const [show,    setShow]    = useState(false);
+
+  const handleAdd = () => {
+    if (!name.trim()) return;
+    onAdd({ type, name: name.trim(), dose_route: dose.trim(), time_given:"", response:"" });
+    setName(""); setDose(""); setShow(false);
+  };
+
+  if (!show) return (
+    <button onClick={() => setShow(true)}
+      style={{ padding:"5px 12px", borderRadius:7, cursor:"pointer",
+        fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+        border:"1px solid rgba(42,79,122,.4)", background:"rgba(14,37,68,.5)",
+        color:"var(--qn-txt4)", transition:"all .15s", marginTop:4 }}>
+      + Add Intervention
+    </button>
+  );
+
+  return (
+    <div style={{ display:"flex", gap:7, flexWrap:"wrap", alignItems:"center",
+      padding:"8px 10px", borderRadius:8, marginTop:6,
+      background:"rgba(14,37,68,.5)", border:"1px solid rgba(42,79,122,.4)" }}>
+      <select value={type} onChange={e => setType(e.target.value)}
+        style={{ padding:"4px 8px", borderRadius:6, background:"rgba(8,22,40,.8)",
+          border:"1px solid rgba(42,79,122,.5)", color:"var(--qn-txt3)",
+          fontFamily:"'DM Sans',sans-serif", fontSize:11, outline:"none" }}>
+        {Object.entries(INT_TYPE_CONFIG).map(([k,v]) => (
+          <option key={k} value={k}>{v.icon} {v.label}</option>
+        ))}
+      </select>
+      <input value={name} onChange={e => setName(e.target.value)}
+        placeholder="Intervention name"
+        onKeyDown={e => e.key === "Enter" && handleAdd()}
+        style={{ flex:"1 1 160px", padding:"4px 9px", borderRadius:6,
+          background:"rgba(8,22,40,.8)", border:"1px solid rgba(42,79,122,.5)",
+          color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          outline:"none" }} />
+      <input value={dose} onChange={e => setDose(e.target.value)}
+        placeholder="Dose/route (optional)"
+        onKeyDown={e => e.key === "Enter" && handleAdd()}
+        style={{ flex:"1 1 120px", padding:"4px 9px", borderRadius:6,
+          background:"rgba(8,22,40,.8)", border:"1px solid rgba(42,79,122,.5)",
+          color:"var(--qn-txt3)", fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          outline:"none" }} />
+      <button onClick={handleAdd}
+        style={{ padding:"4px 12px", borderRadius:6, cursor:"pointer",
+          fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:11,
+          border:"1px solid rgba(0,229,192,.4)", background:"rgba(0,229,192,.1)",
+          color:"var(--qn-teal)" }}>Add</button>
+      <button onClick={() => setShow(false)}
+        style={{ padding:"4px 8px", borderRadius:6, cursor:"pointer",
+          fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          border:"1px solid rgba(42,79,122,.35)", background:"transparent",
+          color:"var(--qn-txt4)" }}>Cancel</button>
+    </div>
+  );
+}
+
+export function InterventionsCard({ items, loading, generated, onGenerate, onToggle, onUpdate, onAdd, onRemove }) {
+  const confirmed = items.filter(i => i.confirmed !== false).length;
+
+  return (
+    <div style={{ marginBottom:14, padding:"14px 16px",
+      background:"rgba(8,22,40,.5)", border:"1px solid rgba(59,158,255,.25)",
+      borderRadius:14 }}>
+
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:12 }}>
+        <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+          fontSize:15, color:"var(--qn-blue)" }}>ED Interventions</span>
+        {generated && (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:"var(--qn-txt4)", letterSpacing:.5 }}>
+            {confirmed} of {items.length} confirmed
+          </span>
+        )}
+        <div style={{ flex:1 }} />
+        {!generated && (
+          <button onClick={onGenerate} disabled={loading}
+            style={{ padding:"5px 14px", borderRadius:7, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+              border:`1px solid ${loading ? "rgba(42,79,122,.3)" : "rgba(59,158,255,.4)"}`,
+              background:loading ? "rgba(14,37,68,.4)" : "rgba(59,158,255,.1)",
+              color:loading ? "var(--qn-txt4)" : "var(--qn-blue)",
+              transition:"all .15s" }}>
+            {loading ? "Generating…" : "✦ Generate Interventions"}
+          </button>
+        )}
+        {generated && (
+          <button onClick={onGenerate} disabled={loading}
+            style={{ padding:"4px 10px", borderRadius:6, cursor:"pointer",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              border:"1px solid rgba(42,79,122,.4)", background:"transparent",
+              color:"var(--qn-txt4)" }}>↺ Regenerate</button>
+        )}
+      </div>
+
+      {!generated && !loading && (
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          color:"var(--qn-txt4)", textAlign:"center", padding:"12px 0" }}>
+          Click to generate a pre-populated interventions list from the clinical documentation.
+          Uncheck anything not actually performed.
+        </div>
+      )}
+
+      {loading && (
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+          color:"var(--qn-txt4)", textAlign:"center", padding:"12px 0" }}>
+          Generating interventions…
+        </div>
+      )}
+
+      {generated && items.length > 0 && (
+        <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+          {items.map(item => {
+            const tc  = INT_TYPE_CONFIG[item.type] || INT_TYPE_CONFIG.other;
+            const off = item.confirmed === false;
+            return (
+              <div key={item.id} style={{ display:"flex", alignItems:"flex-start",
+                gap:8, padding:"7px 10px", borderRadius:8, transition:"all .15s",
+                opacity: off ? .4 : 1,
+                background: off ? "rgba(14,37,68,.3)" : `${tc.color}08`,
+                border:`1px solid ${off ? "rgba(42,79,122,.2)" : tc.color + "28"}` }}>
+
+                {/* Checkbox */}
+                <div onClick={() => onToggle(item.id)}
+                  style={{ width:16, height:16, borderRadius:4, flexShrink:0,
+                    cursor:"pointer", marginTop:1,
+                    background: off ? "rgba(14,37,68,.6)" : `${tc.color}20`,
+                    border:`2px solid ${off ? "rgba(42,79,122,.4)" : tc.color}`,
+                    display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  {!off && <span style={{ fontSize:9, color:tc.color, lineHeight:1 }}>✓</span>}
+                </div>
+
+                {/* Icon + type */}
+                <span style={{ fontSize:14, flexShrink:0 }}>{tc.icon}</span>
+
+                {/* Content */}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+                    fontSize:12, color: off ? "var(--qn-txt4)" : "var(--qn-txt)",
+                    marginBottom:2 }}>
+                    {s(item.name)}
+                    {item.dose_route && (
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                        color:tc.color, marginLeft:7, fontWeight:400 }}>
+                        {s(item.dose_route)}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                    {/* Time input */}
+                    <input value={item.time_given || ""}
+                      onChange={e => onUpdate(item.id, "time_given", e.target.value)}
+                      placeholder="Time (e.g. 1430)"
+                      style={{ padding:"2px 7px", borderRadius:5, width:110,
+                        background:"rgba(8,22,40,.6)", border:"1px solid rgba(42,79,122,.4)",
+                        color:"var(--qn-txt3)", fontFamily:"'JetBrains Mono',monospace",
+                        fontSize:9, outline:"none" }} />
+                    {/* Response input */}
+                    <input value={item.response || ""}
+                      onChange={e => onUpdate(item.id, "response", e.target.value)}
+                      placeholder="Response / result"
+                      style={{ padding:"2px 7px", borderRadius:5, flex:"1 1 140px",
+                        background:"rgba(8,22,40,.6)", border:"1px solid rgba(42,79,122,.4)",
+                        color:"var(--qn-txt3)", fontFamily:"'DM Sans',sans-serif",
+                        fontSize:10, outline:"none" }} />
+                  </div>
+                </div>
+
+                {/* Remove */}
+                <button onClick={() => onRemove(item.id)}
+                  style={{ background:"transparent", border:"none", cursor:"pointer",
+                    color:"var(--qn-txt4)", fontSize:13, padding:"0 2px",
+                    flexShrink:0, opacity:.5 }}>×</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <AddInterventionRow onAdd={onAdd} />
+    </div>
+  );
+}
+
 // ─── LAB FLAGS CARD ──────────────────────────────────────────────────────────
 function labFlagColor(status) {
   const s = (status || "").toLowerCase();
@@ -1172,7 +1525,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={result.result_flags} />
+      <LabFlagsCard flags={s(result.result_flags)} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (

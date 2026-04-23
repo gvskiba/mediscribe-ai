@@ -544,7 +544,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       { label:"HISTORY OF PRESENT ILLNESS", text:hpi },
       { label:"REVIEW OF SYSTEMS",  text:ros },
       { label:"PHYSICAL EXAM",      text:exam },
-    ].filter(sec => sec.text?.trim());
+    ].filter(s => s.text?.trim());
 
     if (!sections.length) return;
 
@@ -701,6 +701,12 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     setHpiSumError(null);
     setHpiSummary(null);
     try {
+      const schema = {
+        type:"object", required:["summary"],
+        properties:{
+          summary:{ type:"string" },
+        },
+      };
       const prompt = `You are a board-certified emergency physician rewriting a nursing triage HPI note into a physician's clinical HPI paragraph.
 
 STRICT ACCURACY RULES — NON-NEGOTIABLE:
@@ -718,13 +724,14 @@ OUTPUT FORMAT:
 SOURCE HPI TEXT:
 ${hpi}
 
-Respond with the HPI paragraph only — no explanation, no preamble, no quotation marks.`;
+Return a JSON object with a single field: { "summary": "<your HPI paragraph here>" }`;
 
-      const res = await base44.integrations.Core.InvokeLLM({ prompt });
-      // InvokeLLM returns a string for plain-text prompts
-      const text = typeof res === "string" ? res.trim()
-        : res?.content?.[0]?.text?.trim() || res?.text?.trim() || "";
-      if (!text) throw new Error("Empty response from AI");
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: schema,
+      });
+      const text = res?.summary?.trim() || "";
+      if (!text) throw new Error("Empty response — please try again");
       setHpiSummary(text);
     } catch (e) {
       setHpiSumError("HPI summary failed: " + (e.message || "Check API connectivity"));

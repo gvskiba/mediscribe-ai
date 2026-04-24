@@ -69,7 +69,7 @@ const ANALYTES = {
       return {
         trend: rising ? "worsening" : "improving",
         flags: significantRise
-          ? [`⚠ Delta >=0.04 ng/mL detected — meets ACC/AHA 2023 ACS protocol threshold`]
+          ? [`⚠ Delta ≥0.04 ng/mL detected — meets ACC/AHA 2023 ACS protocol threshold`]
           : [`Max delta: ${maxDelta.delta >= 0 ? "+" : ""}${maxDelta.delta.toFixed(3)} ng/mL over ${maxDelta.hours.toFixed(1)}h`],
         guideline: "ACC/AHA 2023 Chest Pain Guideline",
       };
@@ -93,13 +93,13 @@ const ANALYTES = {
       const maxRise48 = Math.max(...rise48h.map(p => latest - p.value));
       let stage = 0;
       const flags = [];
-      if (latest >= baseline * 3)        { stage = 3; flags.push("⚠ AKI Stage 3 (3x baseline) — nephrology consult indicated"); }
-      else if (latest >= baseline * 2)   { stage = 2; flags.push("⚠ AKI Stage 2 (2x baseline)"); }
+      if (latest >= baseline * 3)        { stage = 3; flags.push("⚠ AKI Stage 3 (3× baseline) — nephrology consult indicated"); }
+      else if (latest >= baseline * 2)   { stage = 2; flags.push("⚠ AKI Stage 2 (2× baseline)"); }
       else if (latest >= baseline * 1.5 || maxRise48 >= 0.3) {
         stage = 1;
         flags.push(maxRise48 >= 0.3
-          ? `⚠ AKI Stage 1 (>=0.3 mg/dL rise in 48h: +${maxRise48.toFixed(2)})`
-          : `⚠ AKI Stage 1 (>=1.5x baseline)`);
+          ? `⚠ AKI Stage 1 (≥0.3 mg/dL rise in 48h: +${maxRise48.toFixed(2)})`
+          : `⚠ AKI Stage 1 (≥1.5× baseline)`);
       }
       if (!flags.length) flags.push(`No KDIGO AKI criteria met · Latest ${latest.toFixed(2)} vs baseline ${baseline.toFixed(2)} mg/dL`);
       return {
@@ -127,8 +127,8 @@ const ANALYTES = {
       const latest = sorted[sorted.length-1].value;
       const clearance = ((first - latest) / first * 100);
       const flags = [];
-      if (clearance >= 10) flags.push(`✓ Lactate clearance ${clearance.toFixed(0)}% — >=10% clearance meets Surviving Sepsis target`);
-      else if (first > 2)  flags.push(`⚠ Inadequate clearance (${clearance.toFixed(0)}%) — target >=10% per SSC 2021`);
+      if (clearance >= 10) flags.push(`✓ Lactate clearance ${clearance.toFixed(0)}% — ≥10% clearance meets Surviving Sepsis target`);
+      else if (first > 2)  flags.push(`⚠ Inadequate clearance (${clearance.toFixed(0)}%) — target ≥10% per SSC 2021`);
       if (latest > 4)      flags.push(`⚠ Lactate >4 mmol/L — high risk; consider ICU`);
       else if (latest > 2) flags.push(`Lactate still elevated (${latest.toFixed(1)} mmol/L) — continue resuscitation`);
       return {
@@ -155,8 +155,8 @@ const ANALYTES = {
       const latest = sorted[sorted.length-1].value;
       const drop   = first - latest;
       const flags  = [];
-      if (drop >= 2)   flags.push(`⚠ Drop >=2 g/dL (${drop.toFixed(1)} g/dL) — significant hemorrhage`);
-      if (latest <= 7) flags.push(`⚠ Hgb <=7 g/dL — meets transfusion threshold (most patients)`);
+      if (drop >= 2)   flags.push(`⚠ Drop ≥2 g/dL (${drop.toFixed(1)} g/dL) — significant hemorrhage`);
+      if (latest <= 7) flags.push(`⚠ Hgb ≤7 g/dL — meets transfusion threshold (most patients)`);
       if (!flags.length) flags.push(`Hgb stable · Total change: ${drop >= 0 ? "-" : "+"}${Math.abs(drop).toFixed(1)} g/dL`);
       return {
         trend: latest < first ? "worsening" : "improving",
@@ -181,7 +181,7 @@ const ANALYTES = {
       const first = sorted[0].value; const latest = sorted[sorted.length-1].value;
       const pct = ((first - latest) / first * 100);
       const flags = [];
-      if (pct >= 30 && latest < first) flags.push(`✓ BNP decrease ${pct.toFixed(0)}% — >=30% reduction suggests treatment response`);
+      if (pct >= 30 && latest < first) flags.push(`✓ BNP decrease ${pct.toFixed(0)}% — ≥30% reduction suggests treatment response`);
       else if (latest > first) flags.push(`⚠ BNP rising — incomplete decongestion`);
       if (latest > 100) flags.push(`BNP >100 pg/mL threshold — consistent with elevated filling pressures`);
       return {
@@ -239,7 +239,12 @@ const ANALYTES = {
 };
 
 // ─── RESULT PARSER ────────────────────────────────────────────────────────────
-function parseResults(raw) {
+// Handles formats:
+//   "0800 1.8\n1200 2.4"  (time value)
+//   "1.8 / 2.4 / 2.1"    (slash-separated, evenly spaced 1h apart)
+//   "08:00: 1.8"          (with colons/labels)
+//   "1.8, 2.4, 2.1"       (comma-separated)
+function parseResults(raw, analyteType) {
   if (!raw.trim()) return [];
   const lines = raw.split(/[\n,]/).map(l => l.trim()).filter(Boolean);
   const now = Date.now();
@@ -261,6 +266,7 @@ function parseResults(raw) {
 
   // Try time + value pairs
   lines.forEach(line => {
+    // Match patterns: "0800 1.8", "08:00 1.8", "0800: 1.8", "T+3h: 1.8", "3h 1.8"
     const timeValMatch = line.match(/^(\d{1,2}:?\d{2})\s*:?\s*([\d.]+)/);
     const relMatch     = line.match(/^[Tt]\+?(\d+\.?\d*)\s*h[:\s]+?([\d.]+)/i);
     const justVal      = line.match(/^([\d.]+)\s*$/);
@@ -329,18 +335,20 @@ function AnalytePanel({ defaultType, onRemove, panelId }) {
   const label = analyteType === "custom" && customLabel ? customLabel : cfg.label;
   const unit  = analyteType === "custom" ? customUnit : cfg.unit;
 
-  const points = useMemo(() => parseResults(rawInput), [rawInput]);
+  const points = useMemo(() => parseResults(rawInput, analyteType), [rawInput, analyteType]);
   const interp = useMemo(() => {
     if (points.length < 2) return null;
     return cfg.interpret(points);
   }, [points, cfg]);
 
+  // Build chart data — format x-axis as HH:MM
   const chartData = useMemo(() => points.map(p => ({
     time:  p.label,
     value: p.value,
     ts:    p.ts,
   })), [points]);
 
+  // Dynamic y-axis domain with padding
   const yVals  = points.map(p => p.value);
   const refVals = cfg.references.filter(r => r.value).map(r => r.value);
   const allVals = [...yVals, ...refVals];
@@ -548,10 +556,11 @@ export default function LabTrendHub() {
   const [panels, setPanels] = useState([
     { id:"p1", type:"troponin" },
   ]);
-  const idCounter = useState(2);
+  const nextId = useState(() => 2)[0];
+  const idRef  = { current: panels.length + 1 };
 
   const addPanel = (type) => {
-    const id = `p${idCounter[0]++}-${Date.now()}`;
+    const id = `p${idRef.current++}-${Date.now()}`;
     setPanels(prev => [...prev, { id, type }]);
   };
 

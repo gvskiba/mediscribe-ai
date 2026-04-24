@@ -94,6 +94,7 @@ import DermMorphologyRef from '@/pages/DermMorphologyRef';
 import QuickNote from '@/pages/QuickNote';
 import AIFlagReview from '@/pages/AIFlagReview';
 import TemplateStudio from '@/pages/TemplateStudio';
+import LabTrendHub from '@/pages/LabTrendHub';
 
 
 
@@ -276,6 +277,7 @@ const AuthenticatedApp = () => {
       <Route path="/QuickNote" element={<QuickNote />} />
       <Route path="/AIFlagReview" element={<AIFlagReview />} />
       <Route path="/TemplateStudio" element={<TemplateStudio />} />
+      <Route path="/LabTrendHub" element={<LabTrendHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -5,15 +5,14 @@
 // KDIGO AKI staging, troponin delta, lactate clearance auto-calculated
 // No patient data stored — scratchpad tool for active encounter decision support
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceLine, ResponsiveContainer, Label,
 } from "recharts";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
-function injectStyles() {
-  if (typeof document === "undefined") return;
+(() => {
   if (document.getElementById("lth-css")) return;
   const s = document.createElement("style"); s.id = "lth-css";
   s.textContent = `
@@ -42,7 +41,7 @@ function injectStyles() {
     l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
     document.head.appendChild(l);
   }
-}
+})();
 
 // ─── ANALYTE CONFIGURATION ────────────────────────────────────────────────────
 const ANALYTES = {
@@ -219,6 +218,96 @@ const ANALYTES = {
     },
   },
 
+  wbc: {
+    label:"WBC / Bands",
+    unit:"K/µL",
+    color:"#e879f9",
+    decimals:1,
+    references:[
+      { value:12,  label:"SIRS >12 K/µL",  color:"rgba(255,107,107,.5)", dash:"6 3" },
+      { value:4,   label:"SIRS <4 K/µL",   color:"rgba(59,158,255,.5)",  dash:"4 4" },
+    ],
+    interpret: (points) => {
+      if (points.length < 2) return null;
+      const sorted = [...points].sort((a,b) => a.ts - b.ts);
+      const first = sorted[0].value; const latest = sorted[sorted.length-1].value;
+      const flags = [];
+      if (latest > 12)     flags.push("⚠ WBC >12 K/µL — meets SIRS leukocytosis criterion");
+      else if (latest < 4) flags.push("⚠ WBC <4 K/µL — leukopenia, meets SIRS criterion");
+      const rising = latest > first;
+      if (flags.length === 0) flags.push(`WBC ${latest.toFixed(1)} K/µL · Change: ${rising ? "+" : ""}${(latest-first).toFixed(1)}`);
+      const pct = ((first - latest) / first * 100);
+      if (!rising && Math.abs(pct) >= 20) flags.push(`✓ WBC improved ${Math.abs(pct).toFixed(0)}% from peak`);
+      return {
+        trend: latest < first && first > 12 ? "improving"
+             : latest > first ? "worsening" : "stable",
+        flags,
+        guideline:"SIRS Criteria (Bone et al. 1992) · Sepsis-3 2016",
+      };
+    },
+  },
+
+  sodium: {
+    label:"Sodium",
+    unit:"mEq/L",
+    color:"#38bdf8",
+    decimals:0,
+    references:[
+      { value:135, label:"Low normal (135)",  color:"rgba(59,158,255,.4)",  dash:"5 3" },
+      { value:145, label:"High normal (145)", color:"rgba(255,159,67,.4)",  dash:"4 4" },
+    ],
+    interpret: (points) => {
+      if (points.length < 2) return null;
+      const sorted = [...points].sort((a,b) => a.ts - b.ts);
+      const first = sorted[0].value; const latest = sorted[sorted.length-1].value;
+      const totalChange = latest - first;
+      // Calculate correction rate per 24h
+      const totalHours = (sorted[sorted.length-1].ts - sorted[0].ts) / 3600000 || 1;
+      const ratePer24h = (totalChange / totalHours) * 24;
+      const flags = [];
+      if (first < 130 || latest < 130) {
+        if (ratePer24h > 12) flags.push(`⚠ Correction rate ${ratePer24h.toFixed(1)} mEq/L/24h — exceeds 12 mEq/L/24h limit (ODS risk)`);
+        else if (ratePer24h > 0 && ratePer24h <= 12) flags.push(`✓ Correction rate ${ratePer24h.toFixed(1)} mEq/L/24h — within safe limits (<12 mEq/L/24h)`);
+        else if (ratePer24h < 0) flags.push(`⚠ Sodium declining despite treatment`);
+      }
+      if (first > 145 && totalChange < 0) flags.push(`Correcting hypernatremia · Rate: ${Math.abs(ratePer24h).toFixed(1)} mEq/L/24h (target ≤0.5/h)`);
+      if (!flags.length) flags.push(`Na ${latest} mEq/L · Total change: ${totalChange >= 0 ? "+" : ""}${totalChange} mEq/L over ${totalHours.toFixed(1)}h`);
+      return {
+        trend: (first < 135 && latest > first) || (first > 145 && latest < first) ? "improving"
+             : latest < 135 || latest > 145 ? "worsening" : "stable",
+        flags,
+        guideline:"Sterns et al. JASN 2018 · ODS prevention guidelines",
+      };
+    },
+  },
+
+  inr: {
+    label:"INR / PT",
+    unit:"",
+    color:"#fb923c",
+    decimals:2,
+    references:[
+      { value:1.5, label:"Coagulopathy threshold (1.5)", color:"rgba(255,159,67,.5)", dash:"6 3" },
+      { value:3.0, label:"Supratherapeutic (3.0)",       color:"rgba(255,68,68,.4)",  dash:"4 4" },
+    ],
+    interpret: (points) => {
+      if (points.length < 2) return null;
+      const sorted = [...points].sort((a,b) => a.ts - b.ts);
+      const first = sorted[0].value; const latest = sorted[sorted.length-1].value;
+      const flags = [];
+      if (latest > 3.0)    flags.push("⚠ INR >3.0 — supratherapeutic; consider reversal");
+      else if (latest > 1.5) flags.push("⚠ INR >1.5 — coagulopathy threshold exceeded");
+      if (first > 1.5 && latest <= 1.5) flags.push("✓ INR normalized to ≤1.5 after intervention");
+      else if (first > latest && latest > 1.5) flags.push(`INR improving: ${first.toFixed(2)} → ${latest.toFixed(2)}`);
+      if (!flags.length) flags.push(`INR ${latest.toFixed(2)} · Change: ${(latest-first) >= 0 ? "+" : ""}${(latest-first).toFixed(2)}`);
+      return {
+        trend: first > latest ? "improving" : latest > first ? "worsening" : "stable",
+        flags,
+        guideline:"",
+      };
+    },
+  },
+
   custom: {
     label:"Custom",
     unit:"",
@@ -331,16 +420,67 @@ function AnalytePanel({ defaultType, onRemove, panelId }) {
   const [rawInput,    setRawInput]    = useState("");
   const [customLabel, setCustomLabel] = useState("");
   const [customUnit,  setCustomUnit]  = useState("");
+  const [baseline,    setBaseline]    = useState("");    // physician-entered known baseline
+  const [copiedTrend, setCopiedTrend] = useState(false);
 
   const cfg = ANALYTES[analyteType];
   const label = analyteType === "custom" && customLabel ? customLabel : cfg.label;
   const unit  = analyteType === "custom" ? customUnit : cfg.unit;
 
+  const copySummary = useCallback(() => {
+    if (!points.length) return;
+    const sorted = [...points].sort((a,b) => a.ts - b.ts);
+    const now = new Date().toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+    const lines = [`${label.toUpperCase()} TREND — ${now}`];
+    sorted.forEach((p, i) => {
+      let line = `  ${p.label}: ${p.value.toFixed(cfg.decimals)} ${unit}`;
+      if (i > 0) {
+        const delta = p.value - sorted[i-1].value;
+        const arrow = delta > 0 ? "↑" : delta < 0 ? "↓" : "→";
+        line += ` (${delta >= 0 ? "+" : ""}${delta.toFixed(cfg.decimals)} ${arrow})`;
+      }
+      lines.push(line);
+    });
+    if (interp) {
+      lines.push("");
+      interp.flags.forEach(f => lines.push(f));
+      if (interp.guideline) lines.push(interp.guideline);
+    }
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCopiedTrend(true);
+      setTimeout(() => setCopiedTrend(false), 2500);
+    });
+  }, [points, label, unit, cfg, interp]);
+
   const points = useMemo(() => parseResults(rawInput, analyteType), [rawInput, analyteType]);
   const interp = useMemo(() => {
     if (points.length < 2) return null;
+    // For creatinine, allow a physician-entered known baseline to override first value
+    if (analyteType === "creatinine" && baseline && !isNaN(parseFloat(baseline))) {
+      const bl = parseFloat(baseline);
+      const sorted = [...points].sort((a,b) => a.ts - b.ts);
+      const latest = sorted[sorted.length-1].value;
+      const rise48h = sorted.filter(p => (sorted[sorted.length-1].ts - p.ts) <= 48*3600000);
+      const maxRise48 = Math.max(...rise48h.map(p => latest - p.value));
+      let stage = 0; const flags = [];
+      if (latest >= bl * 3)        { stage = 3; flags.push("⚠ AKI Stage 3 (3× baseline) — nephrology indicated"); }
+      else if (latest >= bl * 2)   { stage = 2; flags.push("⚠ AKI Stage 2 (2× baseline)"); }
+      else if (latest >= bl * 1.5 || maxRise48 >= 0.3) {
+        stage = 1;
+        flags.push(maxRise48 >= 0.3
+          ? `⚠ AKI Stage 1 (≥0.3 mg/dL rise in 48h: +${maxRise48.toFixed(2)})`
+          : `⚠ AKI Stage 1 (≥1.5× baseline of ${bl.toFixed(2)})`);
+      }
+      if (!flags.length) flags.push(`No KDIGO AKI criteria met · Latest ${latest.toFixed(2)} vs known baseline ${bl.toFixed(2)} mg/dL`);
+      return {
+        trend: latest > bl ? "worsening" : latest < bl ? "improving" : "stable",
+        stage: stage || null,
+        flags,
+        guideline:"KDIGO AKI 2012",
+      };
+    }
     return cfg.interpret(points);
-  }, [points, cfg]);
+  }, [points, cfg, analyteType, baseline]);
 
   // Build chart data — format x-axis as HH:MM
   const chartData = useMemo(() => points.map(p => ({
@@ -363,6 +503,9 @@ function AnalytePanel({ defaultType, onRemove, panelId }) {
     hemoglobin: "10:00: 10.2\n14:00: 8.8\n18:00: 7.1",
     bnp:        "0800: 820\n1400: 640\n2000: 490",
     glucose:    "0800: 380\n1000: 290\n1200: 220",
+    wbc:        "08:00: 18.2\n12:00: 14.6\n16:00: 11.3",
+    sodium:     "08:00: 118\n14:00: 122\n20:00: 126",
+    inr:        "0900: 3.8\n1200: 2.9\n1800: 2.1",
     custom:     "08:00: 5.2\n10:00: 4.8\n12:00: 4.1",
   }[analyteType];
 
@@ -413,6 +556,17 @@ function AnalytePanel({ defaultType, onRemove, panelId }) {
           </span>
         )}
         <div style={{ flex:1 }} />
+        {points.length > 0 && (
+          <button onClick={copySummary}
+            style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+              border:`1px solid ${copiedTrend ? "rgba(61,255,160,.5)" : "rgba(42,79,122,.45)"}`,
+              background:copiedTrend ? "rgba(61,255,160,.1)" : "rgba(14,37,68,.6)",
+              color:copiedTrend ? "var(--lth-green)" : "var(--lth-txt4)",
+              letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+            {copiedTrend ? "✓ Copied" : "Copy Summary"}
+          </button>
+        )}
         <button onClick={() => onRemove(panelId)}
           style={{ background:"transparent", border:"1px solid rgba(42,79,122,.4)",
             borderRadius:7, cursor:"pointer", padding:"4px 10px",
@@ -443,6 +597,30 @@ function AnalytePanel({ defaultType, onRemove, panelId }) {
             <span style={{ color:"var(--lth-txt3)" }}>1.8 / 2.4 / 2.1</span><br/>
             One result per line · Timestamps optional
           </div>
+
+          {/* Baseline field — shown for creatinine and sodium */}
+          {(analyteType === "creatinine" || analyteType === "sodium") && (
+            <div style={{ marginTop:10, display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--lth-txt4)", letterSpacing:.8, textTransform:"uppercase",
+                flexShrink:0 }}>
+                {analyteType === "creatinine" ? "Known Baseline Cr" : "Known Baseline Na"}
+              </div>
+              <input value={baseline} onChange={e => setBaseline(e.target.value)}
+                placeholder={analyteType === "creatinine" ? "e.g. 0.9" : "e.g. 138"}
+                style={{ padding:"4px 9px", borderRadius:6, width:90,
+                  background:"rgba(14,37,68,.8)",
+                  border:`1px solid ${baseline ? `${cfg.color}55` : "rgba(42,79,122,.5)"}`,
+                  color:"var(--lth-txt)", fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:10, outline:"none" }} />
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--lth-txt4)" }}>{unit}</span>
+              {baseline && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:cfg.color, letterSpacing:.3 }}>overrides first value</span>
+              )}
+            </div>
+          )}
           {points.length > 0 && (
             <div style={{ marginTop:10, display:"flex", flexDirection:"column", gap:4 }}>
               {points.map((p, i) => (
@@ -557,11 +735,11 @@ export default function LabTrendHub() {
   const [panels, setPanels] = useState([
     { id:"p1", type:"troponin" },
   ]);
-
-  useEffect(() => { injectStyles(); }, []);
+  const nextId = useState(() => 2)[0];
+  const idRef  = { current: panels.length + 1 };
 
   const addPanel = (type) => {
-    const id = `p${Date.now()}`;
+    const id = `p${idRef.current++}-${Date.now()}`;
     setPanels(prev => [...prev, { id, type }]);
   };
 

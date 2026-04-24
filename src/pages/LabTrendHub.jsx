@@ -556,11 +556,10 @@ export default function LabTrendHub() {
   const [panels, setPanels] = useState([
     { id:"p1", type:"troponin" },
   ]);
-  const nextId = useState(() => 2)[0];
-  const idRef  = { current: panels.length + 1 };
+  const idRef = { current: panels.length + 1 };
 
   const addPanel = (type) => {
-    const id = `p${idRef.current++}-${Date.now()}`;
+    const id = `p${Date.now()}`;
     setPanels(prev => [...prev, { id, type }]);
   };
 

@@ -5,14 +5,15 @@
 // KDIGO AKI staging, troponin delta, lactate clearance auto-calculated
 // No patient data stored — scratchpad tool for active encounter decision support
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceLine, ResponsiveContainer, Label,
 } from "recharts";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
-(() => {
+function injectStyles() {
+  if (typeof document === "undefined") return;
   if (document.getElementById("lth-css")) return;
   const s = document.createElement("style"); s.id = "lth-css";
   s.textContent = `
@@ -41,7 +42,7 @@ import {
     l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
     document.head.appendChild(l);
   }
-})();
+}
 
 // ─── ANALYTE CONFIGURATION ────────────────────────────────────────────────────
 const ANALYTES = {
@@ -556,7 +557,8 @@ export default function LabTrendHub() {
   const [panels, setPanels] = useState([
     { id:"p1", type:"troponin" },
   ]);
-  const idRef = { current: panels.length + 1 };
+
+  useEffect(() => { injectStyles(); }, []);
 
   const addPanel = (type) => {
     const id = `p${Date.now()}`;

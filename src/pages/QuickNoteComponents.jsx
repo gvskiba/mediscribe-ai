@@ -611,7 +611,7 @@ function SmartFillBar({ value, onChange }) {
 }
 
 // ─── INPUT ZONE ───────────────────────────────────────────────────────────────
-export function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown, copyable, templateType, smartfill, kbdHint }) {
+export function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown, copyable, templateType, smartfill, kbdHint, vitalsTrendLink }) {
   const inputRef = useRef();
   const [copiedField, setCopiedField] = useState(false);
   const [showPicker,  setShowPicker]  = useState(false);
@@ -643,6 +643,18 @@ export function InputZone({ label, value, onChange, placeholder, rows, phase, re
               padding:"1px 6px", marginLeft:7, letterSpacing:.5,
               verticalAlign:"middle" }}>
               {kbdHint}
+            </span>
+          )}
+          {vitalsTrendLink && (
+            <span onClick={vitalsTrendLink}
+              style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                color:"var(--qn-teal)", background:"rgba(0,229,192,.08)",
+                border:"1px solid rgba(0,229,192,.25)", borderRadius:4,
+                padding:"1px 7px", marginLeft:7, letterSpacing:.5,
+                cursor:"pointer", verticalAlign:"middle", transition:"all .15s" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,229,192,.18)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,229,192,.08)"; }}>
+              📈 VitalsHub
             </span>
           )}
         </SectionLabel>
@@ -1534,8 +1546,148 @@ function LabFlagsCard({ flags }) {
   );
 }
 
+// ─── DIAGNOSIS EXPLANATION CARD (editable + simplify) ───────────────────────
+function DiagnosisExplanationCard({ text, onEdit }) {
+  const [editing,   setEditing]   = useState(false);
+  const [draft,     setDraft]     = useState(text);
+  const [saved,     setSaved]     = useState(false);
+  const [simplifying, setSimplifying] = useState(false);
+  const [simpError,   setSimpError]   = useState(null);
+
+  // Sync if parent text changes (re-run disposition)
+  const prevText = useRef(text);
+  useEffect(() => {
+    if (text !== prevText.current) {
+      setDraft(text); setEditing(false);
+      prevText.current = text;
+    }
+  }, [text]);
+
+  const handleSave = () => {
+    if (onEdit) onEdit(draft);
+    setEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleSimplify = async () => {
+    setSimplifying(true); setSimpError(null);
+    try {
+      const schema = {
+        type:"object", required:["simplified"],
+        properties:{ simplified:{ type:"string" } },
+      };
+      const prompt = `Rewrite the following patient discharge explanation at a 6th grade reading level.
+Use only common everyday words. Keep all clinical information accurate.
+Replace every medical term with a simple plain-language equivalent.
+Write in second person ("you", "your"). 2-3 sentences maximum. No bullet points.
+
+ORIGINAL:
+${draft || text}
+
+Return JSON: { "simplified": "<rewritten text>" }`;
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt, response_json_schema: schema,
+      });
+      const simplified = res?.simplified?.trim();
+      if (!simplified) throw new Error("Empty response");
+      setDraft(simplified);
+      if (onEdit) onEdit(simplified);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      setSimpError("Simplify failed — " + (e.message || "try again"));
+    } finally {
+      setSimplifying(false);
+    }
+  };
+
+  const displayText = editing ? draft : (draft || text);
+
+  return (
+    <div style={{ marginBottom:10, padding:"8px 10px", borderRadius:8,
+      background:"rgba(61,255,160,.05)", border:"1px solid rgba(61,255,160,.2)" }}>
+
+      {/* Header row */}
+      <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+          color:"var(--qn-green)", letterSpacing:.8, flex:1 }}>
+          WHAT YOU HAVE
+          {saved && (
+            <span style={{ color:"var(--qn-green)", marginLeft:8, fontSize:8 }}>✓ Saved</span>
+          )}
+        </div>
+        <div style={{ display:"flex", gap:5 }}>
+          {!editing && (
+            <button onClick={handleSimplify} disabled={simplifying}
+              style={{ padding:"2px 8px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:"1px solid rgba(0,229,192,.35)",
+                background:"rgba(0,229,192,.07)",
+                color: simplifying ? "var(--qn-txt4)" : "var(--qn-teal)",
+                letterSpacing:.4, transition:"all .15s" }}>
+              {simplifying ? "Simplifying…" : "↓ Simplify"}
+            </button>
+          )}
+          {!editing ? (
+            <button onClick={() => { setDraft(displayText); setEditing(true); }}
+              style={{ padding:"2px 8px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:"1px solid rgba(61,255,160,.3)",
+                background:"rgba(61,255,160,.06)",
+                color:"var(--qn-green)", letterSpacing:.4 }}>
+              ✎ Edit
+            </button>
+          ) : (
+            <>
+              <button onClick={handleSave}
+                style={{ padding:"2px 8px", borderRadius:5, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                  border:"1px solid rgba(61,255,160,.5)",
+                  background:"rgba(61,255,160,.12)",
+                  color:"var(--qn-green)", letterSpacing:.4 }}>
+                ✓ Done
+              </button>
+              <button onClick={() => { setDraft(text); setEditing(false); }}
+                style={{ padding:"2px 8px", borderRadius:5, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  border:"1px solid rgba(42,79,122,.4)",
+                  background:"transparent", color:"var(--qn-txt4)" }}>
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      {editing ? (
+        <textarea value={draft} onChange={e => setDraft(e.target.value)}
+          rows={4}
+          style={{ background:"rgba(14,37,68,.7)",
+            border:"1px solid rgba(61,255,160,.4)", borderRadius:8,
+            padding:"8px 10px", color:"var(--qn-txt)",
+            fontFamily:"'DM Sans',sans-serif", fontSize:12,
+            lineHeight:1.7, outline:"none", width:"100%",
+            boxSizing:"border-box", resize:"vertical" }}
+          autoFocus />
+      ) : (
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+          color:"var(--qn-txt2)", lineHeight:1.7 }}>
+          {s(displayText)}
+        </div>
+      )}
+
+      {simpError && (
+        <div style={{ marginTop:5, fontFamily:"'DM Sans',sans-serif", fontSize:10,
+          color:"var(--qn-coral)" }}>{simpError}</div>
+      )}
+    </div>
+  );
+}
+
 // ─── DISPOSITION RESULT DISPLAY ───────────────────────────────────────────────
-export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
+export function DispositionResult({ result, copiedDisch, setCopiedDisch, onDiagExplanationEdit }) {
   const [copiedReeval, setCopiedReeval] = useState(false);
   const [copiedPlan,   setCopiedPlan]   = useState(false);
   const [copiedOrders, setCopiedOrders] = useState(false);
@@ -1615,7 +1767,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={result.result_flags} />
+      <LabFlagsCard flags={s(result.result_flags)} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (
@@ -1724,15 +1876,10 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch }) {
           </div>
 
           {di.diagnosis_explanation && (
-            <div style={{ marginBottom:10, padding:"8px 10px", borderRadius:8,
-              background:"rgba(61,255,160,.05)", border:"1px solid rgba(61,255,160,.15)" }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-                color:"var(--qn-green)", letterSpacing:.8, marginBottom:4 }}>
-                WHAT YOU HAVE
-              </div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-                color:"var(--qn-txt2)", lineHeight:1.7 }}>{s(di.diagnosis_explanation)}</div>
-            </div>
+            <DiagnosisExplanationCard
+              text={s(di.diagnosis_explanation)}
+              onEdit={onDiagExplanationEdit}
+            />
           )}
 
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>

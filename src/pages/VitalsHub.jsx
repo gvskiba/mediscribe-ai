@@ -4,13 +4,13 @@
 // SIRS criteria, qSOFA, Shock Index auto-calculated per time point
 // Pre-populates from QuickNote via ?v= URL param
 // No data saved — clinical decision support scratchpad
-
+ 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceLine, ResponsiveContainer,
 } from "recharts";
-
+ 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
   if (document.getElementById("vh-css")) return;
@@ -42,7 +42,7 @@ import {
     document.head.appendChild(l);
   }
 })();
-
+ 
 // ─── PARAMETER CONFIG ─────────────────────────────────────────────────────────
 const PARAMS = {
   hr:   { label:"Heart Rate",    unit:"bpm",  color:"#ff6b6b", decimals:0,
@@ -65,7 +65,7 @@ const PARAMS = {
           refs:[{ v:38.3,label:"SIRS >38.3°C",    dash:"5 3", color:"rgba(255,107,107,.4)" },
                 { v:36,  label:"SIRS <36°C",      dash:"4 4", color:"rgba(59,158,255,.4)"  }] },
 };
-
+ 
 // ─── VITALS PARSER ─────────────────────────────────────────────────────────────
 // Handles: "0800: HR 102 BP 148/92 RR 18 SpO2 96% T 37.4"
 //          "HR 102 BP 148/92 RR 18 SpO2 96% T 37.4" (single line, auto-time)
@@ -75,7 +75,7 @@ function parseVitalsSeries(raw) {
   const blocks = raw.split(/\n/).filter(l => l.trim());
   const results = [];
   const now = Date.now();
-
+ 
   blocks.forEach((line, idx) => {
     const trimmed = line.trim();
     // Extract timestamp
@@ -91,7 +91,7 @@ function parseVitalsSeries(raw) {
       label = `T${idx === 0 ? "0" : "+" + (idx * 30) + "m"}`;
       rest = trimmed;
     }
-
+ 
     // Extract each vital
     const extract = (pattern) => {
       const m = rest.match(pattern);
@@ -105,7 +105,7 @@ function parseVitalsSeries(raw) {
     const rr   = extract(/\brr\s*(\d+)/i)   || extract(/\bresp\s*(\d+)/i);
     const spo2 = extract(/spo2\s*(\d+)/i)   || extract(/o2\s+sat\s*(\d+)/i) || extract(/sat\s*(\d+)/i);
     const temp = extract(/\bt\s*([\d.]+)/i) || extract(/temp\s*([\d.]+)/i);
-
+ 
     const point = { ts, label, hr, sbp, dbp, map, rr, spo2, temp };
     // Only add if at least one vital extracted
     if (Object.values({ hr, sbp, rr, spo2, temp }).some(v => v !== null)) {
@@ -114,7 +114,7 @@ function parseVitalsSeries(raw) {
   });
   return results.sort((a,b) => a.ts - b.ts);
 }
-
+ 
 // ─── CLINICAL CALCULATORS ─────────────────────────────────────────────────────
 function calcSIRS(p) {
   const criteria = [];
@@ -124,19 +124,19 @@ function calcSIRS(p) {
   if (p.temp!== null && p.temp < 36)   criteria.push("T <36°C");
   return criteria; // ≥2 = SIRS
 }
-
+ 
 function calcQSOFA(p) {
   const criteria = [];
   if (p.rr  !== null && p.rr  >= 22)  criteria.push("RR ≥22");
   if (p.sbp !== null && p.sbp <= 100) criteria.push("SBP ≤100");
   return criteria; // ≥2 = qSOFA positive (AMS not assessable from vitals alone)
 }
-
+ 
 function calcShockIndex(p) {
   if (p.hr === null || p.sbp === null || p.sbp === 0) return null;
   return parseFloat((p.hr / p.sbp).toFixed(2));
 }
-
+ 
 // ─── MINI CHART ───────────────────────────────────────────────────────────────
 function MiniChart({ paramKey, data }) {
   const cfg = PARAMS[paramKey];
@@ -149,14 +149,14 @@ function MiniChart({ paramKey, data }) {
         color:"var(--vh-txt4)" }}>no data</span>
     </div>
   );
-
+ 
   const allVals = [...vals, ...cfg.refs.map(r => r.v)].filter(Boolean);
   const yMin = Math.max(0, Math.min(...allVals) * 0.9);
   const yMax = Math.max(...allVals) * 1.1;
-
+ 
   const chartData = data.map(d => ({ time:d.label, value:d[paramKey] }))
     .filter(d => d.value !== null);
-
+ 
   const latest = vals[vals.length - 1];
   const first  = vals[0];
   const trend  = latest > first ? "↑" : latest < first ? "↓" : "→";
@@ -170,7 +170,7 @@ function MiniChart({ paramKey, data }) {
     if (cfg2 === "map" ) return latest > first ? "var(--vh-green)" : latest < 65  ? "var(--vh-red)"  : "var(--vh-gold)";
     return "var(--vh-txt3)";
   })();
-
+ 
   return (
     <div style={{ padding:"8px 10px", borderRadius:10,
       background:"rgba(8,22,40,.65)", border:`1px solid ${cfg.color}22` }}>
@@ -217,7 +217,7 @@ function MiniChart({ paramKey, data }) {
     </div>
   );
 }
-
+ 
 // ─── FORMAT VITALS FOR QUICKNOTE ──────────────────────────────────────────────
 function formatVitalsString(point) {
   const parts = [];
@@ -229,30 +229,30 @@ function formatVitalsString(point) {
   if (point.temp !== null) parts.push(`T ${point.temp.toFixed(1)}°C`);
   return parts.join("  ");
 }
-
+ 
 function sendToQuickNote(point) {
   const v = formatVitalsString(point);
   if (!v) return;
   window.location.href = "/QuickNote?vitals=" + encodeURIComponent(v);
 }
-
+ 
 // ─── TIME POINT ROW ──────────────────────────────────────────────────────────
 function TimePointRow({ point, idx }) {
   const sirs = calcSIRS(point);
   const qsofa = calcQSOFA(point);
   const si = calcShockIndex(point);
   const siFlag = si && si >= 1.0 ? "red" : si && si >= 0.9 ? "gold" : null;
-
+ 
   return (
     <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap",
       padding:"7px 12px", borderRadius:8,
       background: sirs.length >= 2 ? "rgba(255,68,68,.06)" : "rgba(8,22,40,.5)",
       border:`1px solid ${sirs.length >= 2 ? "rgba(255,68,68,.25)" : "rgba(42,79,122,.3)"}` }}>
-
+ 
       {/* Time label */}
       <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
         fontWeight:700, color:"var(--vh-txt3)", minWidth:44 }}>{point.label}</span>
-
+ 
       {/* Vital values */}
       {[
         ["HR", point.hr, PARAMS.hr],
@@ -268,7 +268,7 @@ function TimePointRow({ point, idx }) {
           {typeof val === "number" ? val.toFixed(pcfg.decimals) : val}
         </span>
       ))}
-
+ 
       {/* Badges */}
       <div style={{ display:"flex", gap:5, marginLeft:"auto", flexWrap:"wrap",
         alignItems:"center" }}>
@@ -313,12 +313,12 @@ function TimePointRow({ point, idx }) {
     </div>
   );
 }
-
+ 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function VitalsHub() {
   const [rawInput, setRawInput] = useState("");
   const [copied,   setCopied]   = useState(false);
-
+ 
   // Pre-populate from QuickNote URL param ?v=...
   useEffect(() => {
     try {
@@ -327,9 +327,9 @@ export default function VitalsHub() {
       if (v) setRawInput(decodeURIComponent(v));
     } catch {}
   }, []);
-
+ 
   const points = useMemo(() => parseVitalsSeries(rawInput), [rawInput]);
-
+ 
   // Overall trajectory — majority trend across key params
   const trajectory = useMemo(() => {
     if (points.length < 2) return null;
@@ -350,7 +350,7 @@ export default function VitalsHub() {
     if (worsening > improving) return "worsening";
     return "stable";
   }, [points]);
-
+ 
   const copySummary = useCallback(() => {
     if (!points.length) return;
     const now = new Date().toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
@@ -375,24 +375,24 @@ export default function VitalsHub() {
       setCopied(true); setTimeout(() => setCopied(false), 2500);
     });
   }, [points, trajectory]);
-
+ 
   const trajConfig = {
     improving:{ color:"var(--vh-green)",  bg:"rgba(61,255,160,.1)",  bd:"rgba(61,255,160,.3)",  icon:"↓", label:"Improving" },
     worsening:{ color:"var(--vh-red)",    bg:"rgba(255,68,68,.1)",   bd:"rgba(255,68,68,.3)",   icon:"↑", label:"Worsening" },
     stable:   { color:"var(--vh-gold)",   bg:"rgba(245,200,66,.08)", bd:"rgba(245,200,66,.3)",  icon:"→", label:"Stable"    },
   };
   const tc = trajectory ? trajConfig[trajectory] : null;
-
+ 
   const placeholder = `0800: HR 122 BP 88/54 RR 24 SpO2 92% T 38.9
 0830: HR 108 BP 96/62 RR 20 SpO2 96% T 38.6
 0900: HR 94  BP 112/72 RR 18 SpO2 99% T 38.1`;
-
+ 
   return (
     <div style={{ minHeight:"100vh", background:"var(--vh-bg)",
       fontFamily:"'DM Sans',sans-serif", color:"var(--vh-txt)",
       padding:"24px 20px 60px" }}>
       <div style={{ maxWidth:1100, margin:"0 auto" }}>
-
+ 
         {/* Header */}
         <div style={{ marginBottom:20 }}>
           <button onClick={() => window.history.back()}
@@ -440,7 +440,7 @@ export default function VitalsHub() {
             </div>
           </div>
         </div>
-
+ 
         {/* Safety note */}
         <div style={{ marginBottom:14, padding:"8px 14px", borderRadius:8,
           background:"rgba(245,200,66,.06)", border:"1px solid rgba(245,200,66,.22)",
@@ -452,7 +452,7 @@ export default function VitalsHub() {
             SIRS and qSOFA require clinical context; individual patient baseline always takes precedence.
           </span>
         </div>
-
+ 
         {/* Input */}
         <div style={{ display:"grid", gridTemplateColumns:"320px 1fr", gap:16, marginBottom:16 }}>
           <div>
@@ -470,7 +470,7 @@ export default function VitalsHub() {
               One visit per line · Timestamp optional · All params optional
             </div>
           </div>
-
+ 
           {/* Time point list */}
           <div>
             {points.length > 0 ? (
@@ -510,7 +510,7 @@ export default function VitalsHub() {
             )}
           </div>
         </div>
-
+ 
         {/* Charts grid — only when ≥2 time points */}
         {points.length >= 2 && (
           <div className="vh-fade">
@@ -530,7 +530,7 @@ export default function VitalsHub() {
             </div>
           </div>
         )}
-
+ 
         <div style={{ marginTop:28, textAlign:"center",
           fontFamily:"'JetBrains Mono',monospace", fontSize:8,
           color:"rgba(107,158,200,.4)", letterSpacing:1.5 }}>

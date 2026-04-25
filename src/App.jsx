@@ -95,6 +95,7 @@ import QuickNote from '@/pages/QuickNote';
 import AIFlagReview from '@/pages/AIFlagReview';
 import TemplateStudio from '@/pages/TemplateStudio';
 import LabTrendHub from '@/pages/LabTrendHub';
+import VitalsHub from '@/pages/VitalsHub';
 
 
 
@@ -278,6 +279,7 @@ const AuthenticatedApp = () => {
       <Route path="/AIFlagReview" element={<AIFlagReview />} />
       <Route path="/TemplateStudio" element={<TemplateStudio />} />
       <Route path="/LabTrendHub" element={<LabTrendHub />} />
+      <Route path="/VitalsHub" element={<VitalsHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

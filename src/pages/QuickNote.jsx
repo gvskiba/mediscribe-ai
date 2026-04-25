@@ -240,8 +240,8 @@ INSTRUCTIONS:
 - plan_summary: 2-3 sentence overall plan narrative that incorporates imaging results — if imaging was provided, the plan must reference the specific study and finding
 - orders: array of specific discharge or admission orders as brief action items (max 12)
 - result_flags: review ALL Labs AND Imaging/Radiology results provided. For EACH abnormal lab value AND for EACH significant imaging finding, create one entry. For imaging: parameter = study type (e.g. "CXR", "CT Head"), value = key finding, status based on urgency. For labs: parameter = test name with units. status = one of "critical" / "high" / "low" / "borderline" / "notable". clinical_significance: 1 sentence why it matters in this clinical context. recommendation: specific actionable next step. guideline_citation: specific guideline name + year if confident, else empty string. Only flag values and findings that warrant clinical attention — do NOT list normal results.
-- discharge_instructions.diagnosis_explanation: plain-language explanation for patient (2-3 sentences)
-- discharge_instructions.return_precautions: exactly 5 specific, actionable return precautions per ACEP standard (fever, worsening, new symptoms, medication issues, follow-up failure)
+- discharge_instructions.diagnosis_explanation: Write a 2-3 sentence plain-language explanation for the PATIENT — not for a clinician. STRICT rules: (1) 6th-8th grade reading level only — use everyday words a patient would understand; (2) any medical term must be immediately followed by a plain explanation in parentheses, e.g. "pneumonia (a lung infection)"; (3) reference the patient's ACTUAL experience this visit — mention specific improvements observed (pain improvement, vital sign normalization, fever resolution) from the recheck vitals and treatment response; (4) make it personal to this encounter, not generic to the diagnosis. Example style: "You came in today with chest pain and we found your heart looks healthy. Your pain improved with medication and your heart tracing (ECG) was normal."
+- discharge_instructions.return_precautions: exactly 5 specific, actionable return precautions per ACEP standard — write each as a complete instruction the patient can act on, not a vague symptom list
 - discharge_instructions.acep_policy_ref: reference applicable ACEP Clinical Policy if one exists, else empty string
 - For Admit, Admit to ICU, Observation, and Transfer dispositions: populate admission_service and return discharge_instructions with all fields as empty strings or empty arrays
 
@@ -445,6 +445,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [sentToNPI,     setSentToNPI]     = useState(false);
   const [sendingNPI,    setSendingNPI]    = useState(false);
   const [fatigueDismissed, setFatigueDismissed] = useState(false);
+  const [vhImported,      setVhImported]      = useState(false);   // banner state
+  const [vhDismissed,     setVhDismissed]     = useState(false);
   const [hpiSummary,      setHpiSummary]      = useState(null);
   const [hpiSumBusy,      setHpiSumBusy]      = useState(false);
   const [hpiSumError,     setHpiSumError]      = useState(null);
@@ -787,6 +789,21 @@ Respond ONLY in valid JSON, no markdown fences.`;
     }
   }, [sendingNPI, cc, vitals, hpi, ros, exam, labs, imaging, mdmResult, demo]);
 
+  // Read ?vitals= URL param from VitalsHub and pre-fill triage vitals
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const v = params.get("vitals");
+      if (v) {
+        const decoded = decodeURIComponent(v);
+        setVitals(decoded);
+        setVhImported(true);
+        // Clean URL without reload
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     const fn = e => {
       const tag = document.activeElement?.tagName?.toLowerCase();
@@ -838,8 +855,13 @@ Respond ONLY in valid JSON, no markdown fences.`;
         return;
       }
 
+      // C — copy full note
+      if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && (mdmResult || dispResult)) {
+        e.preventDefault();
+        copyNote();
+      }
       // C — copy full note · Shift+C — copy clinical inputs (CC/Vitals/HPI/ROS/PE)
-      if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey) {
+      if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && (mdmResult || dispResult || e.shiftKey)) {
         if (e.shiftKey) {
           e.preventDefault(); copyClinicalInputs(); return;
         }
@@ -993,6 +1015,23 @@ Respond ONLY in valid JSON, no markdown fences.`;
           p2Open={p2Open}
         />
 
+        {/* ── VitalsHub import banner ──────────────────────────────────────── */}
+        {vhImported && !vhDismissed && (
+          <div style={{ marginBottom:10, padding:"8px 14px", borderRadius:10,
+            background:"rgba(0,229,192,.08)", border:"1px solid rgba(0,229,192,.35)",
+            display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:14 }}>💓</span>
+            <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+              fontWeight:600, color:"var(--qn-teal)", flex:1 }}>
+              Vitals imported from VitalsHub — pre-filled in Triage Vitals field
+            </span>
+            <button onClick={() => setVhDismissed(true)}
+              style={{ background:"transparent", border:"none", cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                color:"var(--qn-txt4)", padding:"0 4px" }}>✕</button>
+          </div>
+        )}
+
         {/* ── PHASE 1 ─────────────────────────────────────────────────────── */}
         <div style={{ marginBottom:14,
           background:"rgba(8,22,40,.5)", border:"1px solid rgba(42,79,122,.4)",
@@ -1038,6 +1077,10 @@ Respond ONLY in valid JSON, no markdown fences.`;
               onKeyDown={makeKeyDown(0, false, runMDM)} />
             <InputZone label="Triage Vitals" value={vitals} onChange={setVitals} phase={1}
               rows={2}
+              vitalsTrendLink={() => {
+                const url = "/VitalsHub" + (vitals.trim() ? "?v=" + encodeURIComponent(vitals.trim()) : "");
+                window.location.href = url;
+              }}
               placeholder="e.g. HR 102 BP 148/92 RR 18 SpO2 96% T 37.4°C"
               onRef={setRef(1)}
               onKeyDown={makeKeyDown(1, false, runMDM)} />
@@ -1351,7 +1394,14 @@ Respond ONLY in valid JSON, no markdown fences.`;
                 background:"rgba(59,158,255,.1)", border:"1px solid rgba(59,158,255,.2)",
                 borderRadius:4, padding:"2px 7px" }}>ACEP Guidelines</span>
             </div>
-            <DispositionResult result={dispResult} copiedDisch={copiedDisch} setCopiedDisch={setCopiedDisch} />
+            <DispositionResult result={dispResult} copiedDisch={copiedDisch} setCopiedDisch={setCopiedDisch}
+              onDiagExplanationEdit={text => setDispResult(prev => ({
+                ...prev,
+                discharge_instructions: {
+                  ...(prev.discharge_instructions || {}),
+                  diagnosis_explanation: text,
+                },
+              }))} />
           </div>
         )}
 

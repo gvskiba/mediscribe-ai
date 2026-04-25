@@ -67,6 +67,9 @@ const PARAMS = {
 };
 
 // ─── VITALS PARSER ─────────────────────────────────────────────────────────────
+// Handles: "0800: HR 102 BP 148/92 RR 18 SpO2 96% T 37.4"
+//          "HR 102 BP 148/92 RR 18 SpO2 96% T 37.4" (single line, auto-time)
+//          Multiple lines or comma-separated blocks
 function parseVitalsSeries(raw) {
   if (!raw.trim()) return [];
   const blocks = raw.split(/\n/).filter(l => l.trim());
@@ -75,6 +78,7 @@ function parseVitalsSeries(raw) {
 
   blocks.forEach((line, idx) => {
     const trimmed = line.trim();
+    // Extract timestamp
     const timeMatch = trimmed.match(/^(\d{1,2}):?(\d{2})\s*:?\s*/);
     let ts, label, rest;
     if (timeMatch) {
@@ -83,11 +87,12 @@ function parseVitalsSeries(raw) {
       ts = d.getTime(); label = `${timeMatch[1]}:${timeMatch[2]}`;
       rest = trimmed.slice(timeMatch[0].length);
     } else {
-      ts = now - (blocks.length - 1 - idx) * 30 * 60000;
+      ts = now - (blocks.length - 1 - idx) * 30 * 60000; // 30 min apart default
       label = `T${idx === 0 ? "0" : "+" + (idx * 30) + "m"}`;
       rest = trimmed;
     }
 
+    // Extract each vital
     const extract = (pattern) => {
       const m = rest.match(pattern);
       return m ? parseFloat(m[1]) : null;
@@ -102,6 +107,7 @@ function parseVitalsSeries(raw) {
     const temp = extract(/\bt\s*([\d.]+)/i) || extract(/temp\s*([\d.]+)/i);
 
     const point = { ts, label, hr, sbp, dbp, map, rr, spo2, temp };
+    // Only add if at least one vital extracted
     if (Object.values({ hr, sbp, rr, spo2, temp }).some(v => v !== null)) {
       results.push(point);
     }
@@ -116,14 +122,14 @@ function calcSIRS(p) {
   if (p.rr  !== null && p.rr   > 20)   criteria.push("RR >20");
   if (p.temp!== null && p.temp > 38.3) criteria.push("T >38.3°C");
   if (p.temp!== null && p.temp < 36)   criteria.push("T <36°C");
-  return criteria;
+  return criteria; // ≥2 = SIRS
 }
 
 function calcQSOFA(p) {
   const criteria = [];
   if (p.rr  !== null && p.rr  >= 22)  criteria.push("RR ≥22");
   if (p.sbp !== null && p.sbp <= 100) criteria.push("SBP ≤100");
-  return criteria;
+  return criteria; // ≥2 = qSOFA positive (AMS not assessable from vitals alone)
 }
 
 function calcShockIndex(p) {
@@ -155,12 +161,13 @@ function MiniChart({ paramKey, data }) {
   const first  = vals[0];
   const trend  = latest > first ? "↑" : latest < first ? "↓" : "→";
   const trendColor = (() => {
-    if (paramKey === "hr"  ) return latest < first ? "var(--vh-green)" : latest > 100 ? "var(--vh-red)"  : "var(--vh-gold)";
-    if (paramKey === "sbp" ) return latest > first ? "var(--vh-green)" : latest < 90  ? "var(--vh-red)"  : "var(--vh-gold)";
-    if (paramKey === "rr"  ) return latest < first ? "var(--vh-green)" : latest > 22  ? "var(--vh-red)"  : "var(--vh-gold)";
-    if (paramKey === "spo2") return latest > first ? "var(--vh-green)" : latest < 90  ? "var(--vh-red)"  : "var(--vh-gold)";
-    if (paramKey === "temp") return Math.abs(latest - 37) < Math.abs(first - 37) ? "var(--vh-green)" : "var(--vh-coral)";
-    if (paramKey === "map" ) return latest > first ? "var(--vh-green)" : latest < 65  ? "var(--vh-red)"  : "var(--vh-gold)";
+    const cfg2 = paramKey;
+    if (cfg2 === "hr"  ) return latest < first ? "var(--vh-green)" : latest > 100 ? "var(--vh-red)"  : "var(--vh-gold)";
+    if (cfg2 === "sbp" ) return latest > first ? "var(--vh-green)" : latest < 90  ? "var(--vh-red)"  : "var(--vh-gold)";
+    if (cfg2 === "rr"  ) return latest < first ? "var(--vh-green)" : latest > 22  ? "var(--vh-red)"  : "var(--vh-gold)";
+    if (cfg2 === "spo2") return latest > first ? "var(--vh-green)" : latest < 90  ? "var(--vh-red)"  : "var(--vh-gold)";
+    if (cfg2 === "temp") return Math.abs(latest - 37) < Math.abs(first - 37) ? "var(--vh-green)" : "var(--vh-coral)";
+    if (cfg2 === "map" ) return latest > first ? "var(--vh-green)" : latest < 65  ? "var(--vh-red)"  : "var(--vh-gold)";
     return "var(--vh-txt3)";
   })();
 
@@ -230,7 +237,7 @@ function sendToQuickNote(point) {
 }
 
 // ─── TIME POINT ROW ──────────────────────────────────────────────────────────
-function TimePointRow({ point }) {
+function TimePointRow({ point, idx }) {
   const sirs = calcSIRS(point);
   const qsofa = calcQSOFA(point);
   const si = calcShockIndex(point);
@@ -242,9 +249,11 @@ function TimePointRow({ point }) {
       background: sirs.length >= 2 ? "rgba(255,68,68,.06)" : "rgba(8,22,40,.5)",
       border:`1px solid ${sirs.length >= 2 ? "rgba(255,68,68,.25)" : "rgba(42,79,122,.3)"}` }}>
 
+      {/* Time label */}
       <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
         fontWeight:700, color:"var(--vh-txt3)", minWidth:44 }}>{point.label}</span>
 
+      {/* Vital values */}
       {[
         ["HR", point.hr, PARAMS.hr],
         ["BP", point.sbp && point.dbp ? `${point.sbp}/${point.dbp}` : null, PARAMS.sbp],
@@ -260,6 +269,7 @@ function TimePointRow({ point }) {
         </span>
       ))}
 
+      {/* Badges */}
       <div style={{ display:"flex", gap:5, marginLeft:"auto", flexWrap:"wrap",
         alignItems:"center" }}>
         {si !== null && (
@@ -287,6 +297,7 @@ function TimePointRow({ point }) {
             qSOFA+
           </span>
         )}
+        {/* Send this time point to QuickNote */}
         <button onClick={() => sendToQuickNote(point)}
           title="Send these vitals to QuickNote Triage Vitals field"
           style={{ padding:"2px 8px", borderRadius:5, cursor:"pointer",
@@ -308,6 +319,7 @@ export default function VitalsHub() {
   const [rawInput, setRawInput] = useState("");
   const [copied,   setCopied]   = useState(false);
 
+  // Pre-populate from QuickNote URL param ?v=...
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -318,6 +330,7 @@ export default function VitalsHub() {
 
   const points = useMemo(() => parseVitalsSeries(rawInput), [rawInput]);
 
+  // Overall trajectory — majority trend across key params
   const trajectory = useMemo(() => {
     if (points.length < 2) return null;
     const first = points[0]; const last = points[points.length - 1];
@@ -440,7 +453,7 @@ export default function VitalsHub() {
           </span>
         </div>
 
-        {/* Input + time point list */}
+        {/* Input */}
         <div style={{ display:"grid", gridTemplateColumns:"320px 1fr", gap:16, marginBottom:16 }}>
           <div>
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
@@ -458,6 +471,7 @@ export default function VitalsHub() {
             </div>
           </div>
 
+          {/* Time point list */}
           <div>
             {points.length > 0 ? (
               <>
@@ -497,7 +511,7 @@ export default function VitalsHub() {
           </div>
         </div>
 
-        {/* Charts grid */}
+        {/* Charts grid — only when ≥2 time points */}
         {points.length >= 2 && (
           <div className="vh-fade">
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,

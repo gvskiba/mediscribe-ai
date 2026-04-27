@@ -1985,7 +1985,7 @@ export function DiagnosisCodingCard({
             marginBottom:6 }}>Suggested Codes — Click to Add</div>
           <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
             {suggestions.map(c => {
-              const alreadySelected = selected.find(s => s.code === c.code);
+              const alreadySelected = selected.find(sel => sel.code === c.code);
               const tc = CODE_TYPE_COLOR[c.type] || "var(--qn-blue)";
               return (
                 <div key={c.code}
@@ -2526,7 +2526,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch, onDiagE
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={s(result.result_flags)} />
+      <LabFlagsCard flags={Array.isArray(result.result_flags) ? result.result_flags : []} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (

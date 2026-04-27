@@ -7,6 +7,9 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { CC_CATEGORIES, CC_HUB_MAP, BLANK_OPTIONS } from "./QuickNoteData";
 import { ROS_TEMPLATES, PE_TEMPLATES } from "./QuickNoteTemplates";
+import { DifferentialCard, QuickDDxCard, MDMResult } from "./QuickNoteMDM";
+import { ClinicalCalcsCard } from "./QuickNoteCalcs";
+import { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function mdmLevelColor(level) {
@@ -1113,12 +1116,5 @@ function MDMNarrativeCard({ narrative, copiedMDM, setCopiedMDM, onEdit }) {
 }
 
 
-// ─── EXTRACTED TO SEPARATE FILES ────────────────────────────────────────────
-import { DifferentialCard, QuickDDxCard, MDMResult } from "./QuickNoteMDM";
-import { ClinicalCalcsCard } from "./QuickNoteCalcs";
 export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard };
-
-
-// ─── EXTRACTED TO SEPARATE FILES ────────────────────────────────────────────
-import { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";
 export { DiagnosisCodingCard, InterventionsCard, DispositionResult };

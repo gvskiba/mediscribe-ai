@@ -5,15 +5,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-
-function dispColor(disp) {
-  const d = (disp || "").toLowerCase();
-  if (d.includes("icu"))      return "#ff4444";
-  if (d.includes("admit"))    return "#ff6b6b";
-  if (d.includes("obs"))      return "#ff9f43";
-  if (d.includes("transfer")) return "#9b6dff";
-  return "#3dffa0";
-}
+import { dispColor } from "./QuickNoteComponents";
 
 // ─── LOCAL HELPERS ───────────────────────────────────────────────────────────
 const s = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
@@ -665,7 +657,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch, onDiagE
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={s(result.result_flags)} />
+      <LabFlagsCard flags={result.result_flags} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (

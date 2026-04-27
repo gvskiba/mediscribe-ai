@@ -412,7 +412,7 @@ function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
 
   if (p1.hpi) {
     lines.push(hdr("HISTORY OF PRESENT ILLNESS:"));
-    lines.push(extras.hpiSummary?.trim() || p1.hpi);
+    lines.push(p1.hpi);
     lines.push("");
   }
 

@@ -97,6 +97,7 @@ import TemplateStudio from '@/pages/TemplateStudio';
 import LabTrendHub from '@/pages/LabTrendHub';
 import VitalsHub from '@/pages/VitalsHub';
 import UserPreferences from '@/pages/UserPreferences';
+import ShiftDashboard from '@/pages/ShiftDashboard';
 
 
 
@@ -282,6 +283,7 @@ const AuthenticatedApp = () => {
       <Route path="/LabTrendHub" element={<LabTrendHub />} />
       <Route path="/VitalsHub" element={<VitalsHub />} />
       <Route path="/UserPreferences" element={<UserPreferences />} />
+      <Route path="/ShiftDashboard" element={<ShiftDashboard />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

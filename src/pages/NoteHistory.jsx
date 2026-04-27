@@ -2,6 +2,8 @@
 // Saved clinical notes from QuickNote and New Patient Input
 // Reads from the ClinicalNote entity in Base44 entity storage
 // Features: list, filter by source/date/MDM level, expand full note, copy, delete
+// Fixes: API call shape, handoff record filtering, full-note search,
+//        ICD-10 chips, patient active toggle, Continue in QuickNote
 
 import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
@@ -33,6 +35,13 @@ import { base44 } from "@/api/base44Client";
 })();
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
+// Sources that are internal scaffolding — never shown in the note list
+const INTERNAL_SOURCES = ["QN-Handoff", "VH-Analysis", "NH-Resume", "superseded"];
+const isInternalRecord = (note) =>
+  INTERNAL_SOURCES.some(s => (note.source || "").includes(s)) ||
+  (note.status === "superseded") ||
+  (note.status === "pending" && (note.source || "").includes("Handoff"));
+
 function mdmColor(level) {
   if (!level) return "#6b9ec8";
   const l = level.toLowerCase();
@@ -58,10 +67,27 @@ function formatDate(iso) {
   if (!iso) return "—";
   try {
     return new Date(iso).toLocaleDateString("en-US", {
-      month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit"
+      month:"short", day:"numeric", year:"numeric",
+      hour:"2-digit", minute:"2-digit"
     });
   } catch { return iso; }
 }
+
+function safeParseICD(json) {
+  if (!json) return [];
+  try { const p = JSON.parse(json); return Array.isArray(p) ? p : []; }
+  catch { return []; }
+}
+
+const COLOR_HEX = {
+  "var(--nh-teal)":   "#00e5c0",
+  "var(--nh-purple)": "#9b6dff",
+  "var(--nh-blue)":   "#3b9eff",
+  "var(--nh-green)":  "#3dffa0",
+  "var(--nh-gold)":   "#f5c842",
+  "var(--nh-coral)":  "#ff6b6b",
+  "var(--nh-red)":    "#ff4444",
+};
 
 function Label({ children, color }) {
   return (
@@ -73,36 +99,32 @@ function Label({ children, color }) {
   );
 }
 
-// Map CSS variable names to hex so alpha suffixes work correctly
-const COLOR_HEX = {
-  "var(--nh-teal)":   "#00e5c0",
-  "var(--nh-purple)": "#9b6dff",
-  "var(--nh-blue)":   "#3b9eff",
-  "var(--nh-green)":  "#3dffa0",
-  "var(--nh-gold)":   "#f5c842",
-  "var(--nh-coral)":  "#ff6b6b",
-  "var(--nh-red)":    "#ff4444",
-};
-
 function Badge({ text, color }) {
   if (!text) return null;
   const hex = COLOR_HEX[color] || color;
   return (
     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
       padding:"2px 8px", borderRadius:20,
-      background: `${hex}18`, border:`1px solid ${hex}44`,
-      color: color, letterSpacing:.5, textTransform:"uppercase", whiteSpace:"nowrap" }}>
+      background:`${hex}18`, border:`1px solid ${hex}44`,
+      color, letterSpacing:.5, textTransform:"uppercase", whiteSpace:"nowrap" }}>
       {text}
     </span>
   );
 }
 
 // ─── NOTE CARD ────────────────────────────────────────────────────────────────
-function NoteCard({ note, onDelete }) {
-  const [expanded,    setExpanded]    = useState(false);
-  const [copied,      setCopied]      = useState(false);
-  const [confirmDel,  setConfirmDel]  = useState(false);
-  const [deleting,    setDeleting]    = useState(false);
+function NoteCard({ note, onDelete, onUpdate }) {
+  const [expanded,   setExpanded]   = useState(false);
+  const [copied,     setCopied]     = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [deleting,   setDeleting]   = useState(false);
+  const [resuming,   setResuming]   = useState(false);
+  const [togglingActive, setTogglingActive] = useState(false);
+
+  const icdCodes = safeParseICD(note.icd_codes_json);
+  const lc = mdmColor(note.mdm_level);
+  const dc = dispColor(note.disposition);
+  const isActive = note.patient_active !== false; // default true if unset
 
   const handleCopy = () => {
     navigator.clipboard.writeText(note.full_note_text || "").then(() => {
@@ -121,31 +143,100 @@ function NoteCard({ note, onDelete }) {
     }
   };
 
-  const lc = mdmColor(note.mdm_level);
-  const dc = dispColor(note.disposition);
+  // Toggle patient active/discharged status
+  const handleToggleActive = async () => {
+    if (togglingActive) return;
+    setTogglingActive(true);
+    const newVal = !isActive;
+    try {
+      await base44.entities.ClinicalNote.update(note.id, { patient_active: newVal });
+      onUpdate(note.id, { patient_active: newVal });
+    } catch {}
+    finally { setTogglingActive(false); }
+  };
+
+  // Write NH-Resume handoff record → navigate to QuickNote
+  const handleContinue = async () => {
+    if (resuming) return;
+    setResuming(true);
+    try {
+      // Supersede any prior resume records
+      const prior = await base44.entities.ClinicalNote.list({
+        sort:"-created_date", limit:5
+      }).catch(() => []);
+      const stale = (prior || []).filter(r =>
+        r.source === "NH-Resume" && r.status === "pending"
+      );
+      await Promise.all(stale.map(r =>
+        base44.entities.ClinicalNote.update(r.id, { status:"superseded" }).catch(() => null)
+      ));
+      await base44.entities.ClinicalNote.create({
+        source:            "NH-Resume",
+        status:            "pending",
+        encounter_date:    note.encounter_date || new Date().toISOString().split("T")[0],
+        cc:                note.cc || "",
+        full_note_text:    note.vitals_raw || note.full_note_text || "",
+        hpi_raw:           note.hpi_raw || "",
+        ros_raw:           note.ros_raw || "",
+        exam_raw:          note.exam_raw || "",
+        labs_raw:          note.labs_raw || "",
+        imaging_raw:       note.imaging_raw || "",
+        working_diagnosis: note.working_diagnosis || "",
+        mdm_level:         note.mdm_level || "",
+        mdm_narrative:     note.mdm_narrative || "",
+        patient_identifier: note.patient_identifier || "",
+        icd_codes_json:    note.icd_codes_json || "",
+      });
+      window.location.href = "/QuickNote";
+    } catch (e) {
+      console.error("Resume failed:", e);
+      setResuming(false);
+    }
+  };
 
   return (
     <div className="nh-fade" style={{
       background:"rgba(8,22,40,.65)", backdropFilter:"blur(16px)",
       border:"1px solid rgba(42,79,122,.5)", borderRadius:14,
-      overflow:"hidden", transition:"border-color .15s" }}>
+      overflow:"hidden", transition:"border-color .15s",
+      opacity: isActive ? 1 : .65,
+    }}>
 
-      {/* Card header — always visible */}
+      {/* Card header */}
       <div style={{ padding:"14px 16px", cursor:"pointer" }}
         onClick={() => { setExpanded(e => !e); setConfirmDel(false); }}>
         <div style={{ display:"flex", alignItems:"flex-start", gap:10, flexWrap:"wrap" }}>
 
-          {/* Left: date + source */}
+          {/* Left: date + source + active dot */}
           <div style={{ minWidth:140 }}>
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
               color:"var(--nh-txt4)", marginBottom:3 }}>
               {formatDate(note.created_date)}
             </div>
-            <Badge text={note.source || "Note"}
-              color={note.source === "QuickNote" ? "var(--nh-teal)" : "var(--nh-purple)"} />
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+              <Badge text={note.source || "Note"}
+                color={note.source === "QuickNote" ? "var(--nh-teal)" : "var(--nh-purple)"} />
+              {/* Active / discharged dot — click to toggle */}
+              <div onClick={e => { e.stopPropagation(); handleToggleActive(); }}
+                title={isActive ? "Mark discharged" : "Mark active"}
+                style={{ display:"flex", alignItems:"center", gap:4, cursor:"pointer",
+                  padding:"2px 6px", borderRadius:10,
+                  background: isActive ? "rgba(61,255,160,.08)" : "rgba(107,158,200,.08)",
+                  border:`1px solid ${isActive ? "rgba(61,255,160,.2)" : "rgba(107,158,200,.2)"}`,
+                  transition:"all .15s" }}>
+                <div style={{ width:6, height:6, borderRadius:"50%", flexShrink:0,
+                  background: isActive ? "var(--nh-green)" : "var(--nh-txt4)",
+                  transition:"background .2s" }} />
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                  color: isActive ? "var(--nh-green)" : "var(--nh-txt4)",
+                  letterSpacing:.5, textTransform:"uppercase" }}>
+                  {togglingActive ? "…" : isActive ? "Active" : "D/C"}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Center: CC + working Dx */}
+          {/* Center: CC + working Dx + ICD codes */}
           <div style={{ flex:1, minWidth:160 }}>
             <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
               fontSize:14, color:"var(--nh-txt)", lineHeight:1.3, marginBottom:3 }}>
@@ -153,13 +244,35 @@ function NoteCard({ note, onDelete }) {
             </div>
             {note.working_diagnosis && (
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                color:"var(--nh-txt3)", lineHeight:1.4 }}>
+                color:"var(--nh-txt3)", lineHeight:1.4, marginBottom:4 }}>
                 {note.working_diagnosis}
+              </div>
+            )}
+            {/* ICD-10 code chips */}
+            {icdCodes.length > 0 && (
+              <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                {icdCodes.slice(0, 4).map((c, i) => (
+                  <span key={i} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    fontWeight:700,
+                    color: i === 0 ? "var(--nh-teal)" : "var(--nh-txt4)",
+                    background: i === 0 ? "rgba(0,229,192,.1)" : "rgba(42,79,122,.2)",
+                    border:`1px solid ${i === 0 ? "rgba(0,229,192,.3)" : "rgba(42,79,122,.4)"}`,
+                    borderRadius:4, padding:"1px 6px", letterSpacing:.5 }}>
+                    {c.code}
+                    {i === 0 && (
+                      <span style={{ fontSize:7, opacity:.6, marginLeft:3 }}>PRIMARY</span>
+                    )}
+                  </span>
+                ))}
+                {icdCodes.length > 4 && (
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:"var(--nh-txt4)" }}>+{icdCodes.length - 4}</span>
+                )}
               </div>
             )}
           </div>
 
-          {/* Right: MDM + Disposition badges */}
+          {/* Right: MDM + disposition + MRN + chevron */}
           <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
             {note.mdm_level && <Badge text={note.mdm_level} color={lc} />}
             {note.disposition && <Badge text={note.disposition} color={dc} />}
@@ -179,11 +292,32 @@ function NoteCard({ note, onDelete }) {
         </div>
       </div>
 
-      {/* Expanded: MDM narrative + full note + actions */}
+      {/* Expanded content */}
       {expanded && (
         <div style={{ borderTop:"1px solid rgba(42,79,122,.35)", padding:"14px 16px" }}>
 
-          {/* MDM narrative preview */}
+          {/* ICD-10 full list */}
+          {icdCodes.length > 0 && (
+            <div style={{ marginBottom:12, padding:"9px 12px", borderRadius:9,
+              background:"rgba(0,229,192,.05)", border:"1px solid rgba(0,229,192,.2)" }}>
+              <Label color="var(--nh-teal)">ICD-10 Codes</Label>
+              <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                {icdCodes.map((c, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700,
+                      fontSize:11, color: i === 0 ? "var(--nh-teal)" : "var(--nh-txt3)",
+                      minWidth:56 }}>{c.code}</span>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                      color:"var(--nh-txt2)" }}>{c.description}</span>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      color:"var(--nh-txt4)", textTransform:"uppercase" }}>{c.type}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* MDM narrative */}
           {note.mdm_narrative && (
             <div style={{ marginBottom:12, padding:"9px 12px", borderRadius:9,
               background:"rgba(155,109,255,.06)", border:"1px solid rgba(155,109,255,.25)" }}>
@@ -220,6 +354,17 @@ function NoteCard({ note, onDelete }) {
 
           {/* Action buttons */}
           <div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>
+            {/* Continue in QuickNote */}
+            <button onClick={handleContinue} disabled={resuming}
+              style={{ padding:"6px 14px", borderRadius:7, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                border:"1px solid rgba(0,229,192,.45)",
+                background:"rgba(0,229,192,.1)",
+                color: resuming ? "var(--nh-txt4)" : "var(--nh-teal)",
+                opacity: resuming ? .6 : 1, transition:"all .15s" }}>
+              {resuming ? "Opening…" : "Continue in QuickNote →"}
+            </button>
+
             {note.full_note_text && (
               <button onClick={handleCopy}
                 style={{ padding:"6px 14px", borderRadius:7, cursor:"pointer",
@@ -269,59 +414,72 @@ function NoteCard({ note, onDelete }) {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function NoteHistoryPage() {
-  const [notes,        setNotes]       = useState([]);
-  const [loading,      setLoading]     = useState(true);
-  const [error,        setError]       = useState(null);
-  const [filterSource, setFilterSource]= useState("All");
-  const [filterMDM,    setFilterMDM]   = useState("All");
-  const [filterDays,   setFilterDays]  = useState("30");
-  const [search,       setSearch]      = useState("");
+  const [notes,        setNotes]        = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [filterSource, setFilterSource] = useState("All");
+  const [filterMDM,    setFilterMDM]    = useState("All");
+  const [filterActive, setFilterActive] = useState("active"); // "active" | "all" | "discharged"
+  const [filterDays,   setFilterDays]   = useState("30");
+  const [search,       setSearch]       = useState("");
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      let result;
-      if (filterDays !== "All") {
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - parseInt(filterDays));
-        result = await base44.entities.ClinicalNote.filter(
-          { created_date: { $gte: cutoff.toISOString() } },
-          "-created_date",
-          200
-        );
-      } else {
-        result = await base44.entities.ClinicalNote.list("-created_date", 200);
-      }
-      setNotes(result || []);
+      // FIX: Base44 API uses list({ sort, limit }) — not positional args
+      const result = await base44.entities.ClinicalNote.list({
+        sort:"-created_date",
+        limit:300,
+      });
+      // FIX: filter out internal scaffolding records after fetch
+      const clinical = (result || []).filter(n => !isInternalRecord(n));
+      setNotes(clinical);
     } catch (e) {
       setError("Failed to load notes: " + (e.message || "unknown error"));
     } finally {
       setLoading(false);
     }
-  }, [filterDays]);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = (id) => setNotes(n => n.filter(x => x.id !== id));
+  const handleUpdate = (id, patch) =>
+    setNotes(n => n.map(x => x.id === id ? { ...x, ...patch } : x));
+
+  const cutoffMs = filterDays === "All" ? null
+    : Date.now() - parseInt(filterDays) * 86400000;
 
   const filtered = notes.filter(n => {
+    // Date filter — applied client-side now that API sort/filter is fixed
+    if (cutoffMs && new Date(n.created_date).getTime() < cutoffMs) return false;
+    // Source filter
     if (filterSource !== "All" && n.source !== filterSource) return false;
+    // MDM filter
     if (filterMDM !== "All") {
       const l = (n.mdm_level || "").toLowerCase();
-      if (filterMDM === "High" && !l.includes("high")) return false;
-      if (filterMDM === "Moderate" && !l.includes("moderate")) return false;
-      if (filterMDM === "Low" && !l.includes("low")) return false;
-      if (filterMDM === "Straightforward" && !l.includes("straightforward")) return false;
+      if (filterMDM === "High"           && !l.includes("high"))            return false;
+      if (filterMDM === "Moderate"       && !l.includes("moderate"))        return false;
+      if (filterMDM === "Low"            && !l.includes("low"))             return false;
+      if (filterMDM === "Straightforward"&& !l.includes("straightforward")) return false;
     }
+    // Active filter
+    if (filterActive === "active"     && n.patient_active === false)  return false;
+    if (filterActive === "discharged" && n.patient_active !== false)  return false;
+    // FIX: search now includes full_note_text
     if (search) {
       const q = search.toLowerCase();
-      return (n.cc || "").toLowerCase().includes(q) ||
+      return (n.cc                || "").toLowerCase().includes(q) ||
              (n.working_diagnosis || "").toLowerCase().includes(q) ||
-             (n.patient_identifier || "").toLowerCase().includes(q) ||
-             (n.mdm_narrative || "").toLowerCase().includes(q);
+             (n.patient_identifier|| "").toLowerCase().includes(q) ||
+             (n.mdm_narrative     || "").toLowerCase().includes(q) ||
+             (n.full_note_text    || "").toLowerCase().includes(q);
     }
     return true;
   });
+
+  const activeCount     = notes.filter(n => n.patient_active !== false).length;
+  const dischargedCount = notes.filter(n => n.patient_active === false).length;
 
   return (
     <div style={{ minHeight:"100vh", background:"var(--nh-bg)",
@@ -337,7 +495,8 @@ export default function NoteHistoryPage() {
             borderRadius:8, padding:"5px 14px", color:"var(--nh-txt3)", cursor:"pointer" }}>
           ← Back
         </button>
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6,
+          flexWrap:"wrap" }}>
           <h1 style={{ fontFamily:"'Playfair Display',serif", fontWeight:900,
             fontSize:"clamp(22px,4vw,34px)", letterSpacing:-.5, margin:0,
             color:"var(--nh-txt)" }}>
@@ -349,10 +508,22 @@ export default function NoteHistoryPage() {
             borderRadius:4, padding:"2px 8px" }}>
             QuickNote · NPI
           </span>
+          {/* Active / discharged summary */}
+          <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center" }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+              color:"var(--nh-green)" }}>
+              ● {activeCount} active
+            </span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+              color:"var(--nh-txt4)" }}>
+              ○ {dischargedCount} d/c
+            </span>
+          </div>
         </div>
         <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
           color:"var(--nh-txt4)", margin:0 }}>
-          Saved clinical notes · Copy to clipboard to paste into your EMR
+          Saved clinical notes · Copy to clipboard to paste into your EMR ·
+          Click active dot to toggle discharge status
         </p>
       </div>
 
@@ -361,17 +532,17 @@ export default function NoteHistoryPage() {
         marginBottom:16, padding:"12px 14px", borderRadius:10,
         background:"rgba(8,22,40,.6)", border:"1px solid rgba(42,79,122,.3)" }}>
 
-        {/* Search */}
+        {/* Search — FIX: searches full note text */}
         <div style={{ position:"relative", flex:"1 1 200px" }}>
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search CC, diagnosis, MRN…"
+            placeholder="Search CC, diagnosis, MRN, note text…"
             style={{ width:"100%", background:"rgba(14,37,68,.7)",
               border:"1px solid rgba(42,79,122,.5)", borderRadius:8,
               padding:"7px 12px", color:"var(--nh-txt)",
               fontFamily:"'DM Sans',sans-serif", fontSize:12, outline:"none",
               boxSizing:"border-box" }}
             onFocus={e => e.target.style.borderColor = "rgba(0,229,192,.5)"}
-            onBlur={e => e.target.style.borderColor = "rgba(42,79,122,.5)"} />
+            onBlur={e  => e.target.style.borderColor = "rgba(42,79,122,.5)"} />
         </div>
 
         {/* Source filter */}
@@ -387,6 +558,19 @@ export default function NoteHistoryPage() {
           </button>
         ))}
 
+        {/* Active filter */}
+        {[["active","Active only"],["all","All patients"],["discharged","Discharged"]].map(([v,l]) => (
+          <button key={v} onClick={() => setFilterActive(v)}
+            style={{ padding:"6px 12px", borderRadius:20, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+              transition:"all .15s",
+              border:`1px solid ${filterActive === v ? "rgba(61,255,160,.45)" : "rgba(42,79,122,.4)"}`,
+              background:filterActive === v ? "rgba(61,255,160,.1)" : "transparent",
+              color:filterActive === v ? "var(--nh-green)" : "var(--nh-txt3)" }}>
+            {l}
+          </button>
+        ))}
+
         {/* MDM filter */}
         <select value={filterMDM} onChange={e => setFilterMDM(e.target.value)}
           style={{ padding:"6px 10px", borderRadius:8, cursor:"pointer",
@@ -398,7 +582,7 @@ export default function NoteHistoryPage() {
           ))}
         </select>
 
-        {/* Date range */}
+        {/* Date range — FIX: now client-side, API call no longer passes unsupported params */}
         <select value={filterDays} onChange={e => setFilterDays(e.target.value)}
           style={{ padding:"6px 10px", borderRadius:8, cursor:"pointer",
             fontFamily:"'DM Sans',sans-serif", fontSize:11,
@@ -409,7 +593,6 @@ export default function NoteHistoryPage() {
           ))}
         </select>
 
-        {/* Count */}
         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
           color:"var(--nh-txt4)", marginLeft:"auto", whiteSpace:"nowrap" }}>
           {filtered.length} note{filtered.length !== 1 ? "s" : ""}
@@ -450,12 +633,11 @@ export default function NoteHistoryPage() {
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {filtered.map(n => (
-            <NoteCard key={n.id} note={n} onDelete={handleDelete} />
+            <NoteCard key={n.id} note={n} onDelete={handleDelete} onUpdate={handleUpdate} />
           ))}
         </div>
       )}
 
-      {/* Footer */}
       <div style={{ marginTop:32, textAlign:"center",
         fontFamily:"'JetBrains Mono',monospace", fontSize:8,
         color:"var(--nh-txt4)", letterSpacing:1.5 }}>

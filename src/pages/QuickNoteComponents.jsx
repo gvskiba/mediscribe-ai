@@ -1094,12 +1094,6 @@ function MDMNarrativeCard({ narrative, copiedMDM, setCopiedMDM, onEdit }) {
 }
 
 
-// ─── EXTRACTED TO SEPARATE FILES ────────────────────────────────────────────
-import { DifferentialCard, QuickDDxCard, MDMResult } from "./QuickNoteMDM";
-import { ClinicalCalcsCard } from "./QuickNoteCalcs";
-export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard };
-
-
-// ─── EXTRACTED TO SEPARATE FILES ────────────────────────────────────────────
-import { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";
-export { DiagnosisCodingCard, InterventionsCard, DispositionResult };
+// ─── RE-EXPORTED FROM SUB-MODULES ───────────────────────────────────────────
+export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard } from "./QuickNoteMDM";
+export { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";

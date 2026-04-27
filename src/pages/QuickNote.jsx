@@ -81,8 +81,8 @@ import { dispColor, StepProgress, InputZone, MDMResult, DispositionResult,
 // ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
 
 import {
-  buildMDMPrompt, buildDispPrompt, buildMDMBlock,
-  buildFullNote, buildPhase1Copy, buildPhase2Copy,
+  MDM_SCHEMA, DISP_SCHEMA, buildMDMPrompt, buildDispPrompt,
+  buildMDMBlock, buildFullNote, buildPhase1Copy, buildPhase2Copy,
 } from "./QuickNotePrompts";
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────

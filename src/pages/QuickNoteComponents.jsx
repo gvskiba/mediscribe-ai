@@ -1,17 +1,24 @@
 // QuickNoteComponents.jsx
-// Lean orchestrator — delegates to extracted sub-modules.
-// Exported: dispColor, StepProgress, InputZone, MedsAllergyZone
-//   + re-exports from sub-modules for backward compat
-
+// Extracted UI components for QuickNote.jsx
+// Exported: dispColor, StepProgress, InputZone, MedsAllergyZone,
+//           MDMResult, DispositionResult, DifferentialCard, QuickDDxCard,
+//           ClinicalCalcsCard, DiagnosisCodingCard, InterventionsCard
+ 
 import { useState, useEffect, useRef } from "react";
 import { CCPicker, TemplatePicker } from "./QuickNotePickers";
 import { SmartFillBar } from "./QuickNoteSmartFill";
-import { MedsAllergyZone } from "./QuickNoteMeds";
-import { DifferentialCard, QuickDDxCard, MDMResult } from "./QuickNoteMDM";
-import { ClinicalCalcsCard } from "./QuickNoteCalcs";
-import { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";
-
+ 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
+function mdmLevelColor(level) {
+  if (!level) return "#6b9ec8";
+  const l = level.toLowerCase();
+  if (l.includes("high"))            return "#ff4444";
+  if (l.includes("moderate"))        return "#ff9f43";
+  if (l.includes("low"))             return "#f5c842";
+  if (l.includes("straightforward")) return "#3dffa0";
+  return "#3b9eff";
+}
+ 
 export function dispColor(disp) {
   if (!disp) return "#6b9ec8";
   const d = disp.toLowerCase();
@@ -22,7 +29,7 @@ export function dispColor(disp) {
   if (d.includes("precaution")) return "#f5c842";
   return "#3dffa0";
 }
-
+ 
 function SectionLabel({ children, color, style: extraStyle }) {
   return (
     <div className="qn-section-lbl"
@@ -31,7 +38,16 @@ function SectionLabel({ children, color, style: extraStyle }) {
     </div>
   );
 }
-
+ 
+// Safe string coercion — prevents React Error #31 when AI returns unexpected objects
+function s(val) {
+  if (val === null || val === undefined) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "number") return String(val);
+  if (typeof val === "object") return JSON.stringify(val);
+  return String(val);
+}
+ 
 // ─── STEP PROGRESS ────────────────────────────────────────────────────────────
 export function StepProgress({ phase1Done, phase2Done, p2Open }) {
   const steps = [
@@ -76,20 +92,14 @@ export function StepProgress({ phase1Done, phase2Done, p2Open }) {
     </div>
   );
 }
-
+ 
 // ─── INPUT ZONE ───────────────────────────────────────────────────────────────
-export function InputZone({
-  label, value, onChange, placeholder, rows, phase,
-  onRef, onKeyDown, copyable, templateType, smartfill, kbdHint, vitalsTrendLink
-}) {
+export function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown, copyable, templateType, smartfill, kbdHint, vitalsTrendLink }) {
   const inputRef = useRef();
   const [copiedField, setCopiedField] = useState(false);
   const [showPicker,  setShowPicker]  = useState(false);
-
   useEffect(() => { if (onRef) onRef(inputRef); }, []);
-
   const phaseClass = phase === 1 ? " active-phase" : phase === 2 ? " p2-active" : "";
-
   const handleCopy = () => {
     if (!value.trim()) return;
     navigator.clipboard.writeText(value.trim()).then(() => {
@@ -97,14 +107,12 @@ export function InputZone({
       setTimeout(() => setCopiedField(false), 2000);
     });
   };
-
   const handleKeyDown = e => {
     if (templateType && e.ctrlKey && (e.key === "t" || e.key === "T") && !e.metaKey) {
       e.preventDefault(); setShowPicker(p => !p); return;
     }
     if (onKeyDown) onKeyDown(e);
   };
-
   return (
     <div style={{ position:"relative" }}>
       <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
@@ -115,7 +123,8 @@ export function InputZone({
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
               color:"rgba(107,158,200,.5)", background:"rgba(42,79,122,.2)",
               border:"1px solid rgba(42,79,122,.35)", borderRadius:4,
-              padding:"1px 6px", marginLeft:7, letterSpacing:.5, verticalAlign:"middle" }}>
+              padding:"1px 6px", marginLeft:7, letterSpacing:.5,
+              verticalAlign:"middle" }}>
               {kbdHint}
             </span>
           )}
@@ -157,7 +166,6 @@ export function InputZone({
           )}
         </div>
       </div>
-
       {showPicker && templateType === "cc" && (
         <CCPicker
           onInsert={text => { onChange(text); inputRef.current?.focus(); }}
@@ -173,7 +181,6 @@ export function InputZone({
         />
       )}
       {smartfill && <SmartFillBar value={value} onChange={onChange} />}
-
       <textarea
         ref={inputRef}
         className={`qn-ta${phaseClass}`}
@@ -187,8 +194,14 @@ export function InputZone({
     </div>
   );
 }
-
-// ─── RE-EXPORTS for backward compatibility ────────────────────────────────────
+ 
+// ─── EXTRACTED TO SEPARATE FILES ────────────────────────────────────────────
+import { MedsAllergyZone } from "./QuickNoteMeds";
 export { MedsAllergyZone };
+ 
+import { DifferentialCard, QuickDDxCard, MDMResult } from "./QuickNoteMDM";
+import { ClinicalCalcsCard } from "./QuickNoteCalcs";
 export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard };
+ 
+import { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";
 export { DiagnosisCodingCard, InterventionsCard, DispositionResult };

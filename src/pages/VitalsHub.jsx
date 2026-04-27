@@ -44,6 +44,27 @@ import {
   }
 })();
 
+// ─── PEDIATRIC VITAL NORMS (PALS) ────────────────────────────────────────────
+const PEDS_NORMS = {
+  neonate:   { label:"Neonate (<1 mo)", hr:[100,160], sbp:[60,90],   rr:[30,60], spo2:95 },
+  infant:    { label:"Infant (1-12 mo)",hr:[100,160], sbp:[70,100],  rr:[25,50], spo2:95 },
+  toddler:   { label:"Toddler (1-3 y)", hr:[90,150],  sbp:[80,110],  rr:[20,30], spo2:95 },
+  school:    { label:"School (3-12 y)", hr:[70,120],  sbp:[80,120],  rr:[18,25], spo2:95 },
+  adolescent:{ label:"Teen (12-18 y)",  hr:[60,100],  sbp:[90,130],  rr:[12,20], spo2:95 },
+};
+function getPedsRefs(ageGroup) {
+  const n = PEDS_NORMS[ageGroup]; if (!n) return {};
+  return {
+    hr:   [{ v:n.hr[0],  label:`<${n.hr[0]}`,  color:"rgba(59,158,255,.55)",  dash:"5 3" },
+           { v:n.hr[1],  label:`>${n.hr[1]}`,  color:"rgba(255,107,107,.55)", dash:"5 3" }],
+    sbp:  [{ v:n.sbp[0], label:`<${n.sbp[0]}`, color:"rgba(255,68,68,.55)",   dash:"5 3" },
+           { v:n.sbp[1], label:`>${n.sbp[1]}`, color:"rgba(255,159,67,.45)",  dash:"4 4" }],
+    rr:   [{ v:n.rr[0],  label:`<${n.rr[0]}`,  color:"rgba(59,158,255,.55)",  dash:"5 3" },
+           { v:n.rr[1],  label:`>${n.rr[1]}`,  color:"rgba(255,159,67,.55)",  dash:"5 3" }],
+    spo2: [{ v:n.spo2,   label:`<${n.spo2}%`,  color:"rgba(255,159,67,.55)",  dash:"5 3" }],
+  };
+}
+
 // ─── PARAMETER CONFIG ─────────────────────────────────────────────────────────
 const PARAMS = {
   hr:   { label:"Heart Rate",    unit:"bpm",  color:"#ff6b6b", decimals:0,
@@ -139,9 +160,10 @@ function calcShockIndex(p) {
 }
 
 // ─── MINI CHART ───────────────────────────────────────────────────────────────
-function MiniChart({ paramKey, data }) {
+function MiniChart({ paramKey, data, pedsRefs }) {
   const cfg = PARAMS[paramKey];
   if (!cfg) return null;
+  const activeRefs = (pedsRefs && pedsRefs[paramKey]) ? pedsRefs[paramKey] : cfg.refs;
   const vals = data.map(d => d[paramKey]).filter(v => v !== null);
   if (!vals.length) return (
     <div style={{ height:120, display:"flex", alignItems:"center", justifyContent:"center",
@@ -151,7 +173,7 @@ function MiniChart({ paramKey, data }) {
     </div>
   );
 
-  const allVals = [...vals, ...cfg.refs.map(r => r.v)].filter(Boolean);
+  const allVals = [...vals, ...activeRefs.map(r => r.v)].filter(Boolean);
   const yMin = Math.max(0, Math.min(...allVals) * 0.9);
   const yMax = Math.max(...allVals) * 1.1;
 
@@ -205,7 +227,7 @@ function MiniChart({ paramKey, data }) {
               );
             }}
           />
-          {cfg.refs.map((ref, i) => (
+          {activeRefs.map((ref, i) => (
             <ReferenceLine key={i} y={ref.v} stroke={ref.color}
               strokeDasharray={ref.dash} strokeWidth={1.5} />
           ))}
@@ -319,6 +341,8 @@ function TimePointRow({ point, idx }) {
 export default function VitalsHub() {
   const [rawInput, setRawInput] = useState("");
   const [copied,   setCopied]   = useState(false);
+  const [pedsMode, setPedsMode] = useState(false);
+  const [ageGroup, setAgeGroup] = useState("school");
   const [analyzing,   setAnalyzing]   = useState(false);
   const [analysis,    setAnalysis]    = useState(null);   // { vitals_summary, trend_narrative, clinical_flags }
   const [analysisErr, setAnalysisErr] = useState(null);
@@ -629,17 +653,42 @@ STRICT RULES:
         {/* Charts grid — only when ≥2 time points */}
         {points.length >= 2 && (
           <div className="vh-fade">
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-              color:"var(--vh-txt4)", letterSpacing:1.2, textTransform:"uppercase",
-              marginBottom:10 }}>
-              Trend Charts — {points[0].label} → {points[points.length-1].label}
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10,
+              flexWrap:"wrap" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                color:"var(--vh-txt4)", letterSpacing:1.2, textTransform:"uppercase",
+                flex:1 }}>
+                Trend Charts — {points[0].label} → {points[points.length-1].label}
+              </div>
+              {/* Pediatric mode */}
+              <button onClick={() => setPedsMode(p => !p)}
+                style={{ padding:"3px 10px", borderRadius:6, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                  border:`1px solid ${pedsMode ? "rgba(155,109,255,.5)" : "rgba(42,79,122,.4)"}`,
+                  background:pedsMode ? "rgba(155,109,255,.12)" : "transparent",
+                  color:pedsMode ? "var(--vh-purple)" : "var(--vh-txt4)",
+                  letterSpacing:.5, transition:"all .15s" }}>
+                {pedsMode ? "▪ Peds Mode" : "Peds Mode"}
+              </button>
+              {pedsMode && (
+                <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)}
+                  style={{ padding:"3px 8px", borderRadius:6, cursor:"pointer",
+                    background:"rgba(14,37,68,.8)", border:"1px solid rgba(155,109,255,.4)",
+                    color:"var(--vh-purple)", fontFamily:"'DM Sans',sans-serif",
+                    fontSize:11, outline:"none" }}>
+                  {Object.entries(PEDS_NORMS).map(([k,n]) => (
+                    <option key={k} value={k}>{n.label}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div style={{ display:"grid",
               gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",
               gap:10 }}>
               {Object.keys(PARAMS).map(key => (
                 points.some(p => p[key] !== null) && (
-                  <MiniChart key={key} paramKey={key} data={points} />
+                  <MiniChart key={key} paramKey={key} data={points}
+                    pedsRefs={pedsMode ? getPedsRefs(ageGroup) : null} />
                 )
               ))}
             </div>

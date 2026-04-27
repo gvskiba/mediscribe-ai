@@ -491,7 +491,9 @@ function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
   }
 
   if (p1.hpi) {
-    lines.push(hdr("HISTORY OF PRESENT ILLNESS:")); lines.push(p1.hpi); lines.push("");
+    lines.push(hdr("HISTORY OF PRESENT ILLNESS:"));
+    lines.push(extras.hpiSummary?.trim() || p1.hpi);
+    lines.push("");
   }
 
   // Medications & allergies
@@ -672,7 +674,21 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [ekg,        setEkg]        = useState("");
   const [newVitals,  setNewVitals]  = useState("");
   const [formatMode, setFormatMode] = useState("plain"); // "plain" | "epic"
-  const [encounterType, setEncounterType] = useState("adult"); // adult|peds|psych|trauma|obs
+  const [encounterType, setEncounterType] = useState("adult");
+
+  // ── Multi-patient session slots ────────────────────────────────────────────
+  // 4 independent slots; active slot index drives all clinical state below
+  const EMPTY_SLOT = () => ({
+    cc:"", vitals:"", hpi:"", ros:"", exam:"",
+    labs:"", imaging:"", ekg:"", newVitals:"",
+    medsRaw:"", allergiesRaw:"", parsedMeds:[], parsedAllergies:[],
+    mdmResult:null, dispResult:null, icdSelected:[], icdSuggestions:[],
+    interventions:[], hpiSummary:null,
+    encounterType:"adult", p2Open:false,
+  });
+  const [slots,       setSlots]       = useState(() => [EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT()]);
+  const [activeSlot,  setActiveSlot]  = useState(0);
+  const slotRef = useRef(activeSlot);
   // Undo-clear state
   const [undoData,    setUndoData]    = useState(null);   // snapshot for undo
   const [undoTimer,   setUndoTimer]   = useState(null);
@@ -680,7 +696,54 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   // Auto-save draft
   const [draftSaving, setDraftSaving] = useState(false);
   const [draftId,     setDraftId]     = useState(null);   // id of pending draft record
-  const draftRef = useRef(null);  // holds latest draft content without re-render
+  const draftRef = useRef(null);
+  const slotStateRef = useRef({}); // always up-to-date slot state for save
+
+  // Snapshot current clinical state into slots[idx]
+  const saveCurrentToSlot = useCallback((idx, state) => {
+    setSlots(prev => {
+      const next = [...prev];
+      next[idx] = { ...prev[idx], ...state };
+      return next;
+    });
+  }, []);
+
+  // Switch to slot idx — saves current state, loads new slot state
+  const switchToSlot = useCallback((idx) => {
+    if (idx === activeSlot) return;
+    // save current
+    const cur = slotStateRef.current;
+    saveCurrentToSlot(activeSlot, cur);
+    // load new slot
+    setSlots(prev => {
+      const slot = prev[idx] || EMPTY_SLOT();
+      setCC(slot.cc || "");
+      setVitals(slot.vitals || "");
+      setHpi(slot.hpi || "");
+      setRos(slot.ros || "");
+      setExam(slot.exam || "");
+      setLabs(slot.labs || "");
+      setImaging(slot.imaging || "");
+      setEkg(slot.ekg || "");
+      setNewVitals(slot.newVitals || "");
+      setMedsRaw(slot.medsRaw || "");
+      setAllergiesRaw(slot.allergiesRaw || "");
+      setParsedMeds(slot.parsedMeds || []);
+      setParsedAllergies(slot.parsedAllergies || []);
+      setMdmResult(slot.mdmResult || null);
+      setDispResult(slot.dispResult || null);
+      setIcdSelected(slot.icdSelected || []);
+      setIcdSuggestions([]);
+      setInterventions(slot.interventions || []);
+      setHpiSummary(slot.hpiSummary || null);
+      setEncounterType(slot.encounterType || "adult");
+      setP2Open(slot.p2Open || false);
+      setP1Error(null); setP2Error(null);
+      return prev;
+    });
+    setActiveSlot(idx);
+    slotRef.current = idx;
+  }, [activeSlot, saveCurrentToSlot]);
 
   // AI results
   const [mdmResult,  setMdmResult]  = useState(null);
@@ -704,10 +767,13 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [fatigueDismissed, setFatigueDismissed] = useState(false);
   const [vhImported,      setVhImported]      = useState(false);   // banner state
   const [vhDismissed,     setVhDismissed]     = useState(false);
-  const [vhAnalysis,      setVhAnalysis]      = useState(null);   // { trend_narrative, vitals_summary, clinical_flags }
+  const [vhAnalysis,      setVhAnalysis]      = useState(null);
   const [vhAnalysisDismissed, setVhAnalysisDismissed] = useState(false);
   const [nhResumed,           setNhResumed]           = useState(false);
   const [nhResumeDismissed,   setNhResumeDismissed]   = useState(false);
+  const [showKbHelp,          setShowKbHelp]          = useState(false);
+  const [addendumMode,        setAddendumMode]        = useState(false);
+  const [addendumRef,         setAddendumRef]         = useState(null); // original note data
   // Medications & allergies
   const [medsRaw,      setMedsRaw]      = useState("");
   const [allergiesRaw, setAllergiesRaw] = useState("");
@@ -835,6 +901,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       { cc, vitals, hpi, ros, exam },
       mdmResult,
       { parsedMeds, parsedAllergies,
+        hpiSummary,
         providerName: prov.full_name || demo?.full_name || "",
         sigBlock:     prov.sigBlock  || "",
         demographics: { ...(demo || {}), facility: prov.facility, location: prov.location } },
@@ -1345,10 +1412,25 @@ Respond ONLY in valid JSON, no markdown fences.`;
           if (nhRec.exam_raw)  setExam(nhRec.exam_raw);
           if (nhRec.labs_raw)  setLabs(nhRec.labs_raw);
           if (nhRec.imaging_raw) setImaging(nhRec.imaging_raw);
-          // Triage vitals stored in full_note_text for resume
           if (nhRec.full_note_text && !nhRec.hpi_raw) setVitals(nhRec.full_note_text);
           setNhResumed(true);
           base44.entities.ClinicalNote.update(nhRec.id, { status:"imported" }).catch(() => null);
+        }
+
+        // NH-Addendum — Phase 2 only, original note shown as reference banner
+        const addRec = all.find(r => r.source === "NH-Addendum" && r.status === "pending");
+        if (addRec) {
+          setAddendumRef({
+            cc:                addRec.cc || "",
+            working_diagnosis: addRec.working_diagnosis || "",
+            mdm_level:         addRec.mdm_level || "",
+            mdm_narrative:     addRec.mdm_narrative || "",
+            patient_identifier:addRec.patient_identifier || "",
+            encounter_date:    addRec.encounter_date || "",
+          });
+          setAddendumMode(true);
+          setP2Open(true);
+          base44.entities.ClinicalNote.update(addRec.id, { status:"imported" }).catch(() => null);
         }
       })
       .catch(() => null);
@@ -1393,6 +1475,11 @@ Respond ONLY in valid JSON, no markdown fences.`;
           fieldRefs.current[idx]?.current?.focus();
           return;
         }
+      }
+
+      // Shift+? — keyboard help
+      if (e.shiftKey && e.key === "?" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault(); setShowKbHelp(h => !h); return;
       }
 
       // Shift+1 — copy Phase 1 initial note
@@ -1507,6 +1594,16 @@ Respond ONLY in valid JSON, no markdown fences.`;
       .catch(() => null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // mount only
+
+  // Keep slotStateRef up-to-date for snapshot on slot switch
+  useEffect(() => {
+    slotStateRef.current = {
+      cc, vitals, hpi, ros, exam, labs, imaging, ekg, newVitals,
+      medsRaw, allergiesRaw, parsedMeds, parsedAllergies,
+      mdmResult, dispResult, icdSelected, interventions,
+      hpiSummary, encounterType, p2Open,
+    };
+  });
 
   const isFatigueRisk = useMemo(() => { const h = new Date().getHours(); return h >= 17 || h <= 7; }, []);
 
@@ -1627,6 +1724,43 @@ Respond ONLY in valid JSON, no markdown fences.`;
           p2Open={p2Open}
         />
 
+        {/* ── Multi-patient slot bar ───────────────────────────────────────── */}
+        {!embedded && (
+          <div style={{ display:"flex", gap:5, marginBottom:10,
+            padding:"6px 10px", borderRadius:10,
+            background:"rgba(8,22,40,.6)", border:"1px solid rgba(42,79,122,.3)" }}>
+            {slots.map((slot, i) => {
+              const isActive = i === activeSlot;
+              const hasData = !!(slot.cc || slot.hpi || slot.mdmResult);
+              const slotLabel = slot.cc
+                ? slot.cc.slice(0, 18) + (slot.cc.length > 18 ? "…" : "")
+                : `Slot ${i + 1}`;
+              return (
+                <button key={i} onClick={() => switchToSlot(i)}
+                  style={{ flex:1, padding:"5px 8px", borderRadius:7, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:isActive ? 700 : 500,
+                    fontSize:11, transition:"all .15s", textAlign:"left",
+                    border:`1px solid ${isActive ? "rgba(0,229,192,.5)" : hasData ? "rgba(42,79,122,.5)" : "rgba(42,79,122,.25)"}`,
+                    background:isActive ? "rgba(0,229,192,.12)" : hasData ? "rgba(14,37,68,.6)" : "transparent",
+                    color:isActive ? "var(--qn-teal)" : hasData ? "var(--qn-txt3)" : "var(--qn-txt4)" }}>
+                  {isActive && <span style={{ marginRight:4, fontSize:8 }}>●</span>}
+                  {hasData && !isActive && <span style={{ marginRight:4, fontSize:8, color:"var(--qn-gold)" }}>◆</span>}
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    opacity:.5 }}>P{i+1} </span>
+                  {slotLabel}
+                </button>
+              );
+            })}
+            <div style={{ borderLeft:"1px solid rgba(42,79,122,.3)", margin:"2px 4px" }} />
+            <button onClick={() => setShowKbHelp(h => !h)}
+              title="Keyboard shortcuts (Shift+?)"
+              style={{ padding:"4px 9px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700,
+                border:"1px solid rgba(42,79,122,.4)", background:"transparent",
+                color:"var(--qn-txt4)" }}>?</button>
+          </div>
+        )}
+
         {/* ── Undo toast — new encounter cleared ──────────────────────────── */}
         {showUndo && (
           <div style={{ marginBottom:10, padding:"8px 14px", borderRadius:10,
@@ -1740,7 +1874,24 @@ Respond ONLY in valid JSON, no markdown fences.`;
           </div>
         )}
 
-        {/* ── PHASE 1 ─────────────────────────────────────────────────────── */}
+        {/* ── Addendum mode banner — Phase 2 only, Phase 1 read-only ref ──── */}
+        {addendumMode && addendumRef && (
+          <div style={{ marginBottom:10, padding:"10px 14px", borderRadius:10,
+            background:"rgba(59,158,255,.07)", border:"1px solid rgba(59,158,255,.35)" }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              fontWeight:700, color:"var(--qn-blue)", letterSpacing:1.2,
+              textTransform:"uppercase", marginBottom:6 }}>
+              Addendum Mode — Phase 2 only · Original note reference
+            </div>
+            <div style={{ display:"flex", gap:16, flexWrap:"wrap",
+              fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-txt2)" }}>
+              {addendumRef.cc && <span><span style={{ color:"var(--qn-txt4)" }}>CC: </span>{addendumRef.cc}</span>}
+              {addendumRef.working_diagnosis && <span><span style={{ color:"var(--qn-txt4)" }}>Dx: </span>{addendumRef.working_diagnosis}</span>}
+              {addendumRef.mdm_level && <span><span style={{ color:"var(--qn-txt4)" }}>MDM: </span>{addendumRef.mdm_level}</span>}
+              {addendumRef.patient_identifier && <span><span style={{ color:"var(--qn-txt4)" }}>MRN: </span>{addendumRef.patient_identifier}</span>}
+            </div>
+          </div>
+        )}
         <div style={{ marginBottom:14,
           background:"rgba(8,22,40,.5)", border:"1px solid rgba(42,79,122,.4)",
           borderRadius:14, padding:"16px" }}>
@@ -2407,6 +2558,86 @@ Respond ONLY in valid JSON, no markdown fences.`;
             <div style={{ textAlign:"right", fontFamily:"'JetBrains Mono',monospace",
               fontSize:8, color:"rgba(107,158,200,.35)", letterSpacing:.5 }}>
               Shift+1 copy initial note · Shift+2 copy reevaluation · C full note
+            </div>
+          </div>
+        )}
+
+        {/* ── Keyboard help modal ──────────────────────────────────────────── */}
+        {showKbHelp && (
+          <div style={{ position:"fixed", inset:0, zIndex:9999,
+            background:"rgba(5,15,30,.85)", display:"flex",
+            alignItems:"center", justifyContent:"center",
+            backdropFilter:"blur(4px)" }}
+            onClick={() => setShowKbHelp(false)}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background:"rgba(8,22,40,.98)",
+                border:"1px solid rgba(42,79,122,.6)", borderRadius:16,
+                padding:"24px 28px", maxWidth:560, width:"90%",
+                maxHeight:"80vh", overflowY:"auto",
+                boxShadow:"0 20px 60px rgba(0,0,0,.7)" }}>
+              <div style={{ display:"flex", alignItems:"center", marginBottom:18 }}>
+                <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+                  fontSize:18, color:"var(--qn-txt)", flex:1 }}>
+                  Keyboard Shortcuts
+                </span>
+                <button onClick={() => setShowKbHelp(false)}
+                  style={{ background:"transparent", border:"none",
+                    cursor:"pointer", color:"var(--qn-txt4)", fontSize:18 }}>✕</button>
+              </div>
+              {[
+                { section:"EHR Copy Workflow", items:[
+                  ["Shift+1","Copy Initial Note (Phase 1) → paste into EHR"],
+                  ["Shift+2","Copy Reevaluation & Disposition (Phase 2) → paste into EHR"],
+                  ["C",      "Copy full combined note"],
+                  ["Shift+C","Copy HPI / ROS / PE only"],
+                ]},
+                { section:"Generation", items:[
+                  ["Cmd+Enter","Generate MDM (Phase 1) or Disposition (Phase 2)"],
+                  ["Ctrl+T",   "Open CC / template picker"],
+                ]},
+                { section:"Field Navigation", items:[
+                  ["Alt+H","Jump to HPI field"],
+                  ["Alt+R","Jump to ROS field"],
+                  ["Alt+E","Jump to Physical Exam field"],
+                  ["Alt+L","Jump to Labs field"],
+                  ["Tab",  "Advance to next field"],
+                ]},
+                { section:"SmartFill", items:[
+                  ["1–N",     "Select SmartFill option"],
+                  ["Tab / →", "Skip current blank"],
+                  ["Enter",   "Confirm free-text input"],
+                  ["Esc",     "Exit SmartFill"],
+                ]},
+                { section:"Interface", items:[
+                  ["Shift+?","Toggle this help panel"],
+                  ["E",      "Edit MDM narrative (when visible)"],
+                  ["P",      "Print page"],
+                ]},
+              ].map(({ section, items }) => (
+                <div key={section} style={{ marginBottom:16 }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    fontWeight:700, color:"var(--qn-teal)", letterSpacing:1.5,
+                    textTransform:"uppercase", marginBottom:8, paddingBottom:4,
+                    borderBottom:"1px solid rgba(0,229,192,.15)" }}>{section}</div>
+                  {items.map(([key, desc]) => (
+                    <div key={key} style={{ display:"flex", gap:12,
+                      alignItems:"baseline", marginBottom:5 }}>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+                        fontWeight:700, color:"var(--qn-txt)",
+                        background:"rgba(42,79,122,.3)",
+                        border:"1px solid rgba(42,79,122,.5)", borderRadius:5,
+                        padding:"2px 8px", flexShrink:0, minWidth:80,
+                        textAlign:"center" }}>{key}</span>
+                      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                        color:"var(--qn-txt3)", lineHeight:1.4 }}>{desc}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div style={{ marginTop:8, fontFamily:"'JetBrains Mono',monospace",
+                fontSize:8, color:"rgba(107,158,200,.4)", letterSpacing:.5 }}>
+                Shift+? or click outside to close
+              </div>
             </div>
           </div>
         )}

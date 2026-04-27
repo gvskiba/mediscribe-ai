@@ -435,10 +435,26 @@ function parseTokens(text) {
     }
   }
 
+  // Pass 1.5 — labeled yes/no: "word: yes/no" (e.g. "exertional: yes/no")
+  // Must run before Pass 2 so these spans are claimed before the slash-toggle regex fires
+  const labeledYesNoRe = /([\w][\w -]*):\s*(yes\/no|no\/yes)/gi;
+  while ((m = labeledYesNoRe.exec(text)) !== null) {
+    const fullMatch = m[0];
+    const labelKey = m[1].trim();
+    tokens.push({
+      idx:         m.index,
+      raw:         fullMatch,    // full span e.g. "exertional: yes/no"
+      type:        "toggle",
+      options:     ["Yes", "No"],
+      context:     labelKey,     // shown as FILL label e.g. "EXERTIONAL"
+      labelPrefix: labelKey,     // prepended on confirm e.g. "exertional: Yes"
+    });
+  }
+
   // Pass 2 — find ___ blanks and word/word slash-toggles
-  // Skip positions already covered by [or] tokens
-  const orRanges = tokens.map(t => [t.idx, t.idx + t.raw.length]);
-  const inOrRange = (idx) => orRanges.some(([s, e]) => idx >= s && idx < e);
+  // Skip positions already covered by Pass 1 [or] tokens AND Pass 1.5 labeled yes/no
+  const skipRanges = tokens.map(t => [t.idx, t.idx + t.raw.length]);
+  const inOrRange = (idx) => skipRanges.some(([s, e]) => idx >= s && idx < e);
 
   const re2 = /(___|(?<!\w)([a-z][a-z -]*)(?:\/[a-z][a-z -]*)+(?!\w))/gi;
   while ((m = re2.exec(text)) !== null) {
@@ -492,7 +508,10 @@ function SmartFillBar({ value, onChange }) {
   const remaining = total - cursor;
 
   const replaceAndAdvance = (raw, replacement) => {
-    onChange(value.replace(raw, replacement));
+    const actual = tok.labelPrefix
+      ? `${tok.labelPrefix}: ${replacement}`
+      : replacement;
+    onChange(value.replace(raw, actual));
     // Advance or exit
     if (cursor + 1 >= total) {
       setExited(true);
@@ -1094,7 +1113,12 @@ function MDMNarrativeCard({ narrative, copiedMDM, setCopiedMDM, onEdit }) {
 }
 
 
-// ─── RE-EXPORTED FROM SUB-MODULES ───────────────────────────────────────────
-export { DifferentialCard, QuickDDxCard, MDMResult } from "./QuickNoteMDM";
-export { ClinicalCalcsCard } from "./QuickNoteCalcs";
-export { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";
+// ─── EXTRACTED TO SEPARATE FILES ────────────────────────────────────────────
+import { DifferentialCard, QuickDDxCard, MDMResult } from "./QuickNoteMDM";
+import { ClinicalCalcsCard } from "./QuickNoteCalcs";
+export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard };
+
+
+// ─── EXTRACTED TO SEPARATE FILES ────────────────────────────────────────────
+import { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";
+export { DiagnosisCodingCard, InterventionsCard, DispositionResult };

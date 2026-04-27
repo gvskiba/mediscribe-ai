@@ -116,7 +116,7 @@ export function DiagnosisCodingCard({
             marginBottom:6 }}>Suggested Codes — Click to Add</div>
           <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
             {suggestions.map(c => {
-              const alreadySelected = selected.find(s => s.code === c.code);
+              const alreadySelected = selected.find(sel => sel.code === c.code);
               const tc = CODE_TYPE_COLOR[c.type] || "var(--qn-blue)";
               return (
                 <div key={c.code}
@@ -379,11 +379,11 @@ export function InterventionsCard({ items, loading, generated, onGenerate, onTog
 
 // ─── LAB FLAGS CARD ──────────────────────────────────────────────────────────
 function labFlagColor(status) {
-  const s = (status || "").toLowerCase();
-  if (s === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)"];
-  if (s === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)"];
-  if (s === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)"];
-  if (s === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)"];
+  const st = (status || "").toLowerCase();
+  if (st === "critical")   return ["var(--qn-red)",    "rgba(255,68,68,.1)",   "rgba(255,68,68,.4)"];
+  if (st === "high")       return ["var(--qn-coral)",  "rgba(255,107,107,.08)","rgba(255,107,107,.35)"];
+  if (st === "low")        return ["var(--qn-blue)",   "rgba(59,158,255,.08)", "rgba(59,158,255,.35)"];
+  if (st === "borderline") return ["var(--qn-gold)",   "rgba(245,200,66,.08)", "rgba(245,200,66,.3)"];
   return                         ["var(--qn-purple)", "rgba(155,109,255,.07)","rgba(155,109,255,.28)"];
 }
 

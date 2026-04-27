@@ -13,7 +13,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, InputZone, MDMResult, DispositionResult,
-         DiagnosisCodingCard, InterventionsCard } from "./QuickNoteComponents";
+         DiagnosisCodingCard, InterventionsCard, MedsAllergyZone } from "./QuickNoteComponents";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
@@ -163,9 +163,15 @@ const DISP_SCHEMA = {
   },
 };
 
-function buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis) {
+function buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis, parsedMeds, parsedAllergies) {
   const vhContext = vhAnalysis?.trend_narrative
     ? `\nVITAL SIGNS TREND ANALYSIS (from VitalsHub — use in MDM complexity assessment):\n${vhAnalysis.trend_narrative}${vhAnalysis.clinical_flags?.length ? "\nKey observations: " + vhAnalysis.clinical_flags.join(" | ") : ""}\n`
+    : "";
+  const medsContext = parsedMeds?.length
+    ? `\nCURRENT MEDICATIONS:\n${parsedMeds.map(m => `  ${m.name} ${m.dose} ${m.route} ${m.frequency}`.trim()).join("\n")}`
+    : "";
+  const allergiesContext = parsedAllergies?.length
+    ? `\nKNOWN ALLERGIES:\n${parsedAllergies.map(a => `  ${a.allergen}: ${a.reaction}`).join("\n")}`
     : "";
   return `${SYS_BIAS}
 
@@ -184,7 +190,7 @@ Chief Complaint: ${cc || "Not provided"}
 Triage Vitals: ${vitals || "Not provided"}
 HPI: ${hpi || "Not provided"}
 ROS: ${ros || "Not provided"}
-Physical Exam: ${exam || "Not provided"}${vhContext}
+Physical Exam: ${exam || "Not provided"}${vhContext}${medsContext}${allergiesContext}
 
 Generate the MDM assessment. Use ONLY the following exact values for each field:
 
@@ -199,7 +205,7 @@ For mdm_narrative write a single clinically complete paragraph suitable for dire
 Respond ONLY in valid JSON, no markdown fences.`;
 }
 
-function buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam) {
+function buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, parsedMeds, parsedAllergies) {
   const mdmSummary = mdmResult
     ? `Working Dx: ${mdmResult.working_diagnosis || "?"}  |  MDM Level: ${mdmResult.mdm_level || "?"}  |  Risk: ${mdmResult.risk_tier || "?"}`
     : "Not available";
@@ -208,6 +214,12 @@ function buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, r
     : "";
   const critActions = mdmResult?.critical_actions?.length
     ? `Critical Actions: ${mdmResult.critical_actions.join("; ")}`
+    : "";
+  const medsContext = parsedMeds?.length
+    ? `\nCurrent Medications: ${parsedMeds.map(m => `${m.name} ${m.dose} ${m.route} ${m.frequency}`.trim()).join(", ")}`
+    : "";
+  const allergiesContext = parsedAllergies?.length
+    ? `\nAllergies: ${parsedAllergies.map(a => `${a.allergen} (${a.reaction})`).join(", ")}`
     : "";
   return `${SYS_BIAS}
 
@@ -224,7 +236,7 @@ Chief Complaint: ${cc || "Not provided"}
 Triage Vitals: ${vitals || "Not provided"}
 HPI: ${hpi || "Not provided"}
 ROS: ${ros || "Not provided"}
-Physical Exam: ${exam || "Not provided"}
+Physical Exam: ${exam || "Not provided"}${medsContext}${allergiesContext}
 
 PHASE 1 MDM SUMMARY:
 ${mdmSummary}${redFlags ? "\n" + redFlags : ""}${critActions ? "\n" + critActions : ""}
@@ -301,6 +313,24 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
   if (p1.hpi)    { lines.push(""); lines.push("HPI:"); lines.push(p1.hpi); }
   if (p1.ros)    { lines.push(""); lines.push("ROS:"); lines.push(p1.ros); }
   if (p1.exam)   { lines.push(""); lines.push("Physical Exam:"); lines.push(p1.exam); }
+
+  // Medications & allergies
+  if (extras.parsedMeds?.length || extras.parsedAllergies?.length) {
+    lines.push("");
+    lines.push("=== MEDICATIONS & ALLERGIES ===");
+    if (extras.parsedMeds?.length) {
+      lines.push("Current Medications:");
+      extras.parsedMeds.forEach(m => {
+        const parts = [m.name, m.dose, m.route, m.frequency].filter(Boolean);
+        lines.push(`  ${parts.join("  ")}`);
+      });
+    }
+    if (extras.parsedAllergies?.length) {
+      lines.push("Allergies:");
+      extras.parsedAllergies.forEach(a => lines.push(`  ${a.allergen}: ${a.reaction}`));
+    }
+  }
+
   if (p2?.labs)      { lines.push(""); lines.push(`Labs: ${p2.labs}`); }
   if (p2?.imaging)   { lines.push(`Imaging: ${p2.imaging}`); }
   if (p2?.newVitals) { lines.push(`Recheck Vitals: ${p2.newVitals}`); }
@@ -454,6 +484,13 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [vhAnalysisDismissed, setVhAnalysisDismissed] = useState(false);
   const [nhResumed,           setNhResumed]           = useState(false);
   const [nhResumeDismissed,   setNhResumeDismissed]   = useState(false);
+  // Medications & allergies
+  const [medsRaw,      setMedsRaw]      = useState("");
+  const [allergiesRaw, setAllergiesRaw] = useState("");
+  const [parsedMeds,   setParsedMeds]   = useState([]);   // [{name,dose,route,frequency}]
+  const [parsedAllergies, setParsedAllergies] = useState([]); // [{allergen,reaction}]
+  const [medsParsing,  setMedsParsing]  = useState(false);
+  const [medsError,    setMedsError]    = useState(null);
   const [hpiSummary,      setHpiSummary]      = useState(null);
   const [hpiSumBusy,      setHpiSumBusy]      = useState(false);
   const [hpiSumError,     setHpiSumError]      = useState(null);
@@ -489,7 +526,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     setDispResult(null);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis),
+        prompt: buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis, parsedMeds, parsedAllergies),
         response_json_schema: MDM_SCHEMA,
       });
       setMdmResult(res);
@@ -512,7 +549,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     setDispResult(null);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam),
+        prompt: buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, parsedMeds, parsedAllergies),
         response_json_schema: DISP_SCHEMA,
       });
       setDispResult(res);
@@ -533,7 +570,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       mdmResult,
       { labs, imaging, newVitals },
       dispResult,
-      { icdSelected, interventions }
+      { icdSelected, interventions, parsedMeds, parsedAllergies }
     );
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -602,6 +639,80 @@ Return a JSON object with a single field: { "summary": "<your HPI paragraph here
       setHpiSumBusy(false);
     }
   }, [hpi, hpiSumBusy]);
+
+  // AI smart-parse of medications and allergies
+  const parseMedsAllergies = useCallback(async () => {
+    if ((!medsRaw.trim() && !allergiesRaw.trim()) || medsParsing) return;
+    setMedsParsing(true); setMedsError(null);
+    try {
+      const schema = {
+        type:"object",
+        required:["medications","allergies"],
+        properties:{
+          medications:{
+            type:"array",
+            items:{
+              type:"object",
+              required:["name","dose","route","frequency"],
+              properties:{
+                name:      { type:"string" },
+                dose:      { type:"string" },
+                route:     { type:"string" },
+                frequency: { type:"string" },
+              },
+            },
+          },
+          allergies:{
+            type:"array",
+            items:{
+              type:"object",
+              required:["allergen","reaction"],
+              properties:{
+                allergen: { type:"string" },
+                reaction: { type:"string" },
+              },
+            },
+          },
+        },
+      };
+      const prompt = `You are a clinical pharmacist parsing a patient's medication and allergy list from raw text.
+
+MEDICATIONS RAW TEXT:
+${medsRaw || "(none provided)"}
+
+ALLERGIES RAW TEXT:
+${allergiesRaw || "(none provided)"}
+
+Extract and standardize each medication into:
+- name: generic name preferred (convert brand to generic if confident, e.g. Lopressor → Metoprolol)
+- dose: numeric dose with units (e.g. "25 mg", "10 mcg/hr") — use empty string if not specified
+- route: standardized route abbreviation (PO, IV, SQ, IM, TOP, INH, SL) — use "PO" if not specified and oral is implied
+- frequency: standardized frequency (Daily, BID, TID, QID, QHS, PRN, Weekly, Monthly) — preserve as-is if unclear
+
+Extract each allergy into:
+- allergen: drug or substance name
+- reaction: reaction type (e.g. Anaphylaxis, Rash, GI intolerance, Unknown) — use "Unknown" if not specified
+
+Rules:
+- Only include items actually present in the raw text
+- Do not invent or assume medications not mentioned
+- If dose is completely absent, use empty string — do not guess
+- Normalize frequency abbreviations (QD → Daily, BID/twice daily → BID, etc.)
+- Return empty arrays if no medications or allergies are present
+
+Respond ONLY in valid JSON, no markdown.`;
+
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt, response_json_schema: schema,
+      });
+      setParsedMeds(res?.medications || []);
+      setParsedAllergies(res?.allergies || []);
+    } catch (e) {
+      setMedsError("Parse failed: " + (e.message || "try again"));
+    } finally {
+      setMedsParsing(false);
+    }
+  }, [medsRaw, allergiesRaw, medsParsing]);
 
   const hasAnyResult = Boolean(mdmResult || dispResult);
 
@@ -724,7 +835,7 @@ Respond ONLY in valid JSON, no markdown fences.`;
         mdmResult,
         { labs, imaging, newVitals },
         dispResult,
-        { icdSelected, interventions }
+        { icdSelected, interventions, parsedMeds, parsedAllergies }
       );
       await base44.entities.ClinicalNote.create({
         source:             "QuickNote",
@@ -751,6 +862,8 @@ Respond ONLY in valid JSON, no markdown fences.`;
         icd_codes_json:     icdSelected.length
                               ? JSON.stringify(icdSelected)
                               : "",
+        meds_raw:           medsRaw || "",
+        allergies_raw:      allergiesRaw || "",
       });
       setSavedNote(true);
       setTimeout(() => setSavedNote(false), 3000);
@@ -1282,6 +1395,23 @@ Respond ONLY in valid JSON, no markdown fences.`;
               onRef={setRef(4)}
               onKeyDown={makeKeyDown(4, true, runMDM)} />
           </div>
+
+          {/* Medications & Allergies */}
+          <MedsAllergyZone
+            medsRaw={medsRaw}          setMedsRaw={setMedsRaw}
+            allergiesRaw={allergiesRaw} setAllergiesRaw={setAllergiesRaw}
+            parsedMeds={parsedMeds}    parsedAllergies={parsedAllergies}
+            onParse={parseMedsAllergies}
+            parsing={medsParsing}       parseError={medsError}
+            onEditMed={(idx, field, val) =>
+              setParsedMeds(prev => prev.map((m,i) => i===idx ? {...m,[field]:val} : m))
+            }
+            onRemoveMed={idx => setParsedMeds(prev => prev.filter((_,i) => i !== idx))}
+            onEditAllergy={(idx, field, val) =>
+              setParsedAllergies(prev => prev.map((a,i) => i===idx ? {...a,[field]:val} : a))
+            }
+            onRemoveAllergy={idx => setParsedAllergies(prev => prev.filter((_,i) => i !== idx))}
+          />
 
           {/* Copy clinical inputs — available as soon as any input exists */}
           {(hpi.trim() || ros.trim() || exam.trim()) && (

@@ -13,7 +13,8 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, InputZone, MDMResult, DispositionResult,
-         DiagnosisCodingCard, InterventionsCard, MedsAllergyZone } from "./QuickNoteComponents";
+         DiagnosisCodingCard, InterventionsCard, MedsAllergyZone,
+         QuickDDxCard, DifferentialCard } from "./QuickNoteComponents";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
@@ -94,7 +95,20 @@ const MDM_SCHEMA = {
     mdm_level:             { type: "string" },
     mdm_narrative:         { type: "string" },
     working_diagnosis:     { type: "string" },
-    differential:          { type: "array", items: { type: "string" }, minItems: 2, maxItems: 4 },
+    differential: {
+      type:"array", minItems:2, maxItems:5,
+      items:{
+        type:"object",
+        required:["diagnosis","probability","supporting_evidence","against","must_not_miss"],
+        properties:{
+          diagnosis:           { type:"string" },
+          probability:         { type:"string" },
+          supporting_evidence: { type:"string" },
+          against:             { type:"string" },
+          must_not_miss:       { type:"boolean" },
+        },
+      },
+    },
     red_flags:             { type: "array", items: { type: "string" }, maxItems: 6 },
     critical_actions:      { type: "array", items: { type: "string" }, maxItems: 5 },
     recommended_actions:   { type: "array", items: { type: "string" }, maxItems: 6 },
@@ -200,7 +214,7 @@ problem_complexity — pick the single best match:
 data_complexity — pick the single best match:
 "Minimal or none" | "Limited — ordering or reviewing tests" | "Moderate — independent interpretation of results" | "Moderate — discussion with treating provider" | "Extensive — independent interpretation and provider discussion"
 
-For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-4 alternative diagnoses ranked by clinical probability. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For recommended_actions return an array of plain-text strings ONLY — each item must be a single complete sentence, NOT a JSON object or structured data. For lab/test recommendations use this exact format: "Test name in Xh — if [result], then [action]". Example: "Repeat troponin at 3h — if delta >0.04 ng/mL, initiate ACS protocol and cardiology consult." Example: "Urinalysis with reflex culture — if positive, initiate antibiotic therapy." Each string must stand alone as readable chart text. Return an empty array if none. Do NOT return objects, do NOT use keys like test_name or indication. For treatment_recommendations provide evidence-based in-ED treatment interventions for the working diagnosis. For each item: intervention = specific treatment with dose/route/frequency where applicable; indication = clinical indication or threshold; evidence_level = exactly one of "Class I" / "Class IIa" / "Class IIb" / "Class III" / "Expert consensus" per ACC/AHA classification — use "Expert consensus" if unsure; guideline_ref = cite ONLY if highly confident (ACEP Clinical Policy, ACC/AHA, SSC, etc.) — return empty string if uncertain, never fabricate; notes = cautions or contraindications (optional). Prioritize highest-evidence interventions. Do NOT duplicate items already in critical_actions. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies — otherwise return an empty string.
+For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-5 alternative diagnoses as structured objects — each with: diagnosis (name), probability (exactly "high" | "moderate" | "low"), supporting_evidence (1 sentence from THIS case's specific findings), against (1 sentence — what argues against it in this case), must_not_miss (true if this diagnosis would be immediately life-threatening if missed — PE, dissection, STEMI, SAH, etc.). Rank high probability first. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For recommended_actions return an array of plain-text strings ONLY — each item must be a single complete sentence, NOT a JSON object or structured data. For lab/test recommendations use this exact format: "Test name in Xh — if [result], then [action]". Example: "Repeat troponin at 3h — if delta >0.04 ng/mL, initiate ACS protocol and cardiology consult." Example: "Urinalysis with reflex culture — if positive, initiate antibiotic therapy." Each string must stand alone as readable chart text. Return an empty array if none. Do NOT return objects, do NOT use keys like test_name or indication. For treatment_recommendations provide evidence-based in-ED treatment interventions for the working diagnosis. For each item: intervention = specific treatment with dose/route/frequency where applicable; indication = clinical indication or threshold; evidence_level = exactly one of "Class I" / "Class IIa" / "Class IIb" / "Class III" / "Expert consensus" per ACC/AHA classification — use "Expert consensus" if unsure; guideline_ref = cite ONLY if highly confident (ACEP Clinical Policy, ACC/AHA, SSC, etc.) — return empty string if uncertain, never fabricate; notes = cautions or contraindications (optional). Prioritize highest-evidence interventions. Do NOT duplicate items already in critical_actions. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies — otherwise return an empty string.
 
 Respond ONLY in valid JSON, no markdown fences.`;
 }
@@ -491,6 +505,11 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [parsedAllergies, setParsedAllergies] = useState([]); // [{allergen,reaction}]
   const [medsParsing,  setMedsParsing]  = useState(false);
   const [medsError,    setMedsError]    = useState(null);
+  // Quick Differential
+  const [quickDDx,     setQuickDDx]     = useState(null);   // [{diagnosis,probability,supporting_evidence,against,must_not_miss}]
+  const [quickDDxBusy, setQuickDDxBusy] = useState(false);
+  const [quickDDxErr,  setQuickDDxErr]  = useState(null);
+  const [quickDDxDismissed, setQuickDDxDismissed] = useState(false);
   const [hpiSummary,      setHpiSummary]      = useState(null);
   const [hpiSumBusy,      setHpiSumBusy]      = useState(false);
   const [hpiSumError,     setHpiSumError]      = useState(null);
@@ -531,9 +550,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       });
       setMdmResult(res);
       setP2Open(true);
-      // Reset coding and interventions when MDM re-runs
       setIcdSuggestions([]); setIcdSelected([]); setIcdError(null);
       setInterventions([]); setIntGenerated(false);
+      setQuickDDxDismissed(true); // full MDM differential supersedes quick DDx
     } catch (e) {
       setP1Error("MDM generation failed: " + (e.message || "Check API connectivity"));
     } finally {
@@ -713,6 +732,70 @@ Respond ONLY in valid JSON, no markdown.`;
       setMedsParsing(false);
     }
   }, [medsRaw, allergiesRaw, medsParsing]);
+
+  // Quick Differential — lightweight AI call, Phase 1 only, no full MDM
+  const runQuickDDx = useCallback(async () => {
+    if (quickDDxBusy || (!cc.trim() && !hpi.trim())) return;
+    setQuickDDxBusy(true); setQuickDDxErr(null);
+    setQuickDDxDismissed(false);
+    try {
+      const schema = {
+        type:"object", required:["differential"],
+        properties:{
+          differential:{
+            type:"array", minItems:3, maxItems:5,
+            items:{
+              type:"object",
+              required:["diagnosis","probability","supporting_evidence","against","must_not_miss"],
+              properties:{
+                diagnosis:           { type:"string" },
+                probability:         { type:"string" },
+                supporting_evidence: { type:"string" },
+                against:             { type:"string" },
+                must_not_miss:       { type:"boolean" },
+              },
+            },
+          },
+        },
+      };
+
+      const prompt = `You are a board-certified emergency physician generating a rapid differential diagnosis for a patient in the ED.
+
+PRESENTATION:
+Chief Complaint: ${cc || "Not provided"}
+HPI: ${hpi || "Not provided"}
+Vitals: ${vitals || "Not provided"}
+${ros  ? "ROS: " + ros  : ""}
+${exam ? "Physical Exam: " + exam : ""}
+${medsRaw ? "Medications: " + medsRaw : ""}
+${allergiesRaw ? "Allergies: " + allergiesRaw : ""}
+
+Generate a differential diagnosis of 3-5 conditions. For each:
+- diagnosis: condition name
+- probability: exactly "high" | "moderate" | "low" — ranked by likelihood given THIS presentation
+- supporting_evidence: 1 concise sentence citing specific findings from THIS case that support this diagnosis
+- against: 1 concise sentence citing specific findings from THIS case that argue against this diagnosis — write "No features against at this time" if none
+- must_not_miss: true ONLY if this is an immediately life-threatening diagnosis that must be actively excluded (e.g. PE, STEMI, aortic dissection, SAH, meningitis, ectopic pregnancy, necrotizing fasciitis) — otherwise false
+
+Rules:
+- Base reasoning ONLY on findings explicitly present in the data above — do not fabricate clinical details
+- Rank high probability diagnoses first
+- Include at least one must-not-miss item if clinically appropriate
+- Be specific to this case, not generic to the chief complaint
+
+Respond ONLY in valid JSON, no markdown.`;
+
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt, response_json_schema: schema,
+      });
+      if (!res?.differential?.length) throw new Error("Empty response");
+      setQuickDDx(res.differential);
+    } catch (e) {
+      setQuickDDxErr("Quick DDx failed: " + (e.message || "try again"));
+    } finally {
+      setQuickDDxBusy(false);
+    }
+  }, [quickDDxBusy, cc, hpi, vitals, ros, exam, medsRaw, allergiesRaw]);
 
   const hasAnyResult = Boolean(mdmResult || dispResult);
 
@@ -1395,6 +1478,35 @@ Respond ONLY in valid JSON, no markdown fences.`;
               onRef={setRef(4)}
               onKeyDown={makeKeyDown(4, true, runMDM)} />
           </div>
+
+          {/* Quick Differential — appears once CC or HPI has content, before MDM runs */}
+          {(cc.trim().length > 5 || hpi.trim().length > 20) && !mdmResult && (
+            <div style={{ marginBottom:8 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <button onClick={runQuickDDx} disabled={quickDDxBusy}
+                  style={{ padding:"3px 12px", borderRadius:6, cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                    border:`1px solid ${quickDDxBusy ? "rgba(42,79,122,.3)" : "rgba(155,109,255,.4)"}`,
+                    background:quickDDxBusy ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.08)",
+                    color:quickDDxBusy ? "var(--qn-txt4)" : "var(--qn-purple)",
+                    letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+                  {quickDDxBusy ? "● Generating…" : "✦ Quick DDx"}
+                </button>
+                {quickDDxErr && (
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                    color:"var(--qn-coral)" }}>{quickDDxErr}</span>
+                )}
+              </div>
+              {quickDDx && !quickDDxDismissed && (
+                <QuickDDxCard
+                  items={quickDDx}
+                  onDismiss={() => setQuickDDxDismissed(true)}
+                  onRerun={runQuickDDx}
+                  busy={quickDDxBusy}
+                />
+              )}
+            </div>
+          )}
 
           {/* Medications & Allergies */}
           <MedsAllergyZone

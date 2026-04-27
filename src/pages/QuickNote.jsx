@@ -219,7 +219,7 @@ For mdm_narrative write a single clinically complete paragraph suitable for dire
 Respond ONLY in valid JSON, no markdown fences.`;
 }
 
-function buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, parsedMeds, parsedAllergies) {
+function buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, parsedMeds, parsedAllergies, ekg) {
   const mdmSummary = mdmResult
     ? `Working Dx: ${mdmResult.working_diagnosis || "?"}  |  MDM Level: ${mdmResult.mdm_level || "?"}  |  Risk: ${mdmResult.risk_tier || "?"}`
     : "Not available";
@@ -258,6 +258,7 @@ ${mdmSummary}${redFlags ? "\n" + redFlags : ""}${critActions ? "\n" + critAction
 WORKUP RESULTS:
 Labs: ${labs || "Not provided / not ordered"}
 Imaging: ${imaging || "Not provided / not ordered"}
+EKG/ECG: ${ekg || "Not performed / not provided"}
 Re-check Vitals: ${newVitals || "Not documented"}
 
 INSTRUCTIONS:
@@ -289,7 +290,7 @@ function buildMDMBlock(mdm) {
   ];
   if (mdm.working_diagnosis) lines.push(`\nWorking Diagnosis: ${mdm.working_diagnosis}`);
   if (mdm.differential?.length)
-    lines.push(`Differential: ${mdm.differential.map((d,i) => `(${i+1}) ${typeof d === "string" ? d : d.diagnosis || JSON.stringify(d)}`).join(", ")}`);
+    lines.push(`Differential: ${mdm.differential.map((d,i) => `(${i+1}) ${d}`).join(", ")}`);
   if (mdm.red_flags?.length)
     lines.push(`\nRed Flags: ${mdm.red_flags.join("; ")}`);
   if (mdm.critical_actions?.length) {
@@ -357,7 +358,7 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
     lines.push(`Data Complexity: ${mdm.data_complexity || "—"}`);
     lines.push(`Risk: ${mdm.risk_tier || "—"}`);
     if (mdm.working_diagnosis) lines.push(`Working Dx: ${mdm.working_diagnosis}`);
-    if (mdm.differential?.length) lines.push(`Differential: ${mdm.differential.map(d => typeof d === "string" ? d : d.diagnosis || "").filter(Boolean).join(", ")}`);
+    if (mdm.differential?.length) lines.push(`Differential: ${mdm.differential.join(", ")}`);
     if (mdm.red_flags?.length) lines.push(`Red Flags: ${mdm.red_flags.join("; ")}`);
     if (mdm.critical_actions?.length) {
       lines.push(`Critical Actions:`);
@@ -448,6 +449,178 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
   return lines.join("\n");
 }
 
+// ─── PHASE 1 COPY — Initial note for EHR paste ───────────────────────────────
+function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
+  const ts = new Date().toLocaleString("en-US", {
+    month:"short", day:"numeric", year:"numeric",
+    hour:"2-digit", minute:"2-digit"
+  });
+  const provider = extras.providerName ? ` — ${extras.providerName}` : "";
+  const sep  = mode === "epic" ? "\n" : "\n";
+  const hdr  = (label) => mode === "epic" ? label : label;
+
+  const lines = [
+    `${ts}${provider} — Emergency Department Note`,
+    "",
+    hdr("CHIEF COMPLAINT:"),
+    p1.cc || "—",
+    "",
+  ];
+
+  if (p1.vitals) {
+    lines.push(hdr("VITAL SIGNS:")); lines.push(p1.vitals); lines.push("");
+  }
+
+  if (p1.hpi) {
+    lines.push(hdr("HISTORY OF PRESENT ILLNESS:")); lines.push(p1.hpi); lines.push("");
+  }
+
+  // Medications & allergies
+  if (extras.parsedMeds?.length || extras.parsedAllergies?.length) {
+    if (extras.parsedMeds?.length) {
+      lines.push(hdr("CURRENT MEDICATIONS:"));
+      extras.parsedMeds.forEach(m => {
+        const parts = [m.name, m.dose, m.route, m.frequency].filter(Boolean);
+        lines.push(`  ${parts.join("  ")}`);
+      });
+      lines.push("");
+    }
+    if (extras.parsedAllergies?.length) {
+      lines.push(hdr("ALLERGIES:"));
+      extras.parsedAllergies.forEach(a => lines.push(`  ${a.allergen}: ${a.reaction}`));
+      lines.push("");
+    }
+  }
+
+  if (p1.ros) {
+    lines.push(hdr("REVIEW OF SYSTEMS:")); lines.push(p1.ros); lines.push("");
+  }
+
+  if (p1.exam) {
+    lines.push(hdr("PHYSICAL EXAMINATION:")); lines.push(p1.exam); lines.push("");
+  }
+
+  // Assessment & Plan — EHR-ready format
+  if (mdm) {
+    lines.push(hdr("ASSESSMENT AND PLAN:"));
+    if (mdm.working_diagnosis) lines.push(`Working Impression: ${mdm.working_diagnosis}`);
+    if (mdm.mdm_level) lines.push(`MDM Complexity: ${mdm.mdm_level}`);
+    lines.push("");
+    if (mdm.mdm_narrative) { lines.push(mdm.mdm_narrative); lines.push(""); }
+    // Numbered plan from recommended actions
+    const actions = (mdm.recommended_actions || []).filter(Boolean);
+    if (actions.length) {
+      lines.push("Plan:");
+      actions.forEach((a, i) => lines.push(`  ${i+1}. ${typeof a === "string" ? a : a.action || a}`));
+      lines.push("");
+    }
+    // Critical actions
+    if (mdm.critical_actions?.length) {
+      lines.push("Immediate Actions:");
+      mdm.critical_actions.forEach(a => lines.push(`  • ${a}`));
+      lines.push("");
+    }
+  }
+
+  return lines.join(sep);
+}
+
+// ─── PHASE 2 COPY — Reevaluation addendum for EHR paste ──────────────────────
+function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
+  const ts = new Date().toLocaleString("en-US", {
+    month:"short", day:"numeric", year:"numeric",
+    hour:"2-digit", minute:"2-digit"
+  });
+  const provider = extras.providerName ? ` — ${extras.providerName}` : "";
+  const sep = mode === "epic" ? "\n" : "\n";
+
+  const lines = [
+    `${ts}${provider} — ED Reevaluation & Disposition`,
+    "",
+  ];
+
+  if (p2.newVitals) {
+    lines.push("UPDATED VITAL SIGNS:"); lines.push(p2.newVitals); lines.push("");
+  }
+
+  if (p2.labs) {
+    lines.push("LAB RESULTS:"); lines.push(p2.labs); lines.push("");
+  }
+
+  if (p2.imaging) {
+    lines.push("IMAGING RESULTS:"); lines.push(p2.imaging); lines.push("");
+  }
+
+  if (p2.ekg) {
+    lines.push("EKG/ECG RESULTS:"); lines.push(p2.ekg); lines.push("");
+  }
+
+  if (disp) {
+    if (disp.reevaluation_note) {
+      lines.push("REEVALUATION:"); lines.push(disp.reevaluation_note); lines.push("");
+    }
+
+    if (disp.result_flags?.length) {
+      lines.push("CRITICAL/ABNORMAL VALUES:");
+      disp.result_flags.forEach(f => {
+        lines.push(`  ${f.parameter}: ${f.value} — ${f.status?.toUpperCase()}`);
+        if (f.recommendation) lines.push(`    → ${f.recommendation}`);
+      });
+      lines.push("");
+    }
+
+    if (disp.final_diagnosis) {
+      lines.push("FINAL IMPRESSION:");
+      lines.push(disp.final_diagnosis);
+      // ICD-10 codes
+      if (extras.icdSelected?.length) {
+        extras.icdSelected.forEach(c => lines.push(`  ${c.code} — ${c.description}`));
+      }
+      lines.push("");
+    }
+
+    lines.push(`DISPOSITION: ${disp.disposition || "—"}`);
+    if (disp.disposition_plan) { lines.push(disp.disposition_plan); }
+    lines.push("");
+
+    // Interventions
+    const confirmedInts = (extras.interventions || []).filter(i => i.confirmed !== false);
+    if (confirmedInts.length) {
+      lines.push("ED INTERVENTIONS:");
+      confirmedInts.forEach(i => {
+        let line = `  [${(i.type||"OTHER").toUpperCase()}] ${i.name}`;
+        if (i.dose_route) line += ` — ${i.dose_route}`;
+        if (i.time_given) line += ` (${i.time_given})`;
+        if (i.response)   line += ` · ${i.response}`;
+        lines.push(line);
+      });
+      lines.push("");
+    }
+
+    // Discharge instructions — only when discharging
+    const di = disp.discharge_instructions;
+    if (di && disp.disposition && !disp.disposition.toLowerCase().includes("admit") &&
+        !disp.disposition.toLowerCase().includes("icu")) {
+      lines.push("DISCHARGE INSTRUCTIONS:");
+      if (di.diagnosis_explanation) { lines.push(di.diagnosis_explanation); lines.push(""); }
+      if (di.medications?.length) {
+        lines.push("Discharge Medications:");
+        di.medications.forEach(m => lines.push(`  • ${typeof m === "string" ? m : m.medication || m}`));
+        lines.push("");
+      }
+      if (di.activity) { lines.push(`Activity: ${di.activity}`); }
+      if (di.diet)     { lines.push(`Diet: ${di.diet}`); }
+      if (di.return_precautions?.length) {
+        lines.push(""); lines.push("Return to ED if:");
+        di.return_precautions.forEach(r => lines.push(`  • ${typeof r === "string" ? r : r}`));
+      }
+      if (di.followup) { lines.push(""); lines.push(`Follow-up: ${di.followup}`); }
+    }
+  }
+
+  return lines.join(sep);
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function QuickNote({ embedded = false, demo, vitals: initVitals, cc: initCC }) {
   // Phase 1 inputs
@@ -468,9 +641,11 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [exam,   setExam]   = useState("");
 
   // Phase 2 inputs
-  const [labs,      setLabs]      = useState("");
-  const [imaging,   setImaging]   = useState("");
-  const [newVitals, setNewVitals] = useState("");
+  const [labs,       setLabs]       = useState("");
+  const [imaging,    setImaging]    = useState("");
+  const [ekg,        setEkg]        = useState("");
+  const [newVitals,  setNewVitals]  = useState("");
+  const [formatMode, setFormatMode] = useState("plain"); // "plain" | "epic"
 
   // AI results
   const [mdmResult,  setMdmResult]  = useState(null);
@@ -558,7 +733,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     } finally {
       setP1Busy(false);
     }
-  }, [cc, vitals, hpi, ros, exam, phase1Ready, p1Busy, vhAnalysis, parsedMeds, parsedAllergies]);
+  }, [cc, vitals, hpi, ros, exam, phase1Ready, p1Busy]);
 
   // Phase 2 — Disposition
   const runDisposition = useCallback(async () => {
@@ -568,7 +743,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     setDispResult(null);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, parsedMeds, parsedAllergies),
+        prompt: buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, parsedMeds, parsedAllergies, ekg),
         response_json_schema: DISP_SCHEMA,
       });
       setDispResult(res);
@@ -580,7 +755,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     } finally {
       setP2Busy(false);
     }
-  }, [mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, p2Busy, parsedMeds, parsedAllergies]);
+  }, [mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, p2Busy]);
 
   // Copy full note
   const copyNote = useCallback(() => {
@@ -595,9 +770,11 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     });
-  }, [cc, vitals, hpi, ros, exam, mdmResult, labs, imaging, newVitals, dispResult, icdSelected, interventions, parsedMeds, parsedAllergies]);
+  }, [cc, vitals, hpi, ros, exam, mdmResult, labs, imaging, newVitals, dispResult, icdSelected, interventions]);
 
   // Copy clinical inputs (CC / Vitals / HPI / ROS / PE) — EHR paste ready
+  const [copiedP1,    setCopiedP1]    = useState(false);
+  const [copiedP2,    setCopiedP2]    = useState(false);
   const [copiedInputs, setCopiedInputs] = useState(false);
   const copyClinicalInputs = useCallback(() => {
     const sections = [
@@ -614,6 +791,35 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setTimeout(() => setCopiedInputs(false), 2500);
     });
   }, [cc, vitals, hpi, ros, exam]);
+
+  // Phase 1 copy — Initial note for EHR paste
+  const copyPhase1 = useCallback(() => {
+    if (!mdmResult) return;
+    const text = buildPhase1Copy(
+      { cc, vitals, hpi, ros, exam },
+      mdmResult,
+      { parsedMeds, parsedAllergies, providerName: demo?.full_name || "" },
+      formatMode
+    );
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedP1(true); setTimeout(() => setCopiedP1(false), 3000);
+    });
+  }, [cc, vitals, hpi, ros, exam, mdmResult, parsedMeds, parsedAllergies, demo, formatMode]);
+
+  // Phase 2 copy — Reevaluation addendum for EHR paste
+  const copyPhase2 = useCallback(() => {
+    if (!dispResult) return;
+    const text = buildPhase2Copy(
+      { labs, imaging, ekg, newVitals },
+      dispResult,
+      { icdSelected, interventions, providerName: demo?.full_name || "" },
+      formatMode
+    );
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedP2(true); setTimeout(() => setCopiedP2(false), 3000);
+    });
+  }, [labs, imaging, ekg, newVitals, dispResult, icdSelected, interventions, demo, formatMode]);
+
   const summarizeHPI = useCallback(async () => {
     if (!hpi.trim() || hpiSumBusy) return;
     setHpiSumBusy(true);
@@ -1083,6 +1289,17 @@ Respond ONLY in valid JSON, no markdown fences.`;
         }
       }
 
+      // Shift+1 — copy Phase 1 initial note
+      if (e.shiftKey && e.key === "1" && !e.ctrlKey && !e.metaKey) {
+        if (mdmResult) { e.preventDefault(); copyPhase1(); }
+        return;
+      }
+      // Shift+2 — copy Phase 2 reevaluation addendum
+      if (e.shiftKey && e.key === "2" && !e.ctrlKey && !e.metaKey) {
+        if (dispResult) { e.preventDefault(); copyPhase2(); }
+        return;
+      }
+
       if (inInput) return;
 
       // E — open MDM narrative edit (when MDM result is visible)
@@ -1115,7 +1332,7 @@ Respond ONLY in valid JSON, no markdown fences.`;
     };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, [p2Open, mdmResult, dispResult, runMDM, runDisposition, copyNote, copyClinicalInputs]);
+  }, [p2Open, mdmResult, dispResult, runMDM, runDisposition, copyNote, copyClinicalInputs, copyPhase1, copyPhase2]);
 
   const makeKeyDown = useCallback((idx, isLast, onEnterSubmit) => (e) => {
     if (e.key === "Tab" && !e.shiftKey) {
@@ -1659,9 +1876,14 @@ Respond ONLY in valid JSON, no markdown fences.`;
                 onKeyDown={makeKeyDown(5, false, runDisposition)} />
               <InputZone label="Imaging / Studies" value={imaging} onChange={setImaging} phase={2}
                 rows={4}
-                placeholder="Paste imaging results — CXR, CT, ECG interpretation, POCUS findings..."
+                placeholder="Paste imaging results — CXR, CT, US, POCUS findings..."
                 onRef={setRef(6)}
                 onKeyDown={makeKeyDown(6, false, runDisposition)} />
+              <InputZone label="EKG / ECG" value={ekg} onChange={setEkg} phase={2}
+                rows={3}
+                placeholder="e.g. NSR rate 72, normal axis, no ST changes, QTc 420ms — or paste full ECG interpretation..."
+                onRef={setRef(7)}
+                onKeyDown={makeKeyDown(7, false, runDisposition)} />
             </div>
 
             {/* Recheck vitals */}
@@ -1796,100 +2018,158 @@ Respond ONLY in valid JSON, no markdown fences.`;
 
         {/* ── ACTION BAR ───────────────────────────────────────────────────── */}
         {hasAnyResult && (
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap",
-            padding:"10px 14px", borderRadius:10,
-            background:"rgba(8,22,40,.6)", border:"1px solid rgba(42,79,122,.3)" }}
-            className="no-print">
-            <button onClick={copyNote}
-              style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
-                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                transition:"all .15s",
-                border:copied ? "1px solid rgba(61,255,160,.5)" : "1px solid var(--qn-bd)",
-                background:copied ? "rgba(61,255,160,.1)" : "rgba(14,37,68,.6)",
-                color:copied ? "var(--qn-green)" : "var(--qn-txt3)" }}>
-              {copied ? "✓ Copied to clipboard" : "Copy Full Note"}
-            </button>
-            <button onClick={saveNote} disabled={saving || !hasAnyResult}
-              style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
-                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                border:`1px solid ${savedNote ? "rgba(61,255,160,.5)" : "rgba(0,229,192,.35)"}`,
-                background:savedNote ? "rgba(61,255,160,.1)" : "rgba(14,37,68,.6)",
-                color:savedNote ? "var(--qn-green)" : "var(--qn-teal)",
-                opacity: saving ? .6 : 1, transition:"all .15s" }}>
-              {saving ? "Saving…" : savedNote ? "✓ Note Saved" : "Save Note"}
-            </button>
-            <button onClick={() => window.location.href = "/NoteHistory"}
-              style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
-                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                border:"1px solid rgba(42,79,122,.4)", background:"rgba(14,37,68,.6)",
-                color:"var(--qn-txt3)", transition:"all .15s" }}>
-              Note History →
-            </button>
-            <button onClick={sendToNPI} disabled={sendingNPI}
-              style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
-                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                border:`1px solid ${sentToNPI ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.4)"}`,
-                background:sentToNPI ? "rgba(61,255,160,.1)" : "rgba(14,37,68,.6)",
-                color:sentToNPI ? "var(--qn-green)" : "var(--qn-purple)",
-                opacity: sendingNPI ? .6 : 1, transition:"all .15s" }}>
-              {sendingNPI ? "Sending…" : sentToNPI ? "✓ Sent — opening NPI…" : "Send to NPI →"}
-            </button>
-            <button onClick={() => window.print()}
-              style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
-                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                border:"1px solid var(--qn-bd)", background:"rgba(14,37,68,.6)",
-                color:"var(--qn-txt3)", transition:"all .15s" }}>
-              Print
-            </button>
-            {(hpi.trim() || ros.trim() || exam.trim()) && (
-              <button onClick={copyClinicalInputs}
-                style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
-                  fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                  border:`1px solid ${copiedInputs ? "rgba(61,255,160,.5)" : "rgba(59,158,255,.35)"}`,
-                  background:copiedInputs ? "rgba(61,255,160,.1)" : "rgba(59,158,255,.08)",
-                  color:copiedInputs ? "var(--qn-green)" : "var(--qn-blue)",
-                  transition:"all .15s" }}>
-                {copiedInputs ? "✓ Inputs Copied" : "Copy HPI/ROS/PE"}
-              </button>
-            )}
-            {!confirmClear ? (
-              <button onClick={() => setConfirmClear(true)}
-                style={{ padding:"7px 16px", borderRadius:7, cursor:"pointer",
-                  fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                  border:"1px solid rgba(255,107,107,.3)", background:"rgba(14,37,68,.6)",
-                  color:"var(--qn-coral)", transition:"all .15s" }}>
-                New Encounter
-              </button>
-            ) : (
-              <div style={{ display:"flex", alignItems:"center", gap:6,
-                padding:"5px 10px", borderRadius:7,
-                background:"rgba(255,68,68,.1)", border:"1px solid rgba(255,68,68,.4)" }}>
-                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                  color:"var(--qn-coral)" }}>Clear all data?</span>
-                <button onClick={() => {
-                  setCC(""); setVitals(""); setHpi(""); setRos(""); setExam("");
-                  setLabs(""); setImaging(""); setNewVitals("");
-                  setMdmResult(null); setDispResult(null);
-                  setP1Error(null); setP2Error(null); setP2Open(false);
-                  setConfirmClear(false);
-                }}
-                  style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
-                    fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:11,
-                    border:"1px solid rgba(255,68,68,.5)", background:"rgba(255,68,68,.2)",
-                    color:"var(--qn-red)" }}>Yes, clear</button>
-                <button onClick={() => setConfirmClear(false)}
-                  style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
+          <div className="no-print">
+            {/* Phase indicator */}
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8,
+              padding:"6px 14px", borderRadius:8,
+              background:"rgba(8,22,40,.5)", border:"1px solid rgba(42,79,122,.25)" }}>
+              <div style={{ display:"flex", gap:12, flex:1 }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  fontWeight:700, letterSpacing:.8,
+                  color: mdmResult ? "var(--qn-teal)" : "var(--qn-txt4)",
+                  textTransform:"uppercase" }}>
+                  {mdmResult ? "✓" : "○"} Phase 1: Initial Documentation
+                </span>
+                <span style={{ color:"rgba(42,79,122,.6)", fontSize:9 }}>|</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                  fontWeight:700, letterSpacing:.8,
+                  color: dispResult ? "var(--qn-purple)" : "var(--qn-txt4)",
+                  textTransform:"uppercase" }}>
+                  {dispResult ? "✓" : "○"} Phase 2: Reevaluation &amp; Disposition
+                </span>
+              </div>
+              {/* Format toggle */}
+              <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                  color:"var(--qn-txt4)", letterSpacing:.5, textTransform:"uppercase" }}>
+                  Format:
+                </span>
+                {[["plain","Plain Text"],["epic","Epic"]].map(([v,l]) => (
+                  <button key={v} onClick={() => setFormatMode(v)}
+                    style={{ padding:"2px 8px", borderRadius:4, cursor:"pointer",
+                      fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      border:`1px solid ${formatMode === v ? "rgba(0,229,192,.45)" : "rgba(42,79,122,.35)"}`,
+                      background:formatMode === v ? "rgba(0,229,192,.12)" : "transparent",
+                      color:formatMode === v ? "var(--qn-teal)" : "var(--qn-txt4)",
+                      transition:"all .12s" }}>{l}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Primary EHR copy buttons */}
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap", padding:"10px 14px",
+              borderRadius:10, background:"rgba(8,22,40,.6)",
+              border:"1px solid rgba(42,79,122,.3)", marginBottom:8 }}>
+
+              {/* Phase 1 — primary action once MDM is done */}
+              {mdmResult && (
+                <button onClick={copyPhase1}
+                  style={{ padding:"9px 20px", borderRadius:8, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
+                    transition:"all .15s",
+                    border:`1px solid ${copiedP1 ? "rgba(61,255,160,.6)" : "rgba(0,229,192,.5)"}`,
+                    background:copiedP1 ? "rgba(61,255,160,.15)" : "rgba(0,229,192,.12)",
+                    color:copiedP1 ? "var(--qn-green)" : "var(--qn-teal)",
+                    boxShadow:copiedP1 ? "none" : "0 0 12px rgba(0,229,192,.12)" }}>
+                  {copiedP1 ? "✓ Phase 1 Copied — Paste into EHR" : "📋 Copy Initial Note  "}
+                  {!copiedP1 && <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                    fontSize:9, opacity:.6 }}>[Shift+1]</span>}
+                </button>
+              )}
+
+              {/* Phase 2 — primary action once disposition is done */}
+              {dispResult && (
+                <button onClick={copyPhase2}
+                  style={{ padding:"9px 20px", borderRadius:8, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
+                    transition:"all .15s",
+                    border:`1px solid ${copiedP2 ? "rgba(61,255,160,.6)" : "rgba(155,109,255,.5)"}`,
+                    background:copiedP2 ? "rgba(61,255,160,.15)" : "rgba(155,109,255,.12)",
+                    color:copiedP2 ? "var(--qn-green)" : "var(--qn-purple)",
+                    boxShadow:copiedP2 ? "none" : "0 0 12px rgba(155,109,255,.12)" }}>
+                  {copiedP2 ? "✓ Phase 2 Copied — Paste into EHR" : "📋 Copy Reevaluation & Disposition  "}
+                  {!copiedP2 && <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                    fontSize:9, opacity:.6 }}>[Shift+2]</span>}
+                </button>
+              )}
+
+              <div style={{ flex:1 }} />
+
+              {/* Secondary actions */}
+              <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
+                <button onClick={saveNote} disabled={saving || !hasAnyResult}
+                  style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                    border:`1px solid ${savedNote ? "rgba(61,255,160,.5)" : "rgba(0,229,192,.3)"}`,
+                    background:savedNote ? "rgba(61,255,160,.1)" : "rgba(14,37,68,.6)",
+                    color:savedNote ? "var(--qn-green)" : "var(--qn-teal)",
+                    opacity:saving ? .6 : 1, transition:"all .15s" }}>
+                  {saving ? "Saving…" : savedNote ? "✓ Saved" : "Save Note"}
+                </button>
+                <button onClick={() => window.location.href = "/NoteHistory"}
+                  style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
                     fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
                     border:"1px solid rgba(42,79,122,.4)", background:"rgba(14,37,68,.6)",
-                    color:"var(--qn-txt4)" }}>Cancel</button>
+                    color:"var(--qn-txt3)", transition:"all .15s" }}>
+                  History →
+                </button>
+                <button onClick={sendToNPI} disabled={sendingNPI}
+                  style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                    border:`1px solid ${sentToNPI ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.35)"}`,
+                    background:"rgba(14,37,68,.6)",
+                    color:sentToNPI ? "var(--qn-green)" : "var(--qn-purple)",
+                    opacity:sendingNPI ? .6 : 1, transition:"all .15s" }}>
+                  {sendingNPI ? "…" : sentToNPI ? "✓ NPI" : "→ NPI"}
+                </button>
+                <button onClick={copyNote}
+                  style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                    border:`1px solid ${copied ? "rgba(61,255,160,.5)" : "rgba(42,79,122,.4)"}`,
+                    background:"rgba(14,37,68,.6)",
+                    color:copied ? "var(--qn-green)" : "var(--qn-txt4)",
+                    transition:"all .15s" }}>
+                  {copied ? "✓" : "Full Note"}
+                </button>
+                {!confirmClear ? (
+                  <button onClick={() => setConfirmClear(true)}
+                    style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
+                      fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                      border:"1px solid rgba(255,107,107,.3)", background:"rgba(14,37,68,.6)",
+                      color:"var(--qn-coral)", transition:"all .15s" }}>
+                    New Encounter
+                  </button>
+                ) : (
+                  <div style={{ display:"flex", alignItems:"center", gap:6,
+                    padding:"5px 10px", borderRadius:7,
+                    background:"rgba(255,68,68,.1)", border:"1px solid rgba(255,68,68,.4)" }}>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                      color:"var(--qn-coral)" }}>Clear all data?</span>
+                    <button onClick={() => {
+                      setCC(""); setVitals(""); setHpi(""); setRos(""); setExam("");
+                      setLabs(""); setImaging(""); setEkg(""); setNewVitals("");
+                      setParsedMeds([]); setParsedAllergies([]);
+                      setMdmResult(null); setDispResult(null);
+                      setP1Error(null); setP2Error(null); setP2Open(false);
+                      setConfirmClear(false);
+                    }}
+                      style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
+                        fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:11,
+                        border:"1px solid rgba(255,68,68,.5)", background:"rgba(255,68,68,.2)",
+                        color:"var(--qn-red)" }}>Yes, clear</button>
+                    <button onClick={() => setConfirmClear(false)}
+                      style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
+                        fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                        border:"1px solid rgba(42,79,122,.4)", background:"rgba(14,37,68,.6)",
+                        color:"var(--qn-txt4)" }}>Cancel</button>
+                  </div>
+                )}
               </div>
-            )}
-            <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"flex-end",
-              gap:8 }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                color:"var(--qn-txt4)", letterSpacing:.5 }}>
-                C copy · Shift+C inputs · P print
-              </span>
+            </div>
+
+            <div style={{ textAlign:"right", fontFamily:"'JetBrains Mono',monospace",
+              fontSize:8, color:"rgba(107,158,200,.35)", letterSpacing:.5 }}>
+              Shift+1 copy initial note · Shift+2 copy reevaluation · C full note
             </div>
           </div>
         )}

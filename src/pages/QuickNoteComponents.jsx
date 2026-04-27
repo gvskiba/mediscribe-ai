@@ -3,11 +3,15 @@
 // Exported: dispColor, StepProgress, InputZone, MedsAllergyZone,
 //           MDMResult, DispositionResult, DifferentialCard, QuickDDxCard,
 //           ClinicalCalcsCard, DiagnosisCodingCard, InterventionsCard
- 
+
 import { useState, useEffect, useRef } from "react";
 import { CCPicker, TemplatePicker } from "./QuickNotePickers";
 import { SmartFillBar } from "./QuickNoteSmartFill";
- 
+import { MedsAllergyZone } from "./QuickNoteMeds";
+import { DifferentialCard, QuickDDxCard, MDMResult } from "./QuickNoteMDM";
+import { ClinicalCalcsCard } from "./QuickNoteCalcs";
+import { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function mdmLevelColor(level) {
   if (!level) return "#6b9ec8";
@@ -18,7 +22,7 @@ function mdmLevelColor(level) {
   if (l.includes("straightforward")) return "#3dffa0";
   return "#3b9eff";
 }
- 
+
 export function dispColor(disp) {
   if (!disp) return "#6b9ec8";
   const d = disp.toLowerCase();
@@ -29,7 +33,7 @@ export function dispColor(disp) {
   if (d.includes("precaution")) return "#f5c842";
   return "#3dffa0";
 }
- 
+
 function SectionLabel({ children, color, style: extraStyle }) {
   return (
     <div className="qn-section-lbl"
@@ -38,7 +42,7 @@ function SectionLabel({ children, color, style: extraStyle }) {
     </div>
   );
 }
- 
+
 // Safe string coercion — prevents React Error #31 when AI returns unexpected objects
 function s(val) {
   if (val === null || val === undefined) return "";
@@ -47,7 +51,7 @@ function s(val) {
   if (typeof val === "object") return JSON.stringify(val);
   return String(val);
 }
- 
+
 // ─── STEP PROGRESS ────────────────────────────────────────────────────────────
 export function StepProgress({ phase1Done, phase2Done, p2Open }) {
   const steps = [
@@ -92,7 +96,7 @@ export function StepProgress({ phase1Done, phase2Done, p2Open }) {
     </div>
   );
 }
- 
+
 // ─── INPUT ZONE ───────────────────────────────────────────────────────────────
 export function InputZone({ label, value, onChange, placeholder, rows, phase, ref: _ref, onRef, onKeyDown, copyable, templateType, smartfill, kbdHint, vitalsTrendLink }) {
   const inputRef = useRef();
@@ -194,14 +198,8 @@ export function InputZone({ label, value, onChange, placeholder, rows, phase, re
     </div>
   );
 }
- 
-// ─── EXTRACTED TO SEPARATE FILES ────────────────────────────────────────────
-import { MedsAllergyZone } from "./QuickNoteMeds";
+
+// ─── RE-EXPORTS ───────────────────────────────────────────────────────────────
 export { MedsAllergyZone };
- 
-import { DifferentialCard, QuickDDxCard, MDMResult } from "./QuickNoteMDM";
-import { ClinicalCalcsCard } from "./QuickNoteCalcs";
 export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard };
- 
-import { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";
 export { DiagnosisCodingCard, InterventionsCard, DispositionResult };

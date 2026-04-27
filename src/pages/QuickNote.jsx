@@ -22,8 +22,6 @@ import {
 
 injectQNStyles();
 
-injectQNStyles();
-
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function QuickNote({ embedded = false, demo, vitals: initVitals, cc: initCC }) {
   // Phase 1 inputs

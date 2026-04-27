@@ -73,7 +73,7 @@ function formatTime(iso) {
   catch { return "—"; }
 }
 
-function EncounterRow({ note, onToggleActive }) {
+function EncounterRow({ note, onToggleActive, onContinue, idx }) {
   const status   = getStatus(note);
   const sc       = STATUS_CONFIG[status];
   const isActive = note.patient_active !== false;
@@ -199,13 +199,16 @@ function EncounterRow({ note, onToggleActive }) {
 }
 
 export default function ShiftDashboard() {
-  const [notes,    setNotes]    = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
-  const [lastRefresh, setLastRefresh] = useState(null);
+  const [notes,        setNotes]        = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [lastRefresh,  setLastRefresh]  = useState(null);
+  const [handoff,      setHandoff]      = useState(null);
+  const [handoffBusy,  setHandoffBusy]  = useState(false);
+  const [copiedHandoff,setCopiedHandoff]= useState(false);
 
   const load = useCallback(async () => {
-    setLoading(prev => prev); setError(null);
+    setLoading(notes.length === 0); setError(null);
     try {
       const result = await base44.entities.ClinicalNote.list({ sort:"-created_date", limit:200 });
       const today = new Date().toLocaleDateString("en-US");
@@ -219,16 +222,57 @@ export default function ShiftDashboard() {
     } catch (e) {
       setError("Failed to load: " + (e.message || "unknown error"));
     } finally { setLoading(false); }
-  }, []);
+  }, [notes.length]);
 
   useEffect(() => {
     load();
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, [load]);
+  }, []);
 
   const handleToggleActive = (id, val) =>
     setNotes(prev => prev.map(n => n.id === id ? {...n, patient_active:val} : n));
+
+  const generateHandoff = async () => {
+    const active = notes.filter(n => n.patient_active !== false);
+    if (!active.length || handoffBusy) return;
+    setHandoffBusy(true); setHandoff(null);
+    try {
+      const schema = { type:"object", required:["handoff"],
+        properties:{ handoff:{ type:"string" } } };
+      const summary = active.map((n, i) =>
+        `${i+1}. CC: ${n.cc||"?"} | Dx: ${n.working_diagnosis||"pending"} | MDM: ${n.mdm_level||"—"} | Dispo: ${n.disposition||"pending"}`
+      ).join("\n");
+      const prompt = `You are an emergency physician writing a verbal shift handoff for incoming coverage.
+
+ACTIVE PATIENTS (${active.length}):
+${summary}
+
+Write a concise shift handoff. For each patient:
+- 1-sentence clinical summary
+- Current status and disposition plan
+- Outstanding tasks or pending results
+
+Format as numbered list matching patient order. Prioritize high-acuity patients first.
+Keep it brief — this is for verbal handoff.
+
+Return JSON: { "handoff": "<text with \\n line breaks>" }`;
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt, response_json_schema: schema,
+      });
+      setHandoff(res?.handoff || "");
+    } catch (e) { console.error(e); }
+    finally { setHandoffBusy(false); }
+  };
+
+  const copyHandoff = () => {
+    if (!handoff) return;
+    const ts = new Date().toLocaleString("en-US",
+      { month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    navigator.clipboard.writeText(`SHIFT HANDOFF — ${ts}\n\n${handoff}`).then(() => {
+      setCopiedHandoff(true); setTimeout(() => setCopiedHandoff(false), 3000);
+    });
+  };
 
   const stats = {
     total:      notes.length,
@@ -270,22 +314,32 @@ export default function ShiftDashboard() {
             <div style={{ marginLeft:"auto", display:"flex", gap:8, flexWrap:"wrap",
               alignItems:"center" }}>
               {[
-                { label:"Total",    val:stats.total,      color:"var(--sd-txt3)"  },
-                { label:"Active",   val:stats.active,     color:"var(--sd-green)" },
-                { label:"D/C'd",    val:stats.discharged, color:"var(--sd-txt4)"  },
-                { label:"Complete", val:stats.complete,   color:"var(--sd-teal)"  },
-                { label:"High MDM", val:stats.highMDM,    color:"var(--sd-red)"   },
-              ].map(st => (
-                <div key={st.label} style={{ padding:"6px 12px", borderRadius:8,
+                { label:"Total",       val:stats.total,      color:"var(--sd-txt3)"   },
+                { label:"Active",      val:stats.active,     color:"var(--sd-green)"  },
+                { label:"D/C'd",       val:stats.discharged, color:"var(--sd-txt4)"   },
+                { label:"Complete",    val:stats.complete,   color:"var(--sd-teal)"   },
+                { label:"High MDM",    val:stats.highMDM,    color:"var(--sd-red)"    },
+              ].map(s => (
+                <div key={s.label} style={{ padding:"6px 12px", borderRadius:8,
                   background:"rgba(8,22,40,.6)", border:"1px solid rgba(42,79,122,.3)",
                   display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
                   <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
-                    fontSize:20, color:st.color, lineHeight:1 }}>{st.val}</span>
+                    fontSize:20, color:s.color, lineHeight:1 }}>{s.val}</span>
                   <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
                     color:"var(--sd-txt4)", letterSpacing:.8,
-                    textTransform:"uppercase" }}>{st.label}</span>
+                    textTransform:"uppercase" }}>{s.label}</span>
                 </div>
               ))}
+              <button onClick={generateHandoff}
+                disabled={handoffBusy || stats.active === 0}
+                style={{ padding:"8px 18px", borderRadius:8, cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
+                  border:`1px solid ${handoffBusy ? "rgba(42,79,122,.3)" : "rgba(155,109,255,.45)"}`,
+                  background:handoffBusy ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.12)",
+                  color:handoffBusy ? "var(--sd-txt4)" : "var(--sd-purple)",
+                  opacity:stats.active===0 ? .4 : 1, transition:"all .15s" }}>
+                {handoffBusy ? "Generating…" : "✦ Generate Handoff"}
+              </button>
               <button onClick={() => window.location.href="/QuickNote"}
                 style={{ padding:"8px 18px", borderRadius:8, cursor:"pointer",
                   fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
@@ -309,6 +363,33 @@ export default function ShiftDashboard() {
             </div>
           )}
         </div>
+
+        {/* Handoff output */}
+        {handoff && (
+          <div style={{ marginBottom:16, padding:"14px 16px", borderRadius:12,
+            background:"rgba(155,109,255,.07)", border:"1px solid rgba(155,109,255,.35)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+              <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+                fontSize:14, color:"var(--sd-purple)", flex:1 }}>Shift Handoff</span>
+              <button onClick={copyHandoff}
+                style={{ padding:"5px 14px", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                  border:`1px solid ${copiedHandoff ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.4)"}`,
+                  background:copiedHandoff ? "rgba(61,255,160,.1)" : "rgba(155,109,255,.1)",
+                  color:copiedHandoff ? "var(--sd-green)" : "var(--sd-purple)",
+                  transition:"all .15s" }}>
+                {copiedHandoff ? "✓ Copied" : "Copy Handoff"}
+              </button>
+              <button onClick={() => setHandoff(null)}
+                style={{ background:"transparent", border:"none", cursor:"pointer",
+                  color:"var(--sd-txt4)", fontSize:16 }}>✕</button>
+            </div>
+            <pre style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+              color:"var(--sd-txt2)", lineHeight:1.7, whiteSpace:"pre-wrap", margin:0 }}>
+              {handoff}
+            </pre>
+          </div>
+        )}
 
         {/* Table */}
         {loading && notes.length === 0 ? (
@@ -349,7 +430,7 @@ export default function ShiftDashboard() {
               background:"rgba(14,37,68,.8)",
               borderBottom:"1px solid rgba(42,79,122,.5)" }}>
               {["Time","Chief Complaint / Diagnosis","MDM / Disp","Status",""].map((h, i) => (
-                <div key={i} style={{ padding:`8px 0 8px ${i===0?"0 8px 14px":"12px"}`,
+                <div key={i} style={{ padding:"8px 0 8px" + (i===0?" 0 8px 14px":" 12px"),
                   fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
                   color:"var(--sd-txt4)", letterSpacing:1, textTransform:"uppercase" }}>
                   {h}
@@ -358,7 +439,8 @@ export default function ShiftDashboard() {
             </div>
             {notes.map((n, i) => (
               <EncounterRow key={n.id} note={n} idx={i}
-                onToggleActive={handleToggleActive} />
+                onToggleActive={handleToggleActive}
+                onContinue={() => {}} />
             ))}
           </div>
         )}

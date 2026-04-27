@@ -452,6 +452,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [vhDismissed,     setVhDismissed]     = useState(false);
   const [vhAnalysis,      setVhAnalysis]      = useState(null);   // { trend_narrative, vitals_summary, clinical_flags }
   const [vhAnalysisDismissed, setVhAnalysisDismissed] = useState(false);
+  const [nhResumed,           setNhResumed]           = useState(false);
+  const [nhResumeDismissed,   setNhResumeDismissed]   = useState(false);
   const [hpiSummary,      setHpiSummary]      = useState(null);
   const [hpiSumBusy,      setHpiSumBusy]      = useState(false);
   const [hpiSumError,     setHpiSumError]      = useState(null);
@@ -807,21 +809,38 @@ Respond ONLY in valid JSON, no markdown fences.`;
         window.history.replaceState({}, "", window.location.pathname);
       }
     } catch {}
-    // Check for pending VH-Analysis record
-    base44.entities.ClinicalNote.list({ sort:"-created_date", limit:5 })
+    // Check for pending VH-Analysis or NH-Resume records
+    base44.entities.ClinicalNote.list({ sort:"-created_date", limit:10 })
       .then(results => {
-        const rec = (results || []).find(r => r.source === "VH-Analysis" && r.status === "pending");
-        if (rec) {
+        const all = results || [];
+
+        // VH-Analysis — vitals trend narrative for MDM
+        const vhRec = all.find(r => r.source === "VH-Analysis" && r.status === "pending");
+        if (vhRec) {
           let flags = [];
-          try { flags = JSON.parse(rec.ros_raw || "[]"); } catch {}
+          try { flags = JSON.parse(vhRec.ros_raw || "[]"); } catch {}
           setVhAnalysis({
-            trend_narrative: rec.full_note_text || "",
-            vitals_summary:  rec.hpi_raw || "",
+            trend_narrative: vhRec.full_note_text || "",
+            vitals_summary:  vhRec.hpi_raw || "",
             clinical_flags:  Array.isArray(flags) ? flags : [],
-            raw_data:        rec.working_diagnosis || "",
+            raw_data:        vhRec.working_diagnosis || "",
           });
-          // Mark consumed
-          base44.entities.ClinicalNote.update(rec.id, { status:"imported" }).catch(() => null);
+          base44.entities.ClinicalNote.update(vhRec.id, { status:"imported" }).catch(() => null);
+        }
+
+        // NH-Resume — restore saved note fields
+        const nhRec = all.find(r => r.source === "NH-Resume" && r.status === "pending");
+        if (nhRec) {
+          if (nhRec.cc)        setCC(nhRec.cc);
+          if (nhRec.hpi_raw)   setHpi(nhRec.hpi_raw);
+          if (nhRec.ros_raw)   setRos(nhRec.ros_raw);
+          if (nhRec.exam_raw)  setExam(nhRec.exam_raw);
+          if (nhRec.labs_raw)  setLabs(nhRec.labs_raw);
+          if (nhRec.imaging_raw) setImaging(nhRec.imaging_raw);
+          // Triage vitals stored in full_note_text for resume
+          if (nhRec.full_note_text && !nhRec.hpi_raw) setVitals(nhRec.full_note_text);
+          setNhResumed(true);
+          base44.entities.ClinicalNote.update(nhRec.id, { status:"imported" }).catch(() => null);
         }
       })
       .catch(() => null);
@@ -1037,6 +1056,23 @@ Respond ONLY in valid JSON, no markdown fences.`;
           phase2Done={Boolean(dispResult)}
           p2Open={p2Open}
         />
+
+        {/* ── NH-Resume banner ─────────────────────────────────────────────── */}
+        {nhResumed && !nhResumeDismissed && (
+          <div style={{ marginBottom:10, padding:"8px 14px", borderRadius:10,
+            background:"rgba(59,158,255,.08)", border:"1px solid rgba(59,158,255,.35)",
+            display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:14 }}>📋</span>
+            <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+              fontWeight:600, color:"var(--qn-blue)", flex:1 }}>
+              Note resumed from history — CC, HPI, ROS, PE, Labs, and Imaging pre-filled
+            </span>
+            <button onClick={() => setNhResumeDismissed(true)}
+              style={{ background:"transparent", border:"none", cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                color:"var(--qn-txt4)", padding:"0 4px" }}>✕</button>
+          </div>
+        )}
 
         {/* ── VitalsHub import banner ──────────────────────────────────────── */}
         {vhImported && !vhDismissed && (

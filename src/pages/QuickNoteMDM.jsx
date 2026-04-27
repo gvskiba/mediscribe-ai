@@ -3,7 +3,9 @@
 // Extracted from QuickNoteComponents.jsx
 // Exports: DifferentialCard, QuickDDxCard, MDMResult
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { base44 } from "@/api/base44Client";
+import { CC_HUB_MAP } from "./QuickNoteData";
 
 // ─── LOCAL HELPERS ───────────────────────────────────────────────────────────
 const s = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
@@ -22,6 +24,79 @@ function SectionLabel({ children, color, style }) {
     <div className="qn-section-lbl"
       style={{ color: color || 'var(--qn-txt4)', marginBottom:4, ...style }}>
       {children}
+    </div>
+  );
+}
+
+// ─── MDM NARRATIVE CARD ──────────────────────────────────────────────────────
+function MDMNarrativeCard({ narrative, copiedMDM, setCopiedMDM, onEdit }) {
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState(narrative);
+  const [saved,   setSaved]   = useState(false);
+  const prevNarrative = useRef(narrative);
+
+  useEffect(() => {
+    if (narrative !== prevNarrative.current) {
+      setDraft(narrative); setEditing(false);
+      prevNarrative.current = narrative;
+    }
+  }, [narrative]);
+
+  useEffect(() => {
+    const fn = () => { if (!editing) { setDraft(narrative); setEditing(true); } };
+    window.addEventListener("qn-edit-narrative", fn);
+    return () => window.removeEventListener("qn-edit-narrative", fn);
+  }, [editing, narrative]);
+
+  const handleSave = () => { if (onEdit) onEdit(draft); setEditing(false); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const copy = () => { navigator.clipboard.writeText(editing ? draft : narrative); setCopiedMDM(true); setTimeout(() => setCopiedMDM(false), 2000); };
+
+  return (
+    <div className="qn-card" style={{ marginBottom:10 }}>
+      <div style={{ display:"flex", alignItems:"center", marginBottom:6, gap:6 }}>
+        <SectionLabel color="var(--qn-purple)" style={{ marginBottom:0 }}>MDM Narrative — Chart-Ready</SectionLabel>
+        {saved && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--qn-green)" }}>✓ Saved</span>}
+        <div style={{ flex:1 }} />
+        {!editing ? (
+          <>
+            <button onClick={() => { setDraft(narrative); setEditing(true); }}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, border:"1px solid rgba(155,109,255,.35)", background:"rgba(155,109,255,.08)", color:"var(--qn-purple)", letterSpacing:.5, textTransform:"uppercase" }}>✎ Edit</button>
+            <button onClick={copy}
+              style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, border:`1px solid ${copiedMDM ? "rgba(61,255,160,.5)" : "rgba(155,109,255,.35)"}`, background:copiedMDM ? "rgba(61,255,160,.1)" : "rgba(155,109,255,.08)", color:copiedMDM ? "var(--qn-green)" : "var(--qn-purple)", letterSpacing:.5, textTransform:"uppercase" }}>{copiedMDM ? "✓ Copied" : "Copy"}</button>
+          </>
+        ) : (
+          <>
+            <button onClick={handleSave} style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, border:"1px solid rgba(61,255,160,.5)", background:"rgba(61,255,160,.1)", color:"var(--qn-green)" }}>✓ Done</button>
+            <button onClick={() => { setDraft(narrative); setEditing(false); }} style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:8, border:"1px solid rgba(42,79,122,.4)", background:"transparent", color:"var(--qn-txt4)" }}>Cancel</button>
+          </>
+        )}
+      </div>
+      {editing ? (
+        <textarea value={draft} onChange={e => setDraft(e.target.value)} rows={5} autoFocus
+          style={{ background:"rgba(14,37,68,.7)", border:"1px solid rgba(155,109,255,.45)", borderRadius:8, padding:"10px 12px", color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif", fontSize:12, lineHeight:1.75, outline:"none", width:"100%", boxSizing:"border-box", resize:"vertical" }} />
+      ) : (
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--qn-txt2)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>{s(narrative)}</div>
+      )}
+    </div>
+  );
+}
+
+// ─── HUB STRIP ────────────────────────────────────────────────────────────────
+function HubStrip({ catId, label }) {
+  const hubs = CC_HUB_MAP[catId];
+  if (!hubs) return null;
+  const all = [...(hubs.primary || []), ...(hubs.secondary || [])];
+  return (
+    <div style={{ marginTop:8, padding:"7px 10px", borderRadius:8, background:"rgba(8,22,40,.7)", border:"1px solid rgba(42,79,122,.35)" }}>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--qn-txt4)", letterSpacing:1.2, textTransform:"uppercase", marginBottom:6 }}>{label || "Related Hubs"}</div>
+      <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+        {all.map((h, i) => (
+          <button key={i} onClick={() => { window.location.href = h.route; }}
+            style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:7, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, border:`1px solid ${h.color}44`, background:`${h.color}0e`, color:h.color, transition:"all .15s" }}>
+            <span style={{ fontSize:13 }}>{h.icon}</span>{h.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -198,9 +273,9 @@ export function QuickDDxCard({ items, onDismiss, onRerun, busy }) {
 
 // ─── MDM RESULT DISPLAY ───────────────────────────────────────────────────────
 export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) {
+  const [auditOpen, setAuditOpen] = useState(false);
   if (!result) return null;
   const lc = mdmLevelColor(result.mdm_level);
-  const [auditOpen, setAuditOpen] = useState(false);
 
   // E&M 2023 criteria explanation per field
   const PROBLEM_CRITERIA = {

@@ -365,6 +365,39 @@ function NoteCard({ note, onDelete, onUpdate }) {
               {resuming ? "Opening…" : "Continue in QuickNote →"}
             </button>
 
+            {/* + Addendum — opens QuickNote in Phase 2 addendum mode */}
+            {note.status !== "draft" && (
+              <button onClick={async () => {
+                try {
+                  const prior = await base44.entities.ClinicalNote.list(
+                    { sort:"-created_date", limit:5 }
+                  ).catch(() => []);
+                  await Promise.all(
+                    (prior||[]).filter(r => r.source === "NH-Addendum" && r.status === "pending")
+                      .map(r => base44.entities.ClinicalNote.update(r.id, { status:"superseded" }).catch(() => null))
+                  );
+                  await base44.entities.ClinicalNote.create({
+                    source:"NH-Addendum", status:"pending",
+                    encounter_date:      note.encounter_date || "",
+                    cc:                  note.cc || "",
+                    working_diagnosis:   note.working_diagnosis || "",
+                    mdm_level:           note.mdm_level || "",
+                    mdm_narrative:       note.mdm_narrative || "",
+                    patient_identifier:  note.patient_identifier || "",
+                    icd_codes_json:      note.icd_codes_json || "",
+                    hpi_raw:             note.hpi_raw || "",
+                  });
+                  window.location.href = "/QuickNote";
+                } catch (e) { console.error("Addendum failed:", e); }
+              }}
+                style={{ padding:"6px 14px", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                  border:"1px solid rgba(59,158,255,.35)", background:"rgba(59,158,255,.06)",
+                  color:"var(--nh-blue)", transition:"all .15s" }}>
+                + Addendum
+              </button>
+            )}
+
             {note.full_note_text && (
               <button onClick={handleCopy}
                 style={{ padding:"6px 14px", borderRadius:7, cursor:"pointer",

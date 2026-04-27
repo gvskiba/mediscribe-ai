@@ -1265,9 +1265,9 @@ export function QuickDDxCard({ items, onDismiss, onRerun, busy }) {
 
 // ─── MDM RESULT DISPLAY ───────────────────────────────────────────────────────
 export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) {
-  const [auditOpen, setAuditOpen] = useState(false);
   if (!result) return null;
   const lc = mdmLevelColor(result.mdm_level);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   // E&M 2023 criteria explanation per field
   const PROBLEM_CRITERIA = {
@@ -1772,6 +1772,55 @@ const CALCS = {
       n === 2    ? { label:"AKI STAGE 2", note:"2.0–2.9× baseline · Consider nephrology", color:"var(--qn-coral)" } :
                    { label:"AKI STAGE 3", note:"≥3× baseline or Cr ≥4.0 · Nephrology consult", color:"var(--qn-red)" },
     guideline:"KDIGO AKI 2012",
+  },
+
+  nihss: {
+    id:"nihss", label:"NIHSS", abbr:"NIHSS",
+    color:"#9b6dff", colorRgb:"155,109,255",
+    description:"NIH Stroke Scale · Stroke severity · tPA eligibility context",
+    triggers:/stroke|tia|nihss|facial.droop|arm.drift|aphasia|dysarthria|focal.neuro|neuro.deficit/i,
+    fields:[
+      { key:"loc",     label:"1a. Level of Consciousness", type:"select",
+        options:[{v:0,l:"Alert (0)"},{v:1,l:"Drowsy (1)"},{v:2,l:"Stuporous (2)"},{v:3,l:"Unresponsive (3)"}]},
+      { key:"locq",    label:"1b. LOC Questions",          type:"select",
+        options:[{v:0,l:"Both correct (0)"},{v:1,l:"One correct (1)"},{v:2,l:"Neither (2)"}]},
+      { key:"locc",    label:"1c. LOC Commands",           type:"select",
+        options:[{v:0,l:"Both obey (0)"},{v:1,l:"One obeys (1)"},{v:2,l:"Neither (2)"}]},
+      { key:"gaze",    label:"2. Best Gaze",               type:"select",
+        options:[{v:0,l:"Normal (0)"},{v:1,l:"Partial palsy (1)"},{v:2,l:"Forced deviation (2)"}]},
+      { key:"visual",  label:"3. Visual Fields",           type:"select",
+        options:[{v:0,l:"No loss (0)"},{v:1,l:"Partial hemianopia (1)"},{v:2,l:"Complete hemianopia (2)"},{v:3,l:"Bilateral (3)"}]},
+      { key:"facial",  label:"4. Facial Palsy",            type:"select",
+        options:[{v:0,l:"Normal (0)"},{v:1,l:"Minor (1)"},{v:2,l:"Partial (2)"},{v:3,l:"Complete (3)"}]},
+      { key:"motorL",  label:"5L. Motor Arm Left",         type:"select",
+        options:[{v:0,l:"No drift (0)"},{v:1,l:"Drift (1)"},{v:2,l:"Some effort (2)"},{v:3,l:"No effort (3)"},{v:4,l:"No movement (4)"}]},
+      { key:"motorR",  label:"5R. Motor Arm Right",        type:"select",
+        options:[{v:0,l:"No drift (0)"},{v:1,l:"Drift (1)"},{v:2,l:"Some effort (2)"},{v:3,l:"No effort (3)"},{v:4,l:"No movement (4)"}]},
+      { key:"legL",    label:"6L. Motor Leg Left",         type:"select",
+        options:[{v:0,l:"No drift (0)"},{v:1,l:"Drift (1)"},{v:2,l:"Some effort (2)"},{v:3,l:"No effort (3)"},{v:4,l:"No movement (4)"}]},
+      { key:"legR",    label:"6R. Motor Leg Right",        type:"select",
+        options:[{v:0,l:"No drift (0)"},{v:1,l:"Drift (1)"},{v:2,l:"Some effort (2)"},{v:3,l:"No effort (3)"},{v:4,l:"No movement (4)"}]},
+      { key:"ataxia",  label:"7. Limb Ataxia",             type:"select",
+        options:[{v:0,l:"Absent (0)"},{v:1,l:"One limb (1)"},{v:2,l:"Two limbs (2)"}]},
+      { key:"sensory", label:"8. Sensory",                 type:"select",
+        options:[{v:0,l:"Normal (0)"},{v:1,l:"Mild loss (1)"},{v:2,l:"Severe loss (2)"}]},
+      { key:"lang",    label:"9. Best Language",           type:"select",
+        options:[{v:0,l:"Normal (0)"},{v:1,l:"Mild aphasia (1)"},{v:2,l:"Severe aphasia (2)"},{v:3,l:"Mute/global (3)"}]},
+      { key:"dysarth", label:"10. Dysarthria",             type:"select",
+        options:[{v:0,l:"Normal (0)"},{v:1,l:"Mild (1)"},{v:2,l:"Severe/anarthric (2)"}]},
+      { key:"extinct", label:"11. Extinction/Inattention", type:"select",
+        options:[{v:0,l:"Normal (0)"},{v:1,l:"One modality (1)"},{v:2,l:"Two modalities (2)"}]},
+    ],
+    score:(v)=>["loc","locq","locc","gaze","visual","facial","motorL","motorR",
+      "legL","legR","ataxia","sensory","lang","dysarth","extinct"]
+      .reduce((s,k)=>s+(parseFloat(v[k])||0),0),
+    interpret:(n)=>
+      n===0  ?{label:"NO DEFICIT",        note:"Score 0 — no neurological deficit detected",              color:"var(--qn-green)"  }:
+      n<=4   ?{label:"MINOR STROKE",      note:"1–4 · Minor deficit · NIHSS-guided imaging pathway",      color:"var(--qn-gold)"   }:
+      n<=15  ?{label:"MODERATE STROKE",   note:"5–15 · Moderate · Evaluate tPA/thrombectomy eligibility", color:"var(--qn-orange)" }:
+      n<=20  ?{label:"MOD-SEVERE STROKE", note:"16–20 · Significant deficit",                             color:"var(--qn-coral)"  }:
+               {label:"SEVERE STROKE",    note:"21–42 · Severe deficit · Thrombectomy workup urgently",   color:"var(--qn-red)"    },
+    guideline:"Brott et al. Stroke 1989 · AHA/ASA 2019 Acute Ischemic Stroke Guidelines",
   },
 };
 

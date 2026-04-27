@@ -7,7 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
-import { injectQNStyles } from "./QuickNoteStyle";
+import { injectQNStyles } from "./QuickNoteStyle.jsx";
 import { PatientBanner, FatigueBanner, UndoToast, NhResumeBanner,
          VhImportBanner, VhAnalysisCard, AddendumBanner } from "./QuickNoteBanners";
 import { KbHelpModal } from "./QuickNoteKbHelp";
@@ -19,6 +19,8 @@ import {
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
   buildFullNote, buildPhase1Copy, buildPhase2Copy,
 } from "./QuickNotePrompts";
+
+injectQNStyles();
 
 injectQNStyles();
 

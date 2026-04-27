@@ -81,8 +81,8 @@ import { dispColor, StepProgress, InputZone, MDMResult, DispositionResult,
 // ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
 
 import {
-  MDM_SCHEMA, DISP_SCHEMA, buildMDMPrompt, buildDispPrompt,
-  buildMDMBlock, buildFullNote, buildPhase1Copy, buildPhase2Copy,
+  buildMDMPrompt, buildDispPrompt, buildMDMBlock,
+  buildFullNote, buildPhase1Copy, buildPhase2Copy,
 } from "./QuickNotePrompts";
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     labs:"", imaging:"", ekg:"", newVitals:"",
     medsRaw:"", allergiesRaw:"", parsedMeds:[], parsedAllergies:[],
     mdmResult:null, dispResult:null, icdSelected:[], icdSuggestions:[],
-    interventions:[], hpiSummary:null,
+    interventions:[], hpiSummary:null, hpiMode:"original",
     encounterType:"adult", p2Open:false,
   });
   const [slots,       setSlots]       = useState(() => [EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT()]);
@@ -172,6 +172,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setIcdSuggestions([]);
       setInterventions(slot.interventions || []);
       setHpiSummary(slot.hpiSummary || null);
+      setHpiMode(slot.hpiMode || "original");
       setEncounterType(slot.encounterType || "adult");
       setP2Open(slot.p2Open || false);
       setP1Error(null); setP2Error(null);
@@ -226,6 +227,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [hpiSumBusy,      setHpiSumBusy]      = useState(false);
   const [hpiSumError,     setHpiSumError]      = useState(null);
   const [copiedHpiSum,    setCopiedHpiSum]     = useState(false);
+  const [hpiMode,         setHpiMode]         = useState("original"); // "original" | "summary"
   // ICD-10 coding state
   const [icdSuggestions,  setIcdSuggestions]  = useState([]);  // [{code,description,type}]
   const [icdSelected,     setIcdSelected]     = useState([]);  // confirmed codes
@@ -235,6 +237,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [interventions,   setInterventions]   = useState([]);  // [{id,type,name,dose_route,time_given,response,confirmed}]
   const [intLoading,      setIntLoading]      = useState(false);
   const [intGenerated,    setIntGenerated]    = useState(false);
+
+  // HPI used in all copy/note-build functions — respects hpiMode toggle
+  const effectiveHpi = hpiMode === "summary" && hpiSummary ? hpiSummary : hpi;
 
   const phase1Ready = Boolean(cc.trim() || hpi.trim() || exam.trim());
   const phase2Ready = Boolean(mdmResult && (labs.trim() || imaging.trim() || newVitals.trim()));
@@ -297,7 +302,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   // Copy full note
   const copyNote = useCallback(() => {
     const text = buildFullNote(
-      { cc, vitals, hpi, ros, exam },
+      { cc, vitals, hpi: effectiveHpi, ros, exam },
       mdmResult,
       { labs, imaging, newVitals },
       dispResult,
@@ -307,19 +312,22 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     });
-  }, [cc, vitals, hpi, ros, exam, mdmResult, labs, imaging, newVitals, dispResult, icdSelected, interventions]);
+  }, [cc, vitals, effectiveHpi, ros, exam, mdmResult, labs, imaging, newVitals, dispResult, icdSelected, interventions]);
 
   // Copy clinical inputs (CC / Vitals / HPI / ROS / PE) — EHR paste ready
   const [copiedP1,    setCopiedP1]    = useState(false);
   const [copiedP2,    setCopiedP2]    = useState(false);
   const [copiedInputs, setCopiedInputs] = useState(false);
   const copyClinicalInputs = useCallback(() => {
+    const hpiLabel = hpiMode === "summary" && hpiSummary
+      ? "HISTORY OF PRESENT ILLNESS (AI Summary)"
+      : "HISTORY OF PRESENT ILLNESS";
     const sections = [
-      { label:"CHIEF COMPLAINT",             text:cc },
-      { label:"TRIAGE VITALS",               text:vitals },
-      { label:"HISTORY OF PRESENT ILLNESS",  text:hpi },
-      { label:"REVIEW OF SYSTEMS",           text:ros },
-      { label:"PHYSICAL EXAM",               text:exam },
+      { label:"CHIEF COMPLAINT",  text:cc },
+      { label:"TRIAGE VITALS",    text:vitals },
+      { label:hpiLabel,           text:effectiveHpi },
+      { label:"REVIEW OF SYSTEMS", text:ros },
+      { label:"PHYSICAL EXAM",    text:exam },
     ].filter(s => s.text?.trim());
     if (!sections.length) return;
     const block = sections.map(s => `${s.label}:\n${s.text.trim()}`).join("\n\n");
@@ -327,17 +335,18 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setCopiedInputs(true);
       setTimeout(() => setCopiedInputs(false), 2500);
     });
-  }, [cc, vitals, hpi, ros, exam]);
+  }, [cc, vitals, effectiveHpi, ros, exam, hpiMode, hpiSummary]);
 
   // Phase 1 copy — Initial note for EHR paste
   const copyPhase1 = useCallback(() => {
     if (!mdmResult) return;
     const prov = window._notryaProvider || {};
     const text = buildPhase1Copy(
-      { cc, vitals, hpi, ros, exam },
+      { cc, vitals, hpi: effectiveHpi, ros, exam },
       mdmResult,
       { parsedMeds, parsedAllergies,
         hpiSummary,
+        hpiMode,
         providerName: prov.full_name || demo?.full_name || "",
         sigBlock:     prov.sigBlock  || "",
         demographics: { ...(demo || {}), facility: prov.facility, location: prov.location } },
@@ -346,7 +355,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     navigator.clipboard.writeText(text).then(() => {
       setCopiedP1(true); setTimeout(() => setCopiedP1(false), 3000);
     });
-  }, [cc, vitals, hpi, ros, exam, mdmResult, parsedMeds, parsedAllergies, demo, formatMode]);
+  }, [cc, vitals, effectiveHpi, ros, exam, mdmResult, parsedMeds, parsedAllergies, hpiSummary, hpiMode, demo, formatMode]);
 
   // Phase 2 copy — Reevaluation addendum for EHR paste
   const copyPhase2 = useCallback(() => {
@@ -1037,7 +1046,7 @@ Respond ONLY in valid JSON, no markdown fences.`;
       cc, vitals, hpi, ros, exam, labs, imaging, ekg, newVitals,
       medsRaw, allergiesRaw, parsedMeds, parsedAllergies,
       mdmResult, dispResult, icdSelected, interventions,
-      hpiSummary, encounterType, p2Open,
+      hpiSummary, hpiMode, encounterType, p2Open,
     };
   });
 
@@ -1410,24 +1419,57 @@ Respond ONLY in valid JSON, no markdown fences.`;
               onRef={setRef(2)}
               onKeyDown={makeKeyDown(2, false, runMDM)} />
 
-            {/* Summarize HPI button — appears once HPI has content */}
+            {/* HPI mode toggle — appears once HPI has enough content */}
             {hpi.trim().length > 40 && (
-              <div style={{ marginTop:5, display:"flex", alignItems:"center", gap:8 }}>
-                <button onClick={summarizeHPI} disabled={hpiSumBusy}
-                  style={{ padding:"3px 12px", borderRadius:6, cursor:"pointer",
-                    fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
-                    border:`1px solid ${hpiSumBusy ? "rgba(42,79,122,.3)" : "rgba(59,158,255,.4)"}`,
-                    background:hpiSumBusy ? "rgba(14,37,68,.4)" : "rgba(59,158,255,.08)",
-                    color:hpiSumBusy ? "var(--qn-txt4)" : "var(--qn-blue)",
-                    letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-                  {hpiSumBusy ? "● Summarizing…" : "✦ AI HPI Summary"}
-                </button>
-                {hpiSummary && (
-                  <button onClick={() => { setHpiSummary(null); setHpiSumError(null); }}
-                    style={{ padding:"3px 8px", borderRadius:6, cursor:"pointer",
+              <div style={{ marginTop:6, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-txt4)", letterSpacing:.5, textTransform:"uppercase",
+                  flexShrink:0 }}>HPI in note:</span>
+                {[
+                  { id:"original", label:"My HPI as entered" },
+                  { id:"summary",  label:"AI-generated summary" },
+                ].map(({ id, label }) => {
+                  const isActive = hpiMode === id;
+                  const isLoading = id === "summary" && hpiSumBusy;
+                  return (
+                    <button key={id}
+                      onClick={() => {
+                        setHpiMode(id);
+                        if (id === "summary" && !hpiSummary && !hpiSumBusy) summarizeHPI();
+                      }}
+                      style={{ padding:"3px 11px", borderRadius:6, cursor:"pointer",
+                        fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                        transition:"all .15s",
+                        border:`1px solid ${isActive ? "rgba(0,229,192,.5)" : "rgba(42,79,122,.35)"}`,
+                        background:isActive ? "rgba(0,229,192,.12)" : "transparent",
+                        color:isActive ? "var(--qn-teal)" : "var(--qn-txt4)" }}>
+                      {isLoading ? "● Generating…" : label}
+                      {isActive && !isLoading && (
+                        <span style={{ marginLeft:5, fontSize:9,
+                          fontFamily:"'JetBrains Mono',monospace",
+                          color:"rgba(0,229,192,.6)" }}>✓ active</span>
+                      )}
+                    </button>
+                  );
+                })}
+                {hpiSummary && hpiMode === "summary" && (
+                  <button onClick={summarizeHPI} disabled={hpiSumBusy}
+                    title="Regenerate AI summary"
+                    style={{ padding:"3px 8px", borderRadius:5, cursor:"pointer",
                       fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                       border:"1px solid rgba(42,79,122,.3)", background:"transparent",
-                      color:"var(--qn-txt4)" }}>Clear</button>
+                      color:"var(--qn-txt4)", transition:"all .15s" }}>↺ Redo</button>
+                )}
+                {hpiSummary && (
+                  <button onClick={() => {
+                    setHpiSummary(null);
+                    setHpiSumError(null);
+                    setHpiMode("original");
+                  }}
+                    style={{ padding:"3px 8px", borderRadius:5, cursor:"pointer",
+                      fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      border:"1px solid rgba(42,79,122,.3)", background:"transparent",
+                      color:"var(--qn-txt4)", transition:"all .15s" }}>Clear summary</button>
                 )}
               </div>
             )}
@@ -1440,19 +1482,33 @@ Respond ONLY in valid JSON, no markdown fences.`;
               </div>
             )}
 
-            {/* HPI Summary result card */}
+            {/* HPI Summary preview card — shown when summary exists */}
             {hpiSummary && (
               <div className="qn-fade" style={{ marginTop:8, padding:"12px 14px",
-                borderRadius:10, background:"rgba(59,158,255,.06)",
-                border:"1px solid rgba(59,158,255,.35)" }}>
+                borderRadius:10,
+                background: hpiMode === "summary" ? "rgba(0,229,192,.05)" : "rgba(59,158,255,.04)",
+                border:`1px solid ${hpiMode === "summary" ? "rgba(0,229,192,.35)" : "rgba(59,158,255,.25)"}`,
+                transition:"all .2s" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                   <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-                    fontWeight:700, color:"var(--qn-blue)", letterSpacing:1.2,
-                    textTransform:"uppercase" }}>AI HPI Summary</span>
-                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                    color:"var(--qn-txt4)", letterSpacing:.3 }}>
-                    Verify against original text above before charting
+                    fontWeight:700,
+                    color: hpiMode === "summary" ? "var(--qn-teal)" : "var(--qn-txt4)",
+                    letterSpacing:1.2, textTransform:"uppercase", transition:"color .2s" }}>
+                    AI HPI Summary
                   </span>
+                  {hpiMode === "summary" ? (
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      color:"var(--qn-teal)", background:"rgba(0,229,192,.1)",
+                      border:"1px solid rgba(0,229,192,.3)", borderRadius:4,
+                      padding:"1px 7px", letterSpacing:.4 }}>
+                      ✓ In note
+                    </span>
+                  ) : (
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      color:"var(--qn-txt4)", letterSpacing:.3 }}>
+                      Preview — not active
+                    </span>
+                  )}
                   <div style={{ flex:1 }} />
                   <button onClick={() => {
                     navigator.clipboard.writeText(hpiSummary);
@@ -1467,13 +1523,6 @@ Respond ONLY in valid JSON, no markdown fences.`;
                       letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
                     {copiedHpiSum ? "✓ Copied" : "Copy"}
                   </button>
-                  <button onClick={summarizeHPI} disabled={hpiSumBusy}
-                    style={{ padding:"2px 8px", borderRadius:6, cursor:"pointer",
-                      fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                      border:"1px solid rgba(59,158,255,.3)",
-                      background:"rgba(59,158,255,.06)", color:"var(--qn-txt4)" }}>
-                    ↺ Redo
-                  </button>
                 </div>
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
                   color:"var(--qn-txt2)", lineHeight:1.75 }}>
@@ -1484,7 +1533,7 @@ Respond ONLY in valid JSON, no markdown fences.`;
                   fontFamily:"'DM Sans',sans-serif", fontSize:10,
                   color:"var(--qn-gold)", lineHeight:1.5 }}>
                   ⚠ AI restructured from pasted text only — no details were added or inferred.
-                  Compare to the original HPI above before using in the chart.
+                  Verify against original HPI before charting.
                 </div>
               </div>
             )}

@@ -163,7 +163,10 @@ const DISP_SCHEMA = {
   },
 };
 
-function buildMDMPrompt(cc, vitals, hpi, ros, exam) {
+function buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis) {
+  const vhContext = vhAnalysis?.trend_narrative
+    ? `\nVITAL SIGNS TREND ANALYSIS (from VitalsHub — use in MDM complexity assessment):\n${vhAnalysis.trend_narrative}${vhAnalysis.clinical_flags?.length ? "\nKey observations: " + vhAnalysis.clinical_flags.join(" | ") : ""}\n`
+    : "";
   return `${SYS_BIAS}
 
 You are a board-certified emergency physician generating a Medical Decision Making (MDM) assessment. Apply the AMA/CMS 2023 E&M MDM table for Emergency Medicine (99281-99285 + 99291).
@@ -181,7 +184,7 @@ Chief Complaint: ${cc || "Not provided"}
 Triage Vitals: ${vitals || "Not provided"}
 HPI: ${hpi || "Not provided"}
 ROS: ${ros || "Not provided"}
-Physical Exam: ${exam || "Not provided"}
+Physical Exam: ${exam || "Not provided"}${vhContext}
 
 Generate the MDM assessment. Use ONLY the following exact values for each field:
 
@@ -447,6 +450,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [fatigueDismissed, setFatigueDismissed] = useState(false);
   const [vhImported,      setVhImported]      = useState(false);   // banner state
   const [vhDismissed,     setVhDismissed]     = useState(false);
+  const [vhAnalysis,      setVhAnalysis]      = useState(null);   // { trend_narrative, vitals_summary, clinical_flags }
+  const [vhAnalysisDismissed, setVhAnalysisDismissed] = useState(false);
   const [hpiSummary,      setHpiSummary]      = useState(null);
   const [hpiSumBusy,      setHpiSumBusy]      = useState(false);
   const [hpiSumError,     setHpiSumError]      = useState(null);
@@ -482,7 +487,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     setDispResult(null);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildMDMPrompt(cc, vitals, hpi, ros, exam),
+        prompt: buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis),
         response_json_schema: MDM_SCHEMA,
       });
       setMdmResult(res);
@@ -790,6 +795,7 @@ Respond ONLY in valid JSON, no markdown fences.`;
   }, [sendingNPI, cc, vitals, hpi, ros, exam, labs, imaging, mdmResult, demo]);
 
   // Read ?vitals= URL param from VitalsHub and pre-fill triage vitals
+  // Also check for VH-Analysis handoff record in ClinicalNote entity
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -798,10 +804,27 @@ Respond ONLY in valid JSON, no markdown fences.`;
         const decoded = decodeURIComponent(v);
         setVitals(decoded);
         setVhImported(true);
-        // Clean URL without reload
         window.history.replaceState({}, "", window.location.pathname);
       }
     } catch {}
+    // Check for pending VH-Analysis record
+    base44.entities.ClinicalNote.list({ sort:"-created_date", limit:5 })
+      .then(results => {
+        const rec = (results || []).find(r => r.source === "VH-Analysis" && r.status === "pending");
+        if (rec) {
+          let flags = [];
+          try { flags = JSON.parse(rec.ros_raw || "[]"); } catch {}
+          setVhAnalysis({
+            trend_narrative: rec.full_note_text || "",
+            vitals_summary:  rec.hpi_raw || "",
+            clinical_flags:  Array.isArray(flags) ? flags : [],
+            raw_data:        rec.working_diagnosis || "",
+          });
+          // Mark consumed
+          base44.entities.ClinicalNote.update(rec.id, { status:"imported" }).catch(() => null);
+        }
+      })
+      .catch(() => null);
   }, []);
 
   useEffect(() => {
@@ -1029,6 +1052,42 @@ Respond ONLY in valid JSON, no markdown fences.`;
               style={{ background:"transparent", border:"none", cursor:"pointer",
                 fontFamily:"'JetBrains Mono',monospace", fontSize:11,
                 color:"var(--qn-txt4)", padding:"0 4px" }}>✕</button>
+          </div>
+        )}
+
+        {/* ── VitalsHub AI Analysis card ───────────────────────────────────── */}
+        {vhAnalysis && !vhAnalysisDismissed && (
+          <div style={{ marginBottom:10, padding:"12px 14px", borderRadius:10,
+            background:"rgba(155,109,255,.07)",
+            border:"1px solid rgba(155,109,255,.3)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                fontWeight:700, color:"var(--qn-purple)", letterSpacing:1,
+                textTransform:"uppercase" }}>VitalsHub Analysis — included in MDM</span>
+              <div style={{ flex:1 }} />
+              <button onClick={() => setVhAnalysisDismissed(true)}
+                style={{ background:"transparent", border:"none", cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                  color:"var(--qn-txt4)", padding:"0 4px" }}>✕</button>
+            </div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              color:"var(--qn-txt2)", lineHeight:1.7, marginBottom:6 }}>
+              {vhAnalysis.trend_narrative}
+            </div>
+            {vhAnalysis.clinical_flags?.length > 0 && (
+              <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                {vhAnalysis.clinical_flags.map((f, i) => (
+                  <span key={i} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:"var(--qn-txt3)", background:"rgba(42,79,122,.25)",
+                    border:"1px solid rgba(42,79,122,.4)", borderRadius:5,
+                    padding:"2px 8px", lineHeight:1.5 }}>{f}</span>
+                ))}
+              </div>
+            )}
+            <div style={{ marginTop:7, fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:"rgba(155,109,255,.6)", letterSpacing:.4 }}>
+              This analysis is passed to the MDM AI as additional context. Dismiss to exclude it.
+            </div>
           </div>
         )}
 

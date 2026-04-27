@@ -3,7 +3,17 @@
 // Extracted from QuickNoteComponents.jsx
 // Exports: DiagnosisCodingCard, InterventionsCard, DispositionResult
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { base44 } from "@/api/base44Client";
+
+function dispColor(disp) {
+  const d = (disp || "").toLowerCase();
+  if (d.includes("icu"))      return "#ff4444";
+  if (d.includes("admit"))    return "#ff6b6b";
+  if (d.includes("obs"))      return "#ff9f43";
+  if (d.includes("transfer")) return "#9b6dff";
+  return "#3dffa0";
+}
 
 // ─── LOCAL HELPERS ───────────────────────────────────────────────────────────
 const s = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));

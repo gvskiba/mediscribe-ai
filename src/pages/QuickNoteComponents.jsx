@@ -1095,5 +1095,6 @@ function MDMNarrativeCard({ narrative, copiedMDM, setCopiedMDM, onEdit }) {
 
 
 // ─── RE-EXPORTED FROM SUB-MODULES ───────────────────────────────────────────
-export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard } from "./QuickNoteMDM";
+export { DifferentialCard, QuickDDxCard, MDMResult } from "./QuickNoteMDM";
+export { ClinicalCalcsCard } from "./QuickNoteCalcs";
 export { DiagnosisCodingCard, InterventionsCard, DispositionResult } from "./QuickNoteDisposition";

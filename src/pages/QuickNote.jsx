@@ -289,7 +289,7 @@ function buildMDMBlock(mdm) {
   ];
   if (mdm.working_diagnosis) lines.push(`\nWorking Diagnosis: ${mdm.working_diagnosis}`);
   if (mdm.differential?.length)
-    lines.push(`Differential: ${mdm.differential.map((d,i) => `(${i+1}) ${d}`).join(", ")}`);
+    lines.push(`Differential: ${mdm.differential.map((d,i) => `(${i+1}) ${typeof d === "string" ? d : d.diagnosis || JSON.stringify(d)}`).join(", ")}`);
   if (mdm.red_flags?.length)
     lines.push(`\nRed Flags: ${mdm.red_flags.join("; ")}`);
   if (mdm.critical_actions?.length) {
@@ -357,7 +357,7 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
     lines.push(`Data Complexity: ${mdm.data_complexity || "—"}`);
     lines.push(`Risk: ${mdm.risk_tier || "—"}`);
     if (mdm.working_diagnosis) lines.push(`Working Dx: ${mdm.working_diagnosis}`);
-    if (mdm.differential?.length) lines.push(`Differential: ${mdm.differential.join(", ")}`);
+    if (mdm.differential?.length) lines.push(`Differential: ${mdm.differential.map(d => typeof d === "string" ? d : d.diagnosis || "").filter(Boolean).join(", ")}`);
     if (mdm.red_flags?.length) lines.push(`Red Flags: ${mdm.red_flags.join("; ")}`);
     if (mdm.critical_actions?.length) {
       lines.push(`Critical Actions:`);
@@ -558,7 +558,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     } finally {
       setP1Busy(false);
     }
-  }, [cc, vitals, hpi, ros, exam, phase1Ready, p1Busy]);
+  }, [cc, vitals, hpi, ros, exam, phase1Ready, p1Busy, vhAnalysis, parsedMeds, parsedAllergies]);
 
   // Phase 2 — Disposition
   const runDisposition = useCallback(async () => {
@@ -580,7 +580,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     } finally {
       setP2Busy(false);
     }
-  }, [mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, p2Busy]);
+  }, [mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, p2Busy, parsedMeds, parsedAllergies]);
 
   // Copy full note
   const copyNote = useCallback(() => {
@@ -595,7 +595,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     });
-  }, [cc, vitals, hpi, ros, exam, mdmResult, labs, imaging, newVitals, dispResult, icdSelected, interventions]);
+  }, [cc, vitals, hpi, ros, exam, mdmResult, labs, imaging, newVitals, dispResult, icdSelected, interventions, parsedMeds, parsedAllergies]);
 
   // Copy clinical inputs (CC / Vitals / HPI / ROS / PE) — EHR paste ready
   const [copiedInputs, setCopiedInputs] = useState(false);

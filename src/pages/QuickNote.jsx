@@ -177,7 +177,15 @@ const DISP_SCHEMA = {
   },
 };
 
-function buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis, parsedMeds, parsedAllergies) {
+function buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis, parsedMeds, parsedAllergies, encounterType) {
+  const SPECIALTY_CONTEXT = {
+    peds:`\nSPECIALTY CONTEXT — PEDIATRIC ED: Weight-based dosing required. Vital sign interpretation must use age-appropriate norms. Fever threshold <3 months is a critical action. Consider NAT (non-accidental trauma) for unexplained injuries. Parental concern is a legitimate factor in MDM complexity. Social determinants and caregiver reliability affect disposition.`,
+    psych:`\nSPECIALTY CONTEXT — PSYCHIATRIC EMERGENCY: Medical clearance is required before psychiatric disposition. Assess for organic causes of AMS (glucose, electrolytes, toxicology, head CT if indicated). Document SI/HI with plan, means, intent, and prior attempts. Collateral history is high-value data. Involuntary hold criteria vary by state — document capacity assessment. Safety to self and others drives disposition.`,
+    trauma:`\nSPECIALTY CONTEXT — TRAUMA: ATLS primary survey (ABCDE) governs MDM sequence. Document mechanism of injury. GCS and neurologic exam are mandatory. Hemorrhage control and hemodynamic stability drive immediate critical actions. Consider FAST exam and CXR as first-line imaging. Trauma surgery and orthopedics consult thresholds are lower than general ED.`,
+    obs:`\nSPECIALTY CONTEXT — OBSERVATION UNIT: Focus on protocol-driven workup and time-defined endpoints. Chest pain obs: serial troponins, stress testing pathway. Syncope obs: telemetry, orthostatics, echo if indicated. Document medical necessity for observation vs inpatient admission. Expected LOS 8-48 hours. Discharge planning begins at admission.`,
+    adult:"",
+  };
+  const specContext = SPECIALTY_CONTEXT[encounterType || "adult"] || "";
   const vhContext = vhAnalysis?.trend_narrative
     ? `\nVITAL SIGNS TREND ANALYSIS (from VitalsHub — use in MDM complexity assessment):\n${vhAnalysis.trend_narrative}${vhAnalysis.clinical_flags?.length ? "\nKey observations: " + vhAnalysis.clinical_flags.join(" | ") : ""}\n`
     : "";
@@ -204,7 +212,7 @@ Chief Complaint: ${cc || "Not provided"}
 Triage Vitals: ${vitals || "Not provided"}
 HPI: ${hpi || "Not provided"}
 ROS: ${ros || "Not provided"}
-Physical Exam: ${exam || "Not provided"}${vhContext}${medsContext}${allergiesContext}
+Physical Exam: ${exam || "Not provided"}${vhContext}${medsContext}${allergiesContext}${specContext}
 
 Generate the MDM assessment. Use ONLY the following exact values for each field:
 
@@ -459,8 +467,19 @@ function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
   const sep  = mode === "epic" ? "\n" : "\n";
   const hdr  = (label) => mode === "epic" ? label : label;
 
+  // Demographics header
+  const demog = extras.demographics || {};
+  const nameStr  = [demog.firstName, demog.lastName].filter(Boolean).join(" ") || "_______________";
+  const dobStr   = demog.dob        || "_______________";
+  const mrnStr   = demog.mrn        || "_______________";
+  const encStr   = demog.encounter  || "_______________";
+  const locStr   = demog.location   || "ED";
+
   const lines = [
     `${ts}${provider} — Emergency Department Note`,
+    "",
+    `Patient: ${nameStr}    DOB: ${dobStr}    MRN: ${mrnStr}`,
+    `Encounter: ${encStr}    Location: ${locStr}`,
     "",
     hdr("CHIEF COMPLAINT:"),
     p1.cc || "—",
@@ -522,6 +541,7 @@ function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
     }
   }
 
+  if (extras.sigBlock) { lines.push(""); lines.push(extras.sigBlock); }
   return lines.join(sep);
 }
 
@@ -534,8 +554,13 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
   const provider = extras.providerName ? ` — ${extras.providerName}` : "";
   const sep = mode === "epic" ? "\n" : "\n";
 
+  // Demographics header
+  const demog2 = extras.demographics || {};
+  const p2name = [demog2.firstName, demog2.lastName].filter(Boolean).join(" ") || "_______________";
+
   const lines = [
     `${ts}${provider} — ED Reevaluation & Disposition`,
+    `Patient: ${p2name}    MRN: ${demog2.mrn || "_______________"}`,
     "",
   ];
 
@@ -618,6 +643,7 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
     }
   }
 
+  if (extras.sigBlock) { lines.push(""); lines.push(extras.sigBlock); }
   return lines.join(sep);
 }
 
@@ -646,6 +672,15 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [ekg,        setEkg]        = useState("");
   const [newVitals,  setNewVitals]  = useState("");
   const [formatMode, setFormatMode] = useState("plain"); // "plain" | "epic"
+  const [encounterType, setEncounterType] = useState("adult"); // adult|peds|psych|trauma|obs
+  // Undo-clear state
+  const [undoData,    setUndoData]    = useState(null);   // snapshot for undo
+  const [undoTimer,   setUndoTimer]   = useState(null);
+  const [showUndo,    setShowUndo]    = useState(false);
+  // Auto-save draft
+  const [draftSaving, setDraftSaving] = useState(false);
+  const [draftId,     setDraftId]     = useState(null);   // id of pending draft record
+  const draftRef = useRef(null);  // holds latest draft content without re-render
 
   // AI results
   const [mdmResult,  setMdmResult]  = useState(null);
@@ -720,7 +755,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     setDispResult(null);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis, parsedMeds, parsedAllergies),
+        prompt: buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis, parsedMeds, parsedAllergies, encounterType),
         response_json_schema: MDM_SCHEMA,
       });
       setMdmResult(res);
@@ -795,10 +830,14 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   // Phase 1 copy — Initial note for EHR paste
   const copyPhase1 = useCallback(() => {
     if (!mdmResult) return;
+    const prov = window._notryaProvider || {};
     const text = buildPhase1Copy(
       { cc, vitals, hpi, ros, exam },
       mdmResult,
-      { parsedMeds, parsedAllergies, providerName: demo?.full_name || "" },
+      { parsedMeds, parsedAllergies,
+        providerName: prov.full_name || demo?.full_name || "",
+        sigBlock:     prov.sigBlock  || "",
+        demographics: { ...(demo || {}), facility: prov.facility, location: prov.location } },
       formatMode
     );
     navigator.clipboard.writeText(text).then(() => {
@@ -809,16 +848,53 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   // Phase 2 copy — Reevaluation addendum for EHR paste
   const copyPhase2 = useCallback(() => {
     if (!dispResult) return;
+    const prov = window._notryaProvider || {};
     const text = buildPhase2Copy(
       { labs, imaging, ekg, newVitals },
       dispResult,
-      { icdSelected, interventions, providerName: demo?.full_name || "" },
+      { icdSelected, interventions,
+        providerName: prov.full_name || demo?.full_name || "",
+        sigBlock:     prov.sigBlock  || "",
+        demographics: { ...(demo || {}), facility: prov.facility } },
       formatMode
     );
     navigator.clipboard.writeText(text).then(() => {
       setCopiedP2(true); setTimeout(() => setCopiedP2(false), 3000);
     });
   }, [labs, imaging, ekg, newVitals, dispResult, icdSelected, interventions, demo, formatMode]);
+
+  // Patient-facing discharge instructions — clean, no clinical codes
+  const copyDischargeInstructions = useCallback(() => {
+    const di = dispResult?.discharge_instructions;
+    if (!di) return;
+    const lines = [];
+    const demog = demo || {};
+    const patName = [demog.firstName, demog.lastName].filter(Boolean).join(" ");
+    if (patName) lines.push(`Patient: ${patName}`);
+    lines.push("DISCHARGE INSTRUCTIONS");
+    lines.push(`Date: ${new Date().toLocaleDateString("en-US", { month:"long", day:"numeric", year:"numeric" })}`);
+    lines.push("");
+    if (di.diagnosis_explanation) {
+      lines.push("YOUR DIAGNOSIS:"); lines.push(di.diagnosis_explanation); lines.push("");
+    }
+    if (di.medications?.length) {
+      lines.push("MEDICATIONS TO TAKE AT HOME:");
+      (di.medications).forEach(m => lines.push(`  • ${typeof m === "string" ? m : m.medication || m}`));
+      lines.push("");
+    }
+    if (di.activity) { lines.push(`ACTIVITY: ${di.activity}`); lines.push(""); }
+    if (di.diet)     { lines.push(`DIET: ${di.diet}`);         lines.push(""); }
+    if (di.return_precautions?.length) {
+      lines.push("RETURN TO THE EMERGENCY DEPARTMENT OR CALL 911 IF:");
+      di.return_precautions.forEach((r, i) => lines.push(`  ${i+1}. ${typeof r === "string" ? r : r}`));
+      lines.push("");
+    }
+    if (di.followup) { lines.push(`FOLLOW-UP: ${di.followup}`); lines.push(""); }
+    lines.push("If you have questions, call your physician or return to the ED.");
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCopiedDisch(true); setTimeout(() => setCopiedDisch(false), 3000);
+    });
+  }, [dispResult, demo]);
 
   const summarizeHPI = useCallback(async () => {
     if (!hpi.trim() || hpiSumBusy) return;
@@ -1156,6 +1232,11 @@ Respond ONLY in valid JSON, no markdown fences.`;
       });
       setSavedNote(true);
       setTimeout(() => setSavedNote(false), 3000);
+      // Supersede any pending draft for this encounter
+      if (draftId) {
+        base44.entities.ClinicalNote.update(draftId, { status:"superseded" }).catch(() => null);
+        setDraftId(null);
+      }
     } catch (e) {
       console.error("Save failed:", e);
     } finally {
@@ -1211,6 +1292,31 @@ Respond ONLY in valid JSON, no markdown fences.`;
         window.history.replaceState({}, "", window.location.pathname);
       }
     } catch {}
+    // Load UserPreferences — provider name, facility, format, default encounter type
+    base44.entities.UserPreferences.list({ sort:"-created_date", limit:1 })
+      .then(results => {
+        const r = results?.[0];
+        if (r) {
+          if (r.provider_name && !demo?.full_name) {
+            // Merge into demo state so copy outputs pick it up
+            const fullName = [r.provider_name, r.credentials].filter(Boolean).join(", ");
+            // We can't setDemo directly since it may come from props
+            // Store in a ref for use in copy functions
+            window._notryaProvider = {
+              full_name:   fullName,
+              firstName:   r.provider_name,
+              lastName:    r.credentials || "",
+              facility:    r.facility    || "",
+              location:    r.location    || "Emergency Department",
+              sigBlock:    r.signature_block || "",
+            };
+          }
+          if (r.format_mode)            setFormatMode(r.format_mode);
+          if (r.default_encounter_type) setEncounterType(r.default_encounter_type);
+        }
+      })
+      .catch(() => null);
+
     // Check for pending VH-Analysis or NH-Resume records
     base44.entities.ClinicalNote.list({ sort:"-created_date", limit:10 })
       .then(results => {
@@ -1351,6 +1457,57 @@ Respond ONLY in valid JSON, no markdown fences.`;
       setTimeout(() => { fieldRefs.current[5]?.current?.focus(); }, 80);
     }
   }, [p2Open]);
+  // Auto-save draft every 90 seconds when Phase 1 has content
+  useEffect(() => {
+    const saveDraft = async () => {
+      if (!cc.trim() && !hpi.trim()) return; // nothing to save
+      const payload = {
+        source:         "QuickNote",
+        status:         "draft",
+        encounter_date: new Date().toISOString().split("T")[0],
+        cc:             cc || "",
+        hpi_raw:        hpi || "",
+        ros_raw:        ros || "",
+        exam_raw:       exam || "",
+        labs_raw:       labs || "",
+        imaging_raw:    imaging || "",
+        full_note_text: vitals || "",
+        working_diagnosis: mdmResult?.working_diagnosis || "",
+        mdm_level:      mdmResult?.mdm_level || "",
+        mdm_narrative:  mdmResult?.mdm_narrative || "",
+      };
+      try {
+        if (draftId) {
+          await base44.entities.ClinicalNote.update(draftId, payload).catch(() => null);
+        } else {
+          const rec = await base44.entities.ClinicalNote.create(payload).catch(() => null);
+          if (rec?.id) setDraftId(rec.id);
+        }
+      } catch {}
+    };
+    const interval = setInterval(saveDraft, 90000);
+    return () => clearInterval(interval);
+  }, [cc, hpi, ros, exam, labs, imaging, vitals, mdmResult, draftId]);
+
+  // On mount — check for a recent draft to restore
+  useEffect(() => {
+    base44.entities.ClinicalNote.list({ sort:"-created_date", limit:5 })
+      .then(results => {
+        const draft = (results || []).find(r => r.status === "draft" && r.source === "QuickNote");
+        if (draft) {
+          // Only restore if draft is recent (within 8 hours)
+          const age = Date.now() - new Date(draft.created_date || 0).getTime();
+          if (age < 8 * 3600000) {
+            setDraftId(draft.id);
+            // Don't auto-restore — just hold the id for the next save cycle
+            // If a NH-Resume just ran it will override this anyway
+          }
+        }
+      })
+      .catch(() => null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // mount only
+
   const isFatigueRisk = useMemo(() => { const h = new Date().getHours(); return h >= 17 || h <= 7; }, []);
 
   return (
@@ -1470,6 +1627,49 @@ Respond ONLY in valid JSON, no markdown fences.`;
           p2Open={p2Open}
         />
 
+        {/* ── Undo toast — new encounter cleared ──────────────────────────── */}
+        {showUndo && (
+          <div style={{ marginBottom:10, padding:"8px 14px", borderRadius:10,
+            background:"rgba(255,107,107,.1)", border:"1px solid rgba(255,107,107,.4)",
+            display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:14 }}>⚠</span>
+            <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+              fontWeight:600, color:"var(--qn-coral)", flex:1 }}>
+              Encounter cleared
+            </span>
+            <button onClick={() => {
+              if (undoData) {
+                setCC(undoData.cc || "");
+                setVitals(undoData.vitals || "");
+                setHpi(undoData.hpi || "");
+                setRos(undoData.ros || "");
+                setExam(undoData.exam || "");
+                setLabs(undoData.labs || "");
+                setImaging(undoData.imaging || "");
+                setEkg(undoData.ekg || "");
+                setNewVitals(undoData.newVitals || "");
+                setParsedMeds(undoData.parsedMeds || []);
+                setParsedAllergies(undoData.parsedAllergies || []);
+                setMdmResult(undoData.mdmResult || null);
+                setDispResult(undoData.dispResult || null);
+                if (undoData.mdmResult) setP2Open(true);
+              }
+              clearTimeout(undoTimer);
+              setShowUndo(false); setUndoData(null);
+            }}
+              style={{ padding:"5px 14px", borderRadius:7, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
+                border:"1px solid rgba(255,107,107,.5)", background:"rgba(255,107,107,.15)",
+                color:"var(--qn-coral)", transition:"all .15s" }}>
+              ↩ Undo (6s)
+            </button>
+            <button onClick={() => { clearTimeout(undoTimer); setShowUndo(false); setUndoData(null); }}
+              style={{ background:"transparent", border:"none", cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                color:"var(--qn-txt4)", padding:"0 4px" }}>✕</button>
+          </div>
+        )}
+
         {/* ── NH-Resume banner ─────────────────────────────────────────────── */}
         {nhResumed && !nhResumeDismissed && (
           <div style={{ marginBottom:10, padding:"8px 14px", borderRadius:10,
@@ -1546,7 +1746,8 @@ Respond ONLY in valid JSON, no markdown fences.`;
           borderRadius:14, padding:"16px" }}>
 
           {/* Phase header */}
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14,
+            flexWrap:"wrap" }}>
             <div style={{ width:24, height:24, borderRadius:"50%",
               background:"rgba(0,229,192,.15)", border:"1px solid rgba(0,229,192,.4)",
               display:"flex", alignItems:"center", justifyContent:"center",
@@ -1562,8 +1763,28 @@ Respond ONLY in valid JSON, no markdown fences.`;
                 Paste nurse note fields → AI generates MDM
               </div>
             </div>
+            {/* Encounter type selector */}
+            <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginLeft:"auto" }}>
+              {[
+                { id:"adult",   label:"Adult ED"  },
+                { id:"peds",    label:"Pediatric" },
+                { id:"psych",   label:"Psych"     },
+                { id:"trauma",  label:"Trauma"    },
+                { id:"obs",     label:"Obs"       },
+              ].map(({ id, label }) => (
+                <button key={id} onClick={() => setEncounterType(id)}
+                  style={{ padding:"3px 9px", borderRadius:5, cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                    letterSpacing:.4, transition:"all .12s",
+                    border:`1px solid ${encounterType === id ? "rgba(0,229,192,.5)" : "rgba(42,79,122,.35)"}`,
+                    background:encounterType === id ? "rgba(0,229,192,.12)" : "transparent",
+                    color:encounterType === id ? "var(--qn-teal)" : "var(--qn-txt4)" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
             {mdmResult && (
-              <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:6,
+              <div style={{ display:"flex", alignItems:"center", gap:6,
                 padding:"4px 10px", borderRadius:7,
                 background:"rgba(61,255,160,.08)", border:"1px solid rgba(61,255,160,.3)" }}>
                 <div style={{ width:7, height:7, borderRadius:"50%",
@@ -1961,6 +2182,28 @@ Respond ONLY in valid JSON, no markdown fences.`;
                   diagnosis_explanation: text,
                 },
               }))} />
+
+            {/* Copy Patient Instructions — only when discharge */}
+            {dispResult?.discharge_instructions?.diagnosis_explanation &&
+             dispResult?.disposition &&
+             !dispResult.disposition.toLowerCase().includes("admit") &&
+             !dispResult.disposition.toLowerCase().includes("icu") && (
+              <div style={{ marginTop:8 }}>
+                <button onClick={copyDischargeInstructions}
+                  style={{ padding:"7px 16px", borderRadius:8, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                    border:`1px solid ${copiedDisch ? "rgba(61,255,160,.5)" : "rgba(61,255,160,.35)"}`,
+                    background:copiedDisch ? "rgba(61,255,160,.15)" : "rgba(61,255,160,.07)",
+                    color:copiedDisch ? "var(--qn-green)" : "var(--qn-green)",
+                    transition:"all .15s" }}>
+                  {copiedDisch ? "✓ Patient Instructions Copied" : "🖨 Copy Patient Discharge Instructions"}
+                </button>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-txt4)", marginLeft:10, letterSpacing:.4 }}>
+                  Patient-facing format — no clinical codes
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -2131,39 +2374,33 @@ Respond ONLY in valid JSON, no markdown fences.`;
                     transition:"all .15s" }}>
                   {copied ? "✓" : "Full Note"}
                 </button>
-                {!confirmClear ? (
-                  <button onClick={() => setConfirmClear(true)}
-                    style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
-                      fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                      border:"1px solid rgba(255,107,107,.3)", background:"rgba(14,37,68,.6)",
-                      color:"var(--qn-coral)", transition:"all .15s" }}>
-                    New Encounter
-                  </button>
-                ) : (
-                  <div style={{ display:"flex", alignItems:"center", gap:6,
-                    padding:"5px 10px", borderRadius:7,
-                    background:"rgba(255,68,68,.1)", border:"1px solid rgba(255,68,68,.4)" }}>
-                    <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                      color:"var(--qn-coral)" }}>Clear all data?</span>
-                    <button onClick={() => {
-                      setCC(""); setVitals(""); setHpi(""); setRos(""); setExam("");
-                      setLabs(""); setImaging(""); setEkg(""); setNewVitals("");
-                      setParsedMeds([]); setParsedAllergies([]);
-                      setMdmResult(null); setDispResult(null);
-                      setP1Error(null); setP2Error(null); setP2Open(false);
-                      setConfirmClear(false);
-                    }}
-                      style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
-                        fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:11,
-                        border:"1px solid rgba(255,68,68,.5)", background:"rgba(255,68,68,.2)",
-                        color:"var(--qn-red)" }}>Yes, clear</button>
-                    <button onClick={() => setConfirmClear(false)}
-                      style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
-                        fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                        border:"1px solid rgba(42,79,122,.4)", background:"rgba(14,37,68,.6)",
-                        color:"var(--qn-txt4)" }}>Cancel</button>
-                  </div>
-                )}
+                <button onClick={() => {
+                    // Snapshot current state for undo
+                    const snap = { cc, vitals, hpi, ros, exam, labs, imaging,
+                      ekg, newVitals, parsedMeds, parsedAllergies,
+                      mdmResult, dispResult };
+                    setUndoData(snap);
+                    // Clear immediately
+                    setCC(""); setVitals(""); setHpi(""); setRos(""); setExam("");
+                    setLabs(""); setImaging(""); setEkg(""); setNewVitals("");
+                    setParsedMeds([]); setParsedAllergies([]);
+                    setMdmResult(null); setDispResult(null);
+                    setP1Error(null); setP2Error(null); setP2Open(false);
+                    setConfirmClear(false);
+                    setQuickDDxDismissed(false);
+                    // Show undo toast for 6 seconds
+                    setShowUndo(true);
+                    const t = setTimeout(() => {
+                      setShowUndo(false); setUndoData(null);
+                    }, 6000);
+                    setUndoTimer(t);
+                  }}
+                  style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                    border:"1px solid rgba(255,107,107,.3)", background:"rgba(14,37,68,.6)",
+                    color:"var(--qn-coral)", transition:"all .15s" }}>
+                  New Encounter
+                </button>
               </div>
             </div>
 

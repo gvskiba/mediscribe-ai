@@ -1,7 +1,6 @@
-// QuickNoteStyle.jsx
-// CSS injection for QuickNote UI
-// Exported: injectQNStyles
-
+// QuickNoteStyle.js
+// CSS + font injection for QuickNote — call injectQNStyles() once at app load
+ 
 export function injectQNStyles() {
   if (document.getElementById("qn-css")) return;
   const s = document.createElement("style"); s.id = "qn-css";

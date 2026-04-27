@@ -1267,32 +1267,125 @@ export function QuickDDxCard({ items, onDismiss, onRerun, busy }) {
 export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) {
   if (!result) return null;
   const lc = mdmLevelColor(result.mdm_level);
+  const [auditOpen, setAuditOpen] = useState(false);
+
+  // E&M 2023 criteria explanation per field
+  const PROBLEM_CRITERIA = {
+    "1 self-limited or minor problem":              { level:"Straightforward", col:"Problem" },
+    "1 stable chronic illness":                     { level:"Low",             col:"Problem" },
+    "2+ self-limited problems":                     { level:"Low",             col:"Problem" },
+    "1+ chronic illness with exacerbation":         { level:"Moderate",        col:"Problem" },
+    "Undiagnosed new problem with uncertain prognosis":{ level:"Moderate",     col:"Problem" },
+    "Acute illness with systemic symptoms":         { level:"Moderate",        col:"Problem" },
+    "Acute or chronic illness posing threat to life or function":{ level:"High", col:"Problem" },
+  };
+  const DATA_CRITERIA = {
+    "Minimal or none":                              { level:"Straightforward", col:"Data" },
+    "Limited — ordering or reviewing tests":        { level:"Low",             col:"Data" },
+    "Moderate — independent interpretation of results":{ level:"Moderate",    col:"Data" },
+    "Moderate — discussion with treating provider": { level:"Moderate",        col:"Data" },
+    "Extensive — independent interpretation and provider discussion":{ level:"High", col:"Data" },
+  };
+  const RISK_CRITERIA = {
+    "Minimal":{ level:"Straightforward", col:"Risk",
+      note:"Self-limited, OTC meds, no prescribed Rx" },
+    "Low":    { level:"Low",             col:"Risk",
+      note:"Prescription drug management, minor surgery" },
+    "Moderate":{ level:"Moderate",       col:"Risk",
+      note:"New Rx, minor procedure, observation" },
+    "High":   { level:"High",            col:"Risk",
+      note:"Intensive Rx monitoring, hospitalization, or major surgery" },
+  };
+  const probInfo = Object.entries(PROBLEM_CRITERIA).find(([k]) =>
+    (result.problem_complexity||"").toLowerCase().includes(k.toLowerCase().slice(0,20)))?.[1];
+  const dataInfo = Object.entries(DATA_CRITERIA).find(([k]) =>
+    (result.data_complexity||"").toLowerCase().includes(k.toLowerCase().slice(0,20)))?.[1];
+  const riskKey  = Object.keys(RISK_CRITERIA).find(k =>
+    (result.risk_tier||"").toLowerCase().includes(k.toLowerCase()));
+  const riskInfo = riskKey ? RISK_CRITERIA[riskKey] : null;
+
   return (
     <div className="qn-fade">
 
       {/* Level badge */}
-      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12,
-        padding:"11px 14px", borderRadius:10,
+      <div style={{ marginBottom:12, padding:"11px 14px", borderRadius:10,
         background:`${lc}10`, border:`2px solid ${lc}44` }}>
-        <div>
-          <div className="qn-section-lbl" style={{ color:lc, marginBottom:2 }}>MDM Complexity</div>
-          <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
-            fontSize:20, color:lc, letterSpacing:-.3 }}>
-            {s(result.mdm_level) || "—"}
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div>
+            <div className="qn-section-lbl" style={{ color:lc, marginBottom:2 }}>MDM Complexity</div>
+            <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+              fontSize:20, color:lc, letterSpacing:-.3 }}>
+              {s(result.mdm_level) || "—"}
+            </div>
           </div>
+          <div style={{ width:1, height:36, background:`${lc}30`, flexShrink:0 }} />
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+              color:"var(--qn-txt4)", letterSpacing:1, marginBottom:3 }}>
+              PROBLEM · DATA · RISK
+            </div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              color:"var(--qn-txt2)", lineHeight:1.5 }}>
+              {[result.problem_complexity, result.data_complexity, result.risk_tier]
+                .filter(Boolean).join("  ·  ")}
+            </div>
+          </div>
+          {/* Audit trail toggle */}
+          <button onClick={() => setAuditOpen(o => !o)}
+            style={{ padding:"3px 10px", borderRadius:6, cursor:"pointer",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+              border:`1px solid ${lc}44`, background:`${lc}0c`,
+              color:lc, letterSpacing:.5, textTransform:"uppercase",
+              transition:"all .15s", flexShrink:0 }}>
+            {auditOpen ? "Hide Why ▲" : "Why? ▼"}
+          </button>
         </div>
-        <div style={{ width:1, height:36, background:`${lc}30`, flexShrink:0 }} />
-        <div style={{ flex:1 }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-            color:"var(--qn-txt4)", letterSpacing:1, marginBottom:3 }}>
-            PROBLEM · DATA · RISK
+
+        {/* Audit trail — collapsible */}
+        {auditOpen && (
+          <div style={{ marginTop:10, paddingTop:10,
+            borderTop:`1px solid ${lc}25` }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:lc, letterSpacing:1.2, textTransform:"uppercase",
+              marginBottom:8 }}>AMA/CMS 2023 E&M — Complexity Reasoning</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+              {[
+                { label:"Problem", value:result.problem_complexity, info:probInfo,
+                  borderColor:"rgba(155,109,255,.3)", bgColor:"rgba(155,109,255,.06)" },
+                { label:"Data",    value:result.data_complexity,    info:dataInfo,
+                  borderColor:"rgba(59,158,255,.3)",  bgColor:"rgba(59,158,255,.06)" },
+                { label:"Risk",    value:result.risk_tier,          info:riskInfo,
+                  borderColor:`${lc}33`,              bgColor:`${lc}06` },
+              ].map(({ label, value, info, borderColor, bgColor }) => (
+                <div key={label} style={{ padding:"8px 10px", borderRadius:8,
+                  background:bgColor, border:`1px solid ${borderColor}` }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    fontWeight:700, letterSpacing:1, textTransform:"uppercase",
+                    color:"var(--qn-txt4)", marginBottom:4 }}>{label}</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    fontWeight:600, color:"var(--qn-txt)", lineHeight:1.4,
+                    marginBottom:4 }}>
+                    {s(value) || "—"}
+                  </div>
+                  {info && (
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                      color:lc, letterSpacing:.3 }}>
+                      → Drives {info.level} level
+                      {info.note && (
+                        <div style={{ color:"var(--qn-txt4)", marginTop:2 }}>{info.note}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop:7, fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              color:"rgba(107,158,200,.4)", letterSpacing:.5 }}>
+              ACEP GUIDANCE: MDM level determined by HIGHEST column — not an average ·
+              AMA/CMS 2023 E&M Guidelines
+            </div>
           </div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-            color:"var(--qn-txt2)", lineHeight:1.5 }}>
-            {[result.problem_complexity, result.data_complexity, result.risk_tier]
-              .filter(Boolean).join("  ·  ")}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Working Dx + Differential */}
@@ -1985,7 +2078,7 @@ export function DiagnosisCodingCard({
             marginBottom:6 }}>Suggested Codes — Click to Add</div>
           <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
             {suggestions.map(c => {
-              const alreadySelected = selected.find(sel => sel.code === c.code);
+              const alreadySelected = selected.find(s => s.code === c.code);
               const tc = CODE_TYPE_COLOR[c.type] || "var(--qn-blue)";
               return (
                 <div key={c.code}
@@ -2526,7 +2619,7 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch, onDiagE
       )}
 
       {/* Lab & Imaging Flags */}
-      <LabFlagsCard flags={Array.isArray(result.result_flags) ? result.result_flags : []} />
+      <LabFlagsCard flags={s(result.result_flags)} />
 
       {/* Reevaluation note — full width */}
       {result.reevaluation_note && (

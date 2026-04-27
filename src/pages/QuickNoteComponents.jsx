@@ -1093,6 +1093,176 @@ function MDMNarrativeCard({ narrative, copiedMDM, setCopiedMDM, onEdit }) {
   );
 }
 
+// ─── DIFFERENTIAL HELPERS ────────────────────────────────────────────────────
+const PROB_CONFIG = {
+  high:     { color:"var(--qn-coral)",  bg:"rgba(255,107,107,.1)",  bd:"rgba(255,107,107,.35)", label:"HIGH"    },
+  moderate: { color:"var(--qn-gold)",   bg:"rgba(245,200,66,.08)",  bd:"rgba(245,200,66,.3)",   label:"MOD"     },
+  low:      { color:"var(--qn-txt3)",   bg:"rgba(130,174,206,.07)", bd:"rgba(130,174,206,.25)", label:"LOW"     },
+};
+
+function DDxItem({ item, idx, expanded, onToggle }) {
+  const prob  = (item.probability || "low").toLowerCase();
+  const pc    = PROB_CONFIG[prob] || PROB_CONFIG.low;
+  const isMNM = item.must_not_miss;
+
+  return (
+    <div style={{ borderRadius:9, overflow:"hidden",
+      border:`1px solid ${isMNM ? "rgba(255,68,68,.4)" : pc.bd}`,
+      background: isMNM ? "rgba(255,68,68,.05)" : pc.bg,
+      transition:"all .15s" }}>
+      {/* Row header */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px",
+        cursor:"pointer" }} onClick={onToggle}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+          color:"var(--qn-txt4)", flexShrink:0, minWidth:16 }}>{idx + 1}.</span>
+        {isMNM && (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            fontWeight:700, color:"var(--qn-red)",
+            background:"rgba(255,68,68,.15)", border:"1px solid rgba(255,68,68,.4)",
+            borderRadius:3, padding:"1px 5px", letterSpacing:.6,
+            flexShrink:0 }}>⚠ MUST NOT MISS</span>
+        )}
+        <span style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+          fontSize:12, color: isMNM ? "var(--qn-red)" : "var(--qn-txt)",
+          flex:1, lineHeight:1.3 }}>{s(item.diagnosis)}</span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          fontWeight:700, color:pc.color,
+          background:pc.bg, border:`1px solid ${pc.bd}`,
+          borderRadius:4, padding:"1px 6px", letterSpacing:.6,
+          flexShrink:0 }}>{pc.label}</span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+          color:"var(--qn-txt4)" }}>{expanded ? "▲" : "▼"}</span>
+      </div>
+      {/* Expanded reasoning */}
+      {expanded && (
+        <div style={{ padding:"0 10px 9px", borderTop:"1px solid rgba(42,79,122,.2)" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:8 }}>
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:"var(--qn-teal)", letterSpacing:1, textTransform:"uppercase",
+                marginBottom:4 }}>Supporting</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:"var(--qn-txt2)", lineHeight:1.5 }}>
+                {s(item.supporting_evidence) || "—"}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase",
+                marginBottom:4 }}>Against</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:"var(--qn-txt4)", lineHeight:1.5 }}>
+                {s(item.against) || "—"}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Full differential card — used inside MDMResult
+export function DifferentialCard({ differential }) {
+  const [expandedIdx, setExpandedIdx] = useState(null);
+  const mustNotMiss = (differential || []).filter(d => d.must_not_miss);
+
+  // If still the old string[] format, render legacy flat list
+  if (differential?.length && typeof differential[0] === "string") {
+    return (
+      <div className="qn-card">
+        <SectionLabel>Differential</SectionLabel>
+        {differential.map((d, i) => (
+          <div key={i} style={{ display:"flex", gap:6, alignItems:"flex-start", marginBottom:3 }}>
+            <span style={{ color:"var(--qn-txt4)", fontFamily:"'JetBrains Mono',monospace",
+              fontSize:9, marginTop:2, flexShrink:0 }}>{i + 1}.</span>
+            <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+              color:"var(--qn-txt2)" }}>{s(d)}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="qn-card">
+      <div style={{ display:"flex", alignItems:"center", marginBottom:8 }}>
+        <SectionLabel style={{ marginBottom:0, flex:1 }}>Differential Diagnosis</SectionLabel>
+        {mustNotMiss.length > 0 && (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:"var(--qn-red)", letterSpacing:.4 }}>
+            {mustNotMiss.length} must-not-miss
+          </span>
+        )}
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+        {(differential || []).map((item, i) => (
+          <DDxItem key={i} item={item} idx={i}
+            expanded={expandedIdx === i}
+            onToggle={() => setExpandedIdx(expandedIdx === i ? null : i)} />
+        ))}
+      </div>
+      <div style={{ marginTop:6, fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+        color:"rgba(107,158,200,.4)", letterSpacing:.5 }}>
+        Click any item to expand reasoning
+      </div>
+    </div>
+  );
+}
+
+// Quick DDx card — used in Phase 1 before MDM runs
+export function QuickDDxCard({ items, onDismiss, onRerun, busy }) {
+  const [expandedIdx, setExpandedIdx] = useState(null);
+  const mustNotMiss = (items || []).filter(d => d.must_not_miss);
+
+  return (
+    <div className="qn-fade" style={{ marginTop:8, padding:"12px 14px",
+      borderRadius:12, background:"rgba(155,109,255,.06)",
+      border:"1px solid rgba(155,109,255,.3)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+          fontWeight:700, color:"var(--qn-purple)", letterSpacing:1.2,
+          textTransform:"uppercase", flex:1 }}>
+          Quick DDx
+        </span>
+        {mustNotMiss.length > 0 && (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:"var(--qn-red)", background:"rgba(255,68,68,.1)",
+            border:"1px solid rgba(255,68,68,.3)", borderRadius:4,
+            padding:"1px 7px", letterSpacing:.4 }}>
+            ⚠ {mustNotMiss.length} must-not-miss
+          </span>
+        )}
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color:"rgba(155,109,255,.5)", letterSpacing:.3 }}>
+          Superseded when MDM runs
+        </span>
+        <button onClick={onRerun} disabled={busy}
+          style={{ padding:"2px 8px", borderRadius:5, cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            border:"1px solid rgba(155,109,255,.3)",
+            background:"transparent", color:"var(--qn-txt4)" }}>
+          ↺
+        </button>
+        <button onClick={onDismiss}
+          style={{ background:"transparent", border:"none", cursor:"pointer",
+            color:"var(--qn-txt4)", fontSize:12, padding:"0 2px" }}>✕</button>
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+        {(items || []).map((item, i) => (
+          <DDxItem key={i} item={item} idx={i}
+            expanded={expandedIdx === i}
+            onToggle={() => setExpandedIdx(expandedIdx === i ? null : i)} />
+        ))}
+      </div>
+      <div style={{ marginTop:7, fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+        color:"rgba(107,158,200,.4)", letterSpacing:.5 }}>
+        Click any item to expand reasoning · Based on CC and HPI only
+      </div>
+    </div>
+  );
+}
+
 // ─── MDM RESULT DISPLAY ───────────────────────────────────────────────────────
 export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) {
   if (!result) return null;
@@ -1138,17 +1308,7 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) 
             </div>
           )}
           {result.differential?.length > 0 && (
-            <div className="qn-card">
-              <SectionLabel>Differential</SectionLabel>
-              {result.differential.map((d, i) => (
-                <div key={i} style={{ display:"flex", gap:6, alignItems:"flex-start", marginBottom:3 }}>
-                  <span style={{ color:"var(--qn-txt4)", fontFamily:"'JetBrains Mono',monospace",
-                    fontSize:9, marginTop:2, flexShrink:0 }}>{i + 1}.</span>
-                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                    color:"var(--qn-txt2)" }}>{s(d)}</span>
-                </div>
-              ))}
-            </div>
+            <DifferentialCard differential={result.differential} />
           )}
         </div>
       )}

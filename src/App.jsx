@@ -96,6 +96,7 @@ import AIFlagReview from '@/pages/AIFlagReview';
 import TemplateStudio from '@/pages/TemplateStudio';
 import LabTrendHub from '@/pages/LabTrendHub';
 import VitalsHub from '@/pages/VitalsHub';
+import UserPreferences from '@/pages/UserPreferences';
 
 
 
@@ -280,6 +281,7 @@ const AuthenticatedApp = () => {
       <Route path="/TemplateStudio" element={<TemplateStudio />} />
       <Route path="/LabTrendHub" element={<LabTrendHub />} />
       <Route path="/VitalsHub" element={<VitalsHub />} />
+      <Route path="/UserPreferences" element={<UserPreferences />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

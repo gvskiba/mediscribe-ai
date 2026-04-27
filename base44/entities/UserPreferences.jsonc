@@ -1,0 +1,51 @@
+{
+  "name": "UserPreferences",
+  "type": "object",
+  "properties": {
+    "provider_name": {
+      "type": "string",
+      "description": "Provider full name"
+    },
+    "credentials": {
+      "type": "string",
+      "description": "Credentials e.g. MD, DO, PA-C"
+    },
+    "facility": {
+      "type": "string",
+      "description": "Hospital or facility name"
+    },
+    "location": {
+      "type": "string",
+      "description": "Department or unit",
+      "default": "Emergency Department"
+    },
+    "default_encounter_type": {
+      "type": "string",
+      "enum": [
+        "adult",
+        "peds",
+        "psych",
+        "trauma",
+        "obs"
+      ],
+      "default": "adult",
+      "description": "Default encounter type for QuickNote"
+    },
+    "format_mode": {
+      "type": "string",
+      "enum": [
+        "plain",
+        "epic"
+      ],
+      "default": "plain",
+      "description": "Default copy format mode"
+    },
+    "signature_block": {
+      "type": "string",
+      "description": "Provider signature block appended to copy outputs"
+    }
+  },
+  "required": [
+    "provider_name"
+  ]
+}

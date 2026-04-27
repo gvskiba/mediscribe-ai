@@ -1265,9 +1265,9 @@ export function QuickDDxCard({ items, onDismiss, onRerun, busy }) {
 
 // ─── MDM RESULT DISPLAY ───────────────────────────────────────────────────────
 export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) {
+  const [auditOpen, setAuditOpen] = useState(false);
   if (!result) return null;
   const lc = mdmLevelColor(result.mdm_level);
-  const [auditOpen, setAuditOpen] = useState(false);
 
   // E&M 2023 criteria explanation per field
   const PROBLEM_CRITERIA = {

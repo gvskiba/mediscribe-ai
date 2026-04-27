@@ -14,7 +14,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, InputZone, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard, MedsAllergyZone,
-         QuickDDxCard } from "./QuickNoteComponents";
+         QuickDDxCard, DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
 
 // ─── STYLE INJECTION ─────────────────────────────────────────────────────────
 (() => {
@@ -1740,6 +1740,22 @@ Respond ONLY in valid JSON, no markdown fences.`;
                 },
               }))} />
           </div>
+        )}
+
+        {/* ── CLINICAL CALCULATORS ─────────────────────────────────────────── */}
+        {mdmResult && (
+          <ClinicalCalcsCard
+            cc={cc}
+            workingDx={mdmResult?.working_diagnosis || ""}
+            labs={labs}
+            imaging={imaging}
+            onAddToMDM={text => setMdmResult(prev => ({
+              ...prev,
+              mdm_narrative: prev?.mdm_narrative
+                ? prev.mdm_narrative + "\n\n" + text
+                : text,
+            }))}
+          />
         )}
 
         {/* ── DIAGNOSIS CODING ─────────────────────────────────────────────── */}

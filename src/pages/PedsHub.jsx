@@ -8,23 +8,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-function injectPedsStyles() {
-  if (document.getElementById("peds-fonts")) return;
-  const l = document.createElement("link");
-  l.id = "peds-fonts"; l.rel = "stylesheet";
-  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
-  document.head.appendChild(l);
-  const s = document.createElement("style"); s.id = "peds-css";
-  s.textContent = `
-    @keyframes peds-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-    .peds-in{animation:peds-in .18s ease forwards}
-    @keyframes shimmer-peds{0%{background-position:-200% center}100%{background-position:200% center}}
-    .shimmer-peds{background:linear-gradient(90deg,#ddeeff 0%,#3dffa0 40%,#4da6ff 65%,#ddeeff 100%);
-      background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      background-clip:text;animation:shimmer-peds 4s linear infinite;}
-  `;
-  document.head.appendChild(s);
-}
 
 const T = {
   bg:"#050d1a",       // dark navy — matches platform base
@@ -50,7 +33,7 @@ const TABS = [
 // ── Shared components ────────────────────────────────────────────────────────
 function Card({ color, title, children, mb }) {
   return (
-    <div style={{ padding:"11px 13px",borderRadius:10,marginBottom:mb||10,
+    <div style={{ padding:"7px 10px",borderRadius:9,marginBottom:mb||7,
       background:`${color}07`,border:`1px solid ${color}28`,borderLeft:`3px solid ${color}` }}>
       {title && <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1.5,
         textTransform:"uppercase",marginBottom:7 }}>{title}</div>}
@@ -62,7 +45,7 @@ function Bullet({ text, color }) {
   return (
     <div style={{ display:"flex",gap:7,alignItems:"flex-start",marginBottom:5 }}>
       <span style={{ color:color||T.teal,fontSize:7,marginTop:4,flexShrink:0 }}>▸</span>
-      <span style={{ fontFamily:S.sans,fontSize:11.5,color:T.txt2,lineHeight:1.6 }}>{text}</span>
+      <span style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt2,lineHeight:1.6 }}>{text}</span>
     </div>
   );
 }
@@ -80,7 +63,7 @@ function Check({ label, sub, checked, onToggle, color }) {
       </div>
       <div>
         <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:12,color:checked?c:T.txt2 }}>{label}</div>
-        {sub && <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:1 }}>{sub}</div>}
+        {sub && <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:1 }}>{sub}</div>}
       </div>
     </button>
   );
@@ -89,22 +72,22 @@ function ResultBox({ label, detail, color }) {
   return (
     <div style={{ padding:"12px 14px",borderRadius:10,background:`${color}0c`,
       border:`1px solid ${color}44`,marginTop:10 }}>
-      <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:18,color,marginBottom:4 }}>{label}</div>
-      <div style={{ fontFamily:S.sans,fontSize:11.5,color:T.txt2,lineHeight:1.65 }}>{detail}</div>
+      <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:14,color,marginBottom:3 }}>{label}</div>
+      <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt2,lineHeight:1.65 }}>{detail}</div>
     </div>
   );
 }
 function ScoreWidget({ items, scores, setScores, color }) {
   const c = color||T.teal;
   return items.map(item => (
-    <div key={item.key} style={{ marginBottom:10 }}>
+    <div key={item.key} style={{ marginBottom:7 }}>
       <div style={{ fontFamily:S.mono,fontSize:8,color:c,letterSpacing:1.3,
         textTransform:"uppercase",marginBottom:5 }}>{item.label}</div>
       <div style={{ display:"flex",gap:5,flexWrap:"wrap" }}>
         {item.opts.map(opt => (
           <button key={opt.v} onClick={() => setScores(p => ({ ...p,[item.key]:opt.v }))}
             style={{ padding:"5px 11px",borderRadius:7,cursor:"pointer",
-              fontFamily:S.sans,fontWeight:600,fontSize:11,
+              fontFamily:S.sans,fontWeight:600,fontSize:10,
               border:`1px solid ${scores[item.key]===opt.v?c+"66":"rgba(30,70,130,0.4)"}`,
               background:scores[item.key]===opt.v?`${c}14`:"transparent",
               color:scores[item.key]===opt.v?c:T.txt4 }}>
@@ -120,14 +103,14 @@ function DrugSection({ title, color, drugs, wtCalc }) {
   return (
     <div style={{ marginBottom:4 }}>
       <div style={{ fontFamily:S.mono,fontSize:7.5,color,letterSpacing:1.5,
-        textTransform:"uppercase",padding:"4px 10px",marginBottom:4,
+        textTransform:"uppercase",padding:"3px 8px",marginBottom:3,
         background:`${color}10`,borderRadius:5,border:`1px solid ${color}25` }}>{title}</div>
       {drugs.map((d,i) => (
-        <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"7px 8px",
+        <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"5px 7px",
           borderBottom:i<drugs.length-1?"1px solid rgba(30,70,130,0.2)":"none" }}>
           <div style={{ flex:1,minWidth:0 }}>
-            <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:11.5,color:T.txt2 }}>{d.name}</div>
-            <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:1,lineHeight:1.5 }}>{d.note}</div>
+            <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:9.5,color:T.txt2 }}>{d.name}</div>
+            <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:1,lineHeight:1.5 }}>{d.note}</div>
           </div>
           <div style={{ textAlign:"right",flexShrink:0,minWidth:90 }}>
             {wtCalc&&d.calc&&<div style={{ fontFamily:S.mono,fontSize:13,fontWeight:700,color }}>{d.calc}</div>}
@@ -194,13 +177,13 @@ function VitalsTab({ globalWt, setGlobalWt }) {
   const sc=s=>s==="ok"?T.teal:s==="high"?T.coral:T.orange;
   return (
     <div className="peds-in">
-      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12 }}>
+      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:9 }}>
         {[["Age (months)",ageMonths,setAgeMonths,T.mint],["Height / Length (cm)",htCm,setHtCm,T.blue]].map(([lbl,val,set,c])=>(
           <div key={lbl}>
             <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,
               textTransform:"uppercase",marginBottom:4 }}>{lbl}</div>
             <input type="number" value={val} onChange={e=>set(e.target.value)}
-              style={{ width:"100%",padding:"9px 11px",background:"rgba(5,13,32,0.92)",
+              style={{ width:"100%",padding:"7px 10px",background:"rgba(5,13,32,0.92)",
                 border:`1px solid ${val?c+"55":"rgba(30,70,130,0.4)"}`,borderRadius:8,outline:"none",
                 fontFamily:S.mono,fontSize:20,fontWeight:700,color:c }} />
           </div>
@@ -209,12 +192,12 @@ function VitalsTab({ globalWt, setGlobalWt }) {
       {estWt&&(
         <Card color={T.mint} title="Estimated Weight">
           <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-            <div style={{ fontFamily:S.serif,fontSize:44,fontWeight:900,color:T.mint,lineHeight:1 }}>
+            <div style={{ fontFamily:S.serif,fontSize:32,fontWeight:900,color:T.mint,lineHeight:1 }}>
               {estWt.kg.toFixed(1)}<span style={{ fontSize:20 }}> kg</span>
             </div>
             <div>
               <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt3 }}>{estWt.m}</div>
-              <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:3 }}>
+              <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:3 }}>
                 Age formula only — Broselow tape = gold standard for dosing.
               </div>
               <button onClick={()=>setGlobalWt(estWt.kg.toFixed(1))}
@@ -233,16 +216,16 @@ function VitalsTab({ globalWt, setGlobalWt }) {
           <div style={{ display:"flex",alignItems:"center",gap:10 }}>
             <div style={{ width:44,height:44,borderRadius:8,background:bz.hex,flexShrink:0 }} />
             <div>
-              <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:18,color:bz.hex }}>{bz.color} Zone</div>
-              <div style={{ fontFamily:S.mono,fontSize:10,color:T.txt3 }}>{bz.length} · {bz.wt}</div>
-              <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:2 }}>Use color-coded drug cards for weight-appropriate dosing</div>
+              <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:15,color:bz.hex }}>{bz.color} Zone</div>
+              <div style={{ fontFamily:S.mono,fontSize:9,color:T.txt3 }}>{bz.length} · {bz.wt}</div>
+              <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:2 }}>Use color-coded drug cards for weight-appropriate dosing</div>
             </div>
           </div>
         </Card>
       )}
       {norm&&(
         <Card color={T.cyan} title={`Normal Vitals — ${ageM<24?ageM+" months":ageY.toFixed(1)+" years"}`}>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:10 }}>
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:7 }}>
             {[{l:"HR",r:`${norm.hr[0]}–${norm.hr[1]}`,u:"bpm"},{l:"SBP",r:`${norm.sbp[0]}–${norm.sbp[1]}`,u:"mmHg"},{l:"RR",r:`${norm.rr[0]}–${norm.rr[1]}`,u:"/min"}].map(v=>(
               <div key={v.l} style={{ padding:"8px",borderRadius:8,textAlign:"center",
                 background:"rgba(5,13,32,0.75)",border:"1px solid rgba(30,70,130,0.4)" }}>
@@ -349,13 +332,13 @@ function PECARNTab() {
   return (
     <div className="peds-in">
       <Card color={T.blue} title="PECARN Pediatric Head CT Rule — Kuppermann 2009">
-        <div style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.65,marginBottom:10 }}>
+        <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6,marginBottom:7 }}>
           Prospective validation in 42,412 children. Identifies cTBI requiring neurosurgical intervention. Sensitivity 99%+ in both age arms.
         </div>
         <div style={{ display:"flex",gap:7,marginBottom:4 }}>
           {[["u2","< 2 Years"],["2p","≥ 2 Years"]].map(([v,l])=>(
             <button key={v} onClick={()=>{setArm(v);setItems({});}}
-              style={{ flex:1,padding:"9px 0",borderRadius:9,cursor:"pointer",
+              style={{ flex:1,padding:"5px 0",borderRadius:9,cursor:"pointer",
                 fontFamily:S.sans,fontWeight:600,fontSize:12,
                 border:`1px solid ${arm===v?T.blue+"66":"rgba(30,70,130,0.4)"}`,
                 background:arm===v?"rgba(77,166,255,0.12)":"transparent",
@@ -384,7 +367,7 @@ function PECARNTab() {
         {showGcs?"▲ Hide":"▼ Show"} Pediatric GCS Reference (Verbal Modification by Age)
       </button>
       {showGcs&&<Card color={T.blue} title="Pediatric GCS — Verbal Component (Age-Modified)">
-        <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginBottom:8 }}>
+        <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginBottom:8 }}>
           Motor and Eye components are identical to adult GCS. Verbal scoring is modified by developmental age.
         </div>
         <div style={{ overflowX:"auto" }}>
@@ -404,7 +387,7 @@ function PECARNTab() {
             ))}</tbody>
           </table>
         </div>
-        <div style={{ marginTop:8,fontFamily:S.sans,fontSize:10,color:T.txt4,lineHeight:1.6 }}>
+        <div style={{ marginTop:8,fontFamily:S.sans,fontSize:9,color:T.txt4,lineHeight:1.6 }}>
           GCS 13–15: Mild TBI · GCS 9–12: Moderate TBI · GCS 3–8: Severe TBI (intubation threshold)
         </div>
       </Card>}
@@ -455,21 +438,21 @@ function FeverTab() {
   ];
   return (
     <div className="peds-in">
-      <div style={{ marginBottom:12 }}>
+      <div style={{ marginBottom:9 }}>
         <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,
           textTransform:"uppercase",marginBottom:4 }}>Age (weeks)</div>
         <input type="number" value={ageW} onChange={e=>setAgeW(e.target.value)}
-          style={{ width:140,padding:"9px 11px",background:"rgba(5,13,32,0.92)",
+          style={{ width:140,padding:"7px 10px",background:"rgba(5,13,32,0.92)",
             border:`1px solid ${ageW?T.coral+"55":"rgba(30,70,130,0.4)"}`,borderRadius:8,
-            outline:"none",fontFamily:S.mono,fontSize:20,fontWeight:700,color:T.coral }} />
+            outline:"none",fontFamily:S.mono,fontSize:17,fontWeight:700,color:T.coral }} />
       </div>
       {tiers.map((tier,i)=>(
-        <div key={i} style={{ marginBottom:7,padding:"10px 13px",borderRadius:10,
+        <div key={i} style={{ marginBottom:7,padding:"7px 10px",borderRadius:9,
           background:tier.active?`${tier.color}10`:`${tier.color}06`,
           border:`1px solid ${tier.active?tier.color+"55":tier.color+"22"}`,
           borderLeft:`4px solid ${tier.color}` }}>
-          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:13,color:tier.color,
-            marginBottom:tier.active?8:0 }}>
+          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:12,color:tier.color,
+            marginBottom:tier.active?6:0 }}>
             {tier.r}
             {tier.active&&<span style={{ fontFamily:S.mono,fontSize:8,color:tier.color,marginLeft:8,
               background:`${tier.color}18`,border:`1px solid ${tier.color}40`,
@@ -479,12 +462,12 @@ function FeverTab() {
         </div>
       ))}
       {aW>=4&&aW<=8.5&&<Card color={T.orange} title="Rochester Criteria — Low-Risk SBI (29–60 days)">
-        <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginBottom:8 }}>
+        <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginBottom:8 }}>
           ALL criteria must be met. Does NOT replace clinical judgment. Many centers hospitalize all febrile infants 1–2 months.
         </div>
         {ROCHESTER.map(c=><Check key={c.key} label={c.label} sub={c.sub}
           checked={!!roc[c.key]} onToggle={()=>toggle(c.key)} color={T.orange} />)}
-        {Object.keys(roc).length>0&&<div style={{ marginTop:8,padding:"9px 11px",borderRadius:8,
+        {Object.keys(roc).length>0&&<div style={{ marginTop:8,padding:"6px 9px",borderRadius:7,
           background:lowRisk?"rgba(255,159,67,0.08)":"rgba(255,92,92,0.08)",
           border:`1px solid ${lowRisk?"rgba(255,159,67,0.35)":"rgba(255,92,92,0.3)"}` }}>
           <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:14,
@@ -783,18 +766,18 @@ function ResusTab({ globalWt, setGlobalWt }) {
             placeholder="kg"
             style={{ width:110,padding:"10px 12px",background:"rgba(5,13,32,0.92)",
               border:`1px solid ${weight?T.green+"55":"rgba(30,70,130,0.4)"}`,
-              borderRadius:8,outline:"none",fontFamily:S.mono,fontSize:22,fontWeight:900,color:T.green }} />
+              borderRadius:8,outline:"none",fontFamily:S.mono,fontSize:18,fontWeight:900,color:T.green }} />
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt4,lineHeight:1.6 }}>
             Enter from Broselow tape or use "→ drug dosing" button in Vitals tab.
             All doses calculated with max caps applied.
           </div>
         </div>
       </Card>
-      <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"5px",marginBottom:12,
+      <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"4px",marginBottom:9,
         background:"rgba(5,13,32,0.75)",border:"1px solid rgba(30,70,130,0.35)",borderRadius:10 }}>
         {RESUS_SUBTABS.map(st=>(
           <button key={st.id} onClick={()=>setSubTab(st.id)}
-            style={{ flex:1,padding:"7px 10px",borderRadius:7,cursor:"pointer",
+            style={{ flex:1,padding:"5px 8px",borderRadius:7,cursor:"pointer",
               fontFamily:S.sans,fontWeight:600,fontSize:11,
               border:`1px solid ${subTab===st.id?st.color+"66":"rgba(30,70,130,0.4)"}`,
               background:subTab===st.id?`${st.color}14`:"transparent",
@@ -803,7 +786,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
       </div>
 
       {subTab==="resus"&&<>
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10 }}>
+        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:7 }}>
           <div>
             <div style={{ fontFamily:S.mono,fontSize:7,color:T.txt4,letterSpacing:1.3,
               textTransform:"uppercase",marginBottom:4 }}>Age for Airway Sizing (years)</div>
@@ -829,10 +812,10 @@ function ResusTab({ globalWt, setGlobalWt }) {
         </div>
         {wt>0&&<Card color={T.cyan} title="Maintenance Fluids — Holliday-Segar (4-2-1 Rule)">
           <div style={{ display:"flex",alignItems:"center",gap:16 }}>
-            <div style={{ fontFamily:S.serif,fontSize:40,fontWeight:900,color:T.cyan,lineHeight:1 }}>
+            <div style={{ fontFamily:S.serif,fontSize:32,fontWeight:900,color:T.cyan,lineHeight:1 }}>
               {maint.toFixed(0)}<span style={{ fontSize:18 }}> mL/hr</span>
             </div>
-            <div style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.65 }}>
+            <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6 }}>
               <div>Formula: ≤10 kg: 4 mL/kg/hr · 10–20 kg: 40+(2×kg over 10) · {">"} 20 kg: 60+(1×kg over 20)</div>
               <div style={{ color:T.txt4,marginTop:2 }}>Daily: {(maint*24).toFixed(0)} mL/day · Add deficit + ongoing losses for resuscitation</div>
             </div>
@@ -843,7 +826,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
             {defib.map(d=>(
               <div key={d.label} style={{ padding:"8px 10px",borderRadius:8,
                 background:"rgba(255,92,92,0.07)",border:"1px solid rgba(255,92,92,0.25)" }}>
-                <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt3,marginBottom:3 }}>{d.label}</div>
+                <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt3,marginBottom:3 }}>{d.label}</div>
                 <div style={{ fontFamily:S.mono,fontSize:14,fontWeight:700,color:T.coral }}>{d.calc}</div>
                 <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{d.dose}</div>
               </div>
@@ -852,14 +835,14 @@ function ResusTab({ globalWt, setGlobalWt }) {
         </Card>}
         {wt>0?<Card color={T.green} title="PALS Weight-Based Drug Dosing">
           {resusDrugs.map((d,i)=>(
-            <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"7px 0",
+            <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"5px 0",
               borderBottom:i<resusDrugs.length-1?"1px solid rgba(30,70,130,0.25)":"none" }}>
               <div style={{ flex:1,minWidth:0 }}>
-                <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:11.5,color:T.txt2 }}>{d.name}</div>
-                <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:1 }}>{d.note}</div>
+                <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:9.5,color:T.txt2 }}>{d.name}</div>
+                <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:1 }}>{d.note}</div>
               </div>
               <div style={{ textAlign:"right",flexShrink:0 }}>
-                <div style={{ fontFamily:S.mono,fontSize:13,fontWeight:700,color:T.green }}>{d.calc}</div>
+                <div style={{ fontFamily:S.mono,fontSize:12,fontWeight:700,color:T.green }}>{d.calc}</div>
                 <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{d.dose}</div>
               </div>
             </div>
@@ -867,7 +850,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
         </Card>:nWt}
         <Card color={T.orange} title="Seizure Escalation Protocol (Status Epilepticus)">
           {SEIZURE_STEPS.map((step,i)=>(
-            <div key={i} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,
+            <div key={i} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,
               background:`${step.color}08`,border:`1px solid ${step.color}30`,
               borderLeft:`4px solid ${step.color}` }}>
               <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6 }}>
@@ -885,7 +868,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
                 return(
                   <div key={j} style={{ display:"flex",gap:7,alignItems:"flex-start",marginBottom:3 }}>
                     <span style={{ color:step.color,fontSize:7,marginTop:4,flexShrink:0 }}>▸</span>
-                    <span style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt2,lineHeight:1.5 }}>
+                    <span style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt2,lineHeight:1.5 }}>
                       {a}
                       {calc&&<strong style={{ color:step.color }}>{calc}</strong>}
                     </span>
@@ -898,10 +881,10 @@ function ResusTab({ globalWt, setGlobalWt }) {
       </>}
 
       {subTab==="abx"&&<>
-        <div style={{ display:"flex",gap:4,marginBottom:10 }}>
+        <div style={{ display:"flex",gap:4,marginBottom:7 }}>
           {ABX_PILLS.map(p=>(
             <button key={p.id} onClick={()=>{ setAbxPill(p.id); setSelCond(null); }}
-              style={{ flex:1,padding:"6px 8px",borderRadius:7,cursor:"pointer",
+              style={{ flex:1,padding:"5px 7px",borderRadius:7,cursor:"pointer",
                 fontFamily:S.sans,fontWeight:600,fontSize:10.5,
                 border:`1px solid ${abxPill===p.id?T.coral+"66":"rgba(30,70,130,0.4)"}`,
                 background:abxPill===p.id?"rgba(255,92,92,0.12)":"transparent",
@@ -909,7 +892,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
           ))}
         </div>
         {abxPill==="condition"&&<>
-          <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginBottom:10 }}>
+          <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginBottom:7 }}>
             {AGE_FILTERS.map(af=>(
               <button key={String(af.id)} onClick={()=>{ setAgeFilter(af.id); setSelCond(null); }}
                 style={{ padding:"5px 10px",borderRadius:7,cursor:"pointer",
@@ -919,7 +902,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
                   color:ageFilter===af.id?T.blue:T.txt4 }}>{af.label}</button>
             ))}
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))",gap:6,marginBottom:10 }}>
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))",gap:6,marginBottom:7 }}>
             {filteredConds.map(c=>(
               <button key={c.id} onClick={()=>setSelCond(selCond===c.id?null:c.id)}
                 style={{ padding:"9px 10px",borderRadius:9,cursor:"pointer",textAlign:"left",
@@ -931,16 +914,16 @@ function ResusTab({ globalWt, setGlobalWt }) {
               </button>
             ))}
           </div>
-          {cond&&<div style={{ padding:"13px 14px",borderRadius:11,marginBottom:8,
+          {cond&&<div style={{ padding:"9px 11px",borderRadius:9,marginBottom:7,
             background:`${cond.color}08`,border:`1px solid ${cond.color}40`,
             borderLeft:`4px solid ${cond.color}` }}>
-            <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:16,color:cond.color,marginBottom:10 }}>
+            <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:16,color:cond.color,marginBottom:7 }}>
               {cond.icon} {cond.label}
             </div>
             {cond.lines.map((line,i)=>{
               const pd=wt>0&&line.mpkDose?`${calcDose(wt,line.mpkDose,line.max)} mg ${line.freq}`:null;
               return(
-                <div key={i} style={{ display:"flex",gap:10,alignItems:"flex-start",padding:"7px 0",
+                <div key={i} style={{ display:"flex",gap:10,alignItems:"flex-start",padding:"5px 0",
                   borderBottom:i<cond.lines.length-1?`1px solid ${cond.color}20`:"none" }}>
                   <div style={{ minWidth:120,flexShrink:0 }}>
                     <span style={{ fontFamily:S.mono,fontSize:7.5,color:cond.color,
@@ -948,7 +931,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
                       borderRadius:4,padding:"2px 6px" }}>{line.tier}</span>
                   </div>
                   <div style={{ flex:1 }}>
-                    <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:11.5,color:T.txt2 }}>{line.drug}</div>
+                    <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:9.5,color:T.txt2 }}>{line.drug}</div>
                     {line.dur&&<div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,marginTop:2 }}>Duration: {line.dur}</div>}
                   </div>
                   <div style={{ textAlign:"right",flexShrink:0 }}>
@@ -961,7 +944,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
             <div style={{ marginTop:9,padding:"6px 9px",borderRadius:7,
               background:`${cond.color}08`,border:`1px solid ${cond.color}22` }}>
               <span style={{ fontFamily:S.mono,fontSize:7.5,color:cond.color }}>RETURN PRECAUTIONS  </span>
-              <span style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.6 }}>{cond.note}</span>
+              <span style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6 }}>{cond.note}</span>
             </div>
           </div>}
         </>}
@@ -982,15 +965,15 @@ function ResusTab({ globalWt, setGlobalWt }) {
             const sel=concSel[i];
             const mLdose=sel&&sel.m&&pd?(pd/sel.m).toFixed(1):null;
             return(
-              <div key={i} style={{ padding:"9px 0",borderBottom:i<DISCHARGE_ABX.length-1?"1px solid rgba(30,70,130,0.22)":"none" }}>
+              <div key={i} style={{ padding:"5px 0",borderBottom:i<DISCHARGE_ABX.length-1?"1px solid rgba(30,70,130,0.22)":"none" }}>
                 <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
                   <div style={{ flex:1,minWidth:0 }}>
-                    <div style={{ fontFamily:S.sans,fontWeight:700,fontSize:11.5,color:T.txt2 }}>{d.name}</div>
+                    <div style={{ fontFamily:S.sans,fontWeight:700,fontSize:9.5,color:T.txt2 }}>{d.name}</div>
                     <div style={{ fontFamily:S.mono,fontSize:8.5,color:T.txt4,marginTop:1 }}>{d.dose}</div>
-                    <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:2,lineHeight:1.5 }}>{d.note}</div>
+                    <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:2,lineHeight:1.5 }}>{d.note}</div>
                   </div>
                   <div style={{ textAlign:"right",flexShrink:0,minWidth:80 }}>
-                    {pd&&<div style={{ fontFamily:S.mono,fontSize:13,fontWeight:700,color:T.coral }}>{pd} mg</div>}
+                    {pd&&<div style={{ fontFamily:S.mono,fontSize:12,fontWeight:700,color:T.coral }}>{pd} mg</div>}
                     {pd&&<div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{d.freq}</div>}
                     {mLdose&&<div style={{ fontFamily:S.mono,fontSize:12,fontWeight:700,color:T.mint,marginTop:2 }}>{mLdose} mL</div>}
                     {sel&&!sel.m&&<div style={{ fontFamily:S.mono,fontSize:9,color:T.txt3,marginTop:2 }}>Solid dosage</div>}
@@ -1101,49 +1084,49 @@ function ScoringTab({ globalWt }) {
   return (
     <div className="peds-in">
       <Card color={T.teal} title="Westley Croup Score">
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
-          <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4 }}>Total 0–17. ≤2 mild · 3–5 moderate · ≥6 severe</div>
-          <div style={{ fontFamily:S.serif,fontSize:44,fontWeight:900,color:wsSet?wsStr.c:T.txt4,lineHeight:1 }}>{wsT}</div>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}>
+          <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4 }}>Total 0–17. ≤2 mild · 3–5 moderate · ≥6 severe</div>
+          <div style={{ fontFamily:S.serif,fontSize:32,fontWeight:900,color:wsSet?wsStr.c:T.txt4,lineHeight:1 }}>{wsT}</div>
         </div>
         <ScoreWidget items={WESTLEY} scores={ws} setScores={setWs} color={T.teal} />
-        {wsSet&&<div style={{ padding:"10px 13px",borderRadius:9,background:`${wsStr.c}09`,border:`1px solid ${wsStr.c}35` }}>
-          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:16,color:wsStr.c,marginBottom:4 }}>{wsStr.l} (Score {wsT})</div>
+        {wsSet&&<div style={{ padding:"7px 10px",borderRadius:8,background:`${wsStr.c}09`,border:`1px solid ${wsStr.c}35` }}>
+          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:13,color:wsStr.c,marginBottom:3 }}>{wsStr.l} (Score {wsT})</div>
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt2,lineHeight:1.6 }}>{wsStr.tx}</div>
         </div>}
       </Card>
 
       <Card color={T.blue} title="PRAM Asthma Score (Pediatric Respiratory Assessment Measure)">
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
-          <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4 }}>Total 0–12. ≤4 mild · 5–8 moderate · 9–12 severe</div>
-          <div style={{ fontFamily:S.serif,fontSize:44,fontWeight:900,color:pramSet?pramStr.c:T.txt4,lineHeight:1 }}>{pramT}</div>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}>
+          <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4 }}>Total 0–12. ≤4 mild · 5–8 moderate · 9–12 severe</div>
+          <div style={{ fontFamily:S.serif,fontSize:32,fontWeight:900,color:pramSet?pramStr.c:T.txt4,lineHeight:1 }}>{pramT}</div>
         </div>
         <ScoreWidget items={PRAM} scores={pram} setScores={setPram} color={T.blue} />
-        {pramSet&&<div style={{ padding:"10px 13px",borderRadius:9,background:`${pramStr.c}09`,border:`1px solid ${pramStr.c}35` }}>
-          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:16,color:pramStr.c,marginBottom:4 }}>{pramStr.l} (Score {pramT})</div>
+        {pramSet&&<div style={{ padding:"7px 10px",borderRadius:8,background:`${pramStr.c}09`,border:`1px solid ${pramStr.c}35` }}>
+          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:13,color:pramStr.c,marginBottom:3 }}>{pramStr.l} (Score {pramT})</div>
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt2,lineHeight:1.6 }}>{pramStr.tx}</div>
         </div>}
       </Card>
 
       <Card color={T.purple} title="FLACC Pain Scale (< 3 years / non-verbal / cognitively impaired)">
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
-          <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4 }}>Total 0–10. 0 = no pain · 1–3 mild · 4–6 moderate · 7–10 severe</div>
-          <div style={{ fontFamily:S.serif,fontSize:44,fontWeight:900,color:flaccSet?flaccStr.c:T.txt4,lineHeight:1 }}>{flaccT}</div>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}>
+          <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4 }}>Total 0–10. 0 = no pain · 1–3 mild · 4–6 moderate · 7–10 severe</div>
+          <div style={{ fontFamily:S.serif,fontSize:32,fontWeight:900,color:flaccSet?flaccStr.c:T.txt4,lineHeight:1 }}>{flaccT}</div>
         </div>
         <ScoreWidget items={FLACC} scores={flacc} setScores={setFlacc} color={T.purple} />
-        {flaccSet&&<div style={{ padding:"10px 13px",borderRadius:9,background:`${flaccStr.c}09`,border:`1px solid ${flaccStr.c}35` }}>
-          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:16,color:flaccStr.c,marginBottom:4 }}>{flaccStr.l}</div>
+        {flaccSet&&<div style={{ padding:"7px 10px",borderRadius:8,background:`${flaccStr.c}09`,border:`1px solid ${flaccStr.c}35` }}>
+          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:13,color:flaccStr.c,marginBottom:3 }}>{flaccStr.l}</div>
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt2,lineHeight:1.6 }}>{flaccStr.tx}</div>
         </div>}
       </Card>
 
       <Card color={T.gold} title="Clinical Dehydration Scale (CDS — Goldman 2008)">
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
-          <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4 }}>Total 0–8. 0 = no dehydration · 1–4 some (~3–6%) · 5–8 severe ({">"}6%)</div>
-          <div style={{ fontFamily:S.serif,fontSize:44,fontWeight:900,color:cdsSet?cdsStr.c:T.txt4,lineHeight:1 }}>{cdsT}</div>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}>
+          <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4 }}>Total 0–8. 0 = no dehydration · 1–4 some (~3–6%) · 5–8 severe ({">"}6%)</div>
+          <div style={{ fontFamily:S.serif,fontSize:32,fontWeight:900,color:cdsSet?cdsStr.c:T.txt4,lineHeight:1 }}>{cdsT}</div>
         </div>
         <ScoreWidget items={CDS} scores={cds} setScores={setCds} color={T.gold} />
-        {cdsSet&&<div style={{ padding:"10px 13px",borderRadius:9,background:`${cdsStr.c}09`,border:`1px solid ${cdsStr.c}35` }}>
-          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:16,color:cdsStr.c,marginBottom:4 }}>{cdsStr.l}</div>
+        {cdsSet&&<div style={{ padding:"7px 10px",borderRadius:8,background:`${cdsStr.c}09`,border:`1px solid ${cdsStr.c}35` }}>
+          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:13,color:cdsStr.c,marginBottom:3 }}>{cdsStr.l}</div>
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt2,lineHeight:1.6 }}>{cdsStr.tx}</div>
         </div>}
       </Card>
@@ -1170,13 +1153,13 @@ function ScoringTab({ globalWt }) {
             ))}</tbody>
           </table>
         </div>
-        <div style={{ marginTop:8,fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.6 }}>
+        <div style={{ marginTop:8,fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6 }}>
           Score at 1 min and 5 min. 7–10 = normal · 4–6 = moderate depression (stimulate, O₂, reassess) · 0–3 = severe (immediate resuscitation)
         </div>
       </Card>
 
       <Card color={T.gold} title="Febrile Seizure — AAP 2011 / 2022 Update">
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10 }}>
+        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:7 }}>
           {[{l:"Simple Febrile Seizure",c:T.teal,items:["Generalized (tonic-clonic)","Duration < 15 minutes","Single seizure in 24h","Age 6 months – 5 years","Full recovery to baseline","No prior CNS abnormality"]},
             {l:"Complex Febrile Seizure",c:T.coral,items:["Focal onset or focal features","Duration ≥ 15 minutes","Recurs within 24h","Any age outside 6m–5y","Prolonged postictal state","Todd's paralysis"]}].map(s=>(
             <div key={s.l} style={{ padding:"9px 10px",borderRadius:8,background:`${s.c}08`,border:`1px solid ${s.c}28` }}>
@@ -1184,7 +1167,7 @@ function ScoringTab({ globalWt }) {
               {s.items.map((item,i)=>(
                 <div key={i} style={{ display:"flex",gap:5,marginBottom:3 }}>
                   <span style={{ color:s.c,fontSize:7,marginTop:3 }}>▸</span>
-                  <span style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt2 }}>{item}</span>
+                  <span style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt2 }}>{item}</span>
                 </div>
               ))}
             </div>
@@ -1208,7 +1191,7 @@ function ScoringTab({ globalWt }) {
             ["Migration of pain to RLQ",1],["Leukocytosis > 10,000",1],["Leukocyte left shift (PMN > 75%)",1]].map(([l,p],i)=>(
             <div key={i} style={{ padding:"7px 9px",borderRadius:7,background:"rgba(255,159,67,0.07)",
               border:"1px solid rgba(255,159,67,0.22)",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-              <span style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt2 }}>{l}</span>
+              <span style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt2 }}>{l}</span>
               <span style={{ fontFamily:S.mono,fontSize:11,fontWeight:700,color:T.orange }}>+{p}</span>
             </div>
           ))}
@@ -1231,7 +1214,7 @@ function ScoringTab({ globalWt }) {
               {s.items.map((item,i)=>(
                 <div key={i} style={{ display:"flex",gap:5,marginBottom:3 }}>
                   <span style={{ color:s.c,fontSize:7,marginTop:3 }}>▸</span>
-                  <span style={{ fontFamily:S.sans,fontSize:10,color:T.txt3 }}>{item}</span>
+                  <span style={{ fontFamily:S.sans,fontSize:9,color:T.txt3 }}>{item}</span>
                 </div>
               ))}
             </div>
@@ -1287,11 +1270,11 @@ function ToolsTab({ globalWt }) {
   const park8h=parkland?(parseInt(parkland)/2).toFixed(0):null;
   return (
     <div className="peds-in">
-      <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"5px",marginBottom:12,
+      <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"4px",marginBottom:9,
         background:"rgba(5,13,32,0.75)",border:"1px solid rgba(30,70,130,0.35)",borderRadius:10 }}>
         {TOOLS_TABS.map(t=>(
           <button key={t.id} onClick={()=>setToolTab(t.id)}
-            style={{ flex:1,padding:"7px 10px",borderRadius:7,cursor:"pointer",
+            style={{ flex:1,padding:"5px 8px",borderRadius:7,cursor:"pointer",
               fontFamily:S.sans,fontWeight:600,fontSize:11,
               border:`1px solid ${toolTab===t.id?t.color+"66":"rgba(30,70,130,0.4)"}`,
               background:toolTab===t.id?`${t.color}14`:"transparent",
@@ -1301,10 +1284,10 @@ function ToolsTab({ globalWt }) {
 
       {toolTab==="fluids"&&<>
         <Card color={T.gold} title="Pediatric DKA Management">
-          <div style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.65,marginBottom:10 }}>
+          <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6,marginBottom:7 }}>
             DKA: glucose {">"} 200 + pH {"<"} 7.30 + HCO3 {"<"} 15 + ketonuria/ketonemia
           </div>
-          {wt>0&&<div style={{ marginBottom:10 }}>
+          {wt>0&&<div style={{ marginBottom:7 }}>
             <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>Estimated Dehydration (% body weight)</div>
             <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
               {[["5%","5"],["7%","7"],["10%","10"]].map(([l,v])=>(
@@ -1320,7 +1303,7 @@ function ToolsTab({ globalWt }) {
                 {[["Fluid Deficit",`${deficitMl} mL`],["48h Maintenance",`${maint48} mL`],["Total IV Fluids",`${totalDka} mL`],["Starting Rate",`${dkaRate} mL/hr`]].map(([l,v])=>(
                   <div key={l} style={{ textAlign:"center" }}>
                     <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{l}</div>
-                    <div style={{ fontFamily:S.serif,fontSize:22,fontWeight:700,color:T.gold }}>{v}</div>
+                    <div style={{ fontFamily:S.serif,fontSize:17,fontWeight:700,color:T.gold }}>{v}</div>
                   </div>
                 ))}
               </div>
@@ -1328,20 +1311,20 @@ function ToolsTab({ globalWt }) {
           </div>}
           {[["Critical DKA Principles",T.coral,["NO fluid bolus in moderate/severe DKA unless hemodynamically unstable (cerebral edema risk)","Use 0.9% NS or LR. Add dextrose when glucose < 250–300 mg/dL (use 2-bag system).","Insulin drip: 0.05–0.1 units/kg/hr IV — NO loading bolus. Start after first hour of fluids.","K+ > 5.5: hold replacement · 3.5–5.5: add 40 mEq/L · < 3.5: stop insulin, give 60–80 mEq/L"]],
             ["Cerebral Edema — Act Immediately",T.orange,["Signs: headache, bradycardia, hypertension, declining GCS, pupil changes — 0.5–1% of peds DKA","3% NaCl 3–5 mL/kg IV over 30 min OR mannitol 0.5–1 g/kg IV — give immediately","HOB 30°, restrict IVF, neurosurgery consult, ICU transfer"]]].map(([title,color,items])=>(
-            <div key={title} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,background:`${color}08`,border:`1px solid ${color}30` }}>
+            <div key={title} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}30` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
               {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
             </div>
           ))}
         </Card>
         <Card color={T.orange} title="Burns — Fluid Resuscitation (Parkland Formula)">
-          {wt>0&&<div style={{ marginBottom:10 }}>
+          {wt>0&&<div style={{ marginBottom:7 }}>
             <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>TBSA (%) burned — exclude superficial / 1st degree</div>
             <div style={{ display:"flex",alignItems:"center",gap:10 }}>
               <input type="number" value={tbsaPct} onChange={e=>setTbsaPct(e.target.value)}
                 style={{ width:80,padding:"8px 10px",background:"rgba(5,13,32,0.92)",
                   border:`1px solid ${tbsaPct?T.orange+"55":"rgba(30,70,130,0.4)"}`,
-                  borderRadius:7,outline:"none",fontFamily:S.mono,fontSize:20,fontWeight:700,color:T.orange }} />
+                  borderRadius:7,outline:"none",fontFamily:S.mono,fontSize:17,fontWeight:700,color:T.orange }} />
               <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt4 }}>% TBSA</div>
             </div>
           </div>}
@@ -1350,15 +1333,15 @@ function ToolsTab({ globalWt }) {
               {[["Total LR (24h)",`${parkland} mL`],["First 8h",`${park8h} mL`],["Next 16h",`${park8h} mL`],["Rate first 8h",`${(parseInt(park8h)/8).toFixed(0)} mL/hr`]].map(([l,v])=>(
                 <div key={l} style={{ textAlign:"center" }}>
                   <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{l}</div>
-                  <div style={{ fontFamily:S.serif,fontSize:22,fontWeight:700,color:T.orange }}>{v}</div>
+                  <div style={{ fontFamily:S.serif,fontSize:17,fontWeight:700,color:T.orange }}>{v}</div>
                 </div>
               ))}
             </div>
-            <div style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.6 }}>
+            <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6 }}>
               4 mL x %TBSA x weight(kg). Time 0 = time of burn, not arrival. Add maintenance IV for children {"<"} 30 kg.
             </div>
           </div>}
-          <div style={{ padding:"9px 11px",borderRadius:8,background:"rgba(5,13,32,0.65)",border:"1px solid rgba(30,70,130,0.3)" }}>
+          <div style={{ padding:"6px 9px",borderRadius:7,background:"rgba(5,13,32,0.65)",border:"1px solid rgba(30,70,130,0.3)" }}>
             <div style={{ fontFamily:S.mono,fontSize:8,color:T.orange,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>Pediatric TBSA — Modified Rule of Nines</div>
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,fontFamily:S.mono,fontSize:9 }}>
               {[["Head & neck","Infant 19% · 5y 13% · 10y 11%"],["Each arm","9% (all ages)"],["Anterior trunk","18%"],["Posterior trunk","18%"],["Each thigh","Infant 5.5% · 5y 6.5% · Adult 9%"],["Each lower leg","Infant 5% · 5y 5.5% · Adult 7%"]].map(([b,v])=>(
@@ -1386,11 +1369,11 @@ function ToolsTab({ globalWt }) {
           ))}
         </Card>
         <Card color={T.orange} title="Iron Ingestion">
-          {wt>0&&<div style={{ padding:"9px 11px",borderRadius:8,marginBottom:8,background:"rgba(255,159,67,0.09)",border:"1px solid rgba(255,159,67,0.3)" }}>
+          {wt>0&&<div style={{ padding:"6px 9px",borderRadius:7,marginBottom:8,background:"rgba(255,159,67,0.09)",border:"1px solid rgba(255,159,67,0.3)" }}>
             <div style={{ fontFamily:S.mono,fontSize:8,color:T.orange,letterSpacing:1,marginBottom:5 }}>ELEMENTAL IRON THRESHOLDS — {wt} kg patient</div>
             <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6 }}>
               {[["Nontoxic","< 20 mg/kg",`< ${Math.round(wt*20)} mg`,T.teal],["Moderate","20–60 mg/kg",`${Math.round(wt*20)}–${Math.round(wt*60)} mg`,T.gold],["Potentially fatal","> 60 mg/kg",`> ${Math.round(wt*60)} mg`,T.coral]].map(([tier,dose,calc,color])=>(
-                <div key={tier} style={{ padding:"7px 8px",borderRadius:7,background:`${color}08`,border:`1px solid ${color}25`,textAlign:"center" }}>
+                <div key={tier} style={{ padding:"5px 7px",borderRadius:7,background:`${color}08`,border:`1px solid ${color}25`,textAlign:"center" }}>
                   <div style={{ fontFamily:S.mono,fontSize:7.5,color,marginBottom:2 }}>{tier}</div>
                   <div style={{ fontFamily:S.serif,fontSize:13,fontWeight:700,color }}>{calc}</div>
                   <div style={{ fontFamily:S.mono,fontSize:7,color:T.txt4 }}>{dose}</div>
@@ -1428,18 +1411,18 @@ function ToolsTab({ globalWt }) {
 
       {toolTab==="sepsis"&&<>
         <Card color={T.orange} title="Pediatric Sepsis / Septic Shock — Surviving Sepsis 2020 / PALS">
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12 }}>
+          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:9 }}>
             {[{l:"SIRS",c:T.teal,d:"2+ criteria (1 must be temp or WBC abnormality)"},
               {l:"Sepsis",c:T.gold,d:"SIRS + suspected/confirmed infection — ABX within 1 hour"},
               {l:"Septic Shock",c:T.coral,d:"Sepsis + cardiovascular dysfunction despite fluid"}].map(s=>(
               <div key={s.l} style={{ padding:"8px 10px",borderRadius:8,background:`${s.c}09`,border:`1px solid ${s.c}30` }}>
                 <div style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:s.c,marginBottom:4 }}>{s.l}</div>
-                <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt3,lineHeight:1.5 }}>{s.d}</div>
+                <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt3,lineHeight:1.5 }}>{s.d}</div>
               </div>
             ))}
           </div>
           <div style={{ fontFamily:S.mono,fontSize:8,color:T.orange,letterSpacing:1.2,textTransform:"uppercase",marginBottom:8 }}>Age-Specific SIRS Criteria</div>
-          <div style={{ overflowX:"auto",marginBottom:12 }}>
+          <div style={{ overflowX:"auto",marginBottom:9 }}>
             <table style={{ width:"100%",borderCollapse:"collapse",fontFamily:S.mono,fontSize:8.5 }}>
               <thead><tr style={{ borderBottom:"1px solid rgba(255,159,67,0.35)" }}>
                 {["Age","HR (bpm)","RR (/min)","WBC (x10^3)","Temp (C)"].map(h=>(
@@ -1460,7 +1443,7 @@ function ToolsTab({ globalWt }) {
           {[["Resuscitation Pathway",T.coral,["1. Airway / O2 / IV or IO access (IO if IV fails in 2 attempts)","2. Fluid: 20 mL/kg NS over 5–10 min. Reassess after each bolus.","3. Repeat up to 60 mL/kg total — STOP if crackles, hepatomegaly, or oxygen worsens","4. Blood cultures x 2 before antibiotics. Lactate, CBC, BMP, procalcitonin.","5. Empiric antibiotics within 1 hour of recognition. Source-directed selection below.","6. Vasopressors if unresponsive to 40–60 mL/kg: start epinephrine (cold) or norepinephrine (warm)"]],
             ["Empiric Antibiotics by Source",T.blue,["Unknown source: ceftriaxone 100 mg/kg IV (max 4 g) +/- vancomycin 15 mg/kg","Intra-abdominal: piperacillin-tazobactam 100 mg/kg IV q8h (max 4.5 g)","Meningitis: ceftriaxone 100 mg/kg IV + vancomycin + dexamethasone 0.15 mg/kg","Healthcare-associated / line infection: vancomycin + pip-tazo or meropenem","Neutropenic fever: cefepime 50 mg/kg IV q8h (max 2 g); add vancomycin for line/skin source"]],
             ["Vasopressor Selection",T.purple,["Cold shock (mottled, cool extremities, low CO): Epinephrine 0.05–1 mcg/kg/min IV","Warm shock (flushed, bounding, vasodilatory): Norepinephrine 0.05–2 mcg/kg/min IV","Refractory: vasopressin 0.0003–0.002 units/kg/min OR hydrocortisone 50 mg/m2 IV (adrenal crisis)","Target MAP > 65 mmHg (age-adjusted). Goal-directed therapy with PICU team."]]].map(([title,color,items])=>(
-            <div key={title} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,background:`${color}08`,border:`1px solid ${color}28` }}>
+            <div key={title} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}28` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
               {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
             </div>
@@ -1470,26 +1453,26 @@ function ToolsTab({ globalWt }) {
 
       {toolTab==="proc"&&<>
         <Card color={T.red} title="Button Battery / Caustic Ingestion — EMERGENCY PROTOCOL">
-          <div style={{ padding:"8px 10px",borderRadius:7,background:"rgba(255,61,61,0.1)",border:"1px solid rgba(255,61,61,0.35)",marginBottom:10 }}>
+          <div style={{ padding:"8px 10px",borderRadius:7,background:"rgba(255,61,61,0.1)",border:"1px solid rgba(255,61,61,0.35)",marginBottom:7 }}>
             <div style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:T.red,letterSpacing:1 }}>ESOPHAGEAL BUTTON BATTERY = SURGICAL EMERGENCY — Remove within 2 hours</div>
           </div>
           {[["Localization",T.coral,["PA film: double halo / stacked coin sign. Lateral: step-off between cathode/anode layers.","20 mm 3V lithium disc — highest risk (OH- generation causes liquefactive necrosis within hours)","Esophageal location: emergency endoscopic removal regardless of symptoms or X-ray timing"]],
             ["Pre-Endoscopy (Esophageal Only)",T.orange,["Honey (12 months+): 10 mL PO every 10 min x 6 doses while en route to endoscopy","Sucralfate (>1y): 5 mL (2–10y) or 10 mL (>10y) q30 min x 3 doses pre-endoscopy only","NEVER induce vomiting. NPO otherwise. Contact GI/surgery immediately."]],
             ["Gastric / Intestinal",T.gold,["Asymptomatic: serial radiographs. If not passed in 10–14 days, consider endoscopic retrieval.","Fever, abdominal pain, hematemesis, or melena = immediate removal","Battery + magnet co-ingestion: urgent surgical/endoscopic removal regardless of location"]]].map(([title,color,items])=>(
-            <div key={title} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,background:`${color}08`,border:`1px solid ${color}30` }}>
+            <div key={title} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}30` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
               {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
             </div>
           ))}
         </Card>
         <Card color={T.coral} title="Non-Accidental Trauma (Child Abuse) — Suspicious Indicators">
-          <div style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.6,marginBottom:10 }}>
+          <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6,marginBottom:7 }}>
             No single finding is pathognomonic. Evaluate injury in context of developmental stage, history consistency, and overall presentation. Mandatory report to CPS — not optional.
           </div>
           {[["High-Specificity Fractures",T.coral,["Classic metaphyseal lesions (CML / bucket-handle fractures) — require high torsional force, highly specific for NAT","Posterior rib fractures — require forceful anterior-posterior compression; rarely accidental in infants","Multiple fractures at different stages of healing without a clear, consistent explanation","Vertebral compression or spinous process fractures in pre-ambulatory infants"]],
             ["Soft Tissue & Pattern Findings",T.orange,["Bruising in non-mobile infants: 'Those who don't cruise don't bruise' (AAP 2014)","Patterned bruising matching implements (loop cord, belt buckle); bruising over torso/ears/neck in infants","Burns: sharply demarcated margins, stocking/glove distribution (forced immersion), or cigarette marks","Injuries inconsistent with developmental milestone (e.g., spiral femur fracture in pre-walker)"]],
             ["Workup — Suspected NAT",T.purple,["Skeletal survey (2-view, full): ALL children < 2y with suspected abuse — includes all long bones, ribs, skull, spine","Ophthalmology consult: retinal hemorrhages — any infant with unexplained AMS, seizure, or head injury","Head CT: unexplained AMS, seizure, fontanelle bulge, or any infant with suspicious injury","Labs: CBC, PT/PTT, LFTs, lipase, UA — screen for occult abdominal/bleeding injuries","Document objectively. Report to CPS. Notify child abuse team if available."]]].map(([title,color,items])=>(
-            <div key={title} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,background:`${color}08`,border:`1px solid ${color}28` }}>
+            <div key={title} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}28` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
               {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
             </div>
@@ -1517,14 +1500,30 @@ export default function PediatricHub({ embedded = false }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("vitals");
   const [globalWt, setGlobalWt] = useState("");
-
-  useEffect(() => { injectPedsStyles(); }, []);
+  // ── Font & animation injection — protected inside useEffect, never runs twice ──
+  useEffect(() => {
+    if (document.getElementById("peds-fonts")) return;
+    const l = document.createElement("link");
+    l.id = "peds-fonts"; l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+    document.head.appendChild(l);
+    const s = document.createElement("style"); s.id = "peds-css";
+    s.textContent = [
+      "@keyframes peds-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}",
+      ".peds-in{animation:peds-in .18s ease forwards}",
+      "@keyframes shimmer-peds{0%{background-position:-200% center}100%{background-position:200% center}}",
+      ".shimmer-peds{background:linear-gradient(90deg,#ddeeff 0%,#3dffa0 40%,#4da6ff 65%,#ddeeff 100%);",
+      "  background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;",
+      "  background-clip:text;animation:shimmer-peds 4s linear infinite;}",
+    ].join("\n");
+    document.head.appendChild(s);
+  }, []);
 
   return (
     <div style={{ fontFamily:S.sans,background:embedded?"transparent":T.bg,
       minHeight:embedded?"auto":"100vh",color:T.txt }}>
       <div style={{ maxWidth:900,margin:"0 auto",padding:embedded?"0":"0 16px" }}>
-        {!embedded&&<div style={{ padding:"18px 0 14px" }}>
+        {!embedded&&<div style={{ padding:"10px 0 8px" }}>
           <button onClick={()=>navigate("/hub")}
             style={{ marginBottom:10,display:"inline-flex",alignItems:"center",gap:7,
               fontFamily:S.sans,fontSize:12,fontWeight:600,padding:"5px 14px",borderRadius:8,
@@ -1537,12 +1536,12 @@ export default function PediatricHub({ embedded = false }) {
               borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8 }}>
               <span style={{ fontFamily:S.mono,fontSize:10,color:T.mint,letterSpacing:3 }}>NOTRYA</span>
               <span style={{ color:T.txt4,fontFamily:S.mono,fontSize:10 }}>/</span>
-              <span style={{ fontFamily:S.mono,fontSize:10,color:T.txt3,letterSpacing:2 }}>PEDS</span>
+              <span style={{ fontFamily:S.mono,fontSize:9,color:T.txt3,letterSpacing:2 }}>PEDS</span>
             </div>
             <div style={{ height:1,flex:1,background:"linear-gradient(90deg,rgba(61,255,160,0.45),transparent)" }} />
           </div>
           <h1 className="shimmer-peds" style={{ fontFamily:S.serif,
-            fontSize:"clamp(22px,4vw,38px)",fontWeight:900,letterSpacing:-0.5,lineHeight:1.1 }}>
+            fontSize:"clamp(16px,3vw,26px)",fontWeight:900,letterSpacing:-0.5,lineHeight:1.1 }}>
             Pediatric Emergency Hub
           </h1>
           {globalWt&&<div style={{ display:"inline-flex",alignItems:"center",gap:6,marginTop:6,
@@ -1565,7 +1564,7 @@ export default function PediatricHub({ embedded = false }) {
           <span style={{ fontFamily:S.mono,fontSize:14,fontWeight:700,color:T.green }}>{globalWt} kg</span>
         </div>}
 
-        <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"6px",marginBottom:14,
+        <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"6px",marginBottom:10,
           background:"rgba(5,13,32,0.88)",border:"1px solid rgba(30,70,130,0.4)",borderRadius:12 }}>
           {TABS.map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)}

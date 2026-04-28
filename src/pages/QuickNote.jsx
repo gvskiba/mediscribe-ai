@@ -24,6 +24,18 @@ import {
 
 injectQNStyles();
 
+// ─── MODULE-LEVEL CONSTANTS ───────────────────────────────────────────────────
+const DEFAULT_EVENTS = [
+  { id:"triage",       label:"Triage",                   time:"", notes:"" },
+  { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },
+  { id:"labs_ordered", label:"Labs Ordered",              time:"", notes:"" },
+  { id:"labs_result",  label:"Labs Resulted",             time:"", notes:"" },
+  { id:"img_ordered",  label:"Imaging Ordered",           time:"", notes:"" },
+  { id:"img_result",   label:"Imaging Resulted",          time:"", notes:"" },
+  { id:"recheck",      label:"Recheck Vitals / Reassess", time:"", notes:"" },
+  { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
+];
+
 // ─── CRITICAL VALUE DETECTOR (sync, runs before Phase 2 generate) ─────────────
 function detectCriticalValues(labsText) {
   if (!labsText) return [];
@@ -85,16 +97,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [consults, setConsults] = useState([]);
 
   // Timeline
-  const DEFAULT_EVENTS = [
-    { id:"triage",       label:"Triage",                   time:"", notes:"" },
-    { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },
-    { id:"labs_ordered", label:"Labs Ordered",              time:"", notes:"" },
-    { id:"labs_result",  label:"Labs Resulted",             time:"", notes:"" },
-    { id:"img_ordered",  label:"Imaging Ordered",           time:"", notes:"" },
-    { id:"img_result",   label:"Imaging Resulted",          time:"", notes:"" },
-    { id:"recheck",      label:"Recheck Vitals / Reassess", time:"", notes:"" },
-    { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
-  ];
   const [timestamps, setTimestamps] = useState(DEFAULT_EVENTS);
 
   // EKG AI interpret state
@@ -330,10 +332,10 @@ Only include body systems that have at least one symptom explicitly mentioned in
   }, [hpi, autoRosBusy]);
 
   // ── Copy callbacks ─────────────────────────────────────────────────────────
-  const stripLabels = (text) => {
+  const stripLabels = useCallback((text) => {
     if (pasteReady !== "prose") return text;
     return text.replace(/^[A-Z][A-Z /&]+:\s*/gm, "").trim();
-  };
+  }, [pasteReady]);
 
   const copyNote = useCallback(() => {
     const text = buildFullNote(
@@ -587,20 +589,24 @@ Only include body systems that have at least one symptom explicitly mentioned in
 
   const handleNewEncounter = useCallback(() => {
     const snap = { cc, vitals, hpi, ros, exam, labs, imaging, ekg, newVitals,
-      parsedMeds, parsedAllergies, mdmResult, dispResult };
+      parsedMeds, parsedAllergies, mdmResult, dispResult,
+      hpiSummary, hpiMode, isBounceback, bouncebackDate, encounterType };
     setUndoData(snap);
     [setCC,setVitals,setHpi,setRos,setExam,setLabs,setImaging,setEkg,setNewVitals].forEach(fn => fn(""));
     setTimestamps(DEFAULT_EVENTS.map(e => ({ ...e, time:"", notes:"" })));
     setParsedMeds([]); setParsedAllergies([]);
     setMdmResult(null); setDispResult(null);
+    setHpiSummary(null); setHpiMode("original");
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
-    setQuickDDxDismissed(false); setIsBounceback(false);
+    setQuickDDxDismissed(false); setIsBounceback(false); setBouncebackDate("");
+    setIcdSuggestions([]); setIcdSelected([]); setInterventions([]); setIntGenerated(false);
     setShowUndo(true);
     const t = setTimeout(() => { setShowUndo(false); setUndoData(null); }, 6000);
     setUndoTimer(t);
   }, [cc, vitals, hpi, ros, exam, labs, imaging, ekg, newVitals,
-      parsedMeds, parsedAllergies, mdmResult, dispResult]);
+      parsedMeds, parsedAllergies, mdmResult, dispResult,
+      hpiSummary, hpiMode, isBounceback, bouncebackDate, encounterType]);
 
   const handleUndo = useCallback(() => {
     if (undoData) {
@@ -610,6 +616,9 @@ Only include body systems that have at least one symptom explicitly mentioned in
       setEkg(undoData.ekg||""); setNewVitals(undoData.newVitals||"");
       setParsedMeds(undoData.parsedMeds||[]); setParsedAllergies(undoData.parsedAllergies||[]);
       setMdmResult(undoData.mdmResult||null); setDispResult(undoData.dispResult||null);
+      setHpiSummary(undoData.hpiSummary||null); setHpiMode(undoData.hpiMode||"original");
+      setIsBounceback(undoData.isBounceback||false); setBouncebackDate(undoData.bouncebackDate||"");
+      if (undoData.encounterType) setEncounterType(undoData.encounterType);
       if (undoData.mdmResult) setP2Open(true);
     }
     clearTimeout(undoTimer); setShowUndo(false); setUndoData(null);

@@ -385,8 +385,8 @@ function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
     hour:"2-digit", minute:"2-digit"
   });
   const provider = extras.providerName ? ` — ${extras.providerName}` : "";
-  const sep = mode === "epic" ? "\n" : "\n";
-  const hdr = (label) => label;
+  const sep = "\n";
+  const hdr = (label) => mode === "epic" ? `.${label.replace(/:/g, "")}` : label;
 
   const demog = extras.demographics || {};
   const nameStr = [demog.firstName, demog.lastName].filter(Boolean).join(" ") || "_______________";
@@ -470,7 +470,7 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
     hour:"2-digit", minute:"2-digit"
   });
   const provider = extras.providerName ? ` — ${extras.providerName}` : "";
-  const sep = mode === "epic" ? "\n" : "\n";
+  const sep = "\n";
 
   const demog2 = extras.demographics || {};
   const p2name = [demog2.firstName, demog2.lastName].filter(Boolean).join(" ") || "_______________";

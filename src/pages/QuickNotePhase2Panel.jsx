@@ -297,7 +297,7 @@ export function Phase2Panel({
         <InputZone label="Re-check Vitals / Response to Treatment" value={newVitals}
           onChange={setNewVitals} phase={2} rows={2}
           placeholder="e.g. After IVF 1L: HR 88 BP 128/76 SpO2 99% — pain improved to 3/10"
-          onRef={setRef(8)} onKeyDown={makeKeyDown(8, true, runDisposition)} />
+          onRef={setRef(7)} onKeyDown={makeKeyDown(7, true, runDisposition)} />
       </div>
 
       <ConsultDocs consults={consults} setConsults={setConsults} />

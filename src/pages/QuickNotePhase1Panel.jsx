@@ -4,7 +4,6 @@
 
 import React from "react";
 import { InputZone, MedsAllergyZone, QuickDDxCard } from "./QuickNoteComponents";
-import { DictationButton, useSmartText } from "./QuickNoteVoice";
 
 export function Phase1Panel({
   // Core inputs
@@ -33,18 +32,11 @@ export function Phase1Panel({
   isBounceback, setIsBounceback, bouncebackDate, setBouncebackDate,
   // Auto-ROS
   autoRosFromHpi, autoRosBusy,
-  // Pregnancy + Weight
+  // Extra props (pregnancy, weight, smartExpansions)
   patientPregnant, setPatientPregnant,
   patientWeight, setPatientWeight,
-  // Smart text custom expansions
   smartExpansions,
 }) {
-  // Smart text expansion wrappers
-  const smartCC   = useSmartText(cc,   setCC,   smartExpansions);
-  const smartHpi  = useSmartText(hpi,  setHpi,  smartExpansions);
-  const smartRos  = useSmartText(ros,  setRos,  smartExpansions);
-  const smartExam = useSmartText(exam, setExam, smartExpansions);
-
   return (
     <div style={{ marginBottom:14,
       background:"rgba(8,22,40,.5)", border:"1px solid rgba(42,79,122,.4)",
@@ -99,61 +91,13 @@ export function Phase1Panel({
         )}
       </div>
 
-      {/* Pregnancy + Weight row */}
-      <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:10,
-        padding:"7px 12px", borderRadius:8,
-        background:"rgba(14,37,68,.5)", border:"1px solid rgba(42,79,122,.3)" }}>
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-          color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase", flexShrink:0 }}>
-          Pregnancy:
-        </span>
-        {["Unknown","Yes","No","N/A"].map(opt => (
-          <button key={opt} onClick={() => setPatientPregnant(opt)}
-            style={{ padding:"2px 9px", borderRadius:5, cursor:"pointer",
-              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:10,
-              transition:"all .12s",
-              border:`1px solid ${patientPregnant===opt ? (opt==="Yes"?"rgba(255,107,107,.5)":"rgba(0,229,192,.45)") : "rgba(42,79,122,.35)"}`,
-              background:patientPregnant===opt ? (opt==="Yes"?"rgba(255,107,107,.12)":"rgba(0,229,192,.1)") : "transparent",
-              color:patientPregnant===opt ? (opt==="Yes"?"var(--qn-coral)":"var(--qn-teal)") : "var(--qn-txt4)" }}>
-            {opt}
-          </button>
-        ))}
-        <div style={{ width:1, height:16, background:"rgba(42,79,122,.4)", flexShrink:0 }} />
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-          color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase", flexShrink:0 }}>
-          Weight:
-        </span>
-        <input value={patientWeight} onChange={e => setPatientWeight(e.target.value)}
-          placeholder="kg"
-          style={{ width:70, padding:"3px 7px", borderRadius:6, fontSize:11,
-            background:"rgba(14,37,68,.8)", border:"1px solid rgba(42,79,122,.4)",
-            color:"var(--qn-txt)", fontFamily:"'JetBrains Mono',monospace",
-            outline:"none" }} />
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-          color:"rgba(42,79,122,.6)", letterSpacing:.4 }}>
-          Used for weight-based dosing in MDM
-        </span>
-      </div>
-
-      {/* CC + Vitals row with voice */}
+      {/* CC + Vitals row */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
-        <div>
-          <div style={{ display:"flex", alignItems:"center", marginBottom:4, gap:6 }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700,
-              color:"var(--qn-txt4)", letterSpacing:1.5, textTransform:"uppercase", flex:1 }}>
-              Chief Complaint <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                color:"rgba(107,158,200,.5)", background:"rgba(42,79,122,.2)",
-                border:"1px solid rgba(42,79,122,.35)", borderRadius:4,
-                padding:"1px 6px", marginLeft:4, letterSpacing:.5 }}>Alt+H</span>
-            </span>
-            <DictationButton fieldLabel="Chief Complaint" onTranscript={t => setCC(prev => (prev ? prev + " " : "") + t)} />
-          </div>
-          <InputZone label="" value={cc} onChange={smartCC} phase={1}
-            rows={2} templateType="cc" smartfill
-            placeholder="e.g. Chest pain — or type .cp for template, 🎤 to dictate"
-            onRef={setRef(0)}
-            onKeyDown={makeKeyDown(0, false, runMDM)} />
-        </div>
+        <InputZone label="Chief Complaint" value={cc} onChange={setCC} phase={1}
+          rows={2} templateType="cc" smartfill kbdHint="Alt+H"
+          placeholder="e.g. Chest pain, sharp, onset 2h ago — or press T to select"
+          onRef={setRef(0)}
+          onKeyDown={makeKeyDown(0, false, runMDM)} />
         <InputZone label="Triage Vitals" value={vitals} onChange={setVitals} phase={1}
           rows={2}
           vitalsTrendLink={() => {
@@ -167,19 +111,9 @@ export function Phase1Panel({
 
       {/* HPI */}
       <div style={{ marginBottom:12 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700,
-            color:"var(--qn-txt4)", letterSpacing:1.5, textTransform:"uppercase", flex:1 }}>
-            HPI <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:"rgba(107,158,200,.5)", background:"rgba(42,79,122,.2)",
-              border:"1px solid rgba(42,79,122,.35)", borderRadius:4,
-              padding:"1px 6px", marginLeft:4, letterSpacing:.5 }}>Alt+H</span>
-          </span>
-          <DictationButton fieldLabel="HPI" onTranscript={t => setHpi(prev => (prev ? prev + " " : "") + t)} />
-        </div>
-        <InputZone label="" value={hpi} onChange={smartHpi} phase={1}
-          rows={5} copyable
-          placeholder="Paste HPI or 🎤 dictate — .sob .cp .abd .ha .syn shortcuts available"
+        <InputZone label="HPI" value={hpi} onChange={setHpi} phase={1}
+          rows={5} copyable kbdHint="Alt+H"
+          placeholder="Paste HPI from nurse note or EHR — onset, location, quality, severity, duration, modifying factors, associated symptoms..."
           onRef={setRef(2)}
           onKeyDown={makeKeyDown(2, false, runMDM)} />
 
@@ -296,40 +230,16 @@ export function Phase1Panel({
 
       {/* ROS + Exam row */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
-        <div>
-          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700,
-              color:"var(--qn-txt4)", letterSpacing:1.5, textTransform:"uppercase", flex:1 }}>
-              Review of Systems <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                color:"rgba(107,158,200,.5)", background:"rgba(42,79,122,.2)",
-                border:"1px solid rgba(42,79,122,.35)", borderRadius:4,
-                padding:"1px 6px", marginLeft:4, letterSpacing:.5 }}>Alt+R</span>
-            </span>
-            <DictationButton fieldLabel="ROS" onTranscript={t => setRos(prev => (prev ? prev + " " : "") + t)} />
-          </div>
-          <InputZone label="" value={ros} onChange={smartRos} phase={1}
-            rows={4} copyable templateType="ros" smartfill
-            placeholder="Paste ROS, 🎤 dictate, or type .rosn for normal template"
-            onRef={setRef(3)}
-            onKeyDown={makeKeyDown(3, false, runMDM)} />
-        </div>
-        <div>
-          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700,
-              color:"var(--qn-txt4)", letterSpacing:1.5, textTransform:"uppercase", flex:1 }}>
-              Physical Exam <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                color:"rgba(107,158,200,.5)", background:"rgba(42,79,122,.2)",
-                border:"1px solid rgba(42,79,122,.35)", borderRadius:4,
-                padding:"1px 6px", marginLeft:4, letterSpacing:.5 }}>Alt+E</span>
-            </span>
-            <DictationButton fieldLabel="Physical Exam" onTranscript={t => setExam(prev => (prev ? prev + " " : "") + t)} />
-          </div>
-          <InputZone label="" value={exam} onChange={smartExam} phase={1}
-            rows={4} copyable templateType="pe" smartfill
-            placeholder="Paste PE, 🎤 dictate, or type .normpe for normal exam template"
-            onRef={setRef(4)}
-            onKeyDown={makeKeyDown(4, true, runMDM)} />
-        </div>
+        <InputZone label="Review of Systems" value={ros} onChange={setRos} phase={1}
+          rows={4} copyable templateType="ros" smartfill kbdHint="Alt+R"
+          placeholder="Paste ROS, or press T to insert a template..."
+          onRef={setRef(3)}
+          onKeyDown={makeKeyDown(3, false, runMDM)} />
+        <InputZone label="Physical Exam" value={exam} onChange={setExam} phase={1}
+          rows={4} copyable templateType="pe" smartfill kbdHint="Alt+E"
+          placeholder="Paste physical exam, or press T to insert a template..."
+          onRef={setRef(4)}
+          onKeyDown={makeKeyDown(4, true, runMDM)} />
       </div>
 
       {/* Quick DDx */}

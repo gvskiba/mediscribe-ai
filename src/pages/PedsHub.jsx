@@ -5,10 +5,10 @@
 // Route: /PediatricHub
 // Constraints: no form/localStorage, straight quotes, single react import
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-function injectPedsStyles() {
+(() => {
   if (document.getElementById("peds-fonts")) return;
   const l = document.createElement("link");
   l.id = "peds-fonts"; l.rel = "stylesheet";
@@ -19,17 +19,21 @@ function injectPedsStyles() {
     @keyframes peds-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
     .peds-in{animation:peds-in .18s ease forwards}
     @keyframes shimmer-peds{0%{background-position:-200% center}100%{background-position:200% center}}
-    .shimmer-peds{background:linear-gradient(90deg,#f0f4ff 0%,#3dffa0 40%,#4da6ff 65%,#f0f4ff 100%);
+    .shimmer-peds{background:linear-gradient(90deg,#ddeeff 0%,#3dffa0 40%,#4da6ff 65%,#ddeeff 100%);
       background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
       background-clip:text;animation:shimmer-peds 4s linear infinite;}
   `;
   document.head.appendChild(s);
-}
+})();
 
 const T = {
-  bg:"#030d0f",txt:"#e8fff8",txt2:"#9ed4c0",txt3:"#5aaa90",txt4:"#2d7060",
-  teal:"#00d4b4",gold:"#f5c842",coral:"#ff5c5c",blue:"#4da6ff",
-  orange:"#ff9f43",purple:"#b06dff",green:"#3dffa0",red:"#ff3d3d",
+  bg:"#050d1a",       // dark navy — matches platform base
+  txt:"#ddeeff",      // near-white with cool blue tint
+  txt2:"#7aafd4",     // readable secondary — blue-slate
+  txt3:"#4d82a8",     // muted tertiary — still legible
+  txt4:"#3a6a9a",     // label / quiet text — was near-invisible; now readable on navy
+  teal:"#00d4b4",gold:"#f5c842",coral:"#ff6060",blue:"#4da6ff",
+  orange:"#ff9f43",purple:"#b06dff",green:"#3dffa0",red:"#ff4444",
   mint:"#7fffcf",cyan:"#00c8d4",
 };
 const S = { mono:"'JetBrains Mono',monospace", sans:"'DM Sans',sans-serif", serif:"'Playfair Display',serif" };
@@ -67,10 +71,10 @@ function Check({ label, sub, checked, onToggle, color }) {
   return (
     <button onClick={onToggle} style={{ display:"flex",alignItems:"flex-start",gap:9,
       width:"100%",padding:"8px 12px",borderRadius:8,cursor:"pointer",textAlign:"left",
-      border:"none",marginBottom:4,background:checked?`${c}10`:"rgba(6,20,25,0.7)",
-      borderLeft:`3px solid ${checked?c:"rgba(20,80,70,0.4)"}` }}>
+      border:"none",marginBottom:4,background:checked?`${c}10`:"rgba(5,13,32,0.75)",
+      borderLeft:`3px solid ${checked?c:"rgba(30,70,130,0.4)"}` }}>
       <div style={{ width:17,height:17,borderRadius:4,flexShrink:0,marginTop:1,
-        border:`2px solid ${checked?c:"rgba(45,112,96,0.5)"}`,
+        border:`2px solid ${checked?c:"rgba(40,90,160,0.5)"}`,
         background:checked?c:"transparent",display:"flex",alignItems:"center",justifyContent:"center" }}>
         {checked && <span style={{ color:"#030d0f",fontSize:9,fontWeight:900 }}>✓</span>}
       </div>
@@ -101,7 +105,7 @@ function ScoreWidget({ items, scores, setScores, color }) {
           <button key={opt.v} onClick={() => setScores(p => ({ ...p,[item.key]:opt.v }))}
             style={{ padding:"5px 11px",borderRadius:7,cursor:"pointer",
               fontFamily:S.sans,fontWeight:600,fontSize:11,
-              border:`1px solid ${scores[item.key]===opt.v?c+"66":"rgba(20,80,70,0.4)"}`,
+              border:`1px solid ${scores[item.key]===opt.v?c+"66":"rgba(30,70,130,0.4)"}`,
               background:scores[item.key]===opt.v?`${c}14`:"transparent",
               color:scores[item.key]===opt.v?c:T.txt4 }}>
             {opt.v} — {opt.l}
@@ -120,7 +124,7 @@ function DrugSection({ title, color, drugs, wtCalc }) {
         background:`${color}10`,borderRadius:5,border:`1px solid ${color}25` }}>{title}</div>
       {drugs.map((d,i) => (
         <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"7px 8px",
-          borderBottom:i<drugs.length-1?"1px solid rgba(20,80,70,0.2)":"none" }}>
+          borderBottom:i<drugs.length-1?"1px solid rgba(30,70,130,0.2)":"none" }}>
           <div style={{ flex:1,minWidth:0 }}>
             <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:11.5,color:T.txt2 }}>{d.name}</div>
             <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:1,lineHeight:1.5 }}>{d.note}</div>
@@ -196,8 +200,8 @@ function VitalsTab({ globalWt, setGlobalWt }) {
             <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,
               textTransform:"uppercase",marginBottom:4 }}>{lbl}</div>
             <input type="number" value={val} onChange={e=>set(e.target.value)}
-              style={{ width:"100%",padding:"9px 11px",background:"rgba(6,20,25,0.9)",
-                border:`1px solid ${val?c+"55":"rgba(20,80,70,0.4)"}`,borderRadius:8,outline:"none",
+              style={{ width:"100%",padding:"9px 11px",background:"rgba(5,13,32,0.92)",
+                border:`1px solid ${val?c+"55":"rgba(30,70,130,0.4)"}`,borderRadius:8,outline:"none",
                 fontFamily:S.mono,fontSize:20,fontWeight:700,color:c }} />
           </div>
         ))}
@@ -241,7 +245,7 @@ function VitalsTab({ globalWt, setGlobalWt }) {
           <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:10 }}>
             {[{l:"HR",r:`${norm.hr[0]}–${norm.hr[1]}`,u:"bpm"},{l:"SBP",r:`${norm.sbp[0]}–${norm.sbp[1]}`,u:"mmHg"},{l:"RR",r:`${norm.rr[0]}–${norm.rr[1]}`,u:"/min"}].map(v=>(
               <div key={v.l} style={{ padding:"8px",borderRadius:8,textAlign:"center",
-                background:"rgba(6,20,25,0.7)",border:"1px solid rgba(20,80,70,0.4)" }}>
+                background:"rgba(5,13,32,0.75)",border:"1px solid rgba(30,70,130,0.4)" }}>
                 <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1 }}>{v.l}</div>
                 <div style={{ fontFamily:S.mono,fontSize:13,fontWeight:700,color:T.cyan }}>{v.r}</div>
                 <div style={{ fontFamily:S.mono,fontSize:7,color:T.txt4 }}>{v.u}</div>
@@ -254,8 +258,8 @@ function VitalsTab({ globalWt, setGlobalWt }) {
                 <div style={{ fontFamily:S.mono,fontSize:7,color:T.txt4,letterSpacing:1.3,
                   textTransform:"uppercase",marginBottom:4 }}>{f.lbl}</div>
                 <input type="number" value={f.val} onChange={e=>f.set(e.target.value)}
-                  style={{ width:"100%",padding:"7px 9px",background:"rgba(6,20,25,0.9)",
-                    border:`1px solid ${f.val?sc(f.st)+"55":"rgba(20,80,70,0.35)"}`,
+                  style={{ width:"100%",padding:"7px 9px",background:"rgba(5,13,32,0.92)",
+                    border:`1px solid ${f.val?sc(f.st)+"55":"rgba(30,70,130,0.35)"}`,
                     borderRadius:6,outline:"none",fontFamily:S.mono,fontSize:16,fontWeight:700,
                     color:f.val?sc(f.st):T.txt4 }} />
                 {f.st&&f.st!=="ok"&&<div style={{ fontFamily:S.sans,fontSize:9,color:sc(f.st),marginTop:2 }}>
@@ -279,13 +283,13 @@ function VitalsTab({ globalWt, setGlobalWt }) {
       <Card color={T.teal} title="Pediatric Vital Sign Reference Table">
         <div style={{ overflowX:"auto" }}>
           <table style={{ width:"100%",borderCollapse:"collapse",fontFamily:S.mono,fontSize:9 }}>
-            <thead><tr style={{ borderBottom:"1px solid rgba(20,80,70,0.4)" }}>
+            <thead><tr style={{ borderBottom:"1px solid rgba(30,70,130,0.4)" }}>
               {["Age Group","HR (bpm)","SBP (mmHg)","RR (/min)","Wt (kg)"].map(h=>(
                 <th key={h} style={{ padding:"5px 8px",textAlign:"left",color:T.txt4,fontWeight:700 }}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{VITAL_NORMS.map((r,i)=>(
-              <tr key={i} style={{ borderBottom:"1px solid rgba(20,80,70,0.2)" }}>
+              <tr key={i} style={{ borderBottom:"1px solid rgba(30,70,130,0.2)" }}>
                 <td style={{ padding:"5px 8px",color:T.teal,fontWeight:700 }}>{r.age}</td>
                 <td style={{ padding:"5px 8px",color:T.txt2 }}>{r.hr[0]}–{r.hr[1]}</td>
                 <td style={{ padding:"5px 8px",color:T.txt2 }}>{r.sbp[0]}–{r.sbp[1]}</td>
@@ -354,7 +358,7 @@ function PECARNTab() {
             <button key={v} onClick={()=>{setArm(v);setItems({});}}
               style={{ flex:1,padding:"9px 0",borderRadius:9,cursor:"pointer",
                 fontFamily:S.sans,fontWeight:600,fontSize:12,
-                border:`1px solid ${arm===v?T.blue+"66":"rgba(20,80,70,0.4)"}`,
+                border:`1px solid ${arm===v?T.blue+"66":"rgba(30,70,130,0.4)"}`,
                 background:arm===v?"rgba(77,166,255,0.12)":"transparent",
                 color:arm===v?T.blue:T.txt4 }}>{l}</button>
           ))}
@@ -392,7 +396,7 @@ function PECARNTab() {
               ))}
             </tr></thead>
             <tbody>{PEDS_GCS_VERBAL.map(r=>(
-              <tr key={r.score} style={{ borderBottom:"1px solid rgba(20,80,70,0.2)" }}>
+              <tr key={r.score} style={{ borderBottom:"1px solid rgba(30,70,130,0.2)" }}>
                 <td style={{ padding:"5px 8px",fontFamily:S.mono,fontWeight:700,color:T.blue }}>{r.score}</td>
                 <td style={{ padding:"5px 8px",color:T.txt2 }}>{r.adult}</td>
                 <td style={{ padding:"5px 8px",color:T.txt2 }}>{r.child}</td>
@@ -457,8 +461,8 @@ function FeverTab() {
         <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,
           textTransform:"uppercase",marginBottom:4 }}>Age (weeks)</div>
         <input type="number" value={ageW} onChange={e=>setAgeW(e.target.value)}
-          style={{ width:140,padding:"9px 11px",background:"rgba(6,20,25,0.9)",
-            border:`1px solid ${ageW?T.coral+"55":"rgba(20,80,70,0.4)"}`,borderRadius:8,
+          style={{ width:140,padding:"9px 11px",background:"rgba(5,13,32,0.92)",
+            border:`1px solid ${ageW?T.coral+"55":"rgba(30,70,130,0.4)"}`,borderRadius:8,
             outline:"none",fontFamily:S.mono,fontSize:20,fontWeight:700,color:T.coral }} />
       </div>
       {tiers.map((tier,i)=>(
@@ -755,8 +759,8 @@ function ResusTab({ globalWt, setGlobalWt }) {
         <div style={{ display:"flex",alignItems:"center",gap:10,flexWrap:"wrap" }}>
           <input type="number" value={weight} onChange={e=>{ setWeight(e.target.value); setGlobalWt(e.target.value); }}
             placeholder="kg"
-            style={{ width:110,padding:"10px 12px",background:"rgba(6,20,25,0.9)",
-              border:`1px solid ${weight?T.green+"55":"rgba(20,80,70,0.4)"}`,
+            style={{ width:110,padding:"10px 12px",background:"rgba(5,13,32,0.92)",
+              border:`1px solid ${weight?T.green+"55":"rgba(30,70,130,0.4)"}`,
               borderRadius:8,outline:"none",fontFamily:S.mono,fontSize:22,fontWeight:900,color:T.green }} />
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt4,lineHeight:1.6 }}>
             Enter from Broselow tape or use "→ drug dosing" button in Vitals tab.
@@ -765,12 +769,12 @@ function ResusTab({ globalWt, setGlobalWt }) {
         </div>
       </Card>
       <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"5px",marginBottom:12,
-        background:"rgba(6,20,25,0.7)",border:"1px solid rgba(20,80,70,0.35)",borderRadius:10 }}>
+        background:"rgba(5,13,32,0.75)",border:"1px solid rgba(30,70,130,0.35)",borderRadius:10 }}>
         {RESUS_SUBTABS.map(st=>(
           <button key={st.id} onClick={()=>setSubTab(st.id)}
             style={{ flex:1,padding:"7px 10px",borderRadius:7,cursor:"pointer",
               fontFamily:S.sans,fontWeight:600,fontSize:11,
-              border:`1px solid ${subTab===st.id?st.color+"66":"rgba(20,80,70,0.4)"}`,
+              border:`1px solid ${subTab===st.id?st.color+"66":"rgba(30,70,130,0.4)"}`,
               background:subTab===st.id?`${st.color}14`:"transparent",
               color:subTab===st.id?st.color:T.txt4 }}>{st.label}</button>
         ))}
@@ -782,8 +786,8 @@ function ResusTab({ globalWt, setGlobalWt }) {
             <div style={{ fontFamily:S.mono,fontSize:7,color:T.txt4,letterSpacing:1.3,
               textTransform:"uppercase",marginBottom:4 }}>Age for Airway Sizing (years)</div>
             <input type="number" value={ageYrs} onChange={e=>setAgeYrs(e.target.value)}
-              style={{ width:"100%",padding:"7px 9px",background:"rgba(6,20,25,0.9)",
-                border:`1px solid ${ageYrs?T.mint+"55":"rgba(20,80,70,0.4)"}`,
+              style={{ width:"100%",padding:"7px 9px",background:"rgba(5,13,32,0.92)",
+                border:`1px solid ${ageYrs?T.mint+"55":"rgba(30,70,130,0.4)"}`,
                 borderRadius:7,outline:"none",fontFamily:S.mono,fontSize:18,fontWeight:700,color:T.mint }} />
           </div>
           {ay>0&&<Card color={T.mint} title="Airway Sizing" mb={0}>
@@ -827,7 +831,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
         {wt>0?<Card color={T.green} title="PALS Weight-Based Drug Dosing">
           {resusDrugs.map((d,i)=>(
             <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"7px 0",
-              borderBottom:i<resusDrugs.length-1?"1px solid rgba(20,80,70,0.25)":"none" }}>
+              borderBottom:i<resusDrugs.length-1?"1px solid rgba(30,70,130,0.25)":"none" }}>
               <div style={{ flex:1,minWidth:0 }}>
                 <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:11.5,color:T.txt2 }}>{d.name}</div>
                 <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:1 }}>{d.note}</div>
@@ -877,7 +881,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
             <button key={p.id} onClick={()=>{ setAbxPill(p.id); setSelCond(null); }}
               style={{ flex:1,padding:"6px 8px",borderRadius:7,cursor:"pointer",
                 fontFamily:S.sans,fontWeight:600,fontSize:10.5,
-                border:`1px solid ${abxPill===p.id?T.coral+"66":"rgba(20,80,70,0.4)"}`,
+                border:`1px solid ${abxPill===p.id?T.coral+"66":"rgba(30,70,130,0.4)"}`,
                 background:abxPill===p.id?"rgba(255,92,92,0.12)":"transparent",
                 color:abxPill===p.id?T.coral:T.txt4 }}>{p.label}</button>
           ))}
@@ -888,7 +892,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
               <button key={String(af.id)} onClick={()=>{ setAgeFilter(af.id); setSelCond(null); }}
                 style={{ padding:"5px 10px",borderRadius:7,cursor:"pointer",
                   fontFamily:S.sans,fontWeight:600,fontSize:10,
-                  border:`1px solid ${ageFilter===af.id?T.blue+"66":"rgba(20,80,70,0.35)"}`,
+                  border:`1px solid ${ageFilter===af.id?T.blue+"66":"rgba(30,70,130,0.35)"}`,
                   background:ageFilter===af.id?"rgba(77,166,255,0.12)":"transparent",
                   color:ageFilter===af.id?T.blue:T.txt4 }}>{af.label}</button>
             ))}
@@ -955,7 +959,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
             const pd=wt>0?calcDose(wt,d.mpkDose,d.max):null;
             return(
               <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"8px 0",
-                borderBottom:i<DISCHARGE_ABX.length-1?"1px solid rgba(20,80,70,0.22)":"none" }}>
+                borderBottom:i<DISCHARGE_ABX.length-1?"1px solid rgba(30,70,130,0.22)":"none" }}>
                 <div style={{ flex:1,minWidth:0 }}>
                   <div style={{ fontFamily:S.sans,fontWeight:700,fontSize:11.5,color:T.txt2 }}>{d.name}</div>
                   <div style={{ fontFamily:S.mono,fontSize:8.5,color:T.txt4,marginTop:1 }}>{d.dose}</div>
@@ -1121,7 +1125,7 @@ function ScoringTab({ globalWt }) {
               ["Activity","Limp","Some flexion","Active motion"],
               ["Respiration","Absent","Weak/irregular","Strong cry"],
             ].map((r,i)=>(
-              <tr key={i} style={{ borderBottom:"1px solid rgba(20,80,70,0.2)" }}>
+              <tr key={i} style={{ borderBottom:"1px solid rgba(30,70,130,0.2)" }}>
                 <td style={{ padding:"5px 8px",color:T.coral,fontWeight:700 }}>{r[0]}</td>
                 <td style={{ padding:"5px 8px",color:T.txt3 }}>{r[1]}</td>
                 <td style={{ padding:"5px 8px",color:T.txt2 }}>{r[2]}</td>
@@ -1173,8 +1177,8 @@ function ScoringTab({ globalWt }) {
             </div>
           ))}
         </div>
-        <div style={{ marginTop:8,padding:"7px 10px",borderRadius:7,background:"rgba(6,20,25,0.6)",
-          border:"1px solid rgba(20,80,70,0.35)",fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.55 }}>
+        <div style={{ marginTop:8,padding:"7px 10px",borderRadius:7,background:"rgba(5,13,32,0.65)",
+          border:"1px solid rgba(30,70,130,0.35)",fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.55 }}>
           <strong style={{ color:T.teal }}>≤ 3:</strong> Low risk — discharge with precautions{" · "}
           <strong style={{ color:T.gold }}>4–6:</strong> US first — intermediate{" · "}
           <strong style={{ color:T.coral }}>≥ 7:</strong> Surgical consult (PPV ~72%)
@@ -1249,12 +1253,12 @@ function ToolsTab({ globalWt }) {
   return (
     <div className="peds-in">
       <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"5px",marginBottom:12,
-        background:"rgba(6,20,25,0.7)",border:"1px solid rgba(20,80,70,0.35)",borderRadius:10 }}>
+        background:"rgba(5,13,32,0.75)",border:"1px solid rgba(30,70,130,0.35)",borderRadius:10 }}>
         {TOOLS_TABS.map(t=>(
           <button key={t.id} onClick={()=>setToolTab(t.id)}
             style={{ flex:1,padding:"7px 10px",borderRadius:7,cursor:"pointer",
               fontFamily:S.sans,fontWeight:600,fontSize:11,
-              border:`1px solid ${toolTab===t.id?t.color+"66":"rgba(20,80,70,0.4)"}`,
+              border:`1px solid ${toolTab===t.id?t.color+"66":"rgba(30,70,130,0.4)"}`,
               background:toolTab===t.id?`${t.color}14`:"transparent",
               color:toolTab===t.id?t.color:T.txt4 }}>{t.label}</button>
         ))}
@@ -1271,7 +1275,7 @@ function ToolsTab({ globalWt }) {
               {[["5%","5"],["7%","7"],["10%","10"]].map(([l,v])=>(
                 <button key={v} onClick={()=>setDkaPct(dkaPct===v?"":v)}
                   style={{ padding:"8px 14px",borderRadius:7,cursor:"pointer",fontFamily:S.sans,fontWeight:600,fontSize:11,
-                    border:`1px solid ${dkaPct===v?T.gold+"66":"rgba(20,80,70,0.4)"}`,
+                    border:`1px solid ${dkaPct===v?T.gold+"66":"rgba(30,70,130,0.4)"}`,
                     background:dkaPct===v?`${T.gold}14`:"transparent",color:dkaPct===v?T.gold:T.txt4 }}>
                   {l} {dkaPct===v&&wt>0?`(${(wt*parseFloat(v)*10).toFixed(0)} mL)`:""}</button>
               ))}
@@ -1300,8 +1304,8 @@ function ToolsTab({ globalWt }) {
             <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>TBSA (%) burned — exclude superficial / 1st degree</div>
             <div style={{ display:"flex",alignItems:"center",gap:10 }}>
               <input type="number" value={tbsaPct} onChange={e=>setTbsaPct(e.target.value)}
-                style={{ width:80,padding:"8px 10px",background:"rgba(6,20,25,0.9)",
-                  border:`1px solid ${tbsaPct?T.orange+"55":"rgba(20,80,70,0.4)"}`,
+                style={{ width:80,padding:"8px 10px",background:"rgba(5,13,32,0.92)",
+                  border:`1px solid ${tbsaPct?T.orange+"55":"rgba(30,70,130,0.4)"}`,
                   borderRadius:7,outline:"none",fontFamily:S.mono,fontSize:20,fontWeight:700,color:T.orange }} />
               <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt4 }}>% TBSA</div>
             </div>
@@ -1319,11 +1323,11 @@ function ToolsTab({ globalWt }) {
               4 mL x %TBSA x weight(kg). Time 0 = time of burn, not arrival. Add maintenance IV for children {"<"} 30 kg.
             </div>
           </div>}
-          <div style={{ padding:"9px 11px",borderRadius:8,background:"rgba(6,20,25,0.6)",border:"1px solid rgba(20,80,70,0.3)" }}>
+          <div style={{ padding:"9px 11px",borderRadius:8,background:"rgba(5,13,32,0.65)",border:"1px solid rgba(30,70,130,0.3)" }}>
             <div style={{ fontFamily:S.mono,fontSize:8,color:T.orange,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>Pediatric TBSA — Modified Rule of Nines</div>
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,fontFamily:S.mono,fontSize:9 }}>
               {[["Head & neck","Infant 19% · 5y 13% · 10y 11%"],["Each arm","9% (all ages)"],["Anterior trunk","18%"],["Posterior trunk","18%"],["Each thigh","Infant 5.5% · 5y 6.5% · Adult 9%"],["Each lower leg","Infant 5% · 5y 5.5% · Adult 7%"]].map(([b,v])=>(
-                <div key={b} style={{ display:"flex",justifyContent:"space-between",gap:8,padding:"3px 0",borderBottom:"1px solid rgba(20,80,70,0.15)" }}>
+                <div key={b} style={{ display:"flex",justifyContent:"space-between",gap:8,padding:"3px 0",borderBottom:"1px solid rgba(30,70,130,0.15)" }}>
                   <span style={{ color:T.orange }}>{b}</span><span style={{ color:T.txt3 }}>{v}</span>
                 </div>
               ))}
@@ -1376,7 +1380,7 @@ function ToolsTab({ globalWt }) {
                 {["Toxin","Antidote","Dose / Notes"].map(h=><th key={h} style={{ padding:"5px 8px",textAlign:"left",color:T.purple,fontWeight:700 }}>{h}</th>)}
               </tr></thead>
               <tbody>{ANTIDOTES.map((r,i)=>(
-                <tr key={i} style={{ borderBottom:"1px solid rgba(20,80,70,0.2)" }}>
+                <tr key={i} style={{ borderBottom:"1px solid rgba(30,70,130,0.2)" }}>
                   <td style={{ padding:"5px 8px",color:T.coral,fontWeight:600,whiteSpace:"nowrap" }}>{r.toxin}</td>
                   <td style={{ padding:"5px 8px",color:T.mint,fontWeight:600,whiteSpace:"nowrap" }}>{r.antidote}</td>
                   <td style={{ padding:"5px 8px",color:T.txt3,lineHeight:1.5 }}>{r.dose}</td>
@@ -1408,7 +1412,7 @@ function ToolsTab({ globalWt }) {
                 ))}
               </tr></thead>
               <tbody>{SIRS_AGES.map((r,i)=>(
-                <tr key={i} style={{ borderBottom:"1px solid rgba(20,80,70,0.18)" }}>
+                <tr key={i} style={{ borderBottom:"1px solid rgba(30,70,130,0.18)" }}>
                   <td style={{ padding:"5px 8px",color:T.gold,fontWeight:600 }}>{r.age}</td>
                   <td style={{ padding:"5px 8px",color:T.txt2 }}>{r.hr}</td>
                   <td style={{ padding:"5px 8px",color:T.txt2 }}>{r.rr}</td>
@@ -1480,8 +1484,6 @@ export default function PediatricHub({ embedded = false }) {
   const [tab, setTab] = useState("vitals");
   const [globalWt, setGlobalWt] = useState("");
 
-  useEffect(() => { injectPedsStyles(); }, []);
-
   return (
     <div style={{ fontFamily:S.sans,background:embedded?"transparent":T.bg,
       minHeight:embedded?"auto":"100vh",color:T.txt }}>
@@ -1490,18 +1492,18 @@ export default function PediatricHub({ embedded = false }) {
           <button onClick={()=>navigate("/hub")}
             style={{ marginBottom:10,display:"inline-flex",alignItems:"center",gap:7,
               fontFamily:S.sans,fontSize:12,fontWeight:600,padding:"5px 14px",borderRadius:8,
-              background:"rgba(3,13,15,0.8)",border:"1px solid rgba(20,80,70,0.5)",
+              background:"rgba(3,10,24,0.85)",border:"1px solid rgba(30,70,130,0.5)",
               color:T.txt3,cursor:"pointer" }}>
             ← Back to Hub
           </button>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:8 }}>
-            <div style={{ background:"rgba(3,13,15,0.95)",border:"1px solid rgba(20,80,70,0.6)",
+            <div style={{ background:"rgba(3,10,24,0.96)",border:"1px solid rgba(30,70,130,0.6)",
               borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8 }}>
               <span style={{ fontFamily:S.mono,fontSize:10,color:T.mint,letterSpacing:3 }}>NOTRYA</span>
               <span style={{ color:T.txt4,fontFamily:S.mono,fontSize:10 }}>/</span>
               <span style={{ fontFamily:S.mono,fontSize:10,color:T.txt3,letterSpacing:2 }}>PEDS</span>
             </div>
-            <div style={{ height:1,flex:1,background:"linear-gradient(90deg,rgba(61,255,160,0.5),transparent)" }} />
+            <div style={{ height:1,flex:1,background:"linear-gradient(90deg,rgba(61,255,160,0.45),transparent)" }} />
           </div>
           <h1 className="shimmer-peds" style={{ fontFamily:S.serif,
             fontSize:"clamp(22px,4vw,38px)",fontWeight:900,letterSpacing:-0.5,lineHeight:1.1 }}>
@@ -1528,13 +1530,13 @@ export default function PediatricHub({ embedded = false }) {
         </div>}
 
         <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"6px",marginBottom:14,
-          background:"rgba(6,20,25,0.85)",border:"1px solid rgba(20,80,70,0.4)",borderRadius:12 }}>
+          background:"rgba(5,13,32,0.88)",border:"1px solid rgba(30,70,130,0.4)",borderRadius:12 }}>
           {TABS.map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)}
               style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 10px",
                 borderRadius:9,cursor:"pointer",flex:1,justifyContent:"center",
                 fontFamily:S.sans,fontWeight:600,fontSize:11,
-                border:`1px solid ${tab===t.id?t.color+"77":"rgba(20,80,70,0.5)"}`,
+                border:`1px solid ${tab===t.id?t.color+"77":"rgba(30,70,130,0.5)"}`,
                 background:tab===t.id?`${t.color}14`:"transparent",
                 color:tab===t.id?t.color:T.txt4 }}>
               <span style={{ fontSize:12 }}>{t.icon}</span>

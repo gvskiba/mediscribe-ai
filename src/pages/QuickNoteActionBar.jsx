@@ -6,8 +6,11 @@ import React from "react";
 export function ActionBar({
   mdmResult, dispResult,
   copiedP1, copiedP2, copied, savedNote, saving, sentToNPI, sendingNPI,
+  copiedMDMOnly, copiedDischargeOnly,
   formatMode, setFormatMode,
+  pasteReady, setPasteReady,
   copyPhase1, copyPhase2, copyNote, saveNote, sendToNPI,
+  copyMDMOnly, copyDischargeOnly,
   onNewEncounter,
 }) {
   return (
@@ -32,7 +35,7 @@ export function ActionBar({
           </span>
         </div>
         {/* Format toggle */}
-        <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+        <div style={{ display:"flex", gap:4, alignItems:"center", flexWrap:"wrap" }}>
           <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
             color:"var(--qn-txt4)", letterSpacing:.5, textTransform:"uppercase" }}>
             Format:
@@ -46,6 +49,23 @@ export function ActionBar({
                 color:formatMode === v ? "var(--qn-teal)" : "var(--qn-txt4)",
                 transition:"all .12s" }}>{l}</button>
           ))}
+          {setPasteReady && (
+            <>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:"var(--qn-txt4)", letterSpacing:.5, textTransform:"uppercase", marginLeft:6 }}>
+                Labels:
+              </span>
+              {[["labeled","On"],["prose","Off"]].map(([v,l]) => (
+                <button key={v} onClick={() => setPasteReady(v)}
+                  style={{ padding:"2px 8px", borderRadius:4, cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    border:`1px solid ${pasteReady === v ? "rgba(245,200,66,.5)" : "rgba(42,79,122,.35)"}`,
+                    background:pasteReady === v ? "rgba(245,200,66,.1)" : "transparent",
+                    color:pasteReady === v ? "var(--qn-gold)" : "var(--qn-txt4)",
+                    transition:"all .12s" }}>{l}</button>
+              ))}
+            </>
+          )}
         </div>
       </div>
 
@@ -81,6 +101,34 @@ export function ActionBar({
             {copiedP2 ? "✓ Phase 2 Copied — Paste into EHR" : "📋 Copy Reevaluation & Disposition  "}
             {!copiedP2 && <span style={{ fontFamily:"'JetBrains Mono',monospace",
               fontSize:9, opacity:.6 }}>[Shift+2]</span>}
+          </button>
+        )}
+
+        {mdmResult && copyMDMOnly && (
+          <button onClick={copyMDMOnly}
+            style={{ padding:"9px 16px", borderRadius:8, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+              transition:"all .15s",
+              border:`1px solid ${copiedMDMOnly ? "rgba(61,255,160,.6)" : "rgba(0,229,192,.3)"}`,
+              background:copiedMDMOnly ? "rgba(61,255,160,.12)" : "rgba(14,37,68,.6)",
+              color:copiedMDMOnly ? "var(--qn-green)" : "var(--qn-txt3)" }}>
+            {copiedMDMOnly ? "✓ MDM Only Copied" : "MDM Only"}
+            {!copiedMDMOnly && <span style={{ fontFamily:"'JetBrains Mono',monospace",
+              fontSize:9, opacity:.5, marginLeft:4 }}>[Shift+3]</span>}
+          </button>
+        )}
+
+        {dispResult && copyDischargeOnly && (
+          <button onClick={copyDischargeOnly}
+            style={{ padding:"9px 16px", borderRadius:8, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+              transition:"all .15s",
+              border:`1px solid ${copiedDischargeOnly ? "rgba(61,255,160,.6)" : "rgba(61,255,160,.3)"}`,
+              background:copiedDischargeOnly ? "rgba(61,255,160,.12)" : "rgba(14,37,68,.6)",
+              color:copiedDischargeOnly ? "var(--qn-green)" : "var(--qn-txt3)" }}>
+            {copiedDischargeOnly ? "✓ Disch. Copied" : "Discharge Instr."}
+            {!copiedDischargeOnly && <span style={{ fontFamily:"'JetBrains Mono',monospace",
+              fontSize:9, opacity:.5, marginLeft:4 }}>[Shift+4]</span>}
           </button>
         )}
 
@@ -134,7 +182,7 @@ export function ActionBar({
 
       <div style={{ textAlign:"right", fontFamily:"'JetBrains Mono',monospace",
         fontSize:8, color:"rgba(107,158,200,.35)", letterSpacing:.5 }}>
-        Shift+1 copy initial note · Shift+2 copy reevaluation · C full note
+        Shift+1 initial · Shift+2 reevaluation · Shift+3 MDM only · Shift+4 discharge · C full note
       </div>
     </div>
   );

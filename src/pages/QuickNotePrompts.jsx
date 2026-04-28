@@ -223,7 +223,7 @@ function buildMDMBlock(mdm) {
   ];
   if (mdm.working_diagnosis) lines.push(`\nWorking Diagnosis: ${mdm.working_diagnosis}`);
   if (mdm.differential?.length)
-    lines.push(`Differential: ${mdm.differential.map((d,i) => `(${i+1}) ${d}`).join(", ")}`);
+    lines.push(`Differential: ${mdm.differential.map((d,i) => `(${i+1}) ${d.diagnosis||d}`).join(", ")}`);
   if (mdm.red_flags?.length)
     lines.push(`\nRed Flags: ${mdm.red_flags.join("; ")}`);
   if (mdm.critical_actions?.length) {
@@ -289,7 +289,7 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
     lines.push(`Data Complexity: ${mdm.data_complexity || "—"}`);
     lines.push(`Risk: ${mdm.risk_tier || "—"}`);
     if (mdm.working_diagnosis) lines.push(`Working Dx: ${mdm.working_diagnosis}`);
-    if (mdm.differential?.length) lines.push(`Differential: ${mdm.differential.join(", ")}`);
+    if (mdm.differential?.length) lines.push(`Differential: ${mdm.differential.map(d => d.diagnosis||d).join(", ")}`);
     if (mdm.red_flags?.length) lines.push(`Red Flags: ${mdm.red_flags.join("; ")}`);
     if (mdm.critical_actions?.length) {
       lines.push(`Critical Actions:`);
@@ -516,7 +516,7 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
     }
 
     lines.push(`DISPOSITION: ${disp.disposition || "—"}`);
-    if (disp.disposition_plan) { lines.push(disp.disposition_plan); }
+    if (disp.plan_summary) { lines.push(disp.plan_summary); }
     lines.push("");
 
     const confirmedInts = (extras.interventions || []).filter(i => i.confirmed !== false);

@@ -590,6 +590,7 @@ Only include body systems that have at least one symptom explicitly mentioned in
       parsedMeds, parsedAllergies, mdmResult, dispResult };
     setUndoData(snap);
     [setCC,setVitals,setHpi,setRos,setExam,setLabs,setImaging,setEkg,setNewVitals].forEach(fn => fn(""));
+    setTimestamps(DEFAULT_EVENTS.map(e => ({ ...e, time:"", notes:"" })));
     setParsedMeds([]); setParsedAllergies([]);
     setMdmResult(null); setDispResult(null);
     setP1Error(null); setP2Error(null); setP2Open(false);

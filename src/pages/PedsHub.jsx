@@ -5,10 +5,10 @@
 // Route: /PediatricHub
 // Constraints: no form/localStorage, straight quotes, single react import
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-function injectPedsStyles() {
+(() => {
   if (document.getElementById("peds-fonts")) return;
   const l = document.createElement("link");
   l.id = "peds-fonts"; l.rel = "stylesheet";
@@ -24,7 +24,7 @@ function injectPedsStyles() {
       background-clip:text;animation:shimmer-peds 4s linear infinite;}
   `;
   document.head.appendChild(s);
-}
+})();
 
 const T = {
   bg:"#050d1a",       // dark navy — matches platform base
@@ -129,8 +129,9 @@ function DrugSection({ title, color, drugs, wtCalc }) {
             <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:11.5,color:T.txt2 }}>{d.name}</div>
             <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:1,lineHeight:1.5 }}>{d.note}</div>
           </div>
-          <div style={{ textAlign:"right",flexShrink:0,minWidth:80 }}>
+          <div style={{ textAlign:"right",flexShrink:0,minWidth:90 }}>
             {wtCalc&&d.calc&&<div style={{ fontFamily:S.mono,fontSize:13,fontWeight:700,color }}>{d.calc}</div>}
+            {wtCalc&&d.ml&&<div style={{ fontFamily:S.mono,fontSize:9,color:T.mint,marginTop:1,lineHeight:1.4 }}>{d.ml}</div>}
             <div style={{ fontFamily:S.mono,fontSize:wtCalc&&d.calc?8:11,
               fontWeight:wtCalc&&d.calc?400:600,color:wtCalc&&d.calc?T.txt4:color }}>{d.dose}</div>
           </div>
@@ -140,7 +141,6 @@ function DrugSection({ title, color, drugs, wtCalc }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // VITALS + WEIGHT
 // ═══════════════════════════════════════════════════════════════════════════
 const VITAL_NORMS = [
@@ -304,7 +304,6 @@ function VitalsTab({ globalWt, setGlobalWt }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // PECARN HEAD CT
 // ═══════════════════════════════════════════════════════════════════════════
 const P2 = [
@@ -413,7 +412,6 @@ function PECARNTab() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // FEVER WORKUP
 // ═══════════════════════════════════════════════════════════════════════════
 const ROCHESTER = [
@@ -503,7 +501,6 @@ function FeverTab() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // MEDICATIONS DATA
 // ═══════════════════════════════════════════════════════════════════════════
 const ABX_CONDITIONS = [
@@ -582,22 +579,47 @@ const ABX_CONDITIONS = [
 ];
 
 const DISCHARGE_ABX = [
-  { name:"Amoxicillin (standard)",    dose:"40–50 mg/kg/day ÷ q8–12h",    mpkDose:16.7,freq:"q8h", max:500, note:"Strep pharyngitis, mild CAP (typical), UTI in low-risk older children." },
-  { name:"Amoxicillin (high-dose)",   dose:"80–90 mg/kg/day ÷ q12h",      mpkDose:42.5,freq:"q12h",max:1000,note:"AOM first-line, sinusitis, high-dose CAP. Max 1 g/dose." },
-  { name:"Amox-clavulanate ES 600",   dose:"90 mg/kg/day (amox) ÷ q12h",  mpkDose:45,  freq:"q12h",max:1000,note:"AOM failure, sinusitis resistant, bites. 600 mg amox per 5 mL." },
-  { name:"Amox-clavulanate std",      dose:"25–45 mg/kg/day (amox) ÷ q8h",mpkDose:13.3,freq:"q8h", max:500, note:"Bites, sinusitis mild, polymicrobial." },
-  { name:"Cephalexin",                dose:"25–50 mg/kg/day ÷ q6h",        mpkDose:12.5,freq:"q6h", max:500, note:"MSSA cellulitis, UTI, strep, impetigo." },
-  { name:"Cefdinir",                  dose:"14 mg/kg/day ÷ q12–24h",       mpkDose:7,   freq:"q12h",max:300, note:"AOM (PCN allergy), sinusitis, CAP, UTI." },
-  { name:"Cefpodoxime",               dose:"10 mg/kg/day ÷ q12h",          mpkDose:5,   freq:"q12h",max:200, note:"UTI, AOM, CAP, sinusitis." },
-  { name:"Cefuroxime axetil",         dose:"30 mg/kg/day ÷ q12h",          mpkDose:15,  freq:"q12h",max:500, note:"AOM, sinusitis, Lyme (PCN allergy). Take with food." },
-  { name:"Penicillin VK",             dose:"25–50 mg/kg/day ÷ q6–8h",      mpkDose:12.5,freq:"q6h", max:500, note:"Strep pharyngitis, dental/oral infections." },
-  { name:"Azithromycin",              dose:"10 mg/kg Day1; 5 mg/kg Days2–5",mpkDose:10,  freq:"Day1 load",max:500,note:"Atypical CAP, pertussis, AOM (PCN allergy), Chlamydia." },
-  { name:"Clarithromycin",            dose:"15 mg/kg/day ÷ q12h",          mpkDose:7.5, freq:"q12h",max:500, note:"Atypical CAP, MAC. Macrolide alternative." },
-  { name:"Clindamycin",               dose:"20–30 mg/kg/day ÷ q8h",        mpkDose:10,  freq:"q8h", max:450, note:"CA-MRSA SSTI, strep pharyngitis, anaerobic/dental." },
-  { name:"TMP-SMX (DS)",              dose:"8–12 mg/kg/day (TMP) ÷ q12h",  mpkDose:4,   freq:"q12h",max:160, note:"CA-MRSA SSTI, UTI. Avoid <2m, sulfa allergy." },
-  { name:"Nitrofurantoin",            dose:"5–7 mg/kg/day ÷ q6h",          mpkDose:1.5, freq:"q6h", max:100, note:"UTI only (not pyelonephritis). Avoid <1m, GFR <45." },
-  { name:"Metronidazole",             dose:"15–35 mg/kg/day ÷ q8h",        mpkDose:10,  freq:"q8h", max:500, note:"Anaerobic, C. diff (PO only), Giardia." },
-  { name:"Doxycycline (≥ 8 years)",  dose:"2.2 mg/kg/dose q12h",          mpkDose:2.2, freq:"q12h",max:100, note:"Lyme (≥8y), RMSF, MRSA SSTI, atypical CAP. Avoid <8y." },
+  { name:"Amoxicillin (standard)",   dose:"40–50 mg/kg/day ÷ q8–12h",    mpkDose:16.7,freq:"q8h", max:500,
+    concs:[{l:"125 mg/5 mL",m:25},{l:"200 mg/5 mL",m:40},{l:"250 mg/5 mL",m:50},{l:"400 mg/5 mL",m:80}],
+    note:"Strep pharyngitis, mild CAP (typical), UTI in low-risk older children." },
+  { name:"Amoxicillin (high-dose)",  dose:"80–90 mg/kg/day ÷ q12h",      mpkDose:42.5,freq:"q12h",max:1000,
+    concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50},{l:"400 mg/5 mL",m:80}],
+    note:"AOM first-line, sinusitis, high-dose CAP. Max 1 g/dose." },
+  { name:"Amox-clavulanate ES 600",  dose:"90 mg/kg/day (amox) ÷ q12h",  mpkDose:45,freq:"q12h",max:1000, concs:[{l:"600 mg/5 mL",m:120}],
+    note:"AOM failure, sinusitis resistant, bites. 600/42.9 mg per 5 mL." },
+  { name:"Amox-clavulanate std",     dose:"25–45 mg/kg/day (amox) ÷ q8h",mpkDose:13.3,freq:"q8h", max:500,
+    concs:[{l:"200 mg/5 mL",m:40},{l:"400 mg/5 mL",m:80}],
+    note:"Bites, sinusitis mild, polymicrobial. Dose reflects amoxicillin component." },
+  { name:"Cephalexin",               dose:"25–50 mg/kg/day ÷ q6h",       mpkDose:12.5,freq:"q6h", max:500,
+    concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50}],
+    note:"MSSA cellulitis, UTI, strep, impetigo." },
+  { name:"Cefdinir",                 dose:"14 mg/kg/day ÷ q12–24h",      mpkDose:7,   freq:"q12h",max:300,
+    concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50}],
+    note:"AOM (PCN allergy), sinusitis, CAP, UTI." },
+  { name:"Cefpodoxime",              dose:"10 mg/kg/day ÷ q12h",         mpkDose:5,   freq:"q12h",max:200,
+    concs:[{l:"50 mg/5 mL",m:10},{l:"100 mg/5 mL",m:20}],
+    note:"UTI, AOM, CAP, sinusitis." },
+  { name:"Cefuroxime axetil",        dose:"30 mg/kg/day ÷ q12h",         mpkDose:15,freq:"q12h",max:500, concs:[{l:"125 mg/5 mL",m:25}],
+    note:"AOM, sinusitis, Lyme (PCN allergy). Take with food." },
+  { name:"Penicillin VK",            dose:"25–50 mg/kg/day ÷ q6–8h",     mpkDose:12.5,freq:"q6h", max:500,
+    concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50}],
+    note:"Strep pharyngitis, dental/oral infections." },
+  { name:"Azithromycin",             dose:"10 mg/kg Day1; 5 mg/kg Days2–5",mpkDose:10, freq:"Day1 load",max:500,
+    concs:[{l:"100 mg/5 mL",m:20},{l:"200 mg/5 mL",m:40}],
+    note:"Atypical CAP, pertussis, AOM (PCN allergy), Chlamydia." },
+  { name:"Clarithromycin",           dose:"15 mg/kg/day ÷ q12h",         mpkDose:7.5, freq:"q12h",max:500,
+    concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50}],
+    note:"Atypical CAP, MAC. Macrolide alternative." },
+  { name:"Clindamycin",              dose:"20–30 mg/kg/day ÷ q8h",       mpkDose:10,freq:"q8h",max:450, concs:[{l:"75 mg/5 mL",m:15}],
+    note:"CA-MRSA SSTI, strep pharyngitis, anaerobic/dental." },
+  { name:"TMP-SMX (DS)",             dose:"8–12 mg/kg/day (TMP) ÷ q12h", mpkDose:4,freq:"q12h",max:160, concs:[{l:"40 mg TMP/5 mL",m:8}],
+    note:"CA-MRSA SSTI, UTI. Dose reflects TMP component. Avoid <2m, sulfa allergy." },
+  { name:"Nitrofurantoin",           dose:"5–7 mg/kg/day ÷ q6h",         mpkDose:1.5,freq:"q6h",max:100, concs:[{l:"25 mg/5 mL",m:5}],
+    note:"UTI only (not pyelonephritis). Avoid <1m, GFR <45." },
+  { name:"Metronidazole",            dose:"15–35 mg/kg/day ÷ q8h",       mpkDose:10,freq:"q8h",max:500, concs:[{l:"200 mg/5 mL",m:40}],
+    note:"Anaerobic, C. diff (PO only), Giardia." },
+  { name:"Doxycycline (≥ 8 years)", dose:"2.2 mg/kg/dose q12h", mpkDose:2.2,freq:"q12h",max:100, concs:[{l:"25 mg/5 mL",m:5},{l:"50 mg/5 mL",m:10},{l:"Tabs/Caps",m:null}],
+    note:"Lyme (≥8y), RMSF, MRSA SSTI, atypical CAP. Avoid <8y." },
 ];
 
 const SEIZURE_STEPS = [
@@ -633,7 +655,6 @@ const AGE_FILTERS = [
   { id:"child",   label:"Child (>1y)" },
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════
 // MEDICATIONS TAB
 // ═══════════════════════════════════════════════════════════════════════════
 function ResusTab({ globalWt, setGlobalWt }) {
@@ -642,6 +663,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
   const [abxPill,setAbxPill]=useState("condition");
   const [selCond,setSelCond]=useState(null);
   const [ageFilter,setAgeFilter]=useState(null);
+  const [concSel,setConcSel]=useState({});
   const [ageYrs,setAgeYrs]=useState("");
   const wt=parseFloat(weight)||0;
   const ay=parseFloat(ageYrs)||0;
@@ -658,19 +680,19 @@ function ResusTab({ globalWt, setGlobalWt }) {
     Enter patient weight above to calculate doses.</div>;
 
   const resusDrugs=wt>0?[
-    { name:"Epinephrine (arrest)",     dose:"0.01 mg/kg IV/IO",  calc:`${(wt*.01).toFixed(2)} mg`,  note:"Max 1 mg; q3–5 min. 1:10,000 = 0.1 mL/kg. Drip: 0.1–1 mcg/kg/min." },
-    { name:"Atropine",                 dose:"0.02 mg/kg IV/IO",  calc:`${(wt*.02).toFixed(2)} mg`,  note:"Min 0.1 mg, max 0.5 mg/dose. Bradycardia with poor perfusion." },
-    { name:"Adenosine (SVT)",          dose:"0.1 mg/kg IV rapid",calc:`${(wt*.1).toFixed(2)} mg`,   note:"Max 6 mg. Flush rapidly. 2nd dose 0.2 mg/kg (max 12 mg)." },
-    { name:"Amiodarone (VF/pVT)",      dose:"5 mg/kg IV/IO",     calc:`${(wt*5).toFixed(0)} mg`,    note:"Max 300 mg; max 3 doses. Push in arrest; infuse over 20–60 min otherwise." },
-    { name:"Lidocaine (VF/pVT alt)",   dose:"1 mg/kg IV/IO",     calc:`${(wt*1).toFixed(1)} mg`,    note:"Alt to amiodarone. Max 100 mg. Drip: 20–50 mcg/kg/min." },
-    { name:"Calcium chloride 10%",     dose:"20 mg/kg IV/IO",    calc:`${(wt*20).toFixed(0)} mg (${(wt*.2).toFixed(1)} mL)`, note:"Max 2 g. Hypocalcemia, hyperK, CCB toxicity. Central line preferred." },
-    { name:"Sodium bicarbonate",       dose:"1 mEq/kg IV",       calc:`${(wt*1).toFixed(1)} mEq`,   note:"Dilute to 4.2% in neonates/infants. Confirm acidosis first." },
-    { name:"Dextrose",                 dose:"2–4 mL/kg D10W",    calc:`${(wt*2).toFixed(0)}–${(wt*4).toFixed(0)} mL`, note:"D10W neonates; D25W infants; D50W adolescents. Confirm BG." },
-    { name:"Naloxone",                 dose:"0.01 mg/kg IV/IM/IN",calc:`${(wt*.01).toFixed(3)} mg`, note:"Titrate to respirations. IN: 0.1 mg/kg (max 4 mg). Repeat q2–3 min." },
-    { name:"Normal saline (bolus)",    dose:"10–20 mL/kg IV/IO", calc:`${(wt*10).toFixed(0)}–${(wt*20).toFixed(0)} mL`, note:"Septic shock: 10 mL/kg aliquots. Max 60 mL/kg then reassess." },
-    { name:"RSI: Ketamine",            dose:"1–2 mg/kg IV",      calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mg`, note:"Preferred peds induction. IM 4–5 mg/kg if no IV." },
-    { name:"RSI: Succinylcholine",     dose:"2 mg/kg (<10kg) / 1.5 mg/kg (≥10kg)",calc:`${wt<10?(wt*2).toFixed(0):(wt*1.5).toFixed(0)} mg`, note:"Atropine pretreatment if <1 year." },
-    { name:"RSI: Rocuronium",          dose:"1.2 mg/kg IV",      calc:`${(wt*1.2).toFixed(0)} mg`,  note:"Reversal: sugammadex 16 mg/kg IV." },
+    { name:"Epinephrine (arrest)",     dose:"0.01 mg/kg IV/IO",  calc:`${(wt*.01).toFixed(2)} mg`,  ml:`${(wt*.01/0.1).toFixed(1)} mL of 1:10,000 (0.1 mg/mL)`, note:"Max 1 mg; q3–5 min. Drip: 0.1–1 mcg/kg/min." },
+    { name:"Atropine",                 dose:"0.02 mg/kg IV/IO",  calc:`${(wt*.02).toFixed(2)} mg`,  ml:`${(wt*.02/0.1).toFixed(1)} mL of 0.1 mg/mL`, note:"Min 0.1 mg, max 0.5 mg/dose. Bradycardia with poor perfusion." },
+    { name:"Adenosine (SVT)",          dose:"0.1 mg/kg IV rapid",calc:`${(wt*.1).toFixed(2)} mg`,   ml:`${(wt*.1/3).toFixed(1)} mL of 3 mg/mL`, note:"Max 6 mg. Flush rapidly with NS. 2nd dose 0.2 mg/kg (max 12 mg)." },
+    { name:"Amiodarone (VF/pVT)",      dose:"5 mg/kg IV/IO",     calc:`${(wt*5).toFixed(0)} mg`,    ml:`${(wt*5/50).toFixed(1)} mL of 50 mg/mL`, note:"Max 300 mg; max 3 doses. Push in arrest; infuse over 20–60 min otherwise." },
+    { name:"Lidocaine (VF/pVT alt)",   dose:"1 mg/kg IV/IO",     calc:`${(wt*1).toFixed(1)} mg`,    ml:`${(wt*1/10).toFixed(1)} mL of 1% (10 mg/mL)`, note:"Alt to amiodarone. Max 100 mg. Drip: 20–50 mcg/kg/min." },
+    { name:"Calcium chloride 10%",     dose:"20 mg/kg IV/IO",    calc:`${(wt*20).toFixed(0)} mg`,   ml:`${(wt*.2).toFixed(1)} mL of 10% (100 mg/mL)`, note:"Max 2 g. Hypocalcemia, hyperK, CCB toxicity. Central line preferred." },
+    { name:"Sodium bicarbonate 8.4%",  dose:"1 mEq/kg IV",       calc:`${(wt*1).toFixed(1)} mEq`,   ml:`${(wt*1).toFixed(1)} mL of 8.4% (1 mEq/mL)`, note:"Dilute 1:1 with sterile water in neonates/infants. Confirm acidosis." },
+    { name:"Dextrose",                 dose:"2–4 mL/kg D10W",    calc:`${(wt*2).toFixed(0)}–${(wt*4).toFixed(0)} mL D10W`, note:"D10W neonates; D25W infants; D50W adolescents. Confirm hypoglycemia." },
+    { name:"Naloxone",                 dose:"0.01 mg/kg IV/IM/IN",calc:`${(wt*.01).toFixed(3)} mg`, ml:`${(wt*.01/0.4).toFixed(1)} mL of 0.4 mg/mL  |  IN: ${(wt*.1/1).toFixed(1)} mL of 1 mg/mL`, note:"IV: titrate to respirations. IN: 0.1 mg/kg using 1 mg/mL; max 4 mg." },
+    { name:"Normal saline (bolus)",    dose:"10–20 mL/kg IV/IO", calc:`${(wt*10).toFixed(0)}–${(wt*20).toFixed(0)} mL NS`, note:"Septic shock: 10 mL/kg aliquots. Max 60 mL/kg then reassess." },
+    { name:"RSI: Ketamine",            dose:"1–2 mg/kg IV",      calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mg`, ml:`${(wt*1/10).toFixed(1)}–${(wt*2/10).toFixed(1)} mL of 10 mg/mL  |  IM: ${(wt*4/50).toFixed(1)}–${(wt*5/50).toFixed(1)} mL of 50 mg/mL`, note:"Preferred peds RSI induction. IM 4–5 mg/kg if no IV." },
+    { name:"RSI: Succinylcholine",     dose:"2 mg/kg (<10kg) / 1.5 mg/kg (≥10kg)",calc:`${wt<10?(wt*2).toFixed(0):(wt*1.5).toFixed(0)} mg`, ml:`${wt<10?(wt*2/20).toFixed(1):(wt*1.5/20).toFixed(1)} mL of 20 mg/mL`, note:"Atropine pretreatment if <1 year." },
+    { name:"RSI: Rocuronium",          dose:"1.2 mg/kg IV",      calc:`${(wt*1.2).toFixed(0)} mg`,  ml:`${(wt*1.2/10).toFixed(1)} mL of 10 mg/mL`, note:"Reversal: sugammadex 16 mg/kg IV." },
   ]:[];
   const defib=wt>0?[
     { label:"Initial shock (VF/pVT)",  dose:"2 J/kg",     calc:`${(wt*2).toFixed(0)} J` },
@@ -697,13 +719,13 @@ function ResusTab({ globalWt, setGlobalWt }) {
     { name:"TMP-SMX IV",    dose:"4–5 mg/kg (TMP) q12h",  calc:`${(wt*4).toFixed(0)}–${(wt*5).toFixed(0)} mg TMP`,note:"MRSA, UTI. Avoid neonates." },
   ]:[];
   const opioids=wt>0?[
-    { name:"Fentanyl IV/IN",dose:"1–2 mcg/kg IV; 2 mcg/kg IN",calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mcg IV · ${Math.min(wt*2,100).toFixed(0)} mcg IN`,note:"Max 100 mcg/dose. IN: 1 mL/nostril max." },
-    { name:"Morphine",      dose:"0.1 mg/kg IV/IM",           calc:`${(wt*.1).toFixed(2)} mg`,note:"Max 4 mg/dose IV. Slower onset; histamine release." },
-    { name:"Hydromorphone", dose:"0.015 mg/kg IV",            calc:`${(wt*.015).toFixed(3)} mg`,note:"Max 1 mg/dose. 5× more potent than morphine." },
+    { name:"Fentanyl IV/IN",dose:"1–2 mcg/kg IV; 2 mcg/kg IN",calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mcg IV · ${Math.min(wt*2,100).toFixed(0)} mcg IN`, ml:`IV: ${(wt*1/50).toFixed(1)}–${(wt*2/50).toFixed(1)} mL (50 mcg/mL)  |  IN: ${(wt*2/500).toFixed(2)} mL (500 mcg/mL atomizer)`,note:"IN uses 500 mcg/mL via atomizer — max 1 mL/nostril. IV onset 1–2 min." },
+    { name:"Morphine",      dose:"0.1 mg/kg IV/IM",           calc:`${(wt*.1).toFixed(2)} mg`, ml:`${(wt*.1).toFixed(2)} mL (1 mg/mL)  |  ${(wt*.1/2).toFixed(2)} mL (2 mg/mL)`,note:"Max 4 mg/dose IV. Slower onset; histamine release risk." },
+    { name:"Hydromorphone", dose:"0.015 mg/kg IV",            calc:`${(wt*.015).toFixed(3)} mg`, ml:`${(wt*.015/0.2).toFixed(2)} mL (0.2 mg/mL)`,note:"Max 1 mg/dose. 5× more potent than morphine. Titrate carefully." },
   ]:[];
   const nonOpioids=wt>0?[
-    { name:"Ketorolac",          dose:"0.5 mg/kg IV",      calc:`${Math.min(wt*.5,15).toFixed(1)} mg`,    note:"Max 15 mg IV peds. Avoid bleeding risk or AKI." },
-    { name:"Acetaminophen IV",   dose:"15 mg/kg IV q6h",   calc:`${Math.min(wt*15,1000).toFixed(0)} mg q6h`,note:"Max 1 g/dose; <75 mg/kg/day." },
+    { name:"Ketorolac",          dose:"0.5 mg/kg IV",      calc:`${Math.min(wt*.5,15).toFixed(1)} mg`, ml:`${(Math.min(wt*.5,15)/15).toFixed(1)} mL (15 mg/mL)  |  ${(Math.min(wt*.5,15)/30).toFixed(1)} mL (30 mg/mL)`,note:"Max 15 mg IV peds. Avoid bleeding risk or AKI." },
+    { name:"Acetaminophen IV",   dose:"15 mg/kg IV q6h",   calc:`${Math.min(wt*15,1000).toFixed(0)} mg q6h`, ml:`${(Math.min(wt*15,1000)/10).toFixed(0)} mL (10 mg/mL)`,note:"Max 1 g/dose; <75 mg/kg/day. Pre-mixed 10 mg/mL bags." },
     { name:"Ibuprofen",          dose:"10 mg/kg PO q6–8h", calc:`${Math.min(wt*10,800).toFixed(0)} mg`,   note:"Max 800 mg/dose. Avoid <6m, AKI, GI bleeding." },
     { name:"Acetaminophen PO/PR",dose:"15 mg/kg q4–6h",    calc:`${Math.min(wt*15,1000).toFixed(0)} mg`,  note:"Max 1 g/dose; max 5 doses/day." },
   ]:[];
@@ -954,20 +976,35 @@ function ResusTab({ globalWt, setGlobalWt }) {
             <DrugSection title="MRSA Coverage" color={T.orange} drugs={mrsaAbx} wtCalc />
           </Card>
         </>:nWt)}
-        {abxPill==="po"&&<Card color={T.coral} title="Oral Discharge Antibiotics — Nelson's / AAP Red Book 2024">
+        {abxPill==="po"&&<Card color={T.coral} title="Oral Discharge Antibiotics — Tap concentration for mL dose">
           {DISCHARGE_ABX.map((d,i)=>{
             const pd=wt>0?calcDose(wt,d.mpkDose,d.max):null;
+            const sel=concSel[i];
+            const mLdose=sel&&sel.m&&pd?(pd/sel.m).toFixed(1):null;
             return(
-              <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"8px 0",
-                borderBottom:i<DISCHARGE_ABX.length-1?"1px solid rgba(30,70,130,0.22)":"none" }}>
-                <div style={{ flex:1,minWidth:0 }}>
-                  <div style={{ fontFamily:S.sans,fontWeight:700,fontSize:11.5,color:T.txt2 }}>{d.name}</div>
-                  <div style={{ fontFamily:S.mono,fontSize:8.5,color:T.txt4,marginTop:1 }}>{d.dose}</div>
-                  <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:2,lineHeight:1.5 }}>{d.note}</div>
+              <div key={i} style={{ padding:"9px 0",borderBottom:i<DISCHARGE_ABX.length-1?"1px solid rgba(30,70,130,0.22)":"none" }}>
+                <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <div style={{ fontFamily:S.sans,fontWeight:700,fontSize:11.5,color:T.txt2 }}>{d.name}</div>
+                    <div style={{ fontFamily:S.mono,fontSize:8.5,color:T.txt4,marginTop:1 }}>{d.dose}</div>
+                    <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginTop:2,lineHeight:1.5 }}>{d.note}</div>
+                  </div>
+                  <div style={{ textAlign:"right",flexShrink:0,minWidth:80 }}>
+                    {pd&&<div style={{ fontFamily:S.mono,fontSize:13,fontWeight:700,color:T.coral }}>{pd} mg</div>}
+                    {pd&&<div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{d.freq}</div>}
+                    {mLdose&&<div style={{ fontFamily:S.mono,fontSize:12,fontWeight:700,color:T.mint,marginTop:2 }}>{mLdose} mL</div>}
+                    {sel&&!sel.m&&<div style={{ fontFamily:S.mono,fontSize:9,color:T.txt3,marginTop:2 }}>Solid dosage</div>}
+                  </div>
                 </div>
-                {pd&&<div style={{ textAlign:"right",flexShrink:0,minWidth:70 }}>
-                  <div style={{ fontFamily:S.mono,fontSize:13,fontWeight:700,color:T.coral }}>{pd} mg</div>
-                  <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{d.freq}</div>
+                {d.concs&&d.concs.length>0&&<div style={{ display:"flex",gap:4,flexWrap:"wrap",marginTop:6 }}>
+                  {d.concs.map(c=>(
+                    <button key={c.l} onClick={()=>setConcSel(p=>({...p,[i]:p[i]?.l===c.l?null:c}))}
+                      style={{ padding:"3px 9px",borderRadius:5,cursor:"pointer",
+                        fontFamily:S.mono,fontSize:8,
+                        border:`1px solid ${concSel[i]?.l===c.l?T.mint+"66":"rgba(30,70,130,0.3)"}`,
+                        background:concSel[i]?.l===c.l?`${T.mint}15`:"transparent",
+                        color:concSel[i]?.l===c.l?T.mint:T.txt3 }}>{c.l}</button>
+                  ))}
                 </div>}
               </div>
             );
@@ -1011,7 +1048,6 @@ function ResusTab({ globalWt, setGlobalWt }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // SCORING
 // ═══════════════════════════════════════════════════════════════════════════
 const WESTLEY=[
@@ -1210,7 +1246,6 @@ function ScoringTab({ globalWt }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // CLINICAL TOOLS
 // ═══════════════════════════════════════════════════════════════════════════
 const TOOLS_TABS = [
@@ -1476,15 +1511,12 @@ function ToolsTab({ globalWt }) {
 }
 
 
-// ═══════════════════════════════════════════════════════════════════════════
 // MAIN EXPORT
 // ═══════════════════════════════════════════════════════════════════════════
 export default function PediatricHub({ embedded = false }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("vitals");
   const [globalWt, setGlobalWt] = useState("");
-
-  useEffect(() => { injectPedsStyles(); }, []);
 
   return (
     <div style={{ fontFamily:S.sans,background:embedded?"transparent":T.bg,

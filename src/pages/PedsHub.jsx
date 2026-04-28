@@ -5,10 +5,10 @@
 // Route: /PediatricHub
 // Constraints: no form/localStorage, straight quotes, single react import
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-(() => {
+function injectPedsStyles() {
   if (document.getElementById("peds-fonts")) return;
   const l = document.createElement("link");
   l.id = "peds-fonts"; l.rel = "stylesheet";
@@ -24,7 +24,7 @@ import { useNavigate } from "react-router-dom";
       background-clip:text;animation:shimmer-peds 4s linear infinite;}
   `;
   document.head.appendChild(s);
-})();
+}
 
 const T = {
   bg:"#050d1a",       // dark navy — matches platform base
@@ -1517,6 +1517,8 @@ export default function PediatricHub({ embedded = false }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("vitals");
   const [globalWt, setGlobalWt] = useState("");
+
+  useEffect(() => { injectPedsStyles(); }, []);
 
   return (
     <div style={{ fontFamily:S.sans,background:embedded?"transparent":T.bg,

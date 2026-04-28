@@ -1,6 +1,6 @@
 // QuickNoteExtras.jsx
-// SDM block, Provider Attestation, Nursing Handoff, Prior Visits panel, MDM Plan Entry
-// Exported: SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry
+// SDM block, Provider Attestation, Nursing Handoff, Prior Visits panel
+// Exported: SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel
 
 import React, { useState } from "react";
 

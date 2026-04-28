@@ -18,7 +18,7 @@ import { ActionBar } from "./QuickNoteActionBar";
 import { TimelineCard } from "./QuickNoteTimeline";
 import { SepsisBanner } from "./QuickNoteSepsis";
 import { ProcedureNoteModal } from "./QuickNoteProcedure";
-import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel } from "./QuickNoteExtras";
+import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
@@ -27,18 +27,6 @@ import {
 } from "./QuickNotePrompts";
 
 injectQNStyles();
-
-// ─── MODULE-LEVEL CONSTANTS ───────────────────────────────────────────────────
-const DEFAULT_EVENTS = [
-  { id:"triage",       label:"Triage",                   time:"", notes:"" },
-  { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },
-  { id:"labs_ordered", label:"Labs Ordered",              time:"", notes:"" },
-  { id:"labs_result",  label:"Labs Resulted",             time:"", notes:"" },
-  { id:"img_ordered",  label:"Imaging Ordered",           time:"", notes:"" },
-  { id:"img_result",   label:"Imaging Resulted",          time:"", notes:"" },
-  { id:"recheck",      label:"Recheck Vitals / Reassess", time:"", notes:"" },
-  { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
-];
 
 // ─── CRITICAL VALUE DETECTOR (sync, runs before Phase 2 generate) ─────────────
 function detectCriticalValues(labsText) {
@@ -101,6 +89,16 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [consults, setConsults] = useState([]);
 
   // Timeline
+  const DEFAULT_EVENTS = [
+    { id:"triage",       label:"Triage",                   time:"", notes:"" },
+    { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },
+    { id:"labs_ordered", label:"Labs Ordered",              time:"", notes:"" },
+    { id:"labs_result",  label:"Labs Resulted",             time:"", notes:"" },
+    { id:"img_ordered",  label:"Imaging Ordered",           time:"", notes:"" },
+    { id:"img_result",   label:"Imaging Resulted",          time:"", notes:"" },
+    { id:"recheck",      label:"Recheck Vitals / Reassess", time:"", notes:"" },
+    { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
+  ];
   const [timestamps, setTimestamps] = useState(DEFAULT_EVENTS);
 
   // EKG AI interpret state
@@ -126,6 +124,10 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [showAttestation,   setShowAttestation]   = useState(false);
   const [showNursingHandoff,setShowNursingHandoff]= useState(false);
   const [rerunAddendumBusy, setRerunAddendumBusy] = useState(false);
+
+  // Physician plan entry (shown below MDM, included in copy)
+  const [treatmentPlan, setTreatmentPlan] = useState("");
+  const [actionPlan,    setActionPlan]    = useState("");
 
   // Provider info from UserPreferences (populated on mount)
   const [providerInfo, setProviderInfo] = useState({ name:"", credentials:"", facility:"" });
@@ -397,7 +399,17 @@ Write a single sign-out paragraph in SBAR format: Situation (CC and current stat
       });
       const text = res?.signout_text?.trim();
       if (text) {
-        navigator.clipboard.writeText(text).catch(() => null);
+        // Push to ShiftSignOut entity
+        await base44.entities.ShiftSignOut.create({
+          source:"QuickNote",
+          patient_identifier: demo?.mrn||"",
+          cc: cc||"",
+          working_diagnosis: mdmResult.working_diagnosis||"",
+          mdm_level: mdmResult.mdm_level||"",
+          signout_text: text,
+          status: "pending",
+          created_date: new Date().toISOString(),
+        }).catch(() => null);
         setSignOutDone(true);
         setTimeout(() => setSignOutDone(false), 4000);
       }
@@ -508,11 +520,11 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
   // Shift+3 — MDM only
   const copyMDMOnly = useCallback(() => {
     if (!mdmResult) return;
-    const text = buildMDMBlock(mdmResult);
+    const text = buildMDMBlock(mdmResult, { treatmentPlan, actionPlan });
     navigator.clipboard.writeText(stripLabels(text)).then(() => {
       setCopiedMDMOnly(true); setTimeout(() => setCopiedMDMOnly(false), 2500);
     });
-  }, [mdmResult, pasteReady]);
+  }, [mdmResult, pasteReady, treatmentPlan, actionPlan]);
 
   // Shift+4 — discharge instructions only
   const copyDischargeOnly = useCallback(() => {
@@ -597,7 +609,7 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
   }, [quickDDxBusy, cc, hpi, vitals, ros, exam]);
 
   const searchICD10 = useCallback(async (diagnosisText) => {
-    if (!diagnosisText?.trim() || icdSearching) return;
+    if (!diagnosisText || icdSearching) return;
     setIcdSearching(true); setIcdError(null); setIcdSuggestions([]);
     try {
       const schema = {
@@ -616,8 +628,7 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
   }, [icdSearching, cc, mdmResult, dispResult]);
 
   const generateInterventions = useCallback(async () => {
-    if (intLoading) return;
-    setIntGenerated(false);
+    if (intLoading || intGenerated) return;
     setIntLoading(true);
     try {
       const schema = {
@@ -692,14 +703,12 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
       parsedMeds, parsedAllergies, mdmResult, dispResult };
     setUndoData(snap);
     [setCC,setVitals,setHpi,setRos,setExam,setLabs,setImaging,setEkg,setNewVitals].forEach(fn => fn(""));
-    setTimestamps(DEFAULT_EVENTS.map(e => ({ ...e, time:"", notes:"" })));
     setParsedMeds([]); setParsedAllergies([]);
     setMdmResult(null); setDispResult(null);
-    setHpiSummary(null); setHpiMode("original");
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
-    setIcdSuggestions([]); setIcdSelected([]); setInterventions([]); setIntGenerated(false);
     setQuickDDxDismissed(false); setIsBounceback(false);
+    setTreatmentPlan(""); setActionPlan("");
     setShowUndo(true);
     const t = setTimeout(() => { setShowUndo(false); setUndoData(null); }, 6000);
     setUndoTimer(t);
@@ -993,7 +1002,7 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
                   letterSpacing:.4, transition:"all .15s" }}>
                 {workupRationaleBusy ? "● …" : "✦ Workup Rationale"}
               </button>
-              <button onClick={() => { navigator.clipboard.writeText(buildMDMBlock(mdmResult)).then(() => { setCopiedMDMFull(true); setTimeout(() => setCopiedMDMFull(false), 2000); }); }}
+              <button onClick={() => { navigator.clipboard.writeText(buildMDMBlock(mdmResult, { treatmentPlan, actionPlan })).then(() => { setCopiedMDMFull(true); setTimeout(() => setCopiedMDMFull(false), 2000); }); }}
                 style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
                   fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
                   border:`1px solid ${copiedMDMFull?"rgba(61,255,160,.5)":"rgba(0,229,192,.35)"}`,
@@ -1020,6 +1029,12 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
 
             <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
               onNarrativeEdit={text => setMdmResult(prev => ({ ...prev, mdm_narrative:text }))} />
+
+            {/* Physician plan entry — below AI recs, included in copy */}
+            <MDMPlanEntry
+              treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan}
+              actionPlan={actionPlan}       setActionPlan={setActionPlan}
+            />
 
             {/* MDM Level Explainer */}
             {mdmResult.mdm_level && (

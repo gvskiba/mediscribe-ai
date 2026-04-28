@@ -28,6 +28,18 @@ import {
 
 injectQNStyles();
 
+// ─── MODULE-LEVEL CONSTANTS ───────────────────────────────────────────────────
+const DEFAULT_EVENTS = [
+  { id:"triage",       label:"Triage",                   time:"", notes:"" },
+  { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },
+  { id:"labs_ordered", label:"Labs Ordered",              time:"", notes:"" },
+  { id:"labs_result",  label:"Labs Resulted",             time:"", notes:"" },
+  { id:"img_ordered",  label:"Imaging Ordered",           time:"", notes:"" },
+  { id:"img_result",   label:"Imaging Resulted",          time:"", notes:"" },
+  { id:"recheck",      label:"Recheck Vitals / Reassess", time:"", notes:"" },
+  { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
+];
+
 // ─── CRITICAL VALUE DETECTOR (sync, runs before Phase 2 generate) ─────────────
 function detectCriticalValues(labsText) {
   if (!labsText) return [];
@@ -89,16 +101,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [consults, setConsults] = useState([]);
 
   // Timeline
-  const DEFAULT_EVENTS = [
-    { id:"triage",       label:"Triage",                   time:"", notes:"" },
-    { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },
-    { id:"labs_ordered", label:"Labs Ordered",              time:"", notes:"" },
-    { id:"labs_result",  label:"Labs Resulted",             time:"", notes:"" },
-    { id:"img_ordered",  label:"Imaging Ordered",           time:"", notes:"" },
-    { id:"img_result",   label:"Imaging Resulted",          time:"", notes:"" },
-    { id:"recheck",      label:"Recheck Vitals / Reassess", time:"", notes:"" },
-    { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
-  ];
   const [timestamps, setTimestamps] = useState(DEFAULT_EVENTS);
 
   // EKG AI interpret state
@@ -395,17 +397,7 @@ Write a single sign-out paragraph in SBAR format: Situation (CC and current stat
       });
       const text = res?.signout_text?.trim();
       if (text) {
-        // Push to ShiftSignOut entity
-        await base44.entities.ShiftSignOut.create({
-          source:"QuickNote",
-          patient_identifier: demo?.mrn||"",
-          cc: cc||"",
-          working_diagnosis: mdmResult.working_diagnosis||"",
-          mdm_level: mdmResult.mdm_level||"",
-          signout_text: text,
-          status: "pending",
-          created_date: new Date().toISOString(),
-        }).catch(() => null);
+        navigator.clipboard.writeText(text).catch(() => null);
         setSignOutDone(true);
         setTimeout(() => setSignOutDone(false), 4000);
       }
@@ -699,10 +691,13 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
       parsedMeds, parsedAllergies, mdmResult, dispResult };
     setUndoData(snap);
     [setCC,setVitals,setHpi,setRos,setExam,setLabs,setImaging,setEkg,setNewVitals].forEach(fn => fn(""));
+    setTimestamps(DEFAULT_EVENTS.map(e => ({ ...e, time:"", notes:"" })));
     setParsedMeds([]); setParsedAllergies([]);
     setMdmResult(null); setDispResult(null);
+    setHpiSummary(null); setHpiMode("original");
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
+    setIcdSuggestions([]); setIcdSelected([]); setInterventions([]); setIntGenerated(false);
     setQuickDDxDismissed(false); setIsBounceback(false);
     setShowUndo(true);
     const t = setTimeout(() => { setShowUndo(false); setUndoData(null); }, 6000);

@@ -16,6 +16,10 @@ import { Phase1Panel } from "./QuickNotePhase1Panel";
 import { Phase2Panel } from "./QuickNotePhase2Panel";
 import { ActionBar } from "./QuickNoteActionBar";
 import { TimelineCard } from "./QuickNoteTimeline";
+import { SepsisBanner } from "./QuickNoteSepsis";
+import { ProcedureNoteModal } from "./QuickNoteProcedure";
+import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel } from "./QuickNoteExtras";
+import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
@@ -23,18 +27,6 @@ import {
 } from "./QuickNotePrompts";
 
 injectQNStyles();
-
-// ─── MODULE-LEVEL CONSTANTS ───────────────────────────────────────────────────
-const DEFAULT_EVENTS = [
-  { id:"triage",       label:"Triage",                   time:"", notes:"" },
-  { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },
-  { id:"labs_ordered", label:"Labs Ordered",              time:"", notes:"" },
-  { id:"labs_result",  label:"Labs Resulted",             time:"", notes:"" },
-  { id:"img_ordered",  label:"Imaging Ordered",           time:"", notes:"" },
-  { id:"img_result",   label:"Imaging Resulted",          time:"", notes:"" },
-  { id:"recheck",      label:"Recheck Vitals / Reassess", time:"", notes:"" },
-  { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
-];
 
 // ─── CRITICAL VALUE DETECTOR (sync, runs before Phase 2 generate) ─────────────
 function detectCriticalValues(labsText) {
@@ -97,6 +89,16 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [consults, setConsults] = useState([]);
 
   // Timeline
+  const DEFAULT_EVENTS = [
+    { id:"triage",       label:"Triage",                   time:"", notes:"" },
+    { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },
+    { id:"labs_ordered", label:"Labs Ordered",              time:"", notes:"" },
+    { id:"labs_result",  label:"Labs Resulted",             time:"", notes:"" },
+    { id:"img_ordered",  label:"Imaging Ordered",           time:"", notes:"" },
+    { id:"img_result",   label:"Imaging Resulted",          time:"", notes:"" },
+    { id:"recheck",      label:"Recheck Vitals / Reassess", time:"", notes:"" },
+    { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
+  ];
   const [timestamps, setTimestamps] = useState(DEFAULT_EVENTS);
 
   // EKG AI interpret state
@@ -109,6 +111,22 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
 
   // Auto-ROS
   const [autoRosBusy, setAutoRosBusy] = useState(false);
+
+  // New features state
+  const [patientPregnant,   setPatientPregnant]   = useState("Unknown");
+  const [patientWeight,     setPatientWeight]     = useState("");
+  const [showProcedureModal,setShowProcedureModal]= useState(false);
+  const [priorVisits,       setPriorVisits]       = useState(null);
+  const [priorVisitsLoading,setPriorVisitsLoading]= useState(false);
+  const [signOutBusy,       setSignOutBusy]       = useState(false);
+  const [signOutDone,       setSignOutDone]       = useState(false);
+  const [showSDM,           setShowSDM]           = useState(false);
+  const [showAttestation,   setShowAttestation]   = useState(false);
+  const [showNursingHandoff,setShowNursingHandoff]= useState(false);
+  const [rerunAddendumBusy, setRerunAddendumBusy] = useState(false);
+
+  // Provider info from UserPreferences (populated on mount)
+  const [providerInfo, setProviderInfo] = useState({ name:"", credentials:"", facility:"" });
 
   // Slots
   const EMPTY_SLOT = () => ({
@@ -230,8 +248,13 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       const bouncebackContext = isBounceback
         ? `\nBOUNCEBACK ALERT: Patient is returning within 72 hours${bouncebackDate ? ` (prior visit: ${bouncebackDate})` : ""}. Document in MDM: prior visit diagnosis, what has changed, and clinical justification for current disposition differing from prior visit.`
         : "";
+      const patientContext = [
+        patientPregnant === "Yes" ? "\nPREGNANCY: Patient is PREGNANT — consider pregnancy-related diagnoses, avoid teratogenic medications, adjust radiation decisions." : "",
+        patientPregnant === "Unknown" ? "\nPREGNANCY STATUS: Unknown — consider ordering pregnancy test if clinically relevant." : "",
+        patientWeight ? `\nPATIENT WEIGHT: ${patientWeight}kg — use for weight-based medication dosing.` : "",
+      ].join("");
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis, parsedMeds, parsedAllergies, encounterType) + bouncebackContext,
+        prompt: buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis, parsedMeds, parsedAllergies, encounterType) + bouncebackContext + patientContext,
         response_json_schema: MDM_SCHEMA,
       });
       setMdmResult(res); setP2Open(true);
@@ -331,11 +354,95 @@ Only include body systems that have at least one symptom explicitly mentioned in
     finally { setAutoRosBusy(false); }
   }, [hpi, autoRosBusy]);
 
-  // ── Copy callbacks ─────────────────────────────────────────────────────────
-  const stripLabels = useCallback((text) => {
+  // ── Load prior visits ──────────────────────────────────────────────────────
+  const loadPriorVisits = useCallback(async () => {
+    if (priorVisitsLoading) return;
+    setPriorVisitsLoading(true);
+    try {
+      const filter = demo?.mrn
+        ? { patient_identifier: demo.mrn, sort:"-encounter_date", limit:5 }
+        : { sort:"-encounter_date", limit:5 };
+      const results = await base44.entities.ClinicalNote.list(filter).catch(() => []);
+      const visits = (results||[])
+        .filter(r => r.status === "finalized" && r.source === "QuickNote")
+        .slice(0, 3);
+      setPriorVisits(visits);
+    } catch { setPriorVisits([]); }
+    finally { setPriorVisitsLoading(false); }
+  }, [priorVisitsLoading, demo]);
+
+  // ── Generate sign-out → ShiftSignOut ──────────────────────────────────────
+  const generateSignOut = useCallback(async () => {
+    if (!mdmResult || signOutBusy) return;
+    setSignOutBusy(true);
+    try {
+      const schema = {
+        type:"object", required:["signout_text"],
+        properties:{ signout_text:{ type:"string" } },
+      };
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an ED physician generating a concise sign-out note for the oncoming provider.
+
+PATIENT: ${[demo?.age, demo?.sex].filter(Boolean).join("yo ")||"Adult"}
+CC: ${cc}
+WORKING DIAGNOSIS: ${mdmResult.working_diagnosis||"TBD"}
+MDM LEVEL: ${mdmResult.mdm_level||""}
+PENDING: ${labs?"Labs: pending":""} ${imaging?"Imaging: pending":""}
+DISPOSITION: ${dispResult?.disposition||"Pending"}
+
+Write a single sign-out paragraph in SBAR format: Situation (CC and current status), Background (key hx/meds/allergies if relevant), Assessment (working dx and MDM level), Recommendation (what to do if patient deteriorates or if pending results return abnormal). 2-4 sentences total. Plain text, no headers. Return JSON: { "signout_text": "..." }`,
+        response_json_schema: schema,
+      });
+      const text = res?.signout_text?.trim();
+      if (text) {
+        // Push to ShiftSignOut entity
+        await base44.entities.ShiftSignOut.create({
+          source:"QuickNote",
+          patient_identifier: demo?.mrn||"",
+          cc: cc||"",
+          working_diagnosis: mdmResult.working_diagnosis||"",
+          mdm_level: mdmResult.mdm_level||"",
+          signout_text: text,
+          status: "pending",
+          created_date: new Date().toISOString(),
+        }).catch(() => null);
+        setSignOutDone(true);
+        setTimeout(() => setSignOutDone(false), 4000);
+      }
+    } catch (e) { console.error("Sign-out failed:", e); }
+    finally { setSignOutBusy(false); }
+  }, [mdmResult, dispResult, cc, demo, labs, imaging, signOutBusy]);
+
+  // ── Re-run MDM with addendum context ──────────────────────────────────────
+  const runMDMAddendum = useCallback(async () => {
+    if (!mdmResult || rerunAddendumBusy) return;
+    setRerunAddendumBusy(true);
+    try {
+      const addendumPrompt = `\n\nADDENDUM — ADDITIONAL CLINICAL CONTEXT:
+Previous MDM: ${mdmResult.working_diagnosis} (${mdmResult.mdm_level})
+New information since prior assessment:
+- Updated HPI: ${hpi}
+- Labs resulted: ${labs||"pending"}
+- Imaging resulted: ${imaging||"pending"}
+- EKG: ${ekg||"not performed"}
+- Recheck vitals: ${newVitals||"not yet"}
+Revise the MDM if warranted. Preserve prior working diagnosis unless new data clearly refutes it.`;
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis, parsedMeds, parsedAllergies, encounterType) + addendumPrompt,
+        response_json_schema: MDM_SCHEMA,
+      });
+      setMdmResult(res);
+    } catch (e) { console.error("Addendum re-run failed:", e); }
+    finally { setRerunAddendumBusy(false); }
+  }, [mdmResult, cc, vitals, hpi, ros, exam, labs, imaging, ekg, newVitals,
+      vhAnalysis, parsedMeds, parsedAllergies, encounterType, rerunAddendumBusy]);
+
+  // Smart text expansions (can be extended by user preferences in future)
+  const smartExpansions = DEFAULT_EXPANSIONS;
+  const stripLabels = (text) => {
     if (pasteReady !== "prose") return text;
     return text.replace(/^[A-Z][A-Z /&]+:\s*/gm, "").trim();
-  }, [pasteReady]);
+  };
 
   const copyNote = useCallback(() => {
     const text = buildFullNote(
@@ -589,24 +696,19 @@ Only include body systems that have at least one symptom explicitly mentioned in
 
   const handleNewEncounter = useCallback(() => {
     const snap = { cc, vitals, hpi, ros, exam, labs, imaging, ekg, newVitals,
-      parsedMeds, parsedAllergies, mdmResult, dispResult,
-      hpiSummary, hpiMode, isBounceback, bouncebackDate, encounterType };
+      parsedMeds, parsedAllergies, mdmResult, dispResult };
     setUndoData(snap);
     [setCC,setVitals,setHpi,setRos,setExam,setLabs,setImaging,setEkg,setNewVitals].forEach(fn => fn(""));
-    setTimestamps(DEFAULT_EVENTS.map(e => ({ ...e, time:"", notes:"" })));
     setParsedMeds([]); setParsedAllergies([]);
     setMdmResult(null); setDispResult(null);
-    setHpiSummary(null); setHpiMode("original");
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
-    setQuickDDxDismissed(false); setIsBounceback(false); setBouncebackDate("");
-    setIcdSuggestions([]); setIcdSelected([]); setInterventions([]); setIntGenerated(false);
+    setQuickDDxDismissed(false); setIsBounceback(false);
     setShowUndo(true);
     const t = setTimeout(() => { setShowUndo(false); setUndoData(null); }, 6000);
     setUndoTimer(t);
   }, [cc, vitals, hpi, ros, exam, labs, imaging, ekg, newVitals,
-      parsedMeds, parsedAllergies, mdmResult, dispResult,
-      hpiSummary, hpiMode, isBounceback, bouncebackDate, encounterType]);
+      parsedMeds, parsedAllergies, mdmResult, dispResult]);
 
   const handleUndo = useCallback(() => {
     if (undoData) {
@@ -616,9 +718,6 @@ Only include body systems that have at least one symptom explicitly mentioned in
       setEkg(undoData.ekg||""); setNewVitals(undoData.newVitals||"");
       setParsedMeds(undoData.parsedMeds||[]); setParsedAllergies(undoData.parsedAllergies||[]);
       setMdmResult(undoData.mdmResult||null); setDispResult(undoData.dispResult||null);
-      setHpiSummary(undoData.hpiSummary||null); setHpiMode(undoData.hpiMode||"original");
-      setIsBounceback(undoData.isBounceback||false); setBouncebackDate(undoData.bouncebackDate||"");
-      if (undoData.encounterType) setEncounterType(undoData.encounterType);
       if (undoData.mdmResult) setP2Open(true);
     }
     clearTimeout(undoTimer); setShowUndo(false); setUndoData(null);
@@ -701,6 +800,7 @@ Only include body systems that have at least one symptom explicitly mentioned in
         }
         if (r.format_mode) setFormatMode(r.format_mode);
         if (r.default_encounter_type) setEncounterType(r.default_encounter_type);
+        setProviderInfo({ name:r.provider_name||"", credentials:r.credentials||"", facility:r.facility||"" });
       }
     }).catch(() => null);
     base44.entities.ClinicalNote.list({ sort:"-created_date", limit:10 }).then(results => {
@@ -832,6 +932,17 @@ Only include body systems that have at least one symptom explicitly mentioned in
         <VhAnalysisCard vhAnalysis={vhAnalysis&&!vhAnalysisDismissed?vhAnalysis:null} onDismiss={() => setVhAnalysisDismissed(true)} />
         {addendumMode && <AddendumBanner addendumRef={addendumRef} />}
 
+        {/* Prior Visits */}
+        <PriorVisitsPanel
+          visits={priorVisits} loading={priorVisitsLoading}
+          onLoad={loadPriorVisits}
+        />
+
+        {/* Sepsis/SIRS auto-check — appears once vitals have content */}
+        {(vitals.trim().length > 10 || labs.trim().length > 5) && (
+          <SepsisBanner vitalsText={vitals} labsText={labs} />
+        )}
+
         <Phase1Panel
           cc={cc} setCC={setCC} vitals={vitals} setVitals={setVitals}
           hpi={hpi} setHpi={setHpi} ros={ros} setRos={setRos} exam={exam} setExam={setExam}
@@ -852,6 +963,9 @@ Only include body systems that have at least one symptom explicitly mentioned in
           isBounceback={isBounceback} setIsBounceback={setIsBounceback}
           bouncebackDate={bouncebackDate} setBouncebackDate={setBouncebackDate}
           autoRosFromHpi={autoRosFromHpi} autoRosBusy={autoRosBusy}
+          patientPregnant={patientPregnant} setPatientPregnant={setPatientPregnant}
+          patientWeight={patientWeight} setPatientWeight={setPatientWeight}
+          smartExpansions={smartExpansions}
         />
 
         {/* MDM Result */}
@@ -896,6 +1010,16 @@ Only include body systems that have at least one symptom explicitly mentioned in
                   fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
                   border:"1px solid rgba(245,200,66,.35)", background:"rgba(245,200,66,.07)",
                   color:"var(--qn-gold)", transition:"all .15s" }}>↩ Re-run MDM</button>
+              <button onClick={runMDMAddendum} disabled={rerunAddendumBusy}
+                title="Re-run MDM incorporating new labs/imaging/vitals context"
+                style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                  border:`1px solid ${rerunAddendumBusy ? "rgba(42,79,122,.3)" : "rgba(155,109,255,.4)"}`,
+                  background:rerunAddendumBusy ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.07)",
+                  color:rerunAddendumBusy ? "var(--qn-txt4)" : "var(--qn-purple)",
+                  transition:"all .15s" }}>
+                {rerunAddendumBusy ? "● …" : "+ Addendum Re-run"}
+              </button>
             </div>
 
             <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
@@ -1033,6 +1157,72 @@ Only include body systems that have at least one symptom explicitly mentioned in
               mdm_narrative:prev?.mdm_narrative ? prev.mdm_narrative+"\n\n"+text : text }))} />
         )}
 
+        {/* SDM + Attestation + Nursing Handoff — shown when disposition result exists */}
+        {dispResult && (
+          <div style={{ marginBottom:14 }}>
+            {/* Toggle buttons */}
+            <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }} className="no-print">
+              <button onClick={() => setShowSDM(s => !s)}
+                style={{ padding:"5px 12px", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                  border:`1px solid ${showSDM ? "rgba(59,158,255,.5)" : "rgba(42,79,122,.4)"}`,
+                  background:showSDM ? "rgba(59,158,255,.1)" : "transparent",
+                  color:showSDM ? "var(--qn-blue)" : "var(--qn-txt4)",
+                  letterSpacing:.5, transition:"all .15s" }}>
+                {showSDM ? "▲" : "▼"} Shared Decision Making
+              </button>
+              <button onClick={() => setShowAttestation(s => !s)}
+                style={{ padding:"5px 12px", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                  border:`1px solid ${showAttestation ? "rgba(155,109,255,.5)" : "rgba(42,79,122,.4)"}`,
+                  background:showAttestation ? "rgba(155,109,255,.1)" : "transparent",
+                  color:showAttestation ? "var(--qn-purple)" : "var(--qn-txt4)",
+                  letterSpacing:.5, transition:"all .15s" }}>
+                {showAttestation ? "▲" : "▼"} Physician Attestation
+              </button>
+              <button onClick={() => setShowNursingHandoff(s => !s)}
+                style={{ padding:"5px 12px", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                  border:`1px solid ${showNursingHandoff ? "rgba(61,255,160,.5)" : "rgba(42,79,122,.4)"}`,
+                  background:showNursingHandoff ? "rgba(61,255,160,.1)" : "transparent",
+                  color:showNursingHandoff ? "var(--qn-green)" : "var(--qn-txt4)",
+                  letterSpacing:.5, transition:"all .15s" }}>
+                {showNursingHandoff ? "▲" : "▼"} Nursing Handoff
+              </button>
+              <button onClick={generateSignOut} disabled={signOutBusy}
+                style={{ padding:"5px 12px", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                  border:`1px solid ${signOutDone ? "rgba(61,255,160,.5)" : signOutBusy ? "rgba(42,79,122,.3)" : "rgba(245,200,66,.4)"}`,
+                  background:signOutDone ? "rgba(61,255,160,.1)" : signOutBusy ? "rgba(14,37,68,.4)" : "rgba(245,200,66,.07)",
+                  color:signOutDone ? "var(--qn-green)" : signOutBusy ? "var(--qn-txt4)" : "var(--qn-gold)",
+                  letterSpacing:.5, transition:"all .15s" }}>
+                {signOutDone ? "✓ Sent to Sign-Out" : signOutBusy ? "● Generating…" : "→ Generate Sign-Out"}
+              </button>
+            </div>
+            {showSDM && (
+              <SDMBlock
+                disposition={dispResult.disposition}
+                patientName={[demo?.firstName, demo?.lastName].filter(Boolean).join(" ")}
+              />
+            )}
+            {showAttestation && (
+              <AttestationBlock
+                providerName={providerInfo.name}
+                credentials={providerInfo.credentials}
+                facility={providerInfo.facility}
+                mdmLevel={mdmResult?.mdm_level}
+              />
+            )}
+            {showNursingHandoff && (
+              <NursingHandoff
+                patientName={[demo?.firstName, demo?.lastName].filter(Boolean).join(" ")}
+                diagnosis={dispResult.final_diagnosis||mdmResult?.working_diagnosis||""}
+                disposition={dispResult.disposition}
+              />
+            )}
+          </div>
+        )}
+
         {dispResult && (
           <DiagnosisCodingCard
             finalDiagnosis={dispResult.final_diagnosis||mdmResult?.working_diagnosis||""}
@@ -1071,10 +1261,17 @@ Only include body systems that have at least one symptom explicitly mentioned in
             copyMDMOnly={copyMDMOnly} copyDischargeOnly={copyDischargeOnly}
             copyNote={copyNote} saveNote={saveNote} sendToNPI={sendToNPI}
             onNewEncounter={handleNewEncounter}
+            onProcedureNote={() => setShowProcedureModal(true)}
           />
         )}
 
         {showKbHelp && <KbHelpModal onClose={() => setShowKbHelp(false)} />}
+        {showProcedureModal && (
+          <ProcedureNoteModal
+            onInsert={() => {}}
+            onClose={() => setShowProcedureModal(false)}
+          />
+        )}
 
         {!embedded && (
           <div style={{ textAlign:"center", padding:"24px 0 8px",

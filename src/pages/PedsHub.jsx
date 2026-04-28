@@ -5,10 +5,10 @@
 // Route: /PediatricHub
 // Constraints: no form/localStorage, straight quotes, single react import
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-function injectPedsStyles() {
+(() => {
   if (document.getElementById("peds-fonts")) return;
   const l = document.createElement("link");
   l.id = "peds-fonts"; l.rel = "stylesheet";
@@ -24,7 +24,7 @@ function injectPedsStyles() {
       background-clip:text;animation:shimmer-peds 4s linear infinite;}
   `;
   document.head.appendChild(s);
-}
+})();
 
 const T = {
   bg:"#030d0f",txt:"#e8fff8",txt2:"#9ed4c0",txt3:"#5aaa90",txt4:"#2d7060",
@@ -728,6 +728,22 @@ function ResusTab({ globalWt, setGlobalWt }) {
     { name:"Racemic epi neb",     dose:"0.5 mL of 2.25% in 3 mL NS",  calc:"0.5 mL 2.25% (fixed)",note:"Croup, post-extubation stridor. Observe 2–4h for rebound." },
     { name:"L-Epinephrine 1:1000",dose:"0.5 mL/kg (max 5 mL) in 3 mL NS",calc:`${Math.min(wt*.5,5).toFixed(1)} mL`,note:"Croup alternative to racemic epi. Same efficacy." },
   ]:[];
+  const antiemetics=wt>0?[
+    { name:"Ondansetron IV",   dose:"0.15 mg/kg IV/IM",              calc:`${Math.min(wt*.15,4).toFixed(2)} mg`, note:"Max 4 mg/dose. Repeat q4–6h prn. Most-used peds antiemetic in ED." },
+    { name:"Ondansetron ODT",  dose:"< 30 kg: 4 mg · ≥ 30 kg: 8 mg",calc:wt<30?"4 mg ODT":"8 mg ODT",          note:"Dissolves on tongue — ideal when vomiting makes PO difficult." },
+    { name:"Promethazine",     dose:"0.25–0.5 mg/kg IV/IM q4–6h",   calc:`${Math.min(wt*.3,25).toFixed(1)} mg`, note:"Max 25 mg. Avoid <2y (respiratory depression). Never IV push." },
+  ]:[];
+  const bloodProd=wt>0?[
+    { name:"pRBC",         dose:"10–15 mL/kg IV over 3–4h",    calc:`${(wt*10).toFixed(0)}–${(wt*15).toFixed(0)} mL`, note:"Stable anemia. Each 10 mL/kg raises Hgb ~2–3 g/dL." },
+    { name:"FFP",          dose:"10–15 mL/kg IV over 30–60 min",calc:`${(wt*10).toFixed(0)}–${(wt*15).toFixed(0)} mL`, note:"Coagulopathy, factor deficiency. Allow 30 min thaw time." },
+    { name:"Platelets",    dose:"5–10 mL/kg IV over 30 min",   calc:`${(wt*5).toFixed(0)}–${(wt*10).toFixed(0)} mL`,  note:"1 apheresis unit for larger children. Give over 30 min." },
+    { name:"Cryoprecipitate",dose:"1–2 units per 10 kg IV",    calc:`${Math.max(Math.round(wt/10),1)}–${Math.max(Math.round(wt/5),1)} units`, note:"Fibrinogen replacement. Target fibrinogen > 100 mg/dL." },
+  ]:[];
+  const antiviral=wt>0?[
+    { name:"Oseltamivir (Tamiflu)", dose:"Weight-based × 5 days",
+      calc:wt<15?"30 mg q12h":wt<23?"45 mg q12h":wt<40?"60 mg q12h":"75 mg q12h",
+      note:"Start within 48h of onset. Neonates ≥2 weeks: 3 mg/kg q12h. Adult dose >40 kg." },
+  ]:[];
 
   const filteredConds = ageFilter===null ? ABX_CONDITIONS
     : ABX_CONDITIONS.filter(c=>c.ages.includes("all")||c.ages.includes(ageFilter));
@@ -968,6 +984,15 @@ function ResusTab({ globalWt, setGlobalWt }) {
         <Card color={T.coral} title="Anaphylaxis">
           <DrugSection title="First-Line" color={T.coral} drugs={anaphylaxis} wtCalc />
         </Card>
+        <Card color={T.cyan} title="Antiemetics">
+          <DrugSection title="Nausea / Vomiting" color={T.cyan} drugs={antiemetics} wtCalc />
+        </Card>
+        <Card color={T.teal} title="Antivirals">
+          <DrugSection title="Influenza" color={T.teal} drugs={antiviral} wtCalc />
+        </Card>
+        <Card color={T.blue} title="Blood Products">
+          <DrugSection title="Transfusion Dosing" color={T.blue} drugs={bloodProd} wtCalc />
+        </Card>
       </>:nWt)}
 
       {subTab==="resp"&&(wt>0?<>
@@ -1110,6 +1135,32 @@ function ScoringTab({ globalWt }) {
         </div>
       </Card>
 
+      <Card color={T.gold} title="Febrile Seizure — AAP 2011 / 2022 Update">
+        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10 }}>
+          {[{l:"Simple Febrile Seizure",c:T.teal,items:["Generalized (tonic-clonic)","Duration < 15 minutes","Single seizure in 24h","Age 6 months – 5 years","Full recovery to baseline","No prior CNS abnormality"]},
+            {l:"Complex Febrile Seizure",c:T.coral,items:["Focal onset or focal features","Duration ≥ 15 minutes","Recurs within 24h","Any age outside 6m–5y","Prolonged postictal state","Todd's paralysis"]}].map(s=>(
+            <div key={s.l} style={{ padding:"9px 10px",borderRadius:8,background:`${s.c}08`,border:`1px solid ${s.c}28` }}>
+              <div style={{ fontFamily:S.mono,fontSize:8,fontWeight:700,color:s.c,letterSpacing:1,marginBottom:6 }}>{s.l}</div>
+              {s.items.map((item,i)=>(
+                <div key={i} style={{ display:"flex",gap:5,marginBottom:3 }}>
+                  <span style={{ color:s.c,fontSize:7,marginTop:3 }}>▸</span>
+                  <span style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt2 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        {[["Workup — Simple",T.teal,["LP NOT required for simple febrile seizure in vaccinated child ≥ 6 months (AAP 2011)","LP: strongly consider if < 12 months, unvaccinated, or ill-appearing after seizure resolves","Source of fever: UA, CBC as clinically indicated — LP NOT routine","EEG: not indicated in uncomplicated first simple febrile seizure","Neuroimaging: not routinely indicated — reserve for focal features, abnormal neuro exam"]],
+          ["Management & Discharge",T.gold,["Treat underlying fever source. Antipyretics do NOT prevent recurrence.","Recurrence rate: 30–35% overall; 50% if first FS < 12 months","Prophylactic anticonvulsants NOT recommended for simple febrile seizures","Discharge if: returned to baseline, fever source identified, reliable caregiver, good follow-up","Return precautions: seizure > 5 min, focal features, not returning to baseline within 1–2h, recurrence"]]].map(([title,color,items])=>(
+          <div key={title} style={{ marginBottom:8,padding:"8px 10px",borderRadius:8,
+            background:`${color}08`,border:`1px solid ${color}25` }}>
+            <div style={{ fontFamily:S.mono,fontSize:7.5,color,letterSpacing:1.2,
+              textTransform:"uppercase",marginBottom:6 }}>{title}</div>
+            {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
+          </div>
+        ))}
+      </Card>
+
       <Card color={T.orange} title="Pediatric Appendicitis Score (PAS — Samuel 2002)">
         <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:6 }}>
           {[["Nausea / vomiting",1],["Anorexia",1],["Fever > 38°C",1],
@@ -1158,150 +1209,268 @@ function ScoringTab({ globalWt }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // CLINICAL TOOLS
 // ═══════════════════════════════════════════════════════════════════════════
+const TOOLS_TABS = [
+  { id:"fluids",label:"DKA / Burns", color:T.gold   },
+  { id:"tox",   label:"Toxicology",  color:T.coral  },
+  { id:"sepsis",label:"Sepsis",      color:T.orange },
+  { id:"proc",  label:"Procedures",  color:T.purple },
+];
+const SIRS_AGES = [
+  { age:"< 1 week",     hr:">180 or <100",rr:">50", wbc:">34,000", temp:"38.0–38.4 or <36" },
+  { age:"1 wk – 1 mo",  hr:">180 or <100",rr:">40", wbc:">19,500 or <5,000",temp:"≥38.5 or <36" },
+  { age:"1 mo – 1 yr",  hr:">180 or <90", rr:">34", wbc:">17,500 or <5,000",temp:"≥38.5 or <36" },
+  { age:"2–5 years",    hr:">140",        rr:">22", wbc:">15,500 or <6,000",temp:"≥38.5 or <36" },
+  { age:"6–12 years",   hr:">130",        rr:">18", wbc:">13,500 or <4,500",temp:"≥38.5 or <36" },
+  { age:"13–18 years",  hr:">110",        rr:">14", wbc:">11,000 or <4,500",temp:"≥38.5 or <36" },
+];
+const ANTIDOTES = [
+  { toxin:"Opioids",         antidote:"Naloxone",      dose:"0.01 mg/kg IV/IM/IN (max 2 mg); repeat q2–3 min" },
+  { toxin:"Benzodiazepines", antidote:"Flumazenil",    dose:"0.01 mg/kg IV (max 0.2 mg); caution — may precipitate seizures in dependent patients" },
+  { toxin:"Organophosphates",antidote:"Atropine",      dose:"0.02–0.05 mg/kg IV q5–10 min until secretions dry; no maximum" },
+  { toxin:"Acetaminophen",   antidote:"NAC",           dose:"150 mg/kg IV ×1h → 50 mg/kg ×4h → 100 mg/kg ×16h (21-hour protocol)" },
+  { toxin:"Iron",            antidote:"Deferoxamine",  dose:"15 mg/kg/hr IV (max 6 g/day); stop when urine clears (vin rosé sign)" },
+  { toxin:"Isoniazid (INH)", antidote:"Pyridoxine",    dose:"1 mg per mg INH ingested (max 5 g); 70 mg/kg if dose unknown" },
+  { toxin:"Methemoglobin",   antidote:"Methylene blue",dose:"1–2 mg/kg IV over 5 min; may repeat once" },
+  { toxin:"Methanol / EG",   antidote:"Fomepizole",   dose:"15 mg/kg IV load; call Poison Control for maintenance dosing" },
+  { toxin:"CCB / hyperK",    antidote:"Calcium chloride",dose:"20 mg/kg IV (max 2 g); may repeat. Central line preferred." },
+  { toxin:"Digoxin",         antidote:"Digoxin Fab",   dose:"Empiric: 10 vials IV. Specific: vials = (serum dig × wt kg) / 100" },
+];
 function ToolsTab({ globalWt }) {
+  const [toolTab,setToolTab]=useState("fluids");
   const [dkaPct,setDkaPct]=useState(""); const [tbsaPct,setTbsaPct]=useState("");
   const wt=parseFloat(globalWt)||0;
-  const dkaPctN=parseFloat(dkaPct)||0;
-  const tbsaN=parseFloat(tbsaPct)||0;
+  const dkaPctN=parseFloat(dkaPct)||0; const tbsaN=parseFloat(tbsaPct)||0;
   const deficitMl=wt>0&&dkaPctN>0?(wt*dkaPctN*10).toFixed(0):null;
-  const maint48=wt>0?(wt<=10?wt*4*48:wt<=20?(40+(wt-10)*2)*48:(60+(wt-20)*1)*48).toFixed(0):null;
+  const maint48=wt>0?(wt<=10?wt*4*48:wt<=20?(40+(wt-10)*2)*48:(60+(wt-20))*48).toFixed(0):null;
   const totalDka=deficitMl&&maint48?(parseInt(deficitMl)+parseInt(maint48)).toFixed(0):null;
   const dkaRate=totalDka?(parseInt(totalDka)/48).toFixed(0):null;
   const parkland=wt>0&&tbsaN>0?(4*wt*tbsaN).toFixed(0):null;
   const park8h=parkland?(parseInt(parkland)/2).toFixed(0):null;
-  const park16h=park8h;
   return (
     <div className="peds-in">
-      <Card color={T.gold} title="Pediatric DKA Management">
-        <div style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.65,marginBottom:10 }}>
-          DKA: glucose {">"} 200 + pH {"<"} 7.30 + bicarbonate {"<"} 15 + ketonuria/ketonemia
-        </div>
-        {wt>0&&<div style={{ marginBottom:10 }}>
-          <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,
-            textTransform:"uppercase",marginBottom:4 }}>Estimated Dehydration (% body weight)</div>
-          <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
-            {[["5%","5"],["7%","7"],["10%","10"]].map(([l,v])=>(
-              <button key={v} onClick={()=>setDkaPct(dkaPct===v?"":v)}
-                style={{ padding:"8px 14px",borderRadius:7,cursor:"pointer",
-                  fontFamily:S.sans,fontWeight:600,fontSize:11,
-                  border:`1px solid ${dkaPct===v?T.gold+"66":"rgba(20,80,70,0.4)"}`,
-                  background:dkaPct===v?`${T.gold}14`:"transparent",
-                  color:dkaPct===v?T.gold:T.txt4 }}>
-                {l} {dkaPct===v&&wt>0?`(${(wt*parseFloat(v)*10).toFixed(0)} mL)`:""}</button>
-            ))}
+      <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"5px",marginBottom:12,
+        background:"rgba(6,20,25,0.7)",border:"1px solid rgba(20,80,70,0.35)",borderRadius:10 }}>
+        {TOOLS_TABS.map(t=>(
+          <button key={t.id} onClick={()=>setToolTab(t.id)}
+            style={{ flex:1,padding:"7px 10px",borderRadius:7,cursor:"pointer",
+              fontFamily:S.sans,fontWeight:600,fontSize:11,
+              border:`1px solid ${toolTab===t.id?t.color+"66":"rgba(20,80,70,0.4)"}`,
+              background:toolTab===t.id?`${t.color}14`:"transparent",
+              color:toolTab===t.id?t.color:T.txt4 }}>{t.label}</button>
+        ))}
+      </div>
+
+      {toolTab==="fluids"&&<>
+        <Card color={T.gold} title="Pediatric DKA Management">
+          <div style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.65,marginBottom:10 }}>
+            DKA: glucose {">"} 200 + pH {"<"} 7.30 + HCO3 {"<"} 15 + ketonuria/ketonemia
           </div>
-          {deficitMl&&<div style={{ marginTop:10,padding:"10px 12px",borderRadius:9,
-            background:"rgba(245,200,66,0.08)",border:"1px solid rgba(245,200,66,0.3)" }}>
-            <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8 }}>
-              {[["Fluid Deficit",`${deficitMl} mL`],["48h Maintenance",`${maint48} mL`],
-                ["Total IV Fluids",`${totalDka} mL`],["Starting Rate",`${dkaRate} mL/hr`]].map(([l,v])=>(
+          {wt>0&&<div style={{ marginBottom:10 }}>
+            <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>Estimated Dehydration (% body weight)</div>
+            <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
+              {[["5%","5"],["7%","7"],["10%","10"]].map(([l,v])=>(
+                <button key={v} onClick={()=>setDkaPct(dkaPct===v?"":v)}
+                  style={{ padding:"8px 14px",borderRadius:7,cursor:"pointer",fontFamily:S.sans,fontWeight:600,fontSize:11,
+                    border:`1px solid ${dkaPct===v?T.gold+"66":"rgba(20,80,70,0.4)"}`,
+                    background:dkaPct===v?`${T.gold}14`:"transparent",color:dkaPct===v?T.gold:T.txt4 }}>
+                  {l} {dkaPct===v&&wt>0?`(${(wt*parseFloat(v)*10).toFixed(0)} mL)`:""}</button>
+              ))}
+            </div>
+            {deficitMl&&<div style={{ marginTop:10,padding:"10px 12px",borderRadius:9,background:"rgba(245,200,66,0.08)",border:"1px solid rgba(245,200,66,0.3)" }}>
+              <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8 }}>
+                {[["Fluid Deficit",`${deficitMl} mL`],["48h Maintenance",`${maint48} mL`],["Total IV Fluids",`${totalDka} mL`],["Starting Rate",`${dkaRate} mL/hr`]].map(([l,v])=>(
+                  <div key={l} style={{ textAlign:"center" }}>
+                    <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{l}</div>
+                    <div style={{ fontFamily:S.serif,fontSize:22,fontWeight:700,color:T.gold }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>}
+          </div>}
+          {[["Critical DKA Principles",T.coral,["NO fluid bolus in moderate/severe DKA unless hemodynamically unstable (cerebral edema risk)","Use 0.9% NS or LR. Add dextrose when glucose < 250–300 mg/dL (use 2-bag system).","Insulin drip: 0.05–0.1 units/kg/hr IV — NO loading bolus. Start after first hour of fluids.","K+ > 5.5: hold replacement · 3.5–5.5: add 40 mEq/L · < 3.5: stop insulin, give 60–80 mEq/L"]],
+            ["Cerebral Edema — Act Immediately",T.orange,["Signs: headache, bradycardia, hypertension, declining GCS, pupil changes — 0.5–1% of peds DKA","3% NaCl 3–5 mL/kg IV over 30 min OR mannitol 0.5–1 g/kg IV — give immediately","HOB 30°, restrict IVF, neurosurgery consult, ICU transfer"]]].map(([title,color,items])=>(
+            <div key={title} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,background:`${color}08`,border:`1px solid ${color}30` }}>
+              <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
+              {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
+            </div>
+          ))}
+        </Card>
+        <Card color={T.orange} title="Burns — Fluid Resuscitation (Parkland Formula)">
+          {wt>0&&<div style={{ marginBottom:10 }}>
+            <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>TBSA (%) burned — exclude superficial / 1st degree</div>
+            <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+              <input type="number" value={tbsaPct} onChange={e=>setTbsaPct(e.target.value)}
+                style={{ width:80,padding:"8px 10px",background:"rgba(6,20,25,0.9)",
+                  border:`1px solid ${tbsaPct?T.orange+"55":"rgba(20,80,70,0.4)"}`,
+                  borderRadius:7,outline:"none",fontFamily:S.mono,fontSize:20,fontWeight:700,color:T.orange }} />
+              <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt4 }}>% TBSA</div>
+            </div>
+          </div>}
+          {parkland&&<div style={{ padding:"10px 12px",borderRadius:9,marginBottom:10,background:"rgba(255,159,67,0.08)",border:"1px solid rgba(255,159,67,0.3)" }}>
+            <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8,marginBottom:8 }}>
+              {[["Total LR (24h)",`${parkland} mL`],["First 8h",`${park8h} mL`],["Next 16h",`${park8h} mL`],["Rate first 8h",`${(parseInt(park8h)/8).toFixed(0)} mL/hr`]].map(([l,v])=>(
                 <div key={l} style={{ textAlign:"center" }}>
-                  <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:0.5 }}>{l}</div>
-                  <div style={{ fontFamily:S.serif,fontSize:22,fontWeight:700,color:T.gold }}>{v}</div>
+                  <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{l}</div>
+                  <div style={{ fontFamily:S.serif,fontSize:22,fontWeight:700,color:T.orange }}>{v}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.6 }}>
+              4 mL x %TBSA x weight(kg). Time 0 = time of burn, not arrival. Add maintenance IV for children {"<"} 30 kg.
+            </div>
+          </div>}
+          <div style={{ padding:"9px 11px",borderRadius:8,background:"rgba(6,20,25,0.6)",border:"1px solid rgba(20,80,70,0.3)" }}>
+            <div style={{ fontFamily:S.mono,fontSize:8,color:T.orange,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>Pediatric TBSA — Modified Rule of Nines</div>
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,fontFamily:S.mono,fontSize:9 }}>
+              {[["Head & neck","Infant 19% · 5y 13% · 10y 11%"],["Each arm","9% (all ages)"],["Anterior trunk","18%"],["Posterior trunk","18%"],["Each thigh","Infant 5.5% · 5y 6.5% · Adult 9%"],["Each lower leg","Infant 5% · 5y 5.5% · Adult 7%"]].map(([b,v])=>(
+                <div key={b} style={{ display:"flex",justifyContent:"space-between",gap:8,padding:"3px 0",borderBottom:"1px solid rgba(20,80,70,0.15)" }}>
+                  <span style={{ color:T.orange }}>{b}</span><span style={{ color:T.txt3 }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      </>}
+
+      {toolTab==="tox"&&<>
+        <div style={{ padding:"10px 13px",borderRadius:9,marginBottom:10,background:"rgba(255,92,92,0.1)",border:"1px solid rgba(255,92,92,0.4)" }}>
+          <div style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:T.coral,letterSpacing:1 }}>POISON CONTROL — 1-800-222-1222 (US) — Available 24/7 — Call for ALL complex ingestions</div>
+        </div>
+        <Card color={T.coral} title="Acetaminophen Overdose">
+          {[["Rumack-Matthew Nomogram",T.coral,["Draw serum APAP at EXACTLY 4h post-ingestion. Earlier levels are unreliable.","Treatment threshold at 4h: APAP level > 150 mcg/mL plots above treatment line","Unknown/staggered ingestion time: treat if any detectable level AND symptomatic","Hepatotoxicity risk: > 150 mcg/mL at 4h · > 37.5 at 12h · > 9.4 at 24h"]],
+            ["N-Acetylcysteine (NAC) — 21-Hour IV Protocol",T.orange,["Bag 1: 150 mg/kg IV over 60 min (max 15 g) — loading dose","Bag 2: 50 mg/kg IV over 4h (max 5 g)","Bag 3: 100 mg/kg IV over 16h (max 10 g)","Continue if INR > 1.5, AST rising, or clinical hepatotoxicity"]],
+            ["Monitoring & Pearls",T.gold,["LFTs, INR, BMP, APAP level at 0h, 4h, 8h, and 24h minimum","Anaphylactoid reaction to NAC in ~10%: slow infusion, diphenhydramine, hold if severe","Oral NAC: 70 mg/kg q4h x 17 doses if IV not available (very nausea-inducing)"]]].map(([title,color,items])=>(
+            <div key={title} style={{ marginBottom:8,padding:"8px 10px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}25` }}>
+              <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
+              {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
+            </div>
+          ))}
+        </Card>
+        <Card color={T.orange} title="Iron Ingestion">
+          {wt>0&&<div style={{ padding:"9px 11px",borderRadius:8,marginBottom:8,background:"rgba(255,159,67,0.09)",border:"1px solid rgba(255,159,67,0.3)" }}>
+            <div style={{ fontFamily:S.mono,fontSize:8,color:T.orange,letterSpacing:1,marginBottom:5 }}>ELEMENTAL IRON THRESHOLDS — {wt} kg patient</div>
+            <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6 }}>
+              {[["Nontoxic","< 20 mg/kg",`< ${Math.round(wt*20)} mg`,T.teal],["Moderate","20–60 mg/kg",`${Math.round(wt*20)}–${Math.round(wt*60)} mg`,T.gold],["Potentially fatal","> 60 mg/kg",`> ${Math.round(wt*60)} mg`,T.coral]].map(([tier,dose,calc,color])=>(
+                <div key={tier} style={{ padding:"7px 8px",borderRadius:7,background:`${color}08`,border:`1px solid ${color}25`,textAlign:"center" }}>
+                  <div style={{ fontFamily:S.mono,fontSize:7.5,color,marginBottom:2 }}>{tier}</div>
+                  <div style={{ fontFamily:S.serif,fontSize:13,fontWeight:700,color }}>{calc}</div>
+                  <div style={{ fontFamily:S.mono,fontSize:7,color:T.txt4 }}>{dose}</div>
                 </div>
               ))}
             </div>
           </div>}
-        </div>}
-        {[["Critical DKA Principles",T.coral,[
-          "NO fluid bolus in moderate/severe DKA unless hypotensive/shock (cerebral edema risk)",
-          "Use 0.9% NS or LR for fluid replacement. Add dextrose when glucose < 250–300 mg/dL",
-          "Insulin drip: 0.05–0.1 units/kg/hr IV — NO loading bolus. Start after 1h of fluids.",
-          "K+ > 5.5: hold K+ replacement · K+ 3.5–5.5: add 40 mEq/L · K+ < 3.5: stop insulin, give 60–80 mEq/L",
-        ]],["Cerebral Edema Warning",T.orange,[
-          "Occurs in 0.5–1% of DKA — most common cause of death in peds DKA",
-          "Signs: headache, bradycardia, hypertension, declining neuro status, pupil changes",
-          "Treat IMMEDIATELY: 3% hypertonic saline 3–5 mL/kg IV over 30 min, or mannitol 0.5–1 g/kg IV",
-          "Elevate HOB 30°, restrict fluids, neurosurgery consult, ICU transfer",
-        ]]].map(([title,color,items])=>(
-          <div key={title} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,
-            background:`${color}08`,border:`1px solid ${color}30` }}>
-            <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,
-              textTransform:"uppercase",marginBottom:6 }}>{title}</div>
-            {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
+          <Bullet text="Elemental iron %: ferrous sulfate 20% — ferrous gluconate 12% — ferrous fumarate 33% — polysaccharide 100%" color={T.orange} />
+          <Bullet text="Serum iron at 2–4h. Toxic level > 500 mcg/dL. TIBC no longer recommended for toxicity assessment." color={T.orange} />
+          <Bullet text="Deferoxamine: 15 mg/kg/hr IV (max 6 g/day). Continue until urine clears (vin rose). Call Poison Control." color={T.orange} />
+        </Card>
+        <Card color={T.mint} title="Activated Charcoal">
+          <Bullet text="Dose: 1 g/kg PO (max 50 g). Give within 1–2h of ingestion for best benefit." color={T.mint} />
+          <Bullet text="Contraindications: caustics, hydrocarbons, metals (iron, lithium), alcohols — charcoal does NOT bind these." color={T.mint} />
+          <Bullet text="Airway protection required before giving. Never in obtunded/unprotected airway." color={T.mint} />
+          <Bullet text="Multi-dose (MDAC) for: theophylline, carbamazepine, dapsone, phenobarbital. 0.5 g/kg q4h x 3–4 doses." color={T.mint} />
+        </Card>
+        <Card color={T.purple} title="Antidotes Quick Reference">
+          <div style={{ overflowX:"auto" }}>
+            <table style={{ width:"100%",borderCollapse:"collapse",fontFamily:S.mono,fontSize:9 }}>
+              <thead><tr style={{ borderBottom:"1px solid rgba(176,109,255,0.3)" }}>
+                {["Toxin","Antidote","Dose / Notes"].map(h=><th key={h} style={{ padding:"5px 8px",textAlign:"left",color:T.purple,fontWeight:700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{ANTIDOTES.map((r,i)=>(
+                <tr key={i} style={{ borderBottom:"1px solid rgba(20,80,70,0.2)" }}>
+                  <td style={{ padding:"5px 8px",color:T.coral,fontWeight:600,whiteSpace:"nowrap" }}>{r.toxin}</td>
+                  <td style={{ padding:"5px 8px",color:T.mint,fontWeight:600,whiteSpace:"nowrap" }}>{r.antidote}</td>
+                  <td style={{ padding:"5px 8px",color:T.txt3,lineHeight:1.5 }}>{r.dose}</td>
+                </tr>
+              ))}</tbody>
+            </table>
           </div>
-        ))}
-      </Card>
+        </Card>
+      </>}
 
-      <Card color={T.orange} title="Burns — Fluid Resuscitation (Parkland Formula)">
-        {wt>0&&<div style={{ marginBottom:10 }}>
-          <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,
-            textTransform:"uppercase",marginBottom:4 }}>Enter TBSA (%) burned — exclude 1st degree / superficial</div>
-          <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-            <input type="number" value={tbsaPct} onChange={e=>setTbsaPct(e.target.value)}
-              style={{ width:80,padding:"8px 10px",background:"rgba(6,20,25,0.9)",
-                border:`1px solid ${tbsaPct?T.orange+"55":"rgba(20,80,70,0.4)"}`,
-                borderRadius:7,outline:"none",fontFamily:S.mono,fontSize:20,fontWeight:700,
-                color:T.orange }} />
-            <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt4 }}>% TBSA</div>
-          </div>
-        </div>}
-        {parkland&&<div style={{ padding:"10px 12px",borderRadius:9,marginBottom:10,
-          background:"rgba(255,159,67,0.08)",border:"1px solid rgba(255,159,67,0.3)" }}>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8,marginBottom:8 }}>
-            {[["Total LR (24h)",`${parkland} mL`],["First 8h (half)",`${park8h} mL`],["Next 16h (half)",`${park16h} mL`],
-              ["Rate first 8h",`${(parseInt(park8h)/8).toFixed(0)} mL/hr`]].map(([l,v])=>(
-              <div key={l} style={{ textAlign:"center" }}>
-                <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:0.5 }}>{l}</div>
-                <div style={{ fontFamily:S.serif,fontSize:22,fontWeight:700,color:T.orange }}>{v}</div>
+      {toolTab==="sepsis"&&<>
+        <Card color={T.orange} title="Pediatric Sepsis / Septic Shock — Surviving Sepsis 2020 / PALS">
+          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12 }}>
+            {[{l:"SIRS",c:T.teal,d:"2+ criteria (1 must be temp or WBC abnormality)"},
+              {l:"Sepsis",c:T.gold,d:"SIRS + suspected/confirmed infection — ABX within 1 hour"},
+              {l:"Septic Shock",c:T.coral,d:"Sepsis + cardiovascular dysfunction despite fluid"}].map(s=>(
+              <div key={s.l} style={{ padding:"8px 10px",borderRadius:8,background:`${s.c}09`,border:`1px solid ${s.c}30` }}>
+                <div style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:s.c,marginBottom:4 }}>{s.l}</div>
+                <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt3,lineHeight:1.5 }}>{s.d}</div>
               </div>
             ))}
           </div>
-          <div style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.6 }}>
-            Formula: 4 mL × %TBSA × weight(kg). Time 0 = time of burn (not arrival). Add maintenance IV for children {"<"} 30 kg.
+          <div style={{ fontFamily:S.mono,fontSize:8,color:T.orange,letterSpacing:1.2,textTransform:"uppercase",marginBottom:8 }}>Age-Specific SIRS Criteria</div>
+          <div style={{ overflowX:"auto",marginBottom:12 }}>
+            <table style={{ width:"100%",borderCollapse:"collapse",fontFamily:S.mono,fontSize:8.5 }}>
+              <thead><tr style={{ borderBottom:"1px solid rgba(255,159,67,0.35)" }}>
+                {["Age","HR (bpm)","RR (/min)","WBC (x10^3)","Temp (C)"].map(h=>(
+                  <th key={h} style={{ padding:"5px 8px",textAlign:"left",color:T.orange,fontWeight:700 }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>{SIRS_AGES.map((r,i)=>(
+                <tr key={i} style={{ borderBottom:"1px solid rgba(20,80,70,0.18)" }}>
+                  <td style={{ padding:"5px 8px",color:T.gold,fontWeight:600 }}>{r.age}</td>
+                  <td style={{ padding:"5px 8px",color:T.txt2 }}>{r.hr}</td>
+                  <td style={{ padding:"5px 8px",color:T.txt2 }}>{r.rr}</td>
+                  <td style={{ padding:"5px 8px",color:T.txt2 }}>{r.wbc}</td>
+                  <td style={{ padding:"5px 8px",color:T.txt2 }}>{r.temp}</td>
+                </tr>
+              ))}</tbody>
+            </table>
           </div>
-        </div>}
-        <div style={{ padding:"9px 11px",borderRadius:8,background:"rgba(6,20,25,0.6)",border:"1px solid rgba(20,80,70,0.3)" }}>
-          <div style={{ fontFamily:S.mono,fontSize:8,color:T.orange,letterSpacing:1,
-            textTransform:"uppercase",marginBottom:6 }}>Pediatric TBSA — Modified Rule of Nines</div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,fontFamily:S.mono,fontSize:9 }}>
-            {[["Head & neck","Infant 19% · 5y 13% · 10y 11%"],["Each arm","9% (all ages)"],
-              ["Anterior trunk","18% (all ages)"],["Posterior trunk","18% (all ages)"],
-              ["Each thigh","Infant 5.5% · 5y 6.5% · Adult 9%"],["Each leg (lower)","Infant 5% · 5y 5.5% · Adult 7%"],
-              ["Each foot","3.5% (all ages)"],["Perineum","1% (all ages)"]].map(([b,v])=>(
-              <div key={b} style={{ display:"flex",justifyContent:"space-between",gap:8,
-                padding:"3px 0",borderBottom:"1px solid rgba(20,80,70,0.15)" }}>
-                <span style={{ color:T.orange }}>{b}</span>
-                <span style={{ color:T.txt3 }}>{v}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Card>
+          {[["Resuscitation Pathway",T.coral,["1. Airway / O2 / IV or IO access (IO if IV fails in 2 attempts)","2. Fluid: 20 mL/kg NS over 5–10 min. Reassess after each bolus.","3. Repeat up to 60 mL/kg total — STOP if crackles, hepatomegaly, or oxygen worsens","4. Blood cultures x 2 before antibiotics. Lactate, CBC, BMP, procalcitonin.","5. Empiric antibiotics within 1 hour of recognition. Source-directed selection below.","6. Vasopressors if unresponsive to 40–60 mL/kg: start epinephrine (cold) or norepinephrine (warm)"]],
+            ["Empiric Antibiotics by Source",T.blue,["Unknown source: ceftriaxone 100 mg/kg IV (max 4 g) +/- vancomycin 15 mg/kg","Intra-abdominal: piperacillin-tazobactam 100 mg/kg IV q8h (max 4.5 g)","Meningitis: ceftriaxone 100 mg/kg IV + vancomycin + dexamethasone 0.15 mg/kg","Healthcare-associated / line infection: vancomycin + pip-tazo or meropenem","Neutropenic fever: cefepime 50 mg/kg IV q8h (max 2 g); add vancomycin for line/skin source"]],
+            ["Vasopressor Selection",T.purple,["Cold shock (mottled, cool extremities, low CO): Epinephrine 0.05–1 mcg/kg/min IV","Warm shock (flushed, bounding, vasodilatory): Norepinephrine 0.05–2 mcg/kg/min IV","Refractory: vasopressin 0.0003–0.002 units/kg/min OR hydrocortisone 50 mg/m2 IV (adrenal crisis)","Target MAP > 65 mmHg (age-adjusted). Goal-directed therapy with PICU team."]]].map(([title,color,items])=>(
+            <div key={title} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,background:`${color}08`,border:`1px solid ${color}28` }}>
+              <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
+              {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
+            </div>
+          ))}
+        </Card>
+      </>}
 
-      <Card color={T.red} title="Button Battery / Caustic Ingestion — EMERGENCY PROTOCOL">
-        <div style={{ padding:"8px 10px",borderRadius:7,background:"rgba(255,61,61,0.1)",
-          border:"1px solid rgba(255,61,61,0.35)",marginBottom:10 }}>
-          <div style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:T.red,letterSpacing:1 }}>
-            ESOPHAGEAL BUTTON BATTERY = SURGICAL EMERGENCY. Remove within 2 hours.
+      {toolTab==="proc"&&<>
+        <Card color={T.red} title="Button Battery / Caustic Ingestion — EMERGENCY PROTOCOL">
+          <div style={{ padding:"8px 10px",borderRadius:7,background:"rgba(255,61,61,0.1)",border:"1px solid rgba(255,61,61,0.35)",marginBottom:10 }}>
+            <div style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:T.red,letterSpacing:1 }}>ESOPHAGEAL BUTTON BATTERY = SURGICAL EMERGENCY — Remove within 2 hours</div>
           </div>
-        </div>
-        {[["Initial Assessment",T.coral,[
-          "Plain film (PA + lateral) IMMEDIATELY to localize. PA: double halo / stacked coin sign. Lateral: step-off sign.",
-          "≥20 mm disc battery (20 mm 3V lithium) carries highest risk — generates OH⁻ and causes liquefactive necrosis",
-          "Esophageal location requires emergency endoscopic removal regardless of symptoms",
-        ]],["Pre-Endoscopy — Esophageal Location",T.orange,[
-          "Honey (≥12 months ONLY): 10 mL PO q10 min × 6 doses en route to endoscopy — neutralizes tissue damage",
-          "Sucralfate (>1 year): 5 mL (2–10y) or 10 mL (>10y) PO q30 min × 3 doses PRE-ENDOSCOPY ONLY",
-          "NEVER induce vomiting. NPO otherwise. Keep patient upright.",
-          "Contact GI/surgery IMMEDIATELY. Do NOT delay for radiograph results.",
-        ]],["Gastric / Intestinal Battery",T.gold,[
-          "If asymptomatic and no complications: can observe with serial radiographs",
-          "Recheck X-ray in 10–14 days if battery has not passed stool",
-          "Symptoms of fever, abdominal pain, hematemesis, melena = immediate removal",
-          "Battery + magnet co-ingestion: urgent endoscopic/surgical removal (fistula risk)",
-        ]]].map(([title,color,items])=>(
-          <div key={title} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,
-            background:`${color}08`,border:`1px solid ${color}30` }}>
-            <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,
-              textTransform:"uppercase",marginBottom:6 }}>{title}</div>
-            {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
+          {[["Localization",T.coral,["PA film: double halo / stacked coin sign. Lateral: step-off between cathode/anode layers.","20 mm 3V lithium disc — highest risk (OH- generation causes liquefactive necrosis within hours)","Esophageal location: emergency endoscopic removal regardless of symptoms or X-ray timing"]],
+            ["Pre-Endoscopy (Esophageal Only)",T.orange,["Honey (12 months+): 10 mL PO every 10 min x 6 doses while en route to endoscopy","Sucralfate (>1y): 5 mL (2–10y) or 10 mL (>10y) q30 min x 3 doses pre-endoscopy only","NEVER induce vomiting. NPO otherwise. Contact GI/surgery immediately."]],
+            ["Gastric / Intestinal",T.gold,["Asymptomatic: serial radiographs. If not passed in 10–14 days, consider endoscopic retrieval.","Fever, abdominal pain, hematemesis, or melena = immediate removal","Battery + magnet co-ingestion: urgent surgical/endoscopic removal regardless of location"]]].map(([title,color,items])=>(
+            <div key={title} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,background:`${color}08`,border:`1px solid ${color}30` }}>
+              <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
+              {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
+            </div>
+          ))}
+        </Card>
+        <Card color={T.coral} title="Non-Accidental Trauma (Child Abuse) — Suspicious Indicators">
+          <div style={{ fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.6,marginBottom:10 }}>
+            No single finding is pathognomonic. Evaluate injury in context of developmental stage, history consistency, and overall presentation. Mandatory report to CPS — not optional.
           </div>
-        ))}
-      </Card>
+          {[["High-Specificity Fractures",T.coral,["Classic metaphyseal lesions (CML / bucket-handle fractures) — require high torsional force, highly specific for NAT","Posterior rib fractures — require forceful anterior-posterior compression; rarely accidental in infants","Multiple fractures at different stages of healing without a clear, consistent explanation","Vertebral compression or spinous process fractures in pre-ambulatory infants"]],
+            ["Soft Tissue & Pattern Findings",T.orange,["Bruising in non-mobile infants: 'Those who don't cruise don't bruise' (AAP 2014)","Patterned bruising matching implements (loop cord, belt buckle); bruising over torso/ears/neck in infants","Burns: sharply demarcated margins, stocking/glove distribution (forced immersion), or cigarette marks","Injuries inconsistent with developmental milestone (e.g., spiral femur fracture in pre-walker)"]],
+            ["Workup — Suspected NAT",T.purple,["Skeletal survey (2-view, full): ALL children < 2y with suspected abuse — includes all long bones, ribs, skull, spine","Ophthalmology consult: retinal hemorrhages — any infant with unexplained AMS, seizure, or head injury","Head CT: unexplained AMS, seizure, fontanelle bulge, or any infant with suspicious injury","Labs: CBC, PT/PTT, LFTs, lipase, UA — screen for occult abdominal/bleeding injuries","Document objectively. Report to CPS. Notify child abuse team if available."]]].map(([title,color,items])=>(
+            <div key={title} style={{ marginBottom:8,padding:"9px 11px",borderRadius:9,background:`${color}08`,border:`1px solid ${color}28` }}>
+              <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
+              {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
+            </div>
+          ))}
+        </Card>
+        <Card color={T.blue} title="NRP — Neonatal Resuscitation (AAP/AHA 2021)">
+          {[["Initial Assessment (30 Seconds)",T.blue,["Warm, dry, stimulate. Term? Good tone? Breathing/crying? — All YES = routine care","Any NO: move to warmer, position/clear airway, dry and stimulate, then assess HR","HR by EKG leads or pulse oximetry. Auscultation unreliable for decision-making."]],
+            ["Positive Pressure Ventilation",T.teal,["HR < 100 bpm OR apnea/gasping after stimulation → start PPV immediately","Rate: 40–60 breaths/min. Initial FiO2: term 21%, preterm 21–30%.","If no chest rise: MR SOPA — Mask/Reposition, Suction, Open mouth, Pressure up, Airway (ETT or LMA)"]],
+            ["Chest Compressions + Medications",T.coral,["HR < 60 bpm despite 30 sec effective PPV → chest compressions","2-thumb encircling hands. Depth: 1/3 AP diameter. Ratio: 3 compressions : 1 breath (90/30/min). FiO2 100%.","Epinephrine: 0.01–0.03 mg/kg IV/UVC (preferred) or ETT (not recommended) q3–5 min","Volume (if hypovolemia): NS 10 mL/kg IV over 5–10 min. Naloxone NOT first-line (PPV is priority)"]]].map(([title,color,items])=>(
+            <div key={title} style={{ marginBottom:8,padding:"8px 10px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}25` }}>
+              <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>{title}</div>
+              {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
+            </div>
+          ))}
+        </Card>
+      </>}
     </div>
   );
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN EXPORT
@@ -1310,8 +1479,6 @@ export default function PediatricHub({ embedded = false }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("vitals");
   const [globalWt, setGlobalWt] = useState("");
-
-  useEffect(() => { injectPedsStyles(); }, []);
 
   return (
     <div style={{ fontFamily:S.sans,background:embedded?"transparent":T.bg,

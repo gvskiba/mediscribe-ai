@@ -15,7 +15,7 @@ import { KbHelpModal } from "./QuickNoteKbHelp";
 import { Phase1Panel } from "./QuickNotePhase1Panel";
 import { Phase2Panel } from "./QuickNotePhase2Panel";
 import { ActionBar } from "./QuickNoteActionBar";
-import { TimelineCard } from "./QuickNoteTimeline";
+import { TimelineCard, DEFAULT_EVENTS } from "./QuickNoteTimeline";
 import { SepsisBanner } from "./QuickNoteSepsis";
 import { ProcedureNoteModal } from "./QuickNoteProcedure";
 import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
@@ -89,16 +89,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [consults, setConsults] = useState([]);
 
   // Timeline
-  const DEFAULT_EVENTS = [
-    { id:"triage",       label:"Triage",                   time:"", notes:"" },
-    { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },
-    { id:"labs_ordered", label:"Labs Ordered",              time:"", notes:"" },
-    { id:"labs_result",  label:"Labs Resulted",             time:"", notes:"" },
-    { id:"img_ordered",  label:"Imaging Ordered",           time:"", notes:"" },
-    { id:"img_result",   label:"Imaging Resulted",          time:"", notes:"" },
-    { id:"recheck",      label:"Recheck Vitals / Reassess", time:"", notes:"" },
-    { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
-  ];
   const [timestamps, setTimestamps] = useState(DEFAULT_EVENTS);
 
   // EKG AI interpret state
@@ -705,8 +695,11 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
     [setCC,setVitals,setHpi,setRos,setExam,setLabs,setImaging,setEkg,setNewVitals].forEach(fn => fn(""));
     setParsedMeds([]); setParsedAllergies([]);
     setMdmResult(null); setDispResult(null);
+    setHpiSummary(null); setHpiMode("original");
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
+    setIcdSuggestions([]); setIcdSelected([]); setInterventions([]); setIntGenerated(false);
+    setTimestamps(DEFAULT_EVENTS.map(e => ({ ...e, time:"", notes:"" })));
     setQuickDDxDismissed(false); setIsBounceback(false);
     setTreatmentPlan(""); setActionPlan("");
     setShowUndo(true);

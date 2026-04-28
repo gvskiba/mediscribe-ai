@@ -102,7 +102,7 @@ export function InputZone({ label, value, onChange, placeholder, rows, phase, re
   const inputRef = useRef();
   const [copiedField, setCopiedField] = useState(false);
   const [showPicker,  setShowPicker]  = useState(false);
-  useEffect(() => { if (onRef) onRef(inputRef); }, []);
+  useEffect(() => { if (onRef) onRef(inputRef); }, [onRef]);
   const phaseClass = phase === 1 ? " active-phase" : phase === 2 ? " p2-active" : "";
   const handleCopy = () => {
     if (!value.trim()) return;

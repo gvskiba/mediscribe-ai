@@ -597,7 +597,7 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
   }, [quickDDxBusy, cc, hpi, vitals, ros, exam]);
 
   const searchICD10 = useCallback(async (diagnosisText) => {
-    if (!diagnosisText || icdSearching) return;
+    if (!diagnosisText?.trim() || icdSearching) return;
     setIcdSearching(true); setIcdError(null); setIcdSuggestions([]);
     try {
       const schema = {
@@ -616,7 +616,8 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
   }, [icdSearching, cc, mdmResult, dispResult]);
 
   const generateInterventions = useCallback(async () => {
-    if (intLoading || intGenerated) return;
+    if (intLoading) return;
+    setIntGenerated(false);
     setIntLoading(true);
     try {
       const schema = {

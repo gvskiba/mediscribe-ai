@@ -15,7 +15,7 @@ import { KbHelpModal } from "./QuickNoteKbHelp";
 import { Phase1Panel } from "./QuickNotePhase1Panel";
 import { Phase2Panel } from "./QuickNotePhase2Panel";
 import { ActionBar } from "./QuickNoteActionBar";
-import { TimelineCard, DEFAULT_EVENTS } from "./QuickNoteTimeline";
+import { TimelineCard } from "./QuickNoteTimeline";
 import { SepsisBanner } from "./QuickNoteSepsis";
 import { ProcedureNoteModal } from "./QuickNoteProcedure";
 import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
@@ -89,6 +89,16 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [consults, setConsults] = useState([]);
 
   // Timeline
+  const DEFAULT_EVENTS = [
+    { id:"triage",       label:"Triage",                   time:"", notes:"" },
+    { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },
+    { id:"labs_ordered", label:"Labs Ordered",              time:"", notes:"" },
+    { id:"labs_result",  label:"Labs Resulted",             time:"", notes:"" },
+    { id:"img_ordered",  label:"Imaging Ordered",           time:"", notes:"" },
+    { id:"img_result",   label:"Imaging Resulted",          time:"", notes:"" },
+    { id:"recheck",      label:"Recheck Vitals / Reassess", time:"", notes:"" },
+    { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
+  ];
   const [timestamps, setTimestamps] = useState(DEFAULT_EVENTS);
 
   // EKG AI interpret state
@@ -520,22 +530,64 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
   const copyDischargeOnly = useCallback(() => {
     const di = dispResult?.discharge_instructions;
     if (!di) return;
-    const lines = [];
-    if (di.diagnosis_explanation) { lines.push(di.diagnosis_explanation); lines.push(""); }
+
+    const patName = [demo?.firstName, demo?.lastName].filter(Boolean).join(" ");
+    const dateStr  = new Date().toLocaleDateString("en-US", { month:"long", day:"numeric", year:"numeric" });
+    const lines    = [];
+
+    // Header
+    lines.push("DISCHARGE INSTRUCTIONS");
+    if (patName) lines.push(`Patient: ${patName}`);
+    lines.push(`Date: ${dateStr}`);
+    lines.push("");
+
+    // ── Section 1: What You Were Treated For ─────────────────────────────────
+    lines.push("WHAT YOU WERE TREATED FOR:");
+    lines.push(di.diagnosis_explanation || dispResult?.final_diagnosis || "See your physician for details.");
+    lines.push("");
+
+    // ── Section 2: How to Care for Yourself at Home ───────────────────────────
+    lines.push("HOW TO CARE FOR YOURSELF AT HOME:");
+    const homeCare = [];
+    if (di.home_care_instructions?.length) {
+      di.home_care_instructions.forEach(item => homeCare.push(item));
+    }
     if (di.medications?.length) {
-      lines.push("Medications:"); di.medications.forEach(m => lines.push(`  • ${m}`)); lines.push("");
+      di.medications.forEach(m => homeCare.push(`Take ${typeof m === "string" ? m : m.medication || m} as prescribed.`));
     }
-    if (di.activity) lines.push(`Activity: ${di.activity}`);
-    if (di.diet)     lines.push(`Diet: ${di.diet}`);
+    if (di.activity) homeCare.push(di.activity);
+    if (di.diet)     homeCare.push(di.diet);
+    if (homeCare.length) {
+      homeCare.forEach(item => lines.push(`• ${item}`));
+    } else {
+      lines.push("• Follow up with your doctor for specific home care instructions.");
+    }
+    lines.push("");
+
+    // ── Section 3: Return to ED ───────────────────────────────────────────────
     if (di.return_precautions?.length) {
-      lines.push("\nReturn to ED if:");
-      di.return_precautions.forEach((r,i) => lines.push(`  ${i+1}. ${r}`));
+      lines.push("RETURN TO THE EMERGENCY DEPARTMENT OR CALL 911 IF:");
+      di.return_precautions.forEach((r, i) => {
+        lines.push(`${i + 1}. ${typeof r === "string" ? r : r}`);
+      });
+      lines.push("");
     }
-    if (di.followup) { lines.push(""); lines.push(`Follow-up: ${di.followup}`); }
+
+    // ── Section 4: Follow-Up Care ─────────────────────────────────────────────
+    lines.push("FOLLOW-UP CARE:");
+    lines.push(di.followup || "Contact your primary care provider within 3-5 days.");
+    lines.push("");
+
+    // ── Standard boilerplate footer ───────────────────────────────────────────
+    lines.push("Our goal in the emergency department is to identify and treat conditions that require immediate care. For further evaluation or follow-up, please contact your primary care provider.");
+    lines.push("");
+    lines.push("IMPORTANT REMINDER:");
+    lines.push("These instructions support your care but do not replace medical advice. Contact your provider if symptoms change. Do not stop or adjust medications without speaking to your doctor first.");
+
     navigator.clipboard.writeText(lines.join("\n")).then(() => {
       setCopiedDischargeOnly(true); setTimeout(() => setCopiedDischargeOnly(false), 2500);
     });
-  }, [dispResult]);
+  }, [dispResult, demo]);
 
   const copyDischargeInstructions = copyDischargeOnly;
 
@@ -695,11 +747,8 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
     [setCC,setVitals,setHpi,setRos,setExam,setLabs,setImaging,setEkg,setNewVitals].forEach(fn => fn(""));
     setParsedMeds([]); setParsedAllergies([]);
     setMdmResult(null); setDispResult(null);
-    setHpiSummary(null); setHpiMode("original");
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
-    setIcdSuggestions([]); setIcdSelected([]); setInterventions([]); setIntGenerated(false);
-    setTimestamps(DEFAULT_EVENTS.map(e => ({ ...e, time:"", notes:"" })));
     setQuickDDxDismissed(false); setIsBounceback(false);
     setTreatmentPlan(""); setActionPlan("");
     setShowUndo(true);

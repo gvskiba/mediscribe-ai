@@ -304,3 +304,122 @@ export function PriorVisitsPanel({ visits, loading, onLoad }) {
     </div>
   );
 }
+
+// ─── MDM PLAN ENTRY ───────────────────────────────────────────────────────────
+// Editable fields for physician's own treatment plan + actions
+// Shown below AI treatment recs on screen — included in MDM copy, evidence labels stripped
+export function MDMPlanEntry({
+  treatmentPlan, setTreatmentPlan,
+  actionPlan, setActionPlan,
+}) {
+  const [copiedPlan, setCopiedPlan] = useState(false);
+
+  const copyPlan = () => {
+    const lines = [];
+    if (treatmentPlan?.trim()) { lines.push("MY TREATMENT PLAN:"); lines.push(treatmentPlan.trim()); lines.push(""); }
+    if (actionPlan?.trim())    { lines.push("MY PLAN FOR THIS VISIT:"); lines.push(actionPlan.trim()); }
+    if (!lines.length) return;
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCopiedPlan(true); setTimeout(() => setCopiedPlan(false), 2000);
+    });
+  };
+
+  return (
+    <div style={{ marginTop:12, borderRadius:10,
+      background:"rgba(0,229,192,.04)", border:"1px solid rgba(0,229,192,.2)" }}>
+
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", gap:8,
+        padding:"10px 14px", borderBottom:"1px solid rgba(0,229,192,.12)" }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+          color:"var(--qn-teal)", letterSpacing:1.2, textTransform:"uppercase", flex:1 }}>
+          My Clinical Plan
+        </span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+          color:"rgba(0,229,192,.5)", letterSpacing:.4 }}>
+          Included in Copy MDM · Evidence labels stripped
+        </span>
+        {(treatmentPlan?.trim() || actionPlan?.trim()) && (
+          <button onClick={copyPlan}
+            style={{ padding:"2px 9px", borderRadius:5, cursor:"pointer",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+              border:`1px solid ${copiedPlan ? "rgba(61,255,160,.5)" : "rgba(0,229,192,.35)"}`,
+              background:copiedPlan ? "rgba(61,255,160,.1)" : "transparent",
+              color:copiedPlan ? "var(--qn-green)" : "var(--qn-teal)",
+              letterSpacing:.4, transition:"all .15s" }}>
+            {copiedPlan ? "✓ Copied" : "Copy Plan"}
+          </button>
+        )}
+      </div>
+
+      <div style={{ padding:"12px 14px", display:"grid",
+        gridTemplateColumns:"1fr 1fr", gap:12 }}>
+
+        {/* Treatment Plan */}
+        <div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            fontWeight:700, color:"var(--qn-teal)", letterSpacing:1.2,
+            textTransform:"uppercase", marginBottom:5 }}>
+            Treatment Plan
+          </div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+            color:"var(--qn-txt4)", marginBottom:5, lineHeight:1.4 }}>
+            Document what you will actually order or administer
+          </div>
+          <textarea
+            value={treatmentPlan}
+            onChange={e => setTreatmentPlan(e.target.value)}
+            rows={4}
+            placeholder={
+              "e.g.\n• NS 1L IV bolus — ordered\n• Ondansetron 4mg IV — given 14:32\n• Troponin x2 q3h — pending"
+            }
+            style={{
+              width:"100%", padding:"8px 10px", borderRadius:9, resize:"vertical",
+              background:"rgba(14,37,68,.75)", border:"1px solid rgba(0,229,192,.25)",
+              color:"var(--qn-txt)", fontFamily:"'JetBrains Mono',monospace",
+              fontSize:10, outline:"none", boxSizing:"border-box", lineHeight:1.65,
+              transition:"border-color .15s",
+            }}
+            onFocus={e => e.target.style.borderColor = "rgba(0,229,192,.5)"}
+            onBlur={e  => e.target.style.borderColor = "rgba(0,229,192,.25)"}
+          />
+        </div>
+
+        {/* Actions for This Visit */}
+        <div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            fontWeight:700, color:"var(--qn-teal)", letterSpacing:1.2,
+            textTransform:"uppercase", marginBottom:5 }}>
+            Actions for This Visit
+          </div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+            color:"var(--qn-txt4)", marginBottom:5, lineHeight:1.4 }}>
+            Workup ordered, consults placed, and next steps
+          </div>
+          <textarea
+            value={actionPlan}
+            onChange={e => setActionPlan(e.target.value)}
+            rows={4}
+            placeholder={
+              "e.g.\n• 12-lead ECG — done\n• CXR PA/LAT — ordered\n• Cardiology consult placed\n• Repeat exam in 30 min"
+            }
+            style={{
+              width:"100%", padding:"8px 10px", borderRadius:9, resize:"vertical",
+              background:"rgba(14,37,68,.75)", border:"1px solid rgba(0,229,192,.25)",
+              color:"var(--qn-txt)", fontFamily:"'JetBrains Mono',monospace",
+              fontSize:10, outline:"none", boxSizing:"border-box", lineHeight:1.65,
+              transition:"border-color .15s",
+            }}
+            onFocus={e => e.target.style.borderColor = "rgba(0,229,192,.5)"}
+            onBlur={e  => e.target.style.borderColor = "rgba(0,229,192,.25)"}
+          />
+        </div>
+      </div>
+
+      <div style={{ padding:"0 14px 10px", fontFamily:"'JetBrains Mono',monospace",
+        fontSize:7, color:"rgba(0,229,192,.35)", letterSpacing:.4 }}>
+        These fields appear in Copy MDM and Copy Initial Note — AI evidence class labels are stripped from chart copy
+      </div>
+    </div>
+  );
+}

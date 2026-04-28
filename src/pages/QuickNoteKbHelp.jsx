@@ -50,6 +50,7 @@ export function KbHelpModal({ onClose }) {
             ["Esc",     "Exit SmartFill"],
           ]},
           { section:"Interface", items:[
+            ["Ctrl+1–4", "Jump to patient slot 1 / 2 / 3 / 4"],
             ["Shift+?","Toggle this help panel"],
             ["E",      "Edit MDM narrative (when visible)"],
             ["P",      "Print page"],

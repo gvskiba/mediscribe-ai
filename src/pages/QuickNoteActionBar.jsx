@@ -1,71 +1,71 @@
 // QuickNoteActionBar.jsx
-import React from "react";
-// Bottom action bar: phase indicator, format toggle, EHR copy buttons, secondary actions
+// Bottom action bar: phase indicator, format + paste-ready toggles,
+//                   EHR copy buttons, MDM-only, discharge-only, secondary actions
 // Exported: ActionBar
+
+import React from "react";
 
 export function ActionBar({
   mdmResult, dispResult,
-  copiedP1, copiedP2, copied, savedNote, saving, sentToNPI, sendingNPI,
-  copiedMDMOnly, copiedDischargeOnly,
+  copiedP1, copiedP2, copied, copiedMDMOnly, copiedDischargeOnly,
+  savedNote, saving, sentToNPI, sendingNPI,
   formatMode, setFormatMode,
   pasteReady, setPasteReady,
   copyPhase1, copyPhase2, copyNote, saveNote, sendToNPI,
   copyMDMOnly, copyDischargeOnly,
-  onNewEncounter,
+  onNewEncounter, onProcedureNote,
 }) {
   return (
     <div className="no-print">
-      {/* Phase indicator + format toggle */}
+      {/* Phase indicator + format + paste-ready toggles */}
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8,
         padding:"6px 14px", borderRadius:8,
         background:"rgba(8,22,40,.5)", border:"1px solid rgba(42,79,122,.25)" }}>
-        <div style={{ display:"flex", gap:12, flex:1 }}>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-            fontWeight:700, letterSpacing:.8,
-            color: mdmResult ? "var(--qn-teal)" : "var(--qn-txt4)",
+        <div style={{ display:"flex", gap:12, flex:1, flexWrap:"wrap" }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+            letterSpacing:.8, color:mdmResult ? "var(--qn-teal)" : "var(--qn-txt4)",
             textTransform:"uppercase" }}>
-            {mdmResult ? "✓" : "○"} Phase 1: Initial Documentation
+            {mdmResult ? "✓" : "○"} Phase 1
           </span>
           <span style={{ color:"rgba(42,79,122,.6)", fontSize:9 }}>|</span>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-            fontWeight:700, letterSpacing:.8,
-            color: dispResult ? "var(--qn-purple)" : "var(--qn-txt4)",
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+            letterSpacing:.8, color:dispResult ? "var(--qn-purple)" : "var(--qn-txt4)",
             textTransform:"uppercase" }}>
-            {dispResult ? "✓" : "○"} Phase 2: Reevaluation &amp; Disposition
+            {dispResult ? "✓" : "○"} Phase 2
           </span>
         </div>
         {/* Format toggle */}
-        <div style={{ display:"flex", gap:4, alignItems:"center", flexWrap:"wrap" }}>
+        <div style={{ display:"flex", gap:4, alignItems:"center" }}>
           <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
             color:"var(--qn-txt4)", letterSpacing:.5, textTransform:"uppercase" }}>
             Format:
           </span>
-          {[["plain","Plain Text"],["epic","Epic"]].map(([v,l]) => (
+          {[["plain","Plain"],["epic","Epic"],["smartphrase","SmartPhrase"]].map(([v,l]) => (
             <button key={v} onClick={() => setFormatMode(v)}
               style={{ padding:"2px 8px", borderRadius:4, cursor:"pointer",
                 fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                border:`1px solid ${formatMode === v ? "rgba(0,229,192,.45)" : "rgba(42,79,122,.35)"}`,
-                background:formatMode === v ? "rgba(0,229,192,.12)" : "transparent",
-                color:formatMode === v ? "var(--qn-teal)" : "var(--qn-txt4)",
+                border:`1px solid ${formatMode===v ? "rgba(0,229,192,.45)" : "rgba(42,79,122,.35)"}`,
+                background:formatMode===v ? "rgba(0,229,192,.12)" : "transparent",
+                color:formatMode===v ? "var(--qn-teal)" : "var(--qn-txt4)",
                 transition:"all .12s" }}>{l}</button>
           ))}
-          {setPasteReady && (
-            <>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-                color:"var(--qn-txt4)", letterSpacing:.5, textTransform:"uppercase", marginLeft:6 }}>
-                Labels:
-              </span>
-              {[["labeled","On"],["prose","Off"]].map(([v,l]) => (
-                <button key={v} onClick={() => setPasteReady(v)}
-                  style={{ padding:"2px 8px", borderRadius:4, cursor:"pointer",
-                    fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                    border:`1px solid ${pasteReady === v ? "rgba(245,200,66,.5)" : "rgba(42,79,122,.35)"}`,
-                    background:pasteReady === v ? "rgba(245,200,66,.1)" : "transparent",
-                    color:pasteReady === v ? "var(--qn-gold)" : "var(--qn-txt4)",
-                    transition:"all .12s" }}>{l}</button>
-              ))}
-            </>
-          )}
+        </div>
+        {/* Paste-ready toggle */}
+        <div style={{ display:"flex", gap:4, alignItems:"center",
+          borderLeft:"1px solid rgba(42,79,122,.3)", paddingLeft:8 }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            color:"var(--qn-txt4)", letterSpacing:.5, textTransform:"uppercase" }}>
+            Output:
+          </span>
+          {[["labeled","Labeled"],["prose","Prose Only"]].map(([v,l]) => (
+            <button key={v} onClick={() => setPasteReady(v)}
+              style={{ padding:"2px 8px", borderRadius:4, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                border:`1px solid ${pasteReady===v ? "rgba(245,200,66,.45)" : "rgba(42,79,122,.35)"}`,
+                background:pasteReady===v ? "rgba(245,200,66,.1)" : "transparent",
+                color:pasteReady===v ? "var(--qn-gold)" : "var(--qn-txt4)",
+                transition:"all .12s" }}>{l}</button>
+          ))}
         </div>
       </div>
 
@@ -83,9 +83,9 @@ export function ActionBar({
               background:copiedP1 ? "rgba(61,255,160,.15)" : "rgba(0,229,192,.12)",
               color:copiedP1 ? "var(--qn-green)" : "var(--qn-teal)",
               boxShadow:copiedP1 ? "none" : "0 0 12px rgba(0,229,192,.12)" }}>
-            {copiedP1 ? "✓ Phase 1 Copied — Paste into EHR" : "📋 Copy Initial Note  "}
+            {copiedP1 ? "✓ Phase 1 Copied" : "📋 Copy Initial Note"}
             {!copiedP1 && <span style={{ fontFamily:"'JetBrains Mono',monospace",
-              fontSize:9, opacity:.6 }}>[Shift+1]</span>}
+              fontSize:9, opacity:.6, marginLeft:6 }}>[Shift+1]</span>}
           </button>
         )}
 
@@ -98,37 +98,39 @@ export function ActionBar({
               background:copiedP2 ? "rgba(61,255,160,.15)" : "rgba(155,109,255,.12)",
               color:copiedP2 ? "var(--qn-green)" : "var(--qn-purple)",
               boxShadow:copiedP2 ? "none" : "0 0 12px rgba(155,109,255,.12)" }}>
-            {copiedP2 ? "✓ Phase 2 Copied — Paste into EHR" : "📋 Copy Reevaluation & Disposition  "}
+            {copiedP2 ? "✓ Phase 2 Copied" : "📋 Copy Reevaluation & Disposition"}
             {!copiedP2 && <span style={{ fontFamily:"'JetBrains Mono',monospace",
-              fontSize:9, opacity:.6 }}>[Shift+2]</span>}
+              fontSize:9, opacity:.6, marginLeft:6 }}>[Shift+2]</span>}
           </button>
         )}
 
-        {mdmResult && copyMDMOnly && (
+        {/* Shift+3 — MDM only */}
+        {mdmResult && (
           <button onClick={copyMDMOnly}
             style={{ padding:"9px 16px", borderRadius:8, cursor:"pointer",
               fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
               transition:"all .15s",
-              border:`1px solid ${copiedMDMOnly ? "rgba(61,255,160,.6)" : "rgba(0,229,192,.3)"}`,
-              background:copiedMDMOnly ? "rgba(61,255,160,.12)" : "rgba(14,37,68,.6)",
-              color:copiedMDMOnly ? "var(--qn-green)" : "var(--qn-txt3)" }}>
-            {copiedMDMOnly ? "✓ MDM Only Copied" : "MDM Only"}
+              border:`1px solid ${copiedMDMOnly ? "rgba(61,255,160,.5)" : "rgba(0,229,192,.3)"}`,
+              background:copiedMDMOnly ? "rgba(61,255,160,.1)" : "rgba(14,37,68,.6)",
+              color:copiedMDMOnly ? "var(--qn-green)" : "var(--qn-teal)" }}>
+            {copiedMDMOnly ? "✓ MDM Copied" : "MDM Only"}
             {!copiedMDMOnly && <span style={{ fontFamily:"'JetBrains Mono',monospace",
-              fontSize:9, opacity:.5, marginLeft:4 }}>[Shift+3]</span>}
+              fontSize:8, opacity:.5, marginLeft:5 }}>[Shift+3]</span>}
           </button>
         )}
 
-        {dispResult && copyDischargeOnly && (
+        {/* Shift+4 — discharge instructions only */}
+        {dispResult?.discharge_instructions?.diagnosis_explanation && (
           <button onClick={copyDischargeOnly}
             style={{ padding:"9px 16px", borderRadius:8, cursor:"pointer",
               fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
               transition:"all .15s",
-              border:`1px solid ${copiedDischargeOnly ? "rgba(61,255,160,.6)" : "rgba(61,255,160,.3)"}`,
-              background:copiedDischargeOnly ? "rgba(61,255,160,.12)" : "rgba(14,37,68,.6)",
-              color:copiedDischargeOnly ? "var(--qn-green)" : "var(--qn-txt3)" }}>
-            {copiedDischargeOnly ? "✓ Disch. Copied" : "Discharge Instr."}
+              border:`1px solid ${copiedDischargeOnly ? "rgba(61,255,160,.5)" : "rgba(61,255,160,.3)"}`,
+              background:copiedDischargeOnly ? "rgba(61,255,160,.1)" : "rgba(14,37,68,.6)",
+              color:copiedDischargeOnly ? "var(--qn-green)" : "var(--qn-green)" }}>
+            {copiedDischargeOnly ? "✓ Discharge Copied" : "Discharge Rx Only"}
             {!copiedDischargeOnly && <span style={{ fontFamily:"'JetBrains Mono',monospace",
-              fontSize:9, opacity:.5, marginLeft:4 }}>[Shift+4]</span>}
+              fontSize:8, opacity:.5, marginLeft:5 }}>[Shift+4]</span>}
           </button>
         )}
 
@@ -149,9 +151,7 @@ export function ActionBar({
             style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
               fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
               border:"1px solid rgba(42,79,122,.4)", background:"rgba(14,37,68,.6)",
-              color:"var(--qn-txt3)", transition:"all .15s" }}>
-            History →
-          </button>
+              color:"var(--qn-txt3)", transition:"all .15s" }}>History →</button>
           <button onClick={sendToNPI} disabled={sendingNPI}
             style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
               fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
@@ -174,15 +174,20 @@ export function ActionBar({
             style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
               fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
               border:"1px solid rgba(255,107,107,.3)", background:"rgba(14,37,68,.6)",
-              color:"var(--qn-coral)", transition:"all .15s" }}>
-            New Encounter
-          </button>
+              color:"var(--qn-coral)", transition:"all .15s" }}>New Encounter</button>
+          {onProcedureNote && (
+            <button onClick={onProcedureNote}
+              style={{ padding:"7px 14px", borderRadius:7, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                border:"1px solid rgba(245,200,66,.3)", background:"rgba(14,37,68,.6)",
+                color:"var(--qn-gold)", transition:"all .15s" }}>+ Procedure Note</button>
+          )}
         </div>
       </div>
 
       <div style={{ textAlign:"right", fontFamily:"'JetBrains Mono',monospace",
         fontSize:8, color:"rgba(107,158,200,.35)", letterSpacing:.5 }}>
-        Shift+1 initial · Shift+2 reevaluation · Shift+3 MDM only · Shift+4 discharge · C full note
+        Shift+1 initial note · Shift+2 reevaluation · Shift+3 MDM only · Shift+4 discharge Rx
       </div>
     </div>
   );

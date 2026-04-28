@@ -28,6 +28,10 @@ export function Phase1Panel({
   setRef, makeKeyDown,
   // Submit
   runMDM,
+  // Bounceback
+  isBounceback, setIsBounceback, bouncebackDate, setBouncebackDate,
+  // Auto-ROS
+  autoRosFromHpi, autoRosBusy,
 }) {
   return (
     <div style={{ marginBottom:14,
@@ -282,8 +286,20 @@ export function Phase1Panel({
 
       {/* Copy clinical inputs button */}
       {(hpi.trim() || ros.trim() || exam.trim()) && (
-        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8 }}
+        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8, gap:6, flexWrap:"wrap" }}
           className="no-print">
+          {/* Auto-populate ROS from HPI */}
+          {hpi.trim().length > 30 && (
+            <button onClick={autoRosFromHpi} disabled={autoRosBusy}
+              style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${autoRosBusy ? "rgba(42,79,122,.3)" : "rgba(155,109,255,.4)"}`,
+                background:autoRosBusy ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.07)",
+                color:autoRosBusy ? "var(--qn-txt4)" : "var(--qn-purple)",
+                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+              {autoRosBusy ? "● Generating…" : "✦ Auto-ROS from HPI"}
+            </button>
+          )}
           <button onClick={copyClinicalInputs}
             style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
               fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
@@ -296,6 +312,46 @@ export function Phase1Panel({
           </button>
         </div>
       )}
+
+      {/* Bounceback flag */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10,
+        padding:"8px 12px", borderRadius:8,
+        background: isBounceback ? "rgba(255,107,107,.08)" : "rgba(14,37,68,.4)",
+        border:`1px solid ${isBounceback ? "rgba(255,107,107,.4)" : "rgba(42,79,122,.3)"}`,
+        transition:"all .2s" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer",
+          flex:1 }} onClick={() => setIsBounceback(b => !b)}>
+          <div style={{ width:16, height:16, borderRadius:4, flexShrink:0,
+            border:`2px solid ${isBounceback ? "var(--qn-coral)" : "rgba(42,79,122,.6)"}`,
+            background:isBounceback ? "rgba(255,107,107,.2)" : "transparent",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            transition:"all .15s" }}>
+            {isBounceback && <span style={{ fontSize:10, color:"var(--qn-coral)", lineHeight:1 }}>✓</span>}
+          </div>
+          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+            color:isBounceback ? "var(--qn-coral)" : "var(--qn-txt4)" }}>
+            Return visit within 72h
+          </span>
+          {isBounceback && (
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:"rgba(255,107,107,.6)", letterSpacing:.4 }}>
+              — bounceback documentation added to MDM
+            </span>
+          )}
+        </div>
+        {isBounceback && (
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:"var(--qn-txt4)" }}>Prior visit:</span>
+            <input type="date" value={bouncebackDate}
+              onChange={e => setBouncebackDate(e.target.value)}
+              style={{ padding:"2px 7px", borderRadius:5, fontSize:10,
+                background:"rgba(14,37,68,.8)", border:"1px solid rgba(255,107,107,.4)",
+                color:"var(--qn-txt)", fontFamily:"'JetBrains Mono',monospace",
+                outline:"none" }} />
+          </div>
+        )}
+      </div>
 
       {/* Generate MDM button */}
       <button className="qn-btn" onClick={runMDM}

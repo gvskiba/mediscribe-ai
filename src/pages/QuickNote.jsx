@@ -759,6 +759,9 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
     setMdmResult(null); setDispResult(null);
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
+    setHpiSummary(null); setHpiMode("original");
+    setIcdSuggestions([]); setIcdSelected([]); setInterventions([]); setIntGenerated(false);
+    setTimestamps(DEFAULT_EVENTS.map(e => ({ ...e, time:"", notes:"" })));
     setQuickDDxDismissed(false); setIsBounceback(false);
     setTreatmentPlan(""); setActionPlan("");
     setShowUndo(true);

@@ -1,6 +1,6 @@
 // QuickNoteExtras.jsx
-// SDM block, Provider Attestation, Nursing Handoff, Prior Visits panel, MDM Plan Entry
-// Exported: SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry
+// SDM block, Provider Attestation, Nursing Handoff, Prior Visits panel
+// Exported: SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel
 
 import React, { useState } from "react";
 
@@ -306,119 +306,549 @@ export function PriorVisitsPanel({ visits, loading, onLoad }) {
 }
 
 // ─── MDM PLAN ENTRY ───────────────────────────────────────────────────────────
-// Editable fields for physician's own treatment plan + actions
-// Shown below AI treatment recs on screen — included in MDM copy, evidence labels stripped
+// All 8 speed features:
+// 1. AI auto-populate from MDM   5. Dot-shorthand expansion
+// 2. Quick-pick AI chips          6. Voice dictation
+// 3. Checkbox mode toggle         7. Inline time entry
+// 4. Recent plans library         8. Tabbed layout with preview
+
+import { DictationButton, useSmartText } from "./QuickNoteVoice";
+
+// Plan-specific smart text shortcuts
+const PLAN_EXPANSIONS = {
+  ".iv":    "• IV access established, NS TKO\n",
+  ".ivf":   "• NS 1L IV bolus — ordered\n",
+  ".ecg":   "• 12-lead ECG — obtained and reviewed\n",
+  ".cxr":   "• CXR PA/lateral — ordered\n",
+  ".cbc":   "• CBC, BMP ordered\n",
+  ".labs":  "• CBC, BMP, troponin, lactate, UA ordered\n",
+  ".asa":   "• Aspirin 325mg PO — given\n",
+  ".zofran":"• Ondansetron 4mg IV — given\n",
+  ".toradol":"• Ketorolac 30mg IV — given\n",
+  ".ativan":"• Lorazepam 1mg IV — given\n",
+  ".monitor":"• Continuous cardiac monitoring, pulse oximetry, BP q1h\n",
+  ".consult":"• Consult placed — awaiting response\n",
+  ".repeat":"• Repeat exam in 30 min\n",
+  ".npo":   "• NPO\n",
+  ".dc":    "• Discussed diagnosis, plan, and return precautions with patient\n",
+};
+
+// In-memory recent plans store (session-scoped, last 8 entries)
+const recentPlansStore = { treatment:[], actions:[] };
+function saveToRecent(type, text) {
+  if (!text?.trim()) return;
+  const store = recentPlansStore[type];
+  const existing = store.findIndex(r => r.text === text.trim());
+  if (existing !== -1) store.splice(existing, 1);
+  store.unshift({ text:text.trim(), ts:Date.now() });
+  if (store.length > 8) store.pop();
+}
+
+// Checkbox item component
+function CheckItem({ item, onToggle, onTimeChange }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:7, padding:"4px 0" }}>
+      <div onClick={() => onToggle(item.id)}
+        style={{ width:15, height:15, borderRadius:4, flexShrink:0, cursor:"pointer",
+          border:`2px solid ${item.checked ? "var(--qn-teal)" : "rgba(42,79,122,.5)"}`,
+          background:item.checked ? "rgba(0,229,192,.2)" : "transparent",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          transition:"all .12s" }}>
+        {item.checked && <span style={{ fontSize:9, color:"var(--qn-teal)", lineHeight:1 }}>✓</span>}
+      </div>
+      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+        color:item.checked ? "var(--qn-txt2)" : "var(--qn-txt3)",
+        flex:1, lineHeight:1.4,
+        textDecoration:item.checked ? "none" : "none" }}>
+        {item.label}
+        {item.dose && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+          color:"var(--qn-txt4)", marginLeft:6 }}>{item.dose}</span>}
+      </span>
+      {item.checked && (
+        <input type="time" value={item.time||""} onChange={e => onTimeChange(item.id, e.target.value)}
+          placeholder="time"
+          style={{ width:78, padding:"2px 5px", borderRadius:5, fontSize:9,
+            background:"rgba(14,37,68,.8)", border:"1px solid rgba(42,79,122,.4)",
+            color:"var(--qn-txt)", fontFamily:"'JetBrains Mono',monospace",
+            outline:"none" }} />
+      )}
+    </div>
+  );
+}
+
 export function MDMPlanEntry({
   treatmentPlan, setTreatmentPlan,
-  actionPlan, setActionPlan,
+  actionPlan,    setActionPlan,
+  mdmResult,
+  interventions,
+  onDraftFromMDM, // callback: (treatmentText, actionText) => void
+  base44,
 }) {
-  const [copiedPlan, setCopiedPlan] = useState(false);
+  const [activeTab,      setActiveTab]      = useState("treatment"); // treatment|actions|preview
+  const [mode,           setMode]           = useState("text");      // text|checkbox
+  const [checkItems,     setCheckItems]     = useState([]);
+  const [draftingMDM,    setDraftingMDM]    = useState(false);
+  const [draftingChips,  setDraftingChips]  = useState(false);
+  const [treatChips,     setTreatChips]     = useState([]);
+  const [actionChips,    setActionChips]    = useState([]);
+  const [copiedPlan,     setCopiedPlan]     = useState(false);
+  const [showRecent,     setShowRecent]     = useState(false);
+  const [recentType,     setRecentType]     = useState(null);
 
+  // Smart text wrappers
+  const smartTreatment = useSmartText(treatmentPlan, setTreatmentPlan, PLAN_EXPANSIONS);
+  const smartActions   = useSmartText(actionPlan,    setActionPlan,    PLAN_EXPANSIONS);
+
+  // ── AI: Draft from MDM ──────────────────────────────────────────────────
+  const draftFromMDM = async () => {
+    if (!mdmResult || draftingMDM) return;
+    setDraftingMDM(true);
+    try {
+      // Build treatment text from treatment_recommendations
+      const treatLines = (mdmResult.treatment_recommendations || []).map(t => {
+        const base = t.intervention.replace(/\s*\[(?:Class\s+I{1,3}[ab]?|Expert\s+consensus)\]\s*/gi, "").trim();
+        return `• ${base}`;
+      });
+      // Build action text from recommended_actions + critical_actions
+      const actionLines = [
+        ...(mdmResult.critical_actions || []).map(a => `• ${a} [CRITICAL]`),
+        ...(mdmResult.recommended_actions || []).map(a => `• ${typeof a === "string" ? a : a.action || a}`),
+      ];
+      const newTreat  = treatLines.join("\n");
+      const newAction = actionLines.join("\n");
+      setTreatmentPlan(prev => prev ? prev + "\n" + newTreat : newTreat);
+      setActionPlan(prev   => prev ? prev + "\n" + newAction : newAction);
+      if (onDraftFromMDM) onDraftFromMDM(newTreat, newAction);
+    } finally { setDraftingMDM(false); }
+  };
+
+  // ── AI: Generate quick-pick chips ───────────────────────────────────────
+  const generateChips = async () => {
+    if (!mdmResult || draftingChips) return;
+    setDraftingChips(true);
+    try {
+      const schema = {
+        type:"object", required:["treatment_chips","action_chips"],
+        properties:{
+          treatment_chips:{ type:"array", maxItems:8,
+            items:{ type:"object", required:["label"],
+              properties:{ label:{type:"string"}, dose:{type:"string"} } } },
+          action_chips:{ type:"array", maxItems:8,
+            items:{ type:"object", required:["label"],
+              properties:{ label:{type:"string"} } } },
+        },
+      };
+      const invokeFn = base44?.integrations?.Core?.InvokeLLM;
+      if (!invokeFn) return;
+      const res = await invokeFn({
+        prompt:`Generate quick-pick plan chips for this ED patient.
+Working diagnosis: ${mdmResult.working_diagnosis}
+MDM level: ${mdmResult.mdm_level}
+Critical actions: ${(mdmResult.critical_actions||[]).join("; ")||"none"}
+Treatment recs: ${(mdmResult.treatment_recommendations||[]).map(t=>t.intervention).join("; ")||"none"}
+
+treatment_chips: 4-8 specific treatment items the physician will likely ORDER or GIVE.
+Each item: label = short name (e.g. "Aspirin 325mg PO"), dose = dose/route if applicable.
+Keep labels concise (≤30 chars). Prioritize highest-evidence items first.
+
+action_chips: 4-8 specific diagnostic or workflow ACTIONS.
+Each item: label = short action (e.g. "12-lead ECG", "CXR ordered", "Repeat exam 30min").
+Keep labels concise (≤30 chars).
+
+Be specific to THIS diagnosis, not generic. JSON only.`,
+        response_json_schema: schema,
+      });
+      setTreatChips(res?.treatment_chips || []);
+      setActionChips(res?.action_chips   || []);
+    } catch(e) { console.error("Chips failed:", e); }
+    finally { setDraftingChips(false); }
+  };
+
+  // ── Checkbox mode: build from interventions or chips ────────────────────
+  const buildCheckboxItems = () => {
+    const base = interventions?.length
+      ? interventions.map(i => ({
+          id:      i.id || `ci-${Math.random()}`,
+          label:   i.name,
+          dose:    i.dose_route || "",
+          checked: i.confirmed !== false,
+          time:    i.time_given || "",
+          type:    i.type,
+        }))
+      : [
+          ...(treatChips.length ? treatChips.map((c,i) => ({
+            id:`tc-${i}`, label:c.label, dose:c.dose||"", checked:false, time:"", type:"treatment",
+          })) : []),
+          ...(actionChips.length ? actionChips.map((c,i) => ({
+            id:`ac-${i}`, label:c.label, dose:"", checked:false, time:"", type:"action",
+          })) : []),
+        ];
+    setCheckItems(base);
+    setMode("checkbox");
+  };
+
+  const toggleCheck = (id) =>
+    setCheckItems(prev => prev.map(i => i.id===id ? {...i, checked:!i.checked} : i));
+
+  const updateTime = (id, time) =>
+    setCheckItems(prev => prev.map(i => i.id===id ? {...i, time} : i));
+
+  // Convert checked items back to text
+  const applyCheckboxToText = () => {
+    const treatments = checkItems.filter(i => i.checked && i.type!=="action");
+    const actions    = checkItems.filter(i => i.checked && i.type==="action");
+    const unchecked  = checkItems.filter(i => i.checked && !["treatment","action"].includes(i.type||""));
+
+    const toLine = (i) => {
+      let line = `• ${i.label}`;
+      if (i.dose)  line += ` — ${i.dose}`;
+      if (i.time)  line += ` (${i.time})`;
+      return line;
+    };
+
+    if (treatments.length || unchecked.length)
+      setTreatmentPlan([...treatments, ...unchecked].map(toLine).join("\n"));
+    if (actions.length)
+      setActionPlan(actions.map(toLine).join("\n"));
+
+    setMode("text");
+  };
+
+  // ── Copy plan ────────────────────────────────────────────────────────────
   const copyPlan = () => {
     const lines = [];
     if (treatmentPlan?.trim()) { lines.push("MY TREATMENT PLAN:"); lines.push(treatmentPlan.trim()); lines.push(""); }
     if (actionPlan?.trim())    { lines.push("MY PLAN FOR THIS VISIT:"); lines.push(actionPlan.trim()); }
     if (!lines.length) return;
-    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+    const text = lines.join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      saveToRecent("treatment", treatmentPlan);
+      saveToRecent("actions",   actionPlan);
       setCopiedPlan(true); setTimeout(() => setCopiedPlan(false), 2000);
     });
+  };
+
+  // ── Chip append ──────────────────────────────────────────────────────────
+  const appendChip = (chip, target) => {
+    const line = `• ${chip.label}${chip.dose ? " — " + chip.dose : ""}\n`;
+    if (target === "treatment") setTreatmentPlan(prev => (prev||"") + line);
+    else                        setActionPlan(prev    => (prev||"") + line);
+  };
+
+  // ── Combined preview text ────────────────────────────────────────────────
+  const previewText = [
+    treatmentPlan?.trim() ? `MY TREATMENT PLAN:\n${treatmentPlan.trim()}` : "",
+    actionPlan?.trim()    ? `MY PLAN FOR THIS VISIT:\n${actionPlan.trim()}` : "",
+  ].filter(Boolean).join("\n\n");
+
+  const hasContent = !!(treatmentPlan?.trim() || actionPlan?.trim());
+  const hasChips   = treatChips.length > 0 || actionChips.length > 0;
+
+  // ── Shared textarea style ────────────────────────────────────────────────
+  const taStyle = {
+    width:"100%", padding:"8px 10px", borderRadius:9, resize:"vertical",
+    background:"rgba(14,37,68,.75)", border:"1px solid rgba(0,229,192,.25)",
+    color:"var(--qn-txt)", fontFamily:"'JetBrains Mono',monospace",
+    fontSize:10, outline:"none", boxSizing:"border-box", lineHeight:1.65,
+    transition:"border-color .15s",
   };
 
   return (
     <div style={{ marginTop:12, borderRadius:10,
       background:"rgba(0,229,192,.04)", border:"1px solid rgba(0,229,192,.2)" }}>
 
-      {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:8,
-        padding:"10px 14px", borderBottom:"1px solid rgba(0,229,192,.12)" }}>
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <div style={{ display:"flex", alignItems:"center", gap:6,
+        padding:"10px 14px", borderBottom:"1px solid rgba(0,229,192,.12)",
+        flexWrap:"wrap" }}>
         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
           color:"var(--qn-teal)", letterSpacing:1.2, textTransform:"uppercase", flex:1 }}>
           My Clinical Plan
         </span>
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-          color:"rgba(0,229,192,.5)", letterSpacing:.4 }}>
-          Included in Copy MDM · Evidence labels stripped
-        </span>
-        {(treatmentPlan?.trim() || actionPlan?.trim()) && (
+
+        {/* AI Draft from MDM */}
+        <button onClick={draftFromMDM} disabled={!mdmResult || draftingMDM}
+          title="Pre-fill from AI treatment recommendations"
+          style={{ padding:"3px 10px", borderRadius:6, cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+            border:`1px solid ${draftingMDM ? "rgba(42,79,122,.3)" : "rgba(0,229,192,.4)"}`,
+            background:draftingMDM ? "rgba(14,37,68,.4)" : "rgba(0,229,192,.1)",
+            color:draftingMDM ? "var(--qn-txt4)" : "var(--qn-teal)",
+            letterSpacing:.4, transition:"all .15s" }}>
+          {draftingMDM ? "● …" : "✦ Draft from MDM"}
+        </button>
+
+        {/* Generate chips */}
+        <button onClick={generateChips} disabled={!mdmResult || draftingChips}
+          title="Generate quick-pick chips for this diagnosis"
+          style={{ padding:"3px 10px", borderRadius:6, cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+            border:`1px solid ${draftingChips ? "rgba(42,79,122,.3)" : "rgba(155,109,255,.4)"}`,
+            background:draftingChips ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.08)",
+            color:draftingChips ? "var(--qn-txt4)" : "var(--qn-purple)",
+            letterSpacing:.4, transition:"all .15s" }}>
+          {draftingChips ? "● …" : "⊞ Chips"}
+        </button>
+
+        {/* Checkbox mode toggle */}
+        <button onClick={() => mode === "checkbox" ? applyCheckboxToText() : buildCheckboxItems()}
+          style={{ padding:"3px 10px", borderRadius:6, cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+            border:`1px solid ${mode==="checkbox" ? "rgba(245,200,66,.5)" : "rgba(42,79,122,.4)"}`,
+            background:mode==="checkbox" ? "rgba(245,200,66,.12)" : "transparent",
+            color:mode==="checkbox" ? "var(--qn-gold)" : "var(--qn-txt4)",
+            letterSpacing:.4, transition:"all .15s" }}>
+          {mode === "checkbox" ? "✓ Apply" : "☑ Checklist"}
+        </button>
+
+        {/* Copy */}
+        {hasContent && (
           <button onClick={copyPlan}
-            style={{ padding:"2px 9px", borderRadius:5, cursor:"pointer",
+            style={{ padding:"3px 10px", borderRadius:6, cursor:"pointer",
               fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
               border:`1px solid ${copiedPlan ? "rgba(61,255,160,.5)" : "rgba(0,229,192,.35)"}`,
               background:copiedPlan ? "rgba(61,255,160,.1)" : "transparent",
               color:copiedPlan ? "var(--qn-green)" : "var(--qn-teal)",
               letterSpacing:.4, transition:"all .15s" }}>
-            {copiedPlan ? "✓ Copied" : "Copy Plan"}
+            {copiedPlan ? "✓ Copied" : "Copy"}
           </button>
         )}
       </div>
 
-      <div style={{ padding:"12px 14px", display:"grid",
-        gridTemplateColumns:"1fr 1fr", gap:12 }}>
-
-        {/* Treatment Plan */}
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            fontWeight:700, color:"var(--qn-teal)", letterSpacing:1.2,
-            textTransform:"uppercase", marginBottom:5 }}>
-            Treatment Plan
-          </div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-            color:"var(--qn-txt4)", marginBottom:5, lineHeight:1.4 }}>
-            Document what you will actually order or administer
-          </div>
-          <textarea
-            value={treatmentPlan}
-            onChange={e => setTreatmentPlan(e.target.value)}
-            rows={4}
-            placeholder={
-              "e.g.\n• NS 1L IV bolus — ordered\n• Ondansetron 4mg IV — given 14:32\n• Troponin x2 q3h — pending"
-            }
-            style={{
-              width:"100%", padding:"8px 10px", borderRadius:9, resize:"vertical",
-              background:"rgba(14,37,68,.75)", border:"1px solid rgba(0,229,192,.25)",
-              color:"var(--qn-txt)", fontFamily:"'JetBrains Mono',monospace",
-              fontSize:10, outline:"none", boxSizing:"border-box", lineHeight:1.65,
-              transition:"border-color .15s",
-            }}
-            onFocus={e => e.target.style.borderColor = "rgba(0,229,192,.5)"}
-            onBlur={e  => e.target.style.borderColor = "rgba(0,229,192,.25)"}
-          />
+      {/* ── Quick-pick chips ────────────────────────────────────────────── */}
+      {hasChips && (
+        <div style={{ padding:"8px 14px 0",
+          borderBottom:"1px solid rgba(0,229,192,.08)" }}>
+          {treatChips.length > 0 && (
+            <div style={{ marginBottom:6 }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:"var(--qn-teal)", letterSpacing:.8, textTransform:"uppercase",
+                marginBottom:4 }}>Treatment Quick-Pick</div>
+              <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                {treatChips.map((c, i) => (
+                  <button key={i} onClick={() => appendChip(c, "treatment")}
+                    style={{ padding:"3px 9px", borderRadius:6, cursor:"pointer",
+                      fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:10,
+                      border:"1px solid rgba(0,229,192,.3)",
+                      background:"rgba(0,229,192,.07)", color:"var(--qn-txt2)",
+                      transition:"all .12s", whiteSpace:"nowrap" }}
+                    onMouseEnter={e => { e.currentTarget.style.background="rgba(0,229,192,.18)"; e.currentTarget.style.color="var(--qn-txt)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background="rgba(0,229,192,.07)"; e.currentTarget.style.color="var(--qn-txt2)"; }}>
+                    + {c.label}{c.dose ? ` (${c.dose})` : ""}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {actionChips.length > 0 && (
+            <div style={{ marginBottom:8 }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:"var(--qn-blue)", letterSpacing:.8, textTransform:"uppercase",
+                marginBottom:4 }}>Action Quick-Pick</div>
+              <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                {actionChips.map((c, i) => (
+                  <button key={i} onClick={() => appendChip(c, "action")}
+                    style={{ padding:"3px 9px", borderRadius:6, cursor:"pointer",
+                      fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:10,
+                      border:"1px solid rgba(59,158,255,.3)",
+                      background:"rgba(59,158,255,.07)", color:"var(--qn-txt2)",
+                      transition:"all .12s", whiteSpace:"nowrap" }}
+                    onMouseEnter={e => { e.currentTarget.style.background="rgba(59,158,255,.18)"; e.currentTarget.style.color="var(--qn-txt)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background="rgba(59,158,255,.07)"; e.currentTarget.style.color="var(--qn-txt2)"; }}>
+                    + {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+      )}
 
-        {/* Actions for This Visit */}
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            fontWeight:700, color:"var(--qn-teal)", letterSpacing:1.2,
-            textTransform:"uppercase", marginBottom:5 }}>
-            Actions for This Visit
-          </div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-            color:"var(--qn-txt4)", marginBottom:5, lineHeight:1.4 }}>
-            Workup ordered, consults placed, and next steps
-          </div>
-          <textarea
-            value={actionPlan}
-            onChange={e => setActionPlan(e.target.value)}
-            rows={4}
-            placeholder={
-              "e.g.\n• 12-lead ECG — done\n• CXR PA/LAT — ordered\n• Cardiology consult placed\n• Repeat exam in 30 min"
-            }
-            style={{
-              width:"100%", padding:"8px 10px", borderRadius:9, resize:"vertical",
-              background:"rgba(14,37,68,.75)", border:"1px solid rgba(0,229,192,.25)",
-              color:"var(--qn-txt)", fontFamily:"'JetBrains Mono',monospace",
-              fontSize:10, outline:"none", boxSizing:"border-box", lineHeight:1.65,
-              transition:"border-color .15s",
-            }}
-            onFocus={e => e.target.style.borderColor = "rgba(0,229,192,.5)"}
-            onBlur={e  => e.target.style.borderColor = "rgba(0,229,192,.25)"}
-          />
-        </div>
+      {/* ── Tab bar ─────────────────────────────────────────────────────── */}
+      <div style={{ display:"flex", gap:0, padding:"0 14px",
+        borderBottom:"1px solid rgba(0,229,192,.1)", marginTop:10 }}>
+        {[
+          { id:"treatment", label:"Treatment" },
+          { id:"actions",   label:"Actions"   },
+          { id:"preview",   label:"Both ↗"    },
+        ].map(({ id, label }) => (
+          <button key={id} onClick={() => setActiveTab(id)}
+            style={{ padding:"6px 14px", cursor:"pointer",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+              border:"none", borderBottom:`2px solid ${activeTab===id ? "var(--qn-teal)" : "transparent"}`,
+              background:"transparent",
+              color:activeTab===id ? "var(--qn-teal)" : "var(--qn-txt4)",
+              letterSpacing:.5, transition:"all .15s", marginBottom:-1 }}>
+            {label}
+          </button>
+        ))}
+        <div style={{ flex:1 }} />
+        {/* Shorthand hint */}
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+          color:"rgba(42,79,122,.5)", alignSelf:"center", letterSpacing:.3 }}>
+          .iv .ecg .labs .zofran .monitor…
+        </span>
       </div>
 
+      {/* ── Checkbox mode ────────────────────────────────────────────────── */}
+      {mode === "checkbox" && (
+        <div style={{ padding:"10px 14px" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            {["treatment","action",""].map(type => {
+              const items = checkItems.filter(i =>
+                type === "" ? !["treatment","action"].includes(i.type||"") : i.type===type
+              );
+              if (!items.length) return null;
+              const label = type==="treatment" ? "Treatments" : type==="action" ? "Actions" : "Interventions";
+              const color = type==="treatment" ? "var(--qn-teal)" : type==="action" ? "var(--qn-blue)" : "var(--qn-gold)";
+              return (
+                <div key={type||"other"}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                    color, letterSpacing:.8, textTransform:"uppercase", marginBottom:5 }}>
+                    {label}
+                  </div>
+                  {items.map(item => (
+                    <CheckItem key={item.id} item={item}
+                      onToggle={toggleCheck} onTimeChange={updateTime} />
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+          <button onClick={applyCheckboxToText}
+            style={{ marginTop:10, padding:"5px 14px", borderRadius:7, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:11,
+              border:"1px solid rgba(245,200,66,.4)", background:"rgba(245,200,66,.1)",
+              color:"var(--qn-gold)", transition:"all .15s" }}>
+            ✓ Apply Checked Items to Plan
+          </button>
+        </div>
+      )}
+
+      {/* ── Text mode: tabbed fields ─────────────────────────────────────── */}
+      {mode === "text" && (
+        <div style={{ padding:"10px 14px" }}>
+
+          {/* Treatment tab */}
+          {activeTab === "treatment" && (
+            <div>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                  color:"var(--qn-txt4)", flex:1 }}>
+                  Document what you will order or administer
+                </span>
+                <DictationButton fieldLabel="Treatment Plan"
+                  onTranscript={t => setTreatmentPlan(p => (p?p+"\n":"")+t)} />
+                {recentPlansStore.treatment.length > 0 && (
+                  <button onClick={() => { setRecentType("treatment"); setShowRecent(r=>!r); }}
+                    style={{ padding:"2px 8px", borderRadius:5, cursor:"pointer",
+                      fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                      border:"1px solid rgba(42,79,122,.4)", background:"transparent",
+                      color:"var(--qn-txt4)", letterSpacing:.3 }}>
+                    Recent ▾
+                  </button>
+                )}
+              </div>
+              {showRecent && recentType==="treatment" && (
+                <div style={{ marginBottom:7, padding:"6px 8px", borderRadius:8,
+                  background:"rgba(14,37,68,.8)", border:"1px solid rgba(42,79,122,.35)",
+                  display:"flex", flexDirection:"column", gap:3 }}>
+                  {recentPlansStore.treatment.map((r, i) => (
+                    <button key={i}
+                      onClick={() => { setTreatmentPlan(r.text); setShowRecent(false); }}
+                      style={{ textAlign:"left", padding:"4px 7px", borderRadius:5,
+                        background:"transparent", border:"none", cursor:"pointer",
+                        fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                        color:"var(--qn-txt3)", lineHeight:1.4,
+                        overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {r.text.slice(0, 60)}{r.text.length>60?"…":""}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <textarea value={treatmentPlan} onChange={e => smartTreatment(e.target.value)}
+                rows={5} placeholder={"• NS 1L IV bolus — ordered\n• Ondansetron 4mg IV — given\n• Troponin x2 q3h — pending\n\nType .iv .zofran .ecg .labs for shortcuts · 🎤 to dictate"}
+                style={taStyle}
+                onFocus={e => e.target.style.borderColor="rgba(0,229,192,.5)"}
+                onBlur={e  => e.target.style.borderColor="rgba(0,229,192,.25)"} />
+            </div>
+          )}
+
+          {/* Actions tab */}
+          {activeTab === "actions" && (
+            <div>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
+                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+                  color:"var(--qn-txt4)", flex:1 }}>
+                  Workup ordered, consults placed, and next steps
+                </span>
+                <DictationButton fieldLabel="Actions"
+                  onTranscript={t => setActionPlan(p => (p?p+"\n":"")+t)} />
+                {recentPlansStore.actions.length > 0 && (
+                  <button onClick={() => { setRecentType("actions"); setShowRecent(r=>!r); }}
+                    style={{ padding:"2px 8px", borderRadius:5, cursor:"pointer",
+                      fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                      border:"1px solid rgba(42,79,122,.4)", background:"transparent",
+                      color:"var(--qn-txt4)", letterSpacing:.3 }}>
+                    Recent ▾
+                  </button>
+                )}
+              </div>
+              {showRecent && recentType==="actions" && (
+                <div style={{ marginBottom:7, padding:"6px 8px", borderRadius:8,
+                  background:"rgba(14,37,68,.8)", border:"1px solid rgba(42,79,122,.35)",
+                  display:"flex", flexDirection:"column", gap:3 }}>
+                  {recentPlansStore.actions.map((r, i) => (
+                    <button key={i}
+                      onClick={() => { setActionPlan(r.text); setShowRecent(false); }}
+                      style={{ textAlign:"left", padding:"4px 7px", borderRadius:5,
+                        background:"transparent", border:"none", cursor:"pointer",
+                        fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                        color:"var(--qn-txt3)", lineHeight:1.4,
+                        overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {r.text.slice(0, 60)}{r.text.length>60?"…":""}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <textarea value={actionPlan} onChange={e => smartActions(e.target.value)}
+                rows={5} placeholder={"• 12-lead ECG — done\n• CXR PA/LAT — ordered\n• Cardiology consult placed\n• Repeat exam in 30 min\n\nType .consult .repeat .cxr .monitor for shortcuts · 🎤 to dictate"}
+                style={taStyle}
+                onFocus={e => e.target.style.borderColor="rgba(0,229,192,.5)"}
+                onBlur={e  => e.target.style.borderColor="rgba(0,229,192,.25)"} />
+            </div>
+          )}
+
+          {/* Preview tab — combined copy preview */}
+          {activeTab === "preview" && (
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:"var(--qn-txt4)", letterSpacing:.8, textTransform:"uppercase",
+                marginBottom:6 }}>
+                Copy Preview — exactly what pastes into the chart
+              </div>
+              {previewText ? (
+                <div style={{ padding:"10px 12px", borderRadius:9, whiteSpace:"pre-wrap",
+                  background:"rgba(14,37,68,.6)", border:"1px solid rgba(42,79,122,.3)",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-txt2)",
+                  lineHeight:1.75, minHeight:100 }}>
+                  {previewText}
+                </div>
+              ) : (
+                <div style={{ padding:"20px", textAlign:"center",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                  color:"var(--qn-txt4)", fontStyle:"italic" }}>
+                  No plan entered yet — switch to Treatment or Actions tabs to begin
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ padding:"0 14px 10px", fontFamily:"'JetBrains Mono',monospace",
-        fontSize:7, color:"rgba(0,229,192,.35)", letterSpacing:.4 }}>
-        These fields appear in Copy MDM and Copy Initial Note — AI evidence class labels are stripped from chart copy
+        fontSize:7, color:"rgba(0,229,192,.3)", letterSpacing:.4 }}>
+        Included in Copy MDM and Copy Initial Note · Evidence class labels stripped from chart copy
       </div>
     </div>
   );

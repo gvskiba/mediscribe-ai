@@ -3,6 +3,7 @@
 // Exported: SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel
 
 import React, { useState } from "react";
+import { DictationButton, useSmartText } from "./QuickNoteVoice";
 
 // ─── SHARED DECISION MAKING BLOCK ────────────────────────────────────────────
 export function SDMBlock({ disposition, patientName }) {
@@ -311,8 +312,6 @@ export function PriorVisitsPanel({ visits, loading, onLoad }) {
 // 2. Quick-pick AI chips          6. Voice dictation
 // 3. Checkbox mode toggle         7. Inline time entry
 // 4. Recent plans library         8. Tabbed layout with preview
-
-import { DictationButton, useSmartText } from "./QuickNoteVoice";
 
 // Plan-specific smart text shortcuts
 const PLAN_EXPANSIONS = {

@@ -1239,7 +1239,4 @@ export function ReturnPrecautions() {
   );
 }
 
-// ═══ GUIDED WORKFLOW ════════════════════════════════════════════════════════════
-// Steps: welcome → H → E → A → R → T (HEART) → troponin values → EDACS → dispo
-// Each HEART component gets its own screen with large-target option cards.
-// ════════════════════════════════════════════════════════════════════════
+// ═══ END OF ChestPainPanels ═══════════════════════════════════════════════════

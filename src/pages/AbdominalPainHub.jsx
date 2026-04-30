@@ -87,6 +87,7 @@ const ZONES = {
     organs:"Stomach · Duodenum · Pancreas head · Distal esophagus",
     diagnoses:[
       { name:"Acute Pancreatitis", urgency:"urgent",
+        calculator:"bisap",
         pearl:"Epigastric pain radiating to back, worse supine, better leaning forward. Lipase >3× ULN diagnostic. Most common: gallstones (#1) and alcohol (#2).",
         labs:["Lipase (>3× ULN diagnostic — amylase less specific)","CBC, CMP (BUN, creatinine, calcium)","LFTs — elevated bili/ALP suggests gallstone pancreatitis","Triglycerides","BISAP components: BUN >25, GCS, age >60, SIRS, pleural effusion"],
         imaging:[{mod:"RUQ Ultrasound (all patients)",note:"Evaluate gallstones as etiology — changes management. Pancreas often obscured by bowel gas"},{mod:"CT Abdomen/Pelvis (IV contrast)",note:"NOT routine initially. Indicated at 48-72h if worsening, diagnosis unclear, or necrosis suspected. CTSI severity index"},{mod:"MRCP",note:"Preferred for biliary evaluation, choledocholithiasis, pancreas divisum — avoids radiation"}],
@@ -110,6 +111,7 @@ const ZONES = {
         disposition:{ level:"OR", admit:["Type A (ascending aorta): emergent cardiothoracic OR — no delay","Type B uncomplicated (descending): ICU for medical BP management, vascular surgery consult","Type B complicated (malperfusion, rupture, refractory pain): vascular intervention or OR"], discharge:[], precautions:[] },
         guideline:"AHA/ACC 2022 Aortic Disease Guideline" },
       { name:"Peptic Ulcer Disease", urgency:"moderate",
+        calculator:"glasgow",
         pearl:"Burning epigastric pain: duodenal ulcer relieved by food, gastric worsened by food. NSAID, steroid, or H. pylori risk factors. Check for GI bleeding.",
         labs:["H. pylori stool antigen or urea breath test (most accurate non-invasive)","CBC — anemia if bleeding","CMP + LFTs","Glasgow-Blatchford score if upper GI bleeding present"],
         imaging:[{mod:"Upright CXR (if perforation suspected)",note:"Free air under diaphragm — do first if rigid abdomen"},{mod:"CT Abdomen (if perforation suspected)",note:"Confirms perforation, peritoneal air, associated complications"},{mod:"EGD (non-urgent)",note:"Definitive diagnosis, H. pylori biopsy, and hemostasis if bleeding — inpatient or urgent outpatient"}],
@@ -165,6 +167,7 @@ const ZONES = {
     organs:"Appendix · Cecum · Terminal ileum · Right ovary/tube",
     diagnoses:[
       { name:"Acute Appendicitis", urgency:"urgent",
+        calculator:"alvarado",
         pearl:"Alvarado ≥7 = surgical consult without delay. Periumbilical pain migrating to McBurney point + anorexia + fever. Psoas, obturator, and Rovsing signs support diagnosis.",
         labs:["CBC — WBC >10k in 80%, shift in 90%","CRP >10 mg/L (better specificity than WBC alone)","UA — sterile pyuria in 30% (don't use to exclude)","Beta-hCG in ALL women of reproductive age","Lipase if epigastric component present"],
         imaging:[{mod:"US Abdomen (first-line: pediatrics/pregnancy)",note:"Non-compressible appendix >6mm = diagnostic. Sens 75%, Spec 95%. Operator dependent"},{mod:"CT Abdomen/Pelvis (IV contrast)",note:"Standard adult imaging. Appendix >6mm + fat stranding. Sens 94%, Spec 95%"},{mod:"MRI Abdomen",note:"Pregnancy — no radiation. Comparable sensitivity/specificity to CT"}],
@@ -237,6 +240,7 @@ const ZONES = {
         disposition:{ level:"OR", admit:["All ruptured AAA: emergent OR — activate vascular surgery IMMEDIATELY","Do NOT delay for CT if hemodynamically unstable — POCUS + OR","EVAR preferred if anatomy suitable; open repair if EVAR not feasible or unstable"], discharge:[], precautions:[] },
         guideline:"SVS AAA Guidelines 2018 · ACEP" },
       { name:"Early Appendicitis", urgency:"urgent",
+        calculator:"alvarado",
         pearl:"Visceral pain begins periumbilical before migrating to RLQ over 12-24h. Anorexia and low-grade fever often precede localization. Score with Alvarado and re-examine in 2-4h.",
         labs:["CBC (WBC may be normal early)","CRP (more sensitive early than WBC)","UA","Beta-hCG (females of reproductive age)"],
         imaging:[{mod:"US Abdomen (especially pediatric/female)",note:"May be normal early — non-compressible appendix >6mm diagnostic if seen"},{mod:"CT Abdomen/Pelvis (IV contrast)",note:"Standard if US non-diagnostic or adult male — fat stranding may be subtle early"},{mod:"Serial Exam q2-4h",note:"Pain migration + rising inflammatory markers = increasing Alvarado score — reassess"}],
@@ -442,6 +446,268 @@ function CriticalBanner({ actions }) {
   );
 }
 
+// ── Inline Clinical Calculators ──────────────────────────────────────────────
+function CalcShell({ title, score, max, color, interp, children, open, setOpen }) {
+  return (
+    <div style={{ marginBottom:12, borderRadius:10,
+      border:`1px solid ${color}40`,
+      borderLeft:`4px solid ${color}`,
+      background:`${color}07`, overflow:"hidden" }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ width:"100%", padding:"9px 12px",
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          background:"transparent", border:"none", cursor:"pointer",
+          borderBottom: open ? `1px solid ${color}20` : "none" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:13 }}>🧮</span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace",
+            fontSize:9, fontWeight:700, color, letterSpacing:1.5 }}>{title}</span>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          {score !== null && (
+            <span style={{ fontFamily:"'JetBrains Mono',monospace",
+              fontSize:15, fontWeight:700, color }}>{score}<span style={{
+              fontSize:9, color:`${color}99` }}>/{max}</span></span>
+          )}
+          <span style={{ fontFamily:"'JetBrains Mono',monospace",
+            fontSize:10, color }}>{open ? "▲" : "▼"}</span>
+        </div>
+      </button>
+      {open && (
+        <div style={{ padding:"10px 12px" }}>
+          {children}
+          {score !== null && (
+            <div style={{ marginTop:10, padding:"8px 10px", borderRadius:8,
+              background:`${color}15`, border:`1px solid ${color}35` }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                fontSize:9, color, letterSpacing:1 }}>SCORE {score}/{max} — </span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif",
+                fontSize:12, color, fontWeight:700 }}>{interp}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CalcRow({ label, sub, value, onChange, pts }) {
+  return (
+    <div onClick={() => onChange(!value)}
+      style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+        padding:"7px 8px", borderRadius:7, marginBottom:5, cursor:"pointer",
+        background: value ? "rgba(61,255,160,0.08)" : "rgba(8,20,38,0.5)",
+        border:`1px solid ${value ? "rgba(61,255,160,0.3)" : "rgba(26,53,85,0.5)"}`,
+        userSelect:"none" }}>
+      <div style={{ flex:1 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif",
+          fontSize:12, color: value ? T.green : T.txt2, fontWeight: value ? 600 : 400 }}>
+          {label}
+        </div>
+        {sub && <div style={{ fontFamily:"'DM Sans',sans-serif",
+          fontSize:10, color:T.txt4, marginTop:1 }}>{sub}</div>}
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:7, flexShrink:0 }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace",
+          fontSize:9, color:T.txt4 }}>+{pts}</span>
+        <div style={{ width:18, height:18, borderRadius:4,
+          border:`2px solid ${value ? T.green : "rgba(26,53,85,0.8)"}`,
+          background: value ? T.green : "transparent",
+          display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {value && <span style={{ color:"#081426", fontSize:11, fontWeight:900 }}>✓</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AlvaradoCalc() {
+  const [open, setOpen] = useState(false);
+  const [s, setS] = useState({
+    migrate:false, anorexia:false, nausea:false,
+    rlqTend:false, rebound:false, fever:false,
+    leuko:false, shift:false
+  });
+  const t = (k,v) => setS(p => ({...p,[k]:v}));
+  const score = (s.migrate?1:0)+(s.anorexia?1:0)+(s.nausea?1:0)+
+    (s.rlqTend?2:0)+(s.rebound?1:0)+(s.fever?1:0)+(s.leuko?2:0)+(s.shift?1:0);
+  const interp = score<=3?"Low risk — appendicitis unlikely, consider discharge with return precautions":
+    score<=6?"Moderate risk — CT/US indicated, serial exams, surgical awareness":
+    "High risk — surgical consult without delay, likely appendicitis";
+  return (
+    <CalcShell title="ALVARADO SCORE" score={score} max={10}
+      color={T.teal} interp={interp} open={open} setOpen={setOpen}>
+      <CalcRow label="Pain migration to RLQ" pts={1} value={s.migrate} onChange={v=>t("migrate",v)}/>
+      <CalcRow label="Anorexia" pts={1} value={s.anorexia} onChange={v=>t("anorexia",v)}/>
+      <CalcRow label="Nausea or vomiting" pts={1} value={s.nausea} onChange={v=>t("nausea",v)}/>
+      <CalcRow label="RLQ tenderness on palpation" pts={2} value={s.rlqTend} onChange={v=>t("rlqTend",v)}/>
+      <CalcRow label="Rebound tenderness" pts={1} value={s.rebound} onChange={v=>t("rebound",v)}/>
+      <CalcRow label="Elevated temperature" sub=">37.3°C / 99.1°F" pts={1} value={s.fever} onChange={v=>t("fever",v)}/>
+      <CalcRow label="Leukocytosis" sub="WBC >10,000" pts={2} value={s.leuko} onChange={v=>t("leuko",v)}/>
+      <CalcRow label="Left shift (neutrophilia)" sub=">75% PMNs" pts={1} value={s.shift} onChange={v=>t("shift",v)}/>
+    </CalcShell>
+  );
+}
+
+function BISAPCalc() {
+  const [open, setOpen] = useState(false);
+  const [s, setS] = useState({
+    bun:false, mental:false, sirs:false, age:false, effusion:false
+  });
+  const t = (k,v) => setS(p => ({...p,[k]:v}));
+  const score = Object.values(s).filter(Boolean).length;
+  const interp = score<=1?"Low risk — mortality <1%, standard admission appropriate":
+    score===2?"Low-moderate risk — mortality ~2%, close monitoring":
+    score===3?"Moderate risk — mortality ~5-8%, step-down or ICU":
+    "High risk — mortality >15%, ICU admission required";
+  return (
+    <CalcShell title="BISAP SCORE" score={score} max={5}
+      color={T.gold} interp={interp} open={open} setOpen={setOpen}>
+      <CalcRow label="BUN >25 mg/dL" pts={1} value={s.bun} onChange={v=>t("bun",v)}/>
+      <CalcRow label="Impaired mental status" sub="GCS <15 or new disorientation" pts={1} value={s.mental} onChange={v=>t("mental",v)}/>
+      <CalcRow label="SIRS present" sub="≥2 of: temp <36 or >38°C, HR >90, RR >20, WBC <4k or >12k" pts={1} value={s.sirs} onChange={v=>t("sirs",v)}/>
+      <CalcRow label="Age >60 years" pts={1} value={s.age} onChange={v=>t("age",v)}/>
+      <CalcRow label="Pleural effusion on imaging" pts={1} value={s.effusion} onChange={v=>t("effusion",v)}/>
+    </CalcShell>
+  );
+}
+
+function GlasgowCalc() {
+  const [open, setOpen] = useState(false);
+  const [bun, setBun] = useState(0);
+  const [hgb, setHgb] = useState(0);
+  const [sbp, setSbp] = useState(0);
+  const [male, setMale] = useState(true);
+  const [s, setS] = useState({ tachy:false, melena:false, syncope:false, liver:false, cardiac:false });
+  const t = (k,v) => setS(p => ({...p,[k]:v}));
+  const score = bun + hgb + sbp +
+    (s.tachy?1:0)+(s.melena?1:0)+(s.syncope?2:0)+(s.liver?2:0)+(s.cardiac?2:0);
+  const interp = score===0?"Score 0 — very low risk, outpatient endoscopy may be appropriate":
+    score<=5?"Low-moderate risk — endoscopy within 24h, monitor closely":
+    score<=8?"High risk — urgent endoscopy within 24h, likely needs admission":
+    "Very high risk — emergent endoscopy, resuscitate and GI consult now";
+  const selStyle = (active) => ({
+    flex:1, padding:"5px 4px", borderRadius:6, cursor:"pointer",
+    fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+    border:`1px solid ${active ? T.blue+"60" : "rgba(26,53,85,0.5)"}`,
+    background: active ? `${T.blue}18` : "rgba(8,20,38,0.6)",
+    color: active ? T.blue : T.txt4
+  });
+  return (
+    <CalcShell title="GLASGOW-BLATCHFORD SCORE" score={score} max={23}
+      color={T.blue} interp={interp} open={open} setOpen={setOpen}>
+      {/* Sex toggle */}
+      <div style={{ display:"flex", gap:5, marginBottom:7 }}>
+        <button style={selStyle(male)} onClick={()=>setMale(true)}>♂ MALE</button>
+        <button style={selStyle(!male)} onClick={()=>setMale(false)}>♀ FEMALE</button>
+      </div>
+      {/* BUN */}
+      <div style={{ marginBottom:5 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          color:T.txt3, marginBottom:4 }}>BUN (mg/dL)</div>
+        <div style={{ display:"flex", gap:4 }}>
+          {[["<18",0],["18-22",2],["23-28",3],["29-70",4],[">70",6]].map(([l,v])=>(
+            <button key={l} style={selStyle(bun===v)} onClick={()=>setBun(v)}>{l}</button>
+          ))}
+        </div>
+      </div>
+      {/* Hgb */}
+      <div style={{ marginBottom:5 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          color:T.txt3, marginBottom:4 }}>Hemoglobin (g/dL) — {male?"Male":"Female"}</div>
+        <div style={{ display:"flex", gap:4 }}>
+          {male
+            ? [[">13",0],["12-13",1],["10-12",3],["<10",6]].map(([l,v])=>(
+                <button key={l} style={selStyle(hgb===v)} onClick={()=>setHgb(v)}>{l}</button>))
+            : [[">12",0],["10-12",1],["<10",6]].map(([l,v])=>(
+                <button key={l} style={selStyle(hgb===v)} onClick={()=>setHgb(v)}>{l}</button>))}
+        </div>
+      </div>
+      {/* SBP */}
+      <div style={{ marginBottom:7 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          color:T.txt3, marginBottom:4 }}>Systolic BP (mmHg)</div>
+        <div style={{ display:"flex", gap:4 }}>
+          {[["≥110",0],["100-109",1],["90-99",2],["<90",3]].map(([l,v])=>(
+            <button key={l} style={selStyle(sbp===v)} onClick={()=>setSbp(v)}>{l}</button>
+          ))}
+        </div>
+      </div>
+      <CalcRow label="Heart rate ≥100 bpm" pts={1} value={s.tachy} onChange={v=>t("tachy",v)}/>
+      <CalcRow label="Melena on presentation" pts={1} value={s.melena} onChange={v=>t("melena",v)}/>
+      <CalcRow label="Syncope on presentation" pts={2} value={s.syncope} onChange={v=>t("syncope",v)}/>
+      <CalcRow label="Known hepatic disease" pts={2} value={s.liver} onChange={v=>t("liver",v)}/>
+      <CalcRow label="Known cardiac failure" pts={2} value={s.cardiac} onChange={v=>t("cardiac",v)}/>
+    </CalcShell>
+  );
+}
+
+// ── Anatomical Zone Icons (SVG silhouettes) ──────────────────────────────────
+function ZoneIcon({ zoneKey, color, size=24 }) {
+  const s = { width:size, height:size, display:"block" };
+  const c = color || "#4ad6c8";
+  // Each path is a rough anatomical silhouette of the dominant organ(s)
+  if (zoneKey === "RUQ") return ( // Liver — right-biased dome shape
+    <svg viewBox="0 0 24 24" style={s}>
+      <path d="M3,14 Q3,5 8,3 Q14,1 20,5 Q23,8 22,13 Q20,18 14,19 Q8,20 5,17 Q3,16 3,14Z"
+        fill={`${c}25`} stroke={c} strokeWidth="1.2" strokeLinejoin="round"/>
+      <path d="M8,19 Q7,21 6,23" fill="none" stroke={c} strokeWidth="1" strokeLinecap="round"/>
+    </svg>
+  );
+  if (zoneKey === "EPIG") return ( // Stomach — J-shaped pouch
+    <svg viewBox="0 0 24 24" style={s}>
+      <path d="M6,4 Q4,5 4,8 Q4,13 7,16 Q10,19 13,18 Q17,17 18,13 Q19,9 17,6 Q15,3 12,4 Q9,5 6,4Z"
+        fill={`${c}25`} stroke={c} strokeWidth="1.2" strokeLinejoin="round"/>
+      <path d="M6,4 Q5,2 7,2 Q9,2 10,4" fill="none" stroke={c} strokeWidth="1" strokeLinecap="round"/>
+    </svg>
+  );
+  if (zoneKey === "LUQ") return ( // Spleen — oval left side + stomach hint
+    <svg viewBox="0 0 24 24" style={s}>
+      <ellipse cx="14" cy="12" rx="7" ry="9" fill={`${c}25`} stroke={c} strokeWidth="1.2"/>
+      <path d="M7,9 Q4,10 4,13 Q4,16 7,16" fill="none" stroke={c} strokeWidth="1" strokeLinecap="round"/>
+    </svg>
+  );
+  if (zoneKey === "RLQ") return ( // Cecum + appendix
+    <svg viewBox="0 0 24 24" style={s}>
+      <path d="M6,4 L6,14 Q6,18 10,19 Q14,20 16,17 Q17,14 15,12 Q13,10 14,7 Q15,4 13,3 Q10,2 8,4Z"
+        fill={`${c}25`} stroke={c} strokeWidth="1.2" strokeLinejoin="round"/>
+      <line x1="14" y1="17" x2="18" y2="22" stroke={c} strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  );
+  if (zoneKey === "PERI") return ( // Small bowel loops — coiled
+    <svg viewBox="0 0 24 24" style={s}>
+      <path d="M12,3 Q17,3 18,7 Q19,11 15,12 Q11,13 10,17 Q9,21 13,22 Q17,22 18,19"
+        fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12,3 Q7,3 6,7 Q5,11 9,12 Q13,13 14,17"
+        fill="none" stroke={`${c}80`} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+  if (zoneKey === "LLQ") return ( // Sigmoid colon — S-curve
+    <svg viewBox="0 0 24 24" style={s}>
+      <path d="M17,3 Q20,3 20,7 Q20,11 16,12 Q12,13 12,17 Q12,21 8,22 Q4,22 4,18"
+        fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M16,2 L18,4" stroke={c} strokeWidth="1" strokeLinecap="round"/>
+    </svg>
+  );
+  if (zoneKey === "SUPRA") return ( // Bladder — teardrop + uterus hint
+    <svg viewBox="0 0 24 24" style={s}>
+      <path d="M12,5 Q17,5 19,10 Q21,15 18,19 Q15,23 12,23 Q9,23 6,19 Q3,15 5,10 Q7,5 12,5Z"
+        fill={`${c}25`} stroke={c} strokeWidth="1.2"/>
+      <path d="M12,5 L12,2 M10,2 Q12,0 14,2" fill="none" stroke={c} strokeWidth="1" strokeLinecap="round"/>
+    </svg>
+  );
+  if (zoneKey === "DIFF") return ( // Full abdomen outline with diffuse fill
+    <svg viewBox="0 0 24 24" style={s}>
+      <path d="M8,2 Q5,2 4,5 L3,19 Q3,22 6,22 L18,22 Q21,22 21,19 L20,5 Q19,2 16,2 Z"
+        fill={`${c}25`} stroke={c} strokeWidth="1.2" strokeLinejoin="round"/>
+      <circle cx="9" cy="11" r="1.5" fill={`${c}60`}/>
+      <circle cx="15" cy="11" r="1.5" fill={`${c}60`}/>
+      <circle cx="12" cy="15" r="1.5" fill={`${c}60`}/>
+    </svg>
+  );
+  return <span style={{ fontSize:size * 0.8 }}>●</span>;
+}
+
 function BackBar({ label, onClick }) {
   return (
     <button onClick={onClick}
@@ -525,8 +791,7 @@ function AbdomenMap({ onZoneSelect }) {
                   border:`1px solid ${isHov ? zone.color+"60" : "rgba(26,53,85,0.6)"}`,
                   textAlign:"center", minHeight:88 }}>
                 <div style={{ fontSize:20, marginBottom:5 }}>
-                  {z.key==="RUQ"?"🫀":z.key==="EPIG"?"⚡":z.key==="LUQ"?"🫁":
-                   z.key==="RLQ"?"🔴":z.key==="PERI"?"⭕":"🟡"}
+                  <ZoneIcon zoneKey={z.key} color={zone.color} size={26} />
                 </div>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace",
                   fontSize:10, fontWeight:700, color:zone.color,
@@ -556,7 +821,9 @@ function AbdomenMap({ onZoneSelect }) {
                   background:isHov ? `${zone.color}22` : "rgba(8,20,38,0.75)",
                   border:`1px solid ${isHov ? zone.color+"60" : "rgba(26,53,85,0.6)"}`,
                   textAlign:"center" }}>
-                <div style={{ fontSize:18, marginBottom:4 }}>💚</div>
+                <div style={{ fontSize:18, marginBottom:4 }}>
+                  <ZoneIcon zoneKey="SUPRA" color={zone.color} size={24} />
+                </div>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace",
                   fontSize:10, fontWeight:700, color:zone.color,
                   marginBottom:2 }}>{zone.shortLabel}</div>
@@ -590,7 +857,9 @@ function AbdomenMap({ onZoneSelect }) {
                 border:`1px solid ${isHov ? zone.color+"55" : "rgba(255,107,107,0.25)"}` }}>
               <div style={{ display:"flex", alignItems:"center",
                 justifyContent:"center", gap:10 }}>
-                <span style={{ fontSize:18 }}>⚠️</span>
+                <span style={{ fontSize:18 }}>
+                  <ZoneIcon zoneKey="DIFF" color={zone.color} size={26} />
+                </span>
                 <div>
                   <div style={{ fontFamily:"'JetBrains Mono',monospace",
                     fontSize:10, fontWeight:700, color:zone.color,
@@ -623,12 +892,26 @@ function AbdomenMap({ onZoneSelect }) {
 // ── View 2: Zone Differential List ───────────────────────────────────────────
 function ZoneView({ zoneKey, onBack, onSelect }) {
   const zone = ZONES[zoneKey];
+  const [filter, setFilter] = useState("all");
+
+  // Derive which urgency levels exist in this zone
+  const available = ["all", ...["critical","urgent","moderate"].filter(
+    u => zone.diagnoses.some(dx => dx.urgency === u)
+  )];
+
+  const filtered = filter === "all"
+    ? zone.diagnoses
+    : zone.diagnoses.filter(dx => dx.urgency === filter);
+
+  const chipLabel = { all:"ALL", critical:"CRITICAL", urgent:"URGENT", moderate:"MODERATE" };
+  const chipColor = { all:T.txt3, critical:URGENCY.critical.color,
+    urgent:URGENCY.urgent.color, moderate:URGENCY.moderate.color };
 
   return (
     <div className="abd-in">
       <BackBar label="← Back to Abdomen Map" onClick={onBack} />
 
-      <div style={{ marginBottom:16 }}>
+      <div style={{ marginBottom:12 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
           <div style={{ width:4, height:32, borderRadius:2,
             background:zone.color }}/>
@@ -644,17 +927,53 @@ function ZoneView({ zoneKey, onBack, onSelect }) {
           </div>
         </div>
         <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-          color:T.txt3 }}>
+          color:T.txt3, marginBottom:10 }}>
           {zone.diagnoses.length} diagnoses · Tap a diagnosis for workup + treatment
+        </div>
+
+        {/* Urgency filter chips */}
+        <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+          {available.map(u => {
+            const active = filter === u;
+            const col = chipColor[u];
+            const count = u === "all"
+              ? zone.diagnoses.length
+              : zone.diagnoses.filter(dx => dx.urgency === u).length;
+            return (
+              <button key={u} onClick={() => setFilter(u)}
+                style={{ padding:"5px 10px", borderRadius:20, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:8, letterSpacing:1.2, fontWeight:700,
+                  transition:"all .12s",
+                  border:`1px solid ${active ? col : col+"44"}`,
+                  background: active ? `${col}20` : "rgba(8,20,38,0.6)",
+                  color: active ? col : col+"88" }}>
+                {chipLabel[u]}
+                <span style={{ marginLeft:5, fontWeight:400,
+                  opacity:0.7 }}>{count}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {zone.diagnoses.map((dx, i) => {
+      {/* Dx count when filtered */}
+      {filter !== "all" && (
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          color:chipColor[filter], marginBottom:8,
+          fontWeight:600 }}>
+          {filtered.length} {chipLabel[filter].toLowerCase()} diagnosis{filtered.length !== 1 ? "es" : ""}
+        </div>
+      )}
+
+      {filtered.map((dx, i) => {
         const urg = URGENCY[dx.urgency];
+        // Map filtered index back to original for onSelect
+        const origIndex = zone.diagnoses.indexOf(dx);
         return (
           <button key={i}
             className="dx-row"
-            onClick={() => onSelect(i)}
+            onClick={() => onSelect(origIndex)}
             style={{ display:"block", width:"100%", padding:"12px 14px",
               borderRadius:10, marginBottom:7, cursor:"pointer",
               textAlign:"left", border:"none",
@@ -676,6 +995,15 @@ function ZoneView({ zoneKey, onBack, onSelect }) {
           </button>
         );
       })}
+
+      {filtered.length === 0 && (
+        <div style={{ textAlign:"center", padding:"28px 16px",
+          fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4,
+          borderRadius:10, background:"rgba(8,20,38,0.4)",
+          border:"1px solid rgba(26,53,85,0.3)" }}>
+          No {chipLabel[filter].toLowerCase()} diagnoses in this zone.
+        </div>
+      )}
     </div>
   );
 }
@@ -724,6 +1052,11 @@ function DxView({ zoneKey, dxIndex, onBack }) {
           {dx.pearl}
         </div>
       </div>
+
+      {/* Inline calculator */}
+      {dx.calculator === "alvarado" && <AlvaradoCalc />}
+      {dx.calculator === "bisap"    && <BISAPCalc />}
+      {dx.calculator === "glasgow"  && <GlasgowCalc />}
 
       {/* Critical actions banner */}
       {dx.urgency === "critical" && dx.criticalActions && (

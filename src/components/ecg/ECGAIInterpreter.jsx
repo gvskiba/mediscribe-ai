@@ -1,352 +1,601 @@
 // ECGAIInterpreter.jsx
-// AI-powered ECG interpretation for Notrya ECG Hub.
-// Physician describes ECG findings in plain text -> AI returns structured
-// clinical interpretation with differential, actions, and guideline context.
-// Patient context injected from NPI props (demo, vitals, cc, medications, pmhSelected).
+// Claude Vision-powered 12-lead ECG interpretation for Notrya ECGHub
+// Place at: @/components/ecg/ECGAIInterpreter.jsx
+//
+// Exports:
+//   default  ECGAIInterpreter  — full interpreter panel (used in ECGHub AI tab)
+//   named    PMcardioButton    — standalone deep link button for any hub
+//
+// Constraints: no form, no localStorage, straight quotes only, single react import
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 
-(() => {
-  if (typeof document === "undefined") return;
-  if (document.getElementById("ecgai-style")) return;
-  const s = document.createElement("style"); s.id = "ecgai-style";
-  s.textContent = `@keyframes ecgai-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}.ecgai-in{animation:ecgai-in .2s ease forwards;}`;
+// ── Font injection (idempotent) ─────────────────────────────────────────────
+if (typeof document !== "undefined" && !document.getElementById("ecgai-fonts")) {
+  const l = document.createElement("link");
+  l.id = "ecgai-fonts"; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  document.head.appendChild(l);
+  const s = document.createElement("style"); s.id = "ecgai-css";
+  s.textContent = `
+    @keyframes ecgai-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes ecgai-scan{
+      0%{top:2%;opacity:1}44%{top:92%;opacity:1}
+      50%{top:92%;opacity:0}51%{top:2%;opacity:0}55%{top:2%;opacity:1}100%{top:2%;opacity:1}}
+    @keyframes ecgai-pulse{0%,100%{opacity:.45;transform:scale(.92)}50%{opacity:1;transform:scale(1)}}
+    @keyframes ecgai-shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+    .ecgai-fade{animation:ecgai-fade .22s ease forwards}
+    .ecgai-scan-line{position:absolute;left:4px;right:4px;height:1.5px;
+      background:linear-gradient(90deg,transparent,#00e5c0,transparent);
+      animation:ecgai-scan 2s ease-in-out infinite;pointer-events:none;border-radius:1px;}
+    .ecgai-dot{animation:ecgai-pulse 1.3s ease-in-out infinite}
+  `;
   document.head.appendChild(s);
-})();
+}
 
+// ── Tokens — matches Notrya palette ────────────────────────────────────────
 const T = {
-  bg:"#050f1e", txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
-  teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
-  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", red:"#ff4444",
+  bg:"#050f1e", card:"rgba(14,28,58,0.94)", txt:"#e8f0fe", txt2:"#8aaccc",
+  txt3:"#4a6a8a", txt4:"#638ab5", border:"rgba(35,70,115,0.65)",
+  teal:"#00e5c0", coral:"#ff6b6b", gold:"#f5c842", blue:"#3b9eff",
+  orange:"#ff9f43", purple:"#9b6dff", red:"#ff4444", green:"#3dffa0",
+};
+const FF = {
+  mono:"'JetBrains Mono',monospace",
+  sans:"'DM Sans',sans-serif",
+  serif:"'Playfair Display',serif",
+};
+const glass = {
+  backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",
+  background:"rgba(8,22,40,0.75)",border:"1px solid rgba(42,79,122,0.35)",borderRadius:14,
 };
 
-function buildPatientCtx(demo, vitals, cc, medications, pmhSelected) {
-  const lines = [];
-  if (demo?.age || demo?.sex) lines.push(`${demo?.age || ""}yo ${demo?.sex || ""}`.trim());
-  if (cc?.text)               lines.push(`CC: ${cc.text}`);
-  const pmh = (pmhSelected || []).slice(0, 5);
-  if (pmh.length)             lines.push(`PMH: ${pmh.join(", ")}`);
-  const meds = (medications || []).map(m => typeof m === "string" ? m : m.name || "").filter(Boolean).slice(0, 5);
-  if (meds.length)            lines.push(`Meds: ${meds.join(", ")}`);
-  const vs = [];
-  if (vitals?.hr)   vs.push(`HR ${vitals.hr}`);
-  if (vitals?.bp)   vs.push(`BP ${vitals.bp}`);
-  if (vitals?.spo2) vs.push(`SpO2 ${vitals.spo2}%`);
-  if (vs.length)    lines.push(`Vitals: ${vs.join("  ")}`);
-  return lines.join("\n");
-}
+// ── ECG interpretation system prompt ───────────────────────────────────────
+const ECG_SYSTEM = `You are a board-certified cardiac electrophysiologist performing a structured 12-lead ECG interpretation.
+Analyze the ECG image provided and return ONLY a valid JSON object in the exact schema below.
+Use null for any value you cannot determine. Do not add text outside the JSON.
 
-function buildPrompt(findings, ctx) {
-  return `You are a senior emergency cardiologist providing real-time ECG interpretation for an EM physician at the bedside.
-
-PATIENT CONTEXT:
-${ctx || "No patient context provided"}
-
-ECG FINDINGS AS DESCRIBED BY PHYSICIAN:
-${findings}
-
-Provide a structured clinical interpretation. Respond ONLY with valid JSON, no markdown fences:
 {
-  "overall_pattern": "One sentence: dominant ECG pattern and its clinical significance",
-  "stemi_equivalent": false,
-  "cath_activation": "no",
-  "key_findings": ["specific finding 1", "finding 2", "finding 3"],
-  "differential": [
-    {"diagnosis": "Specific diagnosis", "probability": "high | moderate | consider", "ecg_support": "Which findings support this"}
-  ],
-  "immediate_actions": ["Actionable bedside step 1", "step 2", "step 3"],
-  "serial_ecg": "yes or no -- with specific reason",
-  "guideline_note": "Most relevant 2025 ACC/AHA or 2023 AF Guideline recommendation for this pattern",
-  "pearl": "One high-yield clinical pearl specific to this pattern that reduces mortality or missed diagnosis"
-}
-
-Rules: stemi_equivalent true only for confirmed STEMI, posterior STEMI, De Winter, Wellens, or aVR elevation. cath_activation = "yes", "no", or "consider". Be specific and actionable.`;
-}
-
-const RESULT_SCHEMA = {
-  type: "object",
-  required: ["overall_pattern","stemi_equivalent","cath_activation","key_findings","differential","immediate_actions","serial_ecg","guideline_note","pearl"],
-  properties: {
-    overall_pattern:    { type: "string" },
-    stemi_equivalent:   { type: "boolean" },
-    cath_activation:    { type: "string" },
-    key_findings:       { type: "array", items: { type: "string" } },
-    differential: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          diagnosis:   { type: "string" },
-          probability: { type: "string" },
-          ecg_support: { type: "string" },
-        },
-      },
-    },
-    immediate_actions:  { type: "array", items: { type: "string" } },
-    serial_ecg:         { type: "string" },
-    guideline_note:     { type: "string" },
-    pearl:              { type: "string" },
+  "rate": <integer bpm or null>,
+  "rhythm": "<primary rhythm name>",
+  "regular": <true|false>,
+  "p_waves": "<P wave morphology and P:QRS relationship>",
+  "pr_ms": <integer ms or null>,
+  "qrs_ms": <integer ms or null>,
+  "qtc_ms": <integer ms or null>,
+  "qtc_method": "<Bazett|Fridericia|estimated>",
+  "axis": "<degrees or quadrant description>",
+  "st": {
+    "elevation": "<leads with STE and magnitude, or None>",
+    "depression": "<leads with STD and magnitude, or None>",
+    "morphology": "<concave|convex|flat|downsloping|mixed — describe pattern>"
   },
-};
+  "t_waves": "<T wave description across key leads — note hyperacute, inverted, biphasic, or peaked>",
+  "qrs_morphology": "<RBBB/LBBB/delta wave/LVH/RVH/Q waves/fragmentation/epsilon wave or Normal>",
+  "high_risk": [
+    "<list any: Classic STEMI | Posterior STEMI | De Winter | Wellens A | Wellens B | aVR Elevation | Sgarbossa+ | Brugada Type 1 | Brugada Type 2 | WPW | Long QT | Hyperkalemia pattern | TCA toxicity | ARVC-epsilon | VT | Complete heart block | None>"
+  ],
+  "impression": "<2-3 sentence clinical impression>",
+  "omi_note": "<one sentence on whether OMI can be excluded — always flag if PMcardio/Queen of Hearts review is warranted>",
+  "confidence": "<high|moderate|low>",
+  "image_quality": "<good|degraded|poor>",
+  "urgency": "<emergent|urgent|routine>"
+}`;
 
-function AIResult({ result }) {
-  if (!result) return null;
-  const pc = p => p === "high" ? T.coral : p === "moderate" ? T.orange : T.blue;
+// ── PMcardio deep link button (exported for reuse) ─────────────────────────
+export function PMcardioButton({ compact = false }) {
+  const open = () => {
+    const ios     = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const android = /Android/.test(navigator.userAgent);
+    if (ios) {
+      window.location.href = "pmcardio://";
+      setTimeout(() => { window.location.href = "https://apps.apple.com/us/app/pmcardio-for-individuals/id1640037895"; }, 800);
+    } else if (android) {
+      window.location.href = "intent://open#Intent;scheme=pmcardio;package=com.powerfulmedical.pmcardio;end";
+      setTimeout(() => { window.location.href = "https://play.google.com/store/apps/details?id=com.powerfulmedical.pmcardio"; }, 800);
+    } else {
+      window.open("https://www.powerfulmedical.com/", "_blank");
+    }
+  };
+
+  if (compact) {
+    return (
+      <button onClick={open}
+        style={{ display:"flex", alignItems:"center", gap:8, width:"100%",
+          padding:"8px 12px", borderRadius:8, cursor:"pointer",
+          border:"1.5px solid rgba(255,107,107,0.48)",
+          background:"linear-gradient(135deg,rgba(255,107,107,0.13),rgba(255,107,107,0.04))",
+          fontFamily:FF.sans, fontWeight:700, fontSize:12, color:T.coral }}>
+        <span style={{ fontSize:15 }}>{"\u2665"}</span>
+        <span style={{ flex:1, textAlign:"left" }}>
+          Open PMcardio — Queen of Hearts OMI analysis
+        </span>
+        <span style={{ fontFamily:FF.mono, fontSize:10, color:"rgba(255,107,107,0.55)" }}>{"\u2192"}</span>
+      </button>
+    );
+  }
 
   return (
-    <div className="ecgai-in">
-      {result.stemi_equivalent && (
-        <div style={{padding:"10px 14px",borderRadius:9,marginBottom:10,
-          background:"rgba(255,68,68,0.12)",border:"2px solid rgba(255,68,68,0.5)"}}>
-          <div style={{fontFamily:"JetBrains Mono",fontSize:10,fontWeight:700,color:T.red,
-            letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>
-            STEMI Equivalent Detected
-          </div>
-          <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2}}>
-            Cath lab activation:
-            <strong style={{color:result.cath_activation==="yes"?T.red:T.orange,marginLeft:6}}>
-              {(result.cath_activation || "").toUpperCase()}
-            </strong>
-          </div>
+    <button onClick={open}
+      style={{ display:"flex", alignItems:"center", gap:12, width:"100%",
+        padding:"13px 16px", borderRadius:11, cursor:"pointer",
+        border:"1.5px solid rgba(255,107,107,0.52)",
+        background:"linear-gradient(135deg,rgba(255,107,107,0.13),rgba(255,107,107,0.04))" }}>
+      <div style={{ width:40, height:40, borderRadius:10, flexShrink:0,
+        background:"rgba(255,107,107,0.14)", border:"1px solid rgba(255,107,107,0.38)",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontSize:22, color:T.coral }}>{"\u2665"}</div>
+      <div style={{ flex:1, textAlign:"left" }}>
+        <div style={{ fontFamily:FF.sans, fontWeight:700, fontSize:13, color:T.coral }}>
+          Open in PMcardio
         </div>
-      )}
-
-      <div style={{padding:"10px 13px",borderRadius:9,marginBottom:10,
-        background:"rgba(0,229,192,0.08)",border:"1px solid rgba(0,229,192,0.3)"}}>
-        <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.teal,
-          letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>Overall Pattern</div>
-        <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:15,
-          color:T.txt,lineHeight:1.4}}>{result.overall_pattern}</div>
-      </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-        {result.key_findings?.length > 0 && (
-          <div style={{padding:"9px 11px",borderRadius:8,
-            background:"rgba(8,22,40,0.6)",border:"1px solid rgba(42,79,122,0.4)"}}>
-            <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.txt4,
-              letterSpacing:1.5,textTransform:"uppercase",marginBottom:7}}>Key Findings</div>
-            {result.key_findings.map((f,i) => (
-              <div key={i} style={{display:"flex",gap:6,alignItems:"flex-start",marginBottom:4}}>
-                <span style={{color:T.teal,fontSize:8,marginTop:3,flexShrink:0}}>&#9658;</span>
-                <span style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2,lineHeight:1.4}}>{f}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {result.immediate_actions?.length > 0 && (
-          <div style={{padding:"9px 11px",borderRadius:8,
-            background:"rgba(0,229,192,0.06)",border:"1px solid rgba(0,229,192,0.2)"}}>
-            <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.teal,
-              letterSpacing:1.5,textTransform:"uppercase",marginBottom:7}}>Immediate Actions</div>
-            {result.immediate_actions.map((a,i) => (
-              <div key={i} style={{display:"flex",gap:5,alignItems:"flex-start",marginBottom:4}}>
-                <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.teal,
-                  flexShrink:0,minWidth:16}}>{i+1}.</span>
-                <span style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2,lineHeight:1.4}}>{a}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {result.differential?.length > 0 && (
-        <div style={{marginBottom:10}}>
-          <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.txt4,
-            letterSpacing:1.5,textTransform:"uppercase",marginBottom:7}}>Differential</div>
-          {result.differential.map((d,i) => (
-            <div key={i} style={{padding:"8px 10px",borderRadius:8,marginBottom:5,
-              background:"rgba(8,22,40,0.55)",border:"1px solid rgba(26,53,85,0.4)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
-                <span style={{fontFamily:"Playfair Display",fontWeight:700,
-                  fontSize:12,color:T.txt}}>{d.diagnosis}</span>
-                <span style={{fontFamily:"JetBrains Mono",fontSize:7,fontWeight:700,
-                  color:pc(d.probability),background:`${pc(d.probability)}12`,
-                  border:`1px solid ${pc(d.probability)}33`,borderRadius:4,
-                  padding:"1px 6px",letterSpacing:1,textTransform:"uppercase"}}>
-                  {d.probability}
-                </span>
-              </div>
-              <div style={{fontFamily:"DM Sans",fontSize:10,color:T.txt4}}>{d.ecg_support}</div>
-            </div>
-          ))}
+        <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt3, marginTop:2 }}>
+          Queen of Hearts {"\u00b7"} OMI / STEMI-equivalent detection {"\u00b7"} CE-marked AI
         </div>
-      )}
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-        {result.serial_ecg && (
-          <div style={{padding:"9px 11px",borderRadius:8,
-            background:"rgba(245,200,66,0.06)",border:"1px solid rgba(245,200,66,0.2)"}}>
-            <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.gold,
-              letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>Serial ECG</div>
-            <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2,lineHeight:1.4}}>
-              {result.serial_ecg}
-            </div>
-          </div>
-        )}
-        {result.guideline_note && (
-          <div style={{padding:"9px 11px",borderRadius:8,
-            background:"rgba(59,158,255,0.06)",border:"1px solid rgba(59,158,255,0.2)"}}>
-            <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.blue,
-              letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>Guideline</div>
-            <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2,lineHeight:1.4}}>
-              {result.guideline_note}
-            </div>
-          </div>
-        )}
       </div>
+      <div style={{ fontFamily:FF.mono, fontSize:12, color:"rgba(255,107,107,0.5)" }}>{"\u2192"}</div>
+    </button>
+  );
+}
 
-      {result.pearl && (
-        <div style={{padding:"8px 11px",borderRadius:8,
-          background:"rgba(155,109,255,0.07)",border:"1px solid rgba(155,109,255,0.25)"}}>
-          <span style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.purple,
-            letterSpacing:1,textTransform:"uppercase"}}>Pearl: </span>
-          <span style={{fontFamily:"DM Sans",fontSize:11,color:T.txt2}}>{result.pearl}</span>
-        </div>
-      )}
+// ── Report sub-components ───────────────────────────────────────────────────
+function Chip({ label, color }) {
+  return (
+    <span style={{ fontFamily:FF.mono, fontSize:9, letterSpacing:1,
+      textTransform:"uppercase", padding:"2px 8px", borderRadius:5, fontWeight:700,
+      color, background:`${color}18`, border:`1px solid ${color}44` }}>
+      {label}
+    </span>
+  );
+}
+
+function MetricBox({ label, value, sub, color, wide }) {
+  return (
+    <div style={{ padding:"9px 11px", borderRadius:9,
+      background:`${color || T.blue}09`, border:`1px solid ${color || T.blue}28`,
+      flex: wide ? "1 1 100%" : "1 1 calc(50% - 4px)", minWidth:0 }}>
+      <div style={{ fontFamily:FF.mono, fontSize:9, color:T.txt4,
+        letterSpacing:.9, marginBottom:3, textTransform:"uppercase" }}>{label}</div>
+      <div style={{ fontFamily:FF.mono, fontSize:15, fontWeight:700,
+        color:color || T.blue, lineHeight:1.15 }}>{value ?? "--"}</div>
+      {sub && <div style={{ fontFamily:FF.sans, fontSize:9.5, color:T.txt4, marginTop:2 }}>{sub}</div>}
     </div>
   );
 }
 
-export default function ECGAIInterpreter({
-  embedded = false, onBack,
-  demo, vitals, cc, medications, pmhSelected,
-}) {
-  const [findings, setFindings] = useState("");
-  const [busy,     setBusy]     = useState(false);
-  const [result,   setResult]   = useState(null);
-  const [error,    setError]    = useState(null);
-  const [copied,   setCopied]   = useState(false);
+function AlertRow({ text, color }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:8,
+      padding:"6px 10px", borderRadius:7, marginBottom:5,
+      background:`${color}10`, border:`1px solid ${color}44` }}>
+      <div className="ecgai-dot" style={{ width:7, height:7, borderRadius:"50%",
+        background:color, flexShrink:0 }} />
+      <span style={{ fontFamily:FF.sans, fontSize:11.5, color, lineHeight:1.45 }}>{text}</span>
+    </div>
+  );
+}
 
-  const patCtx = useMemo(() =>
-    buildPatientCtx(demo, vitals, cc, medications, pmhSelected),
-    [demo, vitals, cc, medications, pmhSelected]);
+function Bul({ c, children }) {
+  return (
+    <div style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
+      <span style={{ color:c || T.teal, fontSize:8, marginTop:3, flexShrink:0 }}>{"\u25b8"}</span>
+      <span style={{ fontFamily:FF.sans, fontSize:11.5, color:T.txt2, lineHeight:1.55 }}>{children}</span>
+    </div>
+  );
+}
 
-  const handleInterpret = useCallback(async () => {
-    if (!findings.trim()) return;
-    setBusy(true); setError(null); setResult(null);
-    try {
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildPrompt(findings, patCtx),
-        response_json_schema: RESULT_SCHEMA,
-        model: "claude_sonnet_4_6",
-      });
-      setResult(res);
-    } catch(e) {
-      setError("Interpretation error: " + (e.message || "Check API connectivity"));
-    } finally {
-      setBusy(false);
-    }
-  }, [findings, patCtx]);
+// ── Report card ─────────────────────────────────────────────────────────────
+function ECGReport({ data }) {
+  const urgColor = data.urgency === "emergent" ? T.coral
+    : data.urgency === "urgent"   ? T.gold : T.teal;
+  const confColor = data.confidence === "high" ? T.teal
+    : data.confidence === "moderate" ? T.gold : T.txt4;
 
-  const copyResult = useCallback(() => {
-    if (!result) return;
-    const lines = [
-      "ECG AI INTERPRETATION -- " + new Date().toLocaleString(), "",
-      "PATTERN: " + result.overall_pattern,
-      result.stemi_equivalent ? "** STEMI EQUIVALENT -- CATH: " + (result.cath_activation || "").toUpperCase() + " **" : "",
-      result.key_findings?.length ? "\nFINDINGS:\n" + result.key_findings.map(f => "  - " + f).join("\n") : "",
-      result.differential?.length ? "\nDIFFERENTIAL:\n" + result.differential.map(d => `  - ${d.diagnosis} (${d.probability})`).join("\n") : "",
-      result.immediate_actions?.length ? "\nACTIONS:\n" + result.immediate_actions.map((a,i) => `  ${i+1}. ${a}`).join("\n") : "",
-      result.guideline_note ? "\nGUIDELINE: " + result.guideline_note : "",
-      result.pearl ? "\nPEARL: " + result.pearl : "",
-    ].filter(Boolean).join("\n");
-    navigator.clipboard.writeText(lines).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); });
-  }, [result]);
+  const highRisk = (data.high_risk || []).filter(r => r && r !== "None");
+  const qrsWide  = data.qrs_ms && parseInt(data.qrs_ms) > 120;
+  const qtcHigh  = data.qtc_ms && parseInt(data.qtc_ms) >= 500;
+  const qtcBorder = data.qtc_ms && parseInt(data.qtc_ms) >= 440 && parseInt(data.qtc_ms) < 500;
 
   return (
-    <div style={{fontFamily:"DM Sans",
-      background: embedded ? "transparent" : T.bg,
-      minHeight:  embedded ? "auto" : "100vh",
-      color: T.txt, padding: embedded ? "0" : "24px 16px"}}>
-
-      {!embedded && onBack && (
-        <button onClick={onBack} style={{marginBottom:16,padding:"6px 14px",borderRadius:8,
-          border:"1px solid rgba(42,79,122,0.5)",background:"rgba(14,37,68,0.6)",
-          color:T.txt3,fontFamily:"DM Sans",fontSize:12,fontWeight:600,cursor:"pointer"}}>
-          Back to Hub
-        </button>
-      )}
-
-      {embedded && (
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-          <span style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:15,color:T.teal}}>
-            AI ECG Interpreter
-          </span>
-          <span style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.txt4,letterSpacing:1.5,
-            textTransform:"uppercase",background:"rgba(0,229,192,0.1)",
-            border:"1px solid rgba(0,229,192,0.25)",borderRadius:4,padding:"2px 7px"}}>
-            Describe findings -- AI returns structured interpretation
-          </span>
+    <div className="ecgai-fade" style={{ marginTop:14 }}>
+      {/* Urgency header */}
+      <div style={{ padding:"10px 14px", borderRadius:"11px 11px 0 0",
+        background:`linear-gradient(135deg,${urgColor}16,${urgColor}06)`,
+        border:`1.5px solid ${urgColor}55`, borderBottom:"none",
+        display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <div>
+          <div style={{ fontFamily:FF.serif, fontSize:19, fontWeight:900, color:urgColor }}>
+            {data.urgency === "emergent" ? "EMERGENT"
+              : data.urgency === "urgent" ? "Urgent Review" : "Routine"}
+          </div>
+          <div style={{ fontFamily:FF.mono, fontSize:9, color:urgColor,
+            letterSpacing:1.3, marginTop:2 }}>AI ECG INTERPRETATION {"\u00b7"} NOTRYA</div>
         </div>
-      )}
-
-      {patCtx && (
-        <div style={{padding:"8px 12px",borderRadius:8,marginBottom:12,
-          background:"rgba(59,158,255,0.07)",border:"1px solid rgba(59,158,255,0.2)",
-          fontFamily:"JetBrains Mono",fontSize:9,color:T.txt3,lineHeight:1.7}}>
-          <div style={{color:T.blue,letterSpacing:1,textTransform:"uppercase",
-            fontSize:8,marginBottom:3}}>Patient Context</div>
-          {patCtx}
+        <div style={{ textAlign:"right", display:"flex", flexDirection:"column", gap:5 }}>
+          <Chip label={`Confidence: ${data.confidence || "--"}`} color={confColor} />
+          {data.image_quality && data.image_quality !== "good" && (
+            <Chip label={`Image: ${data.image_quality}`} color={T.gold} />
+          )}
         </div>
-      )}
-
-      <div style={{marginBottom:10}}>
-        <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,
-          letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>
-          Describe ECG Findings
-        </div>
-        <textarea value={findings} onChange={e => setFindings(e.target.value)} rows={5}
-          placeholder={"Describe what you observe on the ECG...\nEx: Sinus tachycardia 110 bpm. Normal axis. PR 160ms. QRS narrow. 2mm STE in V2-V4 with reciprocal depression in II/III/aVF. No old ECG for comparison."}
-          style={{width:"100%",resize:"vertical",boxSizing:"border-box",
-            background:"rgba(14,37,68,0.75)",
-            border:`1px solid ${findings ? "rgba(0,229,192,0.4)" : "rgba(42,79,122,0.35)"}`,
-            borderRadius:8,padding:"9px 11px",outline:"none",
-            fontFamily:"DM Sans",fontSize:12,color:T.txt,lineHeight:1.6}}/>
       </div>
 
-      <div style={{display:"flex",gap:7,marginBottom:12}}>
-        <button onClick={handleInterpret} disabled={busy || !findings.trim()}
-          style={{flex:1,padding:"11px 0",borderRadius:10,
-            cursor:busy||!findings.trim()?"not-allowed":"pointer",
-            border:`1px solid ${!findings.trim()?"rgba(42,79,122,0.3)":"rgba(0,229,192,0.55)"}`,
-            background:!findings.trim()
-              ? "rgba(42,79,122,0.15)"
-              : "linear-gradient(135deg,rgba(0,229,192,0.18),rgba(0,229,192,0.06))",
-            color:!findings.trim()?T.txt4:T.teal,
-            fontFamily:"DM Sans",fontWeight:700,fontSize:13,transition:"all .15s"}}>
-          {busy ? "Interpreting..." : "Interpret ECG"}
-        </button>
-        {result && (
-          <button onClick={copyResult}
-            style={{padding:"11px 16px",borderRadius:10,cursor:"pointer",transition:"all .15s",
-              border:`1px solid ${copied?"rgba(61,255,160,0.5)":"rgba(42,79,122,0.4)"}`,
-              background:copied?"rgba(61,255,160,0.08)":"rgba(42,79,122,0.15)",
-              color:copied?T.green:T.txt3,fontFamily:"DM Sans",fontWeight:600,fontSize:12}}>
-            {copied ? "Copied" : "Copy"}
-          </button>
+      <div style={{ padding:"13px 14px 16px", borderRadius:"0 0 11px 11px",
+        background:T.card, border:`1.5px solid ${urgColor}55`, borderTop:"none" }}>
+
+        {/* High-risk patterns */}
+        {highRisk.length > 0 && (
+          <div style={{ marginBottom:13 }}>
+            <div style={{ fontFamily:FF.mono, fontSize:9, color:T.coral,
+              letterSpacing:1.4, textTransform:"uppercase", marginBottom:7,
+              paddingBottom:4, borderBottom:`1px solid ${T.coral}22` }}>
+              {"\u26A0"} High-Risk Patterns
+            </div>
+            {highRisk.map((p, i) => <AlertRow key={i} text={p} color={T.coral} />)}
+          </div>
         )}
-        <button onClick={() => { setFindings(""); setResult(null); setError(null); }}
-          style={{padding:"11px 12px",borderRadius:10,cursor:"pointer",
-            border:"1px solid rgba(42,79,122,0.35)",background:"transparent",
-            color:T.txt4,fontFamily:"JetBrains Mono",fontSize:8,
-            letterSpacing:1,textTransform:"uppercase"}}>
-          Clear
-        </button>
+
+        {/* Core measurements */}
+        <div style={{ marginBottom:12 }}>
+          <div style={{ fontFamily:FF.mono, fontSize:9, color:T.blue,
+            letterSpacing:1.4, textTransform:"uppercase", marginBottom:7,
+            paddingBottom:4, borderBottom:`1px solid ${T.blue}22` }}>
+            Measurements
+          </div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+            <MetricBox label="Rate" value={data.rate ? `${data.rate} bpm` : null} color={T.blue} />
+            <MetricBox label="Rhythm" value={data.rhythm} color={data.regular === false ? T.coral : T.blue} wide />
+            <MetricBox label="PR"  value={data.pr_ms  ? `${data.pr_ms} ms`  : null} color={T.blue} />
+            <MetricBox label="QRS" value={data.qrs_ms ? `${data.qrs_ms} ms` : null}
+              color={qrsWide ? T.gold : T.blue}
+              sub={qrsWide ? "Wide — assess morphology" : null} />
+            <MetricBox label="QTc" value={data.qtc_ms ? `${data.qtc_ms} ms` : null}
+              color={qtcHigh ? T.coral : qtcBorder ? T.gold : T.blue}
+              sub={data.qtc_ms ? `${data.qtc_method || "Bazett"}${qtcHigh ? " \u2014 HIGH RISK" : qtcBorder ? " \u2014 borderline" : ""}` : null} />
+            <MetricBox label="Axis" value={data.axis} color={T.blue} />
+          </div>
+        </div>
+
+        {/* ST segments */}
+        {(data.st?.elevation !== "None" || data.st?.depression !== "None") && (
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontFamily:FF.mono, fontSize:9, color:T.orange,
+              letterSpacing:1.4, textTransform:"uppercase", marginBottom:7,
+              paddingBottom:4, borderBottom:`1px solid ${T.orange}22` }}>
+              ST Segments
+            </div>
+            {data.st?.elevation && data.st.elevation !== "None" && (
+              <AlertRow text={`Elevation: ${data.st.elevation}`} color={T.coral} />
+            )}
+            {data.st?.depression && data.st.depression !== "None" && (
+              <AlertRow text={`Depression: ${data.st.depression}`} color={T.orange} />
+            )}
+            {data.st?.morphology && (
+              <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt2,
+                lineHeight:1.55, marginTop:5 }}>{data.st.morphology}</div>
+            )}
+          </div>
+        )}
+
+        {/* Waveform analysis */}
+        <div style={{ marginBottom:12 }}>
+          <div style={{ fontFamily:FF.mono, fontSize:9, color:T.purple,
+            letterSpacing:1.4, textTransform:"uppercase", marginBottom:7,
+            paddingBottom:4, borderBottom:`1px solid ${T.purple}22` }}>
+            Waveform Analysis
+          </div>
+          {data.qrs_morphology && (
+            <Bul c={T.purple}><strong style={{ color:T.txt4, fontFamily:FF.mono,
+              fontSize:9 }}>QRS: </strong>{data.qrs_morphology}</Bul>
+          )}
+          {data.p_waves && (
+            <Bul c={T.purple}><strong style={{ color:T.txt4, fontFamily:FF.mono,
+              fontSize:9 }}>P waves: </strong>{data.p_waves}</Bul>
+          )}
+          {data.t_waves && (
+            <Bul c={T.purple}><strong style={{ color:T.txt4, fontFamily:FF.mono,
+              fontSize:9 }}>T waves: </strong>{data.t_waves}</Bul>
+          )}
+        </div>
+
+        {/* Impression */}
+        <div style={{ marginBottom:12, padding:"10px 13px", borderRadius:9,
+          background:"rgba(59,158,255,0.06)", border:"1px solid rgba(59,158,255,0.22)" }}>
+          <div style={{ fontFamily:FF.mono, fontSize:9, color:T.blue,
+            letterSpacing:1.4, textTransform:"uppercase", marginBottom:6 }}>
+            Clinical Impression
+          </div>
+          <div style={{ fontFamily:FF.sans, fontSize:12.5, color:T.txt,
+            lineHeight:1.65 }}>{data.impression}</div>
+        </div>
+
+        {/* OMI caveat + PMcardio */}
+        <div style={{ padding:"10px 13px", borderRadius:9, marginBottom:10,
+          background:"rgba(255,107,107,0.06)", border:"1px solid rgba(255,107,107,0.28)" }}>
+          <div style={{ fontFamily:FF.mono, fontSize:9, color:T.coral,
+            letterSpacing:1.4, textTransform:"uppercase", marginBottom:5 }}>
+            OMI / Occlusion Assessment Limitation
+          </div>
+          <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt3,
+            lineHeight:1.55, marginBottom:9 }}>
+            {data.omi_note || "Claude Vision is not validated for occlusion MI detection. Queen of Hearts (PMcardio) uses deep neural networks trained on angiographic outcomes and significantly outperforms both LLMs and physicians for OMI identification."}
+          </div>
+          <PMcardioButton compact />
+        </div>
+
+        {/* Disclaimer */}
+        <div style={{ fontFamily:FF.mono, fontSize:8.5, color:T.txt4,
+          letterSpacing:.7, lineHeight:1.55, textAlign:"center" }}>
+          CLINICAL DECISION SUPPORT ONLY {"\u00b7"} NOT A DIAGNOSTIC DEVICE {"\u00b7"} PHYSICIAN JUDGMENT REQUIRED
+          {"\u00b7"} AUTOMATED QTc INACCURATE IN ~30% OF ECGs {"\u00b7"} VERIFY ALL MEASUREMENTS MANUALLY
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Loading animation ───────────────────────────────────────────────────────
+function ScanningOverlay() {
+  return (
+    <div style={{ position:"absolute", inset:0, borderRadius:10,
+      background:"rgba(5,15,30,0.65)", display:"flex",
+      flexDirection:"column", alignItems:"center", justifyContent:"center", gap:10 }}>
+      <div className="ecgai-scan-line" />
+      <div style={{ fontFamily:FF.mono, fontSize:11, color:T.teal,
+        letterSpacing:2, textTransform:"uppercase" }}>Analyzing ECG</div>
+      <div style={{ display:"flex", gap:5 }}>
+        {[0,1,2].map(i => (
+          <div key={i} className="ecgai-dot"
+            style={{ width:6, height:6, borderRadius:"50%", background:T.teal,
+              animationDelay:`${i * 0.28}s` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main ECGAIInterpreter component ─────────────────────────────────────────
+export default function ECGAIInterpreter({ embedded = false, vitals, cc, medications, pmhSelected }) {
+  const [imageFile,  setImageFile]  = useState(null);
+  const [imageUrl,   setImageUrl]   = useState(null);
+  const [status,     setStatus]     = useState("idle");  // idle | loading | done | error
+  const [report,     setReport]     = useState(null);
+  const [errorMsg,   setErrorMsg]   = useState("");
+  const [dragOver,   setDragOver]   = useState(false);
+  const fileRef = useRef(null);
+
+  // Build context string from NPI props if available
+  const buildContext = useCallback(() => {
+    const parts = [];
+    if (cc)          parts.push(`Chief complaint: ${typeof cc === "object" ? cc.text : cc}`);
+    if (vitals) {
+      const vParts = [];
+      if (vitals.hr)   vParts.push(`HR ${vitals.hr}`);
+      if (vitals.bp)   vParts.push(`BP ${vitals.bp}`);
+      if (vitals.spo2) vParts.push(`SpO2 ${vitals.spo2}`);
+      if (vParts.length) parts.push(`Vitals: ${vParts.join(", ")}`);
+    }
+    if (medications?.length) {
+      const meds = medications.slice(0,5).map(m => typeof m === "string" ? m : m.name || "").filter(Boolean);
+      if (meds.length) parts.push(`Medications: ${meds.join(", ")}`);
+    }
+    if (pmhSelected?.length) parts.push(`PMH: ${pmhSelected.slice(0,5).join(", ")}`);
+    return parts.length ? `\n\nPatient context:\n${parts.join("\n")}` : "";
+  }, [cc, vitals, medications, pmhSelected]);
+
+  const processFile = useCallback((file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    if (imageUrl) URL.revokeObjectURL(imageUrl);
+    const url = URL.createObjectURL(file);
+    setImageUrl(url);
+    setImageFile(file);
+    setReport(null); setStatus("idle"); setErrorMsg("");
+  }, [imageUrl]);
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault(); setDragOver(false);
+    processFile(e.dataTransfer.files?.[0]);
+  }, [processFile]);
+
+  const handleAnalyze = async () => {
+    if (!imageFile) return;
+    setStatus("loading"); setReport(null); setErrorMsg("");
+    try {
+      // Upload file via base44 UploadFile integration
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
+      const context = buildContext();
+
+      // Use InvokeLLM with file_urls for vision + structured JSON output
+      const ECG_SCHEMA = {
+        type: "object",
+        properties: {
+          rate:         { type: ["integer", "null"] },
+          rhythm:       { type: "string" },
+          regular:      { type: ["boolean", "null"] },
+          p_waves:      { type: "string" },
+          pr_ms:        { type: ["integer", "null"] },
+          qrs_ms:       { type: ["integer", "null"] },
+          qtc_ms:       { type: ["integer", "null"] },
+          qtc_method:   { type: "string" },
+          axis:         { type: "string" },
+          st: {
+            type: "object",
+            properties: {
+              elevation:  { type: "string" },
+              depression: { type: "string" },
+              morphology: { type: "string" },
+            },
+          },
+          t_waves:       { type: "string" },
+          qrs_morphology:{ type: "string" },
+          high_risk:     { type: "array", items: { type: "string" } },
+          impression:    { type: "string" },
+          omi_note:      { type: "string" },
+          confidence:    { type: "string" },
+          image_quality: { type: "string" },
+          urgency:       { type: "string" },
+        },
+      };
+
+      const parsed = await base44.integrations.Core.InvokeLLM({
+        prompt: `${ECG_SYSTEM}\n\nInterpret this 12-lead ECG image. Return only the JSON object.${context}`,
+        file_urls: [file_url],
+        response_json_schema: ECG_SCHEMA,
+        model: "claude_sonnet_4_6",
+      });
+
+      setReport(parsed);
+      setStatus("done");
+    } catch (err) {
+      console.error("ECG AI error:", err);
+      setErrorMsg(`Analysis failed: ${err.message || "Check API connectivity"}`);
+      setStatus("error");
+    }
+  };
+
+  const handleClear = () => {
+    if (imageUrl) URL.revokeObjectURL(imageUrl);
+    setImageFile(null); setImageUrl(null); setReport(null);
+    setStatus("idle"); setErrorMsg("");
+  };
+
+  const ccText = cc ? (typeof cc === "object" ? cc.text : cc) : null;
+
+  return (
+    <div style={{ fontFamily:FF.sans }}>
+      {/* Section intro */}
+      <div style={{ marginBottom:12, padding:"10px 14px", borderRadius:10,
+        ...glass, border:`1px solid rgba(59,158,255,0.3)` }}>
+        <div style={{ display:"flex", alignItems:"center",
+          justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
+          <div>
+            <div style={{ fontFamily:FF.serif, fontSize:15, fontWeight:700,
+              color:T.blue, marginBottom:3 }}>Claude Vision ECG Interpreter</div>
+            <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt3, lineHeight:1.5 }}>
+              Photograph or upload any 12-lead ECG. Claude Vision provides structured
+              rate/rhythm/interval analysis, ST assessment, and pattern recognition.
+              Not validated for OMI detection — use PMcardio Queen of Hearts for that.
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:6, flexShrink:0, flexWrap:"wrap" }}>
+            {[
+              { label:"Rate/Rhythm", color:T.blue },
+              { label:"Intervals", color:T.purple },
+              { label:"ST Segments", color:T.orange },
+              { label:"Pattern Dx", color:T.coral },
+            ].map(b => (
+              <span key={b.label} style={{ fontFamily:FF.mono, fontSize:8,
+                letterSpacing:.8, padding:"2px 8px", borderRadius:5,
+                color:b.color, background:`${b.color}12`,
+                border:`1px solid ${b.color}30` }}>{b.label}</span>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {error && (
-        <div style={{padding:"8px 12px",borderRadius:8,marginBottom:10,
-          background:"rgba(255,107,107,0.08)",border:"1px solid rgba(255,107,107,0.3)",
-          fontFamily:"DM Sans",fontSize:11,color:T.coral}}>{error}</div>
+      {/* Upload zone */}
+      <div
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => !imageUrl && fileRef.current?.click()}
+        style={{ position:"relative", borderRadius:12, overflow:"hidden",
+          cursor:imageUrl ? "default" : "pointer",
+          border:`1.5px dashed ${dragOver ? T.teal : imageUrl ? "rgba(35,70,115,0.55)" : "rgba(59,158,255,0.38)"}`,
+          background:dragOver ? "rgba(0,229,192,0.06)" : "rgba(5,13,32,0.6)",
+          transition:"border-color .15s, background .15s",
+          minHeight: imageUrl ? "auto" : 140 }}>
+
+        {!imageUrl && (
+          <div style={{ padding:"32px 20px", textAlign:"center" }}>
+            <div style={{ fontSize:36, marginBottom:10 }}>{"\uD83D\uDCF7"}</div>
+            <div style={{ fontFamily:FF.sans, fontWeight:600, fontSize:14,
+              color:T.txt2, marginBottom:5 }}>
+              Photograph or upload a 12-lead ECG
+            </div>
+            <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt4, lineHeight:1.5 }}>
+              Drag &amp; drop {"\u00b7"} tap to browse {"\u00b7"} take a photo<br/>
+              Paper printout, monitor screen, or digital image — any format
+            </div>
+          </div>
+        )}
+
+        {imageUrl && (
+          <div style={{ position:"relative" }}>
+            <img src={imageUrl} alt="ECG"
+              style={{ width:"100%", display:"block", borderRadius:10,
+                maxHeight:340, objectFit:"contain",
+                background:"rgba(5,10,20,0.95)" }} />
+            {status === "loading" && <ScanningOverlay />}
+          </div>
+        )}
+
+        <input ref={fileRef} type="file" accept="image/*" capture="environment"
+          style={{ display:"none" }}
+          onChange={e => processFile(e.target.files?.[0])} />
+      </div>
+
+      {/* Context hint if NPI data available */}
+      {(ccText || vitals) && imageUrl && (
+        <div style={{ marginTop:7, padding:"6px 11px", borderRadius:7,
+          background:"rgba(0,229,192,0.07)", border:"1px solid rgba(0,229,192,0.25)",
+          fontFamily:FF.mono, fontSize:9, color:T.teal, letterSpacing:.8 }}>
+          Patient context will be included: {[ccText, vitals?.hr && `HR ${vitals.hr}`, vitals?.bp && `BP ${vitals.bp}`].filter(Boolean).join(" \u00b7 ")}
+        </div>
       )}
 
-      {result && <AIResult result={result}/>}
+      {/* Action buttons */}
+      {imageUrl && (
+        <div style={{ display:"flex", gap:8, marginTop:10 }}>
+          <button onClick={handleAnalyze} disabled={status === "loading" || !imageFile}
+            style={{ flex:1, minHeight:46, borderRadius:10, cursor:status === "loading" ? "wait" : "pointer",
+              fontFamily:FF.sans, fontWeight:700, fontSize:13,
+              border:`1.5px solid ${T.blue}66`,
+              background:status === "loading"
+                ? "rgba(59,158,255,0.07)"
+                : "linear-gradient(135deg,rgba(59,158,255,0.18),rgba(59,158,255,0.06))",
+              color:status === "loading" ? T.txt4 : T.blue,
+              transition:"all .15s" }}>
+            {status === "loading" ? "Analyzing\u2026" : status === "done" ? "Re-analyze" : "Analyze ECG"}
+          </button>
+          <button onClick={() => fileRef.current?.click()}
+            style={{ padding:"0 16px", minHeight:46, borderRadius:10, cursor:"pointer",
+              fontFamily:FF.sans, fontWeight:600, fontSize:12,
+              border:"1px solid rgba(35,70,115,0.65)",
+              background:"rgba(14,28,58,0.85)", color:T.txt4 }}>
+            Change
+          </button>
+          {status === "done" && (
+            <button onClick={handleClear}
+              style={{ padding:"0 14px", minHeight:46, borderRadius:10, cursor:"pointer",
+                fontFamily:FF.sans, fontWeight:600, fontSize:12,
+                border:"1px solid rgba(255,107,107,0.35)",
+                background:"rgba(255,107,107,0.06)", color:T.coral }}>
+              Clear
+            </button>
+          )}
+        </div>
+      )}
 
-      {!embedded && (
-        <div style={{textAlign:"center",paddingTop:24,fontFamily:"JetBrains Mono",
-          fontSize:8,color:T.txt4,letterSpacing:1.5}}>
-          NOTRYA AI ECG INTERPRETER -- PHYSICIAN JUDGMENT REQUIRED -- NOT A SUBSTITUTE FOR CLINICAL ASSESSMENT
+      {/* Error */}
+      {status === "error" && (
+        <div style={{ marginTop:10, padding:"10px 13px", borderRadius:9,
+          background:"rgba(255,68,68,0.08)", border:"1px solid rgba(255,68,68,0.3)",
+          fontFamily:FF.sans, fontSize:11, color:T.coral, lineHeight:1.5 }}>
+          {errorMsg}
+        </div>
+      )}
+
+      {/* Report */}
+      {status === "done" && report && <ECGReport data={report} />}
+
+      {/* PMcardio standalone button (always visible at bottom when no image) */}
+      {!imageUrl && (
+        <div style={{ marginTop:14 }}>
+          <div style={{ fontFamily:FF.mono, fontSize:9, color:T.txt4,
+            letterSpacing:1.2, textTransform:"uppercase",
+            marginBottom:7 }}>Also recommended for OMI detection</div>
+          <PMcardioButton />
         </div>
       )}
     </div>

@@ -81,6 +81,7 @@ import ImagingInterpreter from '@/pages/ImagingInterpreter';
 import WoundCareHub from '@/pages/WoundCareHub';
 import SeizureHub from '@/pages/SeizureHub';
 import ChestPainHub from '@/pages/ChestPainHub';
+import DentalHub from '@/pages/DentalHub';
 import DyspneaHub from '@/pages/DyspneaHub';
 import HeadacheHub from '@/pages/HeadacheHub';
 import AbdominalPainHub from '@/pages/AbdominalPainHub';
@@ -245,6 +246,7 @@ const AuthenticatedApp = () => {
       <Route path="/wound-care-hub" element={<WoundCareHub />} />
       <Route path="/seizure-hub" element={<SeizureHub />} />
       <Route path="/ChestPainHub" element={<LayoutWrapper currentPageName="ChestPainHub"><ChestPainHub /></LayoutWrapper>} />
+      <Route path="/DentalHub" element={<LayoutWrapper currentPageName="DentalHub"><DentalHub /></LayoutWrapper>} />
       <Route path="/DyspneaHub" element={<LayoutWrapper currentPageName="DyspneaHub"><DyspneaHub /></LayoutWrapper>} />
       <Route path="/HeadacheHub" element={<LayoutWrapper currentPageName="HeadacheHub"><HeadacheHub /></LayoutWrapper>} />
       <Route path="/AbdominalPainHub" element={<LayoutWrapper currentPageName="AbdominalPainHub"><AbdominalPainHub /></LayoutWrapper>} />

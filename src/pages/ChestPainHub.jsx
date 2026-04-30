@@ -1310,7 +1310,7 @@ function ReturnPrecautions() {
         "Take aspirin 81 mg daily unless your doctor says otherwise",
       ].map((item, i) => (
         <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
-          <span style={{ color:T.teal, fontSize:9, marginTop:2, flexShrink:0 }}>></span>
+          <span style={{ color:T.teal, fontSize:9, marginTop:2, flexShrink:0 }}>{">"}</span>
           <span style={{ fontFamily:FF.sans, fontSize:12,
             color:T.txt2, lineHeight:1.55 }}>{item}</span>
         </div>
@@ -1409,7 +1409,7 @@ function GuidedOption({ opt, selected, color, onSelect }) {
 function GuidedWorkflow({
   step, setStep,
   heartScores, setHeartScores,
-  t0,setT0,t1,setT1,t2,setT2,uln,setULN,unit,setUnit,tropMode,setTropMode,
+  t0,setT0,t1,setT1,t2,setT2,uln,setULN,tropMode,setTropMode,
   edacsFields,setEdacsFields,edacsNegTrop,setEdacsNegTrop,
   tropResult,tropInterp,heartTotal,edacsScore,
   wellsScore,wellsInterResult,addrsScore,addrsResult,
@@ -1489,7 +1489,7 @@ function GuidedWorkflow({
       <GuidedHeader step={stepIdx} total={GUIDED_STEPS.length}
         label="Troponin Values" color={T.blue} onTabsSwitch={onTabsSwitch} />
       <TroponinTab t0={t0} setT0={setT0} t1={t1} setT1={setT1} t2={t2} setT2={setT2}
-        uln={uln} setULN={setULN} unit={unit} setUnit={setUnit} mode={tropMode} setMode={setTropMode} />
+        uln={uln} setULN={setULN} unit="ng/mL" setUnit={() => {}} mode={tropMode} setMode={setTropMode} />
       <div style={{ display:"flex", gap:10, marginTop:12 }}>
         <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>← Back</NavBtn>
         <NavBtn active={canAdvanceTrop} onClick={() => canAdvanceTrop && setStep(s => s+1)} c={T.blue}>Next →</NavBtn>

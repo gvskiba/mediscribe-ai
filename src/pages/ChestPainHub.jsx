@@ -33,7 +33,7 @@ if (typeof document !== "undefined") {
 }
 
 const T = {
-  bg:"#050f1e", txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#8ab8d8", txt4:"#638ab5",
+  bg:"#050f1e", txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
   teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
   orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", red:"#ff4444",
 };
@@ -303,9 +303,9 @@ function TabBtn({ tab, active, onClick }) {
     <button onClick={onClick}
       style={{ display:"flex", alignItems:"center", gap:5,
         padding:"7px 11px", borderRadius:9, cursor:"pointer", transition:"all .15s",
-        border:`1.5px solid ${active ? tab.color+"cc" : "rgba(35,70,115,0.65)"}`,
-        background:active ? `linear-gradient(135deg,${tab.color}24,${tab.color}0c)` : "rgba(14,28,58,0.80)",
-        color:active ? tab.color : T.txt3, fontFamily:FF.sans, fontWeight:active ? 700 : 500, fontSize:11.5 }}>
+        border:`1px solid ${active ? tab.color+"77" : "rgba(26,53,85,0.7)"}`,
+        background:active ? `linear-gradient(135deg,${tab.color}18,${tab.color}06)` : "rgba(5,15,30,0.6)",
+        color:active ? tab.color : T.txt4, fontFamily:FF.sans, fontWeight:600, fontSize:11.5 }}>
       <span style={{ fontSize:13 }}>{tab.icon}</span>
       <span>{tab.label}</span>
     </button>
@@ -318,13 +318,13 @@ function ScoreOption({ item, val, selected, onSelect }) {
   return (
     <button onClick={() => onSelect(val)}
       style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"8px 12px", borderRadius:8,
-        cursor:"pointer", textAlign:"left", border:`1px solid ${isSelected ? item.color+"55" : "rgba(35,70,115,0.72)"}`,
+        cursor:"pointer", textAlign:"left", border:`1px solid ${isSelected ? item.color+"55" : "rgba(26,53,85,0.6)"}`,
         transition:"all .12s", marginBottom:4,
-        background:isSelected ? `linear-gradient(135deg,${item.color}18,${item.color}08)` : "rgba(14,28,58,0.80)",
-        borderLeft:`3px solid ${isSelected ? item.color : "rgba(35,70,115,0.65)"}` }}>
+        background:isSelected ? `linear-gradient(135deg,${item.color}18,${item.color}08)` : "rgba(5,13,32,0.7)",
+        borderLeft:`3px solid ${isSelected ? item.color : "rgba(26,53,85,0.5)"}` }}>
       <div style={{ width:24, height:24, borderRadius:"50%", flexShrink:0,
         display:"flex", alignItems:"center", justifyContent:"center",
-        background:isSelected ? item.color : "rgba(18,40,80,0.7)", fontFamily:FF.mono, fontWeight:900,
+        background:isSelected ? item.color : "rgba(14,36,70,0.6)", fontFamily:FF.mono, fontWeight:900,
         fontSize:11, color:isSelected ? "#050f1e" : T.txt4 }}>
         {val}
       </div>
@@ -344,7 +344,7 @@ function InfoBox({ color, icon, title, children }) {
     <div style={{ padding:"10px 13px", borderRadius:9, marginBottom:8,
       background:`${color}0a`, border:`1px solid ${color}33`, borderLeft:`3px solid ${color}` }}>
       {title && (
-        <div style={{ fontFamily:FF.mono, fontSize:10, color,
+        <div style={{ fontFamily:FF.mono, fontSize:8, color,
           letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>
           {icon && <span style={{ marginRight:5 }}>{icon}</span>}{title}
         </div>
@@ -360,20 +360,20 @@ function CheckRow({ label, sub, checked, onChange, pts, color }) {
     <button onClick={onChange}
       style={{ display:"flex", alignItems:"center", gap:9, width:"100%",
         padding:"9px 12px", borderRadius:8, cursor:"pointer", textAlign:"left",
-        marginBottom:5, transition:"background .1s", border:`1px solid ${checked ? c+"55" : "rgba(35,70,115,0.68)"}`,
-        background:checked ? `${c}10` : "rgba(14,28,58,0.75)",
-        borderLeft:`3px solid ${checked ? c : "rgba(35,70,115,0.65)"}` }}>
+        marginBottom:5, transition:"background .1s", border:`1px solid ${checked ? c+"55" : "rgba(26,53,85,0.55)"}`,
+        background:checked ? `${c}10` : "rgba(5,13,32,0.65)",
+        borderLeft:`3px solid ${checked ? c : "rgba(26,53,85,0.5)"}` }}>
       <div style={{ width:18, height:18, borderRadius:4, flexShrink:0,
         border:`2px solid ${checked ? c : "rgba(42,79,122,0.55)"}`, background:checked ? c : "transparent",
         display:"flex", alignItems:"center", justifyContent:"center" }}>
-        {checked && <span style={{ color:"#050f1e", fontSize:10, fontWeight:900 }}>✓</span>}
+        {checked && <span style={{ color:"#050f1e", fontSize:9, fontWeight:900 }}>✓</span>}
       </div>
       <div style={{ flex:1 }}>
         <span style={{ fontFamily:FF.sans, fontSize:12, color:T.txt2 }}>{label}</span>
         {sub && <div style={{ fontFamily:FF.sans, fontSize:9.5, color:T.txt4, marginTop:2, lineHeight:1.4 }}>{sub}</div>}
       </div>
       {pts !== undefined && (
-        <span style={{ fontFamily:FF.mono, fontSize:10, fontWeight:700,
+        <span style={{ fontFamily:FF.mono, fontSize:9, fontWeight:700,
           color:pts > 0 ? T.coral : T.teal, flexShrink:0 }}>
           {pts > 0 ? "+" : ""}{pts} pts
         </span>
@@ -386,14 +386,14 @@ function TroponinField({ label, value, onChange, uln }) {
   const v = parseFloat(value), over = !isNaN(v) && uln > 0 && v > uln;
   return (
     <div style={{ flex:1 }}>
-      <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4,
+      <div style={{ fontFamily:FF.mono, fontSize:8, color:T.txt4,
         letterSpacing:1.3, textTransform:"uppercase", marginBottom:4 }}>{label}</div>
       <input type="number" value={value} onChange={e => onChange(e.target.value)} placeholder="0.00"
-        style={{ width:"100%", padding:"9px 11px", background:"rgba(14,28,58,0.93)",
-          border:`1px solid ${over ? T.coral+"88" : value ? T.blue+"55" : "rgba(35,70,115,0.65)"}`,
+        style={{ width:"100%", padding:"9px 11px", background:"rgba(5,13,32,0.9)",
+          border:`1px solid ${over ? T.coral+"88" : value ? T.blue+"55" : "rgba(26,53,85,0.5)"}`,
           borderRadius:8, outline:"none", fontFamily:FF.mono,
           fontSize:20, fontWeight:700, color:over ? T.coral : T.blue }} />
-      {over && <div style={{ fontFamily:FF.sans, fontSize:10, color:T.coral, marginTop:3 }}>{(v/uln).toFixed(1)}× ULN</div>}
+      {over && <div style={{ fontFamily:FF.sans, fontSize:9, color:T.coral, marginTop:3 }}>{(v/uln).toFixed(1)}× ULN</div>}
     </div>
   );
 }
@@ -407,14 +407,14 @@ function SummaryStrip({ heartScore, tropInterp, edacsScore, edacsNegTrop }) {
   if (!hasAny) return null;
   return (
     <div style={{ display:"flex", gap:6, marginBottom:12, padding:"8px 10px",
-      borderRadius:9, background:"rgba(14,28,58,0.88)", border:"1px solid rgba(35,70,115,0.72)" }}>
+      borderRadius:9, background:"rgba(5,13,32,0.85)", border:"1px solid rgba(26,53,85,0.6)" }}>
       {[
         { label:"HEART", val:heartScore !== null ? heartScore : "--", color:hs ? hs.color : T.txt4, sub:hs ? hs.label : "incomplete" },
         { label:"Troponin", val:tropInterp || "--", color:tropColor, sub:tropInterp ? "" : "not entered" },
         { label:"EDACS", val:edacsScore !== null ? edacsScore : "--", color:er ? er.color : T.txt4, sub:er ? er.label : "incomplete" },
       ].map(it => (
         <div key={it.label} style={{ flex:1, textAlign:"center", padding:"4px 0" }}>
-          <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4,
+          <div style={{ fontFamily:FF.mono, fontSize:7, color:T.txt4,
             letterSpacing:1, textTransform:"uppercase", marginBottom:2 }}>{it.label}</div>
           <div style={{ fontFamily:FF.mono, fontSize:17, fontWeight:700, color:it.color, lineHeight:1 }}>{it.val}</div>
           {it.sub && <div style={{ fontFamily:FF.sans, fontSize:8.5, color:T.txt4, marginTop:2 }}>{it.sub}</div>}
@@ -429,7 +429,7 @@ function SummaryStrip({ heartScore, tropInterp, edacsScore, edacsNegTrop }) {
 function Bul({ c, children }) {
   return (
     <div style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
-      <span style={{ color:c||T.txt3, fontSize:10, marginTop:3, flexShrink:0 }}>▸</span>
+      <span style={{ color:c||T.txt3, fontSize:8, marginTop:3, flexShrink:0 }}>▸</span>
       <span style={{ fontFamily:FF.sans, fontSize:11, color:T.txt2, lineHeight:1.55 }}>{children}</span>
     </div>
   );
@@ -440,7 +440,7 @@ function NavBtn({ active, c, onClick, children, compact }) {
     <button onClick={onClick}
       style={{ flex:compact?"0 0 100px":1, minHeight:52, borderRadius:11,
         cursor:active?"pointer":"default", fontFamily:FF.sans, fontWeight:700, fontSize:14,
-        border:`1.5px solid ${active?(c||T.blue)+"77":"rgba(35,70,115,0.6)"}`,
+        border:`1.5px solid ${active?(c||T.blue)+"77":"rgba(26,53,85,0.4)"}`,
         background:active?`linear-gradient(135deg,${c||T.blue}22,${c||T.blue}08)`:"rgba(5,13,32,0.5)",
         color:active?(c||T.blue):T.txt4, transition:"all .15s" }}>
       {children}
@@ -453,7 +453,7 @@ function SkipBtn({ onClick, children }) {
     <button onClick={onClick}
       style={{ width:"100%", marginTop:8, minHeight:40, borderRadius:8, cursor:"pointer",
         fontFamily:FF.sans, fontWeight:500, fontSize:11,
-        border:"1px solid rgba(35,70,115,0.6)", background:"transparent", color:T.txt4 }}>
+        border:"1px solid rgba(26,53,85,0.4)", background:"transparent", color:T.txt4 }}>
       {children}
     </button>
   );
@@ -470,8 +470,8 @@ function HeartTab({ scores, setScores, tropInterp }) {
   return (
     <div className="cph-fade">
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-        marginBottom:16, padding:"12px 16px", borderRadius:11, background:"rgba(14,28,58,0.93)",
-        border:`1px solid ${strata ? strata.color+"55" : "rgba(35,70,115,0.72)"}` }}>
+        marginBottom:16, padding:"12px 16px", borderRadius:11, background:"rgba(5,13,32,0.9)",
+        border:`1px solid ${strata ? strata.color+"55" : "rgba(26,53,85,0.6)"}` }}>
         <div>
           <div style={{ fontFamily:FF.serif, fontSize:13, fontWeight:700, color:T.txt3, marginBottom:2 }}>HEART Score</div>
           <div style={{ fontFamily:FF.sans, fontSize:10, color:T.txt4, lineHeight:1.5 }}>
@@ -481,7 +481,7 @@ function HeartTab({ scores, setScores, tropInterp }) {
         <div style={{ textAlign:"right" }}>
           <div style={{ fontFamily:FF.serif, fontSize:52, fontWeight:900, lineHeight:1,
             color:strata ? strata.color : T.txt4 }}>{total}</div>
-          {strata && <div style={{ fontFamily:FF.mono, fontSize:10, letterSpacing:1.5,
+          {strata && <div style={{ fontFamily:FF.mono, fontSize:8, letterSpacing:1.5,
             textTransform:"uppercase", color:strata.color, marginTop:2 }}>
             {strata.label} · {strata.mace} 30d MACE</div>}
         </div>
@@ -507,7 +507,7 @@ function HeartTab({ scores, setScores, tropInterp }) {
                   Troponin tab → {suggestedTropH}
                 </div>
               )}
-              <span style={{ fontFamily:FF.mono, fontSize:10, color:T.txt3 }}>{item.hint}</span>
+              <span style={{ fontFamily:FF.mono, fontSize:9, color:T.txt4 }}>{item.hint}</span>
               {scores[item.key] !== undefined && (
                 <div style={{ width:22, height:22, borderRadius:"50%", background:item.color,
                   display:"flex", alignItems:"center", justifyContent:"center",
@@ -528,7 +528,7 @@ function HeartTab({ scores, setScores, tropInterp }) {
         <button onClick={() => setScores({})}
           style={{ marginTop:6, fontFamily:FF.sans, fontSize:11, fontWeight:600,
             padding:"5px 14px", borderRadius:7, cursor:"pointer",
-            border:"1px solid rgba(35,70,115,0.72)", background:"transparent", color:T.txt4 }}>
+            border:"1px solid rgba(26,53,85,0.6)", background:"transparent", color:T.txt4 }}>
           ↺ Reset
         </button>
       )}
@@ -548,7 +548,7 @@ function TroponinTab({ t0,setT0,t1,setT1,t2,setT2,uln,setULN,unit,setUnit,mode,s
           <button key={m.id} onClick={() => setMode(m.id)}
             style={{ flex:1, padding:"7px 0", borderRadius:8, cursor:"pointer",
               fontFamily:FF.sans, fontWeight:600, fontSize:11, transition:"all .12s",
-              border:`1px solid ${mode===m.id ? T.blue+"66" : "rgba(35,70,115,0.68)"}`,
+              border:`1px solid ${mode===m.id ? T.blue+"66" : "rgba(26,53,85,0.55)"}`,
               background:mode===m.id ? "rgba(59,158,255,0.1)" : "transparent", color:mode===m.id ? T.blue : T.txt4 }}>
             {m.label}
           </button>
@@ -558,21 +558,21 @@ function TroponinTab({ t0,setT0,t1,setT1,t2,setT2,uln,setULN,unit,setUnit,mode,s
       {mode === "conventional" ? (
         <>
           <div style={{ marginBottom:12 }}>
-            <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4,
+            <div style={{ fontFamily:FF.mono, fontSize:8, color:T.txt4,
               letterSpacing:1.3, textTransform:"uppercase", marginBottom:4 }}>
               Upper Limit of Normal (your lab)
             </div>
             <div style={{ display:"flex", gap:8, alignItems:"center" }}>
               <input type="number" value={uln} onChange={e => setULN(e.target.value)}
-                style={{ width:110, padding:"7px 11px", background:"rgba(14,28,58,0.93)",
+                style={{ width:110, padding:"7px 11px", background:"rgba(5,13,32,0.9)",
                   border:"1px solid rgba(59,158,255,0.35)", borderRadius:7, outline:"none",
                   fontFamily:FF.mono, fontSize:14, fontWeight:700, color:T.blue }} />
               <div style={{ display:"flex", gap:5 }}>
                 {TROPONIN_UNITS.map(u => (
                   <button key={u} onClick={() => setUnit(u)}
-                    style={{ fontFamily:FF.mono, fontSize:10, padding:"3px 9px",
+                    style={{ fontFamily:FF.mono, fontSize:8, padding:"3px 9px",
                       borderRadius:5, cursor:"pointer", letterSpacing:0.5,
-                      border:`1px solid ${unit===u ? T.blue+"55" : "rgba(35,70,115,0.65)"}`,
+                      border:`1px solid ${unit===u ? T.blue+"55" : "rgba(26,53,85,0.5)"}`,
                       background:unit===u ? "rgba(59,158,255,0.1)" : "transparent", color:unit===u ? T.blue : T.txt4 }}>
                     {u}
                   </button>
@@ -600,7 +600,7 @@ function TroponinTab({ t0,setT0,t1,setT1,t2,setT2,uln,setULN,unit,setUnit,mode,s
                     color:result.trend ? result.trend.color : T.txt4, sub:result.trend ? result.trend.label : "" },
                 ].map(s => (
                   <div key={s.label} style={{ textAlign:"center" }}>
-                    <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4, letterSpacing:1 }}>{s.label}</div>
+                    <div style={{ fontFamily:FF.mono, fontSize:9, color:T.txt4, letterSpacing:1 }}>{s.label}</div>
                     <div style={{ fontFamily:FF.mono, fontSize:18, fontWeight:700,
                       color:s.color || (result.interp==="acs"?T.coral:result.interp==="elevated"?T.gold:T.teal),
                       lineHeight:1 }}>{s.val||"--"}</div>
@@ -658,24 +658,24 @@ function EdacsTab({ fields, setFields, negTrop, setNegTrop }) {
 
       <div style={{ display:"flex", gap:10, marginBottom:12 }}>
         <div style={{ flex:1 }}>
-          <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4,
+          <div style={{ fontFamily:FF.mono, fontSize:8, color:T.txt4,
             letterSpacing:1.3, textTransform:"uppercase", marginBottom:4 }}>Age</div>
           <input type="number" value={fields.age} onChange={e => setF("age", e.target.value)} placeholder="years"
-            style={{ width:"100%", padding:"9px 11px", background:"rgba(14,28,58,0.93)",
-              border:`1px solid ${ageInvalid ? T.coral+"88" : fields.age ? T.purple+"55" : "rgba(35,70,115,0.65)"}`,
+            style={{ width:"100%", padding:"9px 11px", background:"rgba(5,13,32,0.9)",
+              border:`1px solid ${ageInvalid ? T.coral+"88" : fields.age ? T.purple+"55" : "rgba(26,53,85,0.5)"}`,
               borderRadius:8, outline:"none", fontFamily:FF.mono,
               fontSize:18, fontWeight:700, color:ageInvalid ? T.coral : T.purple }} />
-          {ageInvalid && <div style={{ fontFamily:FF.sans, fontSize:10, color:T.coral, marginTop:3 }}>EDACS validated for age ≥ 18</div>}
+          {ageInvalid && <div style={{ fontFamily:FF.sans, fontSize:9, color:T.coral, marginTop:3 }}>EDACS validated for age ≥ 18</div>}
         </div>
         <div style={{ flex:1 }}>
-          <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4,
+          <div style={{ fontFamily:FF.mono, fontSize:8, color:T.txt4,
             letterSpacing:1.3, textTransform:"uppercase", marginBottom:4 }}>Sex</div>
           <div style={{ display:"flex", gap:6 }}>
             {[["M","Male"],["F","Female"]].map(([v,l]) => (
               <button key={v} onClick={() => setF("sex", v)}
                 style={{ flex:1, padding:"9px 0", borderRadius:8, cursor:"pointer",
                   fontFamily:FF.sans, fontWeight:600, fontSize:12,
-                  border:`1px solid ${fields.sex===v ? T.purple+"66" : "rgba(35,70,115,0.68)"}`,
+                  border:`1px solid ${fields.sex===v ? T.purple+"66" : "rgba(26,53,85,0.55)"}`,
                   background:fields.sex===v ? "rgba(155,109,255,0.12)" : "transparent",
                   color:fields.sex===v ? T.purple : T.txt4 }}>
                 {l}
@@ -738,7 +738,7 @@ function RefSection({ data }) {
       </InfoBox>
       {data.sections.map((sect,i) => (
         <div key={i} style={{ marginBottom:10 }}>
-          <div style={{ fontFamily:FF.mono, fontSize:10, color:sect.c, letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>{sect.label}</div>
+          <div style={{ fontFamily:FF.mono, fontSize:8, color:sect.c, letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>{sect.label}</div>
           {sect.items.map((item,j) => <Bul key={j} c={sect.c}>{item}</Bul>)}
         </div>
       ))}
@@ -768,7 +768,7 @@ function DifferentialsTab({ ddxSub,setDdxSub,wells,setWells,perc,setPerc,addrs,s
           <button key={t.id} onClick={() => setDdxSub(t.id)}
             style={{ padding:"5px 11px", borderRadius:7, cursor:"pointer",
               fontFamily:FF.sans, fontWeight:600, fontSize:11,
-              border:`1px solid ${ddxSub===t.id ? t.color+"66" : "rgba(35,70,115,0.68)"}`,
+              border:`1px solid ${ddxSub===t.id ? t.color+"66" : "rgba(26,53,85,0.55)"}`,
               background:ddxSub===t.id ? `${t.color}14` : "transparent", color:ddxSub===t.id ? t.color : T.txt4 }}>
             {t.label}
           </button>
@@ -795,12 +795,12 @@ function DifferentialsTab({ ddxSub,setDdxSub,wells,setWells,perc,setPerc,addrs,s
             </div>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontFamily:FF.mono, fontSize:32, fontWeight:900, color:wellsInterResult.color, lineHeight:1 }}>{wellsScore.toFixed(1)}</div>
-              <div style={{ fontFamily:FF.mono, fontSize:10, color:wellsInterResult.color, letterSpacing:1 }}>{wellsInterResult.action}</div>
+              <div style={{ fontFamily:FF.mono, fontSize:8, color:wellsInterResult.color, letterSpacing:1 }}>{wellsInterResult.action}</div>
             </div>
           </div>
           {wellsScore <= 1 && (
             <>
-              <div style={{ fontFamily:FF.mono, fontSize:10, color:T.teal,
+              <div style={{ fontFamily:FF.mono, fontSize:8, color:T.teal,
                 letterSpacing:1.5, textTransform:"uppercase", margin:"10px 0 6px" }}>
                 PERC Rule — all 8 must be met to exclude PE
               </div>
@@ -820,7 +820,7 @@ function DifferentialsTab({ ddxSub,setDdxSub,wells,setWells,perc,setPerc,addrs,s
           <button onClick={() => { setWells({}); setPerc({}); }}
             style={{ marginTop:4, fontFamily:FF.sans, fontSize:11, fontWeight:600,
               padding:"5px 14px", borderRadius:7, cursor:"pointer",
-              border:"1px solid rgba(35,70,115,0.72)", background:"transparent", color:T.txt4 }}>
+              border:"1px solid rgba(26,53,85,0.6)", background:"transparent", color:T.txt4 }}>
             ↺ Reset
           </button>
         </div>
@@ -854,7 +854,7 @@ function DifferentialsTab({ ddxSub,setDdxSub,wells,setWells,perc,setPerc,addrs,s
           <button onClick={() => setAddrs({})}
             style={{ marginTop:4, fontFamily:FF.sans, fontSize:11, fontWeight:600,
               padding:"5px 14px", borderRadius:7, cursor:"pointer",
-              border:"1px solid rgba(35,70,115,0.72)", background:"transparent", color:T.txt4 }}>
+              border:"1px solid rgba(26,53,85,0.6)", background:"transparent", color:T.txt4 }}>
             ↺ Reset
           </button>
         </div>
@@ -880,7 +880,7 @@ function ProtocolTab({ expanded, setExpanded, weightKg }) {
       {doses && (
         <div style={{ marginBottom:12, padding:"10px 13px", borderRadius:9,
           background:"rgba(59,158,255,0.08)", border:"1px solid rgba(59,158,255,0.3)" }}>
-          <div style={{ fontFamily:FF.mono, fontSize:10, color:T.blue, letterSpacing:1.2, marginBottom:6 }}>
+          <div style={{ fontFamily:FF.mono, fontSize:8, color:T.blue, letterSpacing:1.2, marginBottom:6 }}>
             COMPUTED DOSES -- {weightKg.toFixed(1)} kg
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
@@ -891,7 +891,7 @@ function ProtocolTab({ expanded, setExpanded, weightKg }) {
               { label:"TNK",         val:`${doses.tnk} mg`,                        sub:"0.5 mg/kg, max 50" },
             ].map(d => (
               <div key={d.label} style={{ textAlign:"center" }}>
-                <div style={{ fontFamily:FF.mono, fontSize:10,
+                <div style={{ fontFamily:FF.mono, fontSize:7,
                   color:T.txt4, letterSpacing:0.8, marginBottom:2 }}>{d.label}</div>
                 <div style={{ fontFamily:FF.mono, fontSize:13,
                   fontWeight:700, color:T.blue }}>{d.val}</div>
@@ -904,11 +904,11 @@ function ProtocolTab({ expanded, setExpanded, weightKg }) {
       )}
       {ACS_STEPS.map((section, i) => (
         <div key={i} style={{ marginBottom:6, borderRadius:10, overflow:"hidden",
-          border:`1px solid ${expanded===i ? section.color+"55" : "rgba(35,70,115,0.65)"}` }}>
+          border:`1px solid ${expanded===i ? section.color+"55" : "rgba(26,53,85,0.5)"}` }}>
           <button onClick={() => setExpanded(p => p===i ? null : i)}
             style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
               width:"100%", padding:"10px 13px", cursor:"pointer", border:"none", textAlign:"left",
-              background:`linear-gradient(135deg,${section.color}0c,rgba(14,28,58,0.97))` }}>
+              background:`linear-gradient(135deg,${section.color}0c,rgba(5,13,32,0.96))` }}>
             <div style={{ display:"flex", alignItems:"center", gap:9 }}>
               <div style={{ width:8, height:8, borderRadius:"50%", background:section.color, flexShrink:0 }} />
               <span style={{ fontFamily:FF.serif, fontWeight:700, fontSize:13, color:section.color }}>{section.title}</span>
@@ -916,10 +916,10 @@ function ProtocolTab({ expanded, setExpanded, weightKg }) {
             <span style={{ color:T.txt4, fontSize:10 }}>{expanded===i ? "▲" : "▼"}</span>
           </button>
           {expanded === i && (
-            <div style={{ padding:"8px 13px 12px", borderTop:`1px solid ${section.color}22`, background:"rgba(14,28,58,0.88)" }}>
+            <div style={{ padding:"8px 13px 12px", borderTop:`1px solid ${section.color}22`, background:"rgba(5,13,32,0.85)" }}>
               {section.steps.map((step, j) => (
                 <div key={j} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:7 }}>
-                  <span style={{ color:section.color, fontSize:10, marginTop:3, flexShrink:0 }}>▸</span>
+                  <span style={{ color:section.color, fontSize:8, marginTop:3, flexShrink:0 }}>▸</span>
                   <span style={{ fontFamily:FF.sans, fontSize:11.5, color:T.txt2, lineHeight:1.6 }}>{step}</span>
                 </div>
               ))}
@@ -1040,7 +1040,7 @@ function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tropResult
           </div>
           <button onClick={handleCopy}
             style={{ padding:"7px 12px", borderRadius:8, cursor:"pointer",
-              fontFamily:FF.mono, fontSize:10, fontWeight:700, letterSpacing:0.5, flexShrink:0,
+              fontFamily:FF.mono, fontSize:9, fontWeight:700, letterSpacing:0.5, flexShrink:0,
               border:`1px solid ${copied ? T.teal+"66" : rec.color+"44"}`,
               background:copied ? "rgba(0,229,192,0.1)" : `${rec.color}0a`, color:copied ? T.teal : rec.color }}>
             {copied ? "COPIED ✓" : "COPY NOTE"}
@@ -1049,7 +1049,7 @@ function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tropResult
         <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
           {rec.plan.map((p, i) => (
             <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
-              <span style={{ fontFamily:FF.mono, fontSize:10, color:rec.color,
+              <span style={{ fontFamily:FF.mono, fontSize:9, color:rec.color,
                 minWidth:18, marginTop:1, fontWeight:700 }}>{i+1}.</span>
               <span style={{ fontFamily:FF.sans, fontSize:12, color:T.txt2, lineHeight:1.6 }}>{p}</span>
             </div>
@@ -1064,8 +1064,8 @@ function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tropResult
           { label:"Strata",  val:heartScore !== null ? heartStrata(heartScore).label : "--", color:rec.color },
         ].map(s => (
           <div key={s.label} style={{ padding:"10px", borderRadius:9, textAlign:"center",
-            background:"rgba(14,28,58,0.88)", border:"1px solid rgba(35,70,115,0.68)" }}>
-            <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4,
+            background:"rgba(5,13,32,0.85)", border:"1px solid rgba(26,53,85,0.55)" }}>
+            <div style={{ fontFamily:FF.mono, fontSize:7, color:T.txt4,
               letterSpacing:1, textTransform:"uppercase", marginBottom:4 }}>{s.label}</div>
             <div style={{ fontFamily:FF.mono, fontSize:14, fontWeight:700, color:s.color }}>{s.val}</div>
           </div>
@@ -1077,7 +1077,7 @@ function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tropResult
         <div style={{ display:"flex", gap:8, marginTop:12, marginBottom:4 }}>
           <button onClick={handleCopyMDM}
             style={{ flex:1, padding:"8px 10px", borderRadius:8, cursor:"pointer",
-              fontFamily:FF.mono, fontSize:10, fontWeight:700, letterSpacing:0.5,
+              fontFamily:FF.mono, fontSize:9, fontWeight:700, letterSpacing:0.5,
               border:`1px solid ${copiedMDM ? T.teal+"66" : T.purple+"44"}`,
               background:copiedMDM ? "rgba(0,229,192,0.1)" : "rgba(155,109,255,0.08)",
               color:copiedMDM ? T.teal : T.purple }}>
@@ -1086,8 +1086,8 @@ function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tropResult
           {rec.dispo === "Safe Discharge" && (
             <button onClick={() => setShowReturn(p => !p)}
               style={{ flex:1, padding:"8px 10px", borderRadius:8, cursor:"pointer",
-                fontFamily:FF.mono, fontSize:10, fontWeight:700, letterSpacing:0.5,
-                border:`1px solid ${showReturn ? T.teal+"66" : "rgba(35,70,115,0.68)"}`,
+                fontFamily:FF.mono, fontSize:9, fontWeight:700, letterSpacing:0.5,
+                border:`1px solid ${showReturn ? T.teal+"66" : "rgba(26,53,85,0.55)"}`,
                 background:showReturn ? "rgba(0,229,192,0.1)" : "transparent", color:showReturn ? T.teal : T.txt4 }}>
               Return Precautions
             </button>
@@ -1111,35 +1111,35 @@ function VitalsBar({ sbp,setSbp,hr,setHr,weight,weightUnit,setWeight,setWeightUn
   const mins = draw3h && !overdue ? Math.round((draw3h-now)/60000) : null;
   return (
     <div style={{ marginBottom:10, padding:"8px 12px", borderRadius:9,
-      background:"rgba(14,28,58,0.93)", border:"1px solid rgba(35,70,115,0.72)" }}>
+      background:"rgba(5,13,32,0.9)", border:"1px solid rgba(26,53,85,0.6)" }}>
       <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
         {[
           { label:"SBP", val:sbp, set:setSbp, alert:sbpLow, ac:T.coral,  al:"LOW"  },
           { label:"HR",  val:hr,  set:setHr,  alert:hrHigh, ac:T.orange, al:"TACH" },
         ].map(f => (
           <div key={f.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
-            <div style={{ fontFamily:FF.mono, fontSize:10, letterSpacing:1,
-              color:f.alert ? f.ac : T.txt3, minWidth:24 }}>{f.label}</div>
+            <div style={{ fontFamily:FF.mono, fontSize:8, letterSpacing:1,
+              color:f.alert ? f.ac : T.txt4, minWidth:24 }}>{f.label}</div>
             <input type="number" value={f.val} onChange={e => f.set(e.target.value)}
-              placeholder="--" style={{ width:56, padding:"4px 7px", background:"rgba(14,28,58,0.93)",
-                border:`1px solid ${f.alert ? f.ac+"88" : "rgba(35,70,115,0.65)"}`, borderRadius:6, outline:"none",
+              placeholder="--" style={{ width:56, padding:"4px 7px", background:"rgba(5,13,32,0.9)",
+                border:`1px solid ${f.alert ? f.ac+"88" : "rgba(26,53,85,0.5)"}`, borderRadius:6, outline:"none",
                 fontFamily:FF.mono, fontSize:13, fontWeight:700, color:f.alert ? f.ac : T.txt }} />
-            {f.alert && <div style={{ fontFamily:FF.sans, fontSize:10,
+            {f.alert && <div style={{ fontFamily:FF.sans, fontSize:9,
               color:f.ac, fontWeight:700 }}>{f.al}</div>}
           </div>
         ))}
         <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-          <div style={{ fontFamily:FF.mono, fontSize:10,
+          <div style={{ fontFamily:FF.mono, fontSize:8,
             color:T.txt4, letterSpacing:1, minWidth:20 }}>WT</div>
           <input type="number" value={weight} onChange={e => setWeight(e.target.value)}
-            placeholder="--" style={{ width:56, padding:"4px 7px", background:"rgba(14,28,58,0.93)",
-              border:"1px solid rgba(35,70,115,0.65)", borderRadius:6, outline:"none",
+            placeholder="--" style={{ width:56, padding:"4px 7px", background:"rgba(5,13,32,0.9)",
+              border:"1px solid rgba(26,53,85,0.5)", borderRadius:6, outline:"none",
               fontFamily:FF.mono, fontSize:13, fontWeight:700, color:T.blue }} />
           <div style={{ display:"flex", gap:3 }}>
             {["kg","lbs"].map(u => (
               <button key={u} onClick={() => setWeightUnit(u)}
-                style={{ fontFamily:FF.mono, fontSize:10, padding:"2px 5px", borderRadius:4, cursor:"pointer",
-                  border:`1px solid ${weightUnit===u ? T.blue+"55" : "rgba(35,70,115,0.6)"}`,
+                style={{ fontFamily:FF.mono, fontSize:7, padding:"2px 5px", borderRadius:4, cursor:"pointer",
+                  border:`1px solid ${weightUnit===u ? T.blue+"55" : "rgba(26,53,85,0.4)"}`,
                   background:weightUnit===u ? "rgba(59,158,255,0.1)" : "transparent",
                   color:weightUnit===u ? T.blue : T.txt4 }}>{u}</button>
             ))}
@@ -1147,13 +1147,13 @@ function VitalsBar({ sbp,setSbp,hr,setHr,weight,weightUnit,setWeight,setWeightUn
         </div>
         {t0 && !tropArrivalTime && (
           <button onClick={() => setTropArrivalTime(Date.now())}
-            style={{ fontFamily:FF.mono, fontSize:10, padding:"4px 10px", borderRadius:6, cursor:"pointer",
+            style={{ fontFamily:FF.mono, fontSize:8, padding:"4px 10px", borderRadius:6, cursor:"pointer",
               border:"1px solid rgba(59,158,255,0.45)", background:"rgba(59,158,255,0.1)", color:T.blue }}>
             Mark 0h
           </button>
         )}
         {draw3hStr && (
-          <div style={{ fontFamily:FF.mono, fontSize:10, padding:"4px 9px", borderRadius:6,
+          <div style={{ fontFamily:FF.mono, fontSize:8, padding:"4px 9px", borderRadius:6,
             border:`1px solid ${overdue ? T.coral+"66" : T.teal+"44"}`,
             background:overdue ? "rgba(255,107,107,0.1)" : "rgba(0,229,192,0.08)", color:overdue ? T.coral : T.teal }}>
             3h draw {overdue ? "OVERDUE" : `due ${draw3hStr}`}{!overdue && mins!==null ? ` (${mins}m)` : ""}
@@ -1187,14 +1187,14 @@ function STEMIOverlay({ open, onClose, weightKg }) {
   const tnk      = wValid ? Math.min((weightKg*0.5).toFixed(1), 50)  : null;
   const enox     = wValid ? weightKg.toFixed(0) : null;
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:9999, overflowY:"auto", background:"rgba(10,18,40,0.99)" }}>
+    <div style={{ position:"fixed", inset:0, zIndex:9999, overflowY:"auto", background:"rgba(5,9,18,0.98)" }}>
       <div style={{ maxWidth:700, margin:"0 auto", padding:"0 16px 32px" }}>
         <div style={{ padding:"16px 0 10px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div>
             <div style={{ fontFamily:FF.serif, fontSize:22, fontWeight:900, color:T.red }}>
               STEMI Activation Protocol
             </div>
-            <div style={{ fontFamily:FF.mono, fontSize:10, color:T.coral, letterSpacing:1.5, marginTop:4 }}>
+            <div style={{ fontFamily:FF.mono, fontSize:9, color:T.coral, letterSpacing:1.5, marginTop:4 }}>
               DOOR-TO-BALLOON TARGET: 90 MIN -- FIBRINOLYSIS: 30 MIN
             </div>
           </div>
@@ -1206,7 +1206,7 @@ function STEMIOverlay({ open, onClose, weightKg }) {
         {wValid && (
           <div style={{ padding:"8px 12px", borderRadius:8, marginBottom:12,
             background:"rgba(59,158,255,0.08)", border:"1px solid rgba(59,158,255,0.3)" }}>
-            <div style={{ fontFamily:FF.mono, fontSize:10, color:T.blue, letterSpacing:1.2, marginBottom:6 }}>
+            <div style={{ fontFamily:FF.mono, fontSize:8, color:T.blue, letterSpacing:1.2, marginBottom:6 }}>
               COMPUTED DOSES -- {weightKg.toFixed(1)} kg
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
@@ -1217,7 +1217,7 @@ function STEMIOverlay({ open, onClose, weightKg }) {
                 { label:"Enoxaparin", val:`${enox} mg`, sub:"1 mg/kg SQ" },
               ].map(d => (
                 <div key={d.label} style={{ textAlign:"center" }}>
-                  <div style={{ fontFamily:FF.mono, fontSize:10,
+                  <div style={{ fontFamily:FF.mono, fontSize:7,
                     color:T.txt4, letterSpacing:0.8, marginBottom:2 }}>{d.label}</div>
                   <div style={{ fontFamily:FF.mono, fontSize:13,
                     fontWeight:700, color:T.blue }}>{d.val}</div>
@@ -1256,12 +1256,12 @@ function STEMIOverlay({ open, onClose, weightKg }) {
         ].map((sect,i) => (
           <div key={i} style={{ marginBottom:10, padding:"12px 14px", borderRadius:10,
             background:`${sect.color}09`, border:`1px solid ${sect.color}33`, borderLeft:`3px solid ${sect.color}` }}>
-            <div style={{ fontFamily:FF.mono, fontSize:10,
+            <div style={{ fontFamily:FF.mono, fontSize:8,
               color:sect.color, letterSpacing:1.5, textTransform:"uppercase",
               marginBottom:8 }}>{sect.label}</div>
             {sect.steps.map((step,j) => (
               <div key={j} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:6 }}>
-                <span style={{ color:sect.color, fontSize:10, marginTop:3, flexShrink:0 }}>-</span>
+                <span style={{ color:sect.color, fontSize:8, marginTop:3, flexShrink:0 }}>-</span>
                 <span style={{ fontFamily:FF.sans,
                   fontSize:12, color:T.txt2, lineHeight:1.6 }}>{step}</span>
               </div>
@@ -1292,12 +1292,12 @@ function ReturnPrecautions() {
     <div style={{ marginBottom:12, padding:"12px 14px", borderRadius:10,
       background:"rgba(0,229,192,0.07)", border:"1px solid rgba(0,229,192,0.3)" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-        <div style={{ fontFamily:FF.mono, fontSize:10, color:T.teal, letterSpacing:1.5, textTransform:"uppercase" }}>
+        <div style={{ fontFamily:FF.mono, fontSize:8, color:T.teal, letterSpacing:1.5, textTransform:"uppercase" }}>
           Patient Return Precautions
         </div>
         <button onClick={() => navigator.clipboard && navigator.clipboard.writeText(text).then(
             () => { setCopied(true); setTimeout(()=>setCopied(false),2500); })}
-          style={{ padding:"5px 11px", borderRadius:6, cursor:"pointer", fontFamily:FF.mono, fontSize:10, fontWeight:700,
+          style={{ padding:"5px 11px", borderRadius:6, cursor:"pointer", fontFamily:FF.mono, fontSize:8, fontWeight:700,
             border:`1px solid ${copied ? T.teal+"88" : T.teal+"44"}`,
             background:copied ? "rgba(0,229,192,0.15)" : "transparent", color:T.teal }}>
           {copied ? "COPIED" : "COPY"}
@@ -1310,7 +1310,7 @@ function ReturnPrecautions() {
         "Take aspirin 81 mg daily unless your doctor says otherwise",
       ].map((item, i) => (
         <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
-          <span style={{ color:T.teal, fontSize:10, marginTop:2, flexShrink:0 }}>></span>
+          <span style={{ color:T.teal, fontSize:9, marginTop:2, flexShrink:0 }}>{">"}</span>
           <span style={{ fontFamily:FF.sans, fontSize:12,
             color:T.txt2, lineHeight:1.55 }}>{item}</span>
         </div>
@@ -1343,7 +1343,7 @@ function GuidedHeader({ step, total, label, color, onTabsSwitch }) {
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           {step > 0 && (
-            <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4, letterSpacing:1 }}>
+            <div style={{ fontFamily:FF.mono, fontSize:9, color:T.txt4, letterSpacing:1 }}>
               STEP {step} / {total - 1}
             </div>
           )}
@@ -1354,14 +1354,14 @@ function GuidedHeader({ step, total, label, color, onTabsSwitch }) {
           )}
         </div>
         <button onClick={onTabsSwitch}
-          style={{ fontFamily:FF.mono, fontSize:10, padding:"3px 10px", borderRadius:6, cursor:"pointer",
-            letterSpacing:1, textTransform:"uppercase", border:"1px solid rgba(35,70,115,0.72)",
+          style={{ fontFamily:FF.mono, fontSize:8, padding:"3px 10px", borderRadius:6, cursor:"pointer",
+            letterSpacing:1, textTransform:"uppercase", border:"1px solid rgba(26,53,85,0.6)",
             background:"transparent", color:T.txt4 }}>
           Reference →
         </button>
       </div>
       {step > 0 && (
-        <div style={{ height:4, borderRadius:2, background:"rgba(35,70,115,0.65)" }}>
+        <div style={{ height:4, borderRadius:2, background:"rgba(26,53,85,0.5)" }}>
           <div style={{ height:"100%", borderRadius:2, width:`${pct}%`, transition:"width .3s ease",
             background:`linear-gradient(90deg,${T.coral},${T.blue})` }} />
         </div>
@@ -1376,12 +1376,12 @@ function GuidedOption({ opt, selected, color, onSelect }) {
     <button onClick={() => onSelect(opt.val)}
       style={{ display:"flex", alignItems:"center", gap:14, width:"100%", minHeight:64, padding:"14px 16px",
         borderRadius:12, cursor:"pointer", textAlign:"left",
-        border:`1.5px solid ${isSel ? color+"88" : "rgba(35,70,115,0.72)"}`, marginBottom:10, transition:"all .12s",
+        border:`1.5px solid ${isSel ? color+"88" : "rgba(26,53,85,0.6)"}`, marginBottom:10, transition:"all .12s",
         background:isSel
           ? `linear-gradient(135deg,${color}20,${color}08)`
-          : "rgba(14,28,58,0.82)", borderLeft:`4px solid ${isSel ? color : "rgba(35,70,115,0.62)"}` }}>
+          : "rgba(5,13,32,0.75)", borderLeft:`4px solid ${isSel ? color : "rgba(26,53,85,0.45)"}` }}>
       <div style={{ width:36, height:36, borderRadius:"50%", flexShrink:0,
-        display:"flex", alignItems:"center", justifyContent:"center", background:isSel ? color : "rgba(18,40,80,0.8)",
+        display:"flex", alignItems:"center", justifyContent:"center", background:isSel ? color : "rgba(14,36,70,0.7)",
         fontFamily:FF.mono, fontWeight:900, fontSize:16, color:isSel ? "#050f1e" : T.txt4 }}>
         {opt.val}
       </div>
@@ -1409,7 +1409,7 @@ function GuidedOption({ opt, selected, color, onSelect }) {
 function GuidedWorkflow({
   step, setStep,
   heartScores, setHeartScores,
-  t0,setT0,t1,setT1,t2,setT2,uln,setULN,unit,setUnit,tropMode,setTropMode,
+  t0,setT0,t1,setT1,t2,setT2,uln,setULN,tropMode,setTropMode,
   edacsFields,setEdacsFields,edacsNegTrop,setEdacsNegTrop,
   tropResult,tropInterp,heartTotal,edacsScore,
   wellsScore,wellsInterResult,addrsScore,addrsResult,
@@ -1447,7 +1447,7 @@ function GuidedWorkflow({
           <button onClick={onTabsSwitch}
             style={{ width:"100%", minHeight:44, borderRadius:10, cursor:"pointer",
               fontFamily:FF.sans, fontWeight:600, fontSize:13,
-              border:"1px solid rgba(35,70,115,0.68)", background:"transparent", color:T.txt4 }}>
+              border:"1px solid rgba(26,53,85,0.55)", background:"transparent", color:T.txt4 }}>
             Open Reference Mode
           </button>
         </div>
@@ -1489,7 +1489,7 @@ function GuidedWorkflow({
       <GuidedHeader step={stepIdx} total={GUIDED_STEPS.length}
         label="Troponin Values" color={T.blue} onTabsSwitch={onTabsSwitch} />
       <TroponinTab t0={t0} setT0={setT0} t1={t1} setT1={setT1} t2={t2} setT2={setT2}
-        uln={uln} setULN={setULN} unit={unit} setUnit={setUnit} mode={tropMode} setMode={setTropMode} />
+        uln={uln} setULN={setULN} unit="ng/mL" setUnit={() => {}} mode={tropMode} setMode={setTropMode} />
       <div style={{ display:"flex", gap:10, marginTop:12 }}>
         <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>← Back</NavBtn>
         <NavBtn active={canAdvanceTrop} onClick={() => canAdvanceTrop && setStep(s => s+1)} c={T.blue}>Next →</NavBtn>
@@ -1625,12 +1625,12 @@ export default function ChestPainHub({ embedded = false, onBack }) {
             <button onClick={handleBack}
               style={{ marginBottom:10, display:"inline-flex", alignItems:"center", gap:7,
                 fontFamily:FF.sans, fontSize:12, fontWeight:600,
-                padding:"5px 14px", borderRadius:8, background:"rgba(14,28,58,0.88)",
-                border:"1px solid rgba(35,70,115,0.75)", color:T.txt3, cursor:"pointer" }}>
+                padding:"5px 14px", borderRadius:8, background:"rgba(5,15,30,0.85)",
+                border:"1px solid rgba(26,53,85,0.65)", color:T.txt3, cursor:"pointer" }}>
               ← Back to Hub
             </button>
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-              <div style={{ background:"rgba(14,28,58,0.94)", border:"1px solid rgba(35,70,115,0.75)",
+              <div style={{ background:"rgba(5,13,32,0.92)", border:"1px solid rgba(26,53,85,0.65)",
                 borderRadius:10, padding:"5px 12px", display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontFamily:FF.mono, fontSize:10, color:T.purple, letterSpacing:3 }}>NOTRYA</span>
                 <span style={{ color:T.txt4, fontFamily:FF.mono, fontSize:10 }}>/</span>
@@ -1658,11 +1658,11 @@ export default function ChestPainHub({ embedded = false, onBack }) {
             <button key={m.id} onClick={() => setUiMode(m.id)}
               style={{ flex:1, padding:"9px 12px", borderRadius:10, cursor:"pointer",
                 fontFamily:FF.sans, fontWeight:600, fontSize:12,
-                border:`1.5px solid ${uiMode===m.id ? T.coral+"66" : "rgba(35,70,115,0.68)"}`, background:uiMode===m.id
+                border:`1.5px solid ${uiMode===m.id ? T.coral+"66" : "rgba(26,53,85,0.55)"}`, background:uiMode===m.id
                   ? "linear-gradient(135deg,rgba(255,107,107,0.15),rgba(255,107,107,0.05))"
-                  : "rgba(14,28,58,0.80)", color:uiMode===m.id ? T.coral : T.txt2 }}>
+                  : "rgba(5,13,32,0.7)", color:uiMode===m.id ? T.coral : T.txt4 }}>
               {m.label}
-              <div style={{ fontFamily:FF.mono, fontSize:10, color:uiMode===m.id ? T.coral : T.txt3, opacity:1,
+              <div style={{ fontFamily:FF.mono, fontSize:8, color:uiMode===m.id ? T.coral : T.txt4, opacity:0.7,
                 letterSpacing:0.5, marginTop:2 }}>{m.desc}</div>
             </button>
           ))}
@@ -1682,7 +1682,7 @@ export default function ChestPainHub({ embedded = false, onBack }) {
             background:"linear-gradient(135deg,rgba(255,68,68,0.15),rgba(255,68,68,0.05))",
             color:T.red, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
           STEMI Activation Protocol
-          <span style={{ fontFamily:FF.mono, fontSize:10,
+          <span style={{ fontFamily:FF.mono, fontSize:9,
             color:"rgba(255,68,68,0.6)" }}>TAP TO OPEN</span>
         </button>
         <STEMIOverlay open={stemiOpen} onClose={() => setStemiOpen(false)} weightKg={weightKg} />
@@ -1715,8 +1715,8 @@ export default function ChestPainHub({ embedded = false, onBack }) {
         ) : (
           <>
             <div style={{ display:"flex", gap:4, flexWrap:"wrap", padding:"6px",
-              marginBottom:12, background:"rgba(14,28,58,0.88)",
-              border:"1px solid rgba(35,70,115,0.68)", borderRadius:12 }}>
+              marginBottom:12, background:"rgba(5,13,32,0.85)",
+              border:"1px solid rgba(26,53,85,0.55)", borderRadius:12 }}>
               {TABS.map(t => (
                 <TabBtn key={t.id} tab={t} active={tab===t.id}
                   onClick={() => setTab(t.id)} />
@@ -1750,7 +1750,7 @@ export default function ChestPainHub({ embedded = false, onBack }) {
 
         {!embedded && (
           <div style={{ textAlign:"center", padding:"24px 0 16px",
-            fontFamily:FF.mono, fontSize:10, color:T.txt4, letterSpacing:1.5 }}>
+            fontFamily:FF.mono, fontSize:8, color:T.txt4, letterSpacing:1.5 }}>
             NOTRYA CHEST PAIN HUB · CLINICAL DECISION SUPPORT ONLY
             · HEART (BACKUS 2010) · ESC 0/1H · EDACS (FLAWS 2016)
             · WELLS PE · ADD-RS (ROGERS 2011) · ACC/AHA 2021 · ACEP 2024

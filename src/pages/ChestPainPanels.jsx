@@ -223,7 +223,7 @@ export function HeartTab({ scores, setScores, tropInterp, killip, setKillip, car
                   borderRadius:5, padding:"2px 8px", cursor:"pointer"
                   }} onClick={()=>setScores(p=>({...p,troponin_h:suggestedTropH}))}>
                   Trop → {suggestedTropH} (tap to apply)
-                </button>
+                </div>
               )}
               <span style={{ fontFamily:FF.mono, fontSize:10, color:T.txt3 }}>{item.hint}</span>
               {scores[item.key] !== undefined && (
@@ -1230,7 +1230,7 @@ export function ReturnPrecautions() {
         "Take aspirin 81 mg daily unless your doctor says otherwise",
       ].map((item, i) => (
         <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
-          <span style={{ color:T.teal, fontSize:10, marginTop:2, flexShrink:0 }}>></span>
+          <span style={{ color:T.teal, fontSize:10, marginTop:2, flexShrink:0 }}>{">"}</span>
           <span style={{ fontFamily:FF.sans, fontSize:12,
             color:T.txt2, lineHeight:1.55 }}>{item}</span>
         </div>

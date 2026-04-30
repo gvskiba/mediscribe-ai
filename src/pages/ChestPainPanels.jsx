@@ -2,7 +2,7 @@
 // Micro-components, tab panels, bedside tools
 // Constraints: no form, no localStorage, straight quotes, single react import
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   T, FF, HEART_ITEMS, heartStrata, TROPONIN_UNITS, HST, evalHST, calcTrop,
   calcEDACS, edacsRisk, WELLS_ITEMS, PERC_ITEMS, wellsInterp,

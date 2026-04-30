@@ -1310,7 +1310,7 @@ function ReturnPrecautions() {
         "Take aspirin 81 mg daily unless your doctor says otherwise",
       ].map((item, i) => (
         <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
-          <span style={{ color:T.teal, fontSize:9, marginTop:2, flexShrink:0 }}>></span>
+          <span style={{ color:T.teal, fontSize:9, marginTop:2, flexShrink:0 }}>&gt;</span>
           <span style={{ fontFamily:FF.sans, fontSize:12,
             color:T.txt2, lineHeight:1.55 }}>{item}</span>
         </div>
@@ -1693,6 +1693,7 @@ export default function ChestPainHub({ embedded = false, onBack }) {
             heartScores={heartScores} setHeartScores={setHeartScores}
             t0={t0} setT0={setT0} t1={t1} setT1={setT1}
             t2={t2} setT2={setT2} uln={uln} setULN={setULN}
+            unit={unit} setUnit={setUnit}
             tropMode={mode} setTropMode={setMode}
             edacsFields={edacsFields} setEdacsFields={setEdacsFields}
             edacsNegTrop={edacsNegTrop} setEdacsNegTrop={setEdacsNegTrop}

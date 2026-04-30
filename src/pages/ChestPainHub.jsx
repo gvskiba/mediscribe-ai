@@ -1310,7 +1310,7 @@ function ReturnPrecautions() {
         "Take aspirin 81 mg daily unless your doctor says otherwise",
       ].map((item, i) => (
         <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
-          <span style={{ color:T.teal, fontSize:9, marginTop:2, flexShrink:0 }}>&gt;</span>
+          <span style={{ color:T.teal, fontSize:9, marginTop:2, flexShrink:0 }}>></span>
           <span style={{ fontFamily:FF.sans, fontSize:12,
             color:T.txt2, lineHeight:1.55 }}>{item}</span>
         </div>
@@ -1430,7 +1430,7 @@ function GuidedWorkflow({
     <div className="cph-fade">
       <GuidedHeader step={0} total={GUIDED_STEPS.length} label="" onTabsSwitch={onTabsSwitch} />
       <div style={{ textAlign:"center", padding:"24px 0 32px" }}>
-        <div style={{ fontSize:52, marginBottom:16 }}>\u2764\uFE0F</div>
+        <div style={{ fontSize:52, marginBottom:16 }}>❤️</div>
         <h2 style={{ fontFamily:FF.serif, fontSize:"clamp(22px,5vw,34px)", fontWeight:900,
           color:T.txt, letterSpacing:-0.5, marginBottom:8 }}>Chest Pain Evaluation</h2>
         <p style={{ fontFamily:FF.sans, fontSize:13, color:T.txt3, lineHeight:1.65,
@@ -1442,7 +1442,7 @@ function GuidedWorkflow({
             style={{ width:"100%", minHeight:58, borderRadius:13, cursor:"pointer",
               fontFamily:FF.sans, fontWeight:700, fontSize:16, border:"1.5px solid rgba(255,107,107,0.5)",
               background:"linear-gradient(135deg,rgba(255,107,107,0.18),rgba(255,107,107,0.06))", color:T.coral }}>
-            Start Evaluation \u2192
+            Start Evaluation →
           </button>
           <button onClick={onTabsSwitch}
             style={{ width:"100%", minHeight:44, borderRadius:10, cursor:"pointer",
@@ -1456,7 +1456,7 @@ function GuidedWorkflow({
         <div style={{ padding:"10px 14px", borderRadius:9,
           background:"rgba(0,229,192,0.07)", border:"1px solid rgba(0,229,192,0.25)",
           fontFamily:FF.sans, fontSize:11, color:T.teal, textAlign:"center" }}>
-          Previous evaluation in progress \u2014 tap Start to continue
+          Previous evaluation in progress — tap Start to continue
         </div>
       )}
     </div>
@@ -1475,10 +1475,10 @@ function GuidedWorkflow({
           color={heartItem.color} onSelect={v => handleHeartSelect(heartItem.key, v)} />
       ))}
       <div style={{ display:"flex", gap:10, marginTop:4 }}>
-        <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>\u2190 Back</NavBtn>
+        <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>← Back</NavBtn>
         <NavBtn active={heartScores[heartItem.key] !== undefined}
           onClick={() => heartScores[heartItem.key] !== undefined && setStep(s => s+1)}
-          c={heartItem.color}>Next \u2192</NavBtn>
+          c={heartItem.color}>Next →</NavBtn>
       </div>
     </div>
   );
@@ -1491,10 +1491,10 @@ function GuidedWorkflow({
       <TroponinTab t0={t0} setT0={setT0} t1={t1} setT1={setT1} t2={t2} setT2={setT2}
         uln={uln} setULN={setULN} unit={unit} setUnit={setUnit} mode={tropMode} setMode={setTropMode} />
       <div style={{ display:"flex", gap:10, marginTop:12 }}>
-        <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>\u2190 Back</NavBtn>
-        <NavBtn active={canAdvanceTrop} onClick={() => canAdvanceTrop && setStep(s => s+1)} c={T.blue}>Next \u2192</NavBtn>
+        <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>← Back</NavBtn>
+        <NavBtn active={canAdvanceTrop} onClick={() => canAdvanceTrop && setStep(s => s+1)} c={T.blue}>Next →</NavBtn>
       </div>
-      <SkipBtn onClick={() => setStep(s => s+1)}>Skip \u2014 troponin pending / not yet resulted</SkipBtn>
+      <SkipBtn onClick={() => setStep(s => s+1)}>Skip — troponin pending / not yet resulted</SkipBtn>
     </div>
   );
 
@@ -1506,8 +1506,8 @@ function GuidedWorkflow({
       <EdacsTab fields={edacsFields} setFields={setEdacsFields}
         negTrop={edacsNegTrop} setNegTrop={setEdacsNegTrop} />
       <div style={{ display:"flex", gap:10, marginTop:12 }}>
-        <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>\u2190 Back</NavBtn>
-        <NavBtn active={canAdvanceEdacs} onClick={() => canAdvanceEdacs && setStep(s => s+1)} c={T.purple}>View Disposition \u2192</NavBtn>
+        <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>← Back</NavBtn>
+        <NavBtn active={canAdvanceEdacs} onClick={() => canAdvanceEdacs && setStep(s => s+1)} c={T.purple}>View Disposition →</NavBtn>
       </div>
       <SkipBtn onClick={() => setStep(s => s+1)}>Skip EDACS</SkipBtn>
     </div>
@@ -1525,14 +1525,14 @@ function GuidedWorkflow({
           wellsScore={wellsScore} wellsInterResult={wellsInterResult}
           addrsScore={addrsScore} addrsResult={addrsResult} />
         <div style={{ display:"flex", gap:10, marginTop:12 }}>
-          <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>\u2190 Back</NavBtn>
-          <NavBtn active onClick={onTabsSwitch} c={T.blue}>Full Reference \u2192</NavBtn>
+          <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>← Back</NavBtn>
+          <NavBtn active onClick={onTabsSwitch} c={T.blue}>Full Reference →</NavBtn>
         </div>
         <button onClick={onReset}
           style={{ width:"100%", marginTop:10, minHeight:44, borderRadius:10, cursor:"pointer",
             fontFamily:FF.sans, fontWeight:600, fontSize:12, border:"1px solid rgba(255,107,107,0.35)",
             background:"rgba(255,107,107,0.06)", color:T.coral }}>
-          New Patient \u2014 Reset All
+          New Patient — Reset All
         </button>
       </div>
     );
@@ -1693,7 +1693,6 @@ export default function ChestPainHub({ embedded = false, onBack }) {
             heartScores={heartScores} setHeartScores={setHeartScores}
             t0={t0} setT0={setT0} t1={t1} setT1={setT1}
             t2={t2} setT2={setT2} uln={uln} setULN={setULN}
-            unit={unit} setUnit={setUnit}
             tropMode={mode} setTropMode={setMode}
             edacsFields={edacsFields} setEdacsFields={setEdacsFields}
             edacsNegTrop={edacsNegTrop} setEdacsNegTrop={setEdacsNegTrop}

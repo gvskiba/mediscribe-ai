@@ -8,6 +8,7 @@ import {
   calcEDACS, edacsRisk, WELLS_ITEMS, PERC_ITEMS, wellsInterp,
   ADDRS_ITEMS, addrsInterp, ACS_STEPS, dispositionRec,
   DDX_REF, DDX_TABS, SPESI_ITEMS, spesiInterp, calcGRACE, graceInterp,
+  TIMI_ITEMS, timiInterp, calcSgarbossa, sgarbossaInterp,
 } from "./ChestPainLogic";
 
 
@@ -176,7 +177,7 @@ export function SkipBtn({ onClick, children }) {
 }
 
 // ═══ HEART TAB ═══════════════════════════════════════════════════════════
-export function HeartTab({ scores, setScores, tropInterp, killip, setKillip, cardiacArrest, setCardiacArrest, graceScore, graceResult }) {
+export function HeartTab({ scores, setScores, tropInterp, killip, setKillip, cardiacArrest, setCardiacArrest, graceScore, graceResult, graceAge, setGraceAge }) {
   const total  = Object.values(scores).reduce((s, v) => s + (v ?? 0), 0);
   const allSet = HEART_ITEMS.every(i => scores[i.key] !== undefined);
   const strata = allSet ? heartStrata(total) : null;
@@ -262,6 +263,17 @@ export function HeartTab({ scores, setScores, tropInterp, killip, setKillip, car
             <span style={{ fontFamily:FF.sans, color:T.txt3, fontSize:11, fontWeight:400,
               letterSpacing:0, textTransform:"none", marginLeft:6 }}>ACC/AHA 2021 invasive timing</span>
           </div>
+          {setGraceAge && (
+            <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8 }}>
+              <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt3 }}>Age:</div>
+              <input type="number" value={graceAge||""} onChange={e=>setGraceAge(e.target.value)}
+                placeholder="yrs"
+                style={{ width:60, padding:"4px 8px", background:"rgba(14,28,58,0.94)",
+                  border:"1px solid rgba(35,70,115,0.65)", borderRadius:6, outline:"none",
+                  fontFamily:FF.mono, fontSize:13, fontWeight:700, color:T.blue }} />
+              <div style={{ fontFamily:FF.sans, fontSize:10, color:T.txt4 }}>Overrides EDACS age. HR + SBP from vitals bar.</div>
+            </div>
+          )}
           <div style={{ marginBottom:8 }}>
             <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4, marginBottom:5 }}>Killip Class</div>
             <div style={{ display:"flex", gap:5 }}>

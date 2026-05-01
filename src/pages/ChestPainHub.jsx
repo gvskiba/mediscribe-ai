@@ -6,12 +6,18 @@ import {
   T, FF, TABS, HEART_ITEMS, GUIDED_STEPS, dispositionRec, heartStrata,
   calcTrop, evalHST, calcEDACS, edacsRisk, calcGRACE, graceInterp,
   WELLS_ITEMS, PERC_ITEMS, ADDRS_ITEMS, wellsInterp, addrsInterp, calcCrCl,
-  SPESI_ITEMS, spesiInterp,
+  SPESI_ITEMS, spesiInterp, TIMI_ITEMS, timiInterp,
 } from "./ChestPainLogic";
 import {
-  TabBtn, SummaryStrip, HeartTab, TroponinTab, EdacsTab, DifferentialsTab,
-  ProtocolTab, DispoTab, VitalsBar, STEMIOverlay, NavBtn, SkipBtn,
-} from "./ChestPainPanels";
+  TabBtn, SummaryStrip, HeartTab, TroponinTab, EdacsTab,
+  NavBtn, SkipBtn, TimiPanel,
+} from "./ChestPainCalculators";
+import {
+  DifferentialsTab,
+} from "./ChestPainDDx";
+import {
+  ProtocolTab, DispoTab, VitalsBar, STEMIOverlay, CardiogenicShockPanel,
+} from "./ChestPainManagement";
 
 
 if (typeof document !== "undefined") {
@@ -100,6 +106,41 @@ function GuidedOption({ opt, selected, color, onSelect }) {
         </div>
       )}
     </button>
+  );
+}
+
+
+// === ENCOUNTER LOG ========================================================
+function EncounterLog({ log }) {
+  if (!log || log.length === 0) return null;
+  return (
+    <div style={{ marginBottom:10, padding:"8px 12px", borderRadius:9,
+      background:"rgba(14,28,58,0.88)", border:"1px solid rgba(35,70,115,0.65)" }}>
+      <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4, letterSpacing:1.2,
+        textTransform:"uppercase", marginBottom:6 }}>Session Log</div>
+      {log.map((enc, i) => {
+        const timeStr = new Date(enc.ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+        const stCol = enc.strata==="Low Risk"?T.teal:enc.strata==="High Risk"?T.coral:T.gold;
+        const tCol  = enc.tropInterp==="acs"?T.coral:enc.tropInterp==="elevated"?T.gold:enc.tropInterp==="normal"?T.teal:T.txt4;
+        return (
+          <div key={i} style={{ display:"flex", gap:10, alignItems:"center",
+            padding:"4px 0", borderTop:i>0?"1px solid rgba(35,70,115,0.4)":"none" }}>
+            <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4, minWidth:38 }}>{timeStr}</div>
+            {enc.heartScore!==null && (
+              <div style={{ fontFamily:FF.mono, fontSize:11, fontWeight:700, color:stCol }}>
+                HEART {enc.heartScore}
+              </div>
+            )}
+            {enc.tropInterp && (
+              <div style={{ fontFamily:FF.mono, fontSize:10, color:tCol }}>{enc.tropInterp}</div>
+            )}
+            {enc.strata && enc.strata!=="--" && (
+              <div style={{ fontFamily:FF.sans, fontSize:10, color:stCol }}>{enc.strata}</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -220,7 +261,9 @@ function GuidedWorkflow({
         <DispoTab heartScore={heartTotal} tropInterp={tropInterp}
           edacsScore={edacsScore} edacsNegTrop={edacsNegTrop} tropResult={tropResult}
           wellsScore={wellsScore} wellsInterResult={wellsInterResult}
-          addrsScore={addrsScore} addrsResult={addrsResult} />
+          addrsScore={addrsScore} addrsResult={addrsResult}
+          sbp={sbp} hr={hr} weight={weight} weightUnit={weightUnit}
+          creatinine={creatinine} chiefComplaint={chiefComplaint} />
         <div style={{ display:"flex", gap:10, marginTop:12 }}>
           <NavBtn active onClick={() => setStep(s => s-1)} c={T.txt3} compact>← Back</NavBtn>
           <NavBtn active onClick={onTabsSwitch} c={T.blue}>Full Reference →</NavBtn>
@@ -265,6 +308,9 @@ export default function ChestPainHub({ embedded = false, onBack }) {
 
   // Protocol expanded state -- persistent
   const [protocolExpanded, setProtocolExpanded] = useState(null);
+  const [graceAge,     setGraceAge]     = useState("");
+  const [timi,         setTimi]         = useState({});
+  const [encounterLog, setEncounterLog] = useState([]); // { ts, heartScore, strata, tropInterp, dispo }
   // GRACE + clinical inputs
   const [killip,        setKillip]       = useState(1);
   const [cardiacArrest, setCardiacArrest]= useState(false);
@@ -325,17 +371,29 @@ export default function ChestPainHub({ embedded = false, onBack }) {
     [edacsFields.age, edacsFields.sex, weightKg, creatinine]);
 
   const graceScore = useMemo(() => calcGRACE({
-    age: edacsFields.age, hr, sbp,
+    age: graceAge || edacsFields.age, hr, sbp,
     creatinine, killip, cardiacArrest,
     stDev: (heartScores.ecg||0) >= 1,
     enzymes: tropInterp && tropInterp !== "normal",
-  }), [edacsFields.age, hr, sbp, creatinine, killip, cardiacArrest, heartScores.ecg, tropInterp]);
+  }), [edacsFields.age, graceAge, hr, sbp, creatinine, killip, cardiacArrest, heartScores.ecg, tropInterp]);
 
   const graceResult = useMemo(() => graceInterp(graceScore), [graceScore]);
 
   const handleBack = useCallback(() => {
     if (onBack) onBack(); else window.history.back();
   }, [onBack]);
+
+  // Wire cross-hub navigation to shell
+  useEffect(() => {
+    const h = (e) => {
+      const target = e?.detail?.hub;
+      if (!target) return;
+      // Re-dispatch as notrya-hub-request for NotryaLayout to handle
+      window.dispatchEvent(new CustomEvent("notrya-hub-request", { detail:{ hub:target }, bubbles:true }));
+    };
+    window.addEventListener("notrya-navigate", h);
+    return () => window.removeEventListener("notrya-navigate", h);
+  }, []);
 
   return (
     <div style={{ fontFamily:FF.sans, background:embedded ? "transparent" : T.bg,
@@ -395,13 +453,14 @@ export default function ChestPainHub({ embedded = false, onBack }) {
           weight={weight} weightUnit={weightUnit}
           setWeight={setWeight} setWeightUnit={setWeightUnit}
           tropArrivalTime={tropArrivalTime} setTropArrivalTime={setTropArrivalTime} t0={t0}
-          creatinine={creatinine} setCreatinine={setCreatinine}
+          creatinine={creatinine} setCreatinine={setCreatinine} crcl={crcl}
           doorTime={doorTime} setDoorTime={setDoorTime}
           ekgTime={ekgTime} setEkgTime={setEkgTime}
           cathTime={cathTime} setCathTime={setCathTime}
           symptomMins={symptomMins} setSymptomMins={setSymptomMins}
           chiefComplaint={chiefComplaint} setChiefComplaint={setChiefComplaint} />
 
+        <CardiogenicShockPanel />
         {/* STEMI fast lane */}
         <button onClick={() => setStemiOpen(true)}
           style={{ width:"100%", minHeight:44, borderRadius:10, cursor:"pointer",
@@ -455,12 +514,15 @@ export default function ChestPainHub({ embedded = false, onBack }) {
             </div>
             <SummaryStrip heartScore={heartTotal} tropInterp={tropInterp}
               edacsScore={edacsScore} edacsNegTrop={edacsNegTrop} />
+            <EncounterLog log={encounterLog} />
             <div>
               {tab === "heart"    && <HeartTab scores={heartScores}
                 setScores={setHeartScores} tropInterp={tropInterp}
                 killip={killip} setKillip={setKillip}
                 cardiacArrest={cardiacArrest} setCardiacArrest={setCardiacArrest}
-                graceScore={graceScore} graceResult={graceResult} />}
+                graceScore={graceScore} graceResult={graceResult}
+                graceAge={graceAge} setGraceAge={setGraceAge} />}
+              {tab === "heart" && <TimiPanel timi={timi} setTimi={setTimi} />}
               {tab === "troponin" && <TroponinTab t0={t0} setT0={setT0}
                 t1={t1} setT1={setT1} t2={t2} setT2={setT2}
                 uln={uln} setULN={setULN} unit={unit} setUnit={setUnit}

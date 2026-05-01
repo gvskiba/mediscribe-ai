@@ -242,6 +242,7 @@ function calcAaDO2(pH, pco2, po2, fio2) {
 // ── Paste parser ──────────────────────────────────────────────────────────────
 function parsePastedLabs(text, panelFields) {
   const result = {};
+  const lines = text.split(/[\n,;|\t]/);
   const labelMap = {
     "sodium":"na","na":"na","na+":"na",
     "potassium":"k","k":"k","k+":"k",

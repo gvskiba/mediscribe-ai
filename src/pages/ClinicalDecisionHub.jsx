@@ -15,8 +15,9 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { InvokeLLM } from "@/integrations/Core";
-import { ClinicalNote } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
+const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
+const ClinicalNote = base44.entities.ClinicalNote;
 
 (() => {
   if (document.getElementById("cdh3-fonts")) return;

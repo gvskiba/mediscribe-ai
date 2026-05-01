@@ -17,7 +17,8 @@
 
 import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ClinicalNote } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
+const ClinicalNote = base44.entities.ClinicalNote;
 
 (() => {
   if (document.getElementById("ha-fonts")) return;

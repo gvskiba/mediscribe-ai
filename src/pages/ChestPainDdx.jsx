@@ -1,4 +1,4 @@
-// ChestPainDDx.jsx — Notrya ChestPainHub
+// ChestPainDdx.jsx — Notrya ChestPainHub
 // Differential diagnosis calculators and reference panels
 // Wells PE + PERC + sPESI + PE Treatment + ADD-RS + Pericarditis + Pneumothorax + Boerhaave
 // Constraints: no form, no localStorage, straight quotes only, single react import

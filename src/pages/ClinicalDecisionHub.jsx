@@ -1,35 +1,38 @@
-// ClinicalDecisionHub.jsx — v2
-// AI-Powered Clinical Decision Rules
+// HeadacheHub.jsx
+// Integrated Headache Evaluation Hub — Bedside Reference
 //
-// Rules: Canadian CT Head (Stiell 2001) · PECARN <2yr / 2-18yr (Kuppermann 2009)
-//        New Orleans (Haydel 2000) · PERC + Modified Wells (Kline 2008 / Wells 2000)
-//        HEART Score (Backus 2010) · Ottawa Ankle & Foot (Stiell 1992)
-//        Canadian C-Spine Rule + NEXUS (Stiell 2001 / Hoffman 2000)
+// Guidelines:
+//   - Ottawa SAH Rule (Perry 2013, JAMA) — 100% sensitivity
+//   - SNOOP4 secondary headache red flags
+//   - CSF / LP interpretation for SAH
+//   - Migraine: ACEP 2016, AHS 2024 (dexamethasone, magnesium)
+//   - Cluster: EHF 2023 (CGRP mAb galcanezumab for prevention)
+//   - GCA: ACR/EULAR 2022 (tocilizumab for refractory)
+//   - SAH: AHA/ASA 2023
+//   - Hypertensive emergency management
 //
-// Route: /ClinicalDecisionHub
+// Route: /HeadacheHub
 // Constraints: no form, no localStorage, straight quotes only,
-//   single react import, border before borderLeft/etc, < 1600 lines
+//   single react import, border before borderTop/etc, < 1600 lines
 
-import { useState } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { InvokeLLM } from "@/integrations/Core";
+import { ClinicalNote } from "@/api/entities";
 
 (() => {
-  if (document.getElementById("cdh2-fonts")) return;
+  if (document.getElementById("ha-fonts")) return;
   const l = document.createElement("link");
-  l.id = "cdh2-fonts"; l.rel = "stylesheet";
+  l.id = "ha-fonts"; l.rel = "stylesheet";
   l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
   document.head.appendChild(l);
-  const s = document.createElement("style"); s.id = "cdh2-css";
+  const s = document.createElement("style"); s.id = "ha-css";
   s.textContent = `
-    @keyframes cdh-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-    .cdh-in{animation:cdh-in .18s ease forwards}
-    @keyframes shimmer-cdh{0%{background-position:-200% center}100%{background-position:200% center}}
-    .shimmer-cdh{background:linear-gradient(90deg,#f0f4ff 0%,#9b6dff 40%,#00d4b4 65%,#f0f4ff 100%);
+    @keyframes ha-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+    .ha-in{animation:ha-in .18s ease forwards}
+    @keyframes shimmer-ha{0%{background-position:-200% center}100%{background-position:200% center}}
+    .shimmer-ha{background:linear-gradient(90deg,#f0f4ff 0%,#9b6dff 40%,#ff6b6b 65%,#f0f4ff 100%);
       background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      background-clip:text;animation:shimmer-cdh 4s linear infinite;}
-    @keyframes ai-pulse{0%,100%{opacity:.6}50%{opacity:1}}
-    .ai-pulse{animation:ai-pulse 1.4s ease infinite;}
+      background-clip:text;animation:shimmer-ha 4s linear infinite;}
   `;
   document.head.appendChild(s);
 })();
@@ -42,1044 +45,962 @@ const T = {
   lavender:"#c4aaff",
 };
 
-const CATEGORIES = [
-  { id:"neuro",   label:"Neurological",       icon:"🧠", color:T.purple,
-    rules:[
-      { id:"canadian_ct",  name:"Canadian CT Head",    icon:"🍁" },
-      { id:"pecarn_lt2",   name:"PECARN < 2 yrs",      icon:"👶" },
-      { id:"pecarn_gte2",  name:"PECARN 2-18 yrs",     icon:"🧒" },
-      { id:"new_orleans",  name:"New Orleans",          icon:"🎺" },
-    ] },
-  { id:"cardiac", label:"Cardiac / Pulmonary", icon:"❤️", color:T.coral,
-    rules:[
-      { id:"perc_wells",  name:"PERC + Wells (PE)",    icon:"🫁" },
-      { id:"heart_score", name:"HEART Score (ACS)",    icon:"💓" },
-    ] },
-  { id:"trauma",  label:"Trauma / Ortho",      icon:"🦴", color:T.orange,
-    rules:[
-      { id:"ottawa",      name:"Ottawa Ankle & Foot",   icon:"🦶" },
-      { id:"cspine",      name:"C-Spine CCR + NEXUS",   icon:"🦴" },
-    ] },
+const TABS = [
+  { id:"redflags",  label:"Red Flags",   icon:"🚨", color:T.coral  },
+  { id:"ottawa",    label:"Ottawa SAH",  icon:"🧠", color:T.purple },
+  { id:"lp",        label:"LP / CSF",    icon:"🔬", color:T.blue  },
+  { id:"treatment", label:"Treatment",   icon:"💊", color:T.teal  },
+  { id:"types",     label:"HA Types",    icon:"📋", color:T.gold  },
 ];
 
-// ── Shared Primitives ──────────────────────────────────────────────────
-function CriterionCheck({ label, sub, state, onToggle, color }) {
-  const isPos = state === true, isNeg = state === false;
+// ── Shared primitives ───────────────────────────────────────────────────
+function Card({ color, title, icon, children }) {
   return (
-    <div style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:5,
-      padding:"7px 10px", borderRadius:8, transition:"all .1s",
-      background:isPos ? `${color}12` : isNeg ? "rgba(14,10,26,0.5)" : "rgba(14,10,26,0.3)",
-      border:`1px solid ${isPos ? color+"44" : isNeg ? "rgba(45,30,80,0.3)" : "rgba(45,30,80,0.2)"}`,
-      borderLeft:`3px solid ${isPos ? color : isNeg ? "rgba(45,30,80,0.4)" : "rgba(45,30,80,0.2)"}` }}>
-      <div style={{ display:"flex", gap:4, flexShrink:0, marginTop:2 }}>
-        <button onClick={() => onToggle(true)}
-          style={{ width:20, height:20, borderRadius:4, cursor:"pointer",
-            border:`2px solid ${isPos ? color : "rgba(74,61,122,0.5)"}`,
-            background:isPos ? color : "transparent",
-            display:"flex", alignItems:"center", justifyContent:"center" }}>
-          {isPos && <span style={{ color:"#080510", fontSize:9, fontWeight:900 }}>✓</span>}
-        </button>
-        <button onClick={() => onToggle(false)}
-          style={{ width:20, height:20, borderRadius:4, cursor:"pointer",
-            border:`2px solid ${isNeg ? T.txt3 : "rgba(74,61,122,0.3)"}`,
-            background:isNeg ? "rgba(74,61,122,0.25)" : "transparent",
-            display:"flex", alignItems:"center", justifyContent:"center" }}>
-          {isNeg && <span style={{ color:T.txt3, fontSize:10, fontWeight:700 }}>✕</span>}
-        </button>
-      </div>
+    <div style={{ padding:"11px 13px", borderRadius:10, marginBottom:10,
+      background:`${color}08`, border:`1px solid ${color}28`,
+      borderLeft:`3px solid ${color}` }}>
+      {title && (
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color, letterSpacing:1.5, textTransform:"uppercase", marginBottom:7 }}>
+          {icon && <span style={{ marginRight:5 }}>{icon}</span>}{title}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function Bullet({ text, color, sub }) {
+  return (
+    <div style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
+      <span style={{ color:color||T.teal, fontSize:7, marginTop:4, flexShrink:0 }}>▸</span>
       <div>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12,
-          color:isPos ? color : T.txt2, lineHeight:1.4 }}>{label}</div>
+        <span style={{ fontFamily:"'DM Sans',sans-serif",
+          fontSize:11.5, color:T.txt2, lineHeight:1.6 }}>{text}</span>
         {sub && <div style={{ fontFamily:"'DM Sans',sans-serif",
-          fontSize:10, color:T.txt4, marginTop:1, lineHeight:1.35 }}>{sub}</div>}
+          fontSize:10, color:T.txt4, marginTop:1 }}>{sub}</div>}
       </div>
     </div>
   );
 }
 
-function ScoreSelect({ crit, value, onChange }) {
+function Check({ label, sub, checked, onToggle, color }) {
   return (
-    <div style={{ marginBottom:7, padding:"9px 11px", borderRadius:9,
-      background:"rgba(14,10,26,0.5)",
-      border:`1px solid ${value !== undefined ? T.coral+"33" : "rgba(45,30,80,0.3)"}`,
-      borderLeft:`3px solid ${value !== undefined ? T.coral : "rgba(45,30,80,0.25)"}` }}>
-      <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12,
-        color:value !== undefined ? T.coral : T.txt2, marginBottom:6 }}>
-        {crit.label}
-        {value !== undefined && <span style={{ marginLeft:8,
-          fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:T.gold }}>
-          {value} pt
-        </span>}
+    <button onClick={onToggle}
+      style={{ display:"flex", alignItems:"flex-start", gap:9,
+        width:"100%", padding:"8px 12px", borderRadius:8,
+        cursor:"pointer", textAlign:"left", border:"none",
+        marginBottom:4, transition:"all .1s",
+        background:checked ? `${color||T.purple}12` : "rgba(14,10,26,0.7)",
+        borderLeft:`3px solid ${checked ? (color||T.purple) : "rgba(45,30,80,0.5)"}` }}>
+      <div style={{ width:17, height:17, borderRadius:4, flexShrink:0, marginTop:1,
+        border:`2px solid ${checked ? (color||T.purple) : "rgba(74,61,122,0.5)"}`,
+        background:checked ? (color||T.purple) : "transparent",
+        display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {checked && <span style={{ color:"#080510", fontSize:9, fontWeight:900 }}>✓</span>}
       </div>
-      <div style={{ display:"flex", gap:5 }}>
-        {crit.options.map(opt => (
-          <button key={opt.val} onClick={() => onChange(crit.key, opt.val)}
-            style={{ flex:1, padding:"6px 4px", borderRadius:7, cursor:"pointer",
-              textAlign:"center", transition:"all .1s",
-              border:`1px solid ${value===opt.val ? T.coral+"55" : "rgba(45,30,80,0.4)"}`,
-              background:value===opt.val ? `${T.coral}14` : "transparent" }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:700,
-              color:value===opt.val ? T.coral : T.txt3, marginBottom:2 }}>{opt.val}</div>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9, lineHeight:1.3,
-              color:value===opt.val ? T.txt2 : T.txt4 }}>{opt.label}</div>
-            {opt.sub && value===opt.val && (
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:8,
-                color:T.txt4, marginTop:2, lineHeight:1.3 }}>{opt.sub}</div>
-            )}
-          </button>
+      <div>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+          fontSize:12, color:checked ? (color||T.purple) : T.txt2 }}>{label}</div>
+        {sub && <div style={{ fontFamily:"'DM Sans',sans-serif",
+          fontSize:10, color:T.txt4, marginTop:1 }}>{sub}</div>}
+      </div>
+    </button>
+  );
+}
+
+function Result({ label, detail, color }) {
+  return (
+    <div style={{ padding:"12px 14px", borderRadius:10,
+      background:`${color}0c`, border:`1px solid ${color}44`, marginTop:10 }}>
+      <div style={{ fontFamily:"'Playfair Display',serif",
+        fontWeight:700, fontSize:18, color, marginBottom:4 }}>{label}</div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif",
+        fontSize:11.5, color:T.txt2, lineHeight:1.65 }}>{detail}</div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RED FLAGS TAB — always-visible grid, no accordions
+// ═══════════════════════════════════════════════════════════════════════
+const DANGER_DX = [
+  { dx:"Subarachnoid Hemorrhage",      icon:"🧠", color:T.red,     clue:"Thunderclap, worst of life, meningismus, sentinel bleed" },
+  { dx:"Meningitis / Encephalitis",    icon:"🦠", color:T.coral,   clue:"Fever + headache + stiff neck ± altered mentation" },
+  { dx:"Cerebral Venous Thrombosis",   icon:"🔴", color:T.orange,  clue:"Progressive, papilledema, pregnancy/OCP, no arterial stroke territory" },
+  { dx:"Hypertensive Emergency",       icon:"⚡", color:T.gold,    clue:"BP > 180/120 + headache + end-organ damage" },
+  { dx:"Giant Cell Arteritis",         icon:"👁", color:T.purple,  clue:"Age > 50, jaw claudication, tender temporal artery, ESR > 50" },
+  { dx:"CO Poisoning",                 icon:"💨", color:T.blue,    clue:"Multiple affected, headache + nausea, fuel-burning appliance" },
+  { dx:"Acute Angle-Closure Glaucoma", icon:"👁", color:T.teal,    clue:"Severe eye pain, nausea, red eye, fixed mid-dilated pupil, vision loss" },
+  { dx:"Subdural Hematoma",            icon:"🧠", color:T.lavender,clue:"Elderly, fall history, gradual worsening, anticoagulation use" },
+];
+
+const SNOOP4 = [
+  { letter:"S", color:T.coral, mnemonic:"Systemic / Secondary risk",
+    flags:["Fever → meningitis, encephalitis, abscess","Immunocompromised → opportunistic CNS infection","Active cancer → leptomeningeal / mets","Pregnancy / postpartum → PRES, CVT","Night sweats / weight loss → vasculitis, malignancy"] },
+  { letter:"N", color:T.red, mnemonic:"Neurologic signs",
+    flags:["Focal deficit → stroke, mass, abscess","Altered mentation → encephalitis, SAH, PRES","Papilledema → elevated ICP","Meningismus → meningitis, SAH"] },
+  { letter:"O", color:T.purple, mnemonic:"Onset thunderclap",
+    flags:["Maximal pain in < 1 sec → SAH until proven otherwise","During exertion / Valsalva → sentinel bleed","During sex / orgasm → coital HA, SAH"] },
+  { letter:"O", color:T.orange, mnemonic:"Older patient (> 50 yrs)",
+    flags:["New HA after age 50 → giant cell arteritis","Jaw claudication, tender temporal artery","ESR > 50, CRP elevated → GCA; risk of permanent vision loss"] },
+  { letter:"P", color:T.gold, mnemonic:"Pattern change / Progressive",
+    flags:["Increasing freq / severity over weeks → mass, SDH","Morning HA / worse supine → elevated ICP","Positional worse upright → CSF hypotension / leak"] },
+  { letter:"P", color:T.blue, mnemonic:"Precipitated by Valsalva",
+    flags:["Cough / sneeze → Chiari, posterior fossa mass","Exertional HA → primary exertional HA vs SAH"] },
+  { letter:"P", color:T.teal, mnemonic:"Postural component",
+    flags:["Orthostatic (worse upright) → low CSF pressure, post-LP, CSF leak","Worse supine → IIH, venous sinus thrombosis"] },
+  { letter:"P", color:T.lavender, mnemonic:"Papilledema",
+    flags:["Bilateral disc edema → elevated ICP","Pulsatile tinnitus + visual changes → IIH","Enlarged blind spot on visual fields → IIH"] },
+];
+
+function RedFlagsTab() {
+  return (
+    <div className="ha-in">
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+        color:T.coral, letterSpacing:1.5, textTransform:"uppercase",
+        marginBottom:8 }}>🚨 Must-Not-Miss Diagnoses</div>
+      <div style={{ display:"grid",
+        gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",
+        gap:6, marginBottom:16 }}>
+        {DANGER_DX.map(d => (
+          <div key={d.dx} style={{ padding:"8px 10px", borderRadius:8,
+            background:`${d.color}08`, border:`1px solid ${d.color}28` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
+              <span style={{ fontSize:13 }}>{d.icon}</span>
+              <span style={{ fontFamily:"'Playfair Display',serif",
+                fontWeight:700, fontSize:12, color:d.color }}>{d.dx}</span>
+            </div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif",
+              fontSize:10, color:T.txt4, lineHeight:1.5 }}>{d.clue}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ fontFamily:"'Playfair Display',serif",
+        fontWeight:700, fontSize:15, color:T.purple, marginBottom:10 }}>
+        SNOOP4 Red Flags
+      </div>
+      <div style={{ display:"grid",
+        gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:8 }}>
+        {SNOOP4.map((item, i) => (
+          <div key={i} style={{ padding:"10px 12px", borderRadius:9,
+            background:`${item.color}08`, border:`1px solid ${item.color}28`,
+            borderLeft:`3px solid ${item.color}` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:7 }}>
+              <div style={{ width:22, height:22, borderRadius:"50%",
+                background:item.color, flexShrink:0,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontFamily:"'Playfair Display',serif",
+                fontWeight:900, fontSize:11, color:"#080510" }}>
+                {item.letter}
+              </div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif",
+                fontWeight:600, fontSize:11, color:item.color, lineHeight:1.3 }}>
+                {item.mnemonic}
+              </div>
+            </div>
+            {item.flags.map((f, j) => (
+              <div key={j} style={{ display:"flex", gap:5, marginBottom:4 }}>
+                <span style={{ color:item.color, fontSize:7,
+                  marginTop:4, flexShrink:0 }}>▸</span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif",
+                  fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>{f}</span>
+              </div>
+            ))}
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-function ResultBanner({ result }) {
-  if (!result) return (
-    <div style={{ padding:"11px 14px", borderRadius:10, marginBottom:12,
-      background:"rgba(14,10,26,0.6)", border:"1px solid rgba(45,30,80,0.3)" }}>
-      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-        color:T.txt4, textAlign:"center" }}>
-        Evaluate criteria above to generate recommendation
-      </div>
-    </div>
-  );
-  return (
-    <div style={{ padding:"13px 15px", borderRadius:10, marginBottom:12,
-      background:`${result.color}0d`, border:`2px solid ${result.color}55` }}>
-      <div style={{ fontFamily:"'Playfair Display',serif",
-        fontWeight:900, fontSize:19, color:result.color, marginBottom:4 }}>
-        {result.label}
-      </div>
-      <div style={{ fontFamily:"'DM Sans',sans-serif",
-        fontSize:12, color:T.txt2, lineHeight:1.65 }}>{result.sub}</div>
-    </div>
-  );
-}
+// ═══════════════════════════════════════════════════════════════════════
+// OTTAWA SAH TAB — interactive calculator (clicking appropriate here)
+// ═══════════════════════════════════════════════════════════════════════
+const OTTAWA_CRITERIA = [
+  { key:"age40",      label:"Age ≥ 40 years",                       sub:"" },
+  { key:"neck",       label:"Neck pain or stiffness",                sub:"Reported by patient or on exam" },
+  { key:"loc",        label:"Witnessed loss of consciousness",        sub:"Transient LOC at headache onset" },
+  { key:"exertion",   label:"Onset during exertion",                 sub:"Weight lifting, sex, defecation, coughing" },
+  { key:"thunderclap",label:"Thunderclap — maximal at onset",         sub:"Maximal pain instantaneously" },
+  { key:"neckflex",   label:"Limited neck flexion on exam",           sub:"Physician detects reduced ROM" },
+];
 
-function AIBlock({ ruleName, ruleCtx, posCrit, negCrit, recommendation, context, color }) {
-  const [loading, setLoading] = useState(false);
-  const [result,  setResult]  = useState(null);
-  const [error,   setError]   = useState(null);
-  const canRun = posCrit.length > 0 || negCrit.length > 0;
-  const c = color || T.purple;
+function OttawaTab() {
+  const [items,   setItems]   = useState({});
+  const [gcs15,   setGcs15]   = useState(false);
+  const [onset,   setOnset]   = useState(false);
+  const [ctHours, setCtHours] = useState("");
 
-  const run = async () => {
-    setLoading(true); setError(null); setResult(null);
-    try {
-      const res = await InvokeLLM({
-        prompt:`You are an emergency medicine clinical decision support AI assisting a physician at bedside.
+  const toggle = k => setItems(p => ({ ...p, [k]:!p[k] }));
+  const anyPos     = OTTAWA_CRITERIA.some(c => items[c.key]);
+  const allEval    = OTTAWA_CRITERIA.every(c => c.key in items);
 
-Rule: ${ruleName}
-Context: ${ruleCtx}
-Positive / present findings: ${posCrit.join(" | ") || "None"}
-Negative / absent findings: ${negCrit.join(" | ") || "None"}
-Rule-based recommendation: ${recommendation || "Incomplete evaluation"}
-Physician-provided context: ${context.trim() || "None"}
-
-Be concise and practical. Do NOT restate criteria. Focus on:
-1. Whether this rule is appropriately applied (exclusion criteria violations, age/population mismatches)
-2. Clinical nuances the checklist cannot capture (anticoagulation, occult injury, gestalt override)
-3. Disposition and observation considerations
-4. Additional workup to consider beyond what the rule addresses`,
-        response_json_schema:{
-          type:"object",
-          properties:{
-            applicability_note:{ type:"string", description:"Rule applicability concern. Empty string if fully applicable." },
-            clinical_reasoning:{ type:"string", description:"2-3 sentence clinical interpretation beyond the checklist." },
-            caveats:{ type:"array", items:{ type:"string" }, description:"Up to 3 key caveats. Empty array if none." },
-            disposition:{ type:"string", description:"Practical disposition in 1-2 sentences." },
-            additional_workup:{ type:"array", items:{ type:"string" }, description:"Additional workup. Empty array if none." },
-          },
-          required:["clinical_reasoning","caveats","disposition","additional_workup"],
-        },
-      });
-      setResult(res);
-    } catch { setError("AI analysis unavailable. Use rule-based recommendation above."); }
-    setLoading(false);
-  };
+  const ctSens = useMemo(() => {
+    const h = parseFloat(ctHours);
+    if (isNaN(h)) return null;
+    if (h <= 6)  return { pct:"98.7%", color:T.teal,  note:"CT within 6h near-perfect sensitivity (Perry 2011, JAMA). If negative, SAH essentially excluded." };
+    if (h <= 12) return { pct:"~95%",  color:T.gold,  note:"CT sensitivity drops after 6h. LP required if CT negative and clinical suspicion remains." };
+    return              { pct:"~90%",  color:T.coral, note:"CT > 12h — sensitivity too low. LP required regardless of CT result." };
+  }, [ctHours]);
 
   return (
-    <div style={{ marginTop:10 }}>
-      <button onClick={run} disabled={loading || !canRun}
-        style={{ display:"flex", alignItems:"center", justifyContent:"center",
-          gap:7, width:"100%", padding:"10px 0", borderRadius:9,
-          cursor:canRun ? "pointer" : "not-allowed",
-          fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12, transition:"all .14s",
-          border:`1px solid ${canRun ? c+"55" : "rgba(45,30,80,0.3)"}`,
-          background:canRun ? `${c}10` : "rgba(14,10,26,0.4)",
-          color:canRun ? c : T.txt4 }}>
-        {loading ? <><span className="ai-pulse">✦</span> Analyzing...</>
-                 : <><span>✦</span> AI Clinical Interpretation</>}
-      </button>
-      {!canRun && <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-        color:T.txt4, textAlign:"center", marginTop:4 }}>
-        Evaluate at least one criterion first
-      </div>}
-      {error && <div style={{ marginTop:7, padding:"8px 10px", borderRadius:8,
-        background:"rgba(255,92,92,0.07)", border:"1px solid rgba(255,92,92,0.2)",
-        fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.coral }}>{error}</div>}
-      {result && (
-        <div className="cdh-in" style={{ marginTop:9, padding:"12px 14px", borderRadius:11,
-          background:`${c}08`, border:`1px solid ${c}2a` }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-            color:c, letterSpacing:1.5, textTransform:"uppercase", marginBottom:9 }}>
-            ✦ AI Clinical Interpretation
-          </div>
-          {result.applicability_note && (
-            <div style={{ marginBottom:8, padding:"6px 9px", borderRadius:6,
-              background:`${T.coral}09`, border:`1px solid ${T.coral}22` }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-                color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>
-                Applicability
-              </div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                color:T.txt2, lineHeight:1.6 }}>{result.applicability_note}</div>
-            </div>
-          )}
-          <div style={{ marginBottom:8 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-              color:c, letterSpacing:1.2, textTransform:"uppercase", marginBottom:3 }}>Reasoning</div>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-              color:T.txt2, lineHeight:1.7 }}>{result.clinical_reasoning}</div>
-          </div>
-          {result.caveats?.length > 0 && (
-            <div style={{ marginBottom:8 }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-                color:T.gold, letterSpacing:1.2, textTransform:"uppercase", marginBottom:4 }}>Caveats</div>
-              {result.caveats.map((cv,i) => (
-                <div key={i} style={{ display:"flex", gap:6, marginBottom:3 }}>
-                  <span style={{ color:T.gold, fontSize:7, marginTop:4, flexShrink:0 }}>▸</span>
-                  <span style={{ fontFamily:"'DM Sans',sans-serif",
-                    fontSize:11, color:T.txt2, lineHeight:1.6 }}>{cv}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <div style={{ marginBottom:result.additional_workup?.length > 0 ? 8 : 0 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-              color:T.teal, letterSpacing:1.2, textTransform:"uppercase", marginBottom:3 }}>Disposition</div>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5,
-              color:T.txt2, lineHeight:1.65 }}>{result.disposition}</div>
-          </div>
-          {result.additional_workup?.length > 0 && (
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-                color:T.blue, letterSpacing:1.2, textTransform:"uppercase", marginBottom:4 }}>
-                Additional Workup
-              </div>
-              {result.additional_workup.map((w,i) => (
-                <div key={i} style={{ display:"flex", gap:6, marginBottom:3 }}>
-                  <span style={{ color:T.blue, fontSize:7, marginTop:4, flexShrink:0 }}>▸</span>
-                  <span style={{ fontFamily:"'DM Sans',sans-serif",
-                    fontSize:11, color:T.txt2, lineHeight:1.6 }}>{w}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <div style={{ marginTop:8, fontFamily:"'JetBrains Mono',monospace",
-            fontSize:7, color:T.txt4, letterSpacing:1.1, textAlign:"right" }}>
-            AI-ASSISTED · NOT A SUBSTITUTE FOR CLINICAL JUDGMENT
-          </div>
+    <div className="ha-in">
+      <Card color={T.purple} title="Ottawa SAH Rule — Eligibility" icon="📋">
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5,
+          color:T.txt3, lineHeight:1.65, marginBottom:10 }}>
+          Apply ONLY to: alert (GCS 15) patients with non-traumatic headache reaching
+          maximum intensity within 1 hour. Sensitivity 100% (95% CI 97–100%), specificity 15.3%.
         </div>
-      )}
-    </div>
-  );
-}
+        <Check label="GCS 15 — alert and oriented"
+          sub="Fully alert, no neurologic deficits"
+          checked={gcs15} onToggle={() => setGcs15(p => !p)} color={T.purple} />
+        <Check label="Headache reached maximum intensity within 1 hour"
+          sub="Thunderclap onset — not a gradual build-up"
+          checked={onset} onToggle={() => setOnset(p => !p)} color={T.purple} />
+        {(!gcs15 || !onset) && (
+          <div style={{ marginTop:6, padding:"7px 10px", borderRadius:7,
+            background:"rgba(255,92,92,0.08)", border:"1px solid rgba(255,92,92,0.25)",
+            fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.coral, lineHeight:1.5 }}>
+            {!gcs15 && "Ottawa SAH Rule not applicable — patient not GCS 15. "}
+            {!onset && "Ottawa SAH Rule not applicable — HA did not reach max intensity within 1h. "}
+            Proceed directly to CT head ± LP based on clinical judgment.
+          </div>
+        )}
+      </Card>
 
-function ContextBox({ value, onChange, placeholder, color }) {
-  return (
-    <>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-        color:T.txt4, letterSpacing:1.2, textTransform:"uppercase", marginBottom:5, marginTop:10 }}>
-        Clinical Context (optional — enhances AI)
-      </div>
-      <textarea value={value} onChange={e => onChange(e.target.value)} rows={2}
-        placeholder={placeholder}
-        style={{ width:"100%", padding:"8px 10px", borderRadius:8, outline:"none",
-          resize:"vertical", fontFamily:"'DM Sans',sans-serif", fontSize:11.5,
-          color:T.txt2, lineHeight:1.6, boxSizing:"border-box",
-          background:"rgba(14,10,26,0.8)",
-          border:`1px solid ${value ? (color||T.purple)+"33" : "rgba(45,30,80,0.35)"}` }} />
-    </>
-  );
-}
-
-// ── Binary Rules Data ──────────────────────────────────────────────────
-const BINARY_RULES = {
-  canadian_ct:{
-    name:"Canadian CT Head Rule", color:T.purple, citation:"Stiell et al, Lancet 2001",
-    applies:"GCS 13-15, blunt head trauma within 24h, LOC / amnesia / disorientation, age >= 16",
-    excludes:"Anticoagulation · bleeding disorder · obvious open skull fracture · GCS < 13 · post-injury seizure",
-    sensitivity:"High-risk factors 100% sensitive for neurosurgery. Medium-risk 98.4% for CT abnormality.",
-    groups:[
-      { label:"High Risk — CT for Neurosurgical Intervention", color:T.coral, criteria:[
-        { key:"gcs_lt15",  label:"GCS < 15 at 2 hours after injury" },
-        { key:"skull_fx",  label:"Suspected open or depressed skull fracture" },
-        { key:"basal",     label:"Any sign of basal skull fracture", sub:"Hemotympanum, raccoon eyes, Battle's sign, CSF oto/rhinorrhea" },
-        { key:"vomiting",  label:"Vomiting >= 2 episodes" },
-        { key:"age_65",    label:"Age >= 65 years" },
-      ]},
-      { label:"Medium Risk — CT for Brain Injury Detection", color:T.gold, criteria:[
-        { key:"amnesia",   label:"Amnesia before impact >= 30 minutes" },
-        { key:"mech",      label:"Dangerous mechanism", sub:"MVA, pedestrian/cyclist struck, ejection, fall > 3 ft or 5 stairs" },
-      ]},
-    ],
-    evaluate(c) {
-      const hi  = ["gcs_lt15","skull_fx","basal","vomiting","age_65"].some(k => c[k]);
-      const med = ["amnesia","mech"].some(k => c[k]);
-      const all = ["gcs_lt15","skull_fx","basal","vomiting","age_65","amnesia","mech"].every(k => k in c);
-      if (hi)  return { label:"CT Indicated", color:T.coral,  sub:"High-risk criterion present — CT head for neurosurgical intervention." };
-      if (med) return { label:"CT Indicated", color:T.orange, sub:"Medium-risk criterion present — CT head for brain injury detection." };
-      if (all) return { label:"CT Not Indicated", color:T.teal, sub:"All Canadian CT Head Rule criteria negative — CT not required per rule." };
-      return null;
-    },
-  },
-  pecarn_lt2:{
-    name:"PECARN — Age < 2 Years", color:T.blue, citation:"Kuppermann et al, Lancet 2009",
-    applies:"Children < 2 years, head trauma within 24h, GCS >= 14",
-    excludes:"Trivial mechanism (fall < 3 ft, no signs/symptoms) · GCS < 14 · Penetrating trauma",
-    sensitivity:"High+intermediate combined: 100% for ciTBI. Low-risk: ciTBI rate < 0.02%.",
-    groups:[
-      { label:"High Risk — CT Recommended", color:T.coral, criteria:[
-        { key:"ams",        label:"Altered mental status", sub:"Agitation, somnolence, repetitive questioning, slow response" },
-        { key:"palpable_fx",label:"Palpable skull fracture" },
-      ]},
-      { label:"Intermediate Risk — Observation vs CT (Physician Judgment)", color:T.gold, criteria:[
-        { key:"loc_5",      label:"Loss of consciousness >= 5 seconds" },
-        { key:"not_normal", label:"Not acting normally per parent" },
-        { key:"sev_mech",   label:"Severe mechanism", sub:"MVA ejection/rollover/death; pedestrian struck; fall > 3 ft; high-impact head strike" },
-        { key:"scalp",      label:"Non-frontal scalp hematoma" },
-      ]},
-    ],
-    evaluate(c) {
-      const hi  = ["ams","palpable_fx"].some(k => c[k]);
-      const mid = ["loc_5","not_normal","sev_mech","scalp"].some(k => c[k]);
-      const all = ["ams","palpable_fx","loc_5","not_normal","sev_mech","scalp"].every(k => k in c);
-      if (hi)  return { label:"CT Recommended", color:T.coral, sub:"High-risk criterion present — ciTBI risk warrants CT." };
-      if (mid) return { label:"Observation vs CT — Physician Judgment", color:T.gold, sub:"Intermediate finding. Observe 4-6h; CT if clinical deterioration or multiple criteria present." };
-      if (all) return { label:"CT Not Recommended", color:T.teal, sub:"Low-risk PECARN — ciTBI < 0.02%. Discharge with written return precautions." };
-      return null;
-    },
-  },
-  pecarn_gte2:{
-    name:"PECARN — Age 2-18 Years", color:T.teal, citation:"Kuppermann et al, Lancet 2009",
-    applies:"Children 2-18 years, head trauma within 24h, GCS >= 14",
-    excludes:"Trivial mechanism with no signs/symptoms · GCS < 14 · Penetrating trauma",
-    sensitivity:"High+intermediate combined: 100% for ciTBI. Low-risk: ciTBI < 0.05%.",
-    groups:[
-      { label:"High Risk — CT Recommended", color:T.coral, criteria:[
-        { key:"ams2",     label:"Altered mental status", sub:"Agitation, somnolence, repetitive questioning, slow response" },
-        { key:"basilar",  label:"Signs of basilar skull fracture", sub:"Hemotympanum, raccoon eyes, Battle's sign, CSF oto/rhinorrhea" },
-      ]},
-      { label:"Intermediate Risk — Observation vs CT", color:T.gold, criteria:[
-        { key:"loc2",       label:"Loss of consciousness" },
-        { key:"vomiting2",  label:"History of vomiting" },
-        { key:"sev_mech2",  label:"Severe mechanism", sub:"MVA ejection/rollover/death; pedestrian struck; fall > 5 ft; high-impact head strike" },
-        { key:"severe_ha",  label:"Severe headache" },
-      ]},
-    ],
-    evaluate(c) {
-      const hi  = ["ams2","basilar"].some(k => c[k]);
-      const mid = ["loc2","vomiting2","sev_mech2","severe_ha"].some(k => c[k]);
-      const all = ["ams2","basilar","loc2","vomiting2","sev_mech2","severe_ha"].every(k => k in c);
-      if (hi)  return { label:"CT Recommended", color:T.coral, sub:"High-risk criterion present — CT recommended." };
-      if (mid) return { label:"Observation vs CT — Physician Judgment", color:T.gold, sub:"Intermediate finding. Single criterion + low concern: observation reasonable. Multiple: CT favored." };
-      if (all) return { label:"CT Not Recommended", color:T.teal, sub:"Low-risk PECARN — ciTBI < 0.05%. Discharge with written return precautions." };
-      return null;
-    },
-  },
-  new_orleans:{
-    name:"New Orleans Criteria", color:T.orange, citation:"Haydel et al, NEJM 2000",
-    applies:"GCS 15 after minor head injury with brief LOC, age >= 16",
-    excludes:"Anticoagulation · prior neurologic disease · focal neurologic deficit · GCS < 15",
-    sensitivity:"100% sensitive for traumatic intracranial injury in GCS 15 with LOC. Specificity 25%.",
-    groups:[
-      { label:"CT Indicated if ANY Present", color:T.orange, criteria:[
-        { key:"ha",      label:"Headache" },
-        { key:"vomit",   label:"Vomiting" },
-        { key:"age60",   label:"Age > 60 years" },
-        { key:"intox",   label:"Drug or alcohol intoxication" },
-        { key:"amnesia", label:"Deficits in short-term memory" },
-        { key:"trauma",  label:"Physical evidence of trauma above clavicle", sub:"Scalp laceration, facial injury, tenderness" },
-        { key:"seizure", label:"Seizure" },
-      ]},
-    ],
-    evaluate(c) {
-      const keys = ["ha","vomit","age60","intox","amnesia","trauma","seizure"];
-      const any  = keys.some(k => c[k]);
-      const all  = keys.every(k => k in c);
-      if (any) return { label:"CT Indicated", color:T.coral, sub:"One or more New Orleans criteria present — CT head recommended." };
-      if (all) return { label:"CT Not Indicated", color:T.teal, sub:"All New Orleans criteria absent — CT not required. 100% sensitive for intracranial injury in GCS 15 with LOC." };
-      return null;
-    },
-  },
-};
-
-function BinaryPanel({ ruleId }) {
-  const rule = BINARY_RULES[ruleId];
-  const [checked, setChecked] = useState({});
-  const [ctx,     setCtx]     = useState("");
-  const toggle = (key, val) => setChecked(p => { const n={...p}; p[key]===val ? delete n[key] : n[key]=val; return n; });
-  const result    = rule.evaluate(checked);
-  const allCrit   = rule.groups.flatMap(g => g.criteria);
-  const countEval = allCrit.filter(c => c.key in checked).length;
-  const posLabels = allCrit.filter(c => checked[c.key]===true).map(c => c.label);
-  const negLabels = allCrit.filter(c => checked[c.key]===false).map(c => c.label);
-
-  return (
-    <div className="cdh-in">
-      <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:11,
-        background:`${rule.color}08`, border:`1px solid ${rule.color}28`,
-        borderLeft:`3px solid ${rule.color}` }}>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:7 }}>
-          <div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-              color:rule.color, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>Applies To</div>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>{rule.applies}</div>
+      {gcs15 && onset && (
+        <>
+          <div style={{ fontFamily:"'Playfair Display',serif",
+            fontWeight:700, fontSize:14, color:T.purple, marginBottom:8 }}>
+            Ottawa Criteria — Any positive = imaging required
           </div>
-          <div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-              color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>Exclusions</div>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>{rule.excludes}</div>
-          </div>
-        </div>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, lineHeight:1.4 }}>
-          <span style={{ color:rule.color }}>◉ </span>{rule.sensitivity}
-        </div>
-      </div>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-        <div style={{ flex:1, height:3, borderRadius:3, background:"rgba(45,30,80,0.3)" }}>
-          <div style={{ height:"100%", borderRadius:3, transition:"width .2s",
-            width:`${allCrit.length ? (countEval/allCrit.length)*100 : 0}%`,
-            background:posLabels.length > 0 ? T.coral : T.teal }} />
-        </div>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, flexShrink:0 }}>
-          {countEval}/{allCrit.length}
-          {posLabels.length > 0 && <span style={{ color:T.coral }}> · {posLabels.length} pos</span>}
-        </div>
-      </div>
-      <ResultBanner result={result} />
-      {rule.groups.map((g, gi) => (
-        <div key={gi} style={{ marginBottom:10 }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-            color:g.color, letterSpacing:1.4, textTransform:"uppercase", marginBottom:6,
-            display:"flex", alignItems:"center", gap:5 }}>
-            <div style={{ width:5, height:5, borderRadius:"50%", background:g.color }} />
-            {g.label}
-          </div>
-          {g.criteria.map(c => (
-            <CriterionCheck key={c.key} label={c.label} sub={c.sub}
-              state={c.key in checked ? checked[c.key] : undefined}
-              onToggle={val => toggle(c.key, val)} color={g.color} />
+          {OTTAWA_CRITERIA.map(c => (
+            <Check key={c.key} label={c.label} sub={c.sub}
+              checked={!!items[c.key]} onToggle={() => toggle(c.key)} color={T.purple} />
           ))}
-        </div>
-      ))}
-      {countEval > 0 && (
-        <button onClick={() => setChecked({})}
-          style={{ marginBottom:8, padding:"5px 13px", borderRadius:7, cursor:"pointer",
-            fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
-            border:"1px solid rgba(45,30,80,0.4)", background:"transparent", color:T.txt4 }}>
-          ↺ Clear all
-        </button>
+          {allEval && (
+            anyPos
+              ? <Result label="Ottawa Positive — Imaging Required" color={T.coral}
+                  detail={`${OTTAWA_CRITERIA.filter(c => items[c.key]).length} criterion/criteria positive. Proceed to CT head. If CT negative, LP required.`} />
+              : <Result label="Ottawa Negative — SAH Excluded" color={T.teal}
+                  detail="All 6 Ottawa criteria negative. SAH ruled out without CT or LP in eligible patients (GCS 15, maximal onset within 1h). Document criteria explicitly." />
+          )}
+        </>
       )}
-      <ContextBox value={ctx} onChange={setCtx} color={rule.color}
-        placeholder="e.g. On warfarin INR 2.8, GCS briefly 13 at scene per EMS..." />
-      <AIBlock ruleName={rule.name}
-        ruleCtx={`${rule.applies}. Excludes: ${rule.excludes}. ${rule.sensitivity}`}
-        posCrit={posLabels} negCrit={negLabels}
-        recommendation={result ? `${result.label}: ${result.sub}` : "Incomplete"}
-        context={ctx} color={rule.color} />
-      <div style={{ marginTop:10, fontFamily:"'JetBrains Mono',monospace",
-        fontSize:7, color:T.txt4, letterSpacing:1.2 }}>{rule.citation}</div>
-    </div>
-  );
-}
 
-// ── PERC + Wells Panel ─────────────────────────────────────────────────
-const PERC_ITEMS = [
-  { key:"age50",    label:"Age >= 50 years" },
-  { key:"hr100",    label:"Heart rate >= 100 bpm" },
-  { key:"sat95",    label:"O2 saturation < 95% on room air" },
-  { key:"leg",      label:"Unilateral leg swelling" },
-  { key:"hemo",     label:"Hemoptysis" },
-  { key:"surg",     label:"Surgery or trauma within 4 weeks" },
-  { key:"prior_pe", label:"Prior DVT or PE" },
-  { key:"hormone",  label:"Estrogen / hormone use", sub:"OCP, HRT, hormone-containing medications" },
-];
-const WELLS_ITEMS = [
-  { key:"dvt",    label:"Clinical signs/symptoms of DVT", sub:"Leg swelling, tenderness along deep veins", pts:3 },
-  { key:"alt_dx", label:"PE is #1 diagnosis or equally likely",                                           pts:3 },
-  { key:"hr100w", label:"Heart rate > 100 bpm",                                                           pts:1.5 },
-  { key:"immob",  label:"Immobilization >= 3 days OR surgery in past 4 weeks",                            pts:1.5 },
-  { key:"prior",  label:"Prior DVT or PE",                                                                pts:1.5 },
-  { key:"hemow",  label:"Hemoptysis",                                                                      pts:1 },
-  { key:"malig",  label:"Malignancy on treatment or palliative",                                          pts:1 },
-];
-
-function PERCWellsPanel() {
-  const [pretest, setPretest] = useState(null);
-  const [perc,    setPerc]    = useState({});
-  const [wells,   setWells]   = useState({});
-  const [ddimer,  setDdimer]  = useState(null);
-  const [ctx,     setCtx]     = useState("");
-
-  const togPerc  = (k,v) => setPerc(p  => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
-  const togWells = (k,v) => setWells(p => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
-
-  const percAnyPos  = PERC_ITEMS.some(c => perc[c.key]===true);
-  const percAllNeg  = PERC_ITEMS.every(c => perc[c.key]===false);
-  const percAllEval = PERC_ITEMS.every(c => c.key in perc);
-  const showWells   = pretest==="not_low" || (pretest==="low" && (percAnyPos || (percAllEval && !percAllNeg)));
-  const wellsScore  = WELLS_ITEMS.reduce((s,c) => s + (wells[c.key] ? c.pts : 0), 0);
-  const wellsAllEval= WELLS_ITEMS.every(c => c.key in wells);
-
-  let result = null;
-  if (pretest==="low" && percAllEval && percAllNeg) {
-    result = { label:"PE Ruled Out — PERC Negative", color:T.teal,
-      sub:"Low pretest probability + all 8 PERC criteria absent. No D-dimer or CTA required." };
-  } else if (showWells && wellsAllEval) {
-    if (wellsScore <= 4) {
-      if (ddimer==="neg") result = { label:"PE Excluded", color:T.teal,
-        sub:`Wells ${wellsScore} (PE unlikely <= 4) + D-dimer negative — PE excluded without CTA.` };
-      else if (ddimer==="pos") result = { label:"CTA Chest Indicated", color:T.coral,
-        sub:`Wells ${wellsScore} (PE unlikely <= 4) + D-dimer positive — proceed to CTA chest.` };
-      else result = { label:"Order D-dimer", color:T.gold,
-        sub:`Wells ${wellsScore} (PE unlikely <= 4). If negative: PE excluded. If positive: CTA.` };
-    } else {
-      result = { label:"CTA Chest Indicated", color:T.coral,
-        sub:`Wells ${wellsScore} (PE likely > 4). Proceed directly to CTA — D-dimer not useful at this pretest probability.` };
-    }
-  }
-
-  const posCrit = [
-    ...PERC_ITEMS.filter(c => perc[c.key]===true).map(c => "PERC+ "+c.label),
-    ...WELLS_ITEMS.filter(c => wells[c.key]===true).map(c => `${c.label} (+${c.pts}pts)`),
-  ];
-  const negCrit = [
-    ...PERC_ITEMS.filter(c => perc[c.key]===false).map(c => "PERC- "+c.label),
-    ...WELLS_ITEMS.filter(c => wells[c.key]===false).map(c => c.label),
-  ];
-
-  const Step = ({ n, label, color: stepColor }) => (
-    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-      color:stepColor, letterSpacing:1.4, textTransform:"uppercase", marginBottom:7,
-      display:"flex", alignItems:"center", gap:7 }}>
-      <div style={{ width:18, height:18, borderRadius:"50%", background:stepColor,
-        display:"flex", alignItems:"center", justifyContent:"center",
-        fontFamily:"'Playfair Display',serif", fontWeight:900,
-        fontSize:10, color:"#080510", flexShrink:0 }}>{n}</div>
-      {label}
-    </div>
-  );
-
-  return (
-    <div className="cdh-in">
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9, marginBottom:12,
-        padding:"9px 12px", borderRadius:9,
-        background:`${T.coral}08`, border:`1px solid ${T.coral}28`,
-        borderLeft:`3px solid ${T.coral}` }}>
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-            color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>PERC Rule</div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
-            Low pretest only. All 8 absent: PE ruled out. Sensitivity 97.4%, specificity 21.9%.
+      <Card color={T.blue} title="CT Timing — Sensitivity for SAH" icon="🖥️">
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color:T.txt4, letterSpacing:1.3, textTransform:"uppercase",
+          marginBottom:6 }}>Hours Since Headache Onset</div>
+        <input type="number" value={ctHours}
+          onChange={e => setCtHours(e.target.value)} placeholder="e.g. 4"
+          style={{ width:"100%", padding:"9px 11px",
+            background:"rgba(14,10,26,0.9)",
+            border:`1px solid ${ctHours ? T.blue+"55" : "rgba(45,30,80,0.4)"}`,
+            borderRadius:8, outline:"none",
+            fontFamily:"'JetBrains Mono',monospace",
+            fontSize:20, fontWeight:700, color:T.blue,
+            marginBottom:ctSens ? 8 : 0 }} />
+        {ctSens && (
+          <div style={{ padding:"9px 11px", borderRadius:8,
+            background:`${ctSens.color}09`, border:`1px solid ${ctSens.color}30` }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace",
+              fontSize:14, fontWeight:700, color:ctSens.color, marginBottom:4 }}>
+              CT sensitivity: {ctSens.pct}
+            </div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif",
+              fontSize:11, color:T.txt3, lineHeight:1.55 }}>{ctSens.note}</div>
           </div>
-        </div>
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-            color:T.blue, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>Modified Wells</div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
-            {"<="} 4 (PE unlikely): D-dimer first. {">"} 4 (PE likely): CTA directly.
+        )}
+      </Card>
+
+      <Card color={T.gold} title="CT-Negative Thunderclap — Next Steps">
+        {[
+          { step:"CT negative within 6h + low suspicion", action:"Apply Ottawa criteria — if all negative, may avoid LP. Discharge with return precautions.", color:T.teal },
+          { step:"CT negative within 6h + high suspicion", action:"LP at ≥ 12h after headache onset. Tubes 1 and 4 for RBC. Spectrophotometry for xanthochromia.", color:T.gold },
+          { step:"CT negative after 6h", action:"LP required regardless of Ottawa. CT too insensitive > 6h.", color:T.coral },
+          { step:"CT positive", action:"Neurosurgery immediately. Nimodipine 60mg q4h × 21d. CTA for aneurysm. ICU.", color:T.red },
+        ].map((s, i) => (
+          <div key={i} style={{ padding:"7px 10px", borderRadius:7, marginBottom:6,
+            background:`${s.color}09`, border:`1px solid ${s.color}28` }}>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+              fontSize:11, color:s.color, marginBottom:3 }}>{s.step}</div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif",
+              fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>{s.action}</div>
           </div>
+        ))}
+      </Card>
+
+      <Card color={T.red} title="CT-Negative + LP-Negative — Thunderclap DDx" icon="⚠️">
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5,
+          color:T.txt4, lineHeight:1.5, marginBottom:10 }}>
+          CT and LP negative does NOT exclude serious pathology. The following require specific imaging.
         </div>
-      </div>
-      <ResultBanner result={result} />
-      <div style={{ marginBottom:12 }}>
-        <Step n="1" label="Clinical Pretest Probability (Gestalt)" color={T.purple} />
-        <div style={{ display:"flex", gap:7 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:7 }}>
           {[
-            { val:"low",     label:"Low",             sub:"< 15% — PE not leading concern", color:T.teal },
-            { val:"not_low", label:"Moderate / High", sub:">= 15% — PE on differential",  color:T.coral },
-          ].map(opt => (
-            <button key={opt.val} onClick={() => setPretest(opt.val)}
-              style={{ flex:1, padding:"9px 10px", borderRadius:9, cursor:"pointer",
-                textAlign:"left", transition:"all .1s",
-                border:`1px solid ${pretest===opt.val ? opt.color+"55" : "rgba(45,30,80,0.4)"}`,
-                background:pretest===opt.val ? `${opt.color}10` : "transparent" }}>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
-                color:pretest===opt.val ? opt.color : T.txt2, marginBottom:2 }}>{opt.label}</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>{opt.sub}</div>
-            </button>
+            { dx:"RCVS", icon:"🔴", color:T.red,
+              features:[
+                "Recurrent thunderclap over days–weeks; CT + LP often normal",
+                "CTA/MRA: multifocal vasospasm — 'string of beads'",
+                "⚠️ TRIPTANS CONTRAINDICATED — worsen vasospasm",
+                "Tx: nimodipine 60mg q4h OR verapamil 240mg/day PO; avoid vasoconstrictors",
+              ],
+              workup:"CTA head + neck (or MRA)" },
+            { dx:"Cervical Artery Dissection", icon:"🔶", color:T.orange,
+              features:[
+                "Thunderclap + severe unilateral neck/head pain",
+                "Carotid: Horner syndrome (ptosis, miosis, anhidrosis), amaurosis",
+                "Vertebral: occipital/posterior HA, ataxia, dysarthria",
+                "Tx: anticoagulation or antiplatelet (neurology-guided)",
+              ],
+              workup:"CTA neck (not just head) + MRI DWI for ischemia" },
+            { dx:"PRES", icon:"🟡", color:T.gold,
+              features:[
+                "HA + visual changes + confusion + seizure + hypertension",
+                "Context: pre-eclampsia, eclampsia, immunosuppression (tacrolimus), HTN emergency",
+                "CT often normal; MRI FLAIR: posterior parieto-occipital edema",
+                "DWI usually negative (vasogenic, not cytotoxic edema)",
+              ],
+              workup:"MRI brain (FLAIR sequence); DWI" },
+            { dx:"CVT", icon:"🔵", color:T.blue,
+              features:[
+                "Progressive headache; papilledema; focal deficit; altered mentation",
+                "Risk factors: pregnancy/postpartum, OCP, dehydration, hypercoagulable",
+                "CT often normal; hemorrhage in atypical location is clue",
+                "Tx: anticoagulation even if hemorrhage present (paradoxical but correct)",
+              ],
+              workup:"CT venography or MR venography" },
+          ].map(c => (
+            <div key={c.dx} style={{ padding:"9px 11px", borderRadius:9,
+              background:`${c.color}09`, border:`1px solid ${c.color}30`,
+              borderLeft:`3px solid ${c.color}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                <span style={{ fontSize:13 }}>{c.icon}</span>
+                <span style={{ fontFamily:"'Playfair Display',serif",
+                  fontWeight:700, fontSize:12, color:c.color }}>{c.dx}</span>
+              </div>
+              {c.features.map((f, i) => (
+                <div key={i} style={{ display:"flex", gap:5, marginBottom:3 }}>
+                  <span style={{ color:c.color, fontSize:7, marginTop:3.5, flexShrink:0 }}>▸</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif",
+                    fontSize:10.5, color: f.startsWith("⚠️") ? T.coral : T.txt3,
+                    fontWeight: f.startsWith("⚠️") ? 700 : 400,
+                    lineHeight:1.45 }}>{f}</span>
+                </div>
+              ))}
+              <div style={{ marginTop:6, padding:"4px 8px", borderRadius:5,
+                background:`${c.color}12`, border:`1px solid ${c.color}22` }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:7, color:c.color, letterSpacing:1.2,
+                  textTransform:"uppercase" }}>Workup: </span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif",
+                  fontSize:10, color:T.txt3 }}>{c.workup}</span>
+              </div>
+            </div>
           ))}
         </div>
-      </div>
-      {pretest==="low" && (
-        <div style={{ marginBottom:12 }}>
-          <Step n="2" label="PERC — All 8 must be absent (x) to rule out PE" color={T.coral} />
-          {PERC_ITEMS.map(c => (
-            <CriterionCheck key={c.key} label={c.label} sub={c.sub}
-              state={c.key in perc ? perc[c.key] : undefined}
-              onToggle={val => togPerc(c.key, val)} color={T.coral} />
-          ))}
-        </div>
-      )}
-      {showWells && (
-        <div style={{ marginBottom:12 }}>
-          <Step n={pretest==="low" ? "3" : "2"}
-            label={`Wells Score${WELLS_ITEMS.some(c => wells[c.key]) ? ` — ${wellsScore.toFixed(1)} pts (${wellsScore<=4 ? "PE Unlikely <=4" : "PE Likely >4"})` : ""}`}
-            color={T.blue} />
-          {WELLS_ITEMS.map(c => (
-            <CriterionCheck key={c.key} label={`${c.label}  (+${c.pts})`}
-              state={c.key in wells ? wells[c.key] : undefined}
-              onToggle={val => togWells(c.key, val)} color={T.blue} />
-          ))}
-        </div>
-      )}
-      {showWells && wellsAllEval && wellsScore <= 4 && (
-        <div style={{ marginBottom:12 }}>
-          <Step n={pretest==="low" ? "4" : "3"} label="D-dimer Result (Wells <= 4)" color={T.gold} />
-          <div style={{ display:"flex", gap:7 }}>
-            {[
-              { val:"neg", label:"Negative", sub:"PE excluded — no CTA needed", color:T.teal },
-              { val:"pos", label:"Positive",  sub:"Elevated — proceed to CTA",  color:T.coral },
-            ].map(opt => (
-              <button key={opt.val} onClick={() => setDdimer(ddimer===opt.val ? null : opt.val)}
-                style={{ flex:1, padding:"9px 10px", borderRadius:8, cursor:"pointer",
-                  textAlign:"left", transition:"all .1s",
-                  border:`1px solid ${ddimer===opt.val ? opt.color+"55" : "rgba(45,30,80,0.4)"}`,
-                  background:ddimer===opt.val ? `${opt.color}10` : "transparent" }}>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
-                  color:ddimer===opt.val ? opt.color : T.txt2, marginBottom:2 }}>{opt.label}</div>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>{opt.sub}</div>
-              </button>
+      </Card>
+    </div>
+  );
+}
+// ═══════════════════════════════════════════════════════════════════════
+function LPTab() {
+  const [op,       setOP]       = useState("");
+  const [rbc1,     setRBC1]     = useState("");
+  const [rbc4,     setRBC4]     = useState("");
+  const [wbc,      setWBC]      = useState("");
+  const [protein,  setProtein]  = useState("");
+  const [glucose,  setGlucose]  = useState("");
+  const [serumGlu, setSerumGlu] = useState("");
+  const [xantho,   setXantho]   = useState(null);
+
+  const opVal   = parseFloat(op);
+  const rbc1v   = parseFloat(rbc1);
+  const rbc4v   = parseFloat(rbc4);
+  const wbcV    = parseFloat(wbc);
+  const glucV   = parseFloat(glucose);
+  const sgluV   = parseFloat(serumGlu);
+
+  const opInterp = isNaN(opVal) ? null
+    : opVal < 8   ? { label:"Low (< 8 cmH2O)",       color:T.blue,  note:"Spontaneous intracranial hypotension — orthostatic HA, CSF leak" }
+    : opVal <= 20 ? { label:"Normal (8–20 cmH2O)",    color:T.teal,  note:"Normal ICP" }
+    : opVal <= 25 ? { label:"Borderline (20–25)",      color:T.gold,  note:"Consider IIH if normal CSF composition" }
+    :               { label:"Elevated (> 25 cmH2O)",  color:T.coral, note:"Raised ICP — IIH, venous sinus thrombosis, mass, meningitis" };
+
+  const rbcInterp = (!isNaN(rbc1v) && !isNaN(rbc4v) && rbc1v > 0)
+    ? (rbc4v < rbc1v * 0.7
+        ? { label:"Clearing — Traumatic Tap More Likely", color:T.gold,
+            note:`Tube 1: ${rbc1v}/µL → Tube 4: ${rbc4v}/µL (${Math.round(rbc4v/rbc1v*100)}% of original). Clearing favors traumatic tap. Xanthochromia spectrophotometry is definitive.` }
+        : { label:"No Clearing — SAH More Likely", color:T.coral,
+            note:`Tube 1: ${rbc1v}/µL → Tube 4: ${rbc4v}/µL (${Math.round(rbc4v/rbc1v*100)}% of original). Persistent RBCs favor SAH. Confirm with xanthochromia.` })
+    : null;
+
+  const wbcInterp = isNaN(wbcV) ? null
+    : wbcV <= 5    ? { label:"Normal WBC",                    color:T.teal }
+    : wbcV <= 100  ? { label:"Mild pleocytosis (< 100)",       color:T.gold,  note:"Viral meningitis, partially treated bacterial, SAH reaction, carcinomatous" }
+    : wbcV <= 1000 ? { label:"Moderate pleocytosis (100–1000)",color:T.orange,note:"Bacterial or viral meningitis, TB, fungal. Differential critical." }
+    :                { label:"Severe pleocytosis (> 1000)",    color:T.coral, note:"Bacterial meningitis until proven otherwise — start empiric antibiotics immediately" };
+
+  const glucRatio  = (!isNaN(glucV) && !isNaN(sgluV) && sgluV > 0) ? (glucV / sgluV).toFixed(2) : null;
+  const glucInterp = glucRatio === null ? null
+    : parseFloat(glucRatio) >= 0.6 ? { label:"Normal CSF/serum ratio",          color:T.teal }
+    : parseFloat(glucRatio) >= 0.4 ? { label:"Borderline low ratio (0.4–0.6)", color:T.gold,  note:"Consider bacterial, TB, fungal, carcinomatous meningitis" }
+    :                                 { label:"Low ratio (< 0.4) — Infection",  color:T.coral, note:"Bacterial meningitis, TB, fungal, carcinomatous — treat empirically" };
+
+  return (
+    <div className="ha-in">
+      <Card color={T.purple} title="LP Technique for SAH">
+        <Bullet text="Collect 4 tubes: tubes 1 and 4 for RBC comparison" color={T.purple} />
+        <Bullet text="Timing: LP ideally ≥ 12h after onset for xanthochromia to develop" color={T.purple} />
+        <Bullet text="Spectrophotometry required for xanthochromia — visual inspection sensitivity only 52% vs 96% for spectrophotometry" color={T.purple} />
+        <Bullet text="Xanthochromia window: 12h to 2 weeks after bleed onset" color={T.purple} />
+      </Card>
+
+      <Card color={T.blue} title="Opening Pressure (lateral decubitus)">
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:10, marginBottom:8 }}>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:T.txt4, letterSpacing:1.3, textTransform:"uppercase", marginBottom:4 }}>
+              cmH2O
+            </div>
+            <input type="number" value={op} onChange={e => setOP(e.target.value)}
+              style={{ width:"100%", padding:"8px 10px",
+                background:"rgba(14,10,26,0.9)",
+                border:`1px solid ${op ? T.blue+"55" : "rgba(45,30,80,0.4)"}`,
+                borderRadius:7, outline:"none",
+                fontFamily:"'JetBrains Mono',monospace",
+                fontSize:18, fontWeight:700, color:T.blue }} />
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:4, justifyContent:"center" }}>
+            {[["> 25","Elevated",T.coral],["20–25","Borderline",T.gold],
+              ["8–20","Normal",T.teal],["< 8","Low",T.blue]].map(([r,l,c]) => (
+              <div key={r} style={{ display:"flex", gap:8,
+                fontFamily:"'DM Sans',sans-serif", fontSize:10 }}>
+                <span style={{ color:c, minWidth:40,
+                  fontFamily:"'JetBrains Mono',monospace" }}>{r}</span>
+                <span style={{ color:T.txt4 }}>{l}</span>
+              </div>
             ))}
           </div>
         </div>
-      )}
-      <ContextBox value={ctx} onChange={setCtx} color={T.coral}
-        placeholder="e.g. 58yo F post-hip fracture, immobilized 5 days, HR 108, O2 94% RA..." />
-      <AIBlock ruleName="PERC + Modified Wells for PE"
-        ruleCtx="PERC: low pretest only, all 8 absent = PE ruled out. Wells: <=4 PE unlikely (D-dimer), >4 PE likely (CTA directly). Kline 2008 / Wells 2000."
-        posCrit={posCrit} negCrit={negCrit}
-        recommendation={result ? `${result.label}: ${result.sub}` : "Incomplete"}
-        context={ctx} color={T.coral} />
-      <div style={{ marginTop:10, fontFamily:"'JetBrains Mono',monospace",
-        fontSize:7, color:T.txt4, letterSpacing:1.2 }}>
-        PERC: Kline et al, J Thromb Haemost 2008 · Wells: Wells et al, Thromb Haemost 2000
-      </div>
+        {opInterp && (
+          <div style={{ padding:"7px 10px", borderRadius:7,
+            background:`${opInterp.color}09`, border:`1px solid ${opInterp.color}28` }}>
+            <div style={{ fontFamily:"'Playfair Display',serif",
+              fontWeight:700, fontSize:13, color:opInterp.color, marginBottom:3 }}>
+              {opInterp.label}
+            </div>
+            {opInterp.note && (
+              <div style={{ fontFamily:"'DM Sans',sans-serif",
+                fontSize:10.5, color:T.txt3 }}>{opInterp.note}</div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      <Card color={T.coral} title="RBC Count — Traumatic Tap vs SAH">
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:8 }}>
+          {[
+            { label:"Tube 1 RBC (/µL)", val:rbc1, set:setRBC1 },
+            { label:"Tube 4 RBC (/µL)", val:rbc4, set:setRBC4 },
+          ].map(f => (
+            <div key={f.label}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                color:T.txt4, letterSpacing:1.3, textTransform:"uppercase", marginBottom:4 }}>
+                {f.label}
+              </div>
+              <input type="number" value={f.val} onChange={e => f.set(e.target.value)}
+                style={{ width:"100%", padding:"8px 10px",
+                  background:"rgba(14,10,26,0.9)",
+                  border:`1px solid ${f.val ? T.coral+"55" : "rgba(45,30,80,0.4)"}`,
+                  borderRadius:7, outline:"none",
+                  fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:18, fontWeight:700, color:T.coral }} />
+            </div>
+          ))}
+        </div>
+        {rbcInterp && (
+          <div style={{ padding:"8px 11px", borderRadius:8,
+            background:`${rbcInterp.color}09`, border:`1px solid ${rbcInterp.color}28` }}>
+            <div style={{ fontFamily:"'Playfair Display',serif",
+              fontWeight:700, fontSize:13, color:rbcInterp.color, marginBottom:3 }}>
+              {rbcInterp.label}
+            </div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif",
+              fontSize:10.5, color:T.txt3, lineHeight:1.55 }}>{rbcInterp.note}</div>
+          </div>
+        )}
+        <div style={{ marginTop:10 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:T.txt4, letterSpacing:1.3, textTransform:"uppercase", marginBottom:6 }}>
+            Xanthochromia (Spectrophotometry)
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            {[
+              { val:true,  label:"Positive", color:T.coral },
+              { val:false, label:"Negative", color:T.teal  },
+              { val:null,  label:"Not done", color:T.txt4  },
+            ].map(x => (
+              <button key={String(x.val)} onClick={() => setXantho(x.val)}
+                style={{ flex:1, padding:"7px 0", borderRadius:7, cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                  transition:"all .1s",
+                  border:`1px solid ${xantho===x.val ? x.color+"66" : "rgba(45,30,80,0.4)"}`,
+                  background:xantho===x.val ? `${x.color}12` : "transparent",
+                  color:xantho===x.val ? x.color : T.txt4 }}>
+                {x.label}
+              </button>
+            ))}
+          </div>
+          {xantho === true && (
+            <div style={{ marginTop:6, padding:"7px 10px", borderRadius:7,
+              background:"rgba(255,92,92,0.08)", border:"1px solid rgba(255,92,92,0.25)",
+              fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.coral, lineHeight:1.5 }}>
+              Xanthochromia positive — SAH confirmed. Neurosurgery consult. CTA for aneurysm.
+            </div>
+          )}
+          {xantho === false && (
+            <div style={{ marginTop:6, padding:"7px 10px", borderRadius:7,
+              background:"rgba(0,212,180,0.07)", border:"1px solid rgba(0,212,180,0.25)",
+              fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.teal, lineHeight:1.5 }}>
+              Xanthochromia negative — SAH essentially excluded if ≥ 12h post-onset.
+              Spectrophotometry sensitivity 96% at 12h+.
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <Card color={T.orange} title="WBC & Glucose — Meningitis Evaluation">
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
+          {[
+            { label:"WBC (/µL)",           val:wbc,      set:setWBC,      c:T.orange },
+            { label:"Protein (mg/dL)",      val:protein,  set:setProtein,  c:T.orange },
+            { label:"CSF Glucose (mg/dL)",  val:glucose,  set:setGlucose,  c:T.gold   },
+            { label:"Serum Glucose (mg/dL)",val:serumGlu, set:setSerumGlu, c:T.gold   },
+          ].map(f => (
+            <div key={f.label}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                color:T.txt4, letterSpacing:1.3, textTransform:"uppercase", marginBottom:4 }}>
+                {f.label}
+              </div>
+              <input type="number" value={f.val} onChange={e => f.set(e.target.value)}
+                style={{ width:"100%", padding:"8px 10px",
+                  background:"rgba(14,10,26,0.9)",
+                  border:`1px solid ${f.val ? f.c+"55" : "rgba(45,30,80,0.4)"}`,
+                  borderRadius:7, outline:"none",
+                  fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:18, fontWeight:700, color:f.c }} />
+            </div>
+          ))}
+        </div>
+
+        {wbcInterp && (
+          <div style={{ padding:"7px 10px", borderRadius:7, marginBottom:6,
+            background:`${wbcInterp.color}09`, border:`1px solid ${wbcInterp.color}28` }}>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+              fontSize:11, color:wbcInterp.color, marginBottom:wbcInterp.note ? 2 : 0 }}>
+              {wbcInterp.label}
+            </div>
+            {wbcInterp.note && (
+              <div style={{ fontFamily:"'DM Sans',sans-serif",
+                fontSize:10, color:T.txt3, lineHeight:1.5 }}>{wbcInterp.note}</div>
+            )}
+          </div>
+        )}
+
+        {glucInterp && (
+          <div style={{ padding:"7px 10px", borderRadius:7,
+            background:`${glucInterp.color}09`, border:`1px solid ${glucInterp.color}28` }}>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+              fontSize:11, color:glucInterp.color, marginBottom:glucInterp.note ? 2 : 0 }}>
+              {glucInterp.label} (ratio {glucRatio})
+            </div>
+            {glucInterp.note && (
+              <div style={{ fontFamily:"'DM Sans',sans-serif",
+                fontSize:10, color:T.txt3, lineHeight:1.5 }}>{glucInterp.note}</div>
+            )}
+          </div>
+        )}
+
+        <div style={{ marginTop:10, padding:"7px 10px", borderRadius:7,
+          background:"rgba(14,10,26,0.7)", border:"1px solid rgba(45,30,80,0.4)" }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            color:T.txt4, letterSpacing:1.3, textTransform:"uppercase", marginBottom:6 }}>
+            CSF Reference Values
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
+            {[["WBC","< 5/µL"],["Protein","15–45 mg/dL"],["Glucose","45–80 mg/dL"],["Ratio","> 0.6"]].map(([l,v]) => (
+              <div key={l} style={{ textAlign:"center" }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:7, color:T.txt4 }}>{l}</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:9, fontWeight:700, color:T.teal }}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }
 
-// ── HEART Score Panel ──────────────────────────────────────────────────
-const HEART_CRIT = [
-  { key:"H", label:"History",
-    options:[
-      { val:0, label:"Slightly suspicious",   sub:"Mostly non-specific features" },
-      { val:1, label:"Moderately suspicious", sub:"Mixed typical/atypical" },
-      { val:2, label:"Highly suspicious",     sub:"Classic ACS presentation" },
-    ] },
-  { key:"E", label:"ECG",
-    options:[
-      { val:0, label:"Normal" },
-      { val:1, label:"Non-specific change",     sub:"LBBB, LVH, early repol, digoxin, nonspecific ST/T" },
-      { val:2, label:"Significant ST deviation", sub:"New ST depression/elevation, T-wave inversion" },
-    ] },
-  { key:"A", label:"Age",
-    options:[
-      { val:0, label:"< 45 years" },
-      { val:1, label:"45-65 years" },
-      { val:2, label:"> 65 years" },
-    ] },
-  { key:"R", label:"Risk Factors",
-    options:[
-      { val:0, label:"None known" },
-      { val:1, label:"1-2 risk factors", sub:"HTN, hyperlipidemia, DM, obesity, smoking, family hx CAD" },
-      { val:2, label:">= 3 RF OR prior atherosclerotic disease", sub:"Prior MI, PCI/CABG, stroke, PAD" },
-    ] },
-  { key:"T", label:"Troponin",
-    options:[
-      { val:0, label:"<= Normal limit" },
-      { val:1, label:"1-3x upper limit of normal" },
-      { val:2, label:"> 3x upper limit of normal" },
-    ] },
+// ═══════════════════════════════════════════════════════════════════════
+// TREATMENT TAB — all protocols scrollable, no selector click needed
+// ═══════════════════════════════════════════════════════════════════════
+const TREATMENT_PROTOCOLS = [
+  {
+    id:"migraine", label:"Migraine", icon:"🧠", color:T.purple,
+    sections:[
+      { title:"First-Line IV — ED Cocktail (AHS 2024, ACEP 2016)",
+        items:[
+          "Prochlorperazine 10 mg IV + diphenhydramine 25 mg IV — most effective ED regimen (NNT 3.2); diphenhydramine prevents akathisia, not sedation",
+          "Metoclopramide 10 mg IV + diphenhydramine 25 mg IV — equivalent alternative",
+          "Normal saline 1L IV — improves pain and nausea outcomes",
+          "Ketorolac 30 mg IV — adjunct; inferior to dopamine antagonists as monotherapy",
+          "Dexamethasone 10 mg IV at discharge — reduces 24h headache recurrence by 26% (NNT 9)",
+        ] },
+      { title:"Adjuncts & Second-Line",
+        items:[
+          "Magnesium sulfate 1–2 g IV over 15–30 min — especially effective in migraine with aura (NNT 3.0 in aura subgroup)",
+          "Valproate sodium 500–1000 mg IV over 30 min — effective, consider in refractory cases",
+          "Sumatriptan 6 mg SQ — triptan-naive patients, no cardiovascular disease",
+          "DHE 0.5–1 mg IV q8h — refractory migraine; CI: ergotamine use, cardiovascular disease, pregnancy",
+        ] },
+      { title:"Avoid",
+        items:[
+          "Opioids — increase return visits, chronic opioid dependence, no outcome benefit (ACEP 2016)",
+          "Ketorolac alone as first-line — inferior to dopamine antagonists",
+          "IV diphenhydramine monotherapy — no evidence as single agent",
+        ] },
+    ],
+    pearl:"Complete ED cocktail: Prochlorperazine + diphenhydramine + NS 1L + dexamethasone 10mg at discharge. Dexamethasone cuts 24h headache recurrence nearly in half.",
+  },
+  {
+    id:"cluster", label:"Cluster Headache", icon:"💥", color:T.orange,
+    sections:[
+      { title:"Acute Abort (EHF 2023)",
+        items:[
+          "100% O2 via non-rebreather 10–15 L/min × 15–20 min — effective in 60–70%; NRB mandatory, not simple face mask",
+          "Sumatriptan 6 mg SQ — fastest pharmacologic onset (< 15 min); first-line pharmacologic agent",
+          "Sumatriptan 20 mg intranasal — if SQ unavailable",
+          "Zolmitriptan 5–10 mg intranasal — effective alternative, FDA-approved for cluster",
+        ] },
+      { title:"Refractory / Rescue",
+        items:[
+          "DHE 1 mg IV or IM",
+          "Octreotide 100 mcg SQ — if triptans contraindicated (cardiovascular disease)",
+          "Greater occipital nerve block — lidocaine 2% ± methylprednisolone at posterior skull base",
+          "Intranasal lidocaine 4% ipsilateral nostril — temporizing measure only",
+        ] },
+      { title:"Bridging / Prevention (Initiate or Refer)",
+        items:[
+          "Verapamil 240–480 mg/day PO — standard first-line prevention; ECG monitoring required (PR prolongation)",
+          "Prednisone 60 mg PO × 5 days then taper — short-term bridge while verapamil titrated",
+          "Galcanezumab 300 mg SQ × 1 (CGRP mAb) — only FDA-approved CGRP monoclonal antibody for episodic cluster",
+        ] },
+    ],
+    pearl:"Cluster is among the most severe pain syndromes known. Start 100% O2 via NRB immediately — most attacks abort in 15 min. Sumatriptan SQ for fastest pharmacologic relief.",
+  },
+  {
+    id:"sah", label:"SAH Management", icon:"🩸", color:T.red,
+    sections:[
+      { title:"Immediate",
+        items:[
+          "Neurosurgery consult immediately",
+          "CTA head and neck — aneurysm location and morphology; sensitivity > 96% for aneurysms > 3mm",
+          "DSA (digital subtraction angiography) — if CTA equivocal or for endovascular treatment planning",
+          "ICU admission — continuous monitoring; ECG for neurogenic T-wave changes, QTc prolongation",
+          "Avoid anticoagulation and antiplatelet agents until aneurysm secured",
+        ] },
+      { title:"Medical Management (AHA/ASA 2023)",
+        items:[
+          "Nimodipine 60 mg PO/NG q4h × 21 days — reduces vasospasm-related ischemic deficits (NNT 17); not a BP-lowering agent",
+          "Pre-securing aneurysm: SBP < 160 mmHg — IV nicardipine or labetalol",
+          "Post-securing: SBP 140–180 mmHg to maintain cerebral perfusion pressure",
+          "Levetiracetam for seizure — avoid phenytoin / fosphenytoin (associated with worse functional outcomes)",
+          "Euvolemia — avoid aggressive fluid restriction; maintain Na > 135 mEq/L",
+          "Normoglycemia and normothermia — both independently worsen SAH outcomes",
+        ] },
+    ],
+    pearl:"Nimodipine 60 mg PO q4h × 21 days is non-negotiable for all SAH — reduces ischemic injury from vasospasm. It is not used for blood pressure control.",
+  },
+  {
+    id:"htn", label:"Hypertensive Headache", icon:"⚡", color:T.gold,
+    sections:[
+      { title:"Hypertensive Emergency — BP > 180/120 + End-Organ Damage",
+        items:[
+          "IV nicardipine 5 mg/hr, titrate 2.5 mg/hr q5 min (max 15 mg/hr) — preferred for most presentations",
+          "IV labetalol 20 mg bolus, repeat 40–80 mg q10 min to max 300 mg; then infusion 0.5–2 mg/min",
+          "IV clevidipine 1–2 mg/hr, double q90 sec (max 32 mg/hr) — most titratable agent",
+          "Target: reduce MAP by 10–25% in first hour — NOT to normal; precipitous drops cause stroke and MI",
+          "Oral agents NOT appropriate — variable GI absorption precludes precise titration",
+        ] },
+      { title:"Hypertensive Urgency — BP > 180/120, No End-Organ Damage",
+        items:[
+          "Oral amlodipine 5–10 mg, lisinopril 10–20 mg, or labetalol 200–400 mg PO",
+          "Gradual reduction over 24–48 hours — no evidence for rapid lowering improves outcomes",
+          "Address underlying cause: undertreated pain, anxiety, medication non-adherence, stimulants",
+          "NEVER sublingual nifedipine — precipitous BP drops cause cerebral and myocardial infarction",
+        ] },
+    ],
+    pearl:"Hypertensive emergency headache is typically occipital, pulsatile, worse in morning. Target 10–25% MAP reduction in first hour — never normalize rapidly. Never sublingual nifedipine.",
+  },
+  {
+    id:"gca", label:"Giant Cell Arteritis", icon:"👁", color:T.lavender,
+    sections:[
+      { title:"Suspected GCA — Start Immediately (ACR/EULAR 2022)",
+        items:[
+          "Prednisone 60 mg PO immediately — do NOT wait for biopsy, ESR, or CRP",
+          "If vision loss present: methylprednisolone 1 g IV daily × 3 days, then transition to prednisone",
+          "Temporal artery biopsy within 2 weeks — steroids do NOT alter pathology within 14 days",
+          "Low-dose aspirin 81 mg — reduces cranial ischemic events and vision loss in GCA",
+          "Rheumatology consult; ophthalmology if any visual symptoms",
+        ] },
+      { title:"Refractory or Relapsing GCA (ACR/EULAR 2022)",
+        items:[
+          "Tocilizumab 162 mg SQ weekly or 8 mg/kg IV q4 weeks — FDA-approved for GCA; allows faster prednisone taper",
+          "Reduces relapse rate vs prednisone monotherapy; IL-6 receptor antagonist",
+        ] },
+    ],
+    pearl:"Vision loss from GCA is irreversible in 10–20% of untreated cases. Steroids immediately — biopsy within 2 weeks. Add aspirin 81mg for vascular protection. Tocilizumab for refractory disease.",
+  },
+  {
+    id:"iih", label:"IIH", icon:"👁", color:T.blue,
+    sections:[
+      { title:"ED Management (IIH — Idiopathic Intracranial Hypertension)",
+        items:[
+          "Acetazolamide 500 mg BID PO — first-line; inhibits carbonic anhydrase to reduce CSF production; titrate to 1000–2000 mg/day as outpatient",
+          "Therapeutic LP — drain CSF to opening pressure 20 cmH2O; immediate symptom relief; always measure OP before drainage",
+          "Urgent ophthalmology if any visual symptoms — papilledema can cause rapid permanent vision loss; visual fields and fundoscopy required",
+          "MRI brain + MR venography before diagnosing IIH — exclude CVT, mass, meningitis",
+        ] },
+    ],
+    pearl:"IIH: young obese women + headache + papilledema + OP > 25 cmH2O + normal CSF composition. Always exclude CVT. Acetazolamide + therapeutic LP + urgent ophthalmology.",
+  },
+  {
+    id:"postlp", label:"Post-LP Headache", icon:"🩹", color:T.teal,
+    sections:[
+      { title:"Diagnosis + Management",
+        items:[
+          "Presentation: orthostatic HA (worse upright, better supine), onset within 24–48h of LP; usually resolves in 1–2 weeks spontaneously",
+          "Caffeine 300 mg IV OR 300–600 mg PO — first-line; repeat in 2h if inadequate response; raises CSF pressure via cerebral vasoconstriction",
+          "IV fluids, bed rest — limited evidence as sole treatment; use as adjunct",
+          "Epidural blood patch — 10–20 mL autologous blood at LP level; 70–98% success for refractory cases; refer to anesthesia if caffeine fails",
+        ] },
+    ],
+    pearl:"Post-LP HA: orthostatic pattern, onset 24–48h post-LP. Caffeine 300mg IV or PO is effective first-line. Epidural blood patch for refractory cases. Most resolve in 1–2 weeks.",
+  },
+  {
+    id:"preeclampsia", label:"Pre-eclampsia Headache", icon:"🤰", color:T.coral,
+    sections:[
+      { title:"Severe Features — Act Immediately",
+        items:[
+          "SBP ≥ 160 OR DBP ≥ 110 + headache = hypertensive emergency in pregnancy — treat without delay",
+          "Magnesium sulfate 4–6 g IV over 15–20 min, then 1–2 g/hr infusion — seizure prophylaxis (eclampsia prevention); NOT a BP agent",
+          "Labetalol 20 mg IV q10 min (max 300 mg) OR hydralazine 5–10 mg IV — BP target SBP 140–155 / DBP 90–105 mmHg",
+          "Urgent OB / MFM — definitive treatment is delivery; gestational age guides timing",
+          "Mg toxicity monitoring: check reflexes, RR, urine output; antidote: calcium gluconate 1 g IV",
+        ] },
+    ],
+    pearl:"Pre-eclampsia HA + severe BP: MgSO4 immediately for seizure prophylaxis (not BP). Use labetalol or hydralazine for BP. Target 140–155/90–105 mmHg in pregnancy. Call OB stat.",
+  },
 ];
 
-function HeartPanel() {
-  const [scores, setScores] = useState({});
-  const [ctx,    setCtx]    = useState("");
-  const onChange = (key, val) => setScores(p => ({...p, [key]:val}));
-  const total  = Object.values(scores).reduce((s,v) => s+v, 0);
-  const allSet = HEART_CRIT.every(c => c.key in scores);
-  const result = allSet
-    ? total <= 3 ? { label:`HEART ${total} — Low Risk`, color:T.teal,
-        sub:"MACE risk ~1.7% at 6 weeks. Consider discharge with outpatient cardiology or stress testing within 72h." }
-      : total <= 6 ? { label:`HEART ${total} — Moderate Risk`, color:T.gold,
-        sub:"MACE risk ~12-16.6%. Observation, serial troponins (0, 3, 6h), stress testing or cardiology referral." }
-      : { label:`HEART ${total} — High Risk`, color:T.coral,
-        sub:"MACE risk ~50-65%. Early invasive strategy. Cardiology consult. Likely ACS — admit." }
-    : null;
-
-  const posCrit = HEART_CRIT.filter(c => c.key in scores && scores[c.key] > 0)
-    .map(c => `${c.label}: ${c.options.find(o => o.val===scores[c.key])?.label} (${scores[c.key]}pt)`);
-  const negCrit = HEART_CRIT.filter(c => scores[c.key]===0).map(c => `${c.label}: 0 (normal/low risk)`);
+function TreatmentTab() {
+  const refs = useRef({});
+  const scrollTo = id => refs.current[id]?.scrollIntoView({ behavior:"smooth", block:"start" });
 
   return (
-    <div className="cdh-in">
-      <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:11,
-        background:`${T.coral}08`, border:`1px solid ${T.coral}28`,
-        borderLeft:`3px solid ${T.coral}` }}>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
-          Each component scored 0-2. Total 0-10. Validated for MACE (MI, revascularization, death) at 6 weeks.
-          Backus et al, Ann Emerg Med 2010 · Mahler et al, Crit Pathways Cardiology 2011
+    <div className="ha-in">
+      {/* Pinned cocktail card — always visible */}
+      <div style={{ padding:"12px 14px", borderRadius:10, marginBottom:11,
+        background:"rgba(8,5,16,0.95)",
+        border:`2px solid ${T.teal}44`,
+        borderLeft:`4px solid ${T.teal}` }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+          color:T.teal, letterSpacing:1.8, textTransform:"uppercase", marginBottom:8 }}>
+          🍹 Migraine Cocktail — 2am Reference
+        </div>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:7 }}>
+          {[
+            ["Prochlorperazine","10 mg IV"],
+            ["Diphenhydramine", "25 mg IV"],
+            ["Normal Saline",   "1 L IV"],
+            ["Dexamethasone",   "10 mg IV *"],
+          ].map(([drug, dose]) => (
+            <div key={drug} style={{ padding:"5px 10px", borderRadius:7,
+              background:`${T.teal}12`, border:`1px solid ${T.teal}30` }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace",
+                fontSize:11, fontWeight:700, color:T.teal }}>{dose}</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif",
+                fontSize:9, color:T.txt4 }}>{drug}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>
+          * Dexamethasone at discharge — reduces 24h recurrence 26% (NNT 9). Diphenhydramine prevents akathisia.
         </div>
       </div>
-      {Object.keys(scores).length > 0 && (
-        <div style={{ marginBottom:11, padding:"11px 14px", borderRadius:10,
-          background:`${allSet ? (result?.color||T.gold) : T.gold}0a`,
-          border:`1px solid ${allSet ? (result?.color||T.gold) : T.gold}30` }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:36,
-              fontWeight:700, color:allSet ? (result?.color||T.gold) : T.gold }}>
-              {total}
-            </div>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4 }}>/ 10</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt3 }}>
-                {!allSet ? `${Object.keys(scores).length}/5 scored`
-                  : total<=3 ? "Low Risk" : total<=6 ? "Moderate Risk" : "High Risk"}
-              </div>
-            </div>
-            <div style={{ flex:1, display:"flex", gap:3 }}>
-              {HEART_CRIT.map(c => (
-                <div key={c.key} style={{ flex:1, height:4, borderRadius:2,
-                  background:c.key in scores
-                    ? scores[c.key]===0 ? T.teal : scores[c.key]===1 ? T.gold : T.coral
-                    : "rgba(45,30,80,0.3)" }} />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      {allSet && <ResultBanner result={result} />}
-      {HEART_CRIT.map(c => (
-        <ScoreSelect key={c.key} crit={c} value={scores[c.key]} onChange={onChange} />
-      ))}
-      {Object.keys(scores).length > 0 && (
-        <button onClick={() => setScores({})}
-          style={{ marginBottom:8, padding:"5px 13px", borderRadius:7, cursor:"pointer",
-            fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
-            border:"1px solid rgba(45,30,80,0.4)", background:"transparent", color:T.txt4 }}>
-          ↺ Clear
-        </button>
-      )}
-      <ContextBox value={ctx} onChange={setCtx} color={T.coral}
-        placeholder="e.g. 62yo M, diaphoretic, troponin pending, prior CABG 2018..." />
-      <AIBlock ruleName="HEART Score for Chest Pain / ACS Risk Stratification"
-        ruleCtx="Scores 0-10 across History, ECG, Age, Risk factors, Troponin. Low (0-3): ~1.7% MACE. Moderate (4-6): ~12-16.6%. High (7-10): ~50-65% MACE at 6 weeks."
-        posCrit={posCrit} negCrit={negCrit}
-        recommendation={result ? `${result.label}: ${result.sub}` : "Incomplete"}
-        context={ctx} color={T.coral} />
-    </div>
-  );
-}
 
-// ── Ottawa Ankle & Foot Panel ──────────────────────────────────────────
-function OttawaPanel() {
-  const [anklePain, setAnklePain] = useState(null);
-  const [footPain,  setFootPain]  = useState(null);
-  const [ankle,     setAnkle]     = useState({});
-  const [foot,      setFoot]      = useState({});
-  const [ctx,       setCtx]       = useState("");
-
-  const togA = (k,v) => setAnkle(p => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
-  const togF = (k,v) => setFoot(p  => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
-
-  const ANKLE_C = [
-    { key:"lat",  label:"Bone tenderness at posterior edge or tip of lateral malleolus", sub:"Posterior 6cm of fibula or tip" },
-    { key:"med",  label:"Bone tenderness at posterior edge or tip of medial malleolus",  sub:"Posterior 6cm of tibia or tip" },
-    { key:"wt_a", label:"Unable to bear weight immediately AND in ED (4 steps)" },
-  ];
-  const FOOT_C = [
-    { key:"mt5",  label:"Bone tenderness at base of 5th metatarsal" },
-    { key:"nav",  label:"Bone tenderness at navicular bone" },
-    { key:"wt_f", label:"Unable to bear weight immediately AND in ED (4 steps)" },
-  ];
-
-  const ankleResult = anklePain===false
-    ? { label:"Ankle X-Ray Not Indicated", color:T.teal, sub:"No malleolar zone pain — Ottawa Ankle Rule entry criterion not met." }
-    : anklePain===true && ANKLE_C.every(c => c.key in ankle)
-      ? ANKLE_C.some(c => ankle[c.key])
-        ? { label:"Ankle X-Ray Indicated", color:T.coral, sub:"Ottawa Ankle Rule positive — one or more criteria present." }
-        : { label:"Ankle X-Ray Not Indicated", color:T.teal, sub:"All ankle Ottawa criteria absent. X-ray not required (sensitivity 96.4%)." }
-      : null;
-
-  const footResult = footPain===false
-    ? { label:"Foot X-Ray Not Indicated", color:T.teal, sub:"No midfoot zone pain — Ottawa Foot Rule entry criterion not met." }
-    : footPain===true && FOOT_C.every(c => c.key in foot)
-      ? FOOT_C.some(c => foot[c.key])
-        ? { label:"Foot X-Ray Indicated", color:T.coral, sub:"Ottawa Foot Rule positive — one or more criteria present." }
-        : { label:"Foot X-Ray Not Indicated", color:T.teal, sub:"All foot Ottawa criteria absent. X-ray not required (sensitivity 99.6%)." }
-      : null;
-
-  const posCrit = [
-    ...ANKLE_C.filter(c => ankle[c.key]===true).map(c => "Ankle: "+c.label),
-    ...FOOT_C.filter(c  => foot[c.key]===true).map(c  => "Foot: "+c.label),
-  ];
-  const negCrit = [
-    ...ANKLE_C.filter(c => ankle[c.key]===false).map(c => "Ankle absent: "+c.label),
-    ...FOOT_C.filter(c  => foot[c.key]===false).map(c  => "Foot absent: "+c.label),
-  ];
-
-  const ZoneQ = ({ label, value, onChange: onCh, color: zc }) => (
-    <>
-      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, marginBottom:6 }}>{label}</div>
-      <div style={{ display:"flex", gap:5, marginBottom:9 }}>
-        {[{v:true,l:"Yes"},{v:false,l:"No"}].map(o => (
-          <button key={String(o.v)} onClick={() => onCh(o.v)}
-            style={{ flex:1, padding:"7px 0", borderRadius:7, cursor:"pointer",
-              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-              border:`1px solid ${value===o.v ? zc+"55" : "rgba(45,30,80,0.4)"}`,
-              background:value===o.v ? `${zc}12` : "transparent",
-              color:value===o.v ? zc : T.txt4 }}>{o.l}</button>
+      {/* Mini-nav */}
+      <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:14 }}>
+        {TREATMENT_PROTOCOLS.map(p => (
+          <button key={p.id} onClick={() => scrollTo(p.id)}
+            style={{ padding:"4px 9px", borderRadius:6, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:10,
+              border:`1px solid ${p.color}44`, background:`${p.color}0a`,
+              color:p.color }}>
+            {p.icon} {p.label}
+          </button>
         ))}
       </div>
-    </>
-  );
 
-  const MiniRes = ({ result: r }) => r ? (
-    <div style={{ marginTop:8, padding:"8px 11px", borderRadius:8,
-      background:`${r.color}0c`, border:`1px solid ${r.color}44` }}>
-      <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
-        fontSize:12, color:r.color, marginBottom:2 }}>{r.label}</div>
-      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-        color:T.txt2, lineHeight:1.5 }}>{r.sub}</div>
-    </div>
-  ) : null;
-
-  return (
-    <div className="cdh-in">
-      <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:12,
-        background:`${T.orange}08`, border:`1px solid ${T.orange}28`,
-        borderLeft:`3px solid ${T.orange}` }}>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
-          Adults with acute ankle/foot injury within 10 days. Stiell et al, Lancet 1992.
-          Not validated: age under 18, osteoporosis, pregnancy, distracting injury, altered mental status.
-        </div>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color:T.orange, letterSpacing:1.4, textTransform:"uppercase", marginBottom:8 }}>
-            Ankle X-Ray
+      {TREATMENT_PROTOCOLS.map((proto, pi) => (
+        <div key={proto.id} ref={el => { refs.current[proto.id] = el; }} style={{ marginBottom:20 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8,
+            marginBottom:9, padding:"8px 12px", borderRadius:9,
+            background:`${proto.color}10`,
+            border:`1px solid ${proto.color}33` }}>
+            <span style={{ fontSize:16 }}>{proto.icon}</span>
+            <span style={{ fontFamily:"'Playfair Display',serif",
+              fontWeight:700, fontSize:16, color:proto.color }}>
+              {proto.label}
+            </span>
           </div>
-          <ZoneQ label="Pain in malleolar zone?" value={anklePain}
-            onChange={setAnklePain} color={T.orange} />
-          {anklePain===true && ANKLE_C.map(c => (
-            <CriterionCheck key={c.key} label={c.label} sub={c.sub}
-              state={c.key in ankle ? ankle[c.key] : undefined}
-              onToggle={val => togA(c.key, val)} color={T.orange} />
+          {proto.sections.map((sec, i) => (
+            <div key={i} style={{ padding:"10px 12px", borderRadius:9,
+              marginBottom:7, background:`${proto.color}07`,
+              border:`1px solid ${proto.color}24`,
+              borderLeft:`3px solid ${proto.color}` }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                color:proto.color, letterSpacing:1.5,
+                textTransform:"uppercase", marginBottom:6 }}>
+                {sec.title}
+              </div>
+              {sec.items.map((item, j) => (
+                <Bullet key={j} text={item} color={proto.color} />
+              ))}
+            </div>
           ))}
-          <MiniRes result={ankleResult} />
-        </div>
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color:T.gold, letterSpacing:1.4, textTransform:"uppercase", marginBottom:8 }}>
-            Foot X-Ray
+          <div style={{ padding:"9px 12px", borderRadius:8,
+            background:`${proto.color}09`,
+            border:`1px solid ${proto.color}30` }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace",
+              fontSize:8, color:proto.color, letterSpacing:1.3,
+              textTransform:"uppercase" }}>💎 Pearl:{" "}</span>
+            <span style={{ fontFamily:"'DM Sans',sans-serif",
+              fontSize:11.5, color:T.txt2, lineHeight:1.65 }}>
+              {proto.pearl}
+            </span>
           </div>
-          <ZoneQ label="Pain in midfoot zone?" value={footPain}
-            onChange={setFootPain} color={T.gold} />
-          {footPain===true && FOOT_C.map(c => (
-            <CriterionCheck key={c.key} label={c.label} sub={c.sub}
-              state={c.key in foot ? foot[c.key] : undefined}
-              onToggle={val => togF(c.key, val)} color={T.gold} />
-          ))}
-          <MiniRes result={footResult} />
+          {pi < TREATMENT_PROTOCOLS.length - 1 && (
+            <div style={{ height:1, marginTop:18,
+              background:"linear-gradient(90deg,transparent,rgba(45,30,80,0.5),transparent)" }} />
+          )}
         </div>
-      </div>
-      <ContextBox value={ctx} onChange={setCtx} color={T.orange}
-        placeholder="e.g. 22yo athlete, inversion injury, significant lateral ankle swelling, cannot weight bear..." />
-      <AIBlock ruleName="Ottawa Ankle and Foot Rules"
-        ruleCtx="Ottawa rules: adults, acute ankle/foot injury within 10 days. Entry criterion: pain in malleolar zone (ankle) or midfoot zone (foot). Not validated in children under 18."
-        posCrit={posCrit} negCrit={negCrit}
-        recommendation={[ankleResult, footResult].filter(Boolean).map(r => r.label).join(" | ") || "Incomplete"}
-        context={ctx} color={T.orange} />
-      <div style={{ marginTop:10, fontFamily:"'JetBrains Mono',monospace",
-        fontSize:7, color:T.txt4, letterSpacing:1.2 }}>
-        Stiell et al, Lancet 1992 · Ankle sensitivity 96.4% · Foot sensitivity 99.6%
-      </div>
+      ))}
     </div>
   );
 }
 
-// ── Canadian C-Spine + NEXUS Panel ─────────────────────────────────────
-function CSpinePanel() {
-  const [ccr,    setCCR]    = useState({});
-  const [canRot, setCanRot] = useState(null);
-  const [nexus,  setNexus]  = useState({});
-  const [ctx,    setCtx]    = useState("");
+// ═══════════════════════════════════════════════════════════════════════
+// HA TYPES TAB — ICHD-3, always-visible grid, no accordions
+// ═══════════════════════════════════════════════════════════════════════
+const HA_TYPES = [
+  { type:"Migraine without Aura", color:T.purple, icon:"🧠",
+    criteria:[
+      "≥ 5 attacks, 4–72h duration",
+      "≥ 2 of: unilateral | pulsating | moderate-severe | worsened by activity",
+      "≥ 1 of: nausea / vomiting | photophobia + phonophobia",
+    ],
+    ed:"Prochlorperazine 10mg IV + diphenhydramine 25mg IV + NS 1L + dexamethasone 10mg IV at discharge" },
+  { type:"Migraine with Aura", color:T.lavender, icon:"✨",
+    criteria:[
+      "≥ 1 fully reversible aura: visual (most common), sensory, speech / language",
+      "Aura develops over ≥ 5 min, each symptom lasts 5–60 min",
+      "Headache begins during or within 60 min of aura",
+    ],
+    ed:"Same as migraine without aura. Magnesium 2g IV (NNT 3.0 in aura subgroup). Avoid combined OCP — stroke risk." },
+  { type:"Cluster Headache", color:T.orange, icon:"💥",
+    criteria:[
+      "≥ 5 attacks of severe unilateral orbital / supraorbital pain, 15–180 min",
+      "≥ 1 ipsilateral autonomic: lacrimation | conjunctival injection | rhinorrhea | ptosis | miosis | lid edema",
+      "Frequency 1/2 days to 8/day during cluster period; restlessness / agitation",
+    ],
+    ed:"100% O2 via NRB 10–15 L/min + sumatriptan 6 mg SQ (fastest response)" },
+  { type:"Tension-Type Headache", color:T.blue, icon:"😶",
+    criteria:[
+      "≥ 10 episodes, 30 min – 7 days",
+      "≥ 2 of: bilateral | pressing/tightening (non-pulsating) | mild-moderate | not worsened by activity",
+      "No nausea / vomiting; max one of photophobia or phonophobia",
+    ],
+    ed:"NSAIDs or acetaminophen PO. Avoid opioids and frequent analgesic use (medication overuse HA risk)." },
+  { type:"Medication Overuse Headache", color:T.gold, icon:"💊",
+    criteria:[
+      "HA ≥ 15 days/month for > 3 months",
+      "Regular overuse: analgesics / opioids ≥ 15 days/mo; triptans / ergots ≥ 10 days/mo",
+      "HA developed or worsened during medication overuse",
+    ],
+    ed:"Abrupt withdrawal (preferred). Bridge: prednisone 60mg × 3d then taper. Start preventive therapy (topiramate, amitriptyline, propranolol)." },
+  { type:"New Daily Persistent Headache", color:T.coral, icon:"📅",
+    criteria:[
+      "Daily and persistent from onset — never remits",
+      "Duration ≥ 3 months",
+      "Distinct, clearly remembered onset date (\"I remember the exact day\")",
+    ],
+    ed:"Rule out CVT, IIH, SAH, meningitis before diagnosing NDPH. No established ED treatment. Neurology referral." },
+];
 
-  const togC = (k,v) => setCCR(p   => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
-  const togN = (k,v) => setNexus(p => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
-
-  const CCR_HI = [
-    { key:"age65",       label:"Age >= 65 years" },
-    { key:"danger",      label:"Dangerous mechanism", sub:"Fall > 3ft/5 stairs, axial load, high-speed MVC/rollover/ejection, bicycle/MRC collision" },
-    { key:"paresthesia", label:"Paresthesias in extremities" },
-  ];
-  const CCR_LO = [
-    { key:"simple_mvc",   label:"Simple rear-end MVC", sub:"Not pushed into traffic, not high speed, not rollover, not struck by bus/truck" },
-    { key:"sitting_ed",   label:"Sitting position in ED" },
-    { key:"ambulatory",   label:"Ambulatory at any time after injury" },
-    { key:"delayed_pain", label:"Delayed onset of neck pain (not immediate)" },
-    { key:"no_midline",   label:"Absence of midline c-spine tenderness" },
-  ];
-  const NX = [
-    { key:"nx_tender",   label:"Posterior midline c-spine tenderness" },
-    { key:"nx_intox",    label:"Evidence of intoxication" },
-    { key:"nx_alert",    label:"Altered level of alertness", sub:"GCS < 15, confused, disoriented, not following commands" },
-    { key:"nx_neuro",    label:"Focal neurological deficit" },
-    { key:"nx_distract", label:"Painful distracting injury" },
-  ];
-
-  const hiAny     = CCR_HI.some(c => ccr[c.key]===true);
-  const hiAllEval = CCR_HI.every(c => c.key in ccr);
-  const loAny     = CCR_LO.some(c => ccr[c.key]===true);
-  const loAllEval = CCR_LO.every(c => c.key in ccr);
-
-  let ccrResult = null;
-  if (hiAny) {
-    ccrResult = { label:"Imaging Required", color:T.coral, sub:"High-risk criterion present — CT c-spine indicated." };
-  } else if (hiAllEval) {
-    if (loAny) {
-      if (canRot===true)  ccrResult = { label:"No Imaging Required", color:T.teal,
-        sub:"No high-risk factors. Low-risk factor present. Patient can rotate neck 45° bilaterally." };
-      else if (canRot===false) ccrResult = { label:"Imaging Required", color:T.coral,
-        sub:"Low-risk factor present but patient cannot rotate 45° — imaging required." };
-      else ccrResult = { label:"Assess Rotation", color:T.gold,
-        sub:"No high-risk factors, low-risk present. Can patient actively rotate neck 45° left AND right?" };
-    } else if (loAllEval) {
-      ccrResult = { label:"Imaging Required", color:T.orange,
-        sub:"No high-risk factors but no low-risk factors present — imaging required per Canadian C-Spine Rule." };
-    }
-  }
-
-  const nxAnyPos = NX.some(c => nexus[c.key]===true);
-  const nxAllNeg = NX.every(c => nexus[c.key]===false);
-  const nexusResult = nxAnyPos
-    ? { label:"Imaging Required", color:T.coral, sub:"One or more NEXUS criteria present — c-spine imaging required." }
-    : nxAllNeg
-      ? { label:"No Imaging Required", color:T.teal, sub:"All 5 NEXUS criteria absent — c-spine cleared without imaging (sensitivity 99.6%)." }
-      : null;
-
-  const posCrit = [
-    ...CCR_HI.filter(c => ccr[c.key]===true).map(c => "CCR-Hi: "+c.label),
-    ...CCR_LO.filter(c => ccr[c.key]===true).map(c => "CCR-Lo: "+c.label),
-    ...NX.filter(c => nexus[c.key]===true).map(c => "NEXUS+: "+c.label),
-  ];
-  const negCrit = [
-    ...CCR_HI.filter(c => ccr[c.key]===false).map(c => "CCR-Hi absent: "+c.label),
-    ...NX.filter(c => nexus[c.key]===false).map(c => "NEXUS-: "+c.label),
-  ];
-
-  const MiniRes = ({ result: r }) => r ? (
-    <div style={{ marginBottom:10, padding:"8px 10px", borderRadius:8,
-      background:`${r.color}0c`, border:`1px solid ${r.color}44` }}>
-      <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
-        fontSize:12, color:r.color, marginBottom:2 }}>{r.label}</div>
-      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt2, lineHeight:1.5 }}>{r.sub}</div>
-    </div>
-  ) : null;
-
+function TypesTab() {
   return (
-    <div className="cdh-in">
-      <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:12,
-        background:`${T.blue}08`, border:`1px solid ${T.blue}28`,
-        borderLeft:`3px solid ${T.blue}` }}>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
-          Both: alert (GCS 15), stable adult trauma. CCR: sensitivity 99.4%, specificity 45.1%.
-          NEXUS: sensitivity 99.6%, specificity 12.9%. CCR preferred when both applicable — higher specificity reduces unnecessary imaging.
-        </div>
+    <div className="ha-in">
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5,
+        color:T.txt4, lineHeight:1.55, marginBottom:12,
+        padding:"8px 11px", borderRadius:8,
+        background:"rgba(14,10,26,0.7)",
+        border:"1px solid rgba(45,30,80,0.3)" }}>
+        ICHD-3 — International Classification of Headache Disorders, 3rd edition.
+        Primary headache is a diagnosis of exclusion. Always screen for SNOOP4 red flags first.
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color:T.blue, letterSpacing:1.4, textTransform:"uppercase", marginBottom:3 }}>
-            Canadian C-Spine Rule
-          </div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9, color:T.txt4, marginBottom:9 }}>
-            Stiell et al, JAMA 2001
-          </div>
-          <MiniRes result={ccrResult} />
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-            color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:5 }}>
-            High-Risk (any → imaging)
-          </div>
-          {CCR_HI.map(c => (
-            <CriterionCheck key={c.key} label={c.label} sub={c.sub}
-              state={c.key in ccr ? ccr[c.key] : undefined}
-              onToggle={val => togC(c.key, val)} color={T.coral} />
-          ))}
-          {hiAllEval && !hiAny && (
-            <>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-                color:T.gold, letterSpacing:1.2, textTransform:"uppercase",
-                marginTop:9, marginBottom:5 }}>
-                Low-Risk (any → assess rotation)
-              </div>
-              {CCR_LO.map(c => (
-                <CriterionCheck key={c.key} label={c.label} sub={c.sub}
-                  state={c.key in ccr ? ccr[c.key] : undefined}
-                  onToggle={val => togC(c.key, val)} color={T.gold} />
-              ))}
-            </>
-          )}
-          {hiAllEval && !hiAny && loAny && (
-            <div style={{ marginTop:8 }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-                color:T.teal, letterSpacing:1.2, textTransform:"uppercase", marginBottom:5 }}>
-                Can patient rotate 45° left AND right?
-              </div>
-              <div style={{ display:"flex", gap:5 }}>
-                {[{v:true,l:"Yes — rotate OK",c:T.teal},{v:false,l:"No — cannot",c:T.coral}].map(o => (
-                  <button key={String(o.v)} onClick={() => setCanRot(canRot===o.v ? null : o.v)}
-                    style={{ flex:1, padding:"7px 4px", borderRadius:7, cursor:"pointer",
-                      fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:10,
-                      border:`1px solid ${canRot===o.v ? o.c+"55" : "rgba(45,30,80,0.4)"}`,
-                      background:canRot===o.v ? `${o.c}12` : "transparent",
-                      color:canRot===o.v ? o.c : T.txt4 }}>{o.l}</button>
-                ))}
-              </div>
+      <div style={{ display:"grid",
+        gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:9 }}>
+        {HA_TYPES.map((t, i) => (
+          <div key={i} style={{ padding:"11px 13px", borderRadius:10,
+            background:`${t.color}08`, border:`1px solid ${t.color}28`,
+            borderLeft:`3px solid ${t.color}` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:8 }}>
+              <span style={{ fontSize:16 }}>{t.icon}</span>
+              <span style={{ fontFamily:"'Playfair Display',serif",
+                fontWeight:700, fontSize:13, color:t.color }}>
+                {t.type}
+              </span>
             </div>
-          )}
-        </div>
-        <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color:T.lavender, letterSpacing:1.4, textTransform:"uppercase", marginBottom:3 }}>
-            NEXUS Criteria
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              color:t.color, letterSpacing:1.3, textTransform:"uppercase",
+              marginBottom:5 }}>ICHD-3 Criteria</div>
+            {t.criteria.map((c, j) => (
+              <div key={j} style={{ display:"flex", gap:5, marginBottom:4 }}>
+                <span style={{ color:t.color, fontSize:7,
+                  marginTop:4, flexShrink:0 }}>▸</span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif",
+                  fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>{c}</span>
+              </div>
+            ))}
+            <div style={{ marginTop:8, padding:"6px 9px", borderRadius:7,
+              background:`${t.color}0a`, border:`1px solid ${t.color}22` }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                fontSize:7, color:t.color, letterSpacing:1.3,
+                textTransform:"uppercase" }}>ED Tx:{" "}</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif",
+                fontSize:10.5, color:T.txt2, lineHeight:1.5 }}>
+                {t.ed}
+              </span>
+            </div>
           </div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9, color:T.txt4, marginBottom:9 }}>
-            Hoffman et al, NEJM 2000
-          </div>
-          <MiniRes result={nexusResult} />
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt4,
-            marginBottom:7, lineHeight:1.5 }}>
-            ALL 5 must be absent (x) to clear c-spine without imaging.
-          </div>
-          {NX.map(c => (
-            <CriterionCheck key={c.key} label={c.label} sub={c.sub}
-              state={c.key in nexus ? nexus[c.key] : undefined}
-              onToggle={val => togN(c.key, val)} color={T.lavender} />
-          ))}
-        </div>
+        ))}
       </div>
-      <ContextBox value={ctx} onChange={setCtx} color={T.blue}
-        placeholder="e.g. 34yo rear-end MVC at 30mph, ambulatory at scene, posterior neck pain, no paresthesias..." />
-      <AIBlock ruleName="Canadian C-Spine Rule + NEXUS"
-        ruleCtx="CCR: GCS 15, stable, adult trauma. Three-step: high-risk (any→imaging), low-risk (any→assess rotation), can rotate 45° (yes→clear). NEXUS: all 5 absent→clear."
-        posCrit={posCrit} negCrit={negCrit}
-        recommendation={[ccrResult?.label, nexusResult?.label].filter(Boolean).join(" / ") || "Incomplete"}
-        context={ctx} color={T.blue} />
     </div>
   );
 }
@@ -1087,100 +1008,171 @@ function CSpinePanel() {
 // ═══════════════════════════════════════════════════════════════════════
 // MAIN EXPORT
 // ═══════════════════════════════════════════════════════════════════════
-export default function ClinicalDecisionHub({ embedded = false }) {
+export default function HeadacheHub({ embedded = false }) {
   const navigate = useNavigate();
-  const [cat,  setCat]  = useState("neuro");
-  const [rule, setRule] = useState("canadian_ct");
-  const activeCat = CATEGORIES.find(c => c.id === cat);
+  const [tab, setTab] = useState("redflags");
+  const [showChart, setShowChart] = useState(false);
+  const [chartTx,   setChartTx]   = useState("redflags");
+  const [chartNote, setChartNote] = useState("");
+  const [chartSent, setChartSent] = useState(false);
+  const [chartErr,  setChartErr]  = useState(false);
 
-  function ActivePanel() {
-    if (rule in BINARY_RULES)    return <BinaryPanel key={rule} ruleId={rule} />;
-    if (rule === "perc_wells")   return <PERCWellsPanel key={rule} />;
-    if (rule === "heart_score")  return <HeartPanel key={rule} />;
-    if (rule === "ottawa")       return <OttawaPanel key={rule} />;
-    if (rule === "cspine")       return <CSpinePanel key={rule} />;
-    return null;
-  }
+  const defaultNote = `[Notrya HeadacheHub Assessment]
+Chief complaint: Headache
+Presentation type: [thunderclap / progressive / chronic / other]
+Ottawa SAH result: [not evaluated / positive / negative — document criteria]
+LP/CSF findings: [not performed / normal / abnormal — document results]
+Working diagnosis: [complete]
+Treatment initiated: [complete]
+Disposition: [complete]
+
+Generated via Notrya HeadacheHub. Review and complete before chart submission.`;
+
+  const sendToChart = async () => {
+    setChartErr(false);
+    try {
+      await ClinicalNote.create({
+        note_text: chartNote || defaultNote,
+        note_type: "Headache Assessment",
+        source: "QN-Handoff",
+        status: "pending",
+      });
+      setChartSent(true);
+      setTimeout(() => { setShowChart(false); setChartSent(false); setChartNote(""); }, 2200);
+    } catch { setChartErr(true); }
+  };
 
   return (
     <div style={{ fontFamily:"'DM Sans',sans-serif",
       background:embedded ? "transparent" : T.bg,
-      minHeight:embedded ? "auto" : "100vh", color:T.txt }}>
-      <div style={{ maxWidth:900, margin:"0 auto", padding:embedded ? "0" : "0 16px" }}>
+      minHeight:embedded ? "auto" : "100vh",
+      color:T.txt }}>
+      <div style={{ maxWidth:900, margin:"0 auto",
+        padding:embedded ? "0" : "0 16px" }}>
+
         {!embedded && (
           <div style={{ padding:"18px 0 14px" }}>
             <button onClick={() => navigate("/hub")}
-              style={{ marginBottom:10, display:"inline-flex", alignItems:"center", gap:7,
+              style={{ marginBottom:10,
+                display:"inline-flex", alignItems:"center", gap:7,
                 fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
-                padding:"5px 14px", borderRadius:8, background:"rgba(8,5,16,0.8)",
-                border:"1px solid rgba(45,30,80,0.5)", color:T.txt3, cursor:"pointer" }}>
+                padding:"5px 14px", borderRadius:8,
+                background:"rgba(8,5,16,0.8)",
+                border:"1px solid rgba(45,30,80,0.5)",
+                color:T.txt3, cursor:"pointer" }}>
               ← Back to Hub
             </button>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-              <div style={{ background:"rgba(8,5,16,0.95)", border:"1px solid rgba(45,30,80,0.6)",
-                borderRadius:10, padding:"5px 12px", display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ display:"flex", alignItems:"center",
+              gap:10, marginBottom:8 }}>
+              <div style={{ background:"rgba(8,5,16,0.95)",
+                border:"1px solid rgba(45,30,80,0.6)",
+                borderRadius:10, padding:"5px 12px",
+                display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace",
                   fontSize:10, color:T.purple, letterSpacing:3 }}>NOTRYA</span>
-                <span style={{ color:T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:10 }}>/</span>
+                <span style={{ color:T.txt4, fontSize:10,
+                  fontFamily:"'JetBrains Mono',monospace" }}>/</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace",
-                  fontSize:10, color:T.txt3, letterSpacing:2 }}>DECISION</span>
+                  fontSize:10, color:T.txt3, letterSpacing:2 }}>HEADACHE</span>
               </div>
               <div style={{ height:1, flex:1,
                 background:"linear-gradient(90deg,rgba(176,109,255,0.5),transparent)" }} />
             </div>
-            <h1 className="shimmer-cdh"
+            <h1 className="shimmer-ha"
               style={{ fontFamily:"'Playfair Display',serif",
-                fontSize:"clamp(22px,4vw,38px)", fontWeight:900,
-                letterSpacing:-0.5, lineHeight:1.1 }}>
-              Clinical Decision Rules
+                fontSize:"clamp(22px,4vw,38px)",
+                fontWeight:900, letterSpacing:-0.5, lineHeight:1.1 }}>
+              Headache Hub
             </h1>
-            <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4, marginTop:4 }}>
-              Canadian CT · PECARN · New Orleans · PERC + Wells · HEART Score ·
-              Ottawa Ankle/Foot · C-Spine CCR + NEXUS · AI Clinical Interpretation
+            <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+              color:T.txt4, marginTop:4 }}>
+              SNOOP4 · Ottawa SAH Rule · LP Interpretation ·
+              Migraine Cocktail · Cluster · SAH · GCA · ICHD-3
             </p>
           </div>
         )}
-        <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-          {CATEGORIES.map(c => (
-            <button key={c.id} onClick={() => { setCat(c.id); setRule(c.rules[0].id); }}
-              style={{ flex:1, padding:"10px 8px", borderRadius:10, cursor:"pointer",
-                textAlign:"center", transition:"all .14s",
-                border:`1px solid ${cat===c.id ? c.color+"66" : "rgba(45,30,80,0.5)"}`,
-                background:cat===c.id ? `${c.color}12` : "rgba(14,10,26,0.6)" }}>
-              <div style={{ fontSize:20, marginBottom:3 }}>{c.icon}</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                color:cat===c.id ? c.color : T.txt4 }}>{c.label}</div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                color:T.txt4, marginTop:2 }}>{c.rules.length} rules</div>
-            </button>
-          ))}
-        </div>
-        <div style={{ display:"flex", gap:5, flexWrap:"wrap", padding:"5px",
-          marginBottom:14, background:"rgba(14,10,26,0.85)",
-          border:"1px solid rgba(45,30,80,0.4)", borderRadius:10 }}>
-          {activeCat?.rules.map(r => (
-            <button key={r.id} onClick={() => setRule(r.id)}
-              style={{ display:"flex", alignItems:"center", gap:5,
-                padding:"7px 11px", borderRadius:8, cursor:"pointer",
+
+        <div style={{ display:"flex", gap:5, flexWrap:"wrap",
+          padding:"6px", marginBottom:14,
+          background:"rgba(14,10,26,0.85)",
+          border:"1px solid rgba(45,30,80,0.4)",
+          borderRadius:12 }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              style={{ display:"flex", alignItems:"center", gap:6,
+                padding:"8px 13px", borderRadius:9, cursor:"pointer",
                 flex:1, justifyContent:"center",
-                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                transition:"all .12s",
-                border:`1px solid ${rule===r.id ? activeCat.color+"66" : "rgba(45,30,80,0.5)"}`,
-                background:rule===r.id ? `${activeCat.color}12` : "transparent",
-                color:rule===r.id ? activeCat.color : T.txt4 }}>
-              <span style={{ fontSize:13 }}>{r.icon}</span>
-              <span>{r.name}</span>
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12,
+                transition:"all .15s",
+                border:`1px solid ${tab===t.id ? t.color+"77" : "rgba(45,30,80,0.5)"}`,
+                background:tab===t.id ? `${t.color}14` : "transparent",
+                color:tab===t.id ? t.color : T.txt4 }}>
+              <span style={{ fontSize:13 }}>{t.icon}</span>
+              <span>{t.label}</span>
             </button>
           ))}
         </div>
-        <ActivePanel />
+
+        {tab === "redflags"  && <RedFlagsTab />}
+        {tab === "ottawa"    && <OttawaTab />}
+        {tab === "lp"        && <LPTab />}
+        {tab === "treatment" && <TreatmentTab />}
+        {tab === "types"     && <TypesTab />}
+
+        {/* QuickNote / Send to Chart */}
+        <div style={{ marginTop:20, marginBottom:8 }}>
+          <button onClick={() => { setShowChart(p => !p); setChartNote(defaultNote); setChartSent(false); setChartErr(false); }}
+            style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 14px",
+              borderRadius:9, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12,
+              border:`1px solid ${T.teal}44`, background:`${T.teal}09`, color:T.teal }}>
+            📋 Send to Chart
+          </button>
+          {showChart && (
+            <div className="ha-in" style={{ marginTop:8, padding:"12px 14px",
+              borderRadius:10, background:"rgba(14,10,26,0.95)",
+              border:`1px solid ${T.teal}33` }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:T.teal, letterSpacing:1.5, textTransform:"uppercase",
+                marginBottom:8 }}>Send to QuickNote / ClinicalNoteStudio</div>
+              <textarea value={chartNote || defaultNote}
+                onChange={e => setChartNote(e.target.value)} rows={9}
+                style={{ width:"100%", padding:"9px 11px", borderRadius:8,
+                  outline:"none", resize:"vertical", boxSizing:"border-box",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt2,
+                  lineHeight:1.65, background:"rgba(8,5,16,0.9)",
+                  border:`1px solid ${T.teal}33` }} />
+              <div style={{ display:"flex", gap:8, marginTop:8, alignItems:"center" }}>
+                <button onClick={sendToChart}
+                  style={{ padding:"8px 18px", borderRadius:8, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
+                    border:`1px solid ${T.teal}66`, background:`${T.teal}18`, color:T.teal }}>
+                  {chartSent ? "✓ Sent to Chart" : "Send to QuickNote"}
+                </button>
+                <button onClick={() => setShowChart(false)}
+                  style={{ padding:"8px 12px", borderRadius:8, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                    border:"1px solid rgba(45,30,80,0.4)", background:"transparent", color:T.txt4 }}>
+                  Cancel
+                </button>
+                {chartErr && <span style={{ fontFamily:"'DM Sans',sans-serif",
+                  fontSize:10, color:T.coral }}>Entity write failed — check Base44 connection</span>}
+              </div>
+              <div style={{ marginTop:7, fontFamily:"'DM Sans',sans-serif",
+                fontSize:10, color:T.txt4, lineHeight:1.5 }}>
+                Creates a ClinicalNote entity with source: "QN-Handoff", status: "pending".
+                Opens in ClinicalNoteStudio for completion and charting.
+              </div>
+            </div>
+          )}
+        </div>
+
         {!embedded && (
           <div style={{ textAlign:"center", padding:"24px 0 16px",
             fontFamily:"'JetBrains Mono',monospace", fontSize:8,
             color:T.txt4, letterSpacing:1.5 }}>
-            NOTRYA DECISION RULES · CANADIAN CT &amp; CCR (STIELL 2001) · PECARN (KUPPERMANN 2009) ·
-            NEW ORLEANS (HAYDEL 2000) · PERC (KLINE 2008) · WELLS (WELLS 2000) ·
-            HEART (BACKUS 2010) · OTTAWA (STIELL 1992) · NEXUS (HOFFMAN 2000) · CLINICAL SUPPORT ONLY
+            NOTRYA HEADACHE HUB · OTTAWA SAH (PERRY 2013) · AHS 2024 · EHF 2023 ·
+            ACR/EULAR 2022 · AHA/ASA 2023 · CLINICAL DECISION SUPPORT ONLY
           </div>
         )}
       </div>

@@ -39,7 +39,7 @@ import { ClinicalNote } from "@/api/entities";
 
 const T = {
   bg:"#080510", panel:"#0e0a1a",
-  txt:"#f0ecff", txt2:"#c4b8e8", txt3:"#8a7ab4", txt4:"#4a3d7a",
+  txt:"#f0ecff", txt2:"#c4b8e8", txt3:"#8a7ab4", txt4:"#7a6cb0",
   teal:"#00d4b4", gold:"#f5c842", coral:"#ff5c5c", blue:"#6b9fff",
   orange:"#ff9f43", purple:"#b06dff", green:"#3dffa0", red:"#ff3d3d",
   lavender:"#c4aaff",
@@ -78,7 +78,7 @@ function Bullet({ text, color, sub }) {
         <span style={{ fontFamily:"'DM Sans',sans-serif",
           fontSize:11.5, color:T.txt2, lineHeight:1.6 }}>{text}</span>
         {sub && <div style={{ fontFamily:"'DM Sans',sans-serif",
-          fontSize:10, color:T.txt4, marginTop:1 }}>{sub}</div>}
+          fontSize:11.5, color:T.txt4, marginTop:1 }}>{sub}</div>}
       </div>
     </div>
   );
@@ -103,7 +103,7 @@ function Check({ label, sub, checked, onToggle, color }) {
         <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
           fontSize:12, color:checked ? (color||T.purple) : T.txt2 }}>{label}</div>
         {sub && <div style={{ fontFamily:"'DM Sans',sans-serif",
-          fontSize:10, color:T.txt4, marginTop:1 }}>{sub}</div>}
+          fontSize:11.5, color:T.txt4, marginTop:1 }}>{sub}</div>}
       </div>
     </button>
   );
@@ -172,7 +172,7 @@ function RedFlagsTab() {
                 fontWeight:700, fontSize:12, color:d.color }}>{d.dx}</span>
             </div>
             <div style={{ fontFamily:"'DM Sans',sans-serif",
-              fontSize:10, color:T.txt4, lineHeight:1.5 }}>{d.clue}</div>
+              fontSize:11.5, color:T.txt4, lineHeight:1.5 }}>{d.clue}</div>
           </div>
         ))}
       </div>
@@ -205,7 +205,7 @@ function RedFlagsTab() {
                 <span style={{ color:item.color, fontSize:7,
                   marginTop:4, flexShrink:0 }}>▸</span>
                 <span style={{ fontFamily:"'DM Sans',sans-serif",
-                  fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>{f}</span>
+                  fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>{f}</span>
               </div>
             ))}
           </div>
@@ -328,7 +328,7 @@ function OttawaTab() {
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600,
               fontSize:11, color:s.color, marginBottom:3 }}>{s.step}</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif",
-              fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>{s.action}</div>
+              fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>{s.action}</div>
           </div>
         ))}
       </Card>
@@ -393,10 +393,10 @@ function OttawaTab() {
               <div style={{ marginTop:6, padding:"4px 8px", borderRadius:5,
                 background:`${c.color}12`, border:`1px solid ${c.color}22` }}>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace",
-                  fontSize:7, color:c.color, letterSpacing:1.2,
+                  fontSize:9, color:c.color, letterSpacing:1.2,
                   textTransform:"uppercase" }}>Workup: </span>
                 <span style={{ fontFamily:"'DM Sans',sans-serif",
-                  fontSize:10, color:T.txt3 }}>{c.workup}</span>
+                  fontSize:11.5, color:T.txt3 }}>{c.workup}</span>
               </div>
             </div>
           ))}
@@ -494,7 +494,7 @@ function LPTab() {
             </div>
             {opInterp.note && (
               <div style={{ fontFamily:"'DM Sans',sans-serif",
-                fontSize:10.5, color:T.txt3 }}>{opInterp.note}</div>
+                fontSize:11.5, color:T.txt3 }}>{opInterp.note}</div>
             )}
           </div>
         )}
@@ -529,7 +529,7 @@ function LPTab() {
               {rbcInterp.label}
             </div>
             <div style={{ fontFamily:"'DM Sans',sans-serif",
-              fontSize:10.5, color:T.txt3, lineHeight:1.55 }}>{rbcInterp.note}</div>
+              fontSize:11.5, color:T.txt3, lineHeight:1.55 }}>{rbcInterp.note}</div>
           </div>
         )}
         <div style={{ marginTop:10 }}>
@@ -605,7 +605,7 @@ function LPTab() {
             </div>
             {wbcInterp.note && (
               <div style={{ fontFamily:"'DM Sans',sans-serif",
-                fontSize:10, color:T.txt3, lineHeight:1.5 }}>{wbcInterp.note}</div>
+                fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>{wbcInterp.note}</div>
             )}
           </div>
         )}
@@ -619,14 +619,14 @@ function LPTab() {
             </div>
             {glucInterp.note && (
               <div style={{ fontFamily:"'DM Sans',sans-serif",
-                fontSize:10, color:T.txt3, lineHeight:1.5 }}>{glucInterp.note}</div>
+                fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>{glucInterp.note}</div>
             )}
           </div>
         )}
 
         <div style={{ marginTop:10, padding:"7px 10px", borderRadius:7,
           background:"rgba(14,10,26,0.7)", border:"1px solid rgba(45,30,80,0.4)" }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
             color:T.txt4, letterSpacing:1.3, textTransform:"uppercase", marginBottom:6 }}>
             CSF Reference Values
           </div>
@@ -634,7 +634,7 @@ function LPTab() {
             {[["WBC","< 5/µL"],["Protein","15–45 mg/dL"],["Glucose","45–80 mg/dL"],["Ratio","> 0.6"]].map(([l,v]) => (
               <div key={l} style={{ textAlign:"center" }}>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace",
-                  fontSize:7, color:T.txt4 }}>{l}</div>
+                  fontSize:9, color:T.txt4 }}>{l}</div>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace",
                   fontSize:9, fontWeight:700, color:T.teal }}>{v}</div>
               </div>
@@ -839,7 +839,7 @@ function TreatmentTab() {
             </div>
           ))}
         </div>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt4 }}>
           * Dexamethasone at discharge — reduces 24h recurrence 26% (NNT 9). Diphenhydramine prevents akathisia.
         </div>
       </div>
@@ -977,7 +977,7 @@ function TypesTab() {
                 {t.type}
               </span>
             </div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
               color:t.color, letterSpacing:1.3, textTransform:"uppercase",
               marginBottom:5 }}>ICHD-3 Criteria</div>
             {t.criteria.map((c, j) => (
@@ -985,13 +985,13 @@ function TypesTab() {
                 <span style={{ color:t.color, fontSize:7,
                   marginTop:4, flexShrink:0 }}>▸</span>
                 <span style={{ fontFamily:"'DM Sans',sans-serif",
-                  fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>{c}</span>
+                  fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>{c}</span>
               </div>
             ))}
             <div style={{ marginTop:8, padding:"6px 9px", borderRadius:7,
               background:`${t.color}0a`, border:`1px solid ${t.color}22` }}>
               <span style={{ fontFamily:"'JetBrains Mono',monospace",
-                fontSize:7, color:t.color, letterSpacing:1.3,
+                fontSize:9, color:t.color, letterSpacing:1.3,
                 textTransform:"uppercase" }}>ED Tx:{" "}</span>
               <span style={{ fontFamily:"'DM Sans',sans-serif",
                 fontSize:10.5, color:T.txt2, lineHeight:1.5 }}>
@@ -1073,7 +1073,7 @@ Generated via Notrya HeadacheHub. Review and complete before chart submission.`;
                 <span style={{ color:T.txt4, fontSize:10,
                   fontFamily:"'JetBrains Mono',monospace" }}>/</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace",
-                  fontSize:10, color:T.txt3, letterSpacing:2 }}>HEADACHE</span>
+                  fontSize:11.5, color:T.txt3, letterSpacing:2 }}>HEADACHE</span>
               </div>
               <div style={{ height:1, flex:1,
                 background:"linear-gradient(90deg,rgba(176,109,255,0.5),transparent)" }} />
@@ -1132,7 +1132,7 @@ Generated via Notrya HeadacheHub. Review and complete before chart submission.`;
             <div className="ha-in" style={{ marginTop:8, padding:"12px 14px",
               borderRadius:10, background:"rgba(14,10,26,0.95)",
               border:`1px solid ${T.teal}33` }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:T.teal, letterSpacing:1.5, textTransform:"uppercase",
                 marginBottom:8 }}>Send to QuickNote / ClinicalNoteStudio</div>
               <textarea value={chartNote || defaultNote}
@@ -1159,7 +1159,7 @@ Generated via Notrya HeadacheHub. Review and complete before chart submission.`;
                   fontSize:10, color:T.coral }}>Entity write failed — check Base44 connection</span>}
               </div>
               <div style={{ marginTop:7, fontFamily:"'DM Sans',sans-serif",
-                fontSize:10, color:T.txt4, lineHeight:1.5 }}>
+                fontSize:11.5, color:T.txt4, lineHeight:1.5 }}>
                 Creates a ClinicalNote entity with source: "QN-Handoff", status: "pending".
                 Opens in ClinicalNoteStudio for completion and charting.
               </div>

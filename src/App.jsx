@@ -99,6 +99,7 @@ import LabTrendHub from '@/pages/LabTrendHub';
 import VitalsHub from '@/pages/VitalsHub';
 import UserPreferences from '@/pages/UserPreferences';
 import ShiftDashboard from '@/pages/ShiftDashboard';
+import ClinicalDecisionHub from '@/pages/ClinicalDecisionHub';
 
 
 
@@ -286,6 +287,7 @@ const AuthenticatedApp = () => {
       <Route path="/VitalsHub" element={<VitalsHub />} />
       <Route path="/UserPreferences" element={<UserPreferences />} />
       <Route path="/ShiftDashboard" element={<ShiftDashboard />} />
+      <Route path="/ClinicalDecisionHub" element={<ClinicalDecisionHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

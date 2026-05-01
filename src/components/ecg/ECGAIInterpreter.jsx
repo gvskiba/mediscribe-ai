@@ -9,7 +9,6 @@
 // Constraints: no form, no localStorage, straight quotes only, single react import
 
 import { useState, useRef, useCallback } from "react";
-import { base44 } from "@/api/base44Client";
 
 // ── Font injection (idempotent) ─────────────────────────────────────────────
 if (typeof document !== "undefined" && !document.getElementById("ecgai-fonts")) {
@@ -356,18 +355,18 @@ function ScanningOverlay() {
 
 // ── Main ECGAIInterpreter component ─────────────────────────────────────────
 export default function ECGAIInterpreter({ embedded = false, vitals, cc, medications, pmhSelected }) {
-  const [imageFile,  setImageFile]  = useState(null);
-  const [imageUrl,   setImageUrl]   = useState(null);
-  const [status,     setStatus]     = useState("idle");  // idle | loading | done | error
-  const [report,     setReport]     = useState(null);
-  const [errorMsg,   setErrorMsg]   = useState("");
-  const [dragOver,   setDragOver]   = useState(false);
+  const [imageB64,  setImageB64]  = useState(null);
+  const [imageUrl,  setImageUrl]  = useState(null);
+  const [status,    setStatus]    = useState("idle");  // idle | loading | done | error
+  const [report,    setReport]    = useState(null);
+  const [errorMsg,  setErrorMsg]  = useState("");
+  const [dragOver,  setDragOver]  = useState(false);
   const fileRef = useRef(null);
 
   // Build context string from NPI props if available
   const buildContext = useCallback(() => {
     const parts = [];
-    if (cc)          parts.push(`Chief complaint: ${typeof cc === "object" ? cc.text : cc}`);
+    if (cc)          parts.push(`Chief complaint: ${cc}`);
     if (vitals) {
       const vParts = [];
       if (vitals.hr)   vParts.push(`HR ${vitals.hr}`);
@@ -375,10 +374,7 @@ export default function ECGAIInterpreter({ embedded = false, vitals, cc, medicat
       if (vitals.spo2) vParts.push(`SpO2 ${vitals.spo2}`);
       if (vParts.length) parts.push(`Vitals: ${vParts.join(", ")}`);
     }
-    if (medications?.length) {
-      const meds = medications.slice(0,5).map(m => typeof m === "string" ? m : m.name || "").filter(Boolean);
-      if (meds.length) parts.push(`Medications: ${meds.join(", ")}`);
-    }
+    if (medications?.length) parts.push(`Medications: ${medications.slice(0,5).join(", ")}`);
     if (pmhSelected?.length) parts.push(`PMH: ${pmhSelected.slice(0,5).join(", ")}`);
     return parts.length ? `\n\nPatient context:\n${parts.join("\n")}` : "";
   }, [cc, vitals, medications, pmhSelected]);
@@ -388,8 +384,30 @@ export default function ECGAIInterpreter({ embedded = false, vitals, cc, medicat
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     const url = URL.createObjectURL(file);
     setImageUrl(url);
-    setImageFile(file);
     setReport(null); setStatus("idle"); setErrorMsg("");
+    // Compress before encoding: resize to max 1600px, 0.85 quality
+    const img = new window.Image();
+    img.onload = () => {
+      const MAX = 1600;
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else        { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL("image/jpeg", 0.85);
+      setImageB64(compressed.split(",")[1]);
+    };
+    img.onerror = () => {
+      // Fallback: use raw file if canvas fails
+      const reader = new FileReader();
+      reader.onload = e => setImageB64(e.target.result.split(",")[1]);
+      reader.readAsDataURL(file);
+    };
+    img.src = url;
   }, [imageUrl]);
 
   const handleDrop = useCallback((e) => {
@@ -398,74 +416,54 @@ export default function ECGAIInterpreter({ embedded = false, vitals, cc, medicat
   }, [processFile]);
 
   const handleAnalyze = async () => {
-    if (!imageFile) return;
+    if (!imageB64) return;
     setStatus("loading"); setReport(null); setErrorMsg("");
     try {
-      // Upload file via base44 UploadFile integration
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
       const context = buildContext();
-
-      // Use InvokeLLM with file_urls for vision + structured JSON output
-      const ECG_SCHEMA = {
-        type: "object",
-        properties: {
-          rate:         { type: ["integer", "null"] },
-          rhythm:       { type: "string" },
-          regular:      { type: ["boolean", "null"] },
-          p_waves:      { type: "string" },
-          pr_ms:        { type: ["integer", "null"] },
-          qrs_ms:       { type: ["integer", "null"] },
-          qtc_ms:       { type: ["integer", "null"] },
-          qtc_method:   { type: "string" },
-          axis:         { type: "string" },
-          st: {
-            type: "object",
-            properties: {
-              elevation:  { type: "string" },
-              depression: { type: "string" },
-              morphology: { type: "string" },
-            },
-          },
-          t_waves:       { type: "string" },
-          qrs_morphology:{ type: "string" },
-          high_risk:     { type: "array", items: { type: "string" } },
-          impression:    { type: "string" },
-          omi_note:      { type: "string" },
-          confidence:    { type: "string" },
-          image_quality: { type: "string" },
-          urgency:       { type: "string" },
-        },
-      };
-
-      const parsed = await base44.integrations.Core.InvokeLLM({
-        prompt: `${ECG_SYSTEM}\n\nInterpret this 12-lead ECG image. Return only the JSON object.${context}`,
-        file_urls: [file_url],
-        response_json_schema: ECG_SCHEMA,
-        model: "claude_sonnet_4_6",
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: ECG_SYSTEM,
+          messages: [{
+            role:"user",
+            content:[
+              { type:"image", source:{ type:"base64", media_type:"image/jpeg", data:imageB64 } },
+              { type:"text",  text:`Interpret this 12-lead ECG. Return only the JSON object.${context}` },
+            ],
+          }],
+        }),
       });
-
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const data = await res.json();
+      const raw = (data.content?.find(b => b.type === "text")?.text || "").trim();
+      const clean = raw.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(clean);
       setReport(parsed);
       setStatus("done");
     } catch (err) {
       console.error("ECG AI error:", err);
-      setErrorMsg(`Analysis failed: ${err.message || "Check API connectivity"}`);
+      const msg = err.message?.includes("JSON")
+        ? "Could not parse AI response. Try a clearer ECG image or retry."
+        : `Analysis failed: ${err.message}`;
+      setErrorMsg(msg);
       setStatus("error");
     }
   };
 
   const handleClear = () => {
     if (imageUrl) URL.revokeObjectURL(imageUrl);
-    setImageFile(null); setImageUrl(null); setReport(null);
+    setImageB64(null); setImageUrl(null); setReport(null);
     setStatus("idle"); setErrorMsg("");
   };
-
-  const ccText = cc ? (typeof cc === "object" ? cc.text : cc) : null;
 
   return (
     <div style={{ fontFamily:FF.sans }}>
       {/* Section intro */}
       <div style={{ marginBottom:12, padding:"10px 14px", borderRadius:10,
-        ...glass, border:`1px solid rgba(59,158,255,0.3)` }}>
+        ...glass, border:"1px solid rgba(59,158,255,0.3)" }}>
         <div style={{ display:"flex", alignItems:"center",
           justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
           <div>
@@ -477,12 +475,12 @@ export default function ECGAIInterpreter({ embedded = false, vitals, cc, medicat
               Not validated for OMI detection — use PMcardio Queen of Hearts for that.
             </div>
           </div>
-          <div style={{ display:"flex", gap:6, flexShrink:0, flexWrap:"wrap" }}>
+          <div style={{ display:"flex", gap:6, flexShrink:0 }}>
             {[
               { label:"Rate/Rhythm", color:T.blue },
-              { label:"Intervals", color:T.purple },
+              { label:"Intervals",   color:T.purple },
               { label:"ST Segments", color:T.orange },
-              { label:"Pattern Dx", color:T.coral },
+              { label:"Pattern Dx",  color:T.coral },
             ].map(b => (
               <span key={b.label} style={{ fontFamily:FF.mono, fontSize:8,
                 letterSpacing:.8, padding:"2px 8px", borderRadius:5,
@@ -514,7 +512,7 @@ export default function ECGAIInterpreter({ embedded = false, vitals, cc, medicat
               Photograph or upload a 12-lead ECG
             </div>
             <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt4, lineHeight:1.5 }}>
-              Drag &amp; drop {"\u00b7"} tap to browse {"\u00b7"} take a photo<br/>
+              Drag & drop {"\u00b7"} tap to browse {"\u00b7"} take a photo<br/>
               Paper printout, monitor screen, or digital image — any format
             </div>
           </div>
@@ -536,18 +534,18 @@ export default function ECGAIInterpreter({ embedded = false, vitals, cc, medicat
       </div>
 
       {/* Context hint if NPI data available */}
-      {(ccText || vitals) && imageUrl && (
+      {(cc || vitals) && imageB64 && (
         <div style={{ marginTop:7, padding:"6px 11px", borderRadius:7,
           background:"rgba(0,229,192,0.07)", border:"1px solid rgba(0,229,192,0.25)",
           fontFamily:FF.mono, fontSize:9, color:T.teal, letterSpacing:.8 }}>
-          Patient context will be included: {[ccText, vitals?.hr && `HR ${vitals.hr}`, vitals?.bp && `BP ${vitals.bp}`].filter(Boolean).join(" \u00b7 ")}
+          Patient context will be included: {[cc, vitals?.hr && `HR ${vitals.hr}`, vitals?.bp && `BP ${vitals.bp}`].filter(Boolean).join(" \u00b7 ")}
         </div>
       )}
 
       {/* Action buttons */}
       {imageUrl && (
         <div style={{ display:"flex", gap:8, marginTop:10 }}>
-          <button onClick={handleAnalyze} disabled={status === "loading" || !imageFile}
+          <button onClick={handleAnalyze} disabled={status === "loading" || !imageB64}
             style={{ flex:1, minHeight:46, borderRadius:10, cursor:status === "loading" ? "wait" : "pointer",
               fontFamily:FF.sans, fontWeight:700, fontSize:13,
               border:`1.5px solid ${T.blue}66`,
@@ -589,7 +587,7 @@ export default function ECGAIInterpreter({ embedded = false, vitals, cc, medicat
       {/* Report */}
       {status === "done" && report && <ECGReport data={report} />}
 
-      {/* PMcardio standalone button (always visible at bottom when no image) */}
+      {/* PMcardio standalone button (always visible at bottom) */}
       {!imageUrl && (
         <div style={{ marginTop:14 }}>
           <div style={{ fontFamily:FF.mono, fontSize:9, color:T.txt4,

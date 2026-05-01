@@ -71,6 +71,31 @@ const REF = {
   be:     { lo:-2,  hi:2,   unit:"mEq/L",  label:"Base Excess"    },
   sao2:   { lo:95,  hi:100, unit:"%",       label:"SaO2"           },
   lactate:{ lo:0.5, hi:2.0, unit:"mmol/L", label:"Lactate"        },
+  // Cardiac biomarkers
+  troponin: { lo:0,    hi:0.04,  unit:"ng/mL",     label:"Troponin I"       },
+  bnp:      { lo:0,    hi:100,   unit:"pg/mL",      label:"BNP"              },
+  ntprobnp: { lo:0,    hi:125,   unit:"pg/mL",      label:"NT-proBNP"        },
+  ckmb:     { lo:0,    hi:3.6,   unit:"ng/mL",      label:"CK-MB"            },
+  ck:       { lo:30,   hi:200,   unit:"U/L",        label:"CK (Total)"       },
+  // Thyroid
+  tsh:      { lo:0.4,  hi:4.0,   unit:"mIU/L",      label:"TSH"              },
+  ft4:      { lo:0.8,  hi:1.8,   unit:"ng/dL",      label:"Free T4"          },
+  ft3:      { lo:2.3,  hi:4.2,   unit:"pg/mL",      label:"Free T3"          },
+  // Inflammatory / Sepsis
+  crp:      { lo:0,    hi:1.0,   unit:"mg/dL",      label:"CRP"              },
+  esr:      { lo:0,    hi:20,    unit:"mm/hr",      label:"ESR"              },
+  ferritin: { lo:12,   hi:300,   unit:"ng/mL",      label:"Ferritin"         },
+  procalc:  { lo:0,    hi:0.1,   unit:"ng/mL",      label:"Procalcitonin"    },
+  ldh:      { lo:122,  hi:222,   unit:"U/L",        label:"LDH"              },
+  // Tox / Osmolality
+  apap:      { lo:0,   hi:20,    unit:"mcg/mL",     label:"Acetaminophen"    },
+  salicylate:{ lo:0,   hi:30,    unit:"mg/dL",      label:"Salicylate"       },
+  etoh:      { lo:0,   hi:80,    unit:"mg/dL",      label:"Ethanol"          },
+  osm:       { lo:275, hi:295,   unit:"mOsm/kg",    label:"Serum Osm"        },
+  lithium:   { lo:0.6, hi:1.2,   unit:"mEq/L",      label:"Lithium"          },
+  // Pancreatic
+  lipase:    { lo:0,   hi:160,   unit:"U/L",        label:"Lipase"           },
+  amylase:   { lo:30,  hi:110,   unit:"U/L",        label:"Amylase"          },
 };
 
 // ── Panel definitions ─────────────────────────────────────────────────────────
@@ -95,6 +120,26 @@ const PANELS = [
     id:"abg", label:"ABG / VBG", color:T.blue, icon:"💨",
     fields:["pH","pco2","po2","hco3","be","sao2","lactate"],
   },
+  {
+    id:"cardiac", label:"Cardiac Markers", color:T.coral, icon:"💓",
+    fields:["troponin","bnp","ntprobnp","ckmb","ck"],
+  },
+  {
+    id:"thyroid", label:"Thyroid", color:T.purple, icon:"🦋",
+    fields:["tsh","ft4","ft3"],
+  },
+  {
+    id:"inflam", label:"Inflam / Sepsis", color:T.orange, icon:"🔥",
+    fields:["procalc","crp","ferritin","esr","ldh"],
+  },
+  {
+    id:"tox", label:"Tox / Osm", color:T.cyan, icon:"☠️",
+    fields:["apap","salicylate","etoh","osm","lithium"],
+  },
+  {
+    id:"panc", label:"Pancreatic", color:T.gold, icon:"🫁",
+    fields:["lipase","amylase","tbili","alt","glu","ca"],
+  },
 ];
 
 // ── Critical thresholds ───────────────────────────────────────────────────────
@@ -115,6 +160,22 @@ const CRITICAL = {
   po2:  { critLo:50,   critHi:null },
   lactate:{ critLo:null, critHi:4  },
   fibrinogen:{ critLo:100, critHi:null },
+  // Cardiac
+  troponin:  { critLo:null, critHi:0.5    },
+  bnp:       { critLo:null, critHi:500    },
+  ntprobnp:  { critLo:null, critHi:5000   },
+  // Thyroid
+  tsh:       { critLo:0.01, critHi:20     },
+  // Inflammatory
+  procalc:   { critLo:null, critHi:10     },
+  ferritin:  { critLo:null, critHi:10000  },
+  // Tox
+  apap:      { critLo:null, critHi:150    },
+  salicylate:{ critLo:null, critHi:60     },
+  osm:       { critLo:265,  critHi:320    },
+  lithium:   { critLo:null, critHi:2.0    },
+  // Pancreatic
+  lipase:    { critLo:null, critHi:1000   },
 };
 
 // ── Flag helpers ──────────────────────────────────────────────────────────────
@@ -181,76 +242,104 @@ function calcAaDO2(pH, pco2, po2, fio2) {
 // ── Paste parser ──────────────────────────────────────────────────────────────
 function parsePastedLabs(text, panelFields) {
   const result = {};
-
-  // Single-key mappings (label alias → field key)
+  const lines = text.split(/[\n,;|\t]/);
   const labelMap = {
     "sodium":"na","na":"na","na+":"na",
     "potassium":"k","k":"k","k+":"k",
     "chloride":"cl","cl":"cl","cl-":"cl",
-    "bicarb":"co2","co2":"co2","bicarbonate":"co2",
-    "bun":"bun","urea nitrogen":"bun","blood urea nitrogen":"bun",
-    "creatinine":"cr","cr":"cr","crea":"cr","creat":"cr",
+    "bicarb":"co2","co2":"co2","hco3":"hco3","bicarbonate":"co2",
+    "bun":"bun","urea nitrogen":"bun",
+    "creatinine":"cr","cr":"cr","crea":"cr",
     "glucose":"glu","glu":"glu","gluc":"glu",
     "calcium":"ca","ca":"ca",
     "magnesium":"mg","mg":"mg",
-    "phosphorus":"phos","phos":"phos","po4":"phos","phosphate":"phos",
-    "wbc":"wbc","white blood cell":"wbc","white blood cells":"wbc","leukocytes":"wbc",
+    "phosphorus":"phos","phos":"phos","po4":"phos",
+    "wbc":"wbc","white blood cell":"wbc",
     "hemoglobin":"hgb","hgb":"hgb","hb":"hgb",
     "hematocrit":"hct","hct":"hct",
-    "platelets":"plt","plt":"plt","plts":"plt","platelet count":"plt",
+    "platelets":"plt","plt":"plt","plts":"plt",
     "mcv":"mcv",
-    "alt":"alt","sgpt":"alt","alanine aminotransferase":"alt",
-    "ast":"ast","sgot":"ast","aspartate aminotransferase":"ast",
-    "alk phos":"alkp","alkaline phosphatase":"alkp","alkp":"alkp","alp":"alkp",
+    "alt":"alt","sgpt":"alt",
+    "ast":"ast","sgot":"ast",
+    "alk phos":"alkp","alkaline phosphatase":"alkp","alkp":"alkp",
     "bilirubin":"tbili","total bilirubin":"tbili","tbili":"tbili","t bili":"tbili",
-    "direct bilirubin":"dbili","dbili":"dbili","direct bili":"dbili",
+    "direct bilirubin":"dbili","dbili":"dbili",
     "albumin":"albumin",
-    "pt":"pt","prothrombin time":"pt",
-    "inr":"inr","pt/inr":"inr",
+    "pt":"pt","prothrombin":"pt",
+    "inr":"inr",
     "ptt":"ptt","aptt":"ptt","ptt/aptt":"ptt",
     "fibrinogen":"fibrinogen",
-    "d-dimer":"ddimer","ddimer":"ddimer","d dimer":"ddimer",
+    "d-dimer":"ddimer","ddimer":"ddimer",
     "ph":"pH",
     "pco2":"pco2","paco2":"pco2",
     "po2":"po2","pao2":"po2",
-    "base excess":"be","be":"be","base excess/deficit":"be",
-    "sao2":"sao2","o2 sat":"sao2","o2sat":"sao2",
-    "lactate":"lactate","lactic acid":"lactate","lact":"lactate",
+    "base excess":"be","be":"be",
+    "sao2":"sao2","o2 sat":"sao2",
+    "lactate":"lactate","lactic acid":"lactate",
+    // Cardiac
+    "troponin":"troponin","trop i":"troponin","trop":"troponin","trop t":"troponin","hstni":"troponin",
+    "bnp":"bnp","brain natriuretic peptide":"bnp",
+    "nt-probnp":"ntprobnp","ntprobnp":"ntprobnp","nt probnp":"ntprobnp","proBNP":"ntprobnp",
+    "ck-mb":"ckmb","ckmb":"ckmb","ck mb":"ckmb",
+    "ck":"ck","cpk":"ck","creatine kinase":"ck","total ck":"ck",
+    // Thyroid
+    "tsh":"tsh","thyroid stimulating hormone":"tsh","thyroid stim":"tsh",
+    "free t4":"ft4","ft4":"ft4","free thyroxine":"ft4","f t4":"ft4",
+    "free t3":"ft3","ft3":"ft3","free triiodothyronine":"ft3","f t3":"ft3",
+    // Inflammatory
+    "crp":"crp","c-reactive protein":"crp","c reactive protein":"crp",
+    "esr":"esr","sed rate":"esr","sedimentation rate":"esr",
+    "ferritin":"ferritin",
+    "procalcitonin":"procalc","procalc":"procalc","pct":"procalc",
+    "ldh":"ldh","lactate dehydrogenase":"ldh","lactic dehydrogenase":"ldh",
+    // Tox
+    "acetaminophen":"apap","apap":"apap","tylenol level":"apap","apap level":"apap",
+    "salicylate":"salicylate","asa level":"salicylate","aspirin level":"salicylate","salicylates":"salicylate",
+    "ethanol":"etoh","etoh":"etoh","alcohol level":"etoh","bac":"etoh","etoh level":"etoh",
+    "osmolality":"osm","osm":"osm","serum osm":"osm","serum osmolality":"osm",
+    "lithium":"lithium","li level":"lithium","lithium level":"lithium",
+    // Pancreatic
+    "lipase":"lipase","lip":"lipase",
+    "amylase":"amylase","amy":"amylase",
   };
 
-  // Dual-context mappings — try each key in order, use first that fits the active panel.
-  // hco3/bicarbonate: ABG panel uses "hco3" field; BMP panel uses "co2" field.
-  const dualMap = {
-    "hco3":        ["hco3","co2"],
-    "bicarbonate": ["hco3","co2"],
-  };
+  // Normalize label key: lowercase, collapse spaces, strip parens/brackets
+  const norm = s => s.trim().toLowerCase()
+    .replace(/[()[\]]/g, "").replace(/\s+/g, " ").trim();
 
-  function insert(rawLabel, val) {
-    const alias = rawLabel.trim().toLowerCase();
-    const candidates = dualMap[alias]
-      ? dualMap[alias]
-      : labelMap[alias] ? [labelMap[alias]] : [];
-    for (const key of candidates) {
-      if (panelFields.includes(key) && !result[key]) { result[key] = val; break; }
-    }
-  }
-
-  // Strategy A — Tab-delimited lines (Cerner, Meditech): "Label\tValue\tUnit..."
-  // Splitting on \t first was the primary bug — it destroyed label/value pairing.
-  text.split(/\n/).forEach(line => {
-    const parts = line.split(/\t+/);
-    if (parts.length >= 2) {
-      const numMatch = parts[1].trim().match(/^([\d.]+)/);
-      if (numMatch) insert(parts[0], numMatch[1]);
-    }
+  // Strategy A: "Label: value" or "Label = value"
+  // Strategy B: tab / wide-column EMR format ("SODIUM     138   136-145")
+  // Strategy C: "Label value" with single space (no separator)
+  // Apply all 3 to each segment; first hit wins per field
+  const rawLines = text.split(/[\n;|]+/);
+  rawLines.forEach(rawLine => {
+    const segs = rawLine.split(/,+/);
+    segs.forEach(seg => {
+      const clean = seg.trim();
+      if (!clean) return;
+      // A — colon or equals separator
+      let m = clean.match(/^([a-zA-Z][a-zA-Z0-9\s/()[\]+-]{0,35}?)\s*[:=]\s*([\d.]+)/);
+      if (m) {
+        const key = labelMap[norm(m[1])];
+        if (key && panelFields.includes(key)) { result[key] = m[2]; return; }
+      }
+      // B — tabs or 2+ spaces as column separator (Epic/Cerner wide-report format)
+      const cols = clean.split(/\t+|\s{2,}/);
+      if (cols.length >= 2) {
+        const key = labelMap[norm(cols[0])];
+        const numCol = cols.slice(1).find(c => /^[\d.]+$/.test(c.trim()));
+        if (key && panelFields.includes(key) && numCol) {
+          result[key] = numCol.trim(); return;
+        }
+      }
+      // C — single space, label then value (e.g. "Na 138" or "WBC 8.5")
+      m = clean.match(/^([a-zA-Z][a-zA-Z0-9/()+-]{1,25})\s+([\d.]+)(?:\s|$)/);
+      if (m) {
+        const key = labelMap[norm(m[1])];
+        if (key && panelFields.includes(key)) result[key] = m[2];
+      }
+    });
   });
-
-  // Strategy B — Colon-delimited anywhere in text (Epic, CSV, freeform).
-  // Global regex — no ^ anchor, finds all "label: value" matches across the whole string.
-  const re = /([a-zA-Z][a-zA-Z0-9 /+-]*?)\s*:\s*([\d.]+)/g;
-  let m;
-  while ((m = re.exec(text)) !== null) insert(m[1], m[2]);
-
   return result;
 }
 
@@ -277,6 +366,20 @@ function buildLabPrompt(panelId, values, patientCtx) {
     const aa = calcAaDO2(values.pH, values.pco2, values.po2, 21);
     if (pf !== null) calcs.push(`P/F ratio (on room air): ${pf} (${pf < 200 ? "ARDS range" : pf < 300 ? "mild impairment" : "normal"})`);
     if (aa !== null) calcs.push(`A-a gradient (room air): ${aa} mmHg (${aa > 15 ? "elevated" : "normal"})`);
+  }
+  if (panelId === "tox") {
+    const etohV = parseFloat(values.etoh);
+    const apapV = parseFloat(values.apap);
+    const salV  = parseFloat(values.salicylate);
+    if (!isNaN(etohV)) calcs.push(`EtOH osmole contribution: ~${Math.round(etohV/4.6)} mOsm/kg`);
+    if (!isNaN(apapV) && apapV > 0) calcs.push(`Acetaminophen: ${apapV} mcg/mL — Rumack-Matthew treatment line at 4h = 150 mcg/mL${apapV >= 150 ? " [ABOVE TREATMENT LINE]" : apapV >= 66 ? " [in possible-risk zone — check ingestion time]" : " [below treatment threshold]"}`);
+    if (!isNaN(salV) && salV > 0) calcs.push(`Salicylate: ${salV} mg/dL — ${salV >= 60 ? "SEVERE toxicity (>60)" : salV >= 40 ? "moderate toxicity (40-60), treat" : salV >= 30 ? "upper therapeutic / mild toxicity" : "therapeutic range"}`);
+  }
+  if (panelId === "panc") {
+    const lipV = parseFloat(values.lipase);
+    const altV = parseFloat(values.alt);
+    if (!isNaN(lipV)) calcs.push(`Lipase: ${(lipV/160).toFixed(1)}x ULN${lipV >= 480 ? " — ≥3x ULN (AP diagnostic threshold)" : lipV >= 160 ? " — elevated" : " — normal"}`);
+    if (!isNaN(altV) && altV > 150) calcs.push(`ALT >3x ULN (${altV} U/L) — ~95% PPV for gallstone pancreatitis (Ammori)`);
   }
 
   return `Interpret these ${panel.label} lab results for an emergency physician. Be specific, clinically actionable, and focused on ED management.
@@ -603,6 +706,57 @@ function CalcValues({ panelId, values, fio2 }) {
     }
   }
 
+  if (panelId === "tox") {
+    const etohV = parseFloat(values.etoh);
+    const apapV = parseFloat(values.apap);
+    const salV  = parseFloat(values.salicylate);
+    const osmV  = parseFloat(values.osm);
+    if (!isNaN(etohV) && etohV > 0) items.push({
+      label:"EtOH Osm Contrib", val:`~${Math.round(etohV/4.6)}`, unit:"mOsm/kg",
+      detail:`Ethanol adds ~${Math.round(etohV/4.6)} mOsm/kg to measured osmolality (EtOH ÷ 4.6).`,
+      color:T.blue,
+    });
+    if (!isNaN(apapV) && apapV > 0) {
+      const apapColor = apapV >= 150 ? T.red : apapV >= 66 ? T.orange : T.teal;
+      const apapRisk  = apapV >= 150 ? "ABOVE treatment line — NAC now" : apapV >= 66 ? "Possible risk zone — confirm ingestion time" : "Below treatment threshold";
+      items.push({ label:"APAP Nomogram", val:apapV >= 150 ? "HIGH RISK" : apapV >= 66 ? "CHECK TIME" : "LOW RISK", unit:"", detail:apapRisk, color:apapColor });
+    }
+    if (!isNaN(salV) && salV > 0) {
+      const salColor = salV >= 60 ? T.red : salV >= 40 ? T.coral : T.teal;
+      const salRisk  = salV >= 60 ? "Severe — ICU, HD consult" : salV >= 40 ? "Moderate — alkalinize urine, admit" : salV >= 30 ? "Upper therapeutic / mild" : "Therapeutic";
+      items.push({ label:"Salicylate", val:salRisk.split(" ")[0], unit:"", detail:salRisk, color:salColor });
+    }
+    if (!isNaN(osmV) && !isNaN(etohV)) items.push({
+      label:"Measured Osm", val:`${osmV}`, unit:"mOsm/kg",
+      detail:`Osmol gap = measured − calculated (need Na/BUN/Glu from BMP). EtOH accounts for ~${Math.round(etohV/4.6)} mOsm/kg.`,
+      color: osmV > 310 ? T.coral : T.teal,
+    });
+  }
+
+  if (panelId === "panc") {
+    const lipV = parseFloat(values.lipase);
+    const altV = parseFloat(values.alt);
+    const caV  = parseFloat(values.ca);
+    if (!isNaN(lipV) && lipV > 0) {
+      const mult = Math.round(lipV/160*10)/10;
+      items.push({
+        label:"Lipase x ULN", val:`${mult}x`, unit:"",
+        detail: lipV >= 480 ? "≥3x ULN — meets AP diagnostic threshold (Atlanta)" : lipV >= 160 ? "Elevated — below 3x ULN; correlate clinically" : "Normal",
+        color: lipV >= 480 ? T.coral : lipV >= 160 ? T.orange : T.teal,
+      });
+    }
+    if (!isNaN(altV) && altV > 150) items.push({
+      label:"Gallstone AP Risk", val:"ALT >3x ULN", unit:"",
+      detail:"ALT >150 U/L has ~95% PPV for gallstone pancreatitis (Ammori criteria) — urgent RUQUS.",
+      color:T.gold,
+    });
+    if (!isNaN(caV) && caV < 8.0) items.push({
+      label:"Ranson Ca", val:`${caV}`, unit:"mg/dL",
+      detail:"Ca <8 mg/dL is a Ranson criterion (at 48h) — associated with severe pancreatitis.",
+      color:T.coral,
+    });
+  }
+
   if (items.length === 0) return null;
 
   return (
@@ -686,18 +840,28 @@ export default function LabInterpreter({
   const handleParse = useCallback(() => {
     if (!pasteText.trim()) return;
     const parsed = parsePastedLabs(pasteText, panel.fields);
-    const count = Object.keys(parsed).length;
-    if (count === 0) {
-      setError("No matching fields found. Try a format like 'Na: 138, K: 4.2' or paste tab-delimited results.");
-      return;
-    }
-    // Merge — preserve any manually entered values not overwritten by paste
-    setValues(prev => ({ ...prev, ...parsed }));
+    setValues(parsed);
     setPasteText("");
     setShowPaste(false);
     setResult(null);
-    setError(null);
   }, [pasteText, panel.fields]);
+
+  const handleMarkNormal = useCallback(() => {
+    const filled = {};
+    panel.fields.forEach(f => {
+      const r = REF[f];
+      if (!r) return;
+      const mid = (r.lo + r.hi) / 2;
+      // Infer decimal places from the reference bounds
+      const dec = Math.max(
+        String(r.lo).includes(".") ? String(r.lo).split(".")[1].length : 0,
+        String(r.hi).includes(".") ? String(r.hi).split(".")[1].length : 0,
+      );
+      filled[f] = dec > 0 ? mid.toFixed(dec) : String(Math.round(mid));
+    });
+    setValues(filled);
+    setResult(null);
+  }, [panel.fields]);
 
   const enteredCount = panel.fields.filter(f => values[f] !== undefined && values[f] !== "").length;
   const flaggedCount = panel.fields.filter(f => {
@@ -826,7 +990,7 @@ export default function LabInterpreter({
             </h1>
             <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
               color:T.txt4, marginTop:4 }}>
-              BMP · CBC · LFT · Coag · ABG — Pattern Recognition · AI Interpretation · Action Items
+              BMP · CBC · LFT · Coag · ABG · Cardiac · Thyroid · Inflam · Tox · Pancreatic — AI Interpretation · Action Items
             </p>
           </div>
         )}
@@ -843,7 +1007,7 @@ export default function LabInterpreter({
               background:"rgba(59,158,255,0.1)",
               border:"1px solid rgba(59,158,255,0.25)",
               borderRadius:4, padding:"2px 7px" }}>
-              BMP · CBC · LFT · Coag · ABG
+              BMP · CBC · LFT · Coag · ABG · Cardiac · Thyroid · Inflam · Tox · Panc
             </span>
           </div>
         )}
@@ -896,16 +1060,26 @@ export default function LabInterpreter({
                   </span>
                 </div>
               ))}
-              <button onClick={() => setShowPaste(p => !p)}
-                style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  padding:"5px 12px", borderRadius:7, cursor:"pointer",
-                  letterSpacing:1, textTransform:"uppercase",
-                  border:`1px solid ${showPaste ? panel.color+"55" : "rgba(42,79,122,0.4)"}`,
-                  background:showPaste ? `${panel.color}12` : "transparent",
-                  color:showPaste ? panel.color : T.txt4,
-                  marginLeft:"auto" }}>
-                📋 Paste Labs
-              </button>
+              <div style={{ marginLeft:"auto", display:"flex", gap:5 }}>
+                <button onClick={handleMarkNormal}
+                  style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    padding:"5px 12px", borderRadius:7, cursor:"pointer",
+                    letterSpacing:1, textTransform:"uppercase",
+                    border:`1px solid ${T.teal}44`,
+                    background:`${T.teal}0a`,
+                    color:T.teal }}>
+                  ✓ All Normal
+                </button>
+                <button onClick={() => setShowPaste(p => !p)}
+                  style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    padding:"5px 12px", borderRadius:7, cursor:"pointer",
+                    letterSpacing:1, textTransform:"uppercase",
+                    border:`1px solid ${showPaste ? panel.color+"55" : "rgba(42,79,122,0.4)"}`,
+                    background:showPaste ? `${panel.color}12` : "transparent",
+                    color:showPaste ? panel.color : T.txt4 }}>
+                  📋 Paste Labs
+                </button>
+              </div>
             </div>
 
             {/* Paste area */}

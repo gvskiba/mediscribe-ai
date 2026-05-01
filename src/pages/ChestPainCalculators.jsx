@@ -1,30 +1,16 @@
 // ChestPainCalculators.jsx — Notrya ChestPainHub
-// Micro-components + clinical score calculators
+// Reusable micro-components + clinical score calculators
 // Constraints: no form, no localStorage, straight quotes, single react import
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
-  T, FF, HEART_ITEMS, heartStrata, TROPONIN_UNITS, HST, evalHST, calcTrop,
-  calcEDACS, edacsRisk, SPESI_ITEMS, spesiInterp, calcGRACE, graceInterp,
-  TIMI_ITEMS, timiInterp,
-} from "./ChestPainLogic";
-
-
-// ChestPainPanels.jsx — Notrya ChestPainHub UI components
-// Micro-components, tab panels, bedside tools
-// Constraints: no form, no localStorage, straight quotes, single react import
-
-import { useState, useMemo, useCallback, useEffect } from "react";
-import {
-  T, FF, HEART_ITEMS, heartStrata, TROPONIN_UNITS, HST, evalHST, calcTrop,
-  calcEDACS, edacsRisk, WELLS_ITEMS, PERC_ITEMS, wellsInterp,
-  ADDRS_ITEMS, addrsInterp, ACS_STEPS, dispositionRec,
-  DDX_REF, DDX_TABS, SPESI_ITEMS, spesiInterp, calcGRACE, graceInterp,
-  TIMI_ITEMS, timiInterp, calcSgarbossa, sgarbossaInterp,
+  T, FF, HEART_ITEMS, heartStrata, TROPONIN_UNITS, evalHST, calcTrop,
+  calcEDACS, edacsRisk, TIMI_ITEMS, timiInterp,
 } from "./ChestPainLogic";
 
 
 // ═══ REUSABLE COMPONENTS ═════════════════════════════════════════════════════════
+
 export function TabBtn({ tab, active, onClick }) {
   return (
     <button onClick={onClick}
@@ -59,8 +45,7 @@ export function ScoreOption({ item, val, selected, onSelect }) {
         <div style={{ fontFamily:FF.sans, fontWeight:600, fontSize:12, color:isSelected ? item.color : T.txt2 }}>
           {opt?.label}
         </div>
-        {opt?.sub && <div style={{ fontFamily:FF.sans, fontSize:10,
-          color:T.txt4, marginTop:1 }}>{opt.sub}</div>}
+        {opt?.sub && <div style={{ fontFamily:FF.sans, fontSize:10, color:T.txt4, marginTop:1 }}>{opt.sub}</div>}
       </div>
     </button>
   );
@@ -125,7 +110,43 @@ export function TroponinField({ label, value, onChange, uln }) {
   );
 }
 
+// ═══ MICRO COMPONENTS ════════════════════════════════════════════════════════
+
+export function Bul({ c, children }) {
+  return (
+    <div style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
+      <span style={{ color:c||T.txt3, fontSize:10, marginTop:3, flexShrink:0 }}>▸</span>
+      <span style={{ fontFamily:FF.sans, fontSize:11, color:T.txt2, lineHeight:1.55 }}>{children}</span>
+    </div>
+  );
+}
+
+export function NavBtn({ active, c, onClick, children, compact }) {
+  return (
+    <button onClick={onClick}
+      style={{ flex:compact?"0 0 100px":1, minHeight:52, borderRadius:11,
+        cursor:active?"pointer":"default", fontFamily:FF.sans, fontWeight:700, fontSize:14,
+        border:`1.5px solid ${active?(c||T.blue)+"77":"rgba(35,70,115,0.6)"}`,
+        background:active?`linear-gradient(135deg,${c||T.blue}22,${c||T.blue}08)`:"rgba(5,13,32,0.5)",
+        color:active?(c||T.blue):T.txt4, transition:"all .15s" }}>
+      {children}
+    </button>
+  );
+}
+
+export function SkipBtn({ onClick, children }) {
+  return (
+    <button onClick={onClick}
+      style={{ width:"100%", marginTop:8, minHeight:40, borderRadius:8, cursor:"pointer",
+        fontFamily:FF.sans, fontWeight:500, fontSize:11,
+        border:"1px solid rgba(35,70,115,0.6)", background:"transparent", color:T.txt4 }}>
+      {children}
+    </button>
+  );
+}
+
 // ═══ SUMMARY STRIP ════════════════════════════════════════════════════════
+
 export function SummaryStrip({ heartScore, tropInterp, edacsScore, edacsNegTrop }) {
   const hs = heartScore !== null ? heartStrata(heartScore) : null;
   const er = edacsScore !== null ? edacsRisk(edacsScore, edacsNegTrop) : null;
@@ -151,50 +172,12 @@ export function SummaryStrip({ heartScore, tropInterp, edacsScore, edacsNegTrop 
   );
 }
 
-// ═══ MICRO COMPONENTS ════════════════════════════════════════════════════════
-// Bul: bullet point row used throughout DDx / Protocol
-export function Bul({ c, children }) {
-  return (
-    <div style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
-      <span style={{ color:c||T.txt3, fontSize:10, marginTop:3, flexShrink:0 }}>▸</span>
-      <span style={{ fontFamily:FF.sans, fontSize:11, color:T.txt2, lineHeight:1.55 }}>{children}</span>
-    </div>
-  );
-}
-
-// NavBtn: guided workflow navigation button
-export function NavBtn({ active, c, onClick, children, compact }) {
-  return (
-    <button onClick={onClick}
-      style={{ flex:compact?"0 0 100px":1, minHeight:52, borderRadius:11,
-        cursor:active?"pointer":"default", fontFamily:FF.sans, fontWeight:700, fontSize:14,
-        border:`1.5px solid ${active?(c||T.blue)+"77":"rgba(35,70,115,0.6)"}`,
-        background:active?`linear-gradient(135deg,${c||T.blue}22,${c||T.blue}08)`:"rgba(5,13,32,0.5)",
-        color:active?(c||T.blue):T.txt4, transition:"all .15s" }}>
-      {children}
-    </button>
-  );
-}
-
-// SkipBtn: small secondary skip button in guided workflow
-export function SkipBtn({ onClick, children }) {
-  return (
-    <button onClick={onClick}
-      style={{ width:"100%", marginTop:8, minHeight:40, borderRadius:8, cursor:"pointer",
-        fontFamily:FF.sans, fontWeight:500, fontSize:11,
-        border:"1px solid rgba(35,70,115,0.6)", background:"transparent", color:T.txt4 }}>
-      {children}
-    </button>
-  );
-}
-
 // ═══ HEART TAB ═══════════════════════════════════════════════════════════
+
 export function HeartTab({ scores, setScores, tropInterp, killip, setKillip, cardiacArrest, setCardiacArrest, graceScore, graceResult, graceAge, setGraceAge }) {
   const total  = Object.values(scores).reduce((s, v) => s + (v ?? 0), 0);
   const allSet = HEART_ITEMS.every(i => scores[i.key] !== undefined);
   const strata = allSet ? heartStrata(total) : null;
-
-  // Suggested troponin_h value from actual troponin result
   const suggestedTropH = tropInterp === "acs" ? 2 : tropInterp === "elevated" ? 1 : tropInterp === "normal" ? 0 : null;
 
   return (
@@ -229,14 +212,13 @@ export function HeartTab({ scores, setScores, tropInterp, killip, setKillip, car
               <span style={{ fontFamily:FF.serif, fontWeight:700, fontSize:13, color:item.color }}>{item.label}</span>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              {/* Cross-tab troponin nudge */}
               {item.key === "troponin_h" && suggestedTropH !== null && scores.troponin_h !== suggestedTropH && (
                 <div style={{ fontFamily:FF.mono, fontSize:7.5, color:T.gold, letterSpacing:0.5,
                   background:"rgba(245,200,66,0.1)", border:"1px solid rgba(245,200,66,0.45)",
-                  borderRadius:5, padding:"2px 8px", cursor:"pointer"
-                  }} onClick={()=>setScores(p=>({...p,troponin_h:suggestedTropH}))}>
+                  borderRadius:5, padding:"2px 8px", cursor:"pointer" }}
+                  onClick={()=>setScores(p=>({...p,troponin_h:suggestedTropH}))}>
                   Trop → {suggestedTropH} (tap to apply)
-                </button>
+                </div>
               )}
               <span style={{ fontFamily:FF.mono, fontSize:10, color:T.txt3 }}>{item.hint}</span>
               {scores[item.key] !== undefined && (
@@ -264,7 +246,6 @@ export function HeartTab({ scores, setScores, tropInterp, killip, setKillip, car
         </button>
       )}
 
-
       {/* GRACE Score */}
       {Object.values(scores).some(v=>v!==undefined) && (
         <div style={{ marginTop:16, padding:"12px 14px", borderRadius:10,
@@ -275,15 +256,17 @@ export function HeartTab({ scores, setScores, tropInterp, killip, setKillip, car
             <span style={{ fontFamily:FF.sans, color:T.txt3, fontSize:11, fontWeight:400,
               letterSpacing:0, textTransform:"none", marginLeft:6 }}>ACC/AHA 2021 invasive timing</span>
           </div>
-          <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8 }}>
-            <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt3 }}>Age:</div>
-            <input type="number" value={graceAge||(edacsFields?.age||"")} onChange={e=>setGraceAge&&setGraceAge(e.target.value)}
-              placeholder="yrs"
-              style={{ width:60, padding:"4px 8px", background:"rgba(14,28,58,0.94)",
-                border:"1px solid rgba(35,70,115,0.65)", borderRadius:6, outline:"none",
-                fontFamily:FF.mono, fontSize:13, fontWeight:700, color:T.blue }} />
-            <div style={{ fontFamily:FF.sans, fontSize:10, color:T.txt4 }}>Overrides EDACS age. HR + SBP from vitals bar.</div>
-          </div>
+          {setGraceAge && (
+            <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8 }}>
+              <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt3 }}>Age:</div>
+              <input type="number" value={graceAge||""} onChange={e=>setGraceAge(e.target.value)}
+                placeholder="yrs"
+                style={{ width:60, padding:"4px 8px", background:"rgba(14,28,58,0.94)",
+                  border:"1px solid rgba(35,70,115,0.65)", borderRadius:6, outline:"none",
+                  fontFamily:FF.mono, fontSize:13, fontWeight:700, color:T.blue }} />
+              <div style={{ fontFamily:FF.sans, fontSize:10, color:T.txt4 }}>Overrides EDACS age. HR + SBP from vitals bar.</div>
+            </div>
+          )}
           <div style={{ marginBottom:8 }}>
             <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4, marginBottom:5 }}>Killip Class</div>
             <div style={{ display:"flex", gap:5 }}>
@@ -322,15 +305,17 @@ export function HeartTab({ scores, setScores, tropInterp, killip, setKillip, car
             </div>
           ):(
             <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt4 }}>
-              Requires age (EDACS tab), HR + SBP (vitals bar) to calculate.
+              Requires age, HR + SBP (vitals bar) to calculate.
             </div>
           )}
         </div>
-      )}    </div>
+      )}
+    </div>
   );
 }
 
-// === TIMI PANEL ==========================================================
+// ═══ TIMI PANEL ==========================================================
+
 export function TimiPanel({ timi, setTimi }) {
   const score  = TIMI_ITEMS.reduce((s,i)=>s+(timi[i.key]?1:0),0);
   const result = timiInterp(score);
@@ -373,6 +358,7 @@ export function TimiPanel({ timi, setTimi }) {
 }
 
 // ═══ TROPONIN TAB ═════════════════════════════════════════════════════════
+
 export function TroponinTab({ t0,setT0,t1,setT1,t2,setT2,uln,setULN,unit,setUnit,mode,setMode }) {
   const result    = useMemo(() => calcTrop(t0,t1,t2,uln), [t0,t1,t2,uln]);
   const hstResult = useMemo(() => mode === "hst" ? evalHST(t0,t1) : null, [mode,t0,t1]);
@@ -416,13 +402,11 @@ export function TroponinTab({ t0,setT0,t1,setT1,t2,setT2,uln,setULN,unit,setUnit
               </div>
             </div>
           </div>
-
           <div style={{ display:"flex", gap:10, marginBottom:12 }}>
             <TroponinField label="0h (Arrival)" value={t0} onChange={setT0} uln={parseFloat(uln)} />
             <TroponinField label="3h" value={t1} onChange={setT1} uln={parseFloat(uln)} />
             <TroponinField label="6h" value={t2} onChange={setT2} uln={parseFloat(uln)} />
           </div>
-
           {result && (
             <InfoBox color={result.interp==="acs"?T.coral:result.interp==="elevated"?T.gold:T.teal}
               icon={result.interp==="acs"?"🚨":result.interp==="elevated"?"⚠":"✓"}
@@ -456,7 +440,7 @@ export function TroponinTab({ t0,setT0,t1,setT1,t2,setT2,uln,setULN,unit,setUnit
         <>
           <InfoBox color={T.blue} title="ESC 0/1h Protocol — Elecsys hs-cTnI">
             <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt3, lineHeight:1.65 }}>
-              Rule-out: 0h &lt; 5 ng/L, or 0h &lt; 12 ng/L + Δ1h &lt; 3 ng/L &nbsp;| Rule-in: 0h ≥ 52 ng/L, or Δ1h ≥ 6 ng/L
+              Rule-out: 0h &lt; 5 ng/L, or 0h &lt; 12 ng/L + Δ1h &lt; 3 ng/L &nbsp;| Rule-in: 0h ≥ 52 ng/L, or Δ1h ≥ 6 ng/L
             </div>
           </InfoBox>
           <div style={{ display:"flex", gap:10, margin:"12px 0" }}>
@@ -477,6 +461,7 @@ export function TroponinTab({ t0,setT0,t1,setT1,t2,setT2,uln,setULN,unit,setUnit
 }
 
 // ═══ EDACS TAB ═══════════════════════════════════════════════════════════
+
 export function EdacsTab({ fields, setFields, negTrop, setNegTrop }) {
   const setF  = (k, v) => setFields(p => ({ ...p, [k]:v }));
   const age   = parseInt(fields.age) || 0;
@@ -491,7 +476,6 @@ export function EdacsTab({ fields, setFields, negTrop, setNegTrop }) {
           Score &lt; 16 + negative troponin = safe for early discharge. Validated in Flaws et al, Heart 2016 — 99.7% sensitivity for 30-day ACS. Valid ages 18+.
         </div>
       </InfoBox>
-
       <div style={{ display:"flex", gap:10, marginBottom:12 }}>
         <div style={{ flex:1 }}>
           <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4,
@@ -520,7 +504,6 @@ export function EdacsTab({ fields, setFields, negTrop, setNegTrop }) {
           </div>
         </div>
       </div>
-
       {[
         { key:"diaphoresis", pts:3,  label:"Diaphoresis present" },
         { key:"radiation",   pts:5,  label:"Pain radiates to arm or shoulder" },
@@ -533,7 +516,6 @@ export function EdacsTab({ fields, setFields, negTrop, setNegTrop }) {
       ))}
       <CheckRow label="Serial troponin negative (required for low-risk pathway)" checked={negTrop}
         color={negTrop ? T.teal : T.coral} onChange={() => setNegTrop(!negTrop)} />
-
       {score !== null && risk && (
         <div style={{ marginTop:14, padding:"12px 14px", borderRadius:10,
           background:`${risk.color}09`, border:`1px solid ${risk.color}38` }}>

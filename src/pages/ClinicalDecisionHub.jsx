@@ -1,0 +1,1126 @@
+// ClinicalDecisionHub.jsx — v2
+// AI-Powered Clinical Decision Rules
+//
+// Rules: Canadian CT Head (Stiell 2001) · PECARN <2yr / 2-18yr (Kuppermann 2009)
+//        New Orleans (Haydel 2000) · PERC + Modified Wells (Kline 2008 / Wells 2000)
+//        HEART Score (Backus 2010) · Ottawa Ankle & Foot (Stiell 1992)
+//        Canadian C-Spine Rule + NEXUS (Stiell 2001 / Hoffman 2000)
+//
+// Route: /ClinicalDecisionHub
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
+
+(() => {
+  if (document.getElementById("cdh2-fonts")) return;
+  const l = document.createElement("link");
+  l.id = "cdh2-fonts"; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  document.head.appendChild(l);
+  const s = document.createElement("style"); s.id = "cdh2-css";
+  s.textContent = `
+    @keyframes cdh-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+    .cdh-in{animation:cdh-in .18s ease forwards}
+    @keyframes shimmer-cdh{0%{background-position:-200% center}100%{background-position:200% center}}
+    .shimmer-cdh{background:linear-gradient(90deg,#f0f4ff 0%,#9b6dff 40%,#00d4b4 65%,#f0f4ff 100%);
+      background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;animation:shimmer-cdh 4s linear infinite;}
+    @keyframes ai-pulse{0%,100%{opacity:.6}50%{opacity:1}}
+    .ai-pulse{animation:ai-pulse 1.4s ease infinite;}
+  `;
+  document.head.appendChild(s);
+})();
+
+const T = {
+  bg:"#080510", panel:"#0e0a1a",
+  txt:"#f0ecff", txt2:"#c4b8e8", txt3:"#8a7ab4", txt4:"#4a3d7a",
+  teal:"#00d4b4", gold:"#f5c842", coral:"#ff5c5c", blue:"#6b9fff",
+  orange:"#ff9f43", purple:"#b06dff", green:"#3dffa0", red:"#ff3d3d",
+  lavender:"#c4aaff",
+};
+
+const CATEGORIES = [
+  { id:"neuro",   label:"Neurological",       icon:"🧠", color:T.purple,
+    rules:[
+      { id:"canadian_ct",  name:"Canadian CT Head",    icon:"🍁" },
+      { id:"pecarn_lt2",   name:"PECARN < 2 yrs",      icon:"👶" },
+      { id:"pecarn_gte2",  name:"PECARN 2-18 yrs",     icon:"🧒" },
+      { id:"new_orleans",  name:"New Orleans",          icon:"🎺" },
+    ] },
+  { id:"cardiac", label:"Cardiac / Pulmonary", icon:"❤️", color:T.coral,
+    rules:[
+      { id:"perc_wells",  name:"PERC + Wells (PE)",    icon:"🫁" },
+      { id:"heart_score", name:"HEART Score (ACS)",    icon:"💓" },
+    ] },
+  { id:"trauma",  label:"Trauma / Ortho",      icon:"🦴", color:T.orange,
+    rules:[
+      { id:"ottawa",      name:"Ottawa Ankle & Foot",   icon:"🦶" },
+      { id:"cspine",      name:"C-Spine CCR + NEXUS",   icon:"🦴" },
+    ] },
+];
+
+function CriterionCheck({ label, sub, state, onToggle, color }) {
+  const isPos = state === true, isNeg = state === false;
+  return (
+    <div style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:5,
+      padding:"7px 10px", borderRadius:8, transition:"all .1s",
+      background:isPos ? `${color}12` : isNeg ? "rgba(14,10,26,0.5)" : "rgba(14,10,26,0.3)",
+      border:`1px solid ${isPos ? color+"44" : isNeg ? "rgba(45,30,80,0.3)" : "rgba(45,30,80,0.2)"}`,
+      borderLeft:`3px solid ${isPos ? color : isNeg ? "rgba(45,30,80,0.4)" : "rgba(45,30,80,0.2)"}` }}>
+      <div style={{ display:"flex", gap:4, flexShrink:0, marginTop:2 }}>
+        <button onClick={() => onToggle(true)}
+          style={{ width:20, height:20, borderRadius:4, cursor:"pointer",
+            border:`2px solid ${isPos ? color : "rgba(74,61,122,0.5)"}`,
+            background:isPos ? color : "transparent",
+            display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {isPos && <span style={{ color:"#080510", fontSize:9, fontWeight:900 }}>✓</span>}
+        </button>
+        <button onClick={() => onToggle(false)}
+          style={{ width:20, height:20, borderRadius:4, cursor:"pointer",
+            border:`2px solid ${isNeg ? T.txt3 : "rgba(74,61,122,0.3)"}`,
+            background:isNeg ? "rgba(74,61,122,0.25)" : "transparent",
+            display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {isNeg && <span style={{ color:T.txt3, fontSize:10, fontWeight:700 }}>✕</span>}
+        </button>
+      </div>
+      <div>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12,
+          color:isPos ? color : T.txt2, lineHeight:1.4 }}>{label}</div>
+        {sub && <div style={{ fontFamily:"'DM Sans',sans-serif",
+          fontSize:10, color:T.txt4, marginTop:1, lineHeight:1.35 }}>{sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+function ScoreSelect({ crit, value, onChange }) {
+  return (
+    <div style={{ marginBottom:7, padding:"9px 11px", borderRadius:9,
+      background:"rgba(14,10,26,0.5)",
+      border:`1px solid ${value !== undefined ? T.coral+"33" : "rgba(45,30,80,0.3)"}`,
+      borderLeft:`3px solid ${value !== undefined ? T.coral : "rgba(45,30,80,0.25)"}` }}>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12,
+        color:value !== undefined ? T.coral : T.txt2, marginBottom:6 }}>
+        {crit.label}
+        {value !== undefined && <span style={{ marginLeft:8,
+          fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:T.gold }}>
+          {value} pt
+        </span>}
+      </div>
+      <div style={{ display:"flex", gap:5 }}>
+        {crit.options.map(opt => (
+          <button key={opt.val} onClick={() => onChange(crit.key, opt.val)}
+            style={{ flex:1, padding:"6px 4px", borderRadius:7, cursor:"pointer",
+              textAlign:"center", transition:"all .1s",
+              border:`1px solid ${value===opt.val ? T.coral+"55" : "rgba(45,30,80,0.4)"}`,
+              background:value===opt.val ? `${T.coral}14` : "transparent" }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:700,
+              color:value===opt.val ? T.coral : T.txt3, marginBottom:2 }}>{opt.val}</div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9, lineHeight:1.3,
+              color:value===opt.val ? T.txt2 : T.txt4 }}>{opt.label}</div>
+            {opt.sub && value===opt.val && (
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:8,
+                color:T.txt4, marginTop:2, lineHeight:1.3 }}>{opt.sub}</div>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResultBanner({ result }) {
+  if (!result) return (
+    <div style={{ padding:"11px 14px", borderRadius:10, marginBottom:12,
+      background:"rgba(14,10,26,0.6)", border:"1px solid rgba(45,30,80,0.3)" }}>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+        color:T.txt4, textAlign:"center" }}>
+        Evaluate criteria above to generate recommendation
+      </div>
+    </div>
+  );
+  return (
+    <div style={{ padding:"13px 15px", borderRadius:10, marginBottom:12,
+      background:`${result.color}0d`, border:`2px solid ${result.color}55` }}>
+      <div style={{ fontFamily:"'Playfair Display',serif",
+        fontWeight:900, fontSize:19, color:result.color, marginBottom:4 }}>
+        {result.label}
+      </div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif",
+        fontSize:12, color:T.txt2, lineHeight:1.65 }}>{result.sub}</div>
+    </div>
+  );
+}
+
+function AIBlock({ ruleName, ruleCtx, posCrit, negCrit, recommendation, context, color }) {
+  const [loading, setLoading] = useState(false);
+  const [result,  setResult]  = useState(null);
+  const [error,   setError]   = useState(null);
+  const canRun = posCrit.length > 0 || negCrit.length > 0;
+  const c = color || T.purple;
+
+  const run = async () => {
+    setLoading(true); setError(null); setResult(null);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt:`You are an emergency medicine clinical decision support AI assisting a physician at bedside.
+
+Rule: ${ruleName}
+Context: ${ruleCtx}
+Positive / present findings: ${posCrit.join(" | ") || "None"}
+Negative / absent findings: ${negCrit.join(" | ") || "None"}
+Rule-based recommendation: ${recommendation || "Incomplete evaluation"}
+Physician-provided context: ${context.trim() || "None"}
+
+Be concise and practical. Do NOT restate criteria. Focus on:
+1. Whether this rule is appropriately applied
+2. Clinical nuances the checklist cannot capture
+3. Disposition and observation considerations
+4. Additional workup to consider`,
+        response_json_schema:{
+          type:"object",
+          properties:{
+            applicability_note:{ type:"string" },
+            clinical_reasoning:{ type:"string" },
+            caveats:{ type:"array", items:{ type:"string" } },
+            disposition:{ type:"string" },
+            additional_workup:{ type:"array", items:{ type:"string" } },
+          },
+          required:["clinical_reasoning","caveats","disposition","additional_workup"],
+        },
+      });
+      setResult(res);
+    } catch { setError("AI analysis unavailable. Use rule-based recommendation above."); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ marginTop:10 }}>
+      <button onClick={run} disabled={loading || !canRun}
+        style={{ display:"flex", alignItems:"center", justifyContent:"center",
+          gap:7, width:"100%", padding:"10px 0", borderRadius:9,
+          cursor:canRun ? "pointer" : "not-allowed",
+          fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12, transition:"all .14s",
+          border:`1px solid ${canRun ? c+"55" : "rgba(45,30,80,0.3)"}`,
+          background:canRun ? `${c}10` : "rgba(14,10,26,0.4)",
+          color:canRun ? c : T.txt4 }}>
+        {loading ? <><span className="ai-pulse">✦</span> Analyzing...</>
+                 : <><span>✦</span> AI Clinical Interpretation</>}
+      </button>
+      {!canRun && <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
+        color:T.txt4, textAlign:"center", marginTop:4 }}>
+        Evaluate at least one criterion first
+      </div>}
+      {error && <div style={{ marginTop:7, padding:"8px 10px", borderRadius:8,
+        background:"rgba(255,92,92,0.07)", border:"1px solid rgba(255,92,92,0.2)",
+        fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.coral }}>{error}</div>}
+      {result && (
+        <div className="cdh-in" style={{ marginTop:9, padding:"12px 14px", borderRadius:11,
+          background:`${c}08`, border:`1px solid ${c}2a` }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            color:c, letterSpacing:1.5, textTransform:"uppercase", marginBottom:9 }}>
+            ✦ AI Clinical Interpretation
+          </div>
+          {result.applicability_note && (
+            <div style={{ marginBottom:8, padding:"6px 9px", borderRadius:6,
+              background:`${T.coral}09`, border:`1px solid ${T.coral}22` }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>Applicability</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                color:T.txt2, lineHeight:1.6 }}>{result.applicability_note}</div>
+            </div>
+          )}
+          <div style={{ marginBottom:8 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              color:c, letterSpacing:1.2, textTransform:"uppercase", marginBottom:3 }}>Reasoning</div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
+              color:T.txt2, lineHeight:1.7 }}>{result.clinical_reasoning}</div>
+          </div>
+          {result.caveats?.length > 0 && (
+            <div style={{ marginBottom:8 }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:T.gold, letterSpacing:1.2, textTransform:"uppercase", marginBottom:4 }}>Caveats</div>
+              {result.caveats.map((cv,i) => (
+                <div key={i} style={{ display:"flex", gap:6, marginBottom:3 }}>
+                  <span style={{ color:T.gold, fontSize:7, marginTop:4, flexShrink:0 }}>▸</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif",
+                    fontSize:11, color:T.txt2, lineHeight:1.6 }}>{cv}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ marginBottom:result.additional_workup?.length > 0 ? 8 : 0 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              color:T.teal, letterSpacing:1.2, textTransform:"uppercase", marginBottom:3 }}>Disposition</div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5,
+              color:T.txt2, lineHeight:1.65 }}>{result.disposition}</div>
+          </div>
+          {result.additional_workup?.length > 0 && (
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:T.blue, letterSpacing:1.2, textTransform:"uppercase", marginBottom:4 }}>Additional Workup</div>
+              {result.additional_workup.map((w,i) => (
+                <div key={i} style={{ display:"flex", gap:6, marginBottom:3 }}>
+                  <span style={{ color:T.blue, fontSize:7, marginTop:4, flexShrink:0 }}>▸</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif",
+                    fontSize:11, color:T.txt2, lineHeight:1.6 }}>{w}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ marginTop:8, fontFamily:"'JetBrains Mono',monospace",
+            fontSize:7, color:T.txt4, letterSpacing:1.1, textAlign:"right" }}>
+            AI-ASSISTED · NOT A SUBSTITUTE FOR CLINICAL JUDGMENT
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ContextBox({ value, onChange, placeholder, color }) {
+  return (
+    <>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+        color:T.txt4, letterSpacing:1.2, textTransform:"uppercase", marginBottom:5, marginTop:10 }}>
+        Clinical Context (optional)
+      </div>
+      <textarea value={value} onChange={e => onChange(e.target.value)} rows={2}
+        placeholder={placeholder}
+        style={{ width:"100%", padding:"8px 10px", borderRadius:8, outline:"none",
+          resize:"vertical", fontFamily:"'DM Sans',sans-serif", fontSize:11.5,
+          color:T.txt2, lineHeight:1.6, boxSizing:"border-box",
+          background:"rgba(14,10,26,0.8)",
+          border:`1px solid ${value ? (color||T.purple)+"33" : "rgba(45,30,80,0.35)"}` }} />
+    </>
+  );
+}
+
+const BINARY_RULES = {
+  canadian_ct:{
+    name:"Canadian CT Head Rule", color:T.purple, citation:"Stiell et al, Lancet 2001",
+    applies:"GCS 13-15, blunt head trauma within 24h, LOC / amnesia / disorientation, age >= 16",
+    excludes:"Anticoagulation · bleeding disorder · obvious open skull fracture · GCS < 13 · post-injury seizure",
+    sensitivity:"High-risk factors 100% sensitive for neurosurgery. Medium-risk 98.4% for CT abnormality.",
+    groups:[
+      { label:"High Risk — CT for Neurosurgical Intervention", color:T.coral, criteria:[
+        { key:"gcs_lt15",  label:"GCS < 15 at 2 hours after injury" },
+        { key:"skull_fx",  label:"Suspected open or depressed skull fracture" },
+        { key:"basal",     label:"Any sign of basal skull fracture", sub:"Hemotympanum, raccoon eyes, Battle's sign, CSF oto/rhinorrhea" },
+        { key:"vomiting",  label:"Vomiting >= 2 episodes" },
+        { key:"age_65",    label:"Age >= 65 years" },
+      ]},
+      { label:"Medium Risk — CT for Brain Injury Detection", color:T.gold, criteria:[
+        { key:"amnesia",   label:"Amnesia before impact >= 30 minutes" },
+        { key:"mech",      label:"Dangerous mechanism", sub:"MVA, pedestrian/cyclist struck, ejection, fall > 3 ft or 5 stairs" },
+      ]},
+    ],
+    evaluate(c) {
+      const hi  = ["gcs_lt15","skull_fx","basal","vomiting","age_65"].some(k => c[k]);
+      const med = ["amnesia","mech"].some(k => c[k]);
+      const all = ["gcs_lt15","skull_fx","basal","vomiting","age_65","amnesia","mech"].every(k => k in c);
+      if (hi)  return { label:"CT Indicated", color:T.coral,  sub:"High-risk criterion present — CT head for neurosurgical intervention." };
+      if (med) return { label:"CT Indicated", color:T.orange, sub:"Medium-risk criterion present — CT head for brain injury detection." };
+      if (all) return { label:"CT Not Indicated", color:T.teal, sub:"All Canadian CT Head Rule criteria negative — CT not required per rule." };
+      return null;
+    },
+  },
+  pecarn_lt2:{
+    name:"PECARN — Age < 2 Years", color:T.blue, citation:"Kuppermann et al, Lancet 2009",
+    applies:"Children < 2 years, head trauma within 24h, GCS >= 14",
+    excludes:"Trivial mechanism · GCS < 14 · Penetrating trauma",
+    sensitivity:"High+intermediate combined: 100% for ciTBI. Low-risk: ciTBI < 0.02%.",
+    groups:[
+      { label:"High Risk — CT Recommended", color:T.coral, criteria:[
+        { key:"ams",        label:"Altered mental status", sub:"Agitation, somnolence, repetitive questioning, slow response" },
+        { key:"palpable_fx",label:"Palpable skull fracture" },
+      ]},
+      { label:"Intermediate Risk — Observation vs CT", color:T.gold, criteria:[
+        { key:"loc_5",      label:"Loss of consciousness >= 5 seconds" },
+        { key:"not_normal", label:"Not acting normally per parent" },
+        { key:"sev_mech",   label:"Severe mechanism", sub:"MVA ejection/rollover/death; pedestrian struck; fall > 3 ft; high-impact head strike" },
+        { key:"scalp",      label:"Non-frontal scalp hematoma" },
+      ]},
+    ],
+    evaluate(c) {
+      const hi  = ["ams","palpable_fx"].some(k => c[k]);
+      const mid = ["loc_5","not_normal","sev_mech","scalp"].some(k => c[k]);
+      const all = ["ams","palpable_fx","loc_5","not_normal","sev_mech","scalp"].every(k => k in c);
+      if (hi)  return { label:"CT Recommended", color:T.coral, sub:"High-risk criterion present — ciTBI risk warrants CT." };
+      if (mid) return { label:"Observation vs CT — Physician Judgment", color:T.gold, sub:"Intermediate finding. Observe 4-6h; CT if deterioration." };
+      if (all) return { label:"CT Not Recommended", color:T.teal, sub:"Low-risk PECARN — ciTBI < 0.02%. Discharge with return precautions." };
+      return null;
+    },
+  },
+  pecarn_gte2:{
+    name:"PECARN — Age 2-18 Years", color:T.teal, citation:"Kuppermann et al, Lancet 2009",
+    applies:"Children 2-18 years, head trauma within 24h, GCS >= 14",
+    excludes:"Trivial mechanism · GCS < 14 · Penetrating trauma",
+    sensitivity:"High+intermediate combined: 100% for ciTBI. Low-risk: ciTBI < 0.05%.",
+    groups:[
+      { label:"High Risk — CT Recommended", color:T.coral, criteria:[
+        { key:"ams2",     label:"Altered mental status", sub:"Agitation, somnolence, repetitive questioning, slow response" },
+        { key:"basilar",  label:"Signs of basilar skull fracture", sub:"Hemotympanum, raccoon eyes, Battle's sign, CSF oto/rhinorrhea" },
+      ]},
+      { label:"Intermediate Risk — Observation vs CT", color:T.gold, criteria:[
+        { key:"loc2",       label:"Loss of consciousness" },
+        { key:"vomiting2",  label:"History of vomiting" },
+        { key:"sev_mech2",  label:"Severe mechanism", sub:"MVA ejection; pedestrian struck; fall > 5 ft; high-impact head strike" },
+        { key:"severe_ha",  label:"Severe headache" },
+      ]},
+    ],
+    evaluate(c) {
+      const hi  = ["ams2","basilar"].some(k => c[k]);
+      const mid = ["loc2","vomiting2","sev_mech2","severe_ha"].some(k => c[k]);
+      const all = ["ams2","basilar","loc2","vomiting2","sev_mech2","severe_ha"].every(k => k in c);
+      if (hi)  return { label:"CT Recommended", color:T.coral, sub:"High-risk criterion present — CT recommended." };
+      if (mid) return { label:"Observation vs CT — Physician Judgment", color:T.gold, sub:"Intermediate finding. Single criterion + low concern: observation reasonable." };
+      if (all) return { label:"CT Not Recommended", color:T.teal, sub:"Low-risk PECARN — ciTBI < 0.05%. Discharge with return precautions." };
+      return null;
+    },
+  },
+  new_orleans:{
+    name:"New Orleans Criteria", color:T.orange, citation:"Haydel et al, NEJM 2000",
+    applies:"GCS 15 after minor head injury with brief LOC, age >= 16",
+    excludes:"Anticoagulation · prior neurologic disease · focal neurologic deficit · GCS < 15",
+    sensitivity:"100% sensitive for traumatic intracranial injury in GCS 15 with LOC.",
+    groups:[
+      { label:"CT Indicated if ANY Present", color:T.orange, criteria:[
+        { key:"ha",      label:"Headache" },
+        { key:"vomit",   label:"Vomiting" },
+        { key:"age60",   label:"Age > 60 years" },
+        { key:"intox",   label:"Drug or alcohol intoxication" },
+        { key:"amnesia", label:"Deficits in short-term memory" },
+        { key:"trauma",  label:"Physical evidence of trauma above clavicle", sub:"Scalp laceration, facial injury, tenderness" },
+        { key:"seizure", label:"Seizure" },
+      ]},
+    ],
+    evaluate(c) {
+      const keys = ["ha","vomit","age60","intox","amnesia","trauma","seizure"];
+      const any  = keys.some(k => c[k]);
+      const all  = keys.every(k => k in c);
+      if (any) return { label:"CT Indicated", color:T.coral, sub:"One or more New Orleans criteria present — CT head recommended." };
+      if (all) return { label:"CT Not Indicated", color:T.teal, sub:"All New Orleans criteria absent — CT not required." };
+      return null;
+    },
+  },
+};
+
+function BinaryPanel({ ruleId }) {
+  const rule = BINARY_RULES[ruleId];
+  const [checked, setChecked] = useState({});
+  const [ctx,     setCtx]     = useState("");
+  const toggle = (key, val) => setChecked(p => { const n={...p}; p[key]===val ? delete n[key] : n[key]=val; return n; });
+  const result    = rule.evaluate(checked);
+  const allCrit   = rule.groups.flatMap(g => g.criteria);
+  const countEval = allCrit.filter(c => c.key in checked).length;
+  const posLabels = allCrit.filter(c => checked[c.key]===true).map(c => c.label);
+  const negLabels = allCrit.filter(c => checked[c.key]===false).map(c => c.label);
+
+  return (
+    <div className="cdh-in">
+      <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:11,
+        background:`${rule.color}08`, border:`1px solid ${rule.color}28`,
+        borderLeft:`3px solid ${rule.color}` }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:7 }}>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              color:rule.color, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>Applies To</div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>{rule.applies}</div>
+          </div>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>Exclusions</div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>{rule.excludes}</div>
+          </div>
+        </div>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>
+          <span style={{ color:rule.color }}>◉ </span>{rule.sensitivity}
+        </div>
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+        <div style={{ flex:1, height:3, borderRadius:3, background:"rgba(45,30,80,0.3)" }}>
+          <div style={{ height:"100%", borderRadius:3, transition:"width .2s",
+            width:`${allCrit.length ? (countEval/allCrit.length)*100 : 0}%`,
+            background:posLabels.length > 0 ? T.coral : T.teal }} />
+        </div>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, flexShrink:0 }}>
+          {countEval}/{allCrit.length}
+          {posLabels.length > 0 && <span style={{ color:T.coral }}> · {posLabels.length} pos</span>}
+        </div>
+      </div>
+      <ResultBanner result={result} />
+      {rule.groups.map((g, gi) => (
+        <div key={gi} style={{ marginBottom:10 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            color:g.color, letterSpacing:1.4, textTransform:"uppercase", marginBottom:6,
+            display:"flex", alignItems:"center", gap:5 }}>
+            <div style={{ width:5, height:5, borderRadius:"50%", background:g.color }} />
+            {g.label}
+          </div>
+          {g.criteria.map(c => (
+            <CriterionCheck key={c.key} label={c.label} sub={c.sub}
+              state={c.key in checked ? checked[c.key] : undefined}
+              onToggle={val => toggle(c.key, val)} color={g.color} />
+          ))}
+        </div>
+      ))}
+      {countEval > 0 && (
+        <button onClick={() => setChecked({})}
+          style={{ marginBottom:8, padding:"5px 13px", borderRadius:7, cursor:"pointer",
+            fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+            border:"1px solid rgba(45,30,80,0.4)", background:"transparent", color:T.txt4 }}>
+          ↺ Clear all
+        </button>
+      )}
+      <ContextBox value={ctx} onChange={setCtx} color={rule.color}
+        placeholder="e.g. On warfarin INR 2.8, GCS briefly 13 at scene per EMS..." />
+      <AIBlock ruleName={rule.name}
+        ruleCtx={`${rule.applies}. Excludes: ${rule.excludes}. ${rule.sensitivity}`}
+        posCrit={posLabels} negCrit={negLabels}
+        recommendation={result ? `${result.label}: ${result.sub}` : "Incomplete"}
+        context={ctx} color={rule.color} />
+      <div style={{ marginTop:10, fontFamily:"'JetBrains Mono',monospace",
+        fontSize:7, color:T.txt4, letterSpacing:1.2 }}>{rule.citation}</div>
+    </div>
+  );
+}
+
+const PERC_ITEMS = [
+  { key:"age50",    label:"Age >= 50 years" },
+  { key:"hr100",    label:"Heart rate >= 100 bpm" },
+  { key:"sat95",    label:"O2 saturation < 95% on room air" },
+  { key:"leg",      label:"Unilateral leg swelling" },
+  { key:"hemo",     label:"Hemoptysis" },
+  { key:"surg",     label:"Surgery or trauma within 4 weeks" },
+  { key:"prior_pe", label:"Prior DVT or PE" },
+  { key:"hormone",  label:"Estrogen / hormone use", sub:"OCP, HRT, hormone-containing medications" },
+];
+const WELLS_ITEMS = [
+  { key:"dvt",    label:"Clinical signs/symptoms of DVT", sub:"Leg swelling, tenderness along deep veins", pts:3 },
+  { key:"alt_dx", label:"PE is #1 diagnosis or equally likely", pts:3 },
+  { key:"hr100w", label:"Heart rate > 100 bpm", pts:1.5 },
+  { key:"immob",  label:"Immobilization >= 3 days OR surgery in past 4 weeks", pts:1.5 },
+  { key:"prior",  label:"Prior DVT or PE", pts:1.5 },
+  { key:"hemow",  label:"Hemoptysis", pts:1 },
+  { key:"malig",  label:"Malignancy on treatment or palliative", pts:1 },
+];
+
+function PERCWellsPanel() {
+  const [pretest, setPretest] = useState(null);
+  const [perc,    setPerc]    = useState({});
+  const [wells,   setWells]   = useState({});
+  const [ddimer,  setDdimer]  = useState(null);
+  const [ctx,     setCtx]     = useState("");
+
+  const togPerc  = (k,v) => setPerc(p  => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
+  const togWells = (k,v) => setWells(p => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
+
+  const percAnyPos  = PERC_ITEMS.some(c => perc[c.key]===true);
+  const percAllNeg  = PERC_ITEMS.every(c => perc[c.key]===false);
+  const percAllEval = PERC_ITEMS.every(c => c.key in perc);
+  const showWells   = pretest==="not_low" || (pretest==="low" && (percAnyPos || (percAllEval && !percAllNeg)));
+  const wellsScore  = WELLS_ITEMS.reduce((s,c) => s + (wells[c.key] ? c.pts : 0), 0);
+  const wellsAllEval= WELLS_ITEMS.every(c => c.key in wells);
+
+  let result = null;
+  if (pretest==="low" && percAllEval && percAllNeg) {
+    result = { label:"PE Ruled Out — PERC Negative", color:T.teal,
+      sub:"Low pretest probability + all 8 PERC criteria absent. No D-dimer or CTA required." };
+  } else if (showWells && wellsAllEval) {
+    if (wellsScore <= 4) {
+      if (ddimer==="neg") result = { label:"PE Excluded", color:T.teal,
+        sub:`Wells ${wellsScore} (PE unlikely) + D-dimer negative — PE excluded without CTA.` };
+      else if (ddimer==="pos") result = { label:"CTA Chest Indicated", color:T.coral,
+        sub:`Wells ${wellsScore} (PE unlikely) + D-dimer positive — proceed to CTA chest.` };
+      else result = { label:"Order D-dimer", color:T.gold,
+        sub:`Wells ${wellsScore} (PE unlikely <= 4). Order D-dimer next.` };
+    } else {
+      result = { label:"CTA Chest Indicated", color:T.coral,
+        sub:`Wells ${wellsScore} (PE likely > 4). Proceed directly to CTA.` };
+    }
+  }
+
+  const posCrit = [
+    ...PERC_ITEMS.filter(c => perc[c.key]===true).map(c => "PERC+ "+c.label),
+    ...WELLS_ITEMS.filter(c => wells[c.key]===true).map(c => `${c.label} (+${c.pts}pts)`),
+  ];
+  const negCrit = [
+    ...PERC_ITEMS.filter(c => perc[c.key]===false).map(c => "PERC- "+c.label),
+    ...WELLS_ITEMS.filter(c => wells[c.key]===false).map(c => c.label),
+  ];
+
+  const Step = ({ n, label, color: sc }) => (
+    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+      color:sc, letterSpacing:1.4, textTransform:"uppercase", marginBottom:7,
+      display:"flex", alignItems:"center", gap:7 }}>
+      <div style={{ width:18, height:18, borderRadius:"50%", background:sc,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontFamily:"'Playfair Display',serif", fontWeight:900,
+        fontSize:10, color:"#080510", flexShrink:0 }}>{n}</div>
+      {label}
+    </div>
+  );
+
+  return (
+    <div className="cdh-in">
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9, marginBottom:12,
+        padding:"9px 12px", borderRadius:9,
+        background:`${T.coral}08`, border:`1px solid ${T.coral}28`,
+        borderLeft:`3px solid ${T.coral}` }}>
+        <div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>PERC Rule</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+            Low pretest only. All 8 absent: PE ruled out.
+          </div>
+        </div>
+        <div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            color:T.blue, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>Modified Wells</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+            {"<="} 4: D-dimer first. {">"} 4: CTA directly.
+          </div>
+        </div>
+      </div>
+      <ResultBanner result={result} />
+      <div style={{ marginBottom:12 }}>
+        <Step n="1" label="Clinical Pretest Probability" color={T.purple} />
+        <div style={{ display:"flex", gap:7 }}>
+          {[
+            { val:"low",     label:"Low",            sub:"< 15% — PE not leading concern", color:T.teal },
+            { val:"not_low", label:"Moderate / High", sub:">= 15% — PE on differential",  color:T.coral },
+          ].map(opt => (
+            <button key={opt.val} onClick={() => setPretest(opt.val)}
+              style={{ flex:1, padding:"9px 10px", borderRadius:9, cursor:"pointer",
+                textAlign:"left", transition:"all .1s",
+                border:`1px solid ${pretest===opt.val ? opt.color+"55" : "rgba(45,30,80,0.4)"}`,
+                background:pretest===opt.val ? `${opt.color}10` : "transparent" }}>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
+                color:pretest===opt.val ? opt.color : T.txt2, marginBottom:2 }}>{opt.label}</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>{opt.sub}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+      {pretest==="low" && (
+        <div style={{ marginBottom:12 }}>
+          <Step n="2" label="PERC — All 8 must be absent to rule out PE" color={T.coral} />
+          {PERC_ITEMS.map(c => (
+            <CriterionCheck key={c.key} label={c.label} sub={c.sub}
+              state={c.key in perc ? perc[c.key] : undefined}
+              onToggle={val => togPerc(c.key, val)} color={T.coral} />
+          ))}
+        </div>
+      )}
+      {showWells && (
+        <div style={{ marginBottom:12 }}>
+          <Step n={pretest==="low" ? "3" : "2"}
+            label={`Wells Score${WELLS_ITEMS.some(c => wells[c.key]) ? ` — ${wellsScore.toFixed(1)} pts` : ""}`}
+            color={T.blue} />
+          {WELLS_ITEMS.map(c => (
+            <CriterionCheck key={c.key} label={`${c.label}  (+${c.pts})`}
+              state={c.key in wells ? wells[c.key] : undefined}
+              onToggle={val => togWells(c.key, val)} color={T.blue} />
+          ))}
+        </div>
+      )}
+      {showWells && wellsAllEval && wellsScore <= 4 && (
+        <div style={{ marginBottom:12 }}>
+          <Step n={pretest==="low" ? "4" : "3"} label="D-dimer Result" color={T.gold} />
+          <div style={{ display:"flex", gap:7 }}>
+            {[
+              { val:"neg", label:"Negative", sub:"PE excluded", color:T.teal },
+              { val:"pos", label:"Positive",  sub:"Proceed to CTA", color:T.coral },
+            ].map(opt => (
+              <button key={opt.val} onClick={() => setDdimer(ddimer===opt.val ? null : opt.val)}
+                style={{ flex:1, padding:"9px 10px", borderRadius:8, cursor:"pointer",
+                  textAlign:"left", transition:"all .1s",
+                  border:`1px solid ${ddimer===opt.val ? opt.color+"55" : "rgba(45,30,80,0.4)"}`,
+                  background:ddimer===opt.val ? `${opt.color}10` : "transparent" }}>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
+                  color:ddimer===opt.val ? opt.color : T.txt2, marginBottom:2 }}>{opt.label}</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>{opt.sub}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <ContextBox value={ctx} onChange={setCtx} color={T.coral}
+        placeholder="e.g. 58yo F post-hip fracture, immobilized 5 days, HR 108..." />
+      <AIBlock ruleName="PERC + Modified Wells for PE"
+        ruleCtx="PERC: low pretest only, all 8 absent = PE ruled out. Wells: <=4 PE unlikely (D-dimer), >4 PE likely (CTA)."
+        posCrit={posCrit} negCrit={negCrit}
+        recommendation={result ? `${result.label}: ${result.sub}` : "Incomplete"}
+        context={ctx} color={T.coral} />
+      <div style={{ marginTop:10, fontFamily:"'JetBrains Mono',monospace",
+        fontSize:7, color:T.txt4, letterSpacing:1.2 }}>
+        PERC: Kline et al, J Thromb Haemost 2008 · Wells: Wells et al, Thromb Haemost 2000
+      </div>
+    </div>
+  );
+}
+
+const HEART_CRIT = [
+  { key:"H", label:"History",
+    options:[
+      { val:0, label:"Slightly suspicious",   sub:"Mostly non-specific features" },
+      { val:1, label:"Moderately suspicious", sub:"Mixed typical/atypical" },
+      { val:2, label:"Highly suspicious",     sub:"Classic ACS presentation" },
+    ] },
+  { key:"E", label:"ECG",
+    options:[
+      { val:0, label:"Normal" },
+      { val:1, label:"Non-specific change",      sub:"LBBB, LVH, early repol, digoxin" },
+      { val:2, label:"Significant ST deviation",  sub:"New ST depression/elevation, T-wave inversion" },
+    ] },
+  { key:"A", label:"Age",
+    options:[
+      { val:0, label:"< 45 years" },
+      { val:1, label:"45-65 years" },
+      { val:2, label:"> 65 years" },
+    ] },
+  { key:"R", label:"Risk Factors",
+    options:[
+      { val:0, label:"None known" },
+      { val:1, label:"1-2 risk factors", sub:"HTN, hyperlipidemia, DM, obesity, smoking, family hx CAD" },
+      { val:2, label:">= 3 RF OR prior atherosclerotic disease", sub:"Prior MI, PCI/CABG, stroke, PAD" },
+    ] },
+  { key:"T", label:"Troponin",
+    options:[
+      { val:0, label:"<= Normal limit" },
+      { val:1, label:"1-3x upper limit of normal" },
+      { val:2, label:"> 3x upper limit of normal" },
+    ] },
+];
+
+function HeartPanel() {
+  const [scores, setScores] = useState({});
+  const [ctx,    setCtx]    = useState("");
+  const onChange = (key, val) => setScores(p => ({...p, [key]:val}));
+  const total  = Object.values(scores).reduce((s,v) => s+v, 0);
+  const allSet = HEART_CRIT.every(c => c.key in scores);
+  const result = allSet
+    ? total <= 3 ? { label:`HEART ${total} — Low Risk`, color:T.teal,
+        sub:"MACE risk ~1.7% at 6 weeks. Discharge with outpatient cardiology or stress testing within 72h." }
+      : total <= 6 ? { label:`HEART ${total} — Moderate Risk`, color:T.gold,
+        sub:"MACE risk ~12-16.6%. Observation, serial troponins, stress testing or cardiology referral." }
+      : { label:`HEART ${total} — High Risk`, color:T.coral,
+        sub:"MACE risk ~50-65%. Early invasive strategy. Cardiology consult. Likely ACS — admit." }
+    : null;
+
+  const posCrit = HEART_CRIT.filter(c => c.key in scores && scores[c.key] > 0)
+    .map(c => `${c.label}: ${c.options.find(o => o.val===scores[c.key])?.label} (${scores[c.key]}pt)`);
+  const negCrit = HEART_CRIT.filter(c => scores[c.key]===0).map(c => `${c.label}: 0`);
+
+  return (
+    <div className="cdh-in">
+      <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:11,
+        background:`${T.coral}08`, border:`1px solid ${T.coral}28`,
+        borderLeft:`3px solid ${T.coral}` }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+          Each component scored 0-2. Total 0-10. Validated for MACE at 6 weeks. Backus et al, Ann Emerg Med 2010.
+        </div>
+      </div>
+      {Object.keys(scores).length > 0 && (
+        <div style={{ marginBottom:11, padding:"11px 14px", borderRadius:10,
+          background:`${allSet ? (result?.color||T.gold) : T.gold}0a`,
+          border:`1px solid ${allSet ? (result?.color||T.gold) : T.gold}30` }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:36,
+              fontWeight:700, color:allSet ? (result?.color||T.gold) : T.gold }}>{total}</div>
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4 }}>/ 10</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt3 }}>
+                {!allSet ? `${Object.keys(scores).length}/5 scored`
+                  : total<=3 ? "Low Risk" : total<=6 ? "Moderate Risk" : "High Risk"}
+              </div>
+            </div>
+            <div style={{ flex:1, display:"flex", gap:3 }}>
+              {HEART_CRIT.map(c => (
+                <div key={c.key} style={{ flex:1, height:4, borderRadius:2,
+                  background:c.key in scores
+                    ? scores[c.key]===0 ? T.teal : scores[c.key]===1 ? T.gold : T.coral
+                    : "rgba(45,30,80,0.3)" }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {allSet && <ResultBanner result={result} />}
+      {HEART_CRIT.map(c => (
+        <ScoreSelect key={c.key} crit={c} value={scores[c.key]} onChange={onChange} />
+      ))}
+      {Object.keys(scores).length > 0 && (
+        <button onClick={() => setScores({})}
+          style={{ marginBottom:8, padding:"5px 13px", borderRadius:7, cursor:"pointer",
+            fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
+            border:"1px solid rgba(45,30,80,0.4)", background:"transparent", color:T.txt4 }}>
+          ↺ Clear
+        </button>
+      )}
+      <ContextBox value={ctx} onChange={setCtx} color={T.coral}
+        placeholder="e.g. 62yo M, diaphoretic, troponin pending, prior CABG 2018..." />
+      <AIBlock ruleName="HEART Score for ACS Risk Stratification"
+        ruleCtx="Scores 0-10. Low (0-3): ~1.7% MACE. Moderate (4-6): ~12-16.6%. High (7-10): ~50-65% MACE at 6 weeks."
+        posCrit={posCrit} negCrit={negCrit}
+        recommendation={result ? `${result.label}: ${result.sub}` : "Incomplete"}
+        context={ctx} color={T.coral} />
+    </div>
+  );
+}
+
+function OttawaPanel() {
+  const [anklePain, setAnklePain] = useState(null);
+  const [footPain,  setFootPain]  = useState(null);
+  const [ankle,     setAnkle]     = useState({});
+  const [foot,      setFoot]      = useState({});
+  const [ctx,       setCtx]       = useState("");
+
+  const togA = (k,v) => setAnkle(p => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
+  const togF = (k,v) => setFoot(p  => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
+
+  const ANKLE_C = [
+    { key:"lat",  label:"Bone tenderness at posterior edge or tip of lateral malleolus" },
+    { key:"med",  label:"Bone tenderness at posterior edge or tip of medial malleolus" },
+    { key:"wt_a", label:"Unable to bear weight immediately AND in ED (4 steps)" },
+  ];
+  const FOOT_C = [
+    { key:"mt5",  label:"Bone tenderness at base of 5th metatarsal" },
+    { key:"nav",  label:"Bone tenderness at navicular bone" },
+    { key:"wt_f", label:"Unable to bear weight immediately AND in ED (4 steps)" },
+  ];
+
+  const ankleResult = anklePain===false
+    ? { label:"Ankle X-Ray Not Indicated", color:T.teal, sub:"No malleolar zone pain." }
+    : anklePain===true && ANKLE_C.every(c => c.key in ankle)
+      ? ANKLE_C.some(c => ankle[c.key])
+        ? { label:"Ankle X-Ray Indicated", color:T.coral, sub:"Ottawa Ankle Rule positive." }
+        : { label:"Ankle X-Ray Not Indicated", color:T.teal, sub:"All ankle criteria absent (sensitivity 96.4%)." }
+      : null;
+
+  const footResult = footPain===false
+    ? { label:"Foot X-Ray Not Indicated", color:T.teal, sub:"No midfoot zone pain." }
+    : footPain===true && FOOT_C.every(c => c.key in foot)
+      ? FOOT_C.some(c => foot[c.key])
+        ? { label:"Foot X-Ray Indicated", color:T.coral, sub:"Ottawa Foot Rule positive." }
+        : { label:"Foot X-Ray Not Indicated", color:T.teal, sub:"All foot criteria absent (sensitivity 99.6%)." }
+      : null;
+
+  const posCrit = [
+    ...ANKLE_C.filter(c => ankle[c.key]===true).map(c => "Ankle: "+c.label),
+    ...FOOT_C.filter(c  => foot[c.key]===true).map(c  => "Foot: "+c.label),
+  ];
+  const negCrit = [
+    ...ANKLE_C.filter(c => ankle[c.key]===false).map(c => "Ankle absent: "+c.label),
+    ...FOOT_C.filter(c  => foot[c.key]===false).map(c  => "Foot absent: "+c.label),
+  ];
+
+  const ZoneQ = ({ label, value, onChange: onCh, color: zc }) => (
+    <>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, marginBottom:6 }}>{label}</div>
+      <div style={{ display:"flex", gap:5, marginBottom:9 }}>
+        {[{v:true,l:"Yes"},{v:false,l:"No"}].map(o => (
+          <button key={String(o.v)} onClick={() => onCh(o.v)}
+            style={{ flex:1, padding:"7px 0", borderRadius:7, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+              border:`1px solid ${value===o.v ? zc+"55" : "rgba(45,30,80,0.4)"}`,
+              background:value===o.v ? `${zc}12` : "transparent",
+              color:value===o.v ? zc : T.txt4 }}>{o.l}</button>
+        ))}
+      </div>
+    </>
+  );
+
+  const MiniRes = ({ result: r }) => r ? (
+    <div style={{ marginTop:8, padding:"8px 11px", borderRadius:8,
+      background:`${r.color}0c`, border:`1px solid ${r.color}44` }}>
+      <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+        fontSize:12, color:r.color, marginBottom:2 }}>{r.label}</div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt2, lineHeight:1.5 }}>{r.sub}</div>
+    </div>
+  ) : null;
+
+  return (
+    <div className="cdh-in">
+      <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:12,
+        background:`${T.orange}08`, border:`1px solid ${T.orange}28`,
+        borderLeft:`3px solid ${T.orange}` }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+          Adults, acute ankle/foot injury within 10 days. Stiell et al, Lancet 1992.
+        </div>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+        <div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:T.orange, letterSpacing:1.4, textTransform:"uppercase", marginBottom:8 }}>Ankle X-Ray</div>
+          <ZoneQ label="Pain in malleolar zone?" value={anklePain} onChange={setAnklePain} color={T.orange} />
+          {anklePain===true && ANKLE_C.map(c => (
+            <CriterionCheck key={c.key} label={c.label}
+              state={c.key in ankle ? ankle[c.key] : undefined}
+              onToggle={val => togA(c.key, val)} color={T.orange} />
+          ))}
+          <MiniRes result={ankleResult} />
+        </div>
+        <div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:T.gold, letterSpacing:1.4, textTransform:"uppercase", marginBottom:8 }}>Foot X-Ray</div>
+          <ZoneQ label="Pain in midfoot zone?" value={footPain} onChange={setFootPain} color={T.gold} />
+          {footPain===true && FOOT_C.map(c => (
+            <CriterionCheck key={c.key} label={c.label}
+              state={c.key in foot ? foot[c.key] : undefined}
+              onToggle={val => togF(c.key, val)} color={T.gold} />
+          ))}
+          <MiniRes result={footResult} />
+        </div>
+      </div>
+      <ContextBox value={ctx} onChange={setCtx} color={T.orange}
+        placeholder="e.g. 22yo athlete, inversion injury, significant swelling, cannot weight bear..." />
+      <AIBlock ruleName="Ottawa Ankle and Foot Rules"
+        ruleCtx="Adults, acute ankle/foot injury within 10 days."
+        posCrit={posCrit} negCrit={negCrit}
+        recommendation={[ankleResult, footResult].filter(Boolean).map(r => r.label).join(" | ") || "Incomplete"}
+        context={ctx} color={T.orange} />
+    </div>
+  );
+}
+
+function CSpinePanel() {
+  const [ccr,    setCCR]    = useState({});
+  const [canRot, setCanRot] = useState(null);
+  const [nexus,  setNexus]  = useState({});
+  const [ctx,    setCtx]    = useState("");
+
+  const togC = (k,v) => setCCR(p   => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
+  const togN = (k,v) => setNexus(p => { const n={...p}; p[k]===v ? delete n[k] : n[k]=v; return n; });
+
+  const CCR_HI = [
+    { key:"age65",       label:"Age >= 65 years" },
+    { key:"danger",      label:"Dangerous mechanism", sub:"Fall > 3ft/5 stairs, axial load, high-speed MVC/rollover/ejection" },
+    { key:"paresthesia", label:"Paresthesias in extremities" },
+  ];
+  const CCR_LO = [
+    { key:"simple_mvc",   label:"Simple rear-end MVC" },
+    { key:"sitting_ed",   label:"Sitting position in ED" },
+    { key:"ambulatory",   label:"Ambulatory at any time after injury" },
+    { key:"delayed_pain", label:"Delayed onset of neck pain" },
+    { key:"no_midline",   label:"Absence of midline c-spine tenderness" },
+  ];
+  const NX = [
+    { key:"nx_tender",   label:"Posterior midline c-spine tenderness" },
+    { key:"nx_intox",    label:"Evidence of intoxication" },
+    { key:"nx_alert",    label:"Altered level of alertness", sub:"GCS < 15, confused, disoriented" },
+    { key:"nx_neuro",    label:"Focal neurological deficit" },
+    { key:"nx_distract", label:"Painful distracting injury" },
+  ];
+
+  const hiAny     = CCR_HI.some(c => ccr[c.key]===true);
+  const hiAllEval = CCR_HI.every(c => c.key in ccr);
+  const loAny     = CCR_LO.some(c => ccr[c.key]===true);
+  const loAllEval = CCR_LO.every(c => c.key in ccr);
+
+  let ccrResult = null;
+  if (hiAny) {
+    ccrResult = { label:"Imaging Required", color:T.coral, sub:"High-risk criterion present — CT c-spine indicated." };
+  } else if (hiAllEval) {
+    if (loAny) {
+      if (canRot===true) ccrResult = { label:"No Imaging Required", color:T.teal, sub:"No high-risk factors. Low-risk present. Patient can rotate 45° bilaterally." };
+      else if (canRot===false) ccrResult = { label:"Imaging Required", color:T.coral, sub:"Cannot rotate 45° — imaging required." };
+      else ccrResult = { label:"Assess Rotation", color:T.gold, sub:"Can patient actively rotate neck 45° left AND right?" };
+    } else if (loAllEval) {
+      ccrResult = { label:"Imaging Required", color:T.orange, sub:"No low-risk factors present — imaging required." };
+    }
+  }
+
+  const nxAnyPos = NX.some(c => nexus[c.key]===true);
+  const nxAllNeg = NX.every(c => nexus[c.key]===false);
+  const nexusResult = nxAnyPos
+    ? { label:"Imaging Required", color:T.coral, sub:"One or more NEXUS criteria present." }
+    : nxAllNeg
+      ? { label:"No Imaging Required", color:T.teal, sub:"All 5 NEXUS criteria absent (sensitivity 99.6%)." }
+      : null;
+
+  const posCrit = [
+    ...CCR_HI.filter(c => ccr[c.key]===true).map(c => "CCR-Hi: "+c.label),
+    ...CCR_LO.filter(c => ccr[c.key]===true).map(c => "CCR-Lo: "+c.label),
+    ...NX.filter(c => nexus[c.key]===true).map(c => "NEXUS+: "+c.label),
+  ];
+  const negCrit = [
+    ...CCR_HI.filter(c => ccr[c.key]===false).map(c => "CCR-Hi absent: "+c.label),
+    ...NX.filter(c => nexus[c.key]===false).map(c => "NEXUS-: "+c.label),
+  ];
+
+  const MiniRes = ({ result: r }) => r ? (
+    <div style={{ marginBottom:10, padding:"8px 10px", borderRadius:8,
+      background:`${r.color}0c`, border:`1px solid ${r.color}44` }}>
+      <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+        fontSize:12, color:r.color, marginBottom:2 }}>{r.label}</div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt2, lineHeight:1.5 }}>{r.sub}</div>
+    </div>
+  ) : null;
+
+  return (
+    <div className="cdh-in">
+      <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:12,
+        background:`${T.blue}08`, border:`1px solid ${T.blue}28`,
+        borderLeft:`3px solid ${T.blue}` }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+          Both: alert (GCS 15), stable adult trauma. CCR sensitivity 99.4%, NEXUS 99.6%.
+        </div>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+        <div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:T.blue, letterSpacing:1.4, textTransform:"uppercase", marginBottom:3 }}>Canadian C-Spine Rule</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9, color:T.txt4, marginBottom:9 }}>Stiell et al, JAMA 2001</div>
+          <MiniRes result={ccrResult} />
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:5 }}>High-Risk (any → imaging)</div>
+          {CCR_HI.map(c => (
+            <CriterionCheck key={c.key} label={c.label} sub={c.sub}
+              state={c.key in ccr ? ccr[c.key] : undefined}
+              onToggle={val => togC(c.key, val)} color={T.coral} />
+          ))}
+          {hiAllEval && !hiAny && (
+            <>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:T.gold, letterSpacing:1.2, textTransform:"uppercase", marginTop:9, marginBottom:5 }}>
+                Low-Risk (any → assess rotation)
+              </div>
+              {CCR_LO.map(c => (
+                <CriterionCheck key={c.key} label={c.label}
+                  state={c.key in ccr ? ccr[c.key] : undefined}
+                  onToggle={val => togC(c.key, val)} color={T.gold} />
+              ))}
+            </>
+          )}
+          {hiAllEval && !hiAny && loAny && (
+            <div style={{ marginTop:8 }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:T.teal, letterSpacing:1.2, textTransform:"uppercase", marginBottom:5 }}>
+                Can rotate 45° left AND right?
+              </div>
+              <div style={{ display:"flex", gap:5 }}>
+                {[{v:true,l:"Yes",c:T.teal},{v:false,l:"No",c:T.coral}].map(o => (
+                  <button key={String(o.v)} onClick={() => setCanRot(canRot===o.v ? null : o.v)}
+                    style={{ flex:1, padding:"7px 4px", borderRadius:7, cursor:"pointer",
+                      fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:10,
+                      border:`1px solid ${canRot===o.v ? o.c+"55" : "rgba(45,30,80,0.4)"}`,
+                      background:canRot===o.v ? `${o.c}12` : "transparent",
+                      color:canRot===o.v ? o.c : T.txt4 }}>{o.l}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            color:T.lavender, letterSpacing:1.4, textTransform:"uppercase", marginBottom:3 }}>NEXUS Criteria</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9, color:T.txt4, marginBottom:9 }}>Hoffman et al, NEJM 2000</div>
+          <MiniRes result={nexusResult} />
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt4, marginBottom:7, lineHeight:1.5 }}>
+            ALL 5 must be absent to clear c-spine without imaging.
+          </div>
+          {NX.map(c => (
+            <CriterionCheck key={c.key} label={c.label} sub={c.sub}
+              state={c.key in nexus ? nexus[c.key] : undefined}
+              onToggle={val => togN(c.key, val)} color={T.lavender} />
+          ))}
+        </div>
+      </div>
+      <ContextBox value={ctx} onChange={setCtx} color={T.blue}
+        placeholder="e.g. 34yo rear-end MVC, ambulatory at scene, posterior neck pain..." />
+      <AIBlock ruleName="Canadian C-Spine Rule + NEXUS"
+        ruleCtx="CCR: GCS 15, stable adult. NEXUS: all 5 absent = clear."
+        posCrit={posCrit} negCrit={negCrit}
+        recommendation={[ccrResult?.label, nexusResult?.label].filter(Boolean).join(" / ") || "Incomplete"}
+        context={ctx} color={T.blue} />
+    </div>
+  );
+}
+
+export default function ClinicalDecisionHub({ embedded = false }) {
+  const navigate = useNavigate();
+  const [cat,  setCat]  = useState("neuro");
+  const [rule, setRule] = useState("canadian_ct");
+  const activeCat = CATEGORIES.find(c => c.id === cat);
+
+  function ActivePanel() {
+    if (rule in BINARY_RULES)   return <BinaryPanel key={rule} ruleId={rule} />;
+    if (rule === "perc_wells")  return <PERCWellsPanel key={rule} />;
+    if (rule === "heart_score") return <HeartPanel key={rule} />;
+    if (rule === "ottawa")      return <OttawaPanel key={rule} />;
+    if (rule === "cspine")      return <CSpinePanel key={rule} />;
+    return null;
+  }
+
+  return (
+    <div style={{ fontFamily:"'DM Sans',sans-serif",
+      background:embedded ? "transparent" : T.bg,
+      minHeight:embedded ? "auto" : "100vh", color:T.txt }}>
+      <div style={{ maxWidth:900, margin:"0 auto", padding:embedded ? "0" : "0 16px" }}>
+        {!embedded && (
+          <div style={{ padding:"18px 0 14px" }}>
+            <button onClick={() => navigate("/hub")}
+              style={{ marginBottom:10, display:"inline-flex", alignItems:"center", gap:7,
+                fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+                padding:"5px 14px", borderRadius:8, background:"rgba(8,5,16,0.8)",
+                border:"1px solid rgba(45,30,80,0.5)", color:T.txt3, cursor:"pointer" }}>
+              ← Back to Hub
+            </button>
+            <h1 className="shimmer-cdh"
+              style={{ fontFamily:"'Playfair Display',serif",
+                fontSize:"clamp(22px,4vw,38px)", fontWeight:900,
+                letterSpacing:-0.5, lineHeight:1.1 }}>
+              Clinical Decision Rules
+            </h1>
+            <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4, marginTop:4 }}>
+              Canadian CT · PECARN · New Orleans · PERC + Wells · HEART Score ·
+              Ottawa Ankle/Foot · C-Spine CCR + NEXUS · AI Clinical Interpretation
+            </p>
+          </div>
+        )}
+        <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+          {CATEGORIES.map(c => (
+            <button key={c.id} onClick={() => { setCat(c.id); setRule(c.rules[0].id); }}
+              style={{ flex:1, padding:"10px 8px", borderRadius:10, cursor:"pointer",
+                textAlign:"center", transition:"all .14s",
+                border:`1px solid ${cat===c.id ? c.color+"66" : "rgba(45,30,80,0.5)"}`,
+                background:cat===c.id ? `${c.color}12` : "rgba(14,10,26,0.6)" }}>
+              <div style={{ fontSize:20, marginBottom:3 }}>{c.icon}</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                color:cat===c.id ? c.color : T.txt4 }}>{c.label}</div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                color:T.txt4, marginTop:2 }}>{c.rules.length} rules</div>
+            </button>
+          ))}
+        </div>
+        <div style={{ display:"flex", gap:5, flexWrap:"wrap", padding:"5px",
+          marginBottom:14, background:"rgba(14,10,26,0.85)",
+          border:"1px solid rgba(45,30,80,0.4)", borderRadius:10 }}>
+          {activeCat?.rules.map(r => (
+            <button key={r.id} onClick={() => setRule(r.id)}
+              style={{ display:"flex", alignItems:"center", gap:5,
+                padding:"7px 11px", borderRadius:8, cursor:"pointer",
+                flex:1, justifyContent:"center",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11, transition:"all .12s",
+                border:`1px solid ${rule===r.id ? activeCat.color+"66" : "rgba(45,30,80,0.5)"}`,
+                background:rule===r.id ? `${activeCat.color}12` : "transparent",
+                color:rule===r.id ? activeCat.color : T.txt4 }}>
+              <span style={{ fontSize:13 }}>{r.icon}</span>
+              <span>{r.name}</span>
+            </button>
+          ))}
+        </div>
+        <ActivePanel />
+        {!embedded && (
+          <div style={{ textAlign:"center", padding:"24px 0 16px",
+            fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, letterSpacing:1.5 }}>
+            NOTRYA CLINICAL DECISION RULES · CLINICAL SUPPORT ONLY · NOT A SUBSTITUTE FOR PHYSICIAN JUDGMENT
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

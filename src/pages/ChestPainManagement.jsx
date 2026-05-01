@@ -1,31 +1,20 @@
-// ChestPainPanels.jsx — Notrya ChestPainHub UI components
-// This file re-exports shared primitives and owns the Protocol/Dispo/Vitals/STEMI panels.
-// Constraints: no form, no localStorage, straight quotes, single react import
+// ChestPainManagement.jsx — Notrya ChestPainHub
+// ACS Protocol, Disposition, Vitals, STEMI overlay, Fibrinolysis, Sgarbossa, Shock, Return Precautions
+// Constraints: no form, no localStorage, straight quotes only, single react import
 
 import { useState, useMemo } from "react";
 import {
   T, FF, ACS_STEPS, dispositionRec, heartStrata, edacsRisk,
+  calcSgarbossa, sgarbossaInterp,
 } from "./ChestPainLogic";
 import { Bul, InfoBox } from "./ChestPainCalculators";
 
-// ── Re-export shared primitives (single source of truth: ChestPainCalculators) ──
-export {
-  TabBtn, ScoreOption, InfoBox, CheckRow, TroponinField,
-  Bul, NavBtn, SkipBtn, SummaryStrip,
-  HeartTab, TimiPanel, TroponinTab, EdacsTab,
-} from "./ChestPainCalculators";
 
-// ── Re-export DDx components (ChestPainDdx) ──
-export { RefSection, DifferentialsTab } from "./ChestPainDdx";
-
-// ═══ PROTOCOL TAB ═════════════════════════════════════════════════════════
 export function ProtocolTab({ expanded, setExpanded, weightKg, crcl }) {
   const doses = weightKg ? {
-    ufhBolus: Math.min(Math.round(weightKg*60), 4000),
-    ufhInf:   Math.min(Math.round(weightKg*12), 1000),
+    ufhBolus: Math.min(Math.round(weightKg*60), 4000), ufhInf:   Math.min(Math.round(weightKg*12), 1000),
     enox:     weightKg.toFixed(0),
-    enoxFreq: crcl!==null ? (crcl<30 ? "q24h (CrCl "+crcl+"<30)" : "q12h") : "q12h",
-    tnk:      Math.min((weightKg*0.5).toFixed(1), 50),
+    enoxFreq: crcl!==null ? (crcl<30 ? "q24h (CrCl"+crcl+"<30)" : "q12h") : "q12h", tnk:      Math.min((weightKg*0.5).toFixed(1), 50),
   } : null;
   return (
     <div className="cph-fade">
@@ -37,15 +26,18 @@ export function ProtocolTab({ expanded, setExpanded, weightKg, crcl }) {
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
             {[
-              { label:"UFH Bolus",    val:`${doses.ufhBolus.toLocaleString()} u`, sub:"60 u/kg, max 4,000" },
-              { label:"UFH Infusion", val:`${doses.ufhInf} u/hr`,                 sub:"12 u/kg/hr, max 1,000" },
-              { label:"Enoxaparin",   val:`${doses.enox} mg SQ`,                  sub:`1 mg/kg ${doses.enoxFreq}${crcl!==null?", CrCl "+crcl+" mL/min":""}` },
-              { label:"TNK",          val:`${doses.tnk} mg`,                       sub:"0.5 mg/kg, max 50" },
+              { label:"UFH Bolus",   val:`${doses.ufhBolus.toLocaleString()} u`,  sub:"60 u/kg, max 4,000" },
+              { label:"UFH Infusion",val:`${doses.ufhInf} u/hr`,                  sub:"12 u/kg/hr, max 1,000" },
+              { label:"Enoxaparin",  val:`${doses.enox} mg SQ`,                   sub:`1 mg/kg ${doses.enoxFreq||"q12h"}${crcl!==null?", CrCl "+crcl+" mL/min":""}` },
+              { label:"TNK",         val:`${doses.tnk} mg`,                        sub:"0.5 mg/kg, max 50" },
             ].map(d => (
               <div key={d.label} style={{ textAlign:"center" }}>
-                <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4, letterSpacing:0.8, marginBottom:2 }}>{d.label}</div>
-                <div style={{ fontFamily:FF.mono, fontSize:13, fontWeight:700, color:T.blue }}>{d.val}</div>
-                <div style={{ fontFamily:FF.sans, fontSize:8.5, color:T.txt4 }}>{d.sub}</div>
+                <div style={{ fontFamily:FF.mono, fontSize:10,
+                  color:T.txt4, letterSpacing:0.8, marginBottom:2 }}>{d.label}</div>
+                <div style={{ fontFamily:FF.mono, fontSize:13,
+                  fontWeight:700, color:T.blue }}>{d.val}</div>
+                <div style={{ fontFamily:FF.sans, fontSize:8.5,
+                  color:T.txt4 }}>{d.sub}</div>
               </div>
             ))}
           </div>
@@ -84,7 +76,9 @@ export function ProtocolTab({ expanded, setExpanded, weightKg, crcl }) {
             "Ticagrelor preferred over clopidogrel (PLATO) — avoid if prior stroke/TIA",
             "Morphine associated with worse outcomes in NSTEMI — use cautiously",
             "Oxygen only if SpO2 < 90% — hyperoxia is harmful in normoxic ACS",
-          ].map((p, i) => <Bul key={i} c={T.gold}>{p}</Bul>)}
+          ].map((p, i) => (
+            <Bul key={i} c={T.gold}>{p}</Bul>
+          ))}
         </div>
       </InfoBox>
     </div>
@@ -116,8 +110,13 @@ export function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tro
     if (wellsScore>0) mdm += ` Wells PE score ${wellsScore.toFixed(1)}: ${wellsInterResult?.label?.toLowerCase()} probability.`;
     if (addrsScore>0) mdm += ` ADD-RS ${addrsScore}/3 for aortic dissection.`;
     mdm += ` Clinical decision: ${rec.dispo.toLowerCase()}. `;
-    mdm += rec.plan.map((p,i)=>`${i+1}. ${p}`).join(" ");
+    mdm += "\n" + rec.plan.map((p,i)=>`${i+1}. ${p}`).join("\n");
     return mdm;
+  };
+  const handleCopyMDM = () => {
+    if (navigator.clipboard)
+      navigator.clipboard.writeText(generateMDM())
+        .then(()=>{ setCopiedMDM(true); setTimeout(()=>setCopiedMDM(false),2500); });
   };
 
   const generateNote = () => {
@@ -127,9 +126,9 @@ export function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tro
     if (vitalParts.length) lines.push(`Vitals: ${vitalParts.join(", ")}`);
     if (hs) lines.push(`HEART Score: ${heartScore}/10 (${hs.label}) — est. 30-day MACE ${hs.mace}`);
     if (tropResult) {
-      const foldStr  = tropResult.fold ? ` (${tropResult.fold.toFixed(1)}× ULN)` : "";
-      const t1str    = !isNaN(tropResult.v1) ? `, 3h: ${tropResult.v1}` : "";
-      const t2str    = !isNaN(tropResult.v2) ? `, 6h: ${tropResult.v2}` : "";
+      const foldStr = tropResult.fold ? ` (${tropResult.fold.toFixed(1)}× ULN)` : "";
+      const t1str   = !isNaN(tropResult.v1) ? `, 3h: ${tropResult.v1}` : "";
+      const t2str   = !isNaN(tropResult.v2) ? `, 6h: ${tropResult.v2}` : "";
       const trendStr = tropResult.trend ? ` [${tropResult.trend.label}]` : "";
       lines.push(`Troponin 0h: ${tropResult.v0}${foldStr}${t1str}${t2str}${trendStr} — ${
         tropInterp === "acs" ? "rising pattern consistent with AMI" :
@@ -146,23 +145,34 @@ export function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tro
     return lines.join("\n");
   };
 
-  if (heartScore === null) return (
-    <div className="cph-fade" style={{ padding:"24px 0", textAlign:"center" }}>
-      <div style={{ fontSize:32, marginBottom:12 }}>💓</div>
-      <div style={{ fontFamily:FF.sans, fontSize:13, color:T.txt4, lineHeight:1.7 }}>
-        Complete HEART Score to begin. Then add Troponin result to generate disposition.
-      </div>
-    </div>
-  );
+  const handleCopy = () => {
+    const text = generateNote();
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); });
+    }
+  };
 
-  if (tropInterp === null) return (
-    <div className="cph-fade" style={{ padding:"24px 0", textAlign:"center" }}>
-      <div style={{ fontSize:32, marginBottom:12 }}>🔬</div>
-      <div style={{ fontFamily:FF.sans, fontSize:13, color:T.txt4, lineHeight:1.7 }}>
-        HEART Score complete ({heartScore}/10). Enter troponin values on the Troponin tab to generate disposition.
+  if (heartScore === null) {
+    return (
+      <div className="cph-fade" style={{ padding:"24px 0", textAlign:"center" }}>
+        <div style={{ fontSize:32, marginBottom:12 }}>💓</div>
+        <div style={{ fontFamily:FF.sans, fontSize:13, color:T.txt4, lineHeight:1.7 }}>
+          Complete HEART Score to begin. Then add Troponin result to generate disposition.
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (tropInterp === null) {
+    return (
+      <div className="cph-fade" style={{ padding:"24px 0", textAlign:"center" }}>
+        <div style={{ fontSize:32, marginBottom:12 }}>🔬</div>
+        <div style={{ fontFamily:FF.sans, fontSize:13, color:T.txt4, lineHeight:1.7 }}>
+          HEART Score complete ({heartScore}/10). Enter troponin values on the Troponin tab to generate disposition.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="cph-fade">
@@ -174,7 +184,7 @@ export function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tro
             <div style={{ fontFamily:FF.serif, fontWeight:900, fontSize:22, color:rec.color }}>{rec.dispo}</div>
             <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt3, marginTop:2 }}>{rec.detail}</div>
           </div>
-          <button onClick={() => navigator.clipboard.writeText(generateNote()).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2500); })}
+          <button onClick={handleCopy}
             style={{ padding:"7px 12px", borderRadius:8, cursor:"pointer",
               fontFamily:FF.mono, fontSize:10, fontWeight:700, letterSpacing:0.5, flexShrink:0,
               border:`1px solid ${copied ? T.teal+"66" : rec.color+"44"}`,
@@ -185,7 +195,8 @@ export function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tro
         <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
           {rec.plan.map((p, i) => (
             <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
-              <span style={{ fontFamily:FF.mono, fontSize:10, color:rec.color, minWidth:18, marginTop:1, fontWeight:700 }}>{i+1}.</span>
+              <span style={{ fontFamily:FF.mono, fontSize:10, color:rec.color,
+                minWidth:18, marginTop:1, fontWeight:700 }}>{i+1}.</span>
               <span style={{ fontFamily:FF.sans, fontSize:12, color:T.txt2, lineHeight:1.6 }}>{p}</span>
             </div>
           ))}
@@ -194,8 +205,8 @@ export function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tro
 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
         {[
-          { label:"HEART",   val:heartScore !== null ? heartScore : "--",                    color:T.coral   },
-          { label:"Troponin",val:tropInterp || "unknown",                                    color:T.blue    },
+          { label:"HEART",   val:heartScore !== null ? heartScore : "--",                    color:T.coral  },
+          { label:"Troponin",val:tropInterp || "unknown",                                    color:T.blue   },
           { label:"Strata",  val:heartScore !== null ? heartStrata(heartScore).label : "--", color:rec.color },
         ].map(s => (
           <div key={s.label} style={{ padding:"10px", borderRadius:9, textAlign:"center",
@@ -209,7 +220,7 @@ export function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tro
 
       {rec && (
         <div style={{ display:"flex", gap:8, marginTop:12, marginBottom:4 }}>
-          <button onClick={() => navigator.clipboard.writeText(generateMDM()).then(()=>{ setCopiedMDM(true); setTimeout(()=>setCopiedMDM(false),2500); })}
+          <button onClick={handleCopyMDM}
             style={{ flex:1, padding:"8px 10px", borderRadius:8, cursor:"pointer",
               fontFamily:FF.mono, fontSize:10, fontWeight:700, letterSpacing:0.5,
               border:`1px solid ${copiedMDM ? T.teal+"66" : T.purple+"44"}`,
@@ -229,6 +240,94 @@ export function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tro
         </div>
       )}
       {showReturn && rec?.dispo === "Safe Discharge" && <ReturnPrecautions />}
+      {rec && (
+        <div style={{ marginTop:12 }}>
+          <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4, letterSpacing:1.2,
+            textTransform:"uppercase", marginBottom:6 }}>Continue in Notrya</div>
+          <div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>
+            {[
+              { label:"ECG Hub",    color:T.blue,   hub:"ECGHub"    },
+              { label:"Shock Hub",  color:T.coral,  hub:"ShockHub"  },
+              { label:"ERx Hub",    color:T.teal,   hub:"ERxHub"    },
+              { label:"Airway Hub", color:T.purple, hub:"AirwayHub" },
+            ].map(h => (
+              <button key={h.hub}
+                onClick={()=>window.dispatchEvent(new CustomEvent("notrya-navigate",{detail:{hub:h.hub}}))}
+                style={{ padding:"7px 12px", borderRadius:8, cursor:"pointer",
+                  fontFamily:FF.sans, fontWeight:600, fontSize:11,
+                  border:`1px solid ${h.color}55`,
+                  background:`${h.color}0a`, color:h.color }}>
+                {h.label} →
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══ CARDIOGENIC SHOCK PANEL ══════════════════════════════════════════════
+export function CardiogenicShockPanel() {
+  const [open, setOpen] = useState(false);
+  if (!open) return (
+    <button onClick={()=>setOpen(true)}
+      style={{ width:"100%", minHeight:40, borderRadius:9, cursor:"pointer", marginBottom:8,
+        fontFamily:FF.sans, fontWeight:700, fontSize:12,
+        border:"1.5px solid rgba(255,107,107,0.45)",
+        background:"rgba(255,107,107,0.06)", color:T.coral,
+        display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+      Cardiogenic Shock Protocol
+    </button>
+  );
+  return (
+    <div style={{ marginBottom:10, padding:"12px 14px", borderRadius:10,
+      background:"rgba(14,28,58,0.97)", border:"2px solid rgba(255,107,107,0.45)" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        <div style={{ fontFamily:FF.serif, fontSize:16, fontWeight:900, color:T.coral }}>Cardiogenic Shock</div>
+        <button onClick={()=>setOpen(false)}
+          style={{ background:"transparent", border:"none", color:T.txt3, cursor:"pointer", fontSize:18, fontWeight:700 }}>×</button>
+      </div>
+      {[
+        { color:T.coral, label:"Diagnosis", items:[
+          "SBP < 90 mmHg × 30 min OR vasopressors required to maintain SBP ≥ 90",
+          "End-organ hypoperfusion: cool extremities, oliguria, altered mentation",
+          "Pulmonary congestion (clinical or radiographic)",
+          "Reduced cardiac output (CI < 2.2 L/min/m² if PA catheter available)",
+        ]},
+        { color:T.orange, label:"Immediate", items:[
+          "Supplemental O₂, intubate if respiratory failure",
+          "STEMI shock → emergent PCI is the definitive therapy",
+          "Bedside echo: LV/RV function, tamponade, mechanical complications",
+          "Correct reversible causes: arrhythmia, tamponade, pneumothorax",
+        ]},
+        { color:T.blue, label:"Vasopressors", items:[
+          "Norepinephrine 0.1–0.5 mcg/kg/min IV — first-line (SOAP-II trial); MAP target ≥ 65",
+          "Dobutamine 2.5–20 mcg/kg/min IV — add for low output / high filling pressures",
+          "Dopamine 5–15 mcg/kg/min — second-line only (higher mortality vs NE in SOAP-II)",
+          "Vasopressin 0.03–0.04 u/min — adjunct for refractory vasodilation",
+          "Avoid phenylephrine — increases afterload with no inotropy",
+        ]},
+        { color:T.purple, label:"Mechanical Circulatory Support", items:[
+          "IABP: reduces afterload, augments diastolic pressure; easiest to place",
+          "Impella CP/5.5: 3.7–5.5 L/min support; preferred in high-risk PCI",
+          "VA-ECMO: rescue for refractory CS; highest complication rate",
+          "SCAI shock classification A–E guides escalation timing",
+          "Escalate early if MAP < 65 despite 2 vasopressors",
+        ]},
+        { color:T.gold, label:"Avoid", items:[
+          "Aggressive diuresis in RV shock (preload-dependent)",
+          "Beta-blockers acutely in cardiogenic shock",
+          "Nitrates if SBP < 90 or RV infarction suspected",
+        ]},
+      ].map((sect,i) => (
+        <div key={i} style={{ marginBottom:8, padding:"8px 12px", borderRadius:8,
+          background:`${sect.color}09`, borderLeft:`3px solid ${sect.color}` }}>
+          <div style={{ fontFamily:FF.mono, fontSize:9, color:sect.color,
+            letterSpacing:1.2, textTransform:"uppercase", marginBottom:5 }}>{sect.label}</div>
+          {sect.items.map((item,j) => <Bul key={j} c={sect.color}>{item}</Bul>)}
+        </div>
+      ))}
     </div>
   );
 }
@@ -236,7 +335,7 @@ export function DispoTab({ heartScore, tropInterp, edacsScore, edacsNegTrop, tro
 // ═══ VITALS BAR + TROP COUNTDOWN ═════════════════════════════════════════
 export function VitalsBar({ sbp,setSbp,hr,setHr,weight,weightUnit,setWeight,setWeightUnit,
     tropArrivalTime,setTropArrivalTime,t0,
-    creatinine,setCreatinine,doorTime,setDoorTime,ekgTime,setEkgTime,
+    creatinine,setCreatinine,crcl,doorTime,setDoorTime,ekgTime,setEkgTime,
     cathTime,setCathTime,symptomMins,setSymptomMins,chiefComplaint,setChiefComplaint }) {
   const sbpN = parseInt(sbp)||0, hrN = parseInt(hr)||0;
   const sbpLow = sbpN>0 && sbpN<90, hrHigh = hrN>0 && hrN>100;
@@ -260,11 +359,13 @@ export function VitalsBar({ sbp,setSbp,hr,setHr,weight,weightUnit,setWeight,setW
               placeholder="--" style={{ width:56, padding:"4px 7px", background:"rgba(14,28,58,0.93)",
                 border:`1px solid ${f.alert ? f.ac+"88" : "rgba(35,70,115,0.65)"}`, borderRadius:6, outline:"none",
                 fontFamily:FF.mono, fontSize:13, fontWeight:700, color:f.alert ? f.ac : T.txt }} />
-            {f.alert && <div style={{ fontFamily:FF.sans, fontSize:10, color:f.ac, fontWeight:700 }}>{f.al}</div>}
+            {f.alert && <div style={{ fontFamily:FF.sans, fontSize:10,
+              color:f.ac, fontWeight:700 }}>{f.al}</div>}
           </div>
         ))}
         <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-          <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4, letterSpacing:1, minWidth:20 }}>WT</div>
+          <div style={{ fontFamily:FF.mono, fontSize:10,
+            color:T.txt4, letterSpacing:1, minWidth:20 }}>WT</div>
           <input type="number" value={weight} onChange={e => setWeight(e.target.value)}
             placeholder="--" style={{ width:56, padding:"4px 7px", background:"rgba(14,28,58,0.93)",
               border:"1px solid rgba(35,70,115,0.65)", borderRadius:6, outline:"none",
@@ -287,6 +388,15 @@ export function VitalsBar({ sbp,setSbp,hr,setHr,weight,weightUnit,setWeight,setW
               borderRadius:6, outline:"none", fontFamily:FF.mono, fontSize:13,
               fontWeight:700, color:T.purple }} />
           <span style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4 }}>mg/dL</span>
+          {(crcl !== null && crcl !== undefined) && (
+            <div style={{ fontFamily:FF.mono, fontSize:10, fontWeight:700,
+              padding:"2px 8px", borderRadius:5,
+              color:crcl<30?T.coral:crcl<60?T.gold:T.teal,
+              border:`1px solid ${crcl<30?T.coral:crcl<60?T.gold:T.teal}44`,
+              background:crcl<30?"rgba(255,107,107,0.1)":crcl<60?"rgba(245,200,66,0.08)":"rgba(0,229,192,0.07)" }}>
+              CrCl {crcl}{crcl<30?" ↓ reduce enox":""}
+            </div>
+          )}
         </div>
         <input value={chiefComplaint} onChange={e=>setChiefComplaint(e.target.value)}
           placeholder="Chief complaint..."
@@ -328,9 +438,9 @@ export function VitalsBar({ sbp,setSbp,hr,setHr,weight,weightUnit,setWeight,setW
           { label:"EKG",      t:ekgTime,  set:setEkgTime  },
           { label:"Cath lab", t:cathTime, set:setCathTime  },
         ].map(item => {
-          const m = item.t && doorTime ? Math.round((item.t - doorTime)/60000) : null;
+          const mins = item.t && doorTime ? Math.round((item.t - doorTime)/60000) : null;
           const isEkg = item.label==="EKG", isCath = item.label==="Cath lab";
-          const over = isEkg?(m!==null&&m>10):isCath?(m!==null&&m>90):false;
+          const over = isEkg?(mins!==null&&mins>10):isCath?(mins!==null&&mins>90):false;
           return (
             <div key={item.label} style={{ display:"flex", alignItems:"center", gap:4 }}>
               {!item.t ? (
@@ -345,14 +455,17 @@ export function VitalsBar({ sbp,setSbp,hr,setHr,weight,weightUnit,setWeight,setW
                   border:`1px solid ${over?T.coral+"66":T.teal+"44"}`,
                   background:over?"rgba(255,107,107,0.1)":"rgba(0,229,192,0.08)",
                   color:over?T.coral:T.teal }}>
-                  {item.label} {m!==null?`${m}m`:""}{over?" ⚠":""}
+                  {item.label} {mins!==null?`${mins}m`:""}
+                  {over&&isEkg?" ⚠":over&&isCath?" ⚠":""}
                 </div>
               )}
             </div>
           );
         })}
         {symptomMins !== "" && (
-          <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt3 }}>onset {symptomMins}m ago</div>
+          <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt3 }}>
+            onset {symptomMins}m ago
+          </div>
         )}
         <input type="number" value={symptomMins} onChange={e=>setSymptomMins(e.target.value)}
           placeholder="onset min"
@@ -377,7 +490,9 @@ export function STEMIOverlay({ open, onClose, weightKg }) {
       <div style={{ maxWidth:700, margin:"0 auto", padding:"0 16px 32px" }}>
         <div style={{ padding:"16px 0 10px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div>
-            <div style={{ fontFamily:FF.serif, fontSize:22, fontWeight:900, color:T.red }}>STEMI Activation Protocol</div>
+            <div style={{ fontFamily:FF.serif, fontSize:22, fontWeight:900, color:T.red }}>
+              STEMI Activation Protocol
+            </div>
             <div style={{ fontFamily:FF.mono, fontSize:10, color:T.coral, letterSpacing:1.5, marginTop:4 }}>
               DOOR-TO-BALLOON TARGET: 90 MIN -- FIBRINOLYSIS: 30 MIN
             </div>
@@ -395,15 +510,18 @@ export function STEMIOverlay({ open, onClose, weightKg }) {
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
               {[
-                { label:"UFH (PCI)",   val:`${ufhPCI?.toLocaleString()} u`, sub:"70 u/kg bolus" },
+                { label:"UFH (PCI)", val:`${ufhPCI?.toLocaleString()} u`,  sub:"70 u/kg bolus" },
                 { label:"UFH (Lytic)", val:`${ufhBolus?.toLocaleString()} u`, sub:"60 u/kg bolus" },
-                { label:"TNK",         val:`${tnk} mg`, sub:"0.5 mg/kg IV, max 50" },
-                { label:"Enoxaparin",  val:`${enox} mg`, sub:"1 mg/kg SQ" },
+                { label:"TNK", val:`${tnk} mg`, sub:"0.5 mg/kg IV, max 50" },
+                { label:"Enoxaparin", val:`${enox} mg`, sub:"1 mg/kg SQ" },
               ].map(d => (
                 <div key={d.label} style={{ textAlign:"center" }}>
-                  <div style={{ fontFamily:FF.mono, fontSize:10, color:T.txt4, letterSpacing:0.8, marginBottom:2 }}>{d.label}</div>
-                  <div style={{ fontFamily:FF.mono, fontSize:13, fontWeight:700, color:T.blue }}>{d.val}</div>
-                  <div style={{ fontFamily:FF.sans, fontSize:8.5, color:T.txt4 }}>{d.sub}</div>
+                  <div style={{ fontFamily:FF.mono, fontSize:10,
+                    color:T.txt4, letterSpacing:0.8, marginBottom:2 }}>{d.label}</div>
+                  <div style={{ fontFamily:FF.mono, fontSize:13,
+                    fontWeight:700, color:T.blue }}>{d.val}</div>
+                  <div style={{ fontFamily:FF.sans, fontSize:8.5,
+                    color:T.txt4 }}>{d.sub}</div>
                 </div>
               ))}
             </div>
@@ -437,17 +555,20 @@ export function STEMIOverlay({ open, onClose, weightKg }) {
         ].map((sect,i) => (
           <div key={i} style={{ marginBottom:10, padding:"12px 14px", borderRadius:10,
             background:`${sect.color}09`, border:`1px solid ${sect.color}33`, borderLeft:`3px solid ${sect.color}` }}>
-            <div style={{ fontFamily:FF.mono, fontSize:10, color:sect.color,
-              letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>{sect.label}</div>
+            <div style={{ fontFamily:FF.mono, fontSize:10,
+              color:sect.color, letterSpacing:1.5, textTransform:"uppercase",
+              marginBottom:8 }}>{sect.label}</div>
             {sect.steps.map((step,j) => (
               <div key={j} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:6 }}>
                 <span style={{ color:sect.color, fontSize:10, marginTop:3, flexShrink:0 }}>-</span>
-                <span style={{ fontFamily:FF.sans, fontSize:12, color:T.txt2, lineHeight:1.6 }}>{step}</span>
+                <span style={{ fontFamily:FF.sans,
+                  fontSize:12, color:T.txt2, lineHeight:1.6 }}>{step}</span>
               </div>
             ))}
           </div>
         ))}
         <FibrinolysisChecklist />
+        <SgarbossaPanel />
       </div>
     </div>
   );
@@ -466,9 +587,9 @@ export function FibrinolysisChecklist() {
     "Significant closed-head / facial trauma within 3 months",
     "Intracranial or intraspinal surgery within 2 months",
   ];
-  const anyYes     = Object.values(items).some(Boolean);
+  const anyYes = Object.values(items).some(Boolean);
   const allChecked = CI_LIST.every((_,i)=>items[i]!==undefined);
-  const cleared    = allChecked && !anyYes;
+  const cleared = allChecked && !anyYes;
   return (
     <div style={{ margin:"12px 0", padding:"12px 14px", borderRadius:10,
       background:`${anyYes?T.coral:cleared?T.teal:T.blue}0a`,
@@ -498,11 +619,143 @@ export function FibrinolysisChecklist() {
       ))}
       {(anyYes||cleared) && (
         <div style={{ marginTop:8, padding:"7px 11px", borderRadius:7,
-          background:`${anyYes?T.coral:T.teal}15`, border:`1px solid ${anyYes?T.coral:T.teal}55`,
-          fontFamily:FF.sans, fontWeight:700, fontSize:12, color:anyYes?T.coral:T.teal }}>
+          background:`${anyYes?T.coral:T.teal}15`,
+          border:`1px solid ${anyYes?T.coral:T.teal}55`,
+          fontFamily:FF.sans, fontWeight:700, fontSize:12,
+          color:anyYes?T.coral:T.teal }}>
           {anyYes ? "⚠ CONTRAINDICATED — absolute CI present. Consider mechanical reperfusion." : "✓ CLEARED — no absolute contraindications identified"}
         </div>
       )}
+    </div>
+  );
+}
+
+// ═══ SGARBOSSA PANEL ══════════════════════════════════════════════════════
+export function SgarbossaPanel() {
+  const [crit, setCrit]       = useState({});
+  const [smithST, setSmithST] = useState("");
+  const [smithS,  setSmithS]  = useState("");
+  const score      = calcSgarbossa({ concordantSTE:crit.cste, concordantSTD:crit.cstd, discordantSTE:crit.dste });
+  const smithRatio = smithST && smithS ? Math.abs(parseFloat(smithST)/parseFloat(smithS)) : null;
+  const smithPos   = smithRatio !== null && smithRatio >= 0.25;
+  const result     = sgarbossaInterp(score, smithPos);
+  return (
+    <div style={{ margin:"12px 0", padding:"12px 14px", borderRadius:10,
+      background:`${result.color}0a`, border:`1px solid ${result.color}33` }}>
+      <div style={{ fontFamily:FF.mono, fontSize:10, color:result.color,
+        letterSpacing:1.2, textTransform:"uppercase", marginBottom:8 }}>
+        Sgarbossa Criteria — LBBB / Paced Rhythm
+      </div>
+      {[
+        { k:"cste", pts:5, label:"Concordant STE ≥ 1 mm in any lead" },
+        { k:"cstd", pts:3, label:"Concordant STD ≥ 1 mm in V1–V3" },
+        { k:"dste", pts:2, label:"Excessively discordant STE ≥ 5 mm" },
+      ].map(f => (
+        <button key={f.k} onClick={()=>setCrit(p=>({...p,[f.k]:!p[f.k]}))}
+          style={{ display:"flex", alignItems:"center", gap:9, width:"100%",
+            padding:"7px 10px", borderRadius:8, cursor:"pointer", marginBottom:5,
+            border:`1px solid ${crit[f.k]?T.coral+"55":"rgba(35,70,115,0.65)"}`,
+            background:crit[f.k]?"rgba(255,107,107,0.1)":"transparent" }}>
+          <div style={{ width:18, height:18, borderRadius:4, flexShrink:0,
+            border:`2px solid ${crit[f.k]?T.coral:"rgba(42,79,122,0.55)"}`,
+            background:crit[f.k]?T.coral:"transparent",
+            display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {crit[f.k]&&<span style={{ color:"#050f1e", fontSize:11, fontWeight:900 }}>✓</span>}
+          </div>
+          <span style={{ fontFamily:FF.sans, fontSize:12, color:T.txt2, flex:1 }}>{f.label}</span>
+          <span style={{ fontFamily:FF.mono, fontSize:10, color:T.coral }}>{f.pts} pts</span>
+        </button>
+      ))}
+      <div style={{ display:"flex", gap:8, alignItems:"center", margin:"8px 0 4px" }}>
+        <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt3, flex:1 }}>Modified Smith: STE ÷ S-wave ≥ 0.25</div>
+        <input type="number" value={smithST} onChange={e=>setSmithST(e.target.value)}
+          placeholder="STE mm"
+          style={{ width:68, padding:"4px 7px", background:"rgba(14,28,58,0.94)",
+            border:"1px solid rgba(35,70,115,0.65)", borderRadius:6, outline:"none",
+            fontFamily:FF.mono, fontSize:12, color:T.coral }} />
+        <span style={{ color:T.txt4, fontFamily:FF.mono, fontSize:12 }}>/</span>
+        <input type="number" value={smithS} onChange={e=>setSmithS(e.target.value)}
+          placeholder="S mm"
+          style={{ width:68, padding:"4px 7px", background:"rgba(14,28,58,0.94)",
+            border:"1px solid rgba(35,70,115,0.65)", borderRadius:6, outline:"none",
+            fontFamily:FF.mono, fontSize:12, color:T.blue }} />
+        {smithRatio!==null&&(
+          <div style={{ fontFamily:FF.mono, fontSize:11, fontWeight:700, color:smithPos?T.coral:T.teal }}>
+            {smithRatio.toFixed(2)}{smithPos?" ✓":""}
+          </div>
+        )}
+      </div>
+      <div style={{ padding:"7px 11px", borderRadius:7,
+        background:`${result.color}15`, border:`1px solid ${result.color}44` }}>
+        <div style={{ fontFamily:FF.serif, fontWeight:700, fontSize:13, color:result.color, marginBottom:2 }}>{result.label}</div>
+        <div style={{ fontFamily:FF.sans, fontSize:11, color:T.txt2, lineHeight:1.5 }}>{result.rec}</div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ MASSIVE PE FAST LANE ═════════════════════════════════════════════════
+export function MassivePEPanel() {
+  const [open, setOpen] = useState(false);
+  if (!open) return (
+    <button onClick={() => setOpen(true)}
+      style={{ width:"100%", minHeight:40, borderRadius:9, cursor:"pointer",
+        marginTop:8, fontFamily:FF.sans, fontWeight:700, fontSize:12,
+        border:"1.5px solid rgba(255,107,107,0.45)",
+        background:"rgba(255,107,107,0.06)", color:T.coral,
+        display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+      Massive PE Protocol — Systemic Lysis / Embolectomy
+    </button>
+  );
+  return (
+    <div style={{ marginTop:8, padding:"12px 14px", borderRadius:10,
+      background:"rgba(14,28,58,0.97)", border:"2px solid rgba(255,107,107,0.45)" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        <div style={{ fontFamily:FF.serif, fontSize:16, fontWeight:900, color:T.coral }}>Massive PE</div>
+        <button onClick={() => setOpen(false)}
+          style={{ background:"transparent", border:"none", color:T.txt3,
+            cursor:"pointer", fontSize:18, fontWeight:700 }}>×</button>
+      </div>
+      {[
+        { color:T.coral, label:"Systemic Thrombolysis Dosing", items:[
+          "Alteplase (tPA): 100 mg IV over 2 hours (preferred regimen, FDA-approved)",
+          "Arrest / no IV access: 50 mg IV bolus (2019 ESC rescue thrombolysis)",
+          "Heparin: HOLD during infusion, restart when aPTT < 80s after lysis completes",
+          "Monitor: BP, O2 sat, neuro status q15 min during infusion",
+        ]},
+        { color:T.red, label:"Absolute Contraindications to Lysis", items:[
+          "Any prior intracranial hemorrhage",
+          "Ischemic stroke within 3 months",
+          "Active significant internal bleeding (not menses)",
+          "Intracranial or intraspinal surgery or trauma within 2 months",
+          "Known intracranial neoplasm or AVM",
+        ]},
+        { color:T.orange, label:"Catheter-Directed Therapy (CDT)", items:[
+          "Indication: lysis contraindicated OR failed systemic lysis OR submassive with deterioration",
+          "Alteplase CDT dose: 1–2 mg/hr per catheter × 12–24h (much lower bleeding risk)",
+          "Requires IR or cardiology with CDT capability",
+          "EKOS ultrasound-assisted CDT: 1 mg/hr per catheter × 15h in SEATTLE-II trial",
+        ]},
+        { color:T.purple, label:"Surgical Embolectomy", items:[
+          "Indication: lysis fails, contraindicated, or patient in cardiac arrest",
+          "Requires cardiac surgery and cardiopulmonary bypass capability",
+          "Notify cardiothoracic surgery early in any patient with massive PE",
+          "Transfer immediately if not available at your center",
+        ]},
+        { color:T.gold, label:"Hemodynamic Support", items:[
+          "Norepinephrine 0.1–0.5 mcg/kg/min — first-line vasopressor for PE shock",
+          "Avoid aggressive fluid resuscitation: RV already overdistended, fluids worsen RV failure",
+          "Cautious fluid bolus 500 mL if clear underfilling, then reassess",
+          "Mechanical ventilation: high-risk, causes RV afterload spike — prepare for arrest",
+        ]},
+      ].map((sect, i) => (
+        <div key={i} style={{ marginBottom:8, padding:"8px 12px", borderRadius:8,
+          background:`${sect.color}09`, borderLeft:`3px solid ${sect.color}` }}>
+          <div style={{ fontFamily:FF.mono, fontSize:9, color:sect.color,
+            letterSpacing:1.2, textTransform:"uppercase", marginBottom:5 }}>{sect.label}</div>
+          {sect.items.map((item, j) => <Bul key={j} c={sect.color}>{item}</Bul>)}
+        </div>
+      ))}
     </div>
   );
 }
@@ -545,7 +798,8 @@ export function ReturnPrecautions() {
       ].map((item, i) => (
         <div key={i} style={{ display:"flex", gap:7, alignItems:"flex-start", marginBottom:5 }}>
           <span style={{ color:T.teal, fontSize:10, marginTop:2, flexShrink:0 }}>{">"}</span>
-          <span style={{ fontFamily:FF.sans, fontSize:12, color:T.txt2, lineHeight:1.55 }}>{item}</span>
+          <span style={{ fontFamily:FF.sans, fontSize:12,
+            color:T.txt2, lineHeight:1.55 }}>{item}</span>
         </div>
       ))}
     </div>

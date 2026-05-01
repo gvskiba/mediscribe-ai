@@ -14,7 +14,7 @@ import {
 } from "./ChestPainCalculators";
 import {
   DifferentialsTab,
-} from "./ChestPainDDx";
+} from "./ChestPainDdx";
 import {
   ProtocolTab, DispoTab, VitalsBar, STEMIOverlay, CardiogenicShockPanel,
 } from "./ChestPainManagement";
@@ -151,6 +151,7 @@ function GuidedWorkflow({
   edacsFields,setEdacsFields,edacsNegTrop,setEdacsNegTrop,
   tropResult,tropInterp,heartTotal,edacsScore,
   wellsScore,wellsInterResult,addrsScore,addrsResult,
+  sbp,hr,weight,weightUnit,creatinine,chiefComplaint,
   onTabsSwitch,onReset,
 }) {
   const current   = GUIDED_STEPS[step];
@@ -486,6 +487,8 @@ export default function ChestPainHub({ embedded = false, onBack }) {
             heartTotal={heartTotal} edacsScore={edacsScore}
             wellsScore={wellsScore} wellsInterResult={wellsInterResult}
             addrsScore={addrsScore} addrsResult={addrsResult}
+            sbp={sbp} hr={hr} weight={weight} weightUnit={weightUnit}
+            creatinine={creatinine} chiefComplaint={chiefComplaint}
             onTabsSwitch={() => setUiMode("tabs")}
             onReset={() => {
               setHeartScores({}); setT0(""); setT1(""); setT2("");

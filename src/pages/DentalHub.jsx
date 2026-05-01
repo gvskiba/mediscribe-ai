@@ -1473,6 +1473,7 @@ function NotationPage() {
 }
 
 
+export default function DentalHub() {
   const [page, setPage] = useState(PAGES.OVERVIEW);
 
   const renderPage = () => {

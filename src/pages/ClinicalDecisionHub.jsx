@@ -40,7 +40,7 @@ import { ClinicalNote } from "@/api/entities";
 
 const T = {
   bg:"#080510", panel:"#0e0a1a",
-  txt:"#f0ecff", txt2:"#c4b8e8", txt3:"#8a7ab4", txt4:"#4a3d7a",
+  txt:"#f0ecff", txt2:"#c4b8e8", txt3:"#8a7ab4", txt4:"#7a6cb0",
   teal:"#00d4b4", gold:"#f5c842", coral:"#ff5c5c", blue:"#6b9fff",
   orange:"#ff9f43", purple:"#b06dff", green:"#3dffa0", red:"#ff3d3d",
   lavender:"#c4aaff",
@@ -98,7 +98,7 @@ function CriterionCheck({ label, sub, state, onToggle, color }) {
         <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12,
           color:isPos ? color : T.txt2, lineHeight:1.4 }}>{label}</div>
         {sub && <div style={{ fontFamily:"'DM Sans',sans-serif",
-          fontSize:10, color:T.txt4, marginTop:1, lineHeight:1.35 }}>{sub}</div>}
+          fontSize:11.5, color:T.txt4, marginTop:1, lineHeight:1.35 }}>{sub}</div>}
       </div>
     </div>
   );
@@ -246,14 +246,14 @@ Be concise. Do NOT restate criteria. Focus on:
       {result && (
         <div className="cdh-in" style={{ marginTop:9, padding:"12px 14px",
           borderRadius:11, background:`${c}08`, border:`1px solid ${c}2a` }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
             color:c, letterSpacing:1.5, textTransform:"uppercase", marginBottom:9 }}>
             ✦ AI Clinical Interpretation
           </div>
           {result.applicability_note && (
             <div style={{ marginBottom:8, padding:"6px 9px", borderRadius:6,
               background:`${T.coral}09`, border:`1px solid ${T.coral}22` }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>
                 Applicability
               </div>
@@ -262,14 +262,14 @@ Be concise. Do NOT restate criteria. Focus on:
             </div>
           )}
           <div style={{ marginBottom:8 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
               color:c, letterSpacing:1.2, textTransform:"uppercase", marginBottom:3 }}>Reasoning</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
               color:T.txt2, lineHeight:1.7 }}>{result.clinical_reasoning}</div>
           </div>
           {result.caveats?.length > 0 && (
             <div style={{ marginBottom:8 }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:T.gold, letterSpacing:1.2, textTransform:"uppercase", marginBottom:4 }}>Caveats</div>
               {result.caveats.map((cv,i) => (
                 <div key={i} style={{ display:"flex", gap:6, marginBottom:3 }}>
@@ -281,14 +281,14 @@ Be concise. Do NOT restate criteria. Focus on:
             </div>
           )}
           <div style={{ marginBottom:result.additional_workup?.length > 0 ? 8 : 0 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
               color:T.teal, letterSpacing:1.2, textTransform:"uppercase", marginBottom:3 }}>Disposition</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5,
               color:T.txt2, lineHeight:1.65 }}>{result.disposition}</div>
           </div>
           {result.additional_workup?.length > 0 && (
             <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:T.blue, letterSpacing:1.2, textTransform:"uppercase", marginBottom:4 }}>
                 Additional Workup
               </div>
@@ -302,7 +302,7 @@ Be concise. Do NOT restate criteria. Focus on:
             </div>
           )}
           <div style={{ marginTop:8, fontFamily:"'JetBrains Mono',monospace",
-            fontSize:7, color:T.txt4, letterSpacing:1.1, textAlign:"right" }}>
+            fontSize:9, color:T.txt4, letterSpacing:1.1, textAlign:"right" }}>
             AI-ASSISTED · NOT A SUBSTITUTE FOR CLINICAL JUDGMENT
           </div>
         </div>
@@ -314,7 +314,7 @@ Be concise. Do NOT restate criteria. Focus on:
 function ContextBox({ value, onChange, placeholder, color }) {
   return (
     <>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
         color:T.txt4, letterSpacing:1.2, textTransform:"uppercase",
         marginBottom:5, marginTop:10 }}>
         Clinical Context (optional — enhances AI)
@@ -512,19 +512,19 @@ function BinaryPanel({ ruleId }) {
         borderLeft:`3px solid ${rule.color}` }}>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:7 }}>
           <div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
               color:rule.color, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>Applies To</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5,
               color:T.txt3, lineHeight:1.5 }}>{rule.applies}</div>
           </div>
           <div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
               color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>Exclusions</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5,
               color:T.txt3, lineHeight:1.5 }}>{rule.excludes}</div>
           </div>
         </div>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt4 }}>
           <span style={{ color:rule.color }}>◉ </span>{rule.sensitivity}
         </div>
       </div>
@@ -542,7 +542,7 @@ function BinaryPanel({ ruleId }) {
       <ResultBanner result={result} />
       {rule.groups.map((g, gi) => (
         <div key={gi} style={{ marginBottom:10 }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
             color:g.color, letterSpacing:1.4, textTransform:"uppercase", marginBottom:6,
             display:"flex", alignItems:"center", gap:5 }}>
             <div style={{ width:5, height:5, borderRadius:"50%", background:g.color }} />
@@ -571,7 +571,7 @@ function BinaryPanel({ ruleId }) {
         recommendation={result ? `${result.label}: ${result.sub}` : "Incomplete"}
         context={ctx} color={rule.color} />
       <div style={{ marginTop:10, fontFamily:"'JetBrains Mono',monospace",
-        fontSize:7, color:T.txt4, letterSpacing:1.2 }}>{rule.citation}</div>
+        fontSize:9, color:T.txt4, letterSpacing:1.2 }}>{rule.citation}</div>
     </div>
   );
 }
@@ -661,16 +661,16 @@ function PERCWellsPanel() {
         background:`${T.coral}08`, border:`1px solid ${T.coral}28`,
         borderLeft:`3px solid ${T.coral}` }}>
         <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
             color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>PERC Rule</div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>
             Low pretest only. All 8 absent: PE ruled out. Sensitivity 97.4%.
           </div>
         </div>
         <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
             color:T.blue, letterSpacing:1.2, textTransform:"uppercase", marginBottom:2 }}>Modified Wells</div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>
             {"<="} 4 (PE unlikely): D-dimer. {">"} 4 (PE likely): CTA directly.
           </div>
         </div>
@@ -690,7 +690,7 @@ function PERCWellsPanel() {
                 background:pretest===opt.val ? `${opt.color}10` : "transparent" }}>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
                 color:pretest===opt.val ? opt.color : T.txt2, marginBottom:2 }}>{opt.label}</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>{opt.sub}</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt4 }}>{opt.sub}</div>
             </button>
           ))}
         </div>
@@ -733,7 +733,7 @@ function PERCWellsPanel() {
                   background:ddimer===opt.val ? `${opt.color}10` : "transparent" }}>
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:12,
                   color:ddimer===opt.val ? opt.color : T.txt2, marginBottom:2 }}>{opt.label}</div>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>{opt.sub}</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt4 }}>{opt.sub}</div>
               </button>
             ))}
           </div>
@@ -747,7 +747,7 @@ function PERCWellsPanel() {
         recommendation={result ? `${result.label}: ${result.sub}` : "Incomplete"}
         context={ctx} color={T.coral} />
       <div style={{ marginTop:10, fontFamily:"'JetBrains Mono',monospace",
-        fontSize:7, color:T.txt4, letterSpacing:1.2 }}>
+        fontSize:9, color:T.txt4, letterSpacing:1.2 }}>
         PERC: Kline et al, J Thromb Haemost 2008 · Wells: Wells et al, Thromb Haemost 2000
       </div>
     </div>
@@ -812,7 +812,7 @@ function HeartPanel() {
       <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:11,
         background:`${T.coral}08`, border:`1px solid ${T.coral}28`,
         borderLeft:`3px solid ${T.coral}` }}>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>
           Each component scored 0-2. Total 0-10. Validated for MACE (MI, revascularization, death) at 6 weeks.
           Backus et al, Ann Emerg Med 2010 · Index troponin T=0 does NOT exclude ACS — serial troponin required.
         </div>
@@ -827,8 +827,8 @@ function HeartPanel() {
               {total}
             </div>
             <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4 }}>/ 10</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt3 }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11.5, color:T.txt4 }}>/ 10</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt3 }}>
                 {!allSet ? `${Object.keys(scores).length}/5 scored`
                   : total<=3 ? "Low Risk" : total<=6 ? "Moderate Risk" : "High Risk"}
               </div>
@@ -922,7 +922,7 @@ function ABCD2Panel() {
       <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:11,
         background:`${T.purple}08`, border:`1px solid ${T.purple}28`,
         borderLeft:`3px solid ${T.purple}` }}>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>
           Applies to TIA with symptom resolution. Johnston et al, Lancet 2007.
           Score 0-7 — predicts 2-day and 7-day stroke risk. Best used as one input alongside imaging,
           vascular workup, and clinical judgment — not as sole admission criterion.
@@ -938,8 +938,8 @@ function ABCD2Panel() {
               {total}
             </div>
             <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4 }}>/ 7</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt3 }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11.5, color:T.txt4 }}>/ 7</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt3 }}>
                 {!allSet ? `${Object.keys(scores).length}/5 scored`
                   : total<=3 ? "Low Risk" : total<=5 ? "Moderate Risk" : "High Risk"}
               </div>
@@ -969,7 +969,7 @@ function ABCD2Panel() {
       )}
       <div style={{ padding:"8px 10px", borderRadius:8, marginBottom:8,
         background:`${T.gold}08`, border:`1px solid ${T.gold}22` }}>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
           color:T.gold, letterSpacing:1.2, textTransform:"uppercase", marginBottom:3 }}>
           Dual Antiplatelet (all TIA risk tiers)
         </div>
@@ -987,7 +987,7 @@ function ABCD2Panel() {
         recommendation={result ? `${result.label}: ${result.sub}` : "Incomplete"}
         context={ctx} color={T.purple} />
       <div style={{ marginTop:10, fontFamily:"'JetBrains Mono',monospace",
-        fontSize:7, color:T.txt4, letterSpacing:1.2 }}>
+        fontSize:9, color:T.txt4, letterSpacing:1.2 }}>
         Johnston et al, Lancet 2007 · POINT trial (Johnston 2018) · CHANCE trial (Wang 2013)
       </div>
     </div>
@@ -1072,7 +1072,7 @@ function OttawaPanel() {
       <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:12,
         background:`${T.orange}08`, border:`1px solid ${T.orange}28`,
         borderLeft:`3px solid ${T.orange}` }}>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>
           Adults with acute ankle/foot injury within <strong>10 days</strong> (strict cutoff). Stiell et al, Lancet 1992.
           Not validated: age under 18, osteoporosis, pregnancy, distracting injury, AMS.
         </div>
@@ -1116,7 +1116,7 @@ function OttawaPanel() {
         recommendation={[ankleResult, footResult].filter(Boolean).map(r => r.label).join(" | ") || "Incomplete"}
         context={ctx} color={T.orange} />
       <div style={{ marginTop:10, fontFamily:"'JetBrains Mono',monospace",
-        fontSize:7, color:T.txt4, letterSpacing:1.2 }}>
+        fontSize:9, color:T.txt4, letterSpacing:1.2 }}>
         Stiell et al, Lancet 1992 · Ankle sensitivity 96.4% · Foot sensitivity 99.6%
       </div>
     </div>
@@ -1207,7 +1207,7 @@ function CSpinePanel() {
       <div style={{ padding:"9px 12px", borderRadius:9, marginBottom:12,
         background:`${T.blue}08`, border:`1px solid ${T.blue}28`,
         borderLeft:`3px solid ${T.blue}` }}>
-        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt3, lineHeight:1.5 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt3, lineHeight:1.5 }}>
           Both: alert (GCS 15), stable adult trauma. CCR: sensitivity 99.4%, specificity 45.1%.
           NEXUS: sensitivity 99.6%, specificity 12.9%. CCR preferred when both applicable — higher specificity.
         </div>
@@ -1223,7 +1223,7 @@ function CSpinePanel() {
             Stiell et al, JAMA 2001
           </div>
           <MiniRes result={ccrResult} />
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
             color:T.coral, letterSpacing:1.2, textTransform:"uppercase", marginBottom:5 }}>
             High-Risk (any → imaging)
           </div>
@@ -1234,7 +1234,7 @@ function CSpinePanel() {
           ))}
           {hiAllEval && !hiAny && (
             <>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:T.gold, letterSpacing:1.2, textTransform:"uppercase",
                 marginTop:9, marginBottom:5 }}>
                 Low-Risk (any → assess rotation)
@@ -1248,7 +1248,7 @@ function CSpinePanel() {
           )}
           {hiAllEval && !hiAny && loAny && (
             <div style={{ marginTop:8 }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 color:T.teal, letterSpacing:1.2, textTransform:"uppercase", marginBottom:5 }}>
                 Can patient rotate 45° left AND right?
               </div>
@@ -1274,7 +1274,7 @@ function CSpinePanel() {
             Hoffman et al, NEJM 2000
           </div>
           <MiniRes result={nexusResult} />
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10.5, color:T.txt4,
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11.5, color:T.txt4,
             marginBottom:7, lineHeight:1.5 }}>
             ALL 5 must be absent (x) to clear c-spine without imaging.
           </div>
@@ -1339,7 +1339,7 @@ Generated via Notrya ClinicalDecisionHub. Review and complete before chart submi
         <div className="cdh-in" style={{ marginTop:8, padding:"12px 14px",
           borderRadius:10, background:"rgba(8,5,16,0.95)",
           border:`1px solid ${T.teal}33` }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
             color:T.teal, letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>
             Send to QuickNote / ClinicalNoteStudio
           </div>
@@ -1370,7 +1370,7 @@ Generated via Notrya ClinicalDecisionHub. Review and complete before chart submi
             </span>}
           </div>
           <div style={{ marginTop:7, fontFamily:"'DM Sans',sans-serif",
-            fontSize:10, color:T.txt4, lineHeight:1.5 }}>
+            fontSize:11.5, color:T.txt4, lineHeight:1.5 }}>
             Creates ClinicalNote entity · source: "QN-Handoff" · status: "pending"
             · Opens in ClinicalNoteStudio for completion
           </div>
@@ -1422,7 +1422,7 @@ export default function ClinicalDecisionHub({ embedded = false }) {
                   fontSize:10, color:T.purple, letterSpacing:3 }}>NOTRYA</span>
                 <span style={{ color:T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:10 }}>/</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace",
-                  fontSize:10, color:T.txt3, letterSpacing:2 }}>DECISION</span>
+                  fontSize:11.5, color:T.txt3, letterSpacing:2 }}>DECISION</span>
               </div>
               <div style={{ height:1, flex:1,
                 background:"linear-gradient(90deg,rgba(176,109,255,0.5),transparent)" }} />

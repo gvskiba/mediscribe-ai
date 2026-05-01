@@ -135,14 +135,15 @@ export function calcTrop(t0, t1, t2, ulnInput) {
     const deltaSig = delta !== null && Math.abs(parseFloat(delta)) >= 20;
     interp = (fold > 3 || deltaSig) ? "acs" : "elevated";
   }
+  // trend arrow: compare v1 to v0
   let trend = null;
   if (!isNaN(v1)) {
     const pct = (v1 - v0) / Math.max(v0, 0.001);
-    if (pct >= 0.2)        trend = { arrow:"↑↑", label:"Rising rapidly", color:T.coral };
-    else if (pct >= 0.05)  trend = { arrow:"↑",   label:"Rising", color:T.orange };
-    else if (pct <= -0.2)  trend = { arrow:"↓↓", label:"Falling rapidly", color:T.teal };
-    else if (pct <= -0.05) trend = { arrow:"↓",   label:"Falling", color:T.teal };
-    else                   trend = { arrow:"→",   label:"Stable", color:T.blue };
+    if (pct >= 0.2)       trend = { arrow:"↑↑", label:"Rising rapidly", color:T.coral };
+    else if (pct >= 0.05) trend = { arrow:"↑",   label:"Rising", color:T.orange };
+    else if (pct <= -0.2) trend = { arrow:"↓↓", label:"Falling rapidly", color:T.teal };
+    else if (pct <= -0.05)trend = { arrow:"↓",   label:"Falling", color:T.teal };
+    else                  trend = { arrow:"→",   label:"Stable", color:T.blue };
   }
   return { v0, v1, v2, peak, fold, delta, interp, uln, trend };
 }
@@ -218,9 +219,9 @@ export function addrsInterp(score) {
   if (score === 0) return { label:"Low Risk", color:T.teal,
     rec:"ADD-RS 0 — D-dimer (>500 ng/mL) if clinical suspicion warrants. CXR + ECG to exclude other causes." };
   if (score === 1) return { label:"Intermediate Risk", color:T.gold,
-    rec:"ADD-RS 1 — CT Aortogram (chest/abdomen/pelvis, arterial phase) or TEE. Do not delay imaging if hemodynamically unstable. Order as 'CTA aorta' not generic CT chest." };
+    rec:"ADD-RS 1 — CT Aortogram (chest/abdomen/pelvis, arterial phase) or TEE. Do not delay imaging if hemodynamically unstable. Order as ‘CTA aorta’ not generic CT chest." };
   return           { label:"High Risk", color:T.coral,
-    rec:"ADD-RS 2–3 — Emergent CT Aortogram or TEE. IV access ×2, type & screen, cardiac surgery notification. Avoid anticoagulation/thrombolytics until dissection excluded. Order specifically as 'CT Aortogram' (arterial phase, chest + abdomen + pelvis)." };
+    rec:"ADD-RS 2–3 — Emergent CT Aortogram or TEE. IV access ×2, type & screen, cardiac surgery notification. Avoid anticoagulation/thrombolytics until dissection excluded. Order specifically as ‘CT Aortogram’ (arterial phase, chest + abdomen + pelvis)." };
 }
 
 // ═══ ACS PROTOCOL ═══════════════════════════════════════════════════
@@ -267,7 +268,7 @@ export const ACS_STEPS = [
   ]},
 ];
 
-// ═══ DISPOSITION ══════════════════════════════════════════════════════════
+// ═══ DISPOSITION (fixed: null tropInterp = not entered, not normal) ══════════════════
 export function dispositionRec(heartScore, tropInterp) {
   if (heartScore === null || tropInterp === null) return null;
   if (heartScore <= 3) {
@@ -311,7 +312,7 @@ export function dispositionRec(heartScore, tropInterp) {
       "Cardiology consult — bedside if hemodynamically unstable"] };
 }
 
-// DDx reference data
+// DDx reference data (pericarditis, pneumothorax, Boerhaave) + shared renderer
 export const DDX_REF = {
   peri: { color:T.purple, intro:"Classic triad: pleuritic chest pain, fever, pericardial friction rub. Typically young males post-viral. Pain worse supine, relieved leaning forward.", sections:[
     { label:"Diagnostic criteria", c:T.purple, items:["Pleuritic/positional chest pain (worse supine, better leaning forward)","Pericardial friction rub on auscultation","New widespread saddle-shaped ST elevation or PR depression on ECG","New or worsening pericardial effusion on echo"] },
@@ -330,6 +331,7 @@ export const DDX_REF = {
   ]},
 };
 
+// ═══ DIFFERENTIALS TAB ═════════════════════════════════════════════════════
 export const DDX_TABS = [
   { id:"pe",       label:"PE",          color:T.blue   },
   { id:"dissect",  label:"Dissection",  color:T.coral  },
@@ -349,3 +351,41 @@ export const GUIDED_STEPS = [
   { id:"edacs",    label:"EDACS Screen",    type:"edacs"    },
   { id:"dispo",    label:"Disposition",     type:"dispo"    },
 ];
+
+// === TIMI RISK SCORE =========================================================
+export const TIMI_ITEMS = [
+  { key:"ti_age",    label:"Age ≥ 65 years"                                        },
+  { key:"ti_rf",     label:"≥ 3 CAD risk factors (FHx, HTN, hyperlipidemia, DM, smoking)" },
+  { key:"ti_steno",  label:"Known coronary stenosis ≥ 50%"                         },
+  { key:"ti_st",     label:"ST deviation on presenting ECG"                             },
+  { key:"ti_events", label:"≥ 2 anginal events in prior 24 hours"                  },
+  { key:"ti_asa",    label:"Use of ASA in prior 7 days"                                 },
+  { key:"ti_enzymes",label:"Elevated serum cardiac markers"                             },
+];
+export function timiInterp(score) {
+  if (score <= 2) return { label:"Low Risk",          color:"#00e5c0", mortality:"4.7%",
+    rec:"Low risk — early discharge with outpatient follow-up and stress testing" };
+  if (score <= 4) return { label:"Intermediate Risk", color:"#f5c842", mortality:"13.2%",
+    rec:"Intermediate — anti-ischemic therapy; consider early invasive strategy" };
+  return           { label:"High Risk",            color:"#ff6b6b", mortality:"26.2%",
+    rec:"High risk — aggressive pharmacotherapy + early invasive strategy within 24h" };
+}
+
+// === SGARBOSSA CRITERIA ======================================================
+export function calcSgarbossa({ concordantSTE, concordantSTD, discordantSTE, smithRatio }) {
+  let score = 0;
+  if (concordantSTE)   score += 5;
+  if (concordantSTD)   score += 3;
+  if (discordantSTE)   score += 2;
+  return score;
+}
+export function sgarbossaInterp(score, smithPositive) {
+  if (smithPositive) return { label:"Modified Sgarbossa — AMI", color:"#ff6b6b",
+    rec:"STE/S-wave ratio ≥ 0.25 in any lead — high sensitivity for AMI in LBBB/paced rhythm" };
+  if (score >= 3) return { label:"Sgarbossa — AMI likely", color:"#ff6b6b",
+    rec:"Score ≥ 3 — specificity >90% for AMI. Activate cath lab." };
+  if (score > 0)  return { label:"Indeterminate", color:"#f5c842",
+    rec:"Score < 3 — does not meet threshold. Correlate clinically; low sensitivity with LBBB." };
+  return           { label:"Not met", color:"#00e5c0",
+    rec:"No Sgarbossa criteria present. Consider other causes of ST changes in LBBB/paced." };
+}

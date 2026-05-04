@@ -1142,28 +1142,16 @@ function HubCard({ hub, onNavigate, index, size = "normal", isEssential = false,
   );
 }
 
-function SearchBar({ value, onChange }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    const handler = (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); ref.current?.focus(); } };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
+function PaletteLauncher({ onOpen }) {
   return (
-    <div style={{ position: "relative", flex: 1, maxWidth: 420 }}>
-      <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, opacity: 0.4 }}>🔍</span>
-      <input
-        ref={ref}
-        type="text"
-        placeholder="Search hubs…"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        style={{ width: "100%", background: "rgba(8,22,40,0.8)", border: "1px solid rgba(42,79,122,0.6)", borderRadius: 12, padding: "10px 46px 10px 42px", color: "#ffffff", fontFamily: "'DM Sans',sans-serif", fontSize: 13, outline: "none", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", transition: "border-color 0.2s" }}
-        onFocus={e => e.target.style.borderColor = "rgba(0,229,192,0.5)"}
-        onBlur={e => e.target.style.borderColor = "rgba(42,79,122,0.6)"}
-      />
-      <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace" }}>⌘K</span>
-    </div>
+    <button onClick={onOpen}
+      style={{ flex: 1, maxWidth: 440, display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 12, cursor: "pointer", background: "rgba(8,22,40,0.8)", border: "1px solid rgba(42,79,122,0.6)", color: "#4a6a8a", fontFamily: "'DM Sans',sans-serif", fontSize: 13, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", transition: "all 0.2s", textAlign: "left" }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,229,192,0.5)"; e.currentTarget.style.color = "#8aaccc"; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(42,79,122,0.6)"; e.currentTarget.style.color = "#4a6a8a"; }}>
+      <span style={{ fontSize: 15, opacity: 0.45 }}>🔍</span>
+      <span style={{ flex: 1 }}>Search all hubs…</span>
+      <kbd style={{ background: "rgba(42,79,122,0.3)", border: "1px solid rgba(42,79,122,0.5)", borderRadius: 5, padding: "2px 8px", color: "#8aaccc", fontSize: 10, fontFamily: "'JetBrains Mono',monospace", pointerEvents: "none" }}>⌘K</kbd>
+    </button>
   );
 }
 
@@ -1188,14 +1176,140 @@ function RecentStrip({ recents, onNavigate }) {
   );
 }
 
+// ── Command Palette ────────────────────────────────────────────────────────────
+function CommandPalette({ open, onClose, onNavigate, recents }) {
+  const [query, setQuery] = useState("");
+  const [idx,   setIdx]   = useState(0);
+  const inputRef  = useRef(null);
+  const listRef   = useRef(null);
+
+  useEffect(() => {
+    if (open) { setQuery(""); setIdx(0); setTimeout(() => inputRef.current?.focus(), 60); }
+  }, [open]);
+
+  const results = useMemo(() => {
+    const live = h => LIVE_ROUTES.has(h.route);
+    if (!query.trim()) {
+      return recents.length
+        ? recents
+        : HUBS.filter(live).sort((a,b)=>a.priority-b.priority).slice(0,10);
+    }
+    const q = query.toLowerCase().trim();
+    return HUBS.filter(live).map(h => {
+      let s = 0;
+      const t = h.title.toLowerCase();
+      if (t === q)                        s = 100;
+      else if (t.startsWith(q))          s = 82;
+      else if (t.includes(q))            s = 62;
+      if (h.abbr.toLowerCase() === q)    s = Math.max(s, 90);
+      if (h.abbr.toLowerCase().includes(q)) s = Math.max(s, 72);
+      if (h.subtitle.toLowerCase().includes(q)) s = Math.max(s, 42);
+      if (h.category.toLowerCase().includes(q)) s = Math.max(s, 25);
+      if (h.stats.some(st => st.toLowerCase().includes(q))) s = Math.max(s, 32);
+      return { h, s };
+    }).filter(r=>r.s>0).sort((a,b)=>b.s-a.s).map(r=>r.h).slice(0,12);
+  }, [query, recents]);
+
+  useEffect(() => { setIdx(0); }, [query]);
+
+  // Auto-scroll active item into view
+  useEffect(() => {
+    const el = listRef.current?.querySelector(`[data-idx="${idx}"]`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [idx]);
+
+  const handleKey = useCallback((e) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); setIdx(i => Math.min(i+1, results.length-1)); }
+    if (e.key === "ArrowUp")   { e.preventDefault(); setIdx(i => Math.max(i-1, 0)); }
+    if (e.key === "Enter")     { if (results[idx]) { onNavigate(results[idx].route); onClose(); } }
+    if (e.key === "Escape")    { onClose(); }
+  }, [results, idx, onNavigate, onClose]);
+
+  if (!open) return null;
+
+  const sectionLabel = !query.trim()
+    ? (recents.length ? "Recently Used" : "Quick Access")
+    : `${results.length} result${results.length!==1?"s":""}`;
+
+  return (
+    <>
+      {/* Scrim */}
+      <div onClick={onClose} style={{ position:"fixed",inset:0,background:"rgba(3,8,16,0.78)",backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)",zIndex:9000 }}/>
+      {/* Modal */}
+      <div style={{ position:"fixed",top:"10%",left:"50%",transform:"translateX(-50%)",width:"min(660px, 94vw)",zIndex:9001,borderRadius:20,background:"rgba(5,14,28,0.98)",border:"1px solid rgba(42,79,122,0.85)",boxShadow:"0 40px 100px rgba(0,0,0,0.75), 0 0 0 1px rgba(0,229,192,0.08), inset 0 1px 0 rgba(255,255,255,0.04)",overflow:"hidden",animation:"palette-in .18s cubic-bezier(.32,1.4,.64,1) both" }}>
+        <style>{`@keyframes palette-in{from{opacity:0;transform:translateX(-50%) translateY(-12px) scale(.97)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}`}</style>
+        {/* Search input row */}
+        <div style={{ display:"flex",alignItems:"center",gap:12,padding:"16px 20px",borderBottom:"1px solid rgba(26,53,85,0.65)",background:"rgba(8,22,40,0.5)" }}>
+          <span style={{ fontSize:20,opacity:.45,flexShrink:0 }}>🔍</span>
+          <input ref={inputRef} value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={handleKey}
+            placeholder="Search all hubs…" autoComplete="off" spellCheck="false"
+            style={{ flex:1,background:"none",border:"none",outline:"none",color:"#e8f0fe",fontFamily:"'DM Sans',sans-serif",fontSize:16,caretColor:"#00e5c0" }}/>
+          {query && (
+            <button onClick={()=>setQuery("")} style={{ background:"rgba(42,79,122,0.3)",border:"1px solid rgba(42,79,122,0.5)",borderRadius:6,padding:"2px 8px",color:"#8aaccc",fontSize:11,cursor:"pointer",flexShrink:0,fontFamily:"'JetBrains Mono',monospace" }}>✕</button>
+          )}
+          <kbd onClick={onClose} style={{ background:"rgba(42,79,122,0.25)",border:"1px solid rgba(42,79,122,0.45)",borderRadius:5,padding:"2px 8px",color:"#4a6a8a",fontSize:10,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",flexShrink:0 }}>ESC</kbd>
+        </div>
+        {/* Section label */}
+        <div style={{ padding:"10px 20px 4px",fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#4a6a8a",textTransform:"uppercase",letterSpacing:1.4,fontWeight:700 }}>
+          {sectionLabel}
+        </div>
+        {/* Results list */}
+        <div ref={listRef} style={{ maxHeight:440,overflowY:"auto",padding:"0 8px 8px" }}>
+          {results.length===0 ? (
+            <div style={{ padding:"36px 20px",textAlign:"center",color:"#4a6a8a",fontFamily:"'DM Sans',sans-serif",fontSize:13 }}>
+              No hubs found for <strong style={{color:"#8aaccc"}}>"{query}"</strong>
+            </div>
+          ) : results.map((hub,i) => {
+            const active = idx===i;
+            return (
+              <div key={hub.id} data-idx={i}
+                onClick={()=>{ onNavigate(hub.route); onClose(); }}
+                onMouseEnter={()=>setIdx(i)}
+                style={{ display:"flex",alignItems:"center",gap:12,padding:"9px 12px",borderRadius:11,cursor:"pointer",marginBottom:2,transition:"all .08s",background:active?`linear-gradient(135deg,${hub.glass.replace("0.07","0.22")},rgba(0,229,192,0.04))`:"transparent",border:`1px solid ${active?hub.border:"transparent"}` }}>
+                <div style={{ width:40,height:40,borderRadius:11,flexShrink:0,background:active?hub.glass.replace("0.07","0.32"):hub.glass,border:`1px solid ${hub.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:active?`0 0 16px ${hub.glow.replace("0.4","0.25")}`:"none",transition:"all .12s" }}>
+                  {hub.icon}
+                </div>
+                <div style={{ flex:1,minWidth:0 }}>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:active?"#ffffff":"#c8d8ee",marginBottom:2 }}>{hub.title}</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#4a6a8a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{hub.subtitle}</div>
+                </div>
+                <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0 }}>
+                  <span style={{ fontSize:9,fontFamily:"'JetBrains Mono',monospace",padding:"2px 7px",borderRadius:20,background:hub.glass.replace("0.07","0.2"),border:`1px solid ${hub.border}`,color:hub.color,whiteSpace:"nowrap" }}>{hub.badge}</span>
+                  <span style={{ fontSize:9,color:"#2e4a6a",fontFamily:"'JetBrains Mono',monospace" }}>{hub.category}</span>
+                </div>
+                {active && <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"#4a6a8a",padding:"2px 7px",background:"rgba(42,79,122,0.28)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:5,flexShrink:0 }}>↵</div>}
+              </div>
+            );
+          })}
+        </div>
+        {/* Footer hints */}
+        <div style={{ padding:"8px 20px 14px",borderTop:"1px solid rgba(26,53,85,0.45)",display:"flex",gap:18,flexWrap:"wrap" }}>
+          {[["↑↓","Navigate"],["↵","Open"],["Esc","Close"]].map(([k,l])=>(
+            <div key={k} style={{ display:"flex",alignItems:"center",gap:5 }}>
+              <kbd style={{ background:"rgba(42,79,122,0.28)",border:"1px solid rgba(42,79,122,0.45)",borderRadius:4,padding:"1px 7px",color:"#8aaccc",fontSize:10,fontFamily:"'JetBrains Mono',monospace" }}>{k}</kbd>
+              <span style={{ fontSize:10,color:"#4a6a8a",fontFamily:"'DM Sans',sans-serif" }}>{l}</span>
+            </div>
+          ))}
+          <div style={{ marginLeft:"auto",fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#2e4a6a" }}>
+            {HUBS.filter(h=>LIVE_ROUTES.has(h.route)).length} live hubs
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function HubSelectorPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
+  // DEFAULT: Essential-only. "Browse all" button or ⌘K expands to full catalog.
+  const [activeCategory, setActiveCategory] = useState("Essential");
   const [sortBy, setSortBy] = useState(() => {
     try { return localStorage.getItem("notrya_hub_sort") || "priority"; } catch { return "priority"; }
   });
   const [userEssentials, setUserEssentials] = useState(new Set(HUBS.filter(h => h.essential).map(h => h.id)));
+  // Command palette
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     try { localStorage.setItem("notrya_hub_sort", sortBy); } catch {}
@@ -1207,6 +1321,15 @@ export default function HubSelectorPage() {
         setUserEssentials(new Set(user.hub_essentials));
       }
     }).catch(() => {});
+  }, []);
+
+  // ⌘K opens the command palette
+  useEffect(() => {
+    const h = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setPaletteOpen(true); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, []);
   const [recents, setRecents] = useState(() => {
     try { return JSON.parse(localStorage.getItem("notrya_recent_hubs") || "[]").slice(0, 4).map(id => HUBS.find(h => h.id === id)).filter(Boolean); }
@@ -1221,6 +1344,7 @@ export default function HubSelectorPage() {
       try { localStorage.setItem("notrya_recent_hubs", JSON.stringify(updated)); } catch {}
       setRecents(updated.map(id => HUBS.find(h => h.id === id)).filter(Boolean));
     }
+    setPaletteOpen(false);
     navigate(route);
   };
 
@@ -1347,7 +1471,7 @@ export default function HubSelectorPage() {
         </div>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 20, flexWrap: "wrap", animation: "hub-appear 0.5s ease both 0.1s" }}>
-          <SearchBar value={search} onChange={setSearch} />
+          <PaletteLauncher onOpen={() => setPaletteOpen(true)} />
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {CATEGORIES.map(cat => (
               <button key={cat} onClick={() => setActiveCategory(cat)}
@@ -1365,13 +1489,19 @@ export default function HubSelectorPage() {
           <RecentStrip recents={recents} onNavigate={handleNavigate} />
         </div>
 
-        {!search && activeCategory === "All" && (
+        {!search && activeCategory === "Essential" && (
           <div style={{ marginBottom: 24, animation: "hub-appear 0.5s ease both 0.13s" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <div style={{ height: 1, width: 24, background: "rgba(245,200,66,0.5)", borderRadius: 1 }} />
               <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#f5c842", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>⭐ Essential</span>
               <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(245,200,66,0.2), transparent)" }} />
               <span style={{ fontSize: 10, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace" }}>{essentials.length} hubs</span>
+              <button onClick={() => setPaletteOpen(true)}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 20, cursor: "pointer", background: "rgba(0,229,192,0.08)", border: "1px solid rgba(0,229,192,0.3)", color: "#00e5c0", fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 600, transition: "all 0.2s" }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(0,229,192,0.14)"}
+                onMouseLeave={e => e.currentTarget.style.background = "rgba(0,229,192,0.08)"}>
+                🔍 Browse all hubs <kbd style={{ background: "rgba(0,229,192,0.12)", border: "1px solid rgba(0,229,192,0.25)", borderRadius: 4, padding: "0 5px", fontSize: 9, fontFamily: "'JetBrains Mono',monospace", color: "#33eccc" }}>⌘K</kbd>
+              </button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
               {essentials.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="normal" isEssential={true} onToggleEssential={toggleEssential} />)}
@@ -1413,7 +1543,7 @@ export default function HubSelectorPage() {
           </>
         )}
 
-        {(search || activeCategory !== "All") && (
+        {(search || (activeCategory !== "All" && activeCategory !== "Essential")) && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <div style={{ height: 1, width: 24, background: "rgba(42,79,122,0.6)", borderRadius: 1 }} />
@@ -1438,10 +1568,17 @@ export default function HubSelectorPage() {
 
         <div style={{ marginTop: 32, textAlign: "center", animation: "hub-appear 0.55s ease both 0.5s" }}>
           <span style={{ fontSize: 10, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace" }}>
-            Press <kbd style={{ background: "rgba(42,79,122,0.3)", border: "1px solid rgba(42,79,122,0.5)", borderRadius: 4, padding: "1px 6px", color: "#c8d8ee" }}>⌘K</kbd> to focus search · Click any card to open the hub
+            Press <kbd style={{ background: "rgba(42,79,122,0.3)", border: "1px solid rgba(42,79,122,0.5)", borderRadius: 4, padding: "1px 6px", color: "#c8d8ee" }}>⌘K</kbd> to search all hubs · Click ☆ on any card to add to Essential
           </span>
         </div>
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onNavigate={handleNavigate}
+        recents={recents}
+      />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap');

@@ -8,13 +8,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-
 const T = {
-  bg:"#050d1a",       // dark navy — matches platform base
-  txt:"#ddeeff",      // near-white with cool blue tint
-  txt2:"#7aafd4",     // readable secondary — blue-slate
-  txt3:"#4d82a8",     // muted tertiary — still legible
-  txt4:"#3a6a9a",     // label / quiet text — was near-invisible; now readable on navy
+  bg:"#050d1a",txt:"#ddeeff",txt2:"#7aafd4",txt3:"#4d82a8",txt4:"#3a6a9a",
   teal:"#00d4b4",gold:"#f5c842",coral:"#ff6060",blue:"#4da6ff",
   orange:"#ff9f43",purple:"#b06dff",green:"#3dffa0",red:"#ff4444",
   mint:"#7fffcf",cyan:"#00c8d4",
@@ -30,7 +25,6 @@ const TABS = [
   { id:"tools",   label:"Clinical Tools",icon:"🩺",color:T.gold  },
 ];
 
-// ── Shared components ────────────────────────────────────────────────────────
 function Card({ color, title, children, mb }) {
   return (
     <div style={{ padding:"7px 10px",borderRadius:9,marginBottom:mb||7,
@@ -124,8 +118,7 @@ function DrugSection({ title, color, drugs, wtCalc }) {
   );
 }
 
-// VITALS + WEIGHT
-// ═══════════════════════════════════════════════════════════════════════════
+// VITALS
 const VITAL_NORMS = [
   { age:"Neonate (0–28d)",hr:[100,160],sbp:[60,90],  rr:[30,60],wt:"2.5–4.5 kg" },
   { age:"1–3 months",    hr:[100,160],sbp:[70,100], rr:[30,60],wt:"3.5–6 kg"   },
@@ -137,17 +130,16 @@ const VITAL_NORMS = [
   { age:"11–14 years",   hr:[60,105], sbp:[90,130], rr:[12,20],wt:"35–60 kg"   },
 ];
 const BROSELOW = [
-  { color:"Grey",  length:"46–55 cm",  wt:"3–5 kg",   zone:"GREY",  hex:"#9e9e9e" },
-  { color:"Pink",  length:"55–67 cm",  wt:"6–7 kg",   zone:"PINK",  hex:"#ff80ab" },
-  { color:"Red",   length:"67–75 cm",  wt:"8–9 kg",   zone:"RED",   hex:"#ff5252" },
-  { color:"Purple",length:"75–85 cm",  wt:"10–11 kg", zone:"PURP",  hex:"#b06dff" },
-  { color:"Yellow",length:"85–95 cm",  wt:"12–14 kg", zone:"YELL",  hex:"#f5c842" },
-  { color:"White", length:"95–107 cm", wt:"15–18 kg", zone:"WHITE", hex:"#e0e0e0" },
-  { color:"Blue",  length:"107–122 cm",wt:"19–22 kg", zone:"BLUE",  hex:"#4da6ff" },
-  { color:"Orange",length:"122–137 cm",wt:"24–28 kg", zone:"ORNG",  hex:"#ff9f43" },
-  { color:"Green", length:"137–152 cm",wt:"30–36 kg", zone:"GREEN", hex:"#3dffa0" },
+  { color:"Grey",  length:"46–55 cm",  wt:"3–5 kg",   hex:"#9e9e9e" },
+  { color:"Pink",  length:"55–67 cm",  wt:"6–7 kg",   hex:"#ff80ab" },
+  { color:"Red",   length:"67–75 cm",  wt:"8–9 kg",   hex:"#ff5252" },
+  { color:"Purple",length:"75–85 cm",  wt:"10–11 kg", hex:"#b06dff" },
+  { color:"Yellow",length:"85–95 cm",  wt:"12–14 kg", hex:"#f5c842" },
+  { color:"White", length:"95–107 cm", wt:"15–18 kg", hex:"#e0e0e0" },
+  { color:"Blue",  length:"107–122 cm",wt:"19–22 kg", hex:"#4da6ff" },
+  { color:"Orange",length:"122–137 cm",wt:"24–28 kg", hex:"#ff9f43" },
+  { color:"Green", length:"137–152 cm",wt:"30–36 kg", hex:"#3dffa0" },
 ];
-
 function VitalsTab({ globalWt, setGlobalWt }) {
   const [ageMonths,setAgeMonths]=useState(""); const [htCm,setHtCm]=useState("");
   const [hrVal,setHRVal]=useState(""); const [sbpVal,setSBPVal]=useState("");
@@ -197,14 +189,10 @@ function VitalsTab({ globalWt, setGlobalWt }) {
             </div>
             <div>
               <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt3 }}>{estWt.m}</div>
-              <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:3 }}>
-                Age formula only — Broselow tape = gold standard for dosing.
-              </div>
               <button onClick={()=>setGlobalWt(estWt.kg.toFixed(1))}
                 style={{ marginTop:6,padding:"4px 12px",borderRadius:6,cursor:"pointer",
                   fontFamily:S.sans,fontWeight:600,fontSize:10,
-                  background:"rgba(127,255,207,0.12)",border:"1px solid rgba(127,255,207,0.4)",
-                  color:T.mint }}>
+                  background:"rgba(127,255,207,0.12)",border:"1px solid rgba(127,255,207,0.4)",color:T.mint }}>
                 Use {estWt.kg.toFixed(1)} kg for drug dosing →
               </button>
             </div>
@@ -218,7 +206,6 @@ function VitalsTab({ globalWt, setGlobalWt }) {
             <div>
               <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:15,color:bz.hex }}>{bz.color} Zone</div>
               <div style={{ fontFamily:S.mono,fontSize:9,color:T.txt3 }}>{bz.length} · {bz.wt}</div>
-              <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:2 }}>Use color-coded drug cards for weight-appropriate dosing</div>
             </div>
           </div>
         </Card>
@@ -257,9 +244,6 @@ function VitalsTab({ globalWt, setGlobalWt }) {
             <span style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:T.coral }}>
               SBP &lt; {ageY<=1?70:ageY<=10?Math.round(70+2*ageY):90} mmHg
             </span>
-            <span style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginLeft:6 }}>
-              {ageY<=1?"(< 1y)":ageY<=10?`(70 + 2×${ageY.toFixed(1)}y)`: "(> 10y)"}
-            </span>
           </div>}
         </Card>
       )}
@@ -287,25 +271,24 @@ function VitalsTab({ globalWt, setGlobalWt }) {
   );
 }
 
-// PECARN HEAD CT
-// ═══════════════════════════════════════════════════════════════════════════
+// PECARN
 const P2 = [
-  { key:"gcs1",  label:"GCS < 15",                      high:true, sub:"On initial ED evaluation" },
-  { key:"palpfx",label:"Palpable skull fracture",        high:true, sub:"On physical examination" },
-  { key:"alt1",  label:"Altered mental status",          high:true, sub:"Agitation, somnolence, repetitive questioning, slow response" },
-  { key:"loc1",  label:"Loss of consciousness ≥ 5 sec",  mod:true,  sub:"Parent-reported or witnessed" },
-  { key:"hem",   label:"Non-frontal scalp hematoma",     mod:true,  sub:"Scalp hematoma other than frontal region" },
-  { key:"mech1", label:"Severe mechanism",               mod:true,  sub:"MVC ejection/rollover/pedestrian, fall >0.9m, high-impact head strike" },
-  { key:"behav", label:"Acting abnormally per parent",   mod:true,  sub:"Behavior different from baseline per caregiver" },
+  { key:"gcs1",  label:"GCS < 15",high:true, sub:"On initial ED evaluation" },
+  { key:"palpfx",label:"Palpable skull fracture",high:true, sub:"On physical examination" },
+  { key:"alt1",  label:"Altered mental status",high:true, sub:"Agitation, somnolence, repetitive questioning, slow response" },
+  { key:"loc1",  label:"Loss of consciousness ≥ 5 sec",mod:true, sub:"Parent-reported or witnessed" },
+  { key:"hem",   label:"Non-frontal scalp hematoma",mod:true, sub:"Scalp hematoma other than frontal region" },
+  { key:"mech1", label:"Severe mechanism",mod:true, sub:"MVC ejection/rollover/pedestrian, fall >0.9m, high-impact head strike" },
+  { key:"behav", label:"Acting abnormally per parent",mod:true, sub:"Behavior different from baseline per caregiver" },
 ];
 const P2P = [
-  { key:"gcs2",  label:"GCS < 15",                        high:true, sub:"On initial ED evaluation" },
-  { key:"alt2",  label:"Altered mental status",            high:true, sub:"Agitation, somnolence, repetitive questioning, slow response" },
-  { key:"bsf",   label:"Signs of basilar skull fracture",  high:true, sub:"Hemotympanum, Battle sign, raccoon eyes, CSF rhinorrhea/otorrhea" },
-  { key:"loc2",  label:"Loss of consciousness",            mod:true,  sub:"Any duration" },
-  { key:"vomit", label:"Vomiting",                         mod:true,  sub:"Any vomiting" },
-  { key:"mech2", label:"Severe mechanism",                 mod:true,  sub:"MVC ejection/rollover/pedestrian, fall >1.5m, high-impact head strike" },
-  { key:"ha",    label:"Severe headache",                  mod:true,  sub:"Patient reports severe headache" },
+  { key:"gcs2",  label:"GCS < 15",high:true, sub:"On initial ED evaluation" },
+  { key:"alt2",  label:"Altered mental status",high:true, sub:"Agitation, somnolence, repetitive questioning, slow response" },
+  { key:"bsf",   label:"Signs of basilar skull fracture",high:true, sub:"Hemotympanum, Battle sign, raccoon eyes, CSF rhinorrhea/otorrhea" },
+  { key:"loc2",  label:"Loss of consciousness",mod:true, sub:"Any duration" },
+  { key:"vomit", label:"Vomiting",mod:true, sub:"Any vomiting" },
+  { key:"mech2", label:"Severe mechanism",mod:true, sub:"MVC ejection/rollover/pedestrian, fall >1.5m, high-impact head strike" },
+  { key:"ha",    label:"Severe headache",mod:true, sub:"Patient reports severe headache" },
 ];
 const PEDS_GCS_VERBAL = [
   { score:5, adult:"Oriented", child:"Coos, babbles", infant:"Smiles, coos" },
@@ -324,16 +307,16 @@ function PECARNTab() {
   const res=!anySet?null:hiRisk?{label:"CT Recommended — High Risk",color:T.coral,
     detail:"High-risk factor present. CT head recommended immediately. cTBI risk > 4.4%."}
   :modRisk?{label:"CT vs Observation — Physician Decision",color:T.gold,
-    detail:arm==="u2"?"Intermediate-risk in child < 2. CT vs 4–6h observation — consider non-frontal hematoma (higher risk < 3 months), clinical factors, family preference."
-    :"Intermediate-risk only. CT vs observation — consider # factors, age, worsening symptoms, parental preference."}
+    detail:arm==="u2"?"Intermediate-risk in child < 2. CT vs 4–6h observation."
+    :"Intermediate-risk only. CT vs observation — consider # factors, age, worsening symptoms."}
   :{label:"CT Not Recommended",color:T.teal,
-    detail:arm==="u2"?"No high/intermediate-risk factors. cTBI risk < 0.02%. Observe 4–6h if mechanism unclear."
-    :"No risk factors. cTBI risk < 0.05%. Discharge with return precautions if reliable follow-up."};
+    detail:arm==="u2"?"No high/intermediate-risk factors. cTBI risk < 0.02%."
+    :"No risk factors. cTBI risk < 0.05%. Discharge with return precautions."};
   return (
     <div className="peds-in">
       <Card color={T.blue} title="PECARN Pediatric Head CT Rule — Kuppermann 2009">
         <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6,marginBottom:7 }}>
-          Prospective validation in 42,412 children. Identifies cTBI requiring neurosurgical intervention. Sensitivity 99%+ in both age arms.
+          Prospective validation in 42,412 children. Identifies cTBI requiring neurosurgical intervention. Sensitivity 99%+.
         </div>
         <div style={{ display:"flex",gap:7,marginBottom:4 }}>
           {[["u2","< 2 Years"],["2p","≥ 2 Years"]].map(([v,l])=>(
@@ -346,14 +329,10 @@ function PECARNTab() {
           ))}
         </div>
       </Card>
-      <div style={{ fontFamily:S.mono,fontSize:8,color:T.coral,letterSpacing:1.5,
-        textTransform:"uppercase",marginBottom:5 }}>High Risk (CT Recommended if Present)</div>
-      {crit.filter(c=>c.high).map(c=><Check key={c.key} label={c.label} sub={c.sub}
-        checked={!!items[c.key]} onToggle={()=>toggle(c.key)} color={T.coral} />)}
-      <div style={{ fontFamily:S.mono,fontSize:8,color:T.gold,letterSpacing:1.5,
-        textTransform:"uppercase",margin:"10px 0 5px" }}>Intermediate Risk (CT vs Observation)</div>
-      {crit.filter(c=>c.mod).map(c=><Check key={c.key} label={c.label} sub={c.sub}
-        checked={!!items[c.key]} onToggle={()=>toggle(c.key)} color={T.gold} />)}
+      <div style={{ fontFamily:S.mono,fontSize:8,color:T.coral,letterSpacing:1.5,textTransform:"uppercase",marginBottom:5 }}>High Risk (CT Recommended if Present)</div>
+      {crit.filter(c=>c.high).map(c=><Check key={c.key} label={c.label} sub={c.sub} checked={!!items[c.key]} onToggle={()=>toggle(c.key)} color={T.coral} />)}
+      <div style={{ fontFamily:S.mono,fontSize:8,color:T.gold,letterSpacing:1.5,textTransform:"uppercase",margin:"10px 0 5px" }}>Intermediate Risk (CT vs Observation)</div>
+      {crit.filter(c=>c.mod).map(c=><Check key={c.key} label={c.label} sub={c.sub} checked={!!items[c.key]} onToggle={()=>toggle(c.key)} color={T.gold} />)}
       {res&&<ResultBox label={res.label} color={res.color} detail={res.detail} />}
       {arm==="u2"&&<Card color={T.purple} title="Age < 3 Months — Additional Considerations" mb={10}>
         <Bullet text="Higher risk of intracranial injury even with low-energy mechanisms — lower threshold for CT" color={T.purple} />
@@ -367,9 +346,6 @@ function PECARNTab() {
         {showGcs?"▲ Hide":"▼ Show"} Pediatric GCS Reference (Verbal Modification by Age)
       </button>
       {showGcs&&<Card color={T.blue} title="Pediatric GCS — Verbal Component (Age-Modified)">
-        <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginBottom:8 }}>
-          Motor and Eye components are identical to adult GCS. Verbal scoring is modified by developmental age.
-        </div>
         <div style={{ overflowX:"auto" }}>
           <table style={{ width:"100%",borderCollapse:"collapse",fontFamily:S.mono,fontSize:9 }}>
             <thead><tr style={{ borderBottom:"1px solid rgba(77,166,255,0.3)" }}>
@@ -388,15 +364,14 @@ function PECARNTab() {
           </table>
         </div>
         <div style={{ marginTop:8,fontFamily:S.sans,fontSize:9,color:T.txt4,lineHeight:1.6 }}>
-          GCS 13–15: Mild TBI · GCS 9–12: Moderate TBI · GCS 3–8: Severe TBI (intubation threshold)
+          GCS 13–15: Mild TBI · GCS 9–12: Moderate TBI · GCS 3–8: Severe TBI
         </div>
       </Card>}
     </div>
   );
 }
 
-// FEVER WORKUP
-// ═══════════════════════════════════════════════════════════════════════════
+// FEVER
 const ROCHESTER = [
   { key:"healthy",label:"Previously healthy — no perinatal complications",sub:"Full-term, no NICU stay, no prior illness" },
   { key:"noabx",  label:"No prior antibiotic treatment",sub:"No antibiotics in past 48h" },
@@ -421,7 +396,6 @@ function FeverTab() {
       "Full workup: CBC, CMP, UA+UC, blood culture, LP strongly recommended",
       "Rochester Criteria (below): if all met, consider outpatient after LP with 24h f/u",
       "Ill-appearing or high-risk: hospitalize + empiric antibiotics regardless of criteria",
-      "Step-by-Step (Gomez 2016): validated sequential SBI rule-out algorithm",
     ]},
     { r:"61–90 days (8–13 weeks)",color:T.gold,active:aW>8.5&&aW<=13,approach:[
       "Stratify risk: blood culture, UA+UC, procalcitonin",
@@ -433,14 +407,12 @@ function FeverTab() {
       "Fully vaccinated (Hib + PCV13): SBI risk < 1% — targeted evaluation by symptoms",
       "UA+UC: female < 24m or uncircumcised male < 12m with fever > 39°C",
       "Blood culture: fever > 39°C + WBC > 15,000 or ill-appearing",
-      "CXR: if WBC > 20,000 even without respiratory symptoms",
     ]},
   ];
   return (
     <div className="peds-in">
       <div style={{ marginBottom:9 }}>
-        <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,
-          textTransform:"uppercase",marginBottom:4 }}>Age (weeks)</div>
+        <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>Age (weeks)</div>
         <input type="number" value={ageW} onChange={e=>setAgeW(e.target.value)}
           style={{ width:140,padding:"7px 10px",background:"rgba(5,13,32,0.92)",
             border:`1px solid ${ageW?T.coral+"55":"rgba(30,70,130,0.4)"}`,borderRadius:8,
@@ -451,27 +423,24 @@ function FeverTab() {
           background:tier.active?`${tier.color}10`:`${tier.color}06`,
           border:`1px solid ${tier.active?tier.color+"55":tier.color+"22"}`,
           borderLeft:`4px solid ${tier.color}` }}>
-          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:12,color:tier.color,
-            marginBottom:tier.active?6:0 }}>
+          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:12,color:tier.color,marginBottom:tier.active?6:0 }}>
             {tier.r}
             {tier.active&&<span style={{ fontFamily:S.mono,fontSize:8,color:tier.color,marginLeft:8,
-              background:`${tier.color}18`,border:`1px solid ${tier.color}40`,
-              borderRadius:4,padding:"1px 7px",letterSpacing:1 }}>ACTIVE</span>}
+              background:`${tier.color}18`,border:`1px solid ${tier.color}40`,borderRadius:4,padding:"1px 7px",letterSpacing:1 }}>ACTIVE</span>}
           </div>
           {tier.active&&tier.approach.map((a,j)=><Bullet key={j} text={a} color={tier.color} />)}
         </div>
       ))}
       {aW>=4&&aW<=8.5&&<Card color={T.orange} title="Rochester Criteria — Low-Risk SBI (29–60 days)">
         <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginBottom:8 }}>
-          ALL criteria must be met. Does NOT replace clinical judgment. Many centers hospitalize all febrile infants 1–2 months.
+          ALL criteria must be met. Does NOT replace clinical judgment.
         </div>
         {ROCHESTER.map(c=><Check key={c.key} label={c.label} sub={c.sub}
           checked={!!roc[c.key]} onToggle={()=>toggle(c.key)} color={T.orange} />)}
         {Object.keys(roc).length>0&&<div style={{ marginTop:8,padding:"6px 9px",borderRadius:7,
           background:lowRisk?"rgba(255,159,67,0.08)":"rgba(255,92,92,0.08)",
           border:`1px solid ${lowRisk?"rgba(255,159,67,0.35)":"rgba(255,92,92,0.3)"}` }}>
-          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:14,
-            color:lowRisk?T.orange:T.coral }}>
+          <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:14,color:lowRisk?T.orange:T.coral }}>
             {lowRisk?"Low-Risk by Rochester Criteria":"Does Not Meet Low-Risk Criteria"}
           </div>
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt3,marginTop:3,lineHeight:1.55 }}>
@@ -484,81 +453,81 @@ function FeverTab() {
   );
 }
 
-// MEDICATIONS DATA
-// ═══════════════════════════════════════════════════════════════════════════
+// MEDICATIONS DATA — ml/dose included on all entries
+// ABX_CONDITIONS: mlPer = mg/mL of standard pediatric suspension
 const ABX_CONDITIONS = [
   { id:"aom",  label:"Otitis Media (AOM)",     icon:"👂",color:T.orange,ages:["infant","child"],
     lines:[
-      { tier:"1st line",          drug:"Amoxicillin (high-dose)",mpkDose:42.5,freq:"q12h",max:1000,dur:"10d (<2y/severe) · 5–7d (≥2y mild)" },
-      { tier:"Failure/β-lactamase",drug:"Amox-clavulanate ES 600",mpkDose:45,freq:"q12h",max:1000,dur:"10d" },
-      { tier:"PCN allergy (mild)", drug:"Cefdinir",               mpkDose:7,  freq:"q12h",max:300, dur:"5–10d" },
-      { tier:"PCN allergy (severe)",drug:"Azithromycin",          mpkDose:10, freq:"Day1; 5mg/kg×4d",max:500,dur:"5d" },
+      { tier:"1st line",          drug:"Amoxicillin (high-dose)",mpkDose:42.5,freq:"q12h",max:1000,dur:"10d (<2y/severe) · 5–7d (≥2y mild)",mlPer:80,suspLabel:"400 mg/5 mL" },
+      { tier:"Failure/β-lactamase",drug:"Amox-clavulanate ES 600",mpkDose:45,freq:"q12h",max:1000,dur:"10d",mlPer:120,suspLabel:"600 mg/5 mL ES" },
+      { tier:"PCN allergy (mild)", drug:"Cefdinir",               mpkDose:7,  freq:"q12h",max:300, dur:"5–10d",mlPer:50,suspLabel:"250 mg/5 mL" },
+      { tier:"PCN allergy (severe)",drug:"Azithromycin",          mpkDose:10, freq:"Day1; 5mg/kg×4d",max:500,dur:"5d",mlPer:40,suspLabel:"200 mg/5 mL" },
     ],
-    note:"Watchful waiting: ≥2y, unilateral, mild, reliable f/u. Return precautions: worsening pain/fever >48h, ear drainage, dizziness. AAFP/AAP 2013." },
+    note:"Watchful waiting: ≥2y, unilateral, mild, reliable f/u. Return: worsening pain/fever >48h, ear drainage, dizziness. AAFP/AAP 2013." },
   { id:"gas",  label:"Strep Pharyngitis",       icon:"🦠",color:T.coral,ages:["child"],
     lines:[
-      { tier:"1st line",          drug:"Amoxicillin",   mpkDose:25,  freq:"q12h",max:500,dur:"10d" },
-      { tier:"Alternative",       drug:"Penicillin VK", mpkDose:12.5,freq:"q6h", max:500,dur:"10d" },
-      { tier:"PCN allergy",       drug:"Cephalexin",    mpkDose:12.5,freq:"q6h", max:500,dur:"10d" },
-      { tier:"PCN+ceph allergy",  drug:"Clindamycin",   mpkDose:7,   freq:"q8h", max:300,dur:"10d" },
+      { tier:"1st line",          drug:"Amoxicillin",   mpkDose:25,  freq:"q12h",max:500,dur:"10d",mlPer:50,suspLabel:"250 mg/5 mL" },
+      { tier:"Alternative",       drug:"Penicillin VK", mpkDose:12.5,freq:"q6h", max:500,dur:"10d",mlPer:50,suspLabel:"250 mg/5 mL" },
+      { tier:"PCN allergy",       drug:"Cephalexin",    mpkDose:12.5,freq:"q6h", max:500,dur:"10d",mlPer:50,suspLabel:"250 mg/5 mL" },
+      { tier:"PCN+ceph allergy",  drug:"Clindamycin",   mpkDose:7,   freq:"q8h", max:300,dur:"10d",mlPer:15,suspLabel:"75 mg/5 mL" },
     ],
     note:"Rapid strep + culture recommended. Full 10-day course prevents ARF. Return: fever >2d on abx, rash, neck stiffness, difficulty swallowing." },
   { id:"cap",  label:"Pneumonia (CAP, outpt)",  icon:"🫁",color:T.blue,ages:["infant","child"],
     lines:[
-      { tier:"Typical (S. pneumo)",  drug:"Amoxicillin (high-dose)",mpkDose:42.5,freq:"q12h",max:1000,dur:"5–7d" },
-      { tier:"Atypical (Mycoplasma)",drug:"Azithromycin",           mpkDose:10,  freq:"Day1; 5mg/kg×4d",max:500,dur:"5d" },
-      { tier:"PCN allergy",          drug:"Clarithromycin",         mpkDose:7.5, freq:"q12h",max:500,dur:"7–10d" },
+      { tier:"Typical (S. pneumo)",  drug:"Amoxicillin (high-dose)",mpkDose:42.5,freq:"q12h",max:1000,dur:"5–7d",mlPer:80,suspLabel:"400 mg/5 mL" },
+      { tier:"Atypical (Mycoplasma)",drug:"Azithromycin",           mpkDose:10,  freq:"Day1; 5mg/kg×4d",max:500,dur:"5d",mlPer:40,suspLabel:"200 mg/5 mL" },
+      { tier:"PCN allergy",          drug:"Clarithromycin",         mpkDose:7.5, freq:"q12h",max:500,dur:"7–10d",mlPer:50,suspLabel:"250 mg/5 mL" },
     ],
-    note:"IDSA 2011: Amox first-line typical CAP. Add atypical coverage in ≥5y. Return: worsening breathing, cyanosis, not tolerating PO, fever >48h on abx." },
+    note:"IDSA 2011: Amox first-line typical CAP. Add atypical coverage in ≥5y. Return: worsening breathing, cyanosis, not tolerating PO." },
   { id:"uti",  label:"UTI / Pyelonephritis",    icon:"💧",color:T.cyan,ages:["all"],
     lines:[
-      { tier:"Uncomplicated UTI",    drug:"TMP-SMX",   mpkDose:4,   freq:"q12h (TMP)",max:160,dur:"3–5d (≥2y) · 7–10d (<2y)" },
-      { tier:"Alternative",         drug:"Cefdinir",   mpkDose:7,   freq:"q12h",max:300,dur:"5–7d" },
-      { tier:"Pyelonephritis (oral)",drug:"Cephalexin", mpkDose:12.5,freq:"q6h",max:500,dur:"10–14d" },
-      { tier:"Pyelo (IV→PO)",       drug:"Ceftriaxone IV → Cephalexin PO",mpkDose:null,freq:"IV until afebrile ×24h",max:null,dur:"14d total" },
+      { tier:"Uncomplicated UTI",    drug:"TMP-SMX",   mpkDose:4,   freq:"q12h (TMP)",max:160,dur:"3–5d (≥2y) · 7–10d (<2y)",mlPer:8,suspLabel:"40 mg TMP/5 mL" },
+      { tier:"Alternative",         drug:"Cefdinir",   mpkDose:7,   freq:"q12h",max:300,dur:"5–7d",mlPer:50,suspLabel:"250 mg/5 mL" },
+      { tier:"Pyelonephritis (oral)",drug:"Cephalexin", mpkDose:12.5,freq:"q6h",max:500,dur:"10–14d",mlPer:50,suspLabel:"250 mg/5 mL" },
+      { tier:"Pyelo (IV→PO)",       drug:"Ceftriaxone IV → Cephalexin PO",mpkDose:null,freq:"IV until afebrile ×24h",max:null,dur:"14d total",mlPer:null },
     ],
-    note:"UA+culture BEFORE antibiotics. Culture required <2y. Return: worsening fever, flank pain, vomiting. Renal US for recurrent or atypical UTI." },
+    note:"UA+culture BEFORE antibiotics. Culture required <2y. Return: worsening fever, flank pain, vomiting." },
   { id:"cell", label:"Cellulitis (non-purulent)",icon:"🩹",color:T.teal,ages:["all"],
     lines:[
-      { tier:"1st line",        drug:"Cephalexin",  mpkDose:12.5,freq:"q6h",max:500,dur:"5–7d" },
-      { tier:"Alternative",     drug:"Amoxicillin", mpkDose:12.5,freq:"q8h",max:500,dur:"5–7d" },
-      { tier:"PCN/ceph allergy",drug:"Clindamycin", mpkDose:10,  freq:"q8h",max:450,dur:"5–7d" },
+      { tier:"1st line",        drug:"Cephalexin",  mpkDose:12.5,freq:"q6h",max:500,dur:"5–7d",mlPer:50,suspLabel:"250 mg/5 mL" },
+      { tier:"Alternative",     drug:"Amoxicillin", mpkDose:12.5,freq:"q8h",max:500,dur:"5–7d",mlPer:50,suspLabel:"250 mg/5 mL" },
+      { tier:"PCN/ceph allergy",drug:"Clindamycin", mpkDose:10,  freq:"q8h",max:450,dur:"5–7d",mlPer:15,suspLabel:"75 mg/5 mL" },
     ],
-    note:"Non-purulent: streptococcal. Mark borders. Elevate extremity. Return: spreading beyond marked borders, fever >48h on abx, blistering/skin breakdown." },
+    note:"Non-purulent: streptococcal. Mark borders. Elevate extremity. Return: spreading beyond marked borders, fever >48h on abx." },
   { id:"ssti", label:"Purulent SSTI / Abscess", icon:"⚡",color:T.purple,ages:["all"],
     lines:[
-      { tier:"MRSA (1st)",  drug:"TMP-SMX",    mpkDose:4,   freq:"q12h (TMP)",max:160,dur:"5–7d" },
-      { tier:"Alternative", drug:"Clindamycin", mpkDose:10,  freq:"q8h",max:450,dur:"5–7d" },
-      { tier:"MSSA/mild",   drug:"Cephalexin",  mpkDose:12.5,freq:"q6h",max:500,dur:"5–7d" },
+      { tier:"MRSA (1st)",  drug:"TMP-SMX",    mpkDose:4,   freq:"q12h (TMP)",max:160,dur:"5–7d",mlPer:8,suspLabel:"40 mg TMP/5 mL" },
+      { tier:"Alternative", drug:"Clindamycin", mpkDose:10,  freq:"q8h",max:450,dur:"5–7d",mlPer:15,suspLabel:"75 mg/5 mL" },
+      { tier:"MSSA/mild",   drug:"Cephalexin",  mpkDose:12.5,freq:"q6h",max:500,dur:"5–7d",mlPer:50,suspLabel:"250 mg/5 mL" },
     ],
-    note:"I&D is primary therapy. Return: spreading, systemic symptoms, wound dehiscence, no improvement in 48h. Wound check 48h if moderate infection." },
+    note:"I&D is primary therapy. Return: spreading, systemic symptoms, wound dehiscence, no improvement in 48h." },
   { id:"sinus",label:"Bacterial Sinusitis (ABRS)",icon:"🌀",color:T.gold,ages:["child"],
     lines:[
-      { tier:"1st line",          drug:"Amoxicillin (high-dose)", mpkDose:42.5,freq:"q12h",max:1000,dur:"10–14d" },
-      { tier:"Resistance risk",   drug:"Amox-clavulanate ES 600", mpkDose:45,  freq:"q12h",max:1000,dur:"10–14d" },
-      { tier:"PCN allergy (mild)",drug:"Cefdinir",                mpkDose:7,   freq:"q12h",max:300, dur:"10–14d" },
+      { tier:"1st line",          drug:"Amoxicillin (high-dose)", mpkDose:42.5,freq:"q12h",max:1000,dur:"10–14d",mlPer:80,suspLabel:"400 mg/5 mL" },
+      { tier:"Resistance risk",   drug:"Amox-clavulanate ES 600", mpkDose:45,  freq:"q12h",max:1000,dur:"10–14d",mlPer:120,suspLabel:"600 mg/5 mL ES" },
+      { tier:"PCN allergy (mild)",drug:"Cefdinir",                mpkDose:7,   freq:"q12h",max:300, dur:"10–14d",mlPer:50,suspLabel:"250 mg/5 mL" },
     ],
-    note:"Diagnose only if: ≥10d without improvement, double sickening, or severe onset (fever ≥39°C + purulent rhinorrhea ≥3d concurrent). AAP 2013." },
+    note:"Diagnose only if: ≥10d without improvement, double sickening, or severe onset. AAP 2013." },
   { id:"bite", label:"Animal / Human Bite",      icon:"🦷",color:T.red,ages:["all"],
     lines:[
-      { tier:"Dog/Cat/Human",  drug:"Amox-clavulanate",mpkDose:13.3,freq:"q8h",max:500,dur:"3–5d prophy · 5–10d infected" },
-      { tier:"PCN allergy",    drug:"TMP-SMX + Metronidazole",mpkDose:null,freq:"q12h + q8h",max:null,dur:"5–7d" },
+      { tier:"Dog/Cat/Human",  drug:"Amox-clavulanate",mpkDose:13.3,freq:"q8h",max:500,dur:"3–5d prophy · 5–10d infected",mlPer:80,suspLabel:"400 mg/5 mL" },
+      { tier:"PCN allergy",    drug:"TMP-SMX + Metronidazole",mpkDose:null,freq:"q12h + q8h",max:null,dur:"5–7d",mlPer:null },
     ],
-    note:"Cat bites: always treat (Pasteurella). Human bites: Eikenella coverage required. Update tetanus. Report animal bites per local regulations." },
+    note:"Cat bites: always treat (Pasteurella). Human bites: Eikenella coverage required. Update tetanus." },
   { id:"lyme", label:"Lyme Disease (EM)",        icon:"🌲",color:T.mint,ages:["child"],
     lines:[
-      { tier:"< 8 years",  drug:"Amoxicillin",      mpkDose:16.7,freq:"q8h", max:500,dur:"14–21d (EM) · 28d (arthritis)" },
-      { tier:"≥ 8 years",  drug:"Doxycycline",       mpkDose:2.2, freq:"q12h",max:100,dur:"10–14d (EM) · 28d (arthritis)" },
-      { tier:"PCN allergy",drug:"Cefuroxime axetil", mpkDose:15,  freq:"q12h",max:500,dur:"14–21d" },
+      { tier:"< 8 years",  drug:"Amoxicillin",      mpkDose:16.7,freq:"q8h", max:500,dur:"14–21d (EM) · 28d (arthritis)",mlPer:50,suspLabel:"250 mg/5 mL" },
+      { tier:"≥ 8 years",  drug:"Doxycycline",       mpkDose:2.2, freq:"q12h",max:100,dur:"10–14d (EM) · 28d (arthritis)",mlPer:10,suspLabel:"50 mg/5 mL" },
+      { tier:"PCN allergy",drug:"Cefuroxime axetil", mpkDose:15,  freq:"q12h",max:500,dur:"14–21d",mlPer:25,suspLabel:"125 mg/5 mL" },
     ],
-    note:"EM ≥5 cm = clinical diagnosis; no serology needed. Return: new neurological symptoms, joint swelling, cardiac symptoms (palpitations, syncope)." },
+    note:"EM ≥5 cm = clinical diagnosis; no serology needed. Return: new neurological symptoms, joint swelling, cardiac symptoms." },
   { id:"pertu",label:"Pertussis",                icon:"💨",color:T.green,ages:["all"],
     lines:[
-      { tier:"< 1 month",           drug:"Azithromycin",mpkDose:10,freq:"q24h",max:500,dur:"5d (avoid erythromycin <1m)" },
-      { tier:"≥ 1 month",           drug:"Azithromycin",mpkDose:10,freq:"Day1; 5mg/kg×4d",max:500,dur:"5d" },
-      { tier:"Macrolide intolerant", drug:"TMP-SMX",    mpkDose:4, freq:"q12h (TMP)",max:160,dur:"14d" },
+      { tier:"< 1 month",           drug:"Azithromycin",mpkDose:10,freq:"q24h",max:500,dur:"5d (avoid erythromycin <1m)",mlPer:40,suspLabel:"200 mg/5 mL" },
+      { tier:"≥ 1 month",           drug:"Azithromycin",mpkDose:10,freq:"Day1; 5mg/kg×4d",max:500,dur:"5d",mlPer:40,suspLabel:"200 mg/5 mL" },
+      { tier:"Macrolide intolerant", drug:"TMP-SMX",    mpkDose:4, freq:"q12h (TMP)",max:160,dur:"14d",mlPer:8,suspLabel:"40 mg TMP/5 mL" },
     ],
-    note:"Treat if onset <3 weeks. Treat ALL close contacts regardless of vaccination. Isolate 5 days after starting treatment. Mandatory reporting." },
+    note:"Treat if onset <3 weeks. Treat ALL close contacts regardless of vaccination. Mandatory reporting." },
 ];
 
 const DISCHARGE_ABX = [
@@ -572,7 +541,7 @@ const DISCHARGE_ABX = [
     note:"AOM failure, sinusitis resistant, bites. 600/42.9 mg per 5 mL." },
   { name:"Amox-clavulanate std",     dose:"25–45 mg/kg/day (amox) ÷ q8h",mpkDose:13.3,freq:"q8h", max:500,
     concs:[{l:"200 mg/5 mL",m:40},{l:"400 mg/5 mL",m:80}],
-    note:"Bites, sinusitis mild, polymicrobial. Dose reflects amoxicillin component." },
+    note:"Bites, sinusitis mild, polymicrobial." },
   { name:"Cephalexin",               dose:"25–50 mg/kg/day ÷ q6h",       mpkDose:12.5,freq:"q6h", max:500,
     concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50}],
     note:"MSSA cellulitis, UTI, strep, impetigo." },
@@ -638,8 +607,6 @@ const AGE_FILTERS = [
   { id:"child",   label:"Child (>1y)" },
 ];
 
-// MEDICATIONS TAB
-// ═══════════════════════════════════════════════════════════════════════════
 function ResusTab({ globalWt, setGlobalWt }) {
   const [weight,setWeight]=useState(globalWt||"");
   const [subTab,setSubTab]=useState("resus");
@@ -648,19 +615,14 @@ function ResusTab({ globalWt, setGlobalWt }) {
   const [ageFilter,setAgeFilter]=useState(null);
   const [concSel,setConcSel]=useState({});
   const [ageYrs,setAgeYrs]=useState("");
-  const wt=parseFloat(weight)||0;
-  const ay=parseFloat(ageYrs)||0;
-
-  // ETT/Airway
+  const wt=parseFloat(weight)||0; const ay=parseFloat(ageYrs)||0;
   const ettUncuffed=ay>=1?(ay/4+4).toFixed(1):ay>0?"3.5":"—";
   const ettCuffed=ay>=1?(ay/4+3.5).toFixed(1):ay>0?"3.0":"—";
   const ettDepth=ay>=1?(ay/2+12).toFixed(0):ay>0?"10–11":"—";
   const blade=ay===0?"—":ay<0.083?"0":ay<2?"1":ay<8?"2":"3";
   const lma=wt<=0?"—":wt<5?"1":wt<10?"1.5":wt<20?"2":wt<30?"2.5":wt<50?"3":"4";
   const maint=wt<=0?0:wt<=10?wt*4:wt<=20?40+(wt-10)*2:60+(wt-20)*1;
-
-  const nWt=<div style={{ padding:"24px",textAlign:"center",fontFamily:S.sans,fontSize:12,color:T.txt4 }}>
-    Enter patient weight above to calculate doses.</div>;
+  const nWt=<div style={{ padding:"24px",textAlign:"center",fontFamily:S.sans,fontSize:12,color:T.txt4 }}>Enter patient weight above to calculate doses.</div>;
 
   const resusDrugs=wt>0?[
     { name:"Epinephrine (arrest)",     dose:"0.01 mg/kg IV/IO",  calc:`${(wt*.01).toFixed(2)} mg`,  ml:`${(wt*.01/0.1).toFixed(1)} mL of 1:10,000 (0.1 mg/mL)`, note:"Max 1 mg; q3–5 min. Drip: 0.1–1 mcg/kg/min." },
@@ -670,10 +632,10 @@ function ResusTab({ globalWt, setGlobalWt }) {
     { name:"Lidocaine (VF/pVT alt)",   dose:"1 mg/kg IV/IO",     calc:`${(wt*1).toFixed(1)} mg`,    ml:`${(wt*1/10).toFixed(1)} mL of 1% (10 mg/mL)`, note:"Alt to amiodarone. Max 100 mg. Drip: 20–50 mcg/kg/min." },
     { name:"Calcium chloride 10%",     dose:"20 mg/kg IV/IO",    calc:`${(wt*20).toFixed(0)} mg`,   ml:`${(wt*.2).toFixed(1)} mL of 10% (100 mg/mL)`, note:"Max 2 g. Hypocalcemia, hyperK, CCB toxicity. Central line preferred." },
     { name:"Sodium bicarbonate 8.4%",  dose:"1 mEq/kg IV",       calc:`${(wt*1).toFixed(1)} mEq`,   ml:`${(wt*1).toFixed(1)} mL of 8.4% (1 mEq/mL)`, note:"Dilute 1:1 with sterile water in neonates/infants. Confirm acidosis." },
-    { name:"Dextrose",                 dose:"2–4 mL/kg D10W",    calc:`${(wt*2).toFixed(0)}–${(wt*4).toFixed(0)} mL D10W`, note:"D10W neonates; D25W infants; D50W adolescents. Confirm hypoglycemia." },
-    { name:"Naloxone",                 dose:"0.01 mg/kg IV/IM/IN",calc:`${(wt*.01).toFixed(3)} mg`, ml:`${(wt*.01/0.4).toFixed(1)} mL of 0.4 mg/mL  |  IN: ${(wt*.1/1).toFixed(1)} mL of 1 mg/mL`, note:"IV: titrate to respirations. IN: 0.1 mg/kg using 1 mg/mL; max 4 mg." },
-    { name:"Normal saline (bolus)",    dose:"10–20 mL/kg IV/IO", calc:`${(wt*10).toFixed(0)}–${(wt*20).toFixed(0)} mL NS`, note:"Septic shock: 10 mL/kg aliquots. Max 60 mL/kg then reassess." },
-    { name:"RSI: Ketamine",            dose:"1–2 mg/kg IV",      calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mg`, ml:`${(wt*1/10).toFixed(1)}–${(wt*2/10).toFixed(1)} mL of 10 mg/mL  |  IM: ${(wt*4/50).toFixed(1)}–${(wt*5/50).toFixed(1)} mL of 50 mg/mL`, note:"Preferred peds RSI induction. IM 4–5 mg/kg if no IV." },
+    { name:"Dextrose",                 dose:"2–4 mL/kg D10W",    calc:`${(wt*2).toFixed(0)}–${(wt*4).toFixed(0)} mL D10W`, ml:`D10W: ${(wt*2).toFixed(0)}–${(wt*4).toFixed(0)} mL  |  D25W: ${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mL  |  D50W: ${(wt*0.5).toFixed(0)}–${(wt*1).toFixed(0)} mL`, note:"D10W neonates; D25W infants; D50W adolescents. Confirm hypoglycemia." },
+    { name:"Naloxone",                 dose:"0.01 mg/kg IV/IM/IN",calc:`${(wt*.01).toFixed(3)} mg`, ml:`IV: ${(wt*.01/0.4).toFixed(1)} mL of 0.4 mg/mL  |  IN: ${(wt*.1/1).toFixed(1)} mL of 1 mg/mL`, note:"IV: titrate to respirations. IN: 0.1 mg/kg using 1 mg/mL; max 4 mg." },
+    { name:"Normal saline (bolus)",    dose:"10–20 mL/kg IV/IO", calc:`${(wt*10).toFixed(0)}–${(wt*20).toFixed(0)} mL NS`, ml:`Bolus: ${(wt*10).toFixed(0)}–${(wt*20).toFixed(0)} mL`, note:"Septic shock: 10 mL/kg aliquots. Max 60 mL/kg then reassess." },
+    { name:"RSI: Ketamine",            dose:"1–2 mg/kg IV",      calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mg`, ml:`IV: ${(wt*1/10).toFixed(1)}–${(wt*2/10).toFixed(1)} mL (10 mg/mL)  |  IM: ${(wt*4/50).toFixed(1)}–${(wt*5/50).toFixed(1)} mL (50 mg/mL)`, note:"Preferred peds RSI induction. IM 4–5 mg/kg if no IV." },
     { name:"RSI: Succinylcholine",     dose:"2 mg/kg (<10kg) / 1.5 mg/kg (≥10kg)",calc:`${wt<10?(wt*2).toFixed(0):(wt*1.5).toFixed(0)} mg`, ml:`${wt<10?(wt*2/20).toFixed(1):(wt*1.5/20).toFixed(1)} mL of 20 mg/mL`, note:"Atropine pretreatment if <1 year." },
     { name:"RSI: Rocuronium",          dose:"1.2 mg/kg IV",      calc:`${(wt*1.2).toFixed(0)} mg`,  ml:`${(wt*1.2/10).toFixed(1)} mL of 10 mg/mL`, note:"Reversal: sugammadex 16 mg/kg IV." },
   ]:[];
@@ -685,21 +647,21 @@ function ResusTab({ globalWt, setGlobalWt }) {
     { label:"Cardioversion — VT pulse",dose:"1–2 J/kg",   calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} J` },
   ]:[];
   const neonAbx=wt>0?[
-    { name:"Ampicillin — sepsis",  dose:"50 mg/kg IV q6h", calc:`${(wt*50).toFixed(0)} mg q6h`, note:"Meningitis: 100 mg/kg IV q6h. GBS, Listeria, enterococcus." },
-    { name:"Gentamicin — neonatal",dose:"4 mg/kg IV q24h", calc:`${(wt*4).toFixed(0)} mg q24h`,note:"7–28d: 3.5 mg/kg q24h. Levels required." },
-    { name:"Acyclovir — HSV",      dose:"20 mg/kg IV q8h", calc:`${(wt*20).toFixed(0)} mg q8h`,note:"Neonatal HSV: 14–21d course. CSF HSV PCR before starting." },
+    { name:"Ampicillin — sepsis",  dose:"50 mg/kg IV q6h", calc:`${(wt*50).toFixed(0)} mg q6h`, ml:`${(wt*50/100).toFixed(1)} mL of 100 mg/mL (post-recon)`, note:"Meningitis: 100 mg/kg IV q6h. GBS, Listeria, enterococcus." },
+    { name:"Gentamicin — neonatal",dose:"4 mg/kg IV q24h", calc:`${(wt*4).toFixed(0)} mg q24h`,ml:`${(wt*4/10).toFixed(1)} mL of 10 mg/mL (peds vial)`,note:"7–28d: 3.5 mg/kg q24h. Levels required." },
+    { name:"Acyclovir — HSV",      dose:"20 mg/kg IV q8h", calc:`${(wt*20).toFixed(0)} mg q8h`,ml:`${(wt*20/50).toFixed(1)} mL of 50 mg/mL stock → dilute to ≤7 mg/mL for infusion`,note:"Neonatal HSV: 14–21d course. CSF HSV PCR before starting." },
   ]:[];
   const broadAbx=wt>0?[
-    { name:"Ceftriaxone",          dose:"50 mg/kg IV/IM q24h",  calc:`${Math.min(wt*50,2000).toFixed(0)} mg q24h`,note:"Meningitis: 100 mg/kg q24h (max 4 g). Sepsis, pneumonia, UTI." },
-    { name:"Cefazolin",            dose:"25 mg/kg IV q8h",      calc:`${Math.min(wt*25,2000).toFixed(0)} mg q8h`, note:"Max 2 g/dose. MSSA, SSTI, surgical prophylaxis." },
-    { name:"Ampicillin-sulbactam", dose:"50 mg/kg IV q6h",      calc:`${Math.min(wt*50,3000).toFixed(0)} mg q6h`, note:"Max 3 g/dose. Polymicrobial, bites, aspiration." },
-    { name:"Pip-tazobactam",       dose:"100 mg/kg IV q8h",     calc:`${Math.min(wt*100,4500).toFixed(0)} mg q8h`,note:"Max 4.5 g/dose. Pseudomonas, febrile neutropenia." },
-    { name:"Meropenem",            dose:"20 mg/kg IV q8h",      calc:`${Math.min(wt*20,1000).toFixed(0)} mg q8h`, note:"Meningitis: 40 mg/kg q8h (max 2 g). MDR organisms." },
+    { name:"Ceftriaxone",          dose:"50 mg/kg IV/IM q24h",  calc:`${Math.min(wt*50,2000).toFixed(0)} mg q24h`,ml:`IV: ${(Math.min(wt*50,2000)/100).toFixed(1)} mL (100 mg/mL)  |  IM: ${(Math.min(wt*50,2000)/250).toFixed(1)} mL (250 mg/mL)`,note:"Meningitis: 100 mg/kg q24h (max 4 g). Sepsis, pneumonia, UTI." },
+    { name:"Cefazolin",            dose:"25 mg/kg IV q8h",      calc:`${Math.min(wt*25,2000).toFixed(0)} mg q8h`, ml:`${(Math.min(wt*25,2000)/100).toFixed(1)} mL of 100 mg/mL (post-dilution)`,note:"Max 2 g/dose. MSSA, SSTI, surgical prophylaxis." },
+    { name:"Ampicillin-sulbactam", dose:"50 mg/kg IV q6h",      calc:`${Math.min(wt*50,3000).toFixed(0)} mg q6h`, ml:`${(Math.min(wt*50,3000)/45).toFixed(1)} mL of 45 mg/mL (infusion)`,note:"Max 3 g/dose. Polymicrobial, bites, aspiration." },
+    { name:"Pip-tazobactam",       dose:"100 mg/kg IV q8h",     calc:`${Math.min(wt*100,4500).toFixed(0)} mg q8h`,ml:`${(Math.min(wt*100,4500)/80).toFixed(1)} mL of 80 mg/mL (infusion)`,note:"Max 4.5 g/dose. Pseudomonas, febrile neutropenia." },
+    { name:"Meropenem",            dose:"20 mg/kg IV q8h",      calc:`${Math.min(wt*20,1000).toFixed(0)} mg q8h`, ml:`${(Math.min(wt*20,1000)/50).toFixed(1)} mL of 50 mg/mL (post-dilution)`,note:"Meningitis: 40 mg/kg q8h (max 2 g). MDR organisms." },
   ]:[];
   const mrsaAbx=wt>0?[
-    { name:"Vancomycin",    dose:"15 mg/kg IV q6h",       calc:`${Math.min(wt*15,750).toFixed(0)} mg q6h`, note:"Max 60 mg/kg/day. AUC-guided; target AUC/MIC 400–600. Check levels." },
-    { name:"Clindamycin IV",dose:"10 mg/kg IV q8h",       calc:`${Math.min(wt*10,600).toFixed(0)} mg q8h`,note:"Max 600 mg/dose. CA-MRSA, osteomyelitis." },
-    { name:"TMP-SMX IV",    dose:"4–5 mg/kg (TMP) q12h",  calc:`${(wt*4).toFixed(0)}–${(wt*5).toFixed(0)} mg TMP`,note:"MRSA, UTI. Avoid neonates." },
+    { name:"Vancomycin",    dose:"15 mg/kg IV q6h",       calc:`${Math.min(wt*15,750).toFixed(0)} mg q6h`, ml:`${(Math.min(wt*15,750)/5).toFixed(1)} mL of 5 mg/mL (post-dilution)`,note:"Max 60 mg/kg/day. AUC-guided; target AUC/MIC 400–600. Check levels." },
+    { name:"Clindamycin IV",dose:"10 mg/kg IV q8h",       calc:`${Math.min(wt*10,600).toFixed(0)} mg q8h`,ml:`${(Math.min(wt*10,600)/12).toFixed(1)} mL of 12 mg/mL (post-dilution)`,note:"Max 600 mg/dose. CA-MRSA, osteomyelitis." },
+    { name:"TMP-SMX IV",    dose:"4–5 mg/kg (TMP) q12h",  calc:`${(wt*4).toFixed(0)}–${(wt*5).toFixed(0)} mg TMP`,ml:`${(wt*4/16).toFixed(1)}–${(wt*5/16).toFixed(1)} mL of 16 mg TMP/mL stock`,note:"MRSA, UTI. Dilute for infusion. Avoid neonates." },
   ]:[];
   const opioids=wt>0?[
     { name:"Fentanyl IV/IN",dose:"1–2 mcg/kg IV; 2 mcg/kg IN",calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mcg IV · ${Math.min(wt*2,100).toFixed(0)} mcg IN`, ml:`IV: ${(wt*1/50).toFixed(1)}–${(wt*2/50).toFixed(1)} mL (50 mcg/mL)  |  IN: ${(wt*2/500).toFixed(2)} mL (500 mcg/mL atomizer)`,note:"IN uses 500 mcg/mL via atomizer — max 1 mL/nostril. IV onset 1–2 min." },
@@ -708,49 +670,50 @@ function ResusTab({ globalWt, setGlobalWt }) {
   ]:[];
   const nonOpioids=wt>0?[
     { name:"Ketorolac",          dose:"0.5 mg/kg IV",      calc:`${Math.min(wt*.5,15).toFixed(1)} mg`, ml:`${(Math.min(wt*.5,15)/15).toFixed(1)} mL (15 mg/mL)  |  ${(Math.min(wt*.5,15)/30).toFixed(1)} mL (30 mg/mL)`,note:"Max 15 mg IV peds. Avoid bleeding risk or AKI." },
-    { name:"Acetaminophen IV",   dose:"15 mg/kg IV q6h",   calc:`${Math.min(wt*15,1000).toFixed(0)} mg q6h`, ml:`${(Math.min(wt*15,1000)/10).toFixed(0)} mL (10 mg/mL)`,note:"Max 1 g/dose; <75 mg/kg/day. Pre-mixed 10 mg/mL bags." },
-    { name:"Ibuprofen",          dose:"10 mg/kg PO q6–8h", calc:`${Math.min(wt*10,800).toFixed(0)} mg`,   note:"Max 800 mg/dose. Avoid <6m, AKI, GI bleeding." },
-    { name:"Acetaminophen PO/PR",dose:"15 mg/kg q4–6h",    calc:`${Math.min(wt*15,1000).toFixed(0)} mg`,  note:"Max 1 g/dose; max 5 doses/day." },
+    { name:"Acetaminophen IV",   dose:"15 mg/kg IV q6h",   calc:`${Math.min(wt*15,1000).toFixed(0)} mg q6h`, ml:`${(Math.min(wt*15,1000)/10).toFixed(0)} mL (10 mg/mL Ofirmev)`,note:"Max 1 g/dose; <75 mg/kg/day. Pre-mixed 10 mg/mL bags." },
+    { name:"Ibuprofen",          dose:"10 mg/kg PO q6–8h", calc:`${Math.min(wt*10,800).toFixed(0)} mg`,   ml:`${(Math.min(wt*10,800)/20).toFixed(1)} mL of 100 mg/5 mL susp`,note:"Max 800 mg/dose. Avoid <6m, AKI, GI bleeding." },
+    { name:"Acetaminophen PO/PR",dose:"15 mg/kg q4–6h",    calc:`${Math.min(wt*15,1000).toFixed(0)} mg`,  ml:`${(Math.min(wt*15,1000)/32).toFixed(1)} mL of 160 mg/5 mL susp`,note:"Max 1 g/dose; max 5 doses/day." },
   ]:[];
   const sedation=wt>0?[
-    { name:"Ketamine (PSA)",  dose:"1–2 mg/kg IV; 4–5 mg/kg IM",calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mg IV · ${(wt*4).toFixed(0)}–${(wt*5).toFixed(0)} mg IM`,note:"Dissociative. Pre-treat ondansetron. Preferred >3m." },
-    { name:"Midazolam",       dose:"0.1 mg/kg IV; 0.2 mg/kg IN",calc:`${(wt*.1).toFixed(2)} mg IV · ${Math.min(wt*.2,10).toFixed(1)} mg IN`,note:"Max 10 mg IN/IM. Reversal: flumazenil 0.01 mg/kg IV." },
-    { name:"Dexmedetomidine", dose:"1–2 mcg/kg IV ×10min; 2–3 mcg/kg IN",calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mcg IV · ${Math.min(wt*2.5,200).toFixed(0)} mcg IN`,note:"No respiratory depression. MRI, wound care." },
-    { name:"Propofol (PSA)",  dose:"1–2 mg/kg IV",              calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mg`,note:"Airway provider required. Lidocaine pre-treat." },
-    { name:"Etomidate",       dose:"0.3 mg/kg IV",              calc:`${(wt*.3).toFixed(1)} mg`,note:"Rapid onset, minimal hemodynamic effect. Single dose." },
+    { name:"Ketamine (PSA)",  dose:"1–2 mg/kg IV; 4–5 mg/kg IM",calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mg IV · ${(wt*4).toFixed(0)}–${(wt*5).toFixed(0)} mg IM`,ml:`IV: ${(wt*1/10).toFixed(1)}–${(wt*2/10).toFixed(1)} mL (10 mg/mL)  |  IM: ${(wt*4/50).toFixed(1)}–${(wt*5/50).toFixed(1)} mL (50 mg/mL)`,note:"Dissociative. Pre-treat ondansetron. Preferred >3m." },
+    { name:"Midazolam",       dose:"0.1 mg/kg IV; 0.2 mg/kg IN",calc:`${(wt*.1).toFixed(2)} mg IV · ${Math.min(wt*.2,10).toFixed(1)} mg IN`,ml:`IV: ${(wt*.1).toFixed(2)} mL (1 mg/mL)  |  IN: ${(Math.min(wt*.2,10)/5).toFixed(2)} mL (5 mg/mL atomizer)`,note:"Max 10 mg IN/IM. Reversal: flumazenil 0.01 mg/kg IV." },
+    { name:"Dexmedetomidine", dose:"1–2 mcg/kg IV ×10min; 2–3 mcg/kg IN",calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mcg IV · ${Math.min(wt*2.5,200).toFixed(0)} mcg IN`,ml:`IV: ${(wt*1/4).toFixed(1)}–${(wt*2/4).toFixed(1)} mL (4 mcg/mL diluted)  |  IN: ${(Math.min(wt*2.5,200)/100).toFixed(2)} mL (100 mcg/mL stock)`,note:"No respiratory depression. MRI, wound care." },
+    { name:"Propofol (PSA)",  dose:"1–2 mg/kg IV",              calc:`${(wt*1).toFixed(0)}–${(wt*2).toFixed(0)} mg`,ml:`${(wt*1/10).toFixed(1)}–${(wt*2/10).toFixed(1)} mL (10 mg/mL)`,note:"Airway provider required. Lidocaine pre-treat." },
+    { name:"Etomidate",       dose:"0.3 mg/kg IV",              calc:`${(wt*.3).toFixed(1)} mg`,ml:`${(wt*.3/2).toFixed(1)} mL (2 mg/mL)`,note:"Rapid onset, minimal hemodynamic effect. Single dose." },
   ]:[];
   const anaphylaxis=wt>0?[
-    { name:"Epinephrine 1:1000 IM",dose:"0.01 mg/kg IM (anterolateral thigh)",calc:`${Math.min(wt*.01,.5).toFixed(3)} mg`,note:"Max 0.5 mg. Auto-injector: <15 kg → 0.15 mg; ≥15 kg → 0.3 mg." },
-    { name:"Diphenhydramine",      dose:"1 mg/kg IV/IM/PO",                   calc:`${Math.min(wt*1,50).toFixed(0)} mg`,note:"Max 50 mg. H1 blocker adjunct — never delay epi for this." },
+    { name:"Epinephrine 1:1000 IM",dose:"0.01 mg/kg IM (anterolateral thigh)",calc:`${Math.min(wt*.01,.5).toFixed(3)} mg`,ml:`${Math.min(wt*.01,.5).toFixed(2)} mL of 1:1,000 (1 mg/mL)`,note:"Max 0.5 mg. Auto-injector: <15 kg → 0.15 mg; ≥15 kg → 0.3 mg." },
+    { name:"Diphenhydramine",      dose:"1 mg/kg IV/IM/PO",                   calc:`${Math.min(wt*1,50).toFixed(0)} mg`,ml:`IV/IM: ${(Math.min(wt*1,50)/50).toFixed(1)} mL (50 mg/mL)  |  PO: ${(Math.min(wt*1,50)/2.5).toFixed(1)} mL of 12.5 mg/5 mL`,note:"Max 50 mg. H1 blocker adjunct — never delay epi for this." },
   ]:[];
   const steroids=wt>0?[
-    { name:"Dexamethasone — croup", dose:"0.6 mg/kg PO/IM/IV × 1",  calc:`${Math.min(wt*.6,10).toFixed(1)} mg`,    note:"Max 10 mg. Single dose. Oral = IV bioavailability." },
-    { name:"Dexamethasone — asthma",dose:"0.6 mg/kg PO/IV × 1–2d",  calc:`${Math.min(wt*.6,16).toFixed(1)} mg/day`,note:"Max 16 mg/day. Non-inferior to 5-day prednisone." },
-    { name:"Methylprednisolone",    dose:"1–2 mg/kg IV q6–12h",      calc:`${(wt*1).toFixed(0)}–${Math.min(wt*2,125).toFixed(0)} mg`,note:"Max 125 mg/dose. Severe asthma, anaphylaxis." },
-    { name:"Prednisolone",          dose:"1 mg/kg PO q24h",          calc:`${Math.min(wt*1,60).toFixed(0)} mg/day`, note:"Max 60 mg/day. Asthma exacerbation, croup." },
+    { name:"Dexamethasone — croup", dose:"0.6 mg/kg PO/IM/IV × 1",  calc:`${Math.min(wt*.6,10).toFixed(1)} mg`, ml:`IV/IM: ${(Math.min(wt*.6,10)/4).toFixed(1)} mL (4 mg/mL)  |  PO: ${(Math.min(wt*.6,10)/1).toFixed(1)} mL of 1 mg/mL elixir`,note:"Max 10 mg. Single dose. Oral = IV bioavailability." },
+    { name:"Dexamethasone — asthma",dose:"0.6 mg/kg PO/IV × 1–2d",  calc:`${Math.min(wt*.6,16).toFixed(1)} mg/day`,ml:`IV: ${(Math.min(wt*.6,16)/4).toFixed(1)} mL (4 mg/mL)  |  PO: ${(Math.min(wt*.6,16)/1).toFixed(1)} mL of 1 mg/mL elixir`,note:"Max 16 mg/day. Non-inferior to 5-day prednisone." },
+    { name:"Methylprednisolone",    dose:"1–2 mg/kg IV q6–12h",      calc:`${(wt*1).toFixed(0)}–${Math.min(wt*2,125).toFixed(0)} mg`,ml:`${(wt*1/40).toFixed(1)}–${(Math.min(wt*2,125)/40).toFixed(1)} mL of 40 mg/mL (post-recon)`,note:"Max 125 mg/dose. Severe asthma, anaphylaxis." },
+    { name:"Prednisolone",          dose:"1 mg/kg PO q24h",          calc:`${Math.min(wt*1,60).toFixed(0)} mg/day`, ml:`${(Math.min(wt*1,60)/3).toFixed(1)} mL of 15 mg/5 mL (Orapred)`,note:"Max 60 mg/day. Asthma exacerbation, croup." },
   ]:[];
   const resp=wt>0?[
-    { name:"Albuterol neb",       dose:"0.15 mg/kg q20min × 3",        calc:`${Math.max(Math.min(wt*.15,5),2.5).toFixed(1)} mg`,note:"Min 2.5 mg, max 5 mg. Continuous: 0.5 mg/kg/h (max 20)." },
-    { name:"Albuterol MDI",       dose:"4–8 puffs with spacer q20min", calc:"4–8 puffs q20 min",note:"MDI + spacer = neb in mild-moderate asthma. 90 mcg/puff." },
-    { name:"Ipratropium",         dose:"250 mcg (<20 kg) / 500 mcg (≥20 kg)",calc:wt<20?"250 mcg neb":"500 mcg neb",note:"q20 min × 3 in severe asthma. Additive with albuterol." },
-    { name:"Magnesium sulfate",   dose:"25–75 mg/kg IV over 20–30 min",calc:`${Math.min(wt*25,500).toFixed(0)}–${Math.min(wt*75,2500).toFixed(0)} mg`,note:"Severe asthma max 2.5 g. Seizures max 2 g. Monitor BP." },
-    { name:"Racemic epi neb",     dose:"0.5 mL of 2.25% in 3 mL NS",  calc:"0.5 mL 2.25% (fixed)",note:"Croup, post-extubation stridor. Observe 2–4h for rebound." },
-    { name:"L-Epinephrine 1:1000",dose:"0.5 mL/kg (max 5 mL) in 3 mL NS",calc:`${Math.min(wt*.5,5).toFixed(1)} mL`,note:"Croup alternative to racemic epi. Same efficacy." },
+    { name:"Albuterol neb",       dose:"0.15 mg/kg q20min × 3",        calc:`${Math.max(Math.min(wt*.15,5),2.5).toFixed(1)} mg`,ml:`${Math.max(Math.min(wt*.15,5),2.5).toFixed(1)} mg in 3 mL NS  |  unit dose: 2.5 mg/3 mL premix`,note:"Min 2.5 mg, max 5 mg. Continuous: 0.5 mg/kg/h (max 20)." },
+    { name:"Albuterol MDI",       dose:"4–8 puffs with spacer q20min", calc:"4–8 puffs q20 min",ml:"90 mcg/puff — no nebulizer volume",note:"MDI + spacer = neb in mild-moderate asthma. 90 mcg/puff." },
+    { name:"Ipratropium",         dose:"250 mcg (<20 kg) / 500 mcg (≥20 kg)",calc:wt<20?"250 mcg neb":"500 mcg neb",ml:wt<20?"2.5 mL of 250 mcg/2.5 mL premix":"2.5 mL of 500 mcg/2.5 mL premix",note:"q20 min × 3 in severe asthma. Additive with albuterol." },
+    { name:"Magnesium sulfate",   dose:"25–75 mg/kg IV over 20–30 min",calc:`${Math.min(wt*25,500).toFixed(0)}–${Math.min(wt*75,2500).toFixed(0)} mg`,ml:`${(Math.min(wt*25,500)/100).toFixed(1)}–${(Math.min(wt*75,2500)/100).toFixed(1)} mL of 100 mg/mL (stock 500 mg/mL — dilute)`,note:"Severe asthma max 2.5 g. Seizures max 2 g. Monitor BP." },
+    { name:"Racemic epi neb",     dose:"0.5 mL of 2.25% in 3 mL NS",  calc:"0.5 mL 2.25% (fixed)",ml:"0.5 mL of 2.25% solution in 3 mL NS",note:"Croup, post-extubation stridor. Observe 2–4h for rebound." },
+    { name:"L-Epinephrine 1:1000",dose:"0.5 mL/kg (max 5 mL) in 3 mL NS",calc:`${Math.min(wt*.5,5).toFixed(1)} mL`,ml:`${Math.min(wt*.5,5).toFixed(1)} mL of 1:1,000 (1 mg/mL) in 3 mL NS`,note:"Croup alternative to racemic epi. Same efficacy." },
   ]:[];
   const antiemetics=wt>0?[
-    { name:"Ondansetron IV",   dose:"0.15 mg/kg IV/IM",              calc:`${Math.min(wt*.15,4).toFixed(2)} mg`, note:"Max 4 mg/dose. Repeat q4–6h prn. Most-used peds antiemetic in ED." },
-    { name:"Ondansetron ODT",  dose:"< 30 kg: 4 mg · ≥ 30 kg: 8 mg",calc:wt<30?"4 mg ODT":"8 mg ODT",          note:"Dissolves on tongue — ideal when vomiting makes PO difficult." },
-    { name:"Promethazine",     dose:"0.25–0.5 mg/kg IV/IM q4–6h",   calc:`${Math.min(wt*.3,25).toFixed(1)} mg`, note:"Max 25 mg. Avoid <2y (respiratory depression). Never IV push." },
+    { name:"Ondansetron IV",   dose:"0.15 mg/kg IV/IM",              calc:`${Math.min(wt*.15,4).toFixed(2)} mg`, ml:`${(Math.min(wt*.15,4)/2).toFixed(2)} mL of 2 mg/mL`,note:"Max 4 mg/dose. Repeat q4–6h prn." },
+    { name:"Ondansetron ODT",  dose:"< 30 kg: 4 mg · ≥ 30 kg: 8 mg",calc:wt<30?"4 mg ODT":"8 mg ODT",          ml:"Solid ODT — dissolves on tongue",note:"Dissolves on tongue — ideal when vomiting makes PO difficult." },
+    { name:"Promethazine",     dose:"0.25–0.5 mg/kg IV/IM q4–6h",   calc:`${Math.min(wt*.3,25).toFixed(1)} mg`, ml:`${(Math.min(wt*.3,25)/25).toFixed(1)} mL of 25 mg/mL`,note:"Max 25 mg. Avoid <2y (respiratory depression). Never IV push." },
   ]:[];
   const bloodProd=wt>0?[
-    { name:"pRBC",         dose:"10–15 mL/kg IV over 3–4h",    calc:`${(wt*10).toFixed(0)}–${(wt*15).toFixed(0)} mL`, note:"Stable anemia. Each 10 mL/kg raises Hgb ~2–3 g/dL." },
-    { name:"FFP",          dose:"10–15 mL/kg IV over 30–60 min",calc:`${(wt*10).toFixed(0)}–${(wt*15).toFixed(0)} mL`, note:"Coagulopathy, factor deficiency. Allow 30 min thaw time." },
-    { name:"Platelets",    dose:"5–10 mL/kg IV over 30 min",   calc:`${(wt*5).toFixed(0)}–${(wt*10).toFixed(0)} mL`,  note:"1 apheresis unit for larger children. Give over 30 min." },
-    { name:"Cryoprecipitate",dose:"1–2 units per 10 kg IV",    calc:`${Math.max(Math.round(wt/10),1)}–${Math.max(Math.round(wt/5),1)} units`, note:"Fibrinogen replacement. Target fibrinogen > 100 mg/dL." },
+    { name:"pRBC",         dose:"10–15 mL/kg IV over 3–4h",    calc:`${(wt*10).toFixed(0)}–${(wt*15).toFixed(0)} mL`, ml:"Volume IS the dose", note:"Stable anemia. Each 10 mL/kg raises Hgb ~2–3 g/dL." },
+    { name:"FFP",          dose:"10–15 mL/kg IV over 30–60 min",calc:`${(wt*10).toFixed(0)}–${(wt*15).toFixed(0)} mL`, ml:"Volume IS the dose", note:"Coagulopathy, factor deficiency. Allow 30 min thaw time." },
+    { name:"Platelets",    dose:"5–10 mL/kg IV over 30 min",   calc:`${(wt*5).toFixed(0)}–${(wt*10).toFixed(0)} mL`,  ml:"Volume IS the dose", note:"1 apheresis unit for larger children. Give over 30 min." },
+    { name:"Cryoprecipitate",dose:"1–2 units per 10 kg IV",    calc:`${Math.max(Math.round(wt/10),1)}–${Math.max(Math.round(wt/5),1)} units`, ml:"~10–15 mL per unit", note:"Fibrinogen replacement. Target fibrinogen > 100 mg/dL." },
   ]:[];
   const antiviral=wt>0?[
     { name:"Oseltamivir (Tamiflu)", dose:"Weight-based × 5 days",
       calc:wt<15?"30 mg q12h":wt<23?"45 mg q12h":wt<40?"60 mg q12h":"75 mg q12h",
+      ml:wt<15?"5 mL of 6 mg/mL susp q12h":wt<23?"7.5 mL of 6 mg/mL susp q12h":wt<40?"10 mL of 6 mg/mL susp q12h":"12.5 mL of 6 mg/mL susp q12h  |  or 75 mg cap",
       note:"Start within 48h of onset. Neonates ≥2 weeks: 3 mg/kg q12h. Adult dose >40 kg." },
   ]:[];
 
@@ -768,8 +731,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
               border:`1px solid ${weight?T.green+"55":"rgba(30,70,130,0.4)"}`,
               borderRadius:8,outline:"none",fontFamily:S.mono,fontSize:18,fontWeight:900,color:T.green }} />
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt4,lineHeight:1.6 }}>
-            Enter from Broselow tape or use "→ drug dosing" button in Vitals tab.
-            All doses calculated with max caps applied.
+            Enter from Broselow tape or use "→ drug dosing" button in Vitals tab. All doses calculated with max caps.
           </div>
         </div>
       </Card>
@@ -788,8 +750,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
       {subTab==="resus"&&<>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:7 }}>
           <div>
-            <div style={{ fontFamily:S.mono,fontSize:7,color:T.txt4,letterSpacing:1.3,
-              textTransform:"uppercase",marginBottom:4 }}>Age for Airway Sizing (years)</div>
+            <div style={{ fontFamily:S.mono,fontSize:7,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>Age for Airway Sizing (years)</div>
             <input type="number" value={ageYrs} onChange={e=>setAgeYrs(e.target.value)}
               style={{ width:"100%",padding:"7px 9px",background:"rgba(5,13,32,0.92)",
                 border:`1px solid ${ageYrs?T.mint+"55":"rgba(30,70,130,0.4)"}`,
@@ -800,8 +761,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
               {[["ETT (uncuffed)",ettUncuffed,"mm"],["ETT (cuffed)",ettCuffed,"mm"],
                 ["ETT depth",ettDepth,"cm at lip"],["Blade size",blade,""],
                 ["LMA size",lma,"(by weight)"],["Suction",ay<1?"6–8F":ay<5?"8–10F":"10–12F","French"]].map(([l,v,u])=>(
-                <div key={l} style={{ padding:"5px 7px",borderRadius:6,background:"rgba(127,255,207,0.06)",
-                  border:"1px solid rgba(127,255,207,0.18)" }}>
+                <div key={l} style={{ padding:"5px 7px",borderRadius:6,background:"rgba(127,255,207,0.06)",border:"1px solid rgba(127,255,207,0.18)" }}>
                   <div style={{ fontFamily:S.mono,fontSize:7.5,color:T.txt4,letterSpacing:0.5 }}>{l}</div>
                   <div style={{ fontFamily:S.mono,fontSize:14,fontWeight:700,color:T.mint }}>{v}</div>
                   <div style={{ fontFamily:S.mono,fontSize:7,color:T.txt4 }}>{u}</div>
@@ -816,16 +776,15 @@ function ResusTab({ globalWt, setGlobalWt }) {
               {maint.toFixed(0)}<span style={{ fontSize:18 }}> mL/hr</span>
             </div>
             <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6 }}>
-              <div>Formula: ≤10 kg: 4 mL/kg/hr · 10–20 kg: 40+(2×kg over 10) · {">"} 20 kg: 60+(1×kg over 20)</div>
-              <div style={{ color:T.txt4,marginTop:2 }}>Daily: {(maint*24).toFixed(0)} mL/day · Add deficit + ongoing losses for resuscitation</div>
+              <div>≤10 kg: 4 mL/kg/hr · 10–20 kg: 40+(2×kg over 10) · {">"} 20 kg: 60+(1×kg over 20)</div>
+              <div style={{ color:T.txt4,marginTop:2 }}>Daily: {(maint*24).toFixed(0)} mL/day</div>
             </div>
           </div>
         </Card>}
         {wt>0&&<Card color={T.coral} title="Defibrillation / Cardioversion">
           <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(185px,1fr))",gap:7 }}>
             {defib.map(d=>(
-              <div key={d.label} style={{ padding:"8px 10px",borderRadius:8,
-                background:"rgba(255,92,92,0.07)",border:"1px solid rgba(255,92,92,0.25)" }}>
+              <div key={d.label} style={{ padding:"8px 10px",borderRadius:8,background:"rgba(255,92,92,0.07)",border:"1px solid rgba(255,92,92,0.25)" }}>
                 <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt3,marginBottom:3 }}>{d.label}</div>
                 <div style={{ fontFamily:S.mono,fontSize:14,fontWeight:700,color:T.coral }}>{d.calc}</div>
                 <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{d.dose}</div>
@@ -841,9 +800,10 @@ function ResusTab({ globalWt, setGlobalWt }) {
                 <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:9.5,color:T.txt2 }}>{d.name}</div>
                 <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:1 }}>{d.note}</div>
               </div>
-              <div style={{ textAlign:"right",flexShrink:0 }}>
+              <div style={{ textAlign:"right",flexShrink:0,minWidth:130 }}>
                 <div style={{ fontFamily:S.mono,fontSize:12,fontWeight:700,color:T.green }}>{d.calc}</div>
-                <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4 }}>{d.dose}</div>
+                {d.ml&&<div style={{ fontFamily:S.mono,fontSize:9,color:T.mint,marginTop:1,lineHeight:1.4 }}>{d.ml}</div>}
+                <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,marginTop:1 }}>{d.dose}</div>
               </div>
             </div>
           ))}
@@ -851,8 +811,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
         <Card color={T.orange} title="Seizure Escalation Protocol (Status Epilepticus)">
           {SEIZURE_STEPS.map((step,i)=>(
             <div key={i} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,
-              background:`${step.color}08`,border:`1px solid ${step.color}30`,
-              borderLeft:`4px solid ${step.color}` }}>
+              background:`${step.color}08`,border:`1px solid ${step.color}30`,borderLeft:`4px solid ${step.color}` }}>
               <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6 }}>
                 <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:13,color:step.color }}>{step.label}</div>
                 <span style={{ fontFamily:S.mono,fontSize:8,color:step.color,background:`${step.color}18`,
@@ -861,7 +820,6 @@ function ResusTab({ globalWt, setGlobalWt }) {
               {step.actions.map((a,j)=>{
                 const mgMatch=a.match(/(\d+\.?\d*)\s*mg\/kg/);
                 const mcgMatch=a.match(/(\d+\.?\d*)\s*mcg\/kg/);
-                const meqMatch=a.match(/(\d+\.?\d*)\s*mEq\/kg/);
                 let calc="";
                 if(wt>0&&mgMatch)calc=` → ${Math.min(Math.round(wt*parseFloat(mgMatch[1])),a.includes("max")?parseInt(a.match(/max[\s,](\d+)/)?.[1]||9999):9999)} mg`;
                 if(wt>0&&mcgMatch)calc=` → ${Math.min(Math.round(wt*parseFloat(mcgMatch[1])),parseInt(a.match(/max[\s,](\d+)/)?.[1]||9999))} mcg`;
@@ -869,8 +827,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
                   <div key={j} style={{ display:"flex",gap:7,alignItems:"flex-start",marginBottom:3 }}>
                     <span style={{ color:step.color,fontSize:7,marginTop:4,flexShrink:0 }}>▸</span>
                     <span style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt2,lineHeight:1.5 }}>
-                      {a}
-                      {calc&&<strong style={{ color:step.color }}>{calc}</strong>}
+                      {a}{calc&&<strong style={{ color:step.color }}>{calc}</strong>}
                     </span>
                   </div>
                 );
@@ -915,13 +872,13 @@ function ResusTab({ globalWt, setGlobalWt }) {
             ))}
           </div>
           {cond&&<div style={{ padding:"9px 11px",borderRadius:9,marginBottom:7,
-            background:`${cond.color}08`,border:`1px solid ${cond.color}40`,
-            borderLeft:`4px solid ${cond.color}` }}>
+            background:`${cond.color}08`,border:`1px solid ${cond.color}40`,borderLeft:`4px solid ${cond.color}` }}>
             <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:16,color:cond.color,marginBottom:7 }}>
               {cond.icon} {cond.label}
             </div>
             {cond.lines.map((line,i)=>{
-              const pd=wt>0&&line.mpkDose?`${calcDose(wt,line.mpkDose,line.max)} mg ${line.freq}`:null;
+              const mg=wt>0&&line.mpkDose?calcDose(wt,line.mpkDose,line.max):null;
+              const mlVol=mg&&line.mlPer?(mg/line.mlPer).toFixed(1):null;
               return(
                 <div key={i} style={{ display:"flex",gap:10,alignItems:"flex-start",padding:"5px 0",
                   borderBottom:i<cond.lines.length-1?`1px solid ${cond.color}20`:"none" }}>
@@ -933,10 +890,16 @@ function ResusTab({ globalWt, setGlobalWt }) {
                   <div style={{ flex:1 }}>
                     <div style={{ fontFamily:S.sans,fontWeight:600,fontSize:9.5,color:T.txt2 }}>{line.drug}</div>
                     {line.dur&&<div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,marginTop:2 }}>Duration: {line.dur}</div>}
+                    {line.suspLabel&&<div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,marginTop:1 }}>Susp: {line.suspLabel}</div>}
                   </div>
-                  <div style={{ textAlign:"right",flexShrink:0 }}>
-                    {pd?<div style={{ fontFamily:S.mono,fontSize:13,fontWeight:700,color:cond.color }}>{pd}</div>
-                    :<div style={{ fontFamily:S.mono,fontSize:9,color:T.txt3 }}>{line.freq}</div>}
+                  <div style={{ textAlign:"right",flexShrink:0,minWidth:90 }}>
+                    {mg
+                      ? <>
+                          <div style={{ fontFamily:S.mono,fontSize:13,fontWeight:700,color:cond.color }}>{mg} mg</div>
+                          {mlVol&&<div style={{ fontFamily:S.mono,fontSize:11,fontWeight:700,color:T.mint,marginTop:1 }}>{mlVol} mL</div>}
+                          <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,marginTop:1 }}>{line.freq}</div>
+                        </>
+                      : <div style={{ fontFamily:S.mono,fontSize:9,color:T.txt3 }}>{line.freq}</div>}
                   </div>
                 </div>
               );
@@ -959,10 +922,10 @@ function ResusTab({ globalWt, setGlobalWt }) {
             <DrugSection title="MRSA Coverage" color={T.orange} drugs={mrsaAbx} wtCalc />
           </Card>
         </>:nWt)}
-        {abxPill==="po"&&<Card color={T.coral} title="Oral Discharge Antibiotics — Tap concentration for mL dose">
+        {abxPill==="po"&&<Card color={T.coral} title="Oral Discharge Antibiotics — Select concentration to calculate mL dose">
           {DISCHARGE_ABX.map((d,i)=>{
             const pd=wt>0?calcDose(wt,d.mpkDose,d.max):null;
-            const sel=concSel[i];
+            const sel=concSel[i]!==undefined?concSel[i]:(d.concs&&d.concs.length>0?d.concs[0]:null);
             const mLdose=sel&&sel.m&&pd?(pd/sel.m).toFixed(1):null;
             return(
               <div key={i} style={{ padding:"5px 0",borderBottom:i<DISCHARGE_ABX.length-1?"1px solid rgba(30,70,130,0.22)":"none" }}>
@@ -984,9 +947,9 @@ function ResusTab({ globalWt, setGlobalWt }) {
                     <button key={c.l} onClick={()=>setConcSel(p=>({...p,[i]:p[i]?.l===c.l?null:c}))}
                       style={{ padding:"3px 9px",borderRadius:5,cursor:"pointer",
                         fontFamily:S.mono,fontSize:8,
-                        border:`1px solid ${concSel[i]?.l===c.l?T.mint+"66":"rgba(30,70,130,0.3)"}`,
-                        background:concSel[i]?.l===c.l?`${T.mint}15`:"transparent",
-                        color:concSel[i]?.l===c.l?T.mint:T.txt3 }}>{c.l}</button>
+                        border:`1px solid ${sel?.l===c.l?T.mint+"66":"rgba(30,70,130,0.3)"}`,
+                        background:sel?.l===c.l?`${T.mint}15`:"transparent",
+                        color:sel?.l===c.l?T.mint:T.txt3 }}>{c.l}</button>
                   ))}
                 </div>}
               </div>
@@ -1032,7 +995,6 @@ function ResusTab({ globalWt, setGlobalWt }) {
 }
 
 // SCORING
-// ═══════════════════════════════════════════════════════════════════════════
 const WESTLEY=[
   { key:"stridor",   label:"Stridor",       opts:[{v:0,l:"None"},{v:1,l:"With agitation"},{v:2,l:"At rest"}] },
   { key:"retract",   label:"Retractions",   opts:[{v:0,l:"None"},{v:1,l:"Mild"},{v:2,l:"Moderate"},{v:3,l:"Severe"}] },
@@ -1041,11 +1003,11 @@ const WESTLEY=[
   { key:"conscious", label:"Consciousness", opts:[{v:0,l:"Normal"},{v:5,l:"Altered"}] },
 ];
 const PRAM=[
-  { key:"scalene",label:"Scalene Muscle Use",         opts:[{v:0,l:"Absent"},{v:2,l:"Present"}] },
-  { key:"supra",  label:"Suprasternal Retractions",   opts:[{v:0,l:"Absent"},{v:2,l:"Present"}] },
-  { key:"wheeze", label:"Wheeze",                     opts:[{v:0,l:"Absent"},{v:1,l:"Expiratory only"},{v:2,l:"Inspiratory + expiratory"},{v:3,l:"Audible / no air entry"}] },
-  { key:"air",    label:"Air Entry",                  opts:[{v:0,l:"Normal"},{v:1,l:"Decreased at bases"},{v:2,l:"Widespread decrease"},{v:3,l:"Minimal / absent"}] },
-  { key:"o2",     label:"O₂ Saturation",              opts:[{v:0,l:"≥ 95% on RA"},{v:1,l:"92–94% on RA"},{v:2,l:"< 92% on RA"}] },
+  { key:"scalene",label:"Scalene Muscle Use",       opts:[{v:0,l:"Absent"},{v:2,l:"Present"}] },
+  { key:"supra",  label:"Suprasternal Retractions", opts:[{v:0,l:"Absent"},{v:2,l:"Present"}] },
+  { key:"wheeze", label:"Wheeze",                   opts:[{v:0,l:"Absent"},{v:1,l:"Expiratory only"},{v:2,l:"Inspiratory + expiratory"},{v:3,l:"Audible / no air entry"}] },
+  { key:"air",    label:"Air Entry",                opts:[{v:0,l:"Normal"},{v:1,l:"Decreased at bases"},{v:2,l:"Widespread decrease"},{v:3,l:"Minimal / absent"}] },
+  { key:"o2",     label:"O₂ Saturation",            opts:[{v:0,l:"≥ 95% on RA"},{v:1,l:"92–94% on RA"},{v:2,l:"< 92% on RA"}] },
 ];
 const FLACC=[
   { key:"face",    label:"Face",          opts:[{v:0,l:"No expression / smile"},{v:1,l:"Occasional grimace"},{v:2,l:"Frequent grimace / jaw clench"}] },
@@ -1060,7 +1022,6 @@ const CDS=[
   { key:"mucosa",  label:"Mucous Membranes",     opts:[{v:0,l:"Moist"},{v:1,l:"Sticky"},{v:2,l:"Dry"}] },
   { key:"tears",   label:"Tears",                opts:[{v:0,l:"Present with crying"},{v:1,l:"Decreased"},{v:2,l:"Absent"}] },
 ];
-
 function ScoringTab({ globalWt }) {
   const [ws,setWs]=useState({}); const [pram,setPram]=useState({});
   const [flacc,setFlacc]=useState({}); const [cds,setCds]=useState({});
@@ -1071,7 +1032,7 @@ function ScoringTab({ globalWt }) {
   const wsStr=wsT<=2?{l:"Mild Croup",c:T.teal,tx:"Dexamethasone 0.6 mg/kg PO × 1 (max 10 mg). Discharge with return precautions."}
     :wsT<=5?{l:"Moderate Croup",c:T.gold,tx:"Dexamethasone 0.6 mg/kg PO/IM/IV. Racemic epi 0.5 mL 2.25% neb. Observe 2–4h post-epi."}
     :{l:"Severe Croup",c:T.coral,tx:"Racemic epi NOW + dexamethasone. Heliox 70:30 if available. ICU. Prepare intubation (smaller ETT)."};
-  const pramStr=pramT<=4?{l:"Mild Asthma",c:T.teal,tx:"Albuterol 2–4 puffs MDI q20 min × 3 or 0.15 mg/kg neb. Discharge if SpO2 ≥95% after treatment."}
+  const pramStr=pramT<=4?{l:"Mild Asthma",c:T.teal,tx:"Albuterol 2–4 puffs MDI q20 min × 3 or 0.15 mg/kg neb. Discharge if SpO2 ≥95%."}
     :pramT<=8?{l:"Moderate Asthma",c:T.gold,tx:"Albuterol neb q20 min × 3 + ipratropium × 3. Dexamethasone 0.6 mg/kg PO. Observe ≥4h."}
     :{l:"Severe Asthma",c:T.coral,tx:"Continuous albuterol + ipratropium. Magnesium 25–75 mg/kg IV. Methylprednisolone IV. Consider ICU."};
   const flaccStr=flaccT<=3?{l:"Mild Pain (0–3)",c:T.teal,tx:"Non-pharmacologic comfort measures. Reassess after intervention."}
@@ -1080,7 +1041,6 @@ function ScoringTab({ globalWt }) {
   const cdsStr=cdsT===0?{l:"No Clinically Detectable Dehydration",c:T.teal,tx:"Encourage PO fluids. Discharge with education on signs of dehydration."}
     :cdsT<=4?{l:"Some Dehydration (~3–6% deficit)",c:T.gold,tx:"ORS 50 mL/kg PO over 4h. If vomiting: ondansetron then ORS. IV if ORT fails."}
     :{l:"Severe Dehydration (> 6% deficit)",c:T.coral,tx:"IV resuscitation: 20 mL/kg NS bolus. Reassess. Replace deficit + maintenance IV over 24h."};
-
   return (
     <div className="peds-in">
       <Card color={T.teal} title="Westley Croup Score">
@@ -1094,8 +1054,7 @@ function ScoringTab({ globalWt }) {
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt2,lineHeight:1.6 }}>{wsStr.tx}</div>
         </div>}
       </Card>
-
-      <Card color={T.blue} title="PRAM Asthma Score (Pediatric Respiratory Assessment Measure)">
+      <Card color={T.blue} title="PRAM Asthma Score">
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}>
           <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4 }}>Total 0–12. ≤4 mild · 5–8 moderate · 9–12 severe</div>
           <div style={{ fontFamily:S.serif,fontSize:32,fontWeight:900,color:pramSet?pramStr.c:T.txt4,lineHeight:1 }}>{pramT}</div>
@@ -1106,8 +1065,7 @@ function ScoringTab({ globalWt }) {
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt2,lineHeight:1.6 }}>{pramStr.tx}</div>
         </div>}
       </Card>
-
-      <Card color={T.purple} title="FLACC Pain Scale (< 3 years / non-verbal / cognitively impaired)">
+      <Card color={T.purple} title="FLACC Pain Scale (< 3 years / non-verbal)">
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}>
           <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4 }}>Total 0–10. 0 = no pain · 1–3 mild · 4–6 moderate · 7–10 severe</div>
           <div style={{ fontFamily:S.serif,fontSize:32,fontWeight:900,color:flaccSet?flaccStr.c:T.txt4,lineHeight:1 }}>{flaccT}</div>
@@ -1118,7 +1076,6 @@ function ScoringTab({ globalWt }) {
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt2,lineHeight:1.6 }}>{flaccStr.tx}</div>
         </div>}
       </Card>
-
       <Card color={T.gold} title="Clinical Dehydration Scale (CDS — Goldman 2008)">
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}>
           <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4 }}>Total 0–8. 0 = no dehydration · 1–4 some (~3–6%) · 5–8 severe ({">"}6%)</div>
@@ -1130,7 +1087,6 @@ function ScoringTab({ globalWt }) {
           <div style={{ fontFamily:S.sans,fontSize:11,color:T.txt2,lineHeight:1.6 }}>{cdsStr.tx}</div>
         </div>}
       </Card>
-
       <Card color={T.coral} title="APGAR Score Reference">
         <div style={{ overflowX:"auto" }}>
           <table style={{ width:"100%",borderCollapse:"collapse",fontFamily:S.mono,fontSize:9 }}>
@@ -1154,56 +1110,41 @@ function ScoringTab({ globalWt }) {
           </table>
         </div>
         <div style={{ marginTop:8,fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6 }}>
-          Score at 1 min and 5 min. 7–10 = normal · 4–6 = moderate depression (stimulate, O₂, reassess) · 0–3 = severe (immediate resuscitation)
+          Score at 1 min and 5 min. 7–10 = normal · 4–6 = moderate depression · 0–3 = severe (immediate resuscitation)
         </div>
       </Card>
-
       <Card color={T.gold} title="Febrile Seizure — AAP 2011 / 2022 Update">
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:7 }}>
           {[{l:"Simple Febrile Seizure",c:T.teal,items:["Generalized (tonic-clonic)","Duration < 15 minutes","Single seizure in 24h","Age 6 months – 5 years","Full recovery to baseline","No prior CNS abnormality"]},
             {l:"Complex Febrile Seizure",c:T.coral,items:["Focal onset or focal features","Duration ≥ 15 minutes","Recurs within 24h","Any age outside 6m–5y","Prolonged postictal state","Todd's paralysis"]}].map(s=>(
             <div key={s.l} style={{ padding:"9px 10px",borderRadius:8,background:`${s.c}08`,border:`1px solid ${s.c}28` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,fontWeight:700,color:s.c,letterSpacing:1,marginBottom:6 }}>{s.l}</div>
-              {s.items.map((item,i)=>(
-                <div key={i} style={{ display:"flex",gap:5,marginBottom:3 }}>
-                  <span style={{ color:s.c,fontSize:7,marginTop:3 }}>▸</span>
-                  <span style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt2 }}>{item}</span>
-                </div>
-              ))}
+              {s.items.map((item,i)=>(<div key={i} style={{ display:"flex",gap:5,marginBottom:3 }}><span style={{ color:s.c,fontSize:7,marginTop:3 }}>▸</span><span style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt2 }}>{item}</span></div>))}
             </div>
           ))}
         </div>
-        {[["Workup — Simple",T.teal,["LP NOT required for simple febrile seizure in vaccinated child ≥ 6 months (AAP 2011)","LP: strongly consider if < 12 months, unvaccinated, or ill-appearing after seizure resolves","Source of fever: UA, CBC as clinically indicated — LP NOT routine","EEG: not indicated in uncomplicated first simple febrile seizure","Neuroimaging: not routinely indicated — reserve for focal features, abnormal neuro exam"]],
-          ["Management & Discharge",T.gold,["Treat underlying fever source. Antipyretics do NOT prevent recurrence.","Recurrence rate: 30–35% overall; 50% if first FS < 12 months","Prophylactic anticonvulsants NOT recommended for simple febrile seizures","Discharge if: returned to baseline, fever source identified, reliable caregiver, good follow-up","Return precautions: seizure > 5 min, focal features, not returning to baseline within 1–2h, recurrence"]]].map(([title,color,items])=>(
-          <div key={title} style={{ marginBottom:8,padding:"8px 10px",borderRadius:8,
-            background:`${color}08`,border:`1px solid ${color}25` }}>
-            <div style={{ fontFamily:S.mono,fontSize:7.5,color,letterSpacing:1.2,
-              textTransform:"uppercase",marginBottom:6 }}>{title}</div>
+        {[["Workup — Simple",T.teal,["LP NOT required for simple febrile seizure in vaccinated child ≥ 6 months (AAP 2011)","LP: strongly consider if < 12 months, unvaccinated, or ill-appearing after seizure resolves","EEG: not indicated in uncomplicated first simple febrile seizure","Neuroimaging: not routinely indicated — reserve for focal features, abnormal neuro exam"]],
+          ["Management & Discharge",T.gold,["Treat underlying fever source. Antipyretics do NOT prevent recurrence.","Recurrence rate: 30–35% overall; 50% if first FS < 12 months","Prophylactic anticonvulsants NOT recommended for simple febrile seizures","Return precautions: seizure > 5 min, focal features, not returning to baseline within 1–2h"]]].map(([title,color,items])=>(
+          <div key={title} style={{ marginBottom:8,padding:"8px 10px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}25` }}>
+            <div style={{ fontFamily:S.mono,fontSize:7.5,color,letterSpacing:1.2,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
             {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
           </div>
         ))}
       </Card>
-
       <Card color={T.orange} title="Pediatric Appendicitis Score (PAS — Samuel 2002)">
         <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:6 }}>
-          {[["Nausea / vomiting",1],["Anorexia",1],["Fever > 38°C",1],
-            ["Cough / hop / percussion RLQ tenderness",2],["RLQ tenderness",2],
-            ["Migration of pain to RLQ",1],["Leukocytosis > 10,000",1],["Leukocyte left shift (PMN > 75%)",1]].map(([l,p],i)=>(
-            <div key={i} style={{ padding:"7px 9px",borderRadius:7,background:"rgba(255,159,67,0.07)",
-              border:"1px solid rgba(255,159,67,0.22)",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+          {[["Nausea / vomiting",1],["Anorexia",1],["Fever > 38°C",1],["Cough / hop / percussion RLQ tenderness",2],
+            ["RLQ tenderness",2],["Migration of pain to RLQ",1],["Leukocytosis > 10,000",1],["Leukocyte left shift (PMN > 75%)",1]].map(([l,p],i)=>(
+            <div key={i} style={{ padding:"7px 9px",borderRadius:7,background:"rgba(255,159,67,0.07)",border:"1px solid rgba(255,159,67,0.22)",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
               <span style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt2 }}>{l}</span>
               <span style={{ fontFamily:S.mono,fontSize:11,fontWeight:700,color:T.orange }}>+{p}</span>
             </div>
           ))}
         </div>
-        <div style={{ marginTop:8,padding:"7px 10px",borderRadius:7,background:"rgba(5,13,32,0.65)",
-          border:"1px solid rgba(30,70,130,0.35)",fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.55 }}>
-          <strong style={{ color:T.teal }}>≤ 3:</strong> Low risk — discharge with precautions{" · "}
-          <strong style={{ color:T.gold }}>4–6:</strong> US first — intermediate{" · "}
-          <strong style={{ color:T.coral }}>≥ 7:</strong> Surgical consult (PPV ~72%)
+        <div style={{ marginTop:8,padding:"7px 10px",borderRadius:7,background:"rgba(5,13,32,0.65)",border:"1px solid rgba(30,70,130,0.35)",fontFamily:S.sans,fontSize:10.5,color:T.txt3,lineHeight:1.55 }}>
+          <strong style={{ color:T.teal }}>≤ 3:</strong> Low risk{" · "}<strong style={{ color:T.gold }}>4–6:</strong> US first{" · "}<strong style={{ color:T.coral }}>≥ 7:</strong> Surgical consult (PPV ~72%)
         </div>
       </Card>
-
       <Card color={T.blue} title="Bronchiolitis Severity — AAP 2014">
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7 }}>
           {[{l:"Mild",c:T.teal,items:["SpO2 ≥ 95% on RA","Minimal retractions","Good air entry","Alert, tolerating feeds"]},
@@ -1211,12 +1152,7 @@ function ScoringTab({ globalWt }) {
             {l:"Severe",c:T.coral,items:["SpO2 < 90% on RA","Severe retractions","Nasal flaring / grunting","Not tolerating PO"]}].map(s=>(
             <div key={s.l} style={{ padding:"8px 10px",borderRadius:8,background:`${s.c}08`,border:`1px solid ${s.c}28` }}>
               <div style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:s.c,marginBottom:5 }}>{s.l}</div>
-              {s.items.map((item,i)=>(
-                <div key={i} style={{ display:"flex",gap:5,marginBottom:3 }}>
-                  <span style={{ color:s.c,fontSize:7,marginTop:3 }}>▸</span>
-                  <span style={{ fontFamily:S.sans,fontSize:9,color:T.txt3 }}>{item}</span>
-                </div>
-              ))}
+              {s.items.map((item,i)=>(<div key={i} style={{ display:"flex",gap:5,marginBottom:3 }}><span style={{ color:s.c,fontSize:7,marginTop:3 }}>▸</span><span style={{ fontFamily:S.sans,fontSize:9,color:T.txt3 }}>{item}</span></div>))}
             </div>
           ))}
         </div>
@@ -1230,7 +1166,6 @@ function ScoringTab({ globalWt }) {
 }
 
 // CLINICAL TOOLS
-// ═══════════════════════════════════════════════════════════════════════════
 const TOOLS_TABS = [
   { id:"fluids",label:"DKA / Burns", color:T.gold   },
   { id:"tox",   label:"Toxicology",  color:T.coral  },
@@ -1246,16 +1181,16 @@ const SIRS_AGES = [
   { age:"13–18 years",  hr:">110",        rr:">14", wbc:">11,000 or <4,500",temp:"≥38.5 or <36" },
 ];
 const ANTIDOTES = [
-  { toxin:"Opioids",         antidote:"Naloxone",      dose:"0.01 mg/kg IV/IM/IN (max 2 mg); repeat q2–3 min" },
-  { toxin:"Benzodiazepines", antidote:"Flumazenil",    dose:"0.01 mg/kg IV (max 0.2 mg); caution — may precipitate seizures in dependent patients" },
-  { toxin:"Organophosphates",antidote:"Atropine",      dose:"0.02–0.05 mg/kg IV q5–10 min until secretions dry; no maximum" },
-  { toxin:"Acetaminophen",   antidote:"NAC",           dose:"150 mg/kg IV ×1h → 50 mg/kg ×4h → 100 mg/kg ×16h (21-hour protocol)" },
-  { toxin:"Iron",            antidote:"Deferoxamine",  dose:"15 mg/kg/hr IV (max 6 g/day); stop when urine clears (vin rosé sign)" },
-  { toxin:"Isoniazid (INH)", antidote:"Pyridoxine",    dose:"1 mg per mg INH ingested (max 5 g); 70 mg/kg if dose unknown" },
-  { toxin:"Methemoglobin",   antidote:"Methylene blue",dose:"1–2 mg/kg IV over 5 min; may repeat once" },
-  { toxin:"Methanol / EG",   antidote:"Fomepizole",   dose:"15 mg/kg IV load; call Poison Control for maintenance dosing" },
+  { toxin:"Opioids",         antidote:"Naloxone",       dose:"0.01 mg/kg IV/IM/IN (max 2 mg); repeat q2–3 min" },
+  { toxin:"Benzodiazepines", antidote:"Flumazenil",     dose:"0.01 mg/kg IV (max 0.2 mg); caution — may precipitate seizures in dependent patients" },
+  { toxin:"Organophosphates",antidote:"Atropine",       dose:"0.02–0.05 mg/kg IV q5–10 min until secretions dry; no maximum" },
+  { toxin:"Acetaminophen",   antidote:"NAC",            dose:"150 mg/kg IV ×1h → 50 mg/kg ×4h → 100 mg/kg ×16h (21-hour protocol)" },
+  { toxin:"Iron",            antidote:"Deferoxamine",   dose:"15 mg/kg/hr IV (max 6 g/day); stop when urine clears (vin rosé sign)" },
+  { toxin:"Isoniazid (INH)", antidote:"Pyridoxine",     dose:"1 mg per mg INH ingested (max 5 g); 70 mg/kg if dose unknown" },
+  { toxin:"Methemoglobin",   antidote:"Methylene blue", dose:"1–2 mg/kg IV over 5 min; may repeat once" },
+  { toxin:"Methanol / EG",   antidote:"Fomepizole",    dose:"15 mg/kg IV load; call Poison Control for maintenance dosing" },
   { toxin:"CCB / hyperK",    antidote:"Calcium chloride",dose:"20 mg/kg IV (max 2 g); may repeat. Central line preferred." },
-  { toxin:"Digoxin",         antidote:"Digoxin Fab",   dose:"Empiric: 10 vials IV. Specific: vials = (serum dig × wt kg) / 100" },
+  { toxin:"Digoxin",         antidote:"Digoxin Fab",    dose:"Empiric: 10 vials IV. Specific: vials = (serum dig × wt kg) / 100" },
 ];
 function ToolsTab({ globalWt }) {
   const [toolTab,setToolTab]=useState("fluids");
@@ -1281,7 +1216,6 @@ function ToolsTab({ globalWt }) {
               color:toolTab===t.id?t.color:T.txt4 }}>{t.label}</button>
         ))}
       </div>
-
       {toolTab==="fluids"&&<>
         <Card color={T.gold} title="Pediatric DKA Management">
           <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6,marginBottom:7 }}>
@@ -1310,7 +1244,7 @@ function ToolsTab({ globalWt }) {
             </div>}
           </div>}
           {[["Critical DKA Principles",T.coral,["NO fluid bolus in moderate/severe DKA unless hemodynamically unstable (cerebral edema risk)","Use 0.9% NS or LR. Add dextrose when glucose < 250–300 mg/dL (use 2-bag system).","Insulin drip: 0.05–0.1 units/kg/hr IV — NO loading bolus. Start after first hour of fluids.","K+ > 5.5: hold replacement · 3.5–5.5: add 40 mEq/L · < 3.5: stop insulin, give 60–80 mEq/L"]],
-            ["Cerebral Edema — Act Immediately",T.orange,["Signs: headache, bradycardia, hypertension, declining GCS, pupil changes — 0.5–1% of peds DKA","3% NaCl 3–5 mL/kg IV over 30 min OR mannitol 0.5–1 g/kg IV — give immediately","HOB 30°, restrict IVF, neurosurgery consult, ICU transfer"]]].map(([title,color,items])=>(
+            ["Cerebral Edema — Act Immediately",T.orange,["Signs: headache, bradycardia, hypertension, declining GCS, pupil changes","3% NaCl 3–5 mL/kg IV over 30 min OR mannitol 0.5–1 g/kg IV — give immediately","HOB 30°, restrict IVF, neurosurgery consult, ICU transfer"]]].map(([title,color,items])=>(
             <div key={title} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}30` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
               {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
@@ -1338,7 +1272,7 @@ function ToolsTab({ globalWt }) {
               ))}
             </div>
             <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6 }}>
-              4 mL x %TBSA x weight(kg). Time 0 = time of burn, not arrival. Add maintenance IV for children {"<"} 30 kg.
+              4 mL × %TBSA × weight(kg). Time 0 = time of burn. Add maintenance IV for children {"<"} 30 kg.
             </div>
           </div>}
           <div style={{ padding:"6px 9px",borderRadius:7,background:"rgba(5,13,32,0.65)",border:"1px solid rgba(30,70,130,0.3)" }}>
@@ -1353,15 +1287,14 @@ function ToolsTab({ globalWt }) {
           </div>
         </Card>
       </>}
-
       {toolTab==="tox"&&<>
         <div style={{ padding:"10px 13px",borderRadius:9,marginBottom:10,background:"rgba(255,92,92,0.1)",border:"1px solid rgba(255,92,92,0.4)" }}>
-          <div style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:T.coral,letterSpacing:1 }}>POISON CONTROL — 1-800-222-1222 (US) — Available 24/7 — Call for ALL complex ingestions</div>
+          <div style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:T.coral,letterSpacing:1 }}>POISON CONTROL — 1-800-222-1222 (US) — Available 24/7</div>
         </div>
         <Card color={T.coral} title="Acetaminophen Overdose">
-          {[["Rumack-Matthew Nomogram",T.coral,["Draw serum APAP at EXACTLY 4h post-ingestion. Earlier levels are unreliable.","Treatment threshold at 4h: APAP level > 150 mcg/mL plots above treatment line","Unknown/staggered ingestion time: treat if any detectable level AND symptomatic","Hepatotoxicity risk: > 150 mcg/mL at 4h · > 37.5 at 12h · > 9.4 at 24h"]],
+          {[["Rumack-Matthew Nomogram",T.coral,["Draw serum APAP at EXACTLY 4h post-ingestion. Earlier levels are unreliable.","Treatment threshold at 4h: APAP level > 150 mcg/mL plots above treatment line","Unknown/staggered ingestion time: treat if any detectable level AND symptomatic"]],
             ["N-Acetylcysteine (NAC) — 21-Hour IV Protocol",T.orange,["Bag 1: 150 mg/kg IV over 60 min (max 15 g) — loading dose","Bag 2: 50 mg/kg IV over 4h (max 5 g)","Bag 3: 100 mg/kg IV over 16h (max 10 g)","Continue if INR > 1.5, AST rising, or clinical hepatotoxicity"]],
-            ["Monitoring & Pearls",T.gold,["LFTs, INR, BMP, APAP level at 0h, 4h, 8h, and 24h minimum","Anaphylactoid reaction to NAC in ~10%: slow infusion, diphenhydramine, hold if severe","Oral NAC: 70 mg/kg q4h x 17 doses if IV not available (very nausea-inducing)"]]].map(([title,color,items])=>(
+            ["Monitoring & Pearls",T.gold,["LFTs, INR, BMP, APAP level at 0h, 4h, 8h, and 24h minimum","Anaphylactoid reaction to NAC in ~10%: slow infusion, diphenhydramine","Oral NAC: 70 mg/kg q4h × 17 doses if IV not available"]]].map(([title,color,items])=>(
             <div key={title} style={{ marginBottom:8,padding:"8px 10px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}25` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
               {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
@@ -1387,9 +1320,9 @@ function ToolsTab({ globalWt }) {
         </Card>
         <Card color={T.mint} title="Activated Charcoal">
           <Bullet text="Dose: 1 g/kg PO (max 50 g). Give within 1–2h of ingestion for best benefit." color={T.mint} />
-          <Bullet text="Contraindications: caustics, hydrocarbons, metals (iron, lithium), alcohols — charcoal does NOT bind these." color={T.mint} />
+          <Bullet text="Contraindications: caustics, hydrocarbons, metals (iron, lithium), alcohols." color={T.mint} />
           <Bullet text="Airway protection required before giving. Never in obtunded/unprotected airway." color={T.mint} />
-          <Bullet text="Multi-dose (MDAC) for: theophylline, carbamazepine, dapsone, phenobarbital. 0.5 g/kg q4h x 3–4 doses." color={T.mint} />
+          <Bullet text="Multi-dose (MDAC) for: theophylline, carbamazepine, dapsone, phenobarbital. 0.5 g/kg q4h × 3–4 doses." color={T.mint} />
         </Card>
         <Card color={T.purple} title="Antidotes Quick Reference">
           <div style={{ overflowX:"auto" }}>
@@ -1408,7 +1341,6 @@ function ToolsTab({ globalWt }) {
           </div>
         </Card>
       </>}
-
       {toolTab==="sepsis"&&<>
         <Card color={T.orange} title="Pediatric Sepsis / Septic Shock — Surviving Sepsis 2020 / PALS">
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:9 }}>
@@ -1421,11 +1353,10 @@ function ToolsTab({ globalWt }) {
               </div>
             ))}
           </div>
-          <div style={{ fontFamily:S.mono,fontSize:8,color:T.orange,letterSpacing:1.2,textTransform:"uppercase",marginBottom:8 }}>Age-Specific SIRS Criteria</div>
           <div style={{ overflowX:"auto",marginBottom:9 }}>
             <table style={{ width:"100%",borderCollapse:"collapse",fontFamily:S.mono,fontSize:8.5 }}>
               <thead><tr style={{ borderBottom:"1px solid rgba(255,159,67,0.35)" }}>
-                {["Age","HR (bpm)","RR (/min)","WBC (x10^3)","Temp (C)"].map(h=>(
+                {["Age","HR (bpm)","RR (/min)","WBC (×10³)","Temp (°C)"].map(h=>(
                   <th key={h} style={{ padding:"5px 8px",textAlign:"left",color:T.orange,fontWeight:700 }}>{h}</th>
                 ))}
               </tr></thead>
@@ -1440,9 +1371,9 @@ function ToolsTab({ globalWt }) {
               ))}</tbody>
             </table>
           </div>
-          {[["Resuscitation Pathway",T.coral,["1. Airway / O2 / IV or IO access (IO if IV fails in 2 attempts)","2. Fluid: 20 mL/kg NS over 5–10 min. Reassess after each bolus.","3. Repeat up to 60 mL/kg total — STOP if crackles, hepatomegaly, or oxygen worsens","4. Blood cultures x 2 before antibiotics. Lactate, CBC, BMP, procalcitonin.","5. Empiric antibiotics within 1 hour of recognition. Source-directed selection below.","6. Vasopressors if unresponsive to 40–60 mL/kg: start epinephrine (cold) or norepinephrine (warm)"]],
-            ["Empiric Antibiotics by Source",T.blue,["Unknown source: ceftriaxone 100 mg/kg IV (max 4 g) +/- vancomycin 15 mg/kg","Intra-abdominal: piperacillin-tazobactam 100 mg/kg IV q8h (max 4.5 g)","Meningitis: ceftriaxone 100 mg/kg IV + vancomycin + dexamethasone 0.15 mg/kg","Healthcare-associated / line infection: vancomycin + pip-tazo or meropenem","Neutropenic fever: cefepime 50 mg/kg IV q8h (max 2 g); add vancomycin for line/skin source"]],
-            ["Vasopressor Selection",T.purple,["Cold shock (mottled, cool extremities, low CO): Epinephrine 0.05–1 mcg/kg/min IV","Warm shock (flushed, bounding, vasodilatory): Norepinephrine 0.05–2 mcg/kg/min IV","Refractory: vasopressin 0.0003–0.002 units/kg/min OR hydrocortisone 50 mg/m2 IV (adrenal crisis)","Target MAP > 65 mmHg (age-adjusted). Goal-directed therapy with PICU team."]]].map(([title,color,items])=>(
+          {[["Resuscitation Pathway",T.coral,["1. Airway / O2 / IV or IO access (IO if IV fails in 2 attempts)","2. Fluid: 20 mL/kg NS over 5–10 min. Reassess after each bolus.","3. Repeat up to 60 mL/kg total — STOP if crackles, hepatomegaly, or oxygen worsens","4. Blood cultures × 2 before antibiotics. Lactate, CBC, BMP, procalcitonin.","5. Empiric antibiotics within 1 hour of recognition.","6. Vasopressors if unresponsive to 40–60 mL/kg: epi (cold shock) or norepi (warm shock)"]],
+            ["Empiric Antibiotics by Source",T.blue,["Unknown source: ceftriaxone 100 mg/kg IV (max 4 g) +/- vancomycin 15 mg/kg","Intra-abdominal: piperacillin-tazobactam 100 mg/kg IV q8h (max 4.5 g)","Meningitis: ceftriaxone 100 mg/kg IV + vancomycin + dexamethasone 0.15 mg/kg","Neutropenic fever: cefepime 50 mg/kg IV q8h (max 2 g)"]],
+            ["Vasopressor Selection",T.purple,["Cold shock (mottled, cool extremities): Epinephrine 0.05–1 mcg/kg/min IV","Warm shock (flushed, bounding): Norepinephrine 0.05–2 mcg/kg/min IV","Refractory: vasopressin 0.0003–0.002 units/kg/min OR hydrocortisone 50 mg/m² IV"]]].map(([title,color,items])=>(
             <div key={title} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}28` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
               {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
@@ -1450,15 +1381,14 @@ function ToolsTab({ globalWt }) {
           ))}
         </Card>
       </>}
-
       {toolTab==="proc"&&<>
         <Card color={T.red} title="Button Battery / Caustic Ingestion — EMERGENCY PROTOCOL">
           <div style={{ padding:"8px 10px",borderRadius:7,background:"rgba(255,61,61,0.1)",border:"1px solid rgba(255,61,61,0.35)",marginBottom:7 }}>
             <div style={{ fontFamily:S.mono,fontSize:9,fontWeight:700,color:T.red,letterSpacing:1 }}>ESOPHAGEAL BUTTON BATTERY = SURGICAL EMERGENCY — Remove within 2 hours</div>
           </div>
-          {[["Localization",T.coral,["PA film: double halo / stacked coin sign. Lateral: step-off between cathode/anode layers.","20 mm 3V lithium disc — highest risk (OH- generation causes liquefactive necrosis within hours)","Esophageal location: emergency endoscopic removal regardless of symptoms or X-ray timing"]],
-            ["Pre-Endoscopy (Esophageal Only)",T.orange,["Honey (12 months+): 10 mL PO every 10 min x 6 doses while en route to endoscopy","Sucralfate (>1y): 5 mL (2–10y) or 10 mL (>10y) q30 min x 3 doses pre-endoscopy only","NEVER induce vomiting. NPO otherwise. Contact GI/surgery immediately."]],
-            ["Gastric / Intestinal",T.gold,["Asymptomatic: serial radiographs. If not passed in 10–14 days, consider endoscopic retrieval.","Fever, abdominal pain, hematemesis, or melena = immediate removal","Battery + magnet co-ingestion: urgent surgical/endoscopic removal regardless of location"]]].map(([title,color,items])=>(
+          {[["Localization",T.coral,["PA film: double halo / stacked coin sign. Lateral: step-off between cathode/anode layers.","20 mm 3V lithium disc — highest risk (OH- generation causes liquefactive necrosis within hours)","Esophageal location: emergency endoscopic removal regardless of symptoms"]],
+            ["Pre-Endoscopy (Esophageal Only)",T.orange,["Honey (12 months+): 10 mL PO every 10 min × 6 doses while en route to endoscopy","Sucralfate (>1y): 5 mL (2–10y) or 10 mL (>10y) q30 min × 3 doses pre-endoscopy only","NEVER induce vomiting. NPO otherwise. Contact GI/surgery immediately."]],
+            ["Gastric / Intestinal",T.gold,["Asymptomatic: serial radiographs. If not passed in 10–14 days, consider retrieval.","Fever, abdominal pain, hematemesis, or melena = immediate removal","Battery + magnet co-ingestion: urgent surgical/endoscopic removal regardless of location"]]].map(([title,color,items])=>(
             <div key={title} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}30` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
               {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
@@ -1466,12 +1396,9 @@ function ToolsTab({ globalWt }) {
           ))}
         </Card>
         <Card color={T.coral} title="Non-Accidental Trauma (Child Abuse) — Suspicious Indicators">
-          <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6,marginBottom:7 }}>
-            No single finding is pathognomonic. Evaluate injury in context of developmental stage, history consistency, and overall presentation. Mandatory report to CPS — not optional.
-          </div>
-          {[["High-Specificity Fractures",T.coral,["Classic metaphyseal lesions (CML / bucket-handle fractures) — require high torsional force, highly specific for NAT","Posterior rib fractures — require forceful anterior-posterior compression; rarely accidental in infants","Multiple fractures at different stages of healing without a clear, consistent explanation","Vertebral compression or spinous process fractures in pre-ambulatory infants"]],
-            ["Soft Tissue & Pattern Findings",T.orange,["Bruising in non-mobile infants: 'Those who don't cruise don't bruise' (AAP 2014)","Patterned bruising matching implements (loop cord, belt buckle); bruising over torso/ears/neck in infants","Burns: sharply demarcated margins, stocking/glove distribution (forced immersion), or cigarette marks","Injuries inconsistent with developmental milestone (e.g., spiral femur fracture in pre-walker)"]],
-            ["Workup — Suspected NAT",T.purple,["Skeletal survey (2-view, full): ALL children < 2y with suspected abuse — includes all long bones, ribs, skull, spine","Ophthalmology consult: retinal hemorrhages — any infant with unexplained AMS, seizure, or head injury","Head CT: unexplained AMS, seizure, fontanelle bulge, or any infant with suspicious injury","Labs: CBC, PT/PTT, LFTs, lipase, UA — screen for occult abdominal/bleeding injuries","Document objectively. Report to CPS. Notify child abuse team if available."]]].map(([title,color,items])=>(
+          {[["High-Specificity Fractures",T.coral,["Classic metaphyseal lesions (CML / bucket-handle fractures) — require high torsional force","Posterior rib fractures — require forceful anterior-posterior compression; rarely accidental in infants","Multiple fractures at different stages of healing without a consistent explanation"]],
+            ["Soft Tissue & Pattern Findings",T.orange,["Bruising in non-mobile infants: 'Those who don't cruise don't bruise' (AAP 2014)","Patterned bruising matching implements; bruising over torso/ears/neck in infants","Burns: sharply demarcated margins, stocking/glove distribution, or cigarette marks"]],
+            ["Workup — Suspected NAT",T.purple,["Skeletal survey (2-view, full): ALL children < 2y with suspected abuse","Ophthalmology consult: retinal hemorrhages — any infant with unexplained AMS or seizure","Head CT: unexplained AMS, seizure, fontanelle bulge, or any infant with suspicious injury","Document objectively. Report to CPS. Notify child abuse team if available."]]].map(([title,color,items])=>(
             <div key={title} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}28` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{title}</div>
               {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
@@ -1480,8 +1407,8 @@ function ToolsTab({ globalWt }) {
         </Card>
         <Card color={T.blue} title="NRP — Neonatal Resuscitation (AAP/AHA 2021)">
           {[["Initial Assessment (30 Seconds)",T.blue,["Warm, dry, stimulate. Term? Good tone? Breathing/crying? — All YES = routine care","Any NO: move to warmer, position/clear airway, dry and stimulate, then assess HR","HR by EKG leads or pulse oximetry. Auscultation unreliable for decision-making."]],
-            ["Positive Pressure Ventilation",T.teal,["HR < 100 bpm OR apnea/gasping after stimulation → start PPV immediately","Rate: 40–60 breaths/min. Initial FiO2: term 21%, preterm 21–30%.","If no chest rise: MR SOPA — Mask/Reposition, Suction, Open mouth, Pressure up, Airway (ETT or LMA)"]],
-            ["Chest Compressions + Medications",T.coral,["HR < 60 bpm despite 30 sec effective PPV → chest compressions","2-thumb encircling hands. Depth: 1/3 AP diameter. Ratio: 3 compressions : 1 breath (90/30/min). FiO2 100%.","Epinephrine: 0.01–0.03 mg/kg IV/UVC (preferred) or ETT (not recommended) q3–5 min","Volume (if hypovolemia): NS 10 mL/kg IV over 5–10 min. Naloxone NOT first-line (PPV is priority)"]]].map(([title,color,items])=>(
+            ["Positive Pressure Ventilation",T.teal,["HR < 100 bpm OR apnea/gasping after stimulation → start PPV immediately","Rate: 40–60 breaths/min. Initial FiO2: term 21%, preterm 21–30%.","MR SOPA if no chest rise: Mask/Reposition, Suction, Open mouth, Pressure up, Airway alternative"]],
+            ["Chest Compressions + Medications",T.coral,["HR < 60 bpm despite 30 sec effective PPV → chest compressions","2-thumb encircling hands. Depth: 1/3 AP diameter. Ratio: 3 compressions : 1 breath. FiO2 100%.","Epinephrine: 0.01–0.03 mg/kg IV/UVC q3–5 min","Volume if hypovolemia: NS 10 mL/kg IV over 5–10 min"]]].map(([title,color,items])=>(
             <div key={title} style={{ marginBottom:8,padding:"8px 10px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}25` }}>
               <div style={{ fontFamily:S.mono,fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>{title}</div>
               {items.map((a,i)=><Bullet key={i} text={a} color={color} />)}
@@ -1493,14 +1420,11 @@ function ToolsTab({ globalWt }) {
   );
 }
 
-
 // MAIN EXPORT
-// ═══════════════════════════════════════════════════════════════════════════
 export default function PediatricHub({ embedded = false }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("vitals");
   const [globalWt, setGlobalWt] = useState("");
-  // ── Font & animation injection — protected inside useEffect, never runs twice ──
   useEffect(() => {
     if (document.getElementById("peds-fonts")) return;
     const l = document.createElement("link");
@@ -1518,7 +1442,6 @@ export default function PediatricHub({ embedded = false }) {
     ].join("\n");
     document.head.appendChild(s);
   }, []);
-
   return (
     <div style={{ fontFamily:S.sans,background:embedded?"transparent":T.bg,
       minHeight:embedded?"auto":"100vh",color:T.txt }}>
@@ -1540,13 +1463,11 @@ export default function PediatricHub({ embedded = false }) {
             </div>
             <div style={{ height:1,flex:1,background:"linear-gradient(90deg,rgba(61,255,160,0.45),transparent)" }} />
           </div>
-          <h1 className="shimmer-peds" style={{ fontFamily:S.serif,
-            fontSize:"clamp(16px,3vw,26px)",fontWeight:900,letterSpacing:-0.5,lineHeight:1.1 }}>
+          <h1 className="shimmer-peds" style={{ fontFamily:S.serif,fontSize:"clamp(16px,3vw,26px)",fontWeight:900,letterSpacing:-0.5,lineHeight:1.1 }}>
             Pediatric Emergency Hub
           </h1>
           {globalWt&&<div style={{ display:"inline-flex",alignItems:"center",gap:6,marginTop:6,
-            padding:"4px 12px",borderRadius:7,background:"rgba(61,255,160,0.08)",
-            border:"1px solid rgba(61,255,160,0.3)" }}>
+            padding:"4px 12px",borderRadius:7,background:"rgba(61,255,160,0.08)",border:"1px solid rgba(61,255,160,0.3)" }}>
             <span style={{ fontFamily:S.mono,fontSize:9,color:T.txt4,letterSpacing:1 }}>ACTIVE WEIGHT</span>
             <span style={{ fontFamily:S.mono,fontSize:14,fontWeight:700,color:T.green }}>{globalWt} kg</span>
           </div>}
@@ -1556,14 +1477,11 @@ export default function PediatricHub({ embedded = false }) {
             PRAM · FLACC · APGAR · Dehydration · DKA · Burns · Button Battery
           </p>
         </div>}
-
         {globalWt&&embedded&&<div style={{ display:"inline-flex",alignItems:"center",gap:6,marginBottom:8,
-          padding:"4px 12px",borderRadius:7,background:"rgba(61,255,160,0.08)",
-          border:"1px solid rgba(61,255,160,0.3)" }}>
+          padding:"4px 12px",borderRadius:7,background:"rgba(61,255,160,0.08)",border:"1px solid rgba(61,255,160,0.3)" }}>
           <span style={{ fontFamily:S.mono,fontSize:9,color:T.txt4,letterSpacing:1 }}>ACTIVE WEIGHT</span>
           <span style={{ fontFamily:S.mono,fontSize:14,fontWeight:700,color:T.green }}>{globalWt} kg</span>
         </div>}
-
         <div style={{ display:"flex",gap:4,flexWrap:"wrap",padding:"6px",marginBottom:10,
           background:"rgba(5,13,32,0.88)",border:"1px solid rgba(30,70,130,0.4)",borderRadius:12 }}>
           {TABS.map(t=>(
@@ -1579,14 +1497,12 @@ export default function PediatricHub({ embedded = false }) {
             </button>
           ))}
         </div>
-
         {tab==="vitals"  && <VitalsTab  globalWt={globalWt} setGlobalWt={setGlobalWt} />}
         {tab==="pecarn"  && <PECARNTab />}
         {tab==="fever"   && <FeverTab />}
         {tab==="meds"    && <ResusTab   globalWt={globalWt} setGlobalWt={setGlobalWt} />}
         {tab==="scoring" && <ScoringTab globalWt={globalWt} />}
         {tab==="tools"   && <ToolsTab   globalWt={globalWt} />}
-
         {!embedded&&<div style={{ textAlign:"center",padding:"24px 0 16px",
           fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.5 }}>
           NOTRYA PEDS · PECARN 2009 · ROCHESTER 1985 · PALS 2020 · NELSON'S 2024 ·

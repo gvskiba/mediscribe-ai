@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import ChestPainHub from "@/pages/ChestPainHub";
-import ECGHub       from "@/pages/ECGHub";
+import { ClinicalNote } from "@/api/entities";
+import ChestPainHub from "@/components/ChestPainHub";
+import ECGHub       from "@/components/ECGHub";
 
 // ════════════════════════════════════════════════════════════
 //  ACS HOME PAGE — GLASSMORPHISM HUB
@@ -164,13 +165,6 @@ const PALS_DRUGS=[{cat:"Cardiac Arrest",drug:"Epinephrine",dose:"0.01 mg/kg IV/I
 // ════════════════════════════════════════════════════════════
 //  CARDIAC RISK — DATA & HELPERS
 // ════════════════════════════════════════════════════════════
-const HEART_ITEMS=[
-  {id:"H",label:"History",desc:"Suspicion of ACS based on history",options:[{score:0,label:"Slightly suspicious",detail:"Non-specific history, doesn't fit ACS pattern"},{score:1,label:"Moderately suspicious",detail:"Mix of typical and atypical features"},{score:2,label:"Highly suspicious",detail:"Classic ACS — chest pressure, radiation, diaphoresis"}]},
-  {id:"E",label:"ECG",desc:"EKG findings at presentation",options:[{score:0,label:"Normal",detail:"No significant abnormalities"},{score:1,label:"Non-specific repolarization",detail:"LBBB, LVH, early repolarization, digoxin effect"},{score:2,label:"Significant ST deviation",detail:"New ST depression ≥1 mm or T-wave inversions ≥2 leads"}]},
-  {id:"A",label:"Age",desc:"Patient age",options:[{score:0,label:"< 45 years",detail:""},{score:1,label:"45–64 years",detail:""},{score:2,label:"≥ 65 years",detail:""}]},
-  {id:"R",label:"Risk Factors",desc:"Cardiovascular risk factors",options:[{score:0,label:"No known risk factors",detail:"No HTN, hyperlipidemia, DM, obesity, smoking, family Hx"},{score:1,label:"1–2 risk factors",detail:"HTN, hyperlipidemia, DM, obesity, smoking, family Hx"},{score:2,label:"≥3 risk factors or known CAD",detail:"Known CAD, prior MI, PCI/CABG, stroke, PAD"}]},
-  {id:"T",label:"Troponin",desc:"Initial troponin value",options:[{score:0,label:"≤ Normal limit",detail:"At or below URL for assay"},{score:1,label:"1–3× normal",detail:"Between 1 and 3× the upper reference limit"},{score:2,label:"> 3× normal",detail:"Greater than 3× the upper reference limit"}]},
-];
 const G_AGE=[[30,0],[40,8],[50,25],[60,41],[70,58],[80,75],[999,91]];
 const G_HR =[[50,0],[70,3],[90,9],[110,15],[150,24],[200,38],[999,46]];
 const G_SBP=[[80,63],[100,58],[120,47],[140,37],[160,26],[200,11],[999,0]];
@@ -183,7 +177,6 @@ function calcGRACE({age,hr,sbp,cr,killip,arrest,stDev,markers}){
   return gLookup(G_AGE,a)+gLookup(G_HR,h)+gLookup(G_SBP,s)+gLookup(G_CR,c)+(G_KP[killip]||0)+(arrest?43:0)+(stDev?30:0)+(markers?15:0);
 }
 const TIMI_LIST=["Age ≥65 years","≥3 CAD risk factors (HTN, DM, hyperlipidemia, family Hx, smoking)","Prior coronary stenosis ≥50% (known CAD)","ST deviation on presenting EKG","≥2 anginal events in prior 24 hours","ASA use in prior 7 days","Elevated cardiac markers (troponin or CK-MB)"];
-function hRisk(s){if(s<=3)return{lbl:"Low Risk",c:"var(--teal)",mace:"<2%",act:"Discharge + rapid outpatient follow-up within 72h"};if(s<=6)return{lbl:"Moderate Risk",c:"var(--gold)",mace:"12–17%",act:"Observation, serial troponins, stress test or cath"};return{lbl:"High Risk",c:"var(--coral)",mace:"65–72%",act:"Cardiology consult, early invasive strategy, ASA + anticoagulation"};}
 function gRisk(s){if(s<109)return{lbl:"Low",c:"var(--teal)",info:"<1% in-hospital mortality"};if(s<=140)return{lbl:"Intermediate",c:"var(--gold)",info:"1–3% in-hospital mortality"};return{lbl:"High",c:"var(--coral)",info:">3% in-hospital mortality"};}
 const TNK_WT2=[[60,30],[70,35],[80,40],[90,45],[999,50]];
 function tnkDose2(wt){const w=parseFloat(wt);if(isNaN(w)||w<=0)return null;for(const[lim,d]of TNK_WT2)if(w<lim)return d;return 50;}
@@ -215,19 +208,16 @@ function PregnancyPage({onBack}){const[tab,setTab]=useState("algorithm");const[g
 //  CARDIAC RISK PAGE
 // ════════════════════════════════════════════════════════════
 function CardiacRiskPage({onBack}){
-  const[tab,setTab]=useState("heart");
-  const[heart,setHeart]=useState({H:null,E:null,A:null,R:null,T:null});
+  const[tab,setTab]=useState("troponin");
   const[trop0,setTrop0]=useState("");const[trop1,setTrop1]=useState("");const[tropTime,setTropTime]=useState("3");
   const[gAge,setGAge]=useState("");const[gHr,setGHr]=useState("");const[gSbp,setGSbp]=useState("");const[gCr,setGCr]=useState("");
   const[gKillip,setGKillip]=useState("I");const[gArrest,setGArrest]=useState(false);const[gStDev,setGStDev]=useState(false);const[gMarkers,setGMarkers]=useState(false);
   const[timi,setTimi]=useState(new Set());
   const[lyticsWt,setLyticsWt]=useState("");
+  const[sending,setSending]=useState(false);const[sent,setSent]=useState("");
 
-  const TABS=[{id:"heart",label:"HEART Score",icon:"♥"},{id:"troponin",label:"Troponin Δ",icon:"📈"},{id:"grace",label:"GRACE/TIMI",icon:"📊"},{id:"disposition",label:"Disposition",icon:"🏥"},{id:"lytics",label:"Lytics",icon:"💊"}];
+  const TABS=[{id:"troponin",label:"Troponin Δ",icon:"📈"},{id:"grace",label:"GRACE / TIMI",icon:"📊"},{id:"disposition",label:"Disposition",icon:"🏥"},{id:"lytics",label:"Lytics",icon:"💊"}];
 
-  const heartTotal=Object.values(heart).reduce((s,v)=>s+(v??0),0);
-  const heartComplete=Object.values(heart).every(v=>v!==null);
-  const hr=hRisk(heartTotal);
   const t0=parseFloat(trop0),t1=parseFloat(trop1);
   const tropDelta=(!isNaN(t0)&&!isNaN(t1))?t1-t0:null;
   const tropPct=(tropDelta!==null&&t0>0)?(tropDelta/t0)*100:null;
@@ -238,54 +228,26 @@ function CardiacRiskPage({onBack}){
   const timiScore=timi.size;
   const tnkMg=tnkDose2(lyticsWt);
 
+  const sendToChart=async(content,key)=>{setSending(true);try{await ClinicalNote.create({content,source:"QN-Handoff",status:"pending"});setSent(key);setTimeout(()=>setSent(""),3000);}catch(e){}finally{setSending(false);};};
+
+  const buildTropContent=()=>`TROPONIN DELTA — ${new Date().toLocaleString()}\n${"─".repeat(40)}\nTrop 0h: ${trop0} ng/L\nTrop +${tropTime}h: ${trop1} ng/L\nAbsolute Δ: ${tropDelta!==null?`${tropDelta>=0?"+":""}${tropDelta.toFixed(1)} ng/L`:"—"}\nRelative Δ: ${tropPct!==null?`${tropPct>=0?"+":""}${tropPct.toFixed(1)}%`:"—"}\nPeak: ${trop0&&trop1?Math.max(t0,t1).toFixed(1)+" ng/L":"—"}\nResult: ${tropRuleIn?"RULE-IN — Significant Rise":tropRuleOut?"RULE-OUT — No Significant Rise":"Observe — Non-diagnostic Delta"}\n\nGenerated by Notrya Cardiac Risk · Clinical decision support only`;
+
+  const buildGRACEContent=()=>`ACS RISK ASSESSMENT — ${new Date().toLocaleString()}\n${"─".repeat(40)}\nGRACE 2.0 Score: ${graceScore!==null?graceScore:"not calculated"} ${gr?`— ${gr.lbl} Risk (${gr.info})`:""}\n${graceScore!==null?(graceScore>140?"→ Early invasive strategy within 24h (Class I).":graceScore>108?"→ Invasive strategy within 72h.":"→ Conservative or selective invasive strategy."):""}\n\nTIMI Score (UA/NSTEMI): ${timiScore}/7 — ${timiScore<=2?"Low (5–8%)":timiScore<=4?"Moderate (13–20%)":"High (26–41%)"}\nItems: ${[...timi].map(i=>TIMI_LIST[i]).join("; ")||"none selected"}\n\nClinical inputs: Age ${gAge||"—"} · HR ${gHr||"—"} bpm · SBP ${gSbp||"—"} mmHg · Cr ${gCr||"—"} mg/dL · Killip ${gKillip}\n\nGenerated by Notrya Cardiac Risk · Clinical decision support only`;
+
   const Inp=({label,val,set,ph,unit})=>(<div><div style={{fontSize:9,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>{label}{unit&&<span style={{color:"var(--txt4)",marginLeft:4}}>({unit})</span>}</div><input type="number" inputMode="decimal" value={val} onChange={e=>set(e.target.value)} placeholder={ph} style={{width:"100%",background:"rgba(14,37,68,.5)",border:`1px solid ${val?"var(--coral)":"var(--border)"}`,borderRadius:6,padding:"7px 10px",color:"var(--txt)",fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,outline:"none",textAlign:"center",backdropFilter:"blur(8px)"}}/></div>);
   const Chk=({label,val,set})=>(<div onClick={()=>set(!val)} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:7,cursor:"pointer",background:val?"rgba(255,107,107,.08)":"rgba(14,37,68,.4)",border:`1px solid ${val?"rgba(255,107,107,.3)":"var(--border)"}`,backdropFilter:"blur(6px)"}}><div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:`1.5px solid ${val?"var(--coral)":"var(--border)"}`,background:val?"rgba(255,107,107,.2)":"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>{val&&<span style={{color:"var(--coral)",fontSize:10,lineHeight:1}}>✓</span>}</div><span style={{fontSize:12,color:val?"var(--coral)":"var(--txt2)"}}>{label}</span></div>);
+  const SendBtn=({content,stateKey})=>(<button onClick={()=>sendToChart(content,stateKey)} disabled={sending||sent===stateKey} style={{width:"100%",marginTop:12,padding:"9px 0",borderRadius:8,cursor:sending?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,border:`1px solid ${sent===stateKey?"rgba(0,229,192,.4)":"rgba(59,158,255,.3)"}`,background:sent===stateKey?"rgba(0,229,192,.1)":"rgba(59,158,255,.08)",color:sent===stateKey?"var(--teal)":"var(--blue)",transition:"all .2s"}}>{sent===stateKey?"✓ Sent to Chart":sending?"Sending…":"📤 Send to Chart"}</button>);
 
   return(<div style={{display:"flex",flexDirection:"column",gap:14}}>
-    <GlassPageHeader icon="❤️" title="Cardiac Risk Assessment" badge="ACC/AHA 2025" badgeColor="coral"
-      sub="HEART Score · Serial Troponin Δ · GRACE/TIMI · ACS Disposition · Lytics" onBack={onBack}
-      extra={heartComplete?<div style={{padding:"5px 12px",borderRadius:8,background:"rgba(255,107,107,.12)",border:"1px solid rgba(255,107,107,.35)"}}><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:hr.c}}>HEART {heartTotal} — {hr.lbl}</span></div>:null}/>
-    <TimeBanner targets={[{icon:"♥",label:"HEART 0–3",target:"Low (<2% MACE)",color:"var(--teal)"},{icon:"⚠️",label:"HEART 4–6",target:"Moderate (12–17%)",color:"var(--gold)"},{icon:"🚨",label:"HEART 7–10",target:"High (65–72%)",color:"var(--coral)"},{icon:"📈",label:"Troponin Δ",target:"≥5 ng/L or ≥20%",color:"var(--blue)"}]}/>
+    <GlassPageHeader icon="❤️" title="ACS Risk Assessment" badge="ACC/AHA 2025" badgeColor="coral"
+      sub="Troponin Δ · GRACE 2.0 · TIMI · Disposition · Lytics" onBack={onBack}
+      extra={graceScore!==null&&gr?<div style={{padding:"5px 12px",borderRadius:8,background:"rgba(255,107,107,.12)",border:"1px solid rgba(255,107,107,.35)"}}><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:gr.c}}>GRACE {graceScore} — {gr.lbl}</span></div>:null}/>
+    <TimeBanner targets={[{icon:"🧬",label:"hs-cTn 0h draw",target:"< 60 min",color:"var(--blue)"},{icon:"📈",label:"Troponin Δ rule-in",target:"≥5 ng/L or ≥20%",color:"var(--coral)"},{icon:"📊",label:"GRACE > 140",target:"Invasive < 24h",color:"var(--gold)"},{icon:"💊",label:"Lytics if PCI",target:"> 120 min",color:"var(--purple)"}]}/>
     <div style={{display:"flex",gap:4,background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,.75)",borderRadius:10,padding:4,backdropFilter:"blur(12px)",overflowX:"auto"}}>
       {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:7,fontSize:12,fontWeight:tab===t.id?700:500,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all .2s",background:tab===t.id?"rgba(255,107,107,.12)":"transparent",border:tab===t.id?"1px solid rgba(255,107,107,.3)":"1px solid transparent",color:tab===t.id?"var(--coral)":"var(--txt3)"}}><span>{t.icon}</span>{t.label}</button>)}
     </div>
 
     <GlassSectionBox icon={TABS.find(t=>t.id===tab)?.icon} title={TABS.find(t=>t.id===tab)?.label} sub="2025 ACC/AHA Evidence-Based Risk Stratification">
-
-      {tab==="heart"&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
-        <div style={{display:"flex",alignItems:"center",gap:16,padding:"12px 16px",borderRadius:10,background:"rgba(255,107,107,.07)",border:`1px solid rgba(255,107,107,.25)`,borderLeft:`4px solid ${hr.c}`}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:48,fontWeight:900,color:hr.c,lineHeight:1}}>{heartTotal}</div>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:hr.c}}>{hr.lbl}</div>
-            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:hr.c,marginTop:2}}>{hr.mace} 6-week MACE</div>
-            <div style={{fontSize:11,color:"var(--txt3)",marginTop:4}}>{hr.act}</div>
-          </div>
-          {heartComplete&&<button onClick={()=>setHeart({H:null,E:null,A:null,R:null,T:null})} style={{padding:"4px 10px",borderRadius:6,border:"1px solid var(--border)",background:"transparent",color:"var(--txt3)",fontSize:11,cursor:"pointer"}}>Reset</button>}
-        </div>
-        {HEART_ITEMS.map(item=>(<div key={item.id} style={{padding:"10px 14px",borderRadius:9,background:heart[item.id]!==null?"rgba(255,107,107,.05)":"rgba(14,37,68,.4)",border:`1px solid ${heart[item.id]!==null?"rgba(255,107,107,.22)":"var(--border)"}`,backdropFilter:"blur(8px)"}}>
-          <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:8}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:900,color:"var(--coral)"}}>{item.id}</span>
-            <span style={{fontSize:13,fontWeight:700,color:"var(--txt)"}}>{item.label}</span>
-            <span style={{fontSize:11,color:"var(--txt3)"}}>{item.desc}</span>
-            {heart[item.id]!==null&&<span style={{marginLeft:"auto",fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:900,color:"var(--coral)"}}>{heart[item.id]}</span>}
-          </div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {item.options.map(opt=>{const sel=heart[item.id]===opt.score;return(<button key={opt.score} onClick={()=>setHeart(p=>({...p,[item.id]:sel?null:opt.score}))} style={{flex:"1 1 110px",padding:"7px 10px",borderRadius:7,cursor:"pointer",textAlign:"left",transition:"all .12s",border:`1px solid ${sel?"rgba(255,107,107,.5)":"var(--border)"}`,background:sel?"rgba(255,107,107,.12)":"transparent",backdropFilter:"blur(6px)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}><span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:900,color:sel?"var(--coral)":"var(--txt4)"}}>{opt.score}</span><span style={{fontSize:11,fontWeight:600,color:sel?"var(--txt)":"var(--txt3)"}}>{opt.label}</span></div>
-              {opt.detail&&<div style={{fontSize:10,color:"var(--txt4)",lineHeight:1.35}}>{opt.detail}</div>}
-            </button>);})}
-          </div>
-        </div>))}
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {[{r:"0–3",l:"Low",c:"var(--teal)",m:"<2%",a:"Discharge + outpatient"},{r:"4–6",l:"Moderate",c:"var(--gold)",m:"12–17%",a:"Observe + serial troponins"},{r:"7–10",l:"High",c:"var(--coral)",m:"65–72%",a:"Early invasive strategy"}].map(rx=>(
-            <div key={rx.r} style={{flex:"1 1 120px",padding:"8px 12px",borderRadius:8,background:"rgba(14,37,68,.5)",border:"1px solid var(--border)"}}>
-              <div style={{display:"flex",alignItems:"baseline",gap:5,marginBottom:3}}><span style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:900,color:rx.c}}>{rx.r}</span><span style={{fontSize:11,fontWeight:700,color:rx.c}}>{rx.l}</span></div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:rx.c}}>MACE {rx.m}</div>
-              <div style={{fontSize:10,color:"var(--txt4)",marginTop:2}}>{rx.a}</div>
-            </div>
-          ))}
-        </div>
-      </div>}
 
       {tab==="troponin"&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
         <div style={{padding:"9px 14px",borderRadius:8,background:"rgba(59,158,255,.07)",border:"1px solid rgba(59,158,255,.22)",fontSize:11,color:"var(--txt3)",lineHeight:1.6}}>High-sensitivity troponin delta. Significant: absolute ≥5 ng/L OR relative ≥20%. Thresholds vary by assay — confirm with lab. Rule-out (ESC 0h/2h): |Δ| &lt;3 ng/L and peak &lt;52 ng/L.</div>
@@ -308,6 +270,7 @@ function CardiacRiskPage({onBack}){
             <div key={n} style={{padding:"6px 10px",borderRadius:7,background:"var(--bg-up)",border:"1px solid var(--border)",flex:"1 1 140px"}}><div style={{fontSize:11,fontWeight:600,color:"var(--txt2)",marginBottom:2}}>{n}</div><div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--txt3)"}}>URL: {u} · Δ: {d}</div></div>
           ))}</div>
         </div>
+        {tropDelta!==null&&<SendBtn content={buildTropContent()} stateKey="trop"/>}
       </div>}
 
       {tab==="grace"&&<div style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -332,10 +295,11 @@ function CardiacRiskPage({onBack}){
             {TIMI_LIST.map((item,i)=>{const on=timi.has(i);return(<div key={i} onClick={()=>setTimi(prev=>{const n=new Set(prev);on?n.delete(i):n.add(i);return n;})} style={{display:"flex",alignItems:"flex-start",gap:8,cursor:"pointer",padding:"6px 8px",borderRadius:7,background:on?"rgba(255,159,67,.08)":"transparent",border:`1px solid ${on?"rgba(255,159,67,.3)":"transparent"}`}}><div style={{width:16,height:16,borderRadius:4,flexShrink:0,marginTop:1,border:`1.5px solid ${on?"var(--orange)":"var(--border)"}`,background:on?"rgba(255,159,67,.2)":"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>{on&&<span style={{color:"var(--orange)",fontSize:10,lineHeight:1}}>✓</span>}</div><span style={{fontSize:12,color:on?"var(--txt)":"var(--txt3)"}}>{item}</span></div>);})}
           </div>
         </div>
+        {(graceScore!==null||timiScore>0)&&<SendBtn content={buildGRACEContent()} stateKey="grace"/>}
       </div>}
 
       {tab==="disposition"&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {[{title:"HEART 0–3 + Negative Serial Troponins",col:"var(--teal)",icon:"✔",label:"Discharge Pathway",items:["Two negative troponins ≥3h apart (0h/2h with hs-cTn if validated)","No new EKG changes during observation","Outpatient stress test or cardiology follow-up within 72h","Return precautions: recurrent chest pain, dyspnea, syncope"],note:"HEART 0–1 with normal EKG: consider single-draw rule-out with validated hs-cTn pathway."},
+        {[{title:"HEART 0–3 + Negative Serial Troponins",col:"var(--teal)",icon:"✔",label:"Discharge Pathway",items:["Two negative troponins ≥3h apart (0h/2h with hs-cTn if validated)","No new EKG changes during observation","Outpatient stress test or cardiology follow-up within 72h","Return precautions: recurrent chest pain, dyspnea, syncope"],note:"HEART 0–1 with normal EKG: consider single-draw rule-out with validated hs-cTn pathway. Use Chest Pain Hub for full HEART Score workflow."},
           {title:"HEART 4–6 or Equivocal Troponin",col:"var(--gold)",icon:"⏳",label:"Observation Pathway",items:["Observation unit or telemetry admission","Serial troponins at 0h, 3h, 6h","Aspirin 325 mg PO if not contraindicated","Cardiology notification for elevated troponin trajectory","Stress test (negative troponins) vs coronary angiography (positive)"],note:"HEART 4–6 with elevated troponin should be managed as NSTEMI until proven otherwise."},
           {title:"HEART 7–10 or STEMI / Unstable NSTEMI",col:"var(--coral)",icon:"⚠",label:"Early Invasive Pathway",items:["Immediate cardiology consultation — activate ACS protocol","Aspirin 325 mg + P2Y₁₂ inhibitor per cath lab protocol","Anticoagulation: UFH, bivalirudin, or enoxaparin","STEMI: door-to-balloon <90 min","High-risk NSTEMI: invasive strategy within 2h (GRACE >140) or 24h"],note:"STEMI equivalent (new LBBB, posterior MI, Wellens) — activate cath lab regardless of troponin."}
         ].map(p=>(<div key={p.title} style={{padding:"12px 16px",borderRadius:10,background:`rgba(14,37,68,.4)`,border:`1px solid var(--border)`,borderLeft:`4px solid ${p.col}`,backdropFilter:"blur(8px)"}}>
@@ -343,6 +307,7 @@ function CardiacRiskPage({onBack}){
           {p.items.map((it,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"flex-start",marginBottom:4}}><span style={{color:p.col,flexShrink:0,marginTop:1,fontSize:9}}>▸</span><span style={{fontSize:11,color:"var(--txt3)",lineHeight:1.55}}>{it}</span></div>)}
           <div style={{marginTop:8,padding:"6px 10px",borderRadius:6,background:"rgba(14,37,68,.6)",border:"1px solid var(--border)"}}><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".5px"}}>Note: </span><span style={{fontSize:10,color:"var(--txt4)"}}>{p.note}</span></div>
         </div>))}
+        <div style={{padding:"9px 14px",borderRadius:8,background:"rgba(59,158,255,.06)",border:"1px solid rgba(59,158,255,.2)",fontSize:11,color:"var(--txt3)"}}>→ For full HEART Score workflow with EDACS, PE/dissection DDx, and guided bedside flow — use <strong style={{color:"var(--blue)"}}>Chest Pain Hub</strong>.</div>
       </div>}
 
       {tab==="lytics"&&<div style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -499,6 +464,30 @@ export default function NotryaApp(){
         {!PROTOCOL_SECTIONS.includes(activeSection) && <PlaceholderPage section={activeSection}/>}
       </main>
     </div>
+    <nav className="bottom-nav">
+      <div className="bn-sub-wrap">
+        <div className="bn-sub-row" ref={pillsRef}>
+          {subItems.map(item=>(
+            <button key={item.section} className={`bn-sub-pill${activeSection===item.section?" active":""}`} onClick={()=>selectSection(item.section)}>
+              <span className="pill-icon">{item.icon}</span>
+              {item.label}
+              <span className={`pill-dot ${navDots[item.section]||"empty"}`}/>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="bn-groups">
+        {GROUP_META.map(g=>(
+          <button key={g.key} className={`bn-group-tab${activeGroup===g.key?" active":""}`} onClick={()=>selectGroup(g.key)}>
+            <div className="bn-group-icon">
+              {g.icon}
+              <span className={`bn-group-badge ${getGroupBadge(g.key)}`}/>
+            </div>
+            <span className="bn-group-label">{g.label}</span>
+          </button>
+        ))}
+      </div>
+    </nav>
     <div className={`n-scrim${aiOpen?" open":""}`} onClick={toggleAI}/>
     <div className={`n-overlay${aiOpen?" open":""}`}>
       <div className="n-hdr">
@@ -563,7 +552,7 @@ html,body,#root{height:100%;background:var(--bg);color:var(--txt);font-family:'D
 .btn-primary:hover{filter:brightness(1.15)}
 .btn-coral{background:rgba(255,107,107,.15);color:var(--coral);border:1px solid rgba(255,107,107,.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-family:'DM Sans',sans-serif}
 .btn-coral:hover{background:rgba(255,107,107,.25)}
-.main-wrap{position:fixed;top:var(--top-h);left:var(--icon-sb);right:0;bottom:0;display:flex}
+.main-wrap{position:fixed;top:var(--top-h);left:var(--icon-sb);right:0;bottom:var(--bot-h);display:flex}
 .content{flex:1;overflow-y:auto;padding:18px 28px 30px;display:flex;flex-direction:column;gap:18px}
 .page-header{display:flex;align-items:center;gap:10px}
 .page-header-icon{font-size:20px}

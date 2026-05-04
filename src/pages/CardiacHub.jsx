@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import ChestPainHub from "@/components/ChestPainHub";
+import ECGHub       from "@/components/ECGHub";
 
 // ════════════════════════════════════════════════════════════
 //  ACS HOME PAGE — GLASSMORPHISM HUB
@@ -8,6 +10,8 @@ import { base44 } from "@/api/base44Client";
 const HOME_PROTOCOLS = [
   { id:"acs",         icon:"🫀", abbr:"ACS",   title:"Acute Coronary Syndrome",       subtitle:"STEMI · NSTEMI · Unstable Angina",          badge:"2025 ACC/AHA", tagline:"From door-to-ECG to complete revascularisation",      color:"#ff6b6b", glow:"rgba(255,107,107,0.35)", glass:"rgba(255,107,107,0.06)", border:"rgba(255,107,107,0.25)", accent:"#ff9999", stat:{value:"≤ 90",unit:"min",label:"Door-to-Balloon"},  tags:["TNK Tool","Risk Scores","Cardiology Consult"] },
   { id:"cardiac-risk",icon:"❤️", abbr:"RISK",  title:"Cardiac Risk Assessment",       subtitle:"HEART Score · Troponin Δ · GRACE · TIMI",   badge:"ACC/AHA 2025", tagline:"HEART-guided disposition with serial troponin delta", color:"#ff6b6b", glow:"rgba(255,107,107,0.3)",  glass:"rgba(255,107,107,0.06)", border:"rgba(255,107,107,0.25)", accent:"#ff9999", stat:{value:"HEART",unit:"Score",label:"0–10 risk strat"}, tags:["HEART Score","GRACE/TIMI","Troponin Δ","Lytics"] },
+  { id:"chest-pain",  icon:"💔", abbr:"CPH",   title:"Chest Pain Hub",               subtitle:"HEART · Troponin · EDACS · PE · Dissection", badge:"ACEP 2024",    tagline:"Guided bedside workflow with risk-stratified disposition", color:"#ff9f43", glow:"rgba(255,159,67,0.35)", glass:"rgba(255,159,67,0.06)", border:"rgba(255,159,67,0.25)", accent:"#ffb875", stat:{value:"HEART",unit:"Guided",label:"Risk workflow"}, tags:["HEART","EDACS","Troponin Δ","DDx"] },
+  { id:"ecg",         icon:"📈", abbr:"ECG",   title:"ECG Hub",                       subtitle:"STEMI · Dangerous Patterns · AI Interpret",  badge:"2025 ACC/AHA", tagline:"Pattern library · localizer · clinical tools · AI", color:"#00d4ff", glow:"rgba(0,212,255,0.35)", glass:"rgba(0,212,255,0.06)", border:"rgba(0,212,255,0.25)", accent:"#33dcff", stat:{value:"13+",unit:"Pats",label:"ECG patterns"},    tags:["STEMI","AV Block","QTc","AI"] },
   { id:"tachy",       icon:"⚡", abbr:"TACHY", title:"Adult Tachycardia",             subtitle:"Stable · Unstable · SVT · VT · TdP",        badge:"ACLS 2025",    tagline:"Stable vs unstable pathway with cardioversion guide",  color:"#f5c842", glow:"rgba(245,200,66,0.3)",  glass:"rgba(245,200,66,0.06)", border:"rgba(245,200,66,0.25)", accent:"#f7d875", stat:{value:"< 3",unit:"min",label:"Cardiovert if unstable"}, tags:["Cardioversion","Adenosine","Amiodarone"] },
   { id:"brady",       icon:"🔻", abbr:"BRADY", title:"Adult Bradycardia",             subtitle:"Symptomatic · AV Block · Pacing",            badge:"ACLS 2025",    tagline:"Atropine first · TCP · Vasopressor infusions",        color:"#3b9eff", glow:"rgba(59,158,255,0.3)",  glass:"rgba(59,158,255,0.06)", border:"rgba(59,158,255,0.25)", accent:"#6ab8ff", stat:{value:"1 mg",unit:"IV",label:"Atropine first dose"}, tags:["Atropine","TCP","H's & T's"] },
   { id:"peds",        icon:"👶", abbr:"PALS",  title:"Pediatric ACLS",               subtitle:"Cardiac Arrest · Brady · Tachy · PALS",     badge:"PALS 2025",    tagline:"Weight-based dosing · Defibrillation · All rhythms",  color:"#9b6dff", glow:"rgba(155,109,255,0.3)", glass:"rgba(155,109,255,0.06)",border:"rgba(155,109,255,0.25)",accent:"#b99bff", stat:{value:"2 J/kg",unit:"VF/pVT",label:"1st defibrillation"}, tags:["Weight-based","Broselow","Epinephrine"] },
@@ -61,7 +65,7 @@ function ACSHomePage({ onNavigate }) {
       <div style={{position:"relative",zIndex:1}}>
         <div style={{borderRadius:20,padding:"26px 28px 22px",background:"rgba(5,15,30,0.78)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",border:"1px solid rgba(255,107,107,0.18)",marginBottom:16,position:"relative",overflow:"hidden",animation:"card-in 0.55s ease both",boxShadow:"0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)"}}>
           <div style={{position:"absolute",inset:0,background:"linear-gradient(105deg,rgba(255,107,107,0.06) 0%,transparent 50%,rgba(155,109,255,0.05) 100%)",pointerEvents:"none"}}/>
-          <div style={{position:"absolute",top:0,left:0,right:0,height:2,borderRadius:"20px 20px 0 0",background:"linear-gradient(90deg,#ff6b6b,#f5c842,#00e5c0,#9b6dff,#3b9eff)"}}/>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:2,borderRadius:"20px 20px 0 0",background:"linear-gradient(90deg,#ff6b6b,#ff9f43,#f5c842,#00e5c0,#9b6dff,#3b9eff)"}}/>
           <div style={{display:"flex",alignItems:"flex-start",gap:18,position:"relative"}}>
             <div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,rgba(255,107,107,0.2),rgba(155,109,255,0.15))",border:"1px solid rgba(255,107,107,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,animation:"hb 1.4s ease-in-out infinite",position:"relative"}}>
               🫀<span style={{position:"absolute",inset:-4,borderRadius:20,border:"1.5px solid rgba(255,107,107,0.2)",animation:"pr 1.4s ease-in-out infinite"}}/>
@@ -75,7 +79,7 @@ function ACSHomePage({ onNavigate }) {
             </div>
             <div style={{borderRadius:12,padding:"10px 14px",background:"rgba(8,22,40,0.85)",border:"1px solid rgba(26,53,85,0.9)",textAlign:"center",flexShrink:0}}>
               <div style={{fontSize:9,color:"#4a6a8a",textTransform:"uppercase",letterSpacing:".07em",marginBottom:4}}>Protocols</div>
-              <div style={{fontSize:28,fontWeight:700,color:"#3b9eff",fontFamily:"'JetBrains Mono',monospace",lineHeight:1}}>6</div>
+              <div style={{fontSize:28,fontWeight:700,color:"#3b9eff",fontFamily:"'JetBrains Mono',monospace",lineHeight:1}}>8</div>
               <div style={{fontSize:9,color:"#4a6a8a",marginTop:2}}>available</div>
             </div>
           </div>
@@ -89,7 +93,7 @@ function ACSHomePage({ onNavigate }) {
           </div>
         )}
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:22}}>
-          {[{icon:"📋",label:"Guidelines",value:"6 Protocols",c:"#3b9eff"},{icon:"⚕",label:"Evidence Base",value:"2025 ACC/AHA",c:"#00e5c0"},{icon:"💊",label:"Medications",value:"40+ Drugs",c:"#f5c842"},{icon:"🧮",label:"Decision Tools",value:"HEART · GRACE · TNK",c:"#9b6dff"}].map((s,i)=>(
+          {[{icon:"📋",label:"Guidelines",value:"8 Protocols",c:"#3b9eff"},{icon:"⚕",label:"Evidence Base",value:"2025 ACC/AHA",c:"#00e5c0"},{icon:"💊",label:"Medications",value:"40+ Drugs",c:"#f5c842"},{icon:"🧮",label:"Decision Tools",value:"HEART · GRACE · ECG · TNK",c:"#9b6dff"}].map((s,i)=>(
             <div key={i} style={{borderRadius:12,padding:"12px 14px",background:"rgba(8,22,40,0.72)",border:"1px solid rgba(26,53,85,0.8)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",gap:10,animation:`card-in 0.55s ease both ${0.28+i*0.07}s`}}>
               <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span>
               <div><div style={{fontSize:9,color:"#4a6a8a",textTransform:"uppercase",letterSpacing:".06em",marginBottom:2}}>{s.label}</div><div style={{fontSize:11,fontWeight:700,color:s.c,fontFamily:"'JetBrains Mono',monospace"}}>{s.value}</div></div>
@@ -101,15 +105,17 @@ function ACSHomePage({ onNavigate }) {
           <span style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:"#4a6a8a",textTransform:"uppercase",letterSpacing:".12em",fontWeight:600}}>Select a protocol</span>
           <div style={{height:1,flex:1,background:"linear-gradient(90deg,transparent,rgba(26,53,85,0.8))"}}/>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:14}}>
-          {HOME_PROTOCOLS.slice(0,3).map((p,i)=><ProtocolCard key={p.id} p={p} onClick={onNavigate} index={i}/>)}
+        {/* Row 1 — ACS + Risk + ChestPain + ECG */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14}}>
+          {HOME_PROTOCOLS.slice(0,4).map((p,i)=><ProtocolCard key={p.id} p={p} onClick={onNavigate} index={i}/>)}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:22}}>
-          {HOME_PROTOCOLS.slice(3).map((p,i)=><ProtocolCard key={p.id} p={p} onClick={onNavigate} index={i+3}/>)}
+        {/* Row 2 — Tachy + Brady + PALS + OB */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:22}}>
+          {HOME_PROTOCOLS.slice(4).map((p,i)=><ProtocolCard key={p.id} p={p} onClick={onNavigate} index={i+4}/>)}
         </div>
         <div style={{borderRadius:12,padding:"12px 18px",background:"rgba(5,15,30,0.65)",border:"1px solid rgba(26,53,85,0.6)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",animation:"card-in 0.55s ease both 0.55s"}}>
           <span style={{fontSize:10,color:"#3b9eff",fontFamily:"'JetBrains Mono',monospace",fontWeight:700,flexShrink:0}}>⚕ EVIDENCE BASE</span>
-          {["2025 ACC/AHA/ACEP/NAEMSP/SCAI ACS Guideline","AHA/ACLS 2025 Tachycardia & Bradycardia","AHA/AAP PALS 2025","AHA 2020 Maternal Resuscitation"].map((ref,i)=>(
+          {["2025 ACC/AHA/ACEP/NAEMSP/SCAI ACS Guideline","AHA/ACLS 2025 Tachycardia & Bradycardia","AHA/AAP PALS 2025","AHA 2020 Maternal Resuscitation","ACEP 2024 Chest Pain · HEART (Backus 2010) · ESC 0/1h HST"].map((ref,i)=>(
             <span key={i} style={{fontSize:10,color:"#4a6a8a"}}>{i>0&&<span style={{marginRight:10,color:"#1a3555"}}>·</span>}{ref}</span>
           ))}
         </div>
@@ -137,7 +143,7 @@ function FlowNode({type,text,sub,items,badge,color,branches}){const col={coral:"
 function FlowChart({nodes}){return(<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0}}>{nodes.map((n,i)=>{if(n.arrow)return<GlassArrow key={i}/>;return<FlowNode key={i} {...n}/>;})}</div>);}
 function DrugTable({rows}){const cats=[...new Set(rows.map(r=>r.cat))];return(<div style={{display:"flex",flexDirection:"column",gap:14}}>{cats.map(cat=>(<div key={cat}><div style={{fontSize:10,color:"var(--txt3)",textTransform:"uppercase",letterSpacing:".07em",fontWeight:700,marginBottom:6,paddingBottom:4,borderBottom:"1px solid var(--border)"}}>{cat}</div>{rows.filter(r=>r.cat===cat).map((rx,i)=>(<div key={i} style={{background:"rgba(14,37,68,0.5)",border:"1px solid var(--border)",borderRadius:8,padding:"8px 12px",display:"grid",gridTemplateColumns:"170px 1fr auto",gap:10,alignItems:"start",marginBottom:4,backdropFilter:"blur(8px)"}}><div><div style={{fontSize:12,fontWeight:600,color:"var(--txt)"}}>{rx.drug}</div>{rx.note&&<div style={{fontSize:10,color:"var(--txt3)",marginTop:2}}>{rx.note}</div>}</div><div style={{fontSize:12,color:"var(--txt2)",fontFamily:"'JetBrains Mono',monospace",lineHeight:1.4}}>{rx.dose}</div><CORBadge cor={rx.cor}/></div>))}</div>))}</div>);}
 function TimeBanner({targets}){return(<div style={{display:"flex",gap:8}}>{targets.map((t,i)=>(<div key={i} style={{flex:1,background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,0.8)",borderRadius:8,padding:"8px 12px",display:"flex",alignItems:"center",gap:8,backdropFilter:"blur(10px)"}}><span style={{fontSize:16}}>{t.icon}</span><div><div style={{fontSize:10,color:"var(--txt3)"}}>{t.label}</div><div style={{fontSize:14,fontWeight:700,color:t.color||"var(--blue)",fontFamily:"'JetBrains Mono',monospace"}}>{t.target}</div></div></div>))}</div>);}
-function GlassPageHeader({icon,title,badge,badgeColor,sub,extra,onBack}){const bc={coral:"var(--coral)",teal:"var(--teal)",blue:"var(--blue)",gold:"var(--gold)",purple:"var(--purple)",orange:"var(--orange)"}[badgeColor]||"var(--teal)";const bbg={coral:"rgba(255,107,107,.1)",teal:"rgba(0,229,192,.08)",blue:"rgba(59,158,255,.1)",gold:"rgba(245,200,66,.08)",purple:"rgba(155,109,255,.1)",orange:"rgba(255,159,67,.08)"}[badgeColor]||"rgba(0,229,192,.08)";const bbr={coral:"rgba(255,107,107,.28)",teal:"rgba(0,229,192,.28)",blue:"rgba(59,158,255,.28)",gold:"rgba(245,200,66,.28)",purple:"rgba(155,109,255,.28)",orange:"rgba(255,159,67,.28)"}[badgeColor]||"rgba(0,229,192,.28)";return(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,background:"rgba(8,22,40,0.72)",border:`1px solid ${bbr}`,borderRadius:14,padding:"14px 18px",borderLeft:`3px solid ${bc}`,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",boxShadow:`0 4px 24px rgba(0,0,0,0.4), 0 0 20px ${bbg}`}}><div style={{display:"flex",alignItems:"center",gap:12}}>{onBack&&<button onClick={onBack} style={{background:"rgba(26,53,85,0.6)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:8,padding:"5px 10px",color:"var(--txt3)",fontSize:11,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(8px)"}}>← Back</button>}<div style={{width:44,height:44,borderRadius:12,background:bbg,border:`1px solid ${bbr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:`0 0 16px ${bbg}`}}>{icon}</div><div><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"var(--txt)"}}>{title}</span><span style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",background:bbg,color:bc,border:`1px solid ${bbr}`,borderRadius:20,padding:"2px 9px",fontWeight:700}}>{badge}</span></div><div style={{fontSize:11,color:"var(--txt3)",marginTop:2}}>{sub}</div></div></div>{extra}</div>);}
+function GlassPageHeader({icon,title,badge,badgeColor,sub,extra,onBack}){const bc={coral:"var(--coral)",teal:"var(--teal)",blue:"var(--blue)",gold:"var(--gold)",purple:"var(--purple)",orange:"var(--orange)",cyan:"var(--cyan)"}[badgeColor]||"var(--teal)";const bbg={coral:"rgba(255,107,107,.1)",teal:"rgba(0,229,192,.08)",blue:"rgba(59,158,255,.1)",gold:"rgba(245,200,66,.08)",purple:"rgba(155,109,255,.1)",orange:"rgba(255,159,67,.08)",cyan:"rgba(0,212,255,.08)"}[badgeColor]||"rgba(0,229,192,.08)";const bbr={coral:"rgba(255,107,107,.28)",teal:"rgba(0,229,192,.28)",blue:"rgba(59,158,255,.28)",gold:"rgba(245,200,66,.28)",purple:"rgba(155,109,255,.28)",orange:"rgba(255,159,67,.28)",cyan:"rgba(0,212,255,.28)"}[badgeColor]||"rgba(0,229,192,.28)";return(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,background:"rgba(8,22,40,0.72)",border:`1px solid ${bbr}`,borderRadius:14,padding:"14px 18px",borderLeft:`3px solid ${bc}`,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",boxShadow:`0 4px 24px rgba(0,0,0,0.4), 0 0 20px ${bbg}`}}><div style={{display:"flex",alignItems:"center",gap:12}}>{onBack&&<button onClick={onBack} style={{background:"rgba(26,53,85,0.6)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:8,padding:"5px 10px",color:"var(--txt3)",fontSize:11,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(8px)"}}>← Back</button>}<div style={{width:44,height:44,borderRadius:12,background:bbg,border:`1px solid ${bbr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:`0 0 16px ${bbg}`}}>{icon}</div><div><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"var(--txt)"}}>{title}</span><span style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",background:bbg,color:bc,border:`1px solid ${bbr}`,borderRadius:20,padding:"2px 9px",fontWeight:700}}>{badge}</span></div><div style={{fontSize:11,color:"var(--txt3)",marginTop:2}}>{sub}</div></div></div>{extra}</div>);}
 function GlassSectionBox({icon,title,sub,children}){return(<div style={{background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,0.75)",borderRadius:14,padding:"18px 20px",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",boxShadow:"0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)"}}><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingBottom:12,borderBottom:"1px solid rgba(26,53,85,0.6)"}}><span style={{fontSize:18}}>{icon}</span><div><div style={{fontSize:14,fontWeight:700,color:"var(--txt)"}}>{title}</div>{sub&&<div style={{fontSize:11,color:"var(--txt3)"}}>{sub}</div>}</div><span style={{marginLeft:"auto",fontSize:10,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"3px 10px",borderRadius:20,background:"linear-gradient(90deg,rgba(0,229,192,.1),rgba(59,158,255,.1))",border:"1px solid rgba(0,229,192,.25)",color:"var(--teal)"}}>Guideline-Integrated</span></div>{children}</div>);}
 
 
@@ -156,7 +162,7 @@ const PALS_DRUGS=[{cat:"Cardiac Arrest",drug:"Epinephrine",dose:"0.01 mg/kg IV/I
 
 
 // ════════════════════════════════════════════════════════════
-//  CARDIAC RISK — DATA & HELPERS (NEW)
+//  CARDIAC RISK — DATA & HELPERS
 // ════════════════════════════════════════════════════════════
 const HEART_ITEMS=[
   {id:"H",label:"History",desc:"Suspicion of ACS based on history",options:[{score:0,label:"Slightly suspicious",detail:"Non-specific history, doesn't fit ACS pattern"},{score:1,label:"Moderately suspicious",detail:"Mix of typical and atypical features"},{score:2,label:"Highly suspicious",detail:"Classic ACS — chest pressure, radiation, diaphoresis"}]},
@@ -206,7 +212,7 @@ function PregnancyPage({onBack}){const[tab,setTab]=useState("algorithm");const[g
 
 
 // ════════════════════════════════════════════════════════════
-//  CARDIAC RISK PAGE — NEW
+//  CARDIAC RISK PAGE
 // ════════════════════════════════════════════════════════════
 function CardiacRiskPage({onBack}){
   const[tab,setTab]=useState("heart");
@@ -366,7 +372,7 @@ function CardiacRiskPage({onBack}){
 
 
 // ════════════════════════════════════════════════════════════
-//  NAV DATA — cardiac-risk added to tools
+//  NAV DATA — chest-pain + ecg added to tools
 // ════════════════════════════════════════════════════════════
 const NAV_DATA={
   intake:[
@@ -390,6 +396,8 @@ const NAV_DATA={
     {section:"cardiac-home",abbr:"Ch",icon:"🏠",label:"Cardiac Hub",dot:"empty"},
     {section:"acs",abbr:"CS",icon:"🫀",label:"ACS Protocol",dot:"empty"},
     {section:"cardiac-risk",abbr:"Cr",icon:"❤️",label:"Cardiac Risk",dot:"empty"},
+    {section:"chest-pain",abbr:"Cp",icon:"💔",label:"Chest Pain Hub",dot:"empty"},
+    {section:"ecg",abbr:"Eg",icon:"📈",label:"ECG Hub",dot:"empty"},
     {section:"tachy",abbr:"Tc",icon:"⚡",label:"Tachycardia",dot:"empty"},
     {section:"brady",abbr:"Br",icon:"🔻",label:"Bradycardia",dot:"empty"},
     {section:"peds",abbr:"Pd",icon:"👶",label:"Pediatric ACLS",dot:"empty"},
@@ -411,9 +419,9 @@ function PlaceholderPage({section}){
 }
 
 // ════════════════════════════════════════════════════════════
-//  MAIN APP SHELL — cardiac-risk added
+//  MAIN APP SHELL — chest-pain + ecg added
 // ════════════════════════════════════════════════════════════
-const PROTOCOL_SECTIONS=["cardiac-home","acs","cardiac-risk","tachy","brady","peds","pregnancy"];
+const PROTOCOL_SECTIONS=["cardiac-home","acs","cardiac-risk","chest-pain","ecg","tachy","brady","peds","pregnancy"];
 
 export default function NotryaApp(){
   const navigate = useNavigate();
@@ -482,6 +490,8 @@ export default function NotryaApp(){
         {activeSection==="cardiac-home" && <ACSHomePage onNavigate={navigateTo}/>}
         {activeSection==="acs"          && <ACSPage onBack={backToHub}/>}
         {activeSection==="cardiac-risk" && <CardiacRiskPage onBack={backToHub}/>}
+        {activeSection==="chest-pain"   && <ChestPainHub embedded={true} onBack={backToHub}/>}
+        {activeSection==="ecg"          && <ECGHub embedded={true} onBack={backToHub}/>}
         {activeSection==="tachy"        && <TachycardiaPage onBack={backToHub}/>}
         {activeSection==="brady"        && <BradycardiaPage onBack={backToHub}/>}
         {activeSection==="peds"         && <PediatricsPage onBack={backToHub}/>}

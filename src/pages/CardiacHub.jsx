@@ -2,8 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ClinicalNote } from "@/api/entities";
-import ChestPainHub from "@/components/ChestPainHub";
-import ECGHub       from "@/components/ECGHub";
+import ChestPainHub from "@/pages/ChestPainHub";
+import ECGHub       from "@/pages/ECGHub";
 
 // ════════════════════════════════════════════════════════════
 //  ACS HOME PAGE — GLASSMORPHISM HUB

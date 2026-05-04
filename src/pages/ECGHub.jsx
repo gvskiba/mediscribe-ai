@@ -2,7 +2,7 @@
 // Structured ECG input + AI interpretation + Clinical tools
 // No SVG wave library. Physician enters findings, AI analyzes.
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ClinicalNote } from "@/api/entities";
 import ECGNSTEMIHub from "@/components/ecg/ECGNSTEMIHub";

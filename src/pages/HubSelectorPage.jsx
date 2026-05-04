@@ -10,14 +10,16 @@ const HUBS = [
     icon: "🫀",
     abbr: "CARD",
     title: "Cardiac",
-    subtitle: "ACS · Tachycardia · Bradycardia · PALS · OB Arrest",
+    // CHANGED: reflects expanded hub — ECG + Chest Pain now live inside CardiacHub
+    subtitle: "ACS · ECG · Chest Pain · Tachycardia · Bradycardia · PALS · OB Arrest",
     color: "#ff6b6b",
     glow: "rgba(255,107,107,0.4)",
     glass: "rgba(255,107,107,0.07)",
     border: "rgba(255,107,107,0.28)",
     accent: "#ff9999",
     category: "Critical Care",
-    stats: ["5 Protocols", "2025 ACC/AHA", "TNK Tool"],
+    // CHANGED: 8 protocols, updated stats
+    stats: ["8 Protocols", "2025 ACC/AHA", "ECG · HEART · TNK"],
     badge: "2025 ACC/AHA",
     priority: 1,
     essential: true,
@@ -353,24 +355,8 @@ const HUBS = [
     priority: 19,
     essential: false,
   },
-  {
-    id: "ecg-hub",
-    route: "/ecg-hub",
-    icon: "🫀",
-    abbr: "ECG",
-    title: "ECG Hub",
-    subtitle: "18 rhythms · Diagnostic criteria · STEMI territories · AI interpreter",
-    color: "#f87171",
-    glow: "rgba(248,113,113,0.4)",
-    glass: "rgba(248,113,113,0.07)",
-    border: "rgba(248,113,113,0.28)",
-    accent: "#fca5a5",
-    category: "Tools",
-    stats: ["18 Rhythms", "STEMI Equiv.", "AI Interpreter"],
-    badge: "Live",
-    priority: 18,
-    essential: true,
-  },
+  // REMOVED: ecg-hub (id: "ecg-hub", route: "/ecg-hub")
+  // ECG Hub now lives inside CardiacHub — accessed via /cardiac-hub → ECG tab
   {
     id: "surgical-airway",
     route: "/surgical-airway-hub",
@@ -659,23 +645,8 @@ const HUBS = [
     priority: 1.5,
     essential: true,
   },
-  {
-    id: "chestpain",
-    route: "/ChestPainHub",
-    icon: "💓",
-    abbr: "CHEST PAIN",
-    title: "Chest Pain Hub",
-    subtitle: "HEART Score · Serial Troponin · EDACS · ACS Protocol",
-    color: "#ff6b6b",
-    glow: "rgba(255,107,107,0.4)",
-    glass: "rgba(255,107,107,0.07)",
-    border: "rgba(255,107,107,0.28)",
-    accent: "#ff9999",
-    category: "Chief Complaint",
-    stats: ["HEART Score", "Serial Troponin", "EDACS"],
-    badge: "HEART·EDACS",
-    priority: 33,
-  },
+  // REMOVED: chestpain (id: "chestpain", route: "/ChestPainHub")
+  // Chest Pain Hub now lives inside CardiacHub — accessed via /cardiac-hub → Chest Pain tab
   {
     id: "dyspnea",
     route: "/DyspneaHub",
@@ -1044,16 +1015,17 @@ const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
 const CATEGORIES = ["All", "Essential", "Critical Care", "Chief Complaint", "Specialty", "Procedures", "Diagnostics", "Pharmacology", "Tools"];
 
 // Routes that are actually implemented in App.jsx
+// REMOVED: "/ecg-hub" and "/ChestPainHub" — both now live inside /cardiac-hub
 const LIVE_ROUTES = new Set([
   "/cardiac-hub", "/trauma-hub", "/ob-hub", "/sepsis-hub",
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
   "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub",
-  "/ecg-hub", "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub",
+  "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub",
   "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results",
   "/consult-hub", "/procedure-hub", "/id-hub", "/discharge-hub", "/wound-hub",
   "/DispositionBoard", "/critical-inbox", "/command-center",
-  "/ChestPainHub", "/DyspneaHub", "/HeadacheHub", "/AbdominalPainHub",
+  "/DyspneaHub", "/HeadacheHub", "/AbdominalPainHub",
   "/ams-hub", "/syncope-hub", "/dvt-hub", "/score-hub", "/pain-hub",
   "/weight-dose", "/SepsisHub", "/LabInterpreter", "/imaging-interpreter",
   "/wound-care-hub", "/seizure-hub", "/smart-dosing",

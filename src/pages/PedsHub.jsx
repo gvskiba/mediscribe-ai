@@ -539,53 +539,44 @@ const ABX_CONDITIONS = [
 ];
 
 const DISCHARGE_ABX = [
-  { name:"Amoxicillin (standard)",   dose:"40–50 mg/kg/day ÷ q8–12h",  mpkDose:16.7,freq:"q8h", max:500,
+  { name:"Amoxicillin (standard)",   dose:"40–50 mg/kg/day ÷ q8–12h",  mpkDose:16.7,freq:"q8h", max:500,dur:"10 days",
     concs:[{l:"125 mg/5 mL",m:25},{l:"200 mg/5 mL",m:40},{l:"250 mg/5 mL",m:50},{l:"400 mg/5 mL",m:80}],
     note:"Strep pharyngitis, mild CAP, UTI." },
-  { name:"Amoxicillin (high-dose)",  dose:"80–90 mg/kg/day ÷ q12h",    mpkDose:42.5,freq:"q12h",max:1000,
+  { name:"Amoxicillin (high-dose)",  dose:"80–90 mg/kg/day ÷ q12h",    mpkDose:42.5,freq:"q12h",max:1000,dur:"5–10 days",
     concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50},{l:"400 mg/5 mL",m:80}],
     note:"AOM first-line, sinusitis, high-dose CAP. Max 1 g/dose." },
-  { name:"Amox-clavulanate ES 600",  dose:"90 mg/kg/day (amox) ÷ q12h",mpkDose:45,  freq:"q12h",max:1000,
+  { name:"Amox-clavulanate ES 600",  dose:"90 mg/kg/day (amox) ÷ q12h",mpkDose:45,  freq:"q12h",max:1000,dur:"10 days",
     concs:[{l:"600 mg/5 mL",m:120}],note:"AOM failure, sinusitis resistant, bites." },
-  { name:"Amox-clavulanate std",     dose:"25–45 mg/kg/day ÷ q8h",     mpkDose:13.3,freq:"q8h", max:500,
+  { name:"Amox-clavulanate std",     dose:"25–45 mg/kg/day ÷ q8h",     mpkDose:13.3,freq:"q8h", max:500,dur:"5–10 days",
     concs:[{l:"200 mg/5 mL",m:40},{l:"400 mg/5 mL",m:80}],note:"Bites, sinusitis mild, polymicrobial." },
-  { name:"Cephalexin",               dose:"25–50 mg/kg/day ÷ q6h",     mpkDose:12.5,freq:"q6h", max:500,
+  { name:"Cephalexin",               dose:"25–50 mg/kg/day ÷ q6h",     mpkDose:12.5,freq:"q6h", max:500,dur:"5–10 days",
     concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50}],note:"MSSA cellulitis, UTI, strep, impetigo." },
-  { name:"Cefdinir",                 dose:"14 mg/kg/day ÷ q12–24h",    mpkDose:7,   freq:"q12h",max:300,
+  { name:"Cefdinir",                 dose:"14 mg/kg/day ÷ q12–24h",    mpkDose:7,   freq:"q12h",max:300,dur:"5–10 days",
     concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50}],note:"AOM (PCN allergy), sinusitis, CAP, UTI." },
-  { name:"Cefpodoxime",              dose:"10 mg/kg/day ÷ q12h",       mpkDose:5,   freq:"q12h",max:200,
+  { name:"Cefpodoxime",              dose:"10 mg/kg/day ÷ q12h",       mpkDose:5,   freq:"q12h",max:200,dur:"5–10 days",
     concs:[{l:"50 mg/5 mL",m:10},{l:"100 mg/5 mL",m:20}],note:"UTI, AOM, CAP, sinusitis." },
-  { name:"Cefuroxime axetil",        dose:"30 mg/kg/day ÷ q12h",       mpkDose:15,  freq:"q12h",max:500,
+  { name:"Cefuroxime axetil",        dose:"30 mg/kg/day ÷ q12h",       mpkDose:15,  freq:"q12h",max:500,dur:"10 days",
     concs:[{l:"125 mg/5 mL",m:25}],note:"AOM, sinusitis, Lyme (PCN allergy). Take with food." },
-  { name:"Penicillin VK",            dose:"25–50 mg/kg/day ÷ q6–8h",   mpkDose:12.5,freq:"q6h", max:500,
+  { name:"Penicillin VK",            dose:"25–50 mg/kg/day ÷ q6–8h",   mpkDose:12.5,freq:"q6h", max:500,dur:"10 days",
     concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50}],note:"Strep pharyngitis, dental/oral infections." },
-  { name:"Azithromycin",             dose:"10 mg/kg Day1; 5 mg/kg Days2–5",mpkDose:10,freq:"Day1 load",max:500,
+  { name:"Azithromycin",             dose:"10 mg/kg Day1; 5 mg/kg Days2–5",mpkDose:10,freq:"Day1 load",max:500,dur:"5 days",
     concs:[{l:"100 mg/5 mL",m:20},{l:"200 mg/5 mL",m:40}],note:"Atypical CAP, pertussis, AOM (PCN allergy)." },
-  { name:"Clarithromycin",           dose:"15 mg/kg/day ÷ q12h",       mpkDose:7.5, freq:"q12h",max:500,
+  { name:"Clarithromycin",           dose:"15 mg/kg/day ÷ q12h",       mpkDose:7.5, freq:"q12h",max:500,dur:"7–14 days",
     concs:[{l:"125 mg/5 mL",m:25},{l:"250 mg/5 mL",m:50}],note:"Atypical CAP, MAC. Macrolide alternative." },
-  { name:"Clindamycin",              dose:"20–30 mg/kg/day ÷ q8h",     mpkDose:10,  freq:"q8h", max:450,
+  { name:"Clindamycin",              dose:"20–30 mg/kg/day ÷ q8h",     mpkDose:10,  freq:"q8h", max:450,dur:"5–10 days",
     concs:[{l:"75 mg/5 mL",m:15}],note:"CA-MRSA SSTI, strep pharyngitis, anaerobic/dental." },
-  { name:"TMP-SMX",                  dose:"8–12 mg/kg/day (TMP) ÷ q12h",mpkDose:4,  freq:"q12h",max:160,
+  { name:"TMP-SMX",                  dose:"8–12 mg/kg/day (TMP) ÷ q12h",mpkDose:4,  freq:"q12h",max:160,dur:"5–7 days",
     concs:[{l:"40 mg TMP/5 mL",m:8}],note:"CA-MRSA SSTI, UTI. Dose = TMP component. Avoid <2m, sulfa allergy." },
-  { name:"Nitrofurantoin",           dose:"5–7 mg/kg/day ÷ q6h",       mpkDose:1.5, freq:"q6h", max:100,
+  { name:"Nitrofurantoin",           dose:"5–7 mg/kg/day ÷ q6h",       mpkDose:1.5, freq:"q6h", max:100,dur:"5–7 days",
     concs:[{l:"25 mg/5 mL",m:5}],note:"UTI only (not pyelonephritis). Avoid <1m, GFR <45." },
-  { name:"Metronidazole",            dose:"15–35 mg/kg/day ÷ q8h",     mpkDose:10,  freq:"q8h", max:500,
+  { name:"Metronidazole",            dose:"15–35 mg/kg/day ÷ q8h",     mpkDose:10,  freq:"q8h", max:500,dur:"5–10 days",
     concs:[{l:"200 mg/5 mL",m:40}],note:"Anaerobic, C. diff (PO only), Giardia." },
-  { name:"Doxycycline (≥ 8 years)", dose:"2.2 mg/kg/dose q12h",        mpkDose:2.2, freq:"q12h",max:100,
+  { name:"Doxycycline (≥ 8 years)", dose:"2.2 mg/kg/dose q12h",        mpkDose:2.2, freq:"q12h",max:100,dur:"10–21 days",
     concs:[{l:"25 mg/5 mL",m:5},{l:"50 mg/5 mL",m:10},{l:"Tabs/Caps",m:null}],
     note:"Lyme (≥8y), RMSF, MRSA SSTI, atypical CAP. Avoid <8y." },
 ];
 
-const SEIZURE_STEPS = [
-  { step:"0–5 min", label:"First-Line Benzodiazepine", color:T.teal,
-    actions:["Midazolam IN/IM: 0.2 mg/kg (max 10 mg) — preferred if no IV","Lorazepam IV: 0.1 mg/kg (max 4 mg) — if IV access","Diazepam PR: 0.5 mg/kg (<5y); 0.3 mg/kg (5–12y); max 10 mg"] },
-  { step:"5–10 min",label:"Repeat Benzodiazepine (same agent/route)", color:T.gold,
-    actions:["Repeat initial benzo dose once if seizure persists at 5 min","Establish IV access now if not already present"] },
-  { step:"10–20 min",label:"Second-Line Agent (choose one)", color:T.orange,
-    actions:["Levetiracetam 60 mg/kg IV over 5–10 min (max 4.5 g) — preferred","Valproate 40 mg/kg IV over 15 min (max 3 g) — avoid <2y, metabolic disorders","Fosphenytoin 20 PE/kg IV at 2–3 mg/kg/min (max 1,500 PE) — monitor EKG"] },
-  { step:"> 20 min", label:"Refractory — ICU", color:T.coral,
-    actions:["Phenobarbital 20 mg/kg IV (max 1 g) — monitor respiratory status","Repeat levetiracetam 60 mg/kg OR additional valproate dose","RSI + midazolam/propofol/pentobarbital infusion — ICU transfer required","EEG monitoring for refractory status"] },
-];
+// seizureSteps computed inside ResusTab (needs wt for mL calculations)
 
 function calcDose(wt, mpkDose, max) {
   if (!mpkDose||!wt) return null;
@@ -616,6 +607,7 @@ function ResusTab({ globalWt, setGlobalWt }) {
   const [selCond,setSelCond]=useState(null);
   const [ageFilter,setAgeFilter]=useState(null);
   const [ageYrs,setAgeYrs]=useState("");
+  const [gaAge,setGaAge]=useState("term");
   const wt=parseFloat(weight)||0; const ay=parseFloat(ageYrs)||0;
   const ettUncuffed=ay>=1?(ay/4+4).toFixed(1):ay>0?"3.5":"—";
   const ettCuffed=ay>=1?(ay/4+3.5).toFixed(1):ay>0?"3.0":"—";
@@ -628,6 +620,109 @@ function ResusTab({ globalWt, setGlobalWt }) {
 
   // helper: convert numeric mL to string with 1 decimal
   const ml = (n) => n.toFixed(n < 1 ? 2 : 1);
+
+  // Seizure escalation — full mL calculations per concentration
+  const seizureSteps = [
+    { step:"0–5 min", label:"First-Line Benzodiazepine", color:T.teal, drugs:wt>0?[
+      { name:"Midazolam IN/IM (preferred — no IV needed)", dose:"0.2 mg/kg · max 10 mg",
+        calc:`${Math.min(wt*.2,10).toFixed(1)} mg`,
+        solutions:[{l:"5 mg/mL IN atomizer",v:ml(Math.min(wt*.2,10)/5)},{l:"5 mg/mL IM vial",v:ml(Math.min(wt*.2,10)/5)},{l:"1 mg/mL (diluted IV prep)",v:ml(Math.min(wt*.2,10)/1)}],
+        note:"Split IN between nostrils if >0.5 mL/nostril. IM preferred over PR." },
+      { name:"Lorazepam IV/IO", dose:"0.1 mg/kg · max 4 mg",
+        calc:`${Math.min(wt*.1,4).toFixed(2)} mg`,
+        solutions:[{l:"2 mg/mL",v:ml(Math.min(wt*.1,4)/2)},{l:"4 mg/mL",v:ml(Math.min(wt*.1,4)/4)}],
+        note:"Preferred if IV access. Longer duration than diazepam." },
+      { name:"Diazepam PR/IV", dose:"0.5 mg/kg (<5y) · 0.3 mg/kg (≥5y) · max 10 mg",
+        calc:`${Math.min(wt*.5,10).toFixed(1)} mg PR`,
+        solutions:[{l:"5 mg/mL rectal (Diastat)",v:ml(Math.min(wt*.5,10)/5)},{l:"5 mg/mL IV",v:ml(Math.min(wt*.5,10)/5)}],
+        note:"PR onset 4–8 min. IV onset 1–3 min. Short duration — high recurrence." },
+    ]:[] },
+    { step:"5–10 min", label:"Repeat Benzodiazepine (same route)", color:T.gold, drugs:wt>0?[
+      { name:"Repeat initial benzo × 1", dose:"Same dose, same route",
+        calc:"Repeat first dose",solutions:[],
+        note:"Repeat once if seizure persists at 5 min. Establish IV now if not present." },
+    ]:[] },
+    { step:"10–20 min", label:"Second-Line Agent — choose one", color:T.orange, drugs:wt>0?[
+      { name:"Levetiracetam IV (preferred)", dose:"60 mg/kg IV over 5–10 min · max 4.5 g",
+        calc:`${Math.min(wt*60,4500).toFixed(0)} mg`,
+        solutions:[{l:"100 mg/mL stock",v:ml(Math.min(wt*60,4500)/100)},{l:"15 mg/mL (diluted infusion)",v:ml(Math.min(wt*60,4500)/15)}],
+        note:"Preferred second-line. No cardiac monitoring needed. Dilute stock before infusion." },
+      { name:"Valproate IV", dose:"40 mg/kg IV over 15 min · max 3 g",
+        calc:`${Math.min(wt*40,3000).toFixed(0)} mg`,
+        solutions:[{l:"100 mg/mL (stock)",v:ml(Math.min(wt*40,3000)/100)},{l:"5 mg/mL (diluted)",v:ml(Math.min(wt*40,3000)/5)}],
+        note:"Avoid <2y, metabolic disorders, mitochondrial disease, liver disease." },
+      { name:"Fosphenytoin IV/IO", dose:"20 PE/kg · max 1,500 PE · rate ≤3 mg PE/kg/min",
+        calc:`${Math.min(wt*20,1500).toFixed(0)} PE`,
+        solutions:[{l:"75 mg PE/mL",v:ml(Math.min(wt*20,1500)/75)},{l:"50 mg PE/mL",v:ml(Math.min(wt*20,1500)/50)}],
+        note:"Monitor EKG and BP during infusion. Max rate 3 mg PE/kg/min." },
+    ]:[] },
+    { step:"> 20 min", label:"Refractory SE — ICU Required", color:T.coral, drugs:wt>0?[
+      { name:"Phenobarbital IV", dose:"20 mg/kg IV over 20 min · max 1 g",
+        calc:`${Math.min(wt*20,1000).toFixed(0)} mg`,
+        solutions:[{l:"65 mg/mL",v:ml(Math.min(wt*20,1000)/65)},{l:"130 mg/mL",v:ml(Math.min(wt*20,1000)/130)}],
+        note:"Monitor respirations — apnea risk especially after benzos. May repeat 5–10 mg/kg × 2." },
+      { name:"Midazolam infusion", dose:"Load 0.1–0.2 mg/kg · then 0.05–0.4 mg/kg/hr drip",
+        calc:`${Math.min(wt*.1,10).toFixed(1)}–${Math.min(wt*.2,10).toFixed(1)} mg load`,
+        solutions:[{l:"1 mg/mL (diluted) load",v:`${ml(Math.min(wt*.1,10)/1)}–${ml(Math.min(wt*.2,10)/1)}`},{l:"5 mg/mL load",v:`${ml(Math.min(wt*.1,10)/5)}–${ml(Math.min(wt*.2,10)/5)}`}],
+        note:"Drip: 0.05–0.4 mg/kg/hr. Continuous EEG monitoring. ICU transfer." },
+      { name:"Ketamine IV (refractory)", dose:"1–2 mg/kg IV load · then 0.5–3 mg/kg/hr",
+        calc:`${Math.min(wt*1,200).toFixed(0)}–${Math.min(wt*2,200).toFixed(0)} mg load`,
+        solutions:[{l:"10 mg/mL",v:`${ml(Math.min(wt*1,200)/10)}–${ml(Math.min(wt*2,200)/10)}`},{l:"50 mg/mL",v:`${ml(Math.min(wt*1,200)/50)}–${ml(Math.min(wt*2,200)/50)}`}],
+        note:"Emerging evidence for refractory SE. NMDA antagonism. Continuous EEG required." },
+    ]:[] },
+  ];
+
+  // RSI package (co-calculated simultaneously)
+  const rsiPkg=wt>0?[
+    { name:"PRETREAT: Atropine (if < 1 year)", dose:"0.02 mg/kg IV · min 0.1 mg · max 0.5 mg",
+      calc:`${Math.max(Math.min(wt*.02,.5),.1).toFixed(2)} mg`,
+      solutions:[{l:"0.1 mg/mL",v:ml(Math.max(Math.min(wt*.02,.5),.1)/0.1)},{l:"0.4 mg/mL",v:ml(Math.max(Math.min(wt*.02,.5),.1)/0.4)}],
+      note:"Give 1–2 min before succinylcholine in infants to prevent bradycardia." },
+    { name:"INDUCTION: Ketamine (hemodynamically unstable / airways)", dose:"2 mg/kg IV · 4–5 mg/kg IM",
+      calc:`${(wt*2).toFixed(0)} mg IV`,
+      solutions:[{l:"10 mg/mL IV",v:ml(wt*2/10)},{l:"50 mg/mL IM",v:`${ml(wt*4/50)}–${ml(wt*5/50)}`}],
+      note:"Preferred peds induction. Maintains airway reflexes. Bronchodilator." },
+    { name:"INDUCTION: Etomidate (head trauma / concern for ICP)", dose:"0.3 mg/kg IV",
+      calc:`${(wt*.3).toFixed(1)} mg`,
+      solutions:[{l:"2 mg/mL",v:ml(wt*.3/2)}],
+      note:"Rapid onset, hemodynamically neutral. Single dose only — adrenal suppression." },
+    { name:"PARALYTIC: Succinylcholine", dose:`${wt<10?"2":"1.5"} mg/kg IV`,
+      calc:`${wt<10?(wt*2).toFixed(0):(wt*1.5).toFixed(0)} mg`,
+      solutions:[{l:"20 mg/mL",v:ml(wt<10?wt*2/20:wt*1.5/20)},{l:"100 mg/mL",v:ml(wt<10?wt*2/100:wt*1.5/100)}],
+      note:"2 mg/kg if <10 kg. Contraindicated: hyperK, burn, crush, myopathy, denervation." },
+    { name:"PARALYTIC: Rocuronium (if SCh contraindicated)", dose:"1.2 mg/kg IV",
+      calc:`${(wt*1.2).toFixed(0)} mg`,
+      solutions:[{l:"10 mg/mL",v:ml(wt*1.2/10)}],
+      note:"Reversal: sugammadex 16 mg/kg IV. High dose required for RSI." },
+    { name:"POST-INTUBATION: Fentanyl", dose:"1–2 mcg/kg IV",
+      calc:`${Math.min(wt*1,100).toFixed(0)}–${Math.min(wt*2,100).toFixed(0)} mcg`,
+      solutions:[{l:"50 mcg/mL",v:`${ml(Math.min(wt*1,100)/50)}–${ml(Math.min(wt*2,100)/50)}`},{l:"25 mcg/mL (diluted)",v:`${ml(Math.min(wt*1,100)/25)}–${ml(Math.min(wt*2,100)/25)}`}],
+      note:"Analgesia and suppression of cough/gag. Give after tube confirmed." },
+    { name:"POST-INTUBATION: Midazolam (sedation)", dose:"0.05–0.1 mg/kg IV q1–2h prn",
+      calc:`${(wt*.05).toFixed(2)}–${Math.min(wt*.1,5).toFixed(1)} mg`,
+      solutions:[{l:"1 mg/mL",v:`${ml(wt*.05/1)}–${ml(Math.min(wt*.1,5)/1)}`},{l:"5 mg/mL",v:`${ml(wt*.05/5)}–${ml(Math.min(wt*.1,5)/5)}`}],
+      note:"Sedation maintenance. Titrate to comfort. Consider continuous infusion." },
+  ]:[];
+
+  // Vasopressor drips — mL/hr at starting dose
+  const vasopressors=wt>0?[
+    { name:"Epinephrine drip (cold shock — low BP + cool mottled extremities)", dose:"0.1–1 mcg/kg/min IV/IO",
+      calc:`Start: ${(wt*.1).toFixed(2)} mcg/min → ${(wt*1).toFixed(1)} mcg/min max`,
+      solutions:[{l:"0.1 mg/mL (100 mcg/mL) start rate",v:`${((wt*.1/100)*60).toFixed(1)} mL/hr`},{l:"0.04 mg/mL (40 mcg/mL) start rate",v:`${((wt*.1/40)*60).toFixed(1)} mL/hr`}],
+      note:"Preferred for cold shock. Start 0.1 mcg/kg/min — titrate to MAP. Central line preferred." },
+    { name:"Norepinephrine drip (warm shock — low BP + warm flushed extremities)", dose:"0.05–2 mcg/kg/min IV",
+      calc:`Start: ${(wt*.05).toFixed(3)} mcg/min`,
+      solutions:[{l:"0.1 mg/mL (100 mcg/mL) start rate",v:`${((wt*.05/100)*60).toFixed(2)} mL/hr`},{l:"0.04 mg/mL (40 mcg/mL) start rate",v:`${((wt*.05/40)*60).toFixed(2)} mL/hr`}],
+      note:"Preferred for warm/distributive shock. Central line required." },
+    { name:"Dopamine drip", dose:"5–20 mcg/kg/min IV",
+      calc:`${(wt*5).toFixed(0)}–${(wt*20).toFixed(0)} mcg/min`,
+      solutions:[{l:"1.6 mg/mL (1600 mcg/mL) std peds",v:`${((wt*5/1600)*60).toFixed(1)}–${((wt*20/1600)*60).toFixed(1)} mL/hr`},{l:"3.2 mg/mL (3200 mcg/mL)",v:`${((wt*5/3200)*60).toFixed(1)}–${((wt*20/3200)*60).toFixed(1)} mL/hr`}],
+      note:"5–10 mcg/kg/min (β-effect); 10–20 mcg/kg/min (α-effect). Second-line to epi." },
+    { name:"Vasopressin (refractory)", dose:"0.0003–0.002 units/kg/min IV",
+      calc:`${(wt*.0003).toFixed(4)}–${(wt*.002).toFixed(4)} units/min`,
+      solutions:[{l:"0.04 units/mL (standard dilution)",v:`${((wt*.0003/.04)*60).toFixed(2)}–${((wt*.002/.04)*60).toFixed(2)} mL/hr`}],
+      note:"Catecholamine-refractory vasodilatory shock. Fixed dose regardless of weight in some centers." },
+  ]:[];
 
   const resusDrugs=wt>0?[
     { name:"Epinephrine (arrest)",    dose:"0.01 mg/kg IV/IO · max 1 mg",  calc:`${(wt*.01).toFixed(2)} mg`,
@@ -747,8 +842,8 @@ function ResusTab({ globalWt, setGlobalWt }) {
       solutions:[{l:"10 mg/mL (Ofirmev bag)",v:ml(Math.min(wt*15,1000)/10)}],
       note:"Max 1 g/dose; <75 mg/kg/day. Pre-mixed 10 mg/mL bags." },
     { name:"Ibuprofen PO",        dose:"10 mg/kg PO q6–8h · max 800 mg",calc:`${Math.min(wt*10,800).toFixed(0)} mg`,
-      solutions:[{l:"100 mg/5 mL (20 mg/mL)",v:ml(Math.min(wt*10,800)/20)},{l:"50 mg/1.25 mL (40 mg/mL drops)",v:ml(Math.min(wt*10,800)/40)}],
-      note:"Max 800 mg/dose. Avoid <6m, AKI, GI bleeding." },
+      solutions:[{l:"100 mg/5 mL (20 mg/mL)",v:ml(Math.min(wt*10,800)/20)},{l:"50 mg/1.25 mL (40 mg/mL infant drops)",v:ml(Math.min(wt*10,800)/40)}],
+      note:"Max 800 mg/dose. Avoid <6m, AKI, GI bleeding. Infant drops (40 mg/mL) often pharmacy-packaged by weight tier — verify with dispenser." },
     { name:"Acetaminophen PO/PR", dose:"15 mg/kg q4–6h · max 1 g",  calc:`${Math.min(wt*15,1000).toFixed(0)} mg`,
       solutions:[{l:"160 mg/5 mL (32 mg/mL)",v:ml(Math.min(wt*15,1000)/32)},{l:"80 mg/0.8 mL drops (100 mg/mL)",v:ml(Math.min(wt*15,1000)/100)},{l:"650 mg suppository",v:"per kg"},{l:"325 mg suppository",v:"per kg"}],
       note:"Max 1 g/dose; max 5 doses/day." },
@@ -853,7 +948,11 @@ function ResusTab({ globalWt, setGlobalWt }) {
         {l:"6 mg/mL suspension",v:wt<15?"5":wt<23?"7.5":wt<40?"10":"12.5"},
         {l:"75 mg capsule",v:wt>=40?"1 cap":"see dose"},
       ],
-      note:"Start within 48h of onset. Neonates ≥2 weeks: 3 mg/kg q12h." },
+      note:"Start within 48h of onset. ≥1 year standard dosing above." },
+    ...(wt<10?[{ name:"Oseltamivir (Neonatal/Infant — compounded)", dose:"3 mg/kg q12h × 5 days (≥2 weeks GA)",
+      calc:`${(wt*3).toFixed(1)} mg q12h`,
+      solutions:[{l:"6 mg/mL susp (compounded)",v:ml(wt*3/6)},{l:"15 mg/mL (alt compounded)",v:ml(wt*3/15)}],
+      note:"Neonates ≥2 weeks gestational age. Standard suspension may need compounding." }]:[]),
   ]:[];
 
   const filteredConds = ageFilter===null ? ABX_CONDITIONS
@@ -909,15 +1008,32 @@ function ResusTab({ globalWt, setGlobalWt }) {
             </div>
           </Card>}
         </div>
-        {wt>0&&<Card color={T.cyan} title="Maintenance Fluids — Holliday-Segar (4-2-1 Rule)">
-          <div style={{ display:"flex",alignItems:"center",gap:16 }}>
-            <div style={{ fontFamily:S.serif,fontSize:32,fontWeight:900,color:T.cyan,lineHeight:1 }}>
-              {maint.toFixed(0)}<span style={{ fontSize:18 }}> mL/hr</span>
+        {wt>0&&<Card color={T.cyan} title="IV Fluids — Maintenance + Bolus Reference">
+          <div style={{ display:"flex",alignItems:"center",gap:14,marginBottom:9,
+            padding:"8px 10px",borderRadius:8,background:"rgba(0,212,180,0.07)",border:"1px solid rgba(0,212,180,0.25)" }}>
+            <div style={{ fontFamily:S.serif,fontSize:30,fontWeight:900,color:T.cyan,lineHeight:1 }}>
+              {maint.toFixed(0)}<span style={{ fontSize:16 }}> mL/hr</span>
             </div>
-            <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.6 }}>
-              <div>≤10 kg: 4 mL/kg/hr · 10–20 kg: 40+(2×kg over 10) · {">"} 20 kg: 60+(1×kg over 20)</div>
-              <div style={{ color:T.txt4,marginTop:2 }}>Daily: {(maint*24).toFixed(0)} mL/day</div>
+            <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt3,lineHeight:1.6 }}>
+              <div style={{ fontWeight:600,color:T.cyan }}>Maintenance (Holliday-Segar 4-2-1)</div>
+              <div>≤10 kg: 4 mL/kg/hr · 10–20 kg: 40+(2×over10) · {">"}20 kg: 60+(1×over20)</div>
+              <div style={{ color:T.txt4 }}>Daily: {(maint*24).toFixed(0)} mL</div>
             </div>
+          </div>
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(125px,1fr))",gap:6 }}>
+            {[["NS Bolus 10 mL/kg",`${(wt*10).toFixed(0)} mL`,T.blue,"sepsis/dehydration"],
+              ["NS Bolus 20 mL/kg",`${(wt*20).toFixed(0)} mL`,T.blue,"repeat if needed"],
+              ["Max Resus 60 mL/kg",`${(wt*60).toFixed(0)} mL`,T.orange,"total then reassess"],
+              ["pRBC 10 mL/kg",`${(wt*10).toFixed(0)} mL`,T.coral,"↑Hgb ~2–3 g/dL"],
+              ["Albumin 5% 10 mL/kg",`${(wt*10).toFixed(0)} mL`,T.teal,"oncotic support"],
+              ["DKA initial 10 mL/kg",`${(wt*10).toFixed(0)} mL NS`,T.gold,"only if unstable"],
+            ].map(([l,v,c,sub])=>(
+              <div key={l} style={{ padding:"6px 8px",borderRadius:7,background:`${c}08`,border:`1px solid ${c}25` }}>
+                <div style={{ fontFamily:S.sans,fontSize:8,color:T.txt4,marginBottom:1 }}>{l}</div>
+                <div style={{ fontFamily:S.mono,fontSize:13,fontWeight:700,color:c }}>{v}</div>
+                <div style={{ fontFamily:S.mono,fontSize:7,color:T.txt4 }}>{sub}</div>
+              </div>
+            ))}
           </div>
         </Card>}
         {wt>0&&<Card color={T.coral} title="Defibrillation / Cardioversion — Joules (not mL)">
@@ -937,30 +1053,30 @@ function ResusTab({ globalWt, setGlobalWt }) {
         {wt>0?<Card color={T.green} title="PALS Weight-Based Drugs — Dose + mL per Concentration">
           <DrugSection title="PALS / Resuscitation" color={T.green} drugs={resusDrugs} wtCalc />
         </Card>:nWt}
-        <Card color={T.orange} title="Seizure Escalation Protocol (Status Epilepticus)">
-          {SEIZURE_STEPS.map((step,i)=>(
-            <div key={i} style={{ marginBottom:8,padding:"6px 9px",borderRadius:8,
+        {wt>0&&<Card color={T.mint} title="RSI Package — All Agents Co-Calculated">
+          <div style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt3,lineHeight:1.5,marginBottom:7 }}>
+            Sequence: Pretreat (if &lt;1y) → Induction → Paralytic → Confirm tube → Post-intubation sedation/analgesia
+          </div>
+          <DrugSection title="RSI Sequence" color={T.mint} drugs={rsiPkg} wtCalc />
+        </Card>}
+        {wt>0&&<Card color={T.purple} title="Vasopressor Drips — Starting mL/hr per Concentration">
+          <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt3,lineHeight:1.5,marginBottom:7 }}>
+            mL/hr values shown at <strong style={{ color:T.purple }}>starting dose</strong>. Titrate by clinical response. Central access preferred for all vasopressors.
+          </div>
+          <DrugSection title="Continuous Infusions" color={T.purple} drugs={vasopressors} wtCalc />
+        </Card>}
+        <Card color={T.orange} title="Seizure Escalation — Dose + mL per Concentration">
+          {seizureSteps.map((step,si)=>(
+            <div key={si} style={{ marginBottom:9,padding:"8px 10px",borderRadius:9,
               background:`${step.color}08`,border:`1px solid ${step.color}30`,borderLeft:`4px solid ${step.color}` }}>
               <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6 }}>
                 <div style={{ fontFamily:S.serif,fontWeight:700,fontSize:13,color:step.color }}>{step.label}</div>
                 <span style={{ fontFamily:S.mono,fontSize:8,color:step.color,background:`${step.color}18`,
                   border:`1px solid ${step.color}35`,borderRadius:4,padding:"2px 8px" }}>{step.step}</span>
               </div>
-              {step.actions.map((a,j)=>{
-                const mgMatch=a.match(/(\d+\.?\d*)\s*mg\/kg/);
-                const mcgMatch=a.match(/(\d+\.?\d*)\s*mcg\/kg/);
-                let calc="";
-                if(wt>0&&mgMatch)calc=` → ${Math.min(Math.round(wt*parseFloat(mgMatch[1])),a.includes("max")?parseInt(a.match(/max[\s,](\d+)/)?.[1]||9999):9999)} mg`;
-                if(wt>0&&mcgMatch)calc=` → ${Math.min(Math.round(wt*parseFloat(mcgMatch[1])),parseInt(a.match(/max[\s,](\d+)/)?.[1]||9999))} mcg`;
-                return(
-                  <div key={j} style={{ display:"flex",gap:7,alignItems:"flex-start",marginBottom:3 }}>
-                    <span style={{ color:step.color,fontSize:7,marginTop:4,flexShrink:0 }}>▸</span>
-                    <span style={{ fontFamily:S.sans,fontSize:9.5,color:T.txt2,lineHeight:1.5 }}>
-                      {a}{calc&&<strong style={{ color:step.color }}>{calc}</strong>}
-                    </span>
-                  </div>
-                );
-              })}
+              {step.drugs.length>0
+                ? <DrugSection title="" color={step.color} drugs={step.drugs} wtCalc />
+                : <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4 }}>Enter weight above to see calculated doses.</div>}
             </div>
           ))}
         </Card>
@@ -1048,8 +1164,39 @@ function ResusTab({ globalWt, setGlobalWt }) {
         </>}
 
         {abxPill==="iv"&&(wt>0?<>
-          <Card color={T.red} title="Neonatal — Nelson's / AAP Red Book 2024">
+          <Card color={T.red} title="Neonatal ABX — Gestational Age / Postnatal Age Adjustment">
+            <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt3,lineHeight:1.5,marginBottom:7 }}>
+              Gentamicin and ampicillin dosing varies by GA and postnatal age. Select below:
+            </div>
+            <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginBottom:8 }}>
+              {[["preterm28","<28 wk GA"],["preterm34","28–34 wk GA"],["term","≥35 wk / Term"],["pna7",">7d Postnatal"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setGaAge(v)}
+                  style={{ padding:"5px 11px",borderRadius:7,cursor:"pointer",fontFamily:S.sans,fontWeight:600,fontSize:10,
+                    border:`1px solid ${gaAge===v?T.red+"66":"rgba(30,70,130,0.4)"}`,
+                    background:gaAge===v?"rgba(255,68,68,0.12)":"transparent",color:gaAge===v?T.red:T.txt4 }}>{l}</button>
+              ))}
+            </div>
             <DrugSection title="Neonatal Sepsis / HSV" color={T.red} drugs={neonAbx} wtCalc />
+            <div style={{ marginTop:7,padding:"5px 8px",borderRadius:6,background:"rgba(255,68,68,0.06)",border:"1px solid rgba(255,68,68,0.2)" }}>
+              <div style={{ fontFamily:S.mono,fontSize:8,color:T.red,letterSpacing:1,marginBottom:4 }}>GENTAMICIN DOSING BY GA / PNA (Nelson's 2024)</div>
+              <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:5 }}>
+                {[["<28 wk GA",`5 mg/kg q48h → ${ml(wt*5/10)} mL (10 mg/mL)`,T.orange],
+                  ["28–34 wk GA",`4.5 mg/kg q36h → ${ml(wt*4.5/10)} mL (10 mg/mL)`,T.gold],
+                  ["≥35 wk / Term",`4 mg/kg q24h → ${ml(wt*4/10)} mL (10 mg/mL)`,T.teal],
+                  [">7d postnatal",`4 mg/kg q12–24h (per GA)`,T.blue],
+                ].map(([tier,dose,c])=>(
+                  <div key={tier} style={{ padding:"5px 8px",borderRadius:6,
+                    background:gaAge===tier.replace("≥35 wk / Term","term").replace(">7d postnatal","pna7").replace("<28 wk GA","preterm28").replace("28–34 wk GA","preterm34")?`${c}15`:`${c}07`,
+                    border:`1px solid ${c}30` }}>
+                    <div style={{ fontFamily:S.mono,fontSize:7.5,color:c,marginBottom:2 }}>{tier}</div>
+                    <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt2 }}>{dose}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontFamily:S.sans,fontSize:8.5,color:T.txt4,marginTop:6 }}>
+                Always get trough levels. Target trough &lt;1 mcg/mL. Renal function monitoring required.
+              </div>
+            </div>
           </Card>
           <Card color={T.coral} title="Broad-Spectrum / Gram-Negative">
             <DrugSection title="Beta-Lactams & Carbapenems" color={T.coral} drugs={broadAbx} wtCalc />
@@ -1068,7 +1215,12 @@ function ResusTab({ globalWt, setGlobalWt }) {
                   <div style={{ flex:1,minWidth:0 }}>
                     <div style={{ fontFamily:S.sans,fontWeight:700,fontSize:9.5,color:T.txt2 }}>{d.name}</div>
                     <div style={{ fontFamily:S.mono,fontSize:8,color:T.txt4,marginTop:1 }}>{d.dose}</div>
-                    <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:2,lineHeight:1.5 }}>{d.note}</div>
+                    {d.dur&&<div style={{ display:"inline-flex",alignItems:"center",gap:5,marginTop:3,
+                      padding:"2px 7px",borderRadius:4,background:"rgba(245,200,66,0.1)",border:"1px solid rgba(245,200,66,0.3)" }}>
+                      <span style={{ fontFamily:S.mono,fontSize:7,color:T.gold,letterSpacing:1 }}>DURATION</span>
+                      <span style={{ fontFamily:S.mono,fontSize:8.5,fontWeight:700,color:T.gold }}>{d.dur}</span>
+                    </div>}
+                    <div style={{ fontFamily:S.sans,fontSize:9,color:T.txt4,marginTop:3,lineHeight:1.5 }}>{d.note}</div>
                   </div>
                   <div style={{ textAlign:"right",flexShrink:0,minWidth:80 }}>
                     {pd&&<div style={{ fontFamily:S.mono,fontSize:12,fontWeight:700,color:T.coral }}>{pd} mg</div>}
@@ -1158,7 +1310,8 @@ const CDS=[
   { key:"mucosa", label:"Mucous Membranes",  opts:[{v:0,l:"Moist"},{v:1,l:"Sticky"},{v:2,l:"Dry"}] },
   { key:"tears",  label:"Tears",             opts:[{v:0,l:"Present with crying"},{v:1,l:"Decreased"},{v:2,l:"Absent"}] },
 ];
-function ScoringTab() {
+function ScoringTab({ globalWt }) {
+  const wtS=parseFloat(globalWt)||0;
   const [ws,setWs]=useState({}); const [pram,setPram]=useState({});
   const [flacc,setFlacc]=useState({}); const [cds,setCds]=useState({});
   const score=obj=>Object.values(obj).reduce((s,v)=>s+(v||0),0);
@@ -1287,6 +1440,44 @@ function ScoringTab() {
           ))}
         </div>
         <Bullet text="High-flow NC O₂, NG feeds — supportive care only. Albuterol, epi, steroids, antibiotics NOT recommended routinely." color={T.blue} />
+        <div style={{ marginTop:8,padding:"8px 10px",borderRadius:8,background:"rgba(0,200,212,0.07)",border:"1px solid rgba(0,200,212,0.3)" }}>
+          <div style={{ fontFamily:S.mono,fontSize:8,color:T.cyan,letterSpacing:1.3,textTransform:"uppercase",marginBottom:7 }}>
+            High-Flow Nasal Cannula (HFNC) — Weight-Based Starting Flows
+          </div>
+          {wtS>0
+            ? <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:6,marginBottom:7 }}>
+                {[["Starting flow","1 L/kg/min",`${Math.min(wtS*1,50).toFixed(0)} L/min`,T.teal],
+                  ["Moderate support","1.5 L/kg/min",`${Math.min(wtS*1.5,50).toFixed(0)} L/min`,T.gold],
+                  ["High support","2 L/kg/min",`${Math.min(wtS*2,50).toFixed(0)} L/min`,T.coral],
+                  ["Max flow","50 L/min cap",`${Math.min(wtS*2,50).toFixed(0)} L/min max`,T.orange],
+                ].map(([l,dose,calc,c])=>(
+                  <div key={l} style={{ padding:"6px 8px",borderRadius:7,background:`${c}09`,border:`1px solid ${c}28` }}>
+                    <div style={{ fontFamily:S.sans,fontSize:8,color:T.txt4 }}>{l}</div>
+                    <div style={{ fontFamily:S.mono,fontSize:14,fontWeight:700,color:c }}>{calc}</div>
+                    <div style={{ fontFamily:S.mono,fontSize:7.5,color:T.txt4 }}>{dose}</div>
+                  </div>
+                ))}
+              </div>
+            : <div style={{ fontFamily:S.sans,fontSize:10,color:T.txt4,marginBottom:7 }}>
+                Enter weight in Medications tab → it carries here for HFNC calculations.
+                <span style={{ display:"block",fontFamily:S.mono,fontSize:9,marginTop:3,color:T.cyan }}>
+                  Starting flow: 1 L/kg/min · High support: 2 L/kg/min · Max: 50 L/min
+                </span>
+              </div>}
+          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+            {[["FiO₂ titration","Start 40%. Increase by 5–10% to maintain SpO2 92–95%.","Avoid hyperoxia — target SpO2 92–96% not >98%."],
+              ["Weaning","Wean flow first (by 0.5 L/kg/min q4–6h if tolerating). Then wean FiO₂.","Trial low-flow NC before full step-down."]].map(([l,d1,d2])=>(
+              <div key={l} style={{ padding:"6px 8px",borderRadius:6,background:"rgba(5,13,32,0.65)",border:"1px solid rgba(30,70,130,0.3)" }}>
+                <div style={{ fontFamily:S.mono,fontSize:7.5,color:T.cyan,marginBottom:3 }}>{l}</div>
+                <div style={{ fontFamily:S.sans,fontSize:8.5,color:T.txt2,lineHeight:1.5 }}>{d1}</div>
+                <div style={{ fontFamily:S.sans,fontSize:8,color:T.txt4,marginTop:2 }}>{d2}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop:6,fontFamily:S.sans,fontSize:8.5,color:T.txt4,lineHeight:1.5 }}>
+            Vapotherm/Optiflow. Failure criteria: worsening RR, SpO2 &lt;92% on FiO₂ ≥60%, apnea, rising CO₂ → escalate to CPAP/intubation.
+          </div>
+        </div>
       </Card>
     </div>
   );
@@ -1611,7 +1802,7 @@ export default function PediatricHub({ embedded = false }) {
         {tab==="pecarn"  && <PECARNTab />}
         {tab==="fever"   && <FeverTab />}
         {tab==="meds"    && <ResusTab   globalWt={globalWt} setGlobalWt={setGlobalWt} />}
-        {tab==="scoring" && <ScoringTab />}
+        {tab==="scoring" && <ScoringTab globalWt={globalWt} />}
         {tab==="tools"   && <ToolsTab   globalWt={globalWt} />}
         {!embedded&&<div style={{ textAlign:"center",padding:"24px 0 16px",
           fontFamily:S.mono,fontSize:8,color:T.txt4,letterSpacing:1.5 }}>

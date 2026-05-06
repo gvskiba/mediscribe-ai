@@ -30,7 +30,6 @@ import OBGYNHub from '@/pages/OBGYNHub';
 import SepsisAbxHub from '@/pages/SepsisAbxHub';
 import AirwayHub from '@/pages/AirwayHub';
 import ToxicologyHub from '@/pages/ToxicologyHub';
-import LabInterpreter from '@/pages/LabInterpreter';
 import LabHub from '@/pages/LabHub';
 import PedsHub from '@/pages/PedsHub';
 import ProviderBilling from '@/pages/ProviderBilling';
@@ -96,7 +95,7 @@ import DermMorphologyRef from '@/pages/DermMorphologyRef';
 import QuickNote from '@/pages/QuickNote';
 import AIFlagReview from '@/pages/AIFlagReview';
 import TemplateStudio from '@/pages/TemplateStudio';
-import LabTrendHub from '@/pages/LabTrendHub';
+
 import VitalsHub from '@/pages/VitalsHub';
 import UserPreferences from '@/pages/UserPreferences';
 import ShiftDashboard from '@/pages/ShiftDashboard';
@@ -200,7 +199,7 @@ const AuthenticatedApp = () => {
       <Route path="/sepsis-hub" element={<SepsisAbxHub />} />
       <Route path="/airway-hub" element={<AirwayHub />} />
       <Route path="/tox-hub" element={<ToxicologyHub />} />
-      <Route path="/lab-interpreter" element={<LabInterpreter />} />
+      <Route path="/lab-interpreter" element={<LabHub />} />
       <Route path="/LabHub" element={<LabHub />} />
       <Route path="/peds-hub" element={<PedsHub />} />
       <Route path="/provider-billing" element={<LayoutWrapper currentPageName="ProviderBilling"><ProviderBilling /></LayoutWrapper>} />
@@ -261,7 +260,7 @@ const AuthenticatedApp = () => {
       <Route path="/ResusHub" element={<ResusHub />} />
       <Route path="/StrokeHub" element={<StrokeHub />} />
       <Route path="/ECGHub" element={<ECGHub />} />
-      <Route path="/LabInterpreter" element={<LabInterpreter />} />
+      <Route path="/LabInterpreter" element={<LabHub />} />
       <Route path="/ScoreHub" element={<ScoreHub />} />
       <Route path="/POCUSHub" element={<POCUSHub />} />
       <Route path="/WeightDoseHub" element={<WeightDoseHub />} />
@@ -285,7 +284,7 @@ const AuthenticatedApp = () => {
       <Route path="/QuickNote" element={<QuickNote />} />
       <Route path="/AIFlagReview" element={<AIFlagReview />} />
       <Route path="/TemplateStudio" element={<TemplateStudio />} />
-      <Route path="/LabTrendHub" element={<LabTrendHub />} />
+      <Route path="/LabTrendHub" element={<LabHub />} />
       <Route path="/VitalsHub" element={<VitalsHub />} />
       <Route path="/UserPreferences" element={<UserPreferences />} />
       <Route path="/ShiftDashboard" element={<ShiftDashboard />} />

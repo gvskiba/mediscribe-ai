@@ -1,2 +1,2 @@
-// Re-export shim — canonical implementation lives in pages/LabInterpreter.jsx
-export { default } from "@/pages/LabInterpreter";
+// Re-export shim — canonical implementation lives in pages/LabHub.jsx
+export { default } from "@/pages/LabHub";

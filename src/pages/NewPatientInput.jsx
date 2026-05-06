@@ -55,9 +55,8 @@ import EDProcedureNotes        from "@/pages/EDProcedureNotes";
 import MedicationReferencePage from "@/pages/MedicationReference";
 import ERPlanBuilder           from "@/pages/ERPlanBuilder";
 import ResultsViewer           from "@/pages/ResultsViewer";
-import ERxHub                  from "@/pages/ERx";
+import UnifiedPharmacologyHub  from "@/pages/UnifiedPharmacologyHub";
 import ScoreHub                from "@/pages/ScoreHub";
-import WeightDoseHub           from "@/pages/WeightDoseHub";
 import ResusHub                from "@/pages/ResusHub";
 import StrokeHub               from "@/pages/StrokeHub";
 import ToxicologyHub           from "@/pages/ToxicologyHub";
@@ -575,7 +574,7 @@ export default function NewPatientInput() {
 
       case "erx": return (
         <div style={{ margin:"-18px -28px", height:"calc(100% + 36px)", overflow:"hidden" }}>
-          <ERxHub embedded navigate={navigate} patientAllergiesFromParent={allergies} patientWeightFromParent={vitals.weight||""} />
+          <UnifiedPharmacologyHub />
         </div>
       );
 
@@ -622,16 +621,7 @@ export default function NewPatientInput() {
       );
 
       case "dosing": return (
-        <WeightDoseHub
-          embedded={true}
-          demo={demo}
-          vitals={vitals}
-          medications={medications}
-          allergies={allergies}
-          cc={cc}
-          showToast={_showToast}
-          onAdvance={() => selectSection("mdm")}
-        />
+        <UnifiedPharmacologyHub />
       );
 
       case "resus": return (

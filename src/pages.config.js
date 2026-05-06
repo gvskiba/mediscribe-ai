@@ -3,7 +3,6 @@ import AppSettings from './pages/AppSettings';
 import AutoCoder from './pages/AutoCoder';
 import EDProcedureNotes from './pages/EDProcedureNotes';
 import ERPlanBuilder from './pages/ERPlanBuilder';
-import ERx from './pages/ERx';
 import Home from './pages/Home';
 import KnowledgeBaseV2 from './pages/KnowledgeBaseV2';
 import MedicalNews from './pages/MedicalNews';
@@ -19,7 +18,6 @@ export const PAGES = {
     "Calculators": Calculators,
     "EDProcedureNotes": EDProcedureNotes,
     "ERPlanBuilder": ERPlanBuilder,
-    "ERx": ERx,
     "Home": Home,
     "KnowledgeBaseV2": KnowledgeBaseV2,
     "MedicalNews": MedicalNews,

@@ -10,7 +10,6 @@ import { PatientProvider } from '@/lib/PatientContext';
 import { PatientDataProvider } from '@/lib/PatientDataContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import PatientSidebar from '@/components/patient/PatientSidebar';
-import AWSPharmacySection from '@/pages/AWSPharmacySection';
 import PatientChart from '@/pages/PatientChart';
 import ProviderStudio from '@/pages/ProviderStudio';
 import NoteHistory from '@/pages/NoteHistory';
@@ -35,7 +34,6 @@ import PedsHub from '@/pages/PedsHub';
 import ProviderBilling from '@/pages/ProviderBilling';
 import HPI from '@/pages/HPI';
 import HPITemplateAdmin from '@/pages/HPITemplateAdmin';
-import ERx from '@/pages/ERx';
 import TriageHub from '@/pages/TriageHub';
 import SurgicalAirwayHub from '@/pages/SurgicalAirwayHub';
 import RapidAssessmentHub from '@/pages/RapidAssessmentHub';
@@ -54,7 +52,6 @@ import DischargeHub from '@/pages/DischargeHub';
 import BillingSubmissions from '@/pages/BillingSubmissions';
 import WoundHub from '@/pages/WoundHub';
 import DispositionBoard from '@/pages/DispositionBoard';
-import SmartDosingHub from '@/pages/SmartDosingHub';
 import DDxEngine from '@/pages/DDxEngine';
 import CriticalResultsInbox from '@/pages/CriticalResultsInbox';
 import ClinicalNarrativeEngine from '@/pages/ClinicalNarrativeEngine';
@@ -73,7 +70,6 @@ import NotryaNewTechnology from '@/pages/NotryaNewTechnology';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 import DischargeDisposition from '@/pages/DischargeDisposition';
 import ScoreHub from '@/pages/ScoreHub';
-import WeightDoseHub from '@/pages/WeightDoseHub';
 import EDProcedureNotesStandalone from '@/pages/EDProcedureNotes';
 import PainHub from '@/pages/PainHub';
 import SyncopeHub from '@/pages/SyncopeHub';
@@ -175,11 +171,7 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
-      <Route path="/awspharmacysection" element={
-        <LayoutWrapper currentPageName="AWSPharmacySection">
-          <AWSPharmacySection />
-        </LayoutWrapper>
-      } />
+
       <Route path="/patientchart" element={<PatientChart />} />
       <Route path="/ProviderStudio" element={<LayoutWrapper currentPageName="ProviderStudio"><ProviderStudio /></LayoutWrapper>} />
       <Route path="/notedetail" element={<LayoutWrapper currentPageName="ProviderStudio"><ProviderStudio /></LayoutWrapper>} />
@@ -206,7 +198,7 @@ const AuthenticatedApp = () => {
       <Route path="/provider-billing" element={<LayoutWrapper currentPageName="ProviderBilling"><ProviderBilling /></LayoutWrapper>} />
       <Route path="/hpi" element={<LayoutWrapper currentPageName="HPI"><HPI /></LayoutWrapper>} />
       <Route path="/hpi-admin" element={<LayoutWrapper currentPageName="HPITemplateAdmin"><HPITemplateAdmin /></LayoutWrapper>} />
-      <Route path="/erx" element={<LayoutWrapper currentPageName="ERx"><ERx /></LayoutWrapper>} />
+      <Route path="/erx" element={<UnifiedPharmacologyHub />} />
       <Route path="/triage-hub" element={<TriageHub />} />
       <Route path="/rapid-assessment-hub" element={<RapidAssessmentHub />} />
       <Route path="/ecg-hub" element={<ECGHub />} />
@@ -226,7 +218,7 @@ const AuthenticatedApp = () => {
       <Route path="/wound-hub" element={<LayoutWrapper currentPageName="WoundHub"><WoundHub /></LayoutWrapper>} />
       <Route path="/EDTrackingBoard" element={<EDTrackingBoard />} />
       <Route path="/DispositionBoard" element={<DispositionBoard />} />
-      <Route path="/smart-dosing" element={<SmartDosingHub />} />
+      <Route path="/smart-dosing" element={<UnifiedPharmacologyHub />} />
       <Route path="/ddx-engine" element={<DDxEngine />} />
       <Route path="/critical-inbox" element={<CriticalResultsInbox />} />
       <Route path="/narrative-engine" element={<ClinicalNarrativeEngine />} />
@@ -239,7 +231,7 @@ const AuthenticatedApp = () => {
       <Route path="/ClinicalNoteV2" element={<ClinicalNoteV2 />} />
       <Route path="/new-technology" element={<NotryaNewTechnology />} />
       <Route path="/score-hub" element={<ScoreHub />} />
-      <Route path="/weight-dose" element={<WeightDoseHub />} />
+      <Route path="/weight-dose" element={<UnifiedPharmacologyHub />} />
       <Route path="/stroke-hub" element={<StrokeHub />} />
       <Route path="/StrokeHub" element={<StrokeHub />} />
       <Route path="/ed-procedure-notes" element={<EDProcedureNotesStandalone />} />
@@ -264,12 +256,13 @@ const AuthenticatedApp = () => {
       <Route path="/LabInterpreter" element={<LabHub />} />
       <Route path="/ScoreHub" element={<ScoreHub />} />
       <Route path="/POCUSHub" element={<POCUSHub />} />
-      <Route path="/WeightDoseHub" element={<WeightDoseHub />} />
+      <Route path="/WeightDoseHub" element={<UnifiedPharmacologyHub />} />
       <Route path="/ToxHub" element={<ToxicologyHub />} />
       <Route path="/PsychHub" element={<PsycheHub />} />
       <Route path="/TriageHub" element={<TriageHub />} />
       <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
       <Route path="/SmartDischargeHub" element={<DischargeHub />} />
+      <Route path="/SmartDosingHub" element={<UnifiedPharmacologyHub />} />
       <Route path="/SepsisHub" element={<SepsisHub />} />
       <Route path="/huddle-board" element={<HuddleBoard />} />
       <Route path="/order-generator" element={<OrderGeneratorHub />} />
@@ -277,7 +270,7 @@ const AuthenticatedApp = () => {
       <Route path="/derm-morphology" element={<DermMorphologyRef />} />
       <Route path="/AMSHub" element={<AMSHub />} />
       <Route path="/OrthoHub" element={<OrthoHub />} />
-      <Route path="/ERx" element={<LayoutWrapper currentPageName="ERx"><ERx /></LayoutWrapper>} />
+      <Route path="/ERx" element={<UnifiedPharmacologyHub />} />
       <Route path="/WoundCareHub" element={<WoundCareHub />} />
       <Route path="/AirwayHub" element={<AirwayHub />} />
       <Route path="/ShockHub" element={<ShockHub />} />

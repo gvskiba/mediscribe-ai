@@ -599,37 +599,8 @@ export default function NewPatientInput() {
         />
       );
 
-      case "labs": return (
-        <LabInterpreter
-          embedded={true}
-          demo={demo}
-          vitals={vitals}
-          cc={cc}
-          medications={medications}
-          pmhSelected={pmhSelected}
-        />
-      );
-
-      case "scores": return (
-        <ScoreHub
-          embedded={true}
-          demo={demo}
-          vitals={vitals}
-          pmhSelected={pmhSelected}
-          cc={cc}
-        />
-      );
-
       case "dosing": return (
         <UnifiedPharmacologyHub />
-      );
-
-      case "resus": return (
-        <ResusHub
-          embedded={true}
-          demo={demo}
-          vitals={vitals}
-        />
       );
 
       case "stroke": return (
@@ -927,7 +898,24 @@ export default function NewPatientInput() {
 
       {/* ── Main content ── */}
       <div className="npi-main-wrap">
-        <main className="npi-content">{renderContent()}</main>
+        <main className="npi-content">
+          {/* Always-mounted tabs (preserve local state across navigation) */}
+          <div style={{ display: currentTab === "labs" ? "flex" : "none", flexDirection:"column", height:"100%" }}>
+            <LabInterpreter
+              embedded={true}
+              demo={demo} vitals={vitals} cc={cc}
+              medications={medications} pmhSelected={pmhSelected}
+            />
+          </div>
+          <div style={{ display: currentTab === "scores" ? "flex" : "none", flexDirection:"column", height:"100%" }}>
+            <ScoreHub embedded={true} demo={demo} vitals={vitals} pmhSelected={pmhSelected} cc={cc} />
+          </div>
+          <div style={{ display: currentTab === "resus" ? "flex" : "none", flexDirection:"column", height:"100%" }}>
+            <ResusHub embedded={true} demo={demo} vitals={vitals} />
+          </div>
+          {/* All other tabs rendered normally (switch-based) */}
+          {currentTab !== "labs" && currentTab !== "scores" && currentTab !== "resus" && renderContent()}
+        </main>
       </div>
 
       {/* ── AI overlay ── */}

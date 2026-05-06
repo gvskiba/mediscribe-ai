@@ -30,6 +30,7 @@ export const PAGES = {
     "UnifiedPharmacologyHub": UnifiedPharmacologyHub,
     "FluidElectrolyteCalculator": FluidElectrolyteCalculator,
     "CriticalCareDripHub": CriticalCareDripHub,
+    "AntibioticStewardshipHub": AntibioticStewardshipHub,
 }
 
 export const pagesConfig = {

@@ -914,12 +914,25 @@ function InterpretTab({demo,vitals,cc,medications,pmhSelected}){
     if(enteredCount===0) return;
     setBusy(true);setError(null);setResult(null);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1600,system:"You are a senior emergency medicine physician interpreting lab results. Be specific, clinically precise, and focused on ED management decisions. Respond ONLY with valid JSON, no markdown fences.",messages:[{role:"user",content:buildLabPrompt(activePanel,values,patientCtx)}]})});
-      const data=await res.json();
-      if(data.error) throw new Error(data.error.message);
-      const raw=data.content?.find(b=>b.type==="text")?.text||"{}";
-      setResult(JSON.parse(raw.replace(/```json|```/g,"").trim()));
-    }catch(e){setError("Error: "+(e.message||"Check API connectivity"));}
+      const { base44 } = await import("@/api/base44Client");
+      const prompt = "You are a senior emergency medicine physician interpreting lab results. Be specific, clinically precise, and focused on ED management decisions. Respond ONLY with valid JSON, no markdown fences.\n\n" + buildLabPrompt(activePanel,values,patientCtx);
+      const raw = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema:{
+          type:"object",
+          properties:{
+            overall_pattern:{type:"string"},
+            critical_values:{type:"array",items:{type:"string"}},
+            abnormal_findings:{type:"array",items:{type:"object",properties:{finding:{type:"string"},significance:{type:"string"},severity:{type:"string"}}}},
+            differential:{type:"array",items:{type:"object",properties:{diagnosis:{type:"string"},probability:{type:"string"},supporting_labs:{type:"string"}}}},
+            immediate_actions:{type:"array",items:{type:"string"}},
+            watch_for:{type:"string"},
+            pearls:{type:"string"},
+          }
+        }
+      });
+      setResult(raw);
+    }catch(e){setError("Error: "+(e.message||"Interpretation failed"));}
     finally{setBusy(false);}
   },[enteredCount,activePanel,values,patientCtx]);
 

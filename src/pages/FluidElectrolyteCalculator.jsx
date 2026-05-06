@@ -196,7 +196,7 @@ function PotassiumCalc() {
               <div><div style={{fontSize:9,color:T.dim,marginBottom:2}}>Dose</div><div style={{fontSize:12,color:T.mut}}>{guidance.dose}</div></div>
             </div>
           </div>
-          {parseFloat(k)<3.0&&<div style={{...gl({padding:"9px 12px",background:T.oD,borderLeft:`3px solid ${T.orange}`}),fontSize:11,color:T.orange}}>⚠ Check and replace magnesium (Mg target >2.0 mEq/L) — hypomagnesemia causes refractory hypokalemia. Also check phosphate and calcium.</div>}
+          {parseFloat(k)<3.0&&<div style={{...gl({padding:"9px 12px",background:T.oD,borderLeft:`3px solid ${T.orange}`}),fontSize:11,color:T.orange}}>⚠ Check and replace magnesium (Mg target &gt;2.0 mEq/L) — hypomagnesemia causes refractory hypokalemia. Also check phosphate and calcium.</div>}
         </div>
       )}
       <div style={{fontSize:10,color:T.dim,marginTop:10,lineHeight:1.6}}>Rough estimate: each 0.1 mEq/L below 4.0 ≈ 100 mEq total body deficit (highly variable). Recheck K+ after every 40 mEq replacement. Peripheral IV max: 10 mEq/hr.</div>

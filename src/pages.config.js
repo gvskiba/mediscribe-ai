@@ -1,6 +1,7 @@
 import AddendumManager from './pages/AddendumManager';
 import UnifiedPharmacologyHub from './pages/UnifiedPharmacologyHub';
 import FluidElectrolyteCalculator from './pages/FluidElectrolyteCalculator';
+import AntibioticStewardshipHub from './pages/AntibioticStewardshipHub';
 import CriticalCareDripHub from './pages/CriticalCareDripHub';
 import AppSettings from './pages/AppSettings';
 import AutoCoder from './pages/AutoCoder';

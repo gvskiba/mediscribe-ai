@@ -1,7 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
-
-const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
+import { InvokeLLM } from "@/integrations/Core";
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (() => {
@@ -48,6 +46,9 @@ const tg = (c,x={}) => ({borderRadius:6,padding:"3px 9px",fontSize:11,fontWeight
 const Sp = () => <span style={{display:"inline-block",width:13,height:13,border:"2px solid rgba(0,180,216,.2)",borderTopColor:T.teal,borderRadius:"50%",animation:"uSpin .7s linear infinite"}} />;
 
 // ── Unified Drug Database ─────────────────────────────────────────────────────
+// tiers:[label, dose, "ok"|"caution"|"avoid"]
+// wt:{ind,route,dpkg,lo,hi,max,conc,unit:"mg"|"mcg",note} — null if N/A
+// drip:{lo,hi,unit,concs:[[label,concVal]],note} — null if not a drip
 const DB = [
   {id:"vanc",name:"Vancomycin",gen:"vancomycin",cat:"antibiotic",controlled:false,
    tiers:[["eGFR >60","15-20 mg/kg IV q8-12h","ok"],["eGFR 30-60","15-20 mg/kg q24h","caution"],
@@ -264,6 +265,7 @@ const getActiveTier = (drug,crcl) => {
 };
 const findDB = n => { const q=n.toLowerCase(); return DB.find(d=>d.name.toLowerCase().includes(q)||d.gen.toLowerCase().includes(q))||null; };
 const FLAG = {ok:{c:T.green,l:"Normal Dose"},caution:{c:T.gold,l:"Adjust Dose"},avoid:{c:T.coral,l:"AVOID"}};
+const ISMP = new Set(["vanc","morph","fent","midaz","succ","roc","enox","amio","prop","ketam","epi","norep"]);
 
 // ── APIs ──────────────────────────────────────────────────────────────────────
 const searchFDA = async q => {
@@ -430,12 +432,14 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
 
       {sel&&(
         <div className="u-in">
+          {/* Header */}
           <div style={{...gl({padding:"16px 20px",marginBottom:12}),display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10}}>
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
                 <h2 style={{margin:0,fontFamily:"Playfair Display,serif",fontSize:20,color:T.teal,lineHeight:1.1}}>{fdaName(sel)}</h2>
                 {flagCfg&&<span style={{...tg(flagCfg.c),fontSize:10}}>{flagCfg.l}</span>}
                 {dbDrug?.controlled&&<span style={{...tg(T.coral),fontSize:10}}>Sch {dbDrug.schedule}</span>}
+                {ISMP.has(dbDrug?.id)&&<span style={{borderRadius:6,padding:"3px 9px",fontSize:10,fontWeight:700,background:"rgba(255,96,96,0.22)",border:`1px solid ${T.coral}55`,color:T.coral}}>⚠ ISMP High-Alert</span>}
               </div>
               {fdaGen(sel)&&<div style={{fontSize:12,color:T.mut,fontStyle:"italic",marginBottom:8}}>{fdaGen(sel)}</div>}
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
@@ -450,6 +454,7 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
             </div>
           </div>
 
+          {/* Patient-specific renal dose */}
           {dbDrug&&activeTier&&(
             <div style={{...gl({padding:"12px 16px",marginBottom:12,borderLeft:`3px solid ${flagCfg.c}`})}}>
               <div style={{fontSize:9,color:flagCfg.c,fontFamily:"JetBrains Mono,monospace",letterSpacing:1.5,fontWeight:700,textTransform:"uppercase",marginBottom:6}}>
@@ -471,6 +476,7 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
             </div>
           )}
 
+          {/* Weight-based dose */}
           {dbDrug?.wt&&pt.wt&&(
             <div style={{...gl({padding:"12px 16px",marginBottom:12,borderLeft:`3px solid ${T.teal}`})}}>
               <div style={{fontSize:9,color:T.teal,fontFamily:"JetBrains Mono,monospace",letterSpacing:1.5,fontWeight:700,textTransform:"uppercase",marginBottom:6}}>Weight-Based Dose ({pt.wt} kg)</div>
@@ -488,6 +494,7 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
             </div>
           )}
 
+          {/* AI Summary */}
           {!aiSum?(
             <button onClick={handleAI} disabled={aiLoad} style={{...ab(T.teal,{marginBottom:12,display:"flex",alignItems:"center",gap:8,opacity:aiLoad?.6:1})}}>
               {aiLoad?<><Sp/> Generating ED Summary...</>:"⚡ Generate AI ED Summary"}
@@ -524,6 +531,7 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
             )
           )}
 
+          {/* Ped Calc */}
           <div style={{...gl({marginBottom:12,overflow:"hidden"}),border:`1px solid ${T.bdr}`}}>
             <button onClick={()=>setExp(p=>({...p,ped:!p.ped}))} style={{width:"100%",background:"none",border:"none",padding:"11px 16px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:12,fontWeight:700,color:T.gold}}>👶 Pediatric Dose Calculator</span>
@@ -560,6 +568,7 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
             )}
           </div>
 
+          {/* FDA Label Sections */}
           {LABEL_SECS.map(({k,l,c})=>{
             const txt=sel[k]?.[0]; if(!txt) return null;
             const long=txt.length>320;
@@ -591,13 +600,16 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
 
 // ── Tab 2: Weight & Drip ──────────────────────────────────────────────────────
 function WeightDripTab({pt}) {
-  const [mode,setMode]=useState("wt");
+  const [mode,setMode]=useState("wt"); // "wt" | "drip" | "rsi" | "cp"
   const [selDrug,setSelDrug]=useState(null);
   const [localWt,setLocalWt]=useState("");
   const [dripDose,setDripDose]=useState("");
   const [dripConc,setDripConc]=useState(0);
   const [rsiInd,setRsiInd]=useState("etom");
   const [rsiPar,setRsiPar]=useState("succ");
+  const [cpBili,setCpBili]=useState(""); const [cpAlb,setCpAlb]=useState("");
+  const [cpPT,setCpPT]=useState(""); const [cpAsc,setCpAsc]=useState("none");
+  const [cpEnc,setCpEnc]=useState("none");
 
   const wt=parseFloat(pt.wt||localWt)||0;
   const wtDrugs=DB.filter(d=>d.wt!==null);
@@ -660,12 +672,14 @@ function WeightDripTab({pt}) {
         </div>
       )}
 
+      {/* Mode tabs */}
       <div style={{display:"flex",gap:5,marginBottom:18,background:T.card,borderRadius:9,padding:4,border:`1px solid ${T.bdr}`,width:"fit-content"}}>
-        {[["wt","⚖ Weight Dosing"],["drip","💧 Drip Calculator"],["rsi","🫁 RSI Kit"]].map(([m,l])=>(
+        {[["wt","⚖ Weight Dosing"],["drip","💧 Drip Calculator"],["rsi","🫁 RSI Kit"],["cp","🫀 Child-Pugh"]].map(([m,l])=>(
           <button key={m} onClick={()=>{setMode(m);setSelDrug(null);}} style={{padding:"6px 16px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"DM Sans,sans-serif",fontSize:12,fontWeight:700,background:mode===m?T.teal:"transparent",color:mode===m?"#060e1a":T.mut,transition:"all .16s"}}>{l}</button>
         ))}
       </div>
 
+      {/* Weight Dosing */}
       {mode==="wt"&&(
         <div style={{display:"grid",gridTemplateColumns:"200px 1fr",gap:14,minHeight:300}}>
           <div style={{...gl({padding:"8px",overflow:"auto",maxHeight:500})}}>
@@ -677,8 +691,9 @@ function WeightDripTab({pt}) {
                 <div key={cat} style={{marginBottom:8}}>
                   <div style={{fontSize:8,color:T.dim,fontFamily:"JetBrains Mono,monospace",letterSpacing:1.5,textTransform:"uppercase",padding:"2px 6px",marginBottom:3}}>{catLabel}</div>
                   {drugs.map(d=>(
-                    <button key={d.id} onClick={()=>setSelDrug(d)} style={{display:"block",width:"100%",textAlign:"left",padding:"7px 10px",borderRadius:7,border:`1px solid ${selDrug?.id===d.id?T.teal+"55":T.bdr}`,background:selDrug?.id===d.id?T.tD:T.card,color:T.txt,fontSize:12,fontFamily:"DM Sans,sans-serif",cursor:"pointer",marginBottom:3}}>
-                      {d.name}
+                    <button key={d.id} onClick={()=>setSelDrug(d)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",textAlign:"left",padding:"7px 10px",borderRadius:7,border:`1px solid ${selDrug?.id===d.id?T.teal+"55":T.bdr}`,background:selDrug?.id===d.id?T.tD:T.card,color:T.txt,fontSize:12,fontFamily:"DM Sans,sans-serif",cursor:"pointer",marginBottom:3}}>
+                      <span>{d.name}</span>
+                      {ISMP.has(d.id)&&<span style={{fontSize:8,color:T.coral,fontWeight:700,flexShrink:0}}>⚠</span>}
                     </button>
                   ))}
                 </div>
@@ -712,6 +727,7 @@ function WeightDripTab({pt}) {
         </div>
       )}
 
+      {/* Drip Calculator */}
       {mode==="drip"&&(
         <div style={{maxWidth:500}}>
           <div style={{marginBottom:14}}>
@@ -755,6 +771,7 @@ function WeightDripTab({pt}) {
         </div>
       )}
 
+      {/* RSI Kit */}
       {mode==="rsi"&&(
         <div style={{maxWidth:600}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
@@ -803,6 +820,84 @@ function WeightDripTab({pt}) {
           {!wt&&<div style={{fontSize:11,color:T.gold,marginTop:10}}>⚠ Enter patient weight to calculate doses</div>}
         </div>
       )}
+
+      {/* Child-Pugh Hepatic Scoring */}
+      {mode==="cp"&&(()=>{
+        const cpScore=()=>{
+          if(!cpBili||!cpAlb||!cpPT) return null;
+          let s=0;
+          s+=parseFloat(cpBili)<2?1:parseFloat(cpBili)<=3?2:3;
+          s+=parseFloat(cpAlb)>3.5?1:parseFloat(cpAlb)>=2.8?2:3;
+          s+=parseFloat(cpPT)<4?1:parseFloat(cpPT)<=6?2:3;
+          s+=cpAsc==="none"?1:cpAsc==="mild"?2:3;
+          s+=cpEnc==="none"?1:cpEnc==="grade12"?2:3;
+          return {score:s,cls:s<=6?"A":s<=9?"B":"C"};
+        };
+        const cp=cpScore();
+        const clsColor=cp?{A:T.green,B:T.gold,C:T.coral}[cp.cls]:T.teal;
+        const clsNote=cp?{A:"Mild hepatic impairment — standard dosing for most agents",B:"Moderate — reduce dose 25-50% for hepatically metabolized drugs (morphine, midazolam, metronidazole, azithromycin)",C:"Severe — avoid valproate, azithromycin, metronidazole; major reductions required; prefer renally cleared agents"}[cp.cls]:"";
+        return(
+          <div style={{maxWidth:520}}>
+            <p style={{fontSize:12,color:T.mut,margin:"0 0 16px"}}>Calculate hepatic function to guide dosing of hepatically metabolized drugs.</p>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
+              {[["Bilirubin","cpBili",cpBili,setCpBili,"mg/dL"],["Albumin","cpAlb",cpAlb,setCpAlb,"g/dL"],["PT Excess","cpPT",cpPT,setCpPT,"sec"]].map(([l,k,v,set,u])=>(
+                <div key={k}>
+                  <div style={{fontSize:8,color:T.dim,fontFamily:"JetBrains Mono,monospace",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{l}</div>
+                  <div style={{position:"relative"}}>
+                    <input type="number" value={v} onChange={e=>set(e.target.value)} placeholder="—"
+                      style={{...ib({paddingRight:30})}} />
+                    <span style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",fontSize:9,color:T.dim}}>{u}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+              {[["Ascites",cpAsc,setCpAsc,[["none","None"],["mild","Mild"],["severe","Tense"]]],
+                ["Encephalopathy",cpEnc,setCpEnc,[["none","None"],["grade12","Grade 1-2"],["grade34","Grade 3-4"]]]].map(([l,v,set,opts])=>(
+                <div key={l}>
+                  <div style={{fontSize:8,color:T.dim,fontFamily:"JetBrains Mono,monospace",letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>{l}</div>
+                  <div style={{display:"flex",gap:4}}>
+                    {opts.map(([k,ol])=>(
+                      <button key={k} onClick={()=>set(k)} style={{flex:1,fontSize:10,fontWeight:600,padding:"6px 4px",borderRadius:7,cursor:"pointer",border:`1px solid ${v===k?T.orange+"55":T.bdr}`,background:v===k?T.oD:"transparent",color:v===k?T.orange:T.mut,fontFamily:"DM Sans,sans-serif"}}>{ol}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {cp?(
+              <div className="u-in" style={{...gl({padding:"16px 18px",border:`1px solid ${clsColor}40`,borderLeft:`4px solid ${clsColor}`})}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                  <div>
+                    <div style={{fontSize:9,color:clsColor,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:3}}>Child-Pugh Class</div>
+                    <div style={{fontSize:12,color:T.mut,lineHeight:1.55,maxWidth:320}}>{clsNote}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontFamily:"JetBrains Mono,monospace",fontWeight:700,fontSize:44,color:clsColor,lineHeight:1}}>{cp.cls}</div>
+                    <div style={{fontSize:12,color:T.dim}}>Score: {cp.score}/15</div>
+                  </div>
+                </div>
+                <div style={{borderTop:`1px solid ${T.bdr}`,paddingTop:10}}>
+                  <div style={{fontSize:9,color:T.dim,fontFamily:"JetBrains Mono,monospace",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Scoring Breakdown</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:5}}>
+                    {[["Bili",cpBili<2?1:cpBili<=3?2:3],["Alb",cpAlb>3.5?1:cpAlb>=2.8?2:3],["PT",cpPT<4?1:cpPT<=6?2:3],
+                      ["Ascites",cpAsc==="none"?1:cpAsc==="mild"?2:3],["Enceph",cpEnc==="none"?1:cpEnc==="grade12"?2:3]].map(([l,pts])=>(
+                      <div key={l} style={{background:T.card,borderRadius:7,padding:"6px 4px",textAlign:"center",border:`1px solid ${T.bdr}`}}>
+                        <div style={{fontSize:8,color:T.dim,marginBottom:2}}>{l}</div>
+                        <div style={{fontFamily:"JetBrains Mono,monospace",fontSize:16,fontWeight:700,color:pts===1?T.green:pts===2?T.gold:T.coral}}>{pts}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ):(
+              <div style={{textAlign:"center",padding:"30px 20px",color:T.dim}}>
+                <div style={{fontSize:28,marginBottom:8}}>🫀</div>
+                <div style={{fontSize:13,color:T.mut}}>Enter bilirubin, albumin, and PT to calculate</div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -929,12 +1024,20 @@ const PHARMACIES=[
   {id:"amz",name:"Amazon Pharmacy",chain:"AMAZON",addr:"Delivery to patient",phone:"1-855-745-5725",epcs:true,open24h:true,hours:"24/7 delivery"},
   {id:"wal",name:"Walmart Pharmacy #4421",chain:"WAL",addr:"2200 Commerce Blvd",phone:"(217) 555-4421",epcs:false,open24h:false,hours:"Open until 9pm"},
 ];
-
-function RxBuilderTab({pt}) {
+function RxBuilderTab({pt,crcl}) {
   const [rx,setRx]=useState({drug:"",dose:"",route:"PO",freq:"",qty:"",refills:"0",indication:"",ptName:"",dob:"",allergy:""});
   const [pharmacy,setPharmacy]=useState(null);
   const [copied,setCopied]=useState(false);
   const f=(k,v)=>setRx(p=>({...p,[k]:v}));
+
+  const renalSig=useMemo(()=>{
+    if(!rx.drug||!crcl) return null;
+    const d=findDB(rx.drug);
+    if(!d) return null;
+    const tier=getActiveTier(d,crcl);
+    if(!tier||tier[2]==="ok") return null;
+    return {drug:d.name,dose:tier[1],flag:tier[2],label:tier[0]};
+  },[rx.drug,crcl]);
 
   const preview=rx.drug?[
     `Patient: ${rx.ptName||"[Name]"} | DOB: ${rx.dob||"[DOB]"}`,
@@ -980,6 +1083,15 @@ function RxBuilderTab({pt}) {
           <div style={{marginBottom:8}}>
             <div style={{fontSize:8,color:T.dim,fontFamily:"JetBrains Mono,monospace",letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>Sig (Instructions)</div>
             <input value={rx.freq} onChange={e=>f("freq",e.target.value)} placeholder="e.g. Take 1 tablet twice daily with food" style={{...ib()}} />
+            {renalSig&&(
+              <div style={{marginTop:6,background:renalSig.flag==="avoid"?T.cD:T.gD,borderRadius:7,padding:"7px 11px",display:"flex",justifyContent:"space-between",alignItems:"center",border:`1px solid ${renalSig.flag==="avoid"?T.coral:T.gold}30`}}>
+                <div>
+                  <span style={{fontSize:9,fontWeight:700,color:renalSig.flag==="avoid"?T.coral:T.gold,textTransform:"uppercase",letterSpacing:1}}>⚠ Renal Adjustment ({renalSig.label}): </span>
+                  <span style={{fontSize:11,color:T.txt}}>{renalSig.dose}</span>
+                </div>
+                <button onClick={()=>f("freq",renalSig.dose)} style={{...ab(renalSig.flag==="avoid"?T.coral:T.gold,{padding:"3px 10px",fontSize:10})}}>Apply</button>
+              </div>
+            )}
           </div>
           <div>
             <div style={{fontSize:8,color:T.dim,fontFamily:"JetBrains Mono,monospace",letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>Indication</div>
@@ -1122,6 +1234,8 @@ export default function UnifiedPharmacologyHub() {
 
   return(
     <div style={{background:T.bg,minHeight:"100vh",padding:"20px 18px 60px",fontFamily:"DM Sans,sans-serif",color:T.txt}}>
+
+      {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:22}}>
         <div style={{width:44,height:44,borderRadius:11,background:T.tD,border:`1px solid ${T.tB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>⚗</div>
         <div>
@@ -1130,8 +1244,10 @@ export default function UnifiedPharmacologyHub() {
         </div>
       </div>
 
+      {/* Patient Banner */}
       <PatientBanner pt={pt} setPt={setPt} crcl={crcl} ibw={ibw}/>
 
+      {/* Tab navigation */}
       <div style={{display:"flex",gap:4,marginBottom:22,background:T.card,borderRadius:10,padding:4,border:`1px solid ${T.bdr}`,overflowX:"auto"}}>
         {TABS.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 16px",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"DM Sans,sans-serif",fontSize:13,fontWeight:700,whiteSpace:"nowrap",transition:"all .16s",background:tab===t.id?T.teal:"transparent",color:tab===t.id?"#060e1a":T.mut,flexShrink:0,position:"relative"}}>
@@ -1141,10 +1257,11 @@ export default function UnifiedPharmacologyHub() {
         ))}
       </div>
 
+      {/* Tab content */}
       {tab==="rx"  &&<RxLookupTab   pt={pt} crcl={crcl} onAddToIx={addToIx}/>}
       {tab==="wt"  &&<WeightDripTab pt={pt}/>}
       {tab==="ix"  &&<InteractionTab ixDrugs={ixDrugs} setIxDrugs={setIxDrugs}/>}
-      {tab==="build"&&<RxBuilderTab pt={pt}/>}
+      {tab==="build"&&<RxBuilderTab pt={pt} crcl={crcl}/>}
       {tab==="ai"  &&<AIPharmacistTab pt={pt} crcl={crcl} ibw={ibw}/>}
 
       <div style={{marginTop:40,textAlign:"center"}}>

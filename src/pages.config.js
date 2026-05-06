@@ -1,5 +1,6 @@
 import AddendumManager from './pages/AddendumManager';
 import UnifiedPharmacologyHub from './pages/UnifiedPharmacologyHub';
+import FluidElectrolyteCalculator from './pages/FluidElectrolyteCalculator';
 import AppSettings from './pages/AppSettings';
 import AutoCoder from './pages/AutoCoder';
 import EDProcedureNotes from './pages/EDProcedureNotes';
@@ -25,6 +26,7 @@ export const PAGES = {
     "MedicationReference": MedicationReference,
     "NewPatientInput": NewPatientInput,
     "UnifiedPharmacologyHub": UnifiedPharmacologyHub,
+    "FluidElectrolyteCalculator": FluidElectrolyteCalculator,
 }
 
 export const pagesConfig = {

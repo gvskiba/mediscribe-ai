@@ -90,6 +90,7 @@ import DermatologyHub from '@/pages/DermatologyHub';
 import DermMorphologyRef from '@/pages/DermMorphologyRef';
 import QuickNote from '@/pages/QuickNote';
 import UnifiedPharmacologyHub from '@/pages/UnifiedPharmacologyHub';
+import FluidElectrolyteCalculator from '@/pages/FluidElectrolyteCalculator';
 import AIFlagReview from '@/pages/AIFlagReview';
 import TemplateStudio from '@/pages/TemplateStudio';
 
@@ -284,6 +285,7 @@ const AuthenticatedApp = () => {
       <Route path="/UserPreferences" element={<UserPreferences />} />
       <Route path="/ShiftDashboard" element={<ShiftDashboard />} />
       <Route path="/ClinicalDecisionHub" element={<ClinicalDecisionHub />} />
+      <Route path="/FluidElectrolyteCalculator" element={<FluidElectrolyteCalculator />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

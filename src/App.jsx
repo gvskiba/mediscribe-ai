@@ -31,6 +31,7 @@ import SepsisAbxHub from '@/pages/SepsisAbxHub';
 import AirwayHub from '@/pages/AirwayHub';
 import ToxicologyHub from '@/pages/ToxicologyHub';
 import LabInterpreter from '@/pages/LabInterpreter';
+import LabHub from '@/pages/LabHub';
 import PedsHub from '@/pages/PedsHub';
 import ProviderBilling from '@/pages/ProviderBilling';
 import HPI from '@/pages/HPI';
@@ -200,6 +201,7 @@ const AuthenticatedApp = () => {
       <Route path="/airway-hub" element={<AirwayHub />} />
       <Route path="/tox-hub" element={<ToxicologyHub />} />
       <Route path="/lab-interpreter" element={<LabInterpreter />} />
+      <Route path="/LabHub" element={<LabHub />} />
       <Route path="/peds-hub" element={<PedsHub />} />
       <Route path="/provider-billing" element={<LayoutWrapper currentPageName="ProviderBilling"><ProviderBilling /></LayoutWrapper>} />
       <Route path="/hpi" element={<LayoutWrapper currentPageName="HPI"><HPI /></LayoutWrapper>} />

@@ -1,4 +1,5 @@
 import AddendumManager from './pages/AddendumManager';
+import UnifiedPharmacologyHub from './pages/UnifiedPharmacologyHub';
 import AppSettings from './pages/AppSettings';
 import AutoCoder from './pages/AutoCoder';
 import EDProcedureNotes from './pages/EDProcedureNotes';
@@ -23,6 +24,7 @@ export const PAGES = {
     "MedicalNews": MedicalNews,
     "MedicationReference": MedicationReference,
     "NewPatientInput": NewPatientInput,
+    "UnifiedPharmacologyHub": UnifiedPharmacologyHub,
 }
 
 export const pagesConfig = {

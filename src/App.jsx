@@ -94,6 +94,7 @@ import FluidElectrolyteCalculator from '@/pages/FluidElectrolyteCalculator';
 import AntibioticStewardshipHub from '@/pages/AntibioticStewardshipHub';
 import CriticalCareDripHub from '@/pages/CriticalCareDripHub';
 import DrugFormularyAdmin from '@/pages/DrugFormularyAdmin';
+import SepsisBundleTracker from '@/pages/SepsisBundleTracker';
 import AIFlagReview from '@/pages/AIFlagReview';
 import TemplateStudio from '@/pages/TemplateStudio';
 
@@ -292,6 +293,7 @@ const AuthenticatedApp = () => {
       <Route path="/AntibioticStewardshipHub" element={<AntibioticStewardshipHub />} />
       <Route path="/CriticalCareDripHub" element={<CriticalCareDripHub />} />
       <Route path="/DrugFormularyAdmin" element={<DrugFormularyAdmin />} />
+      <Route path="/SepsisBundleTracker" element={<SepsisBundleTracker />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

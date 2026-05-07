@@ -1,0 +1,90 @@
+{
+  "name": "SepsisBundle",
+  "type": "object",
+  "properties": {
+    "encounter_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "recognition_time": {
+      "type": "string"
+    },
+    "cultures_time": {
+      "type": "string"
+    },
+    "cultures_minutes": {
+      "type": "number"
+    },
+    "lactate_time": {
+      "type": "string"
+    },
+    "lactate_minutes": {
+      "type": "number"
+    },
+    "lactate_value": {
+      "type": "number"
+    },
+    "antibiotics_time": {
+      "type": "string"
+    },
+    "antibiotics_minutes": {
+      "type": "number"
+    },
+    "antibiotic_selected": {
+      "type": "string"
+    },
+    "fluids_time": {
+      "type": "string"
+    },
+    "fluids_minutes": {
+      "type": "number"
+    },
+    "fluids_volume_ml": {
+      "type": "number"
+    },
+    "map_on_arrival": {
+      "type": "number"
+    },
+    "vasopressor_required": {
+      "type": "boolean",
+      "default": false
+    },
+    "vasopressor_agent": {
+      "type": "string"
+    },
+    "vasopressor_time": {
+      "type": "string"
+    },
+    "lactate_repeat_time": {
+      "type": "string"
+    },
+    "septic_shock": {
+      "type": "boolean",
+      "default": false
+    },
+    "lactate_criteria": {
+      "type": "boolean",
+      "default": false
+    },
+    "hypotension_criteria": {
+      "type": "boolean",
+      "default": false
+    },
+    "sep1_compliant": {
+      "type": "boolean",
+      "default": false
+    },
+    "disposition": {
+      "type": "string"
+    },
+    "provider_name": {
+      "type": "string"
+    },
+    "compliance_notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "encounter_date"
+  ]
+}

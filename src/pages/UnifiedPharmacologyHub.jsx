@@ -1551,8 +1551,8 @@ export default function UnifiedPharmacologyHub() {
   const [dbLoaded,setDbLoaded]=useState(false);
 
   useEffect(()=>{
-    DrugDosing.filter({},{limit:500}).then(records=>{
-      setEntityDB(records.map(normalizeEntityDrug));
+    DrugDosing.list(null, 500).then(records=>{
+      setEntityDB((records||[]).map(normalizeEntityDrug));
       setDbLoaded(true);
     }).catch(()=>setDbLoaded(true));
   },[]);

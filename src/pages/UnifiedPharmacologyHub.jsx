@@ -263,7 +263,9 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
   const [q,setQ]=useState(""); const [res,setRes]=useState([]); const [busy,setBusy]=useState(false);
   const [sel,setSel]=useState(null); const [dbDrug,setDbDrug]=useState(null);
   const [mono,setMono]=useState(null); const [monoLoad,setMonoLoad]=useState(false);
-  const [monoOpen,setMonoOpen]=useState(true); const [activeInd,setActiveInd]=useState(0);
+  const [monoOpen,setMonoOpen]=useState(false); const [activeInd,setActiveInd]=useState(0);
+  const [snap,setSnap]=useState(null); const [snapLoad,setSnapLoad]=useState(false);
+  const [snapCopied,setSnapCopied]=useState(false);
   const [pedWt,setPedWt]=useState(""); const [pedRes,setPedRes]=useState(null); const [pedLoad,setPedLoad]=useState(false);
   const [exp,setExp]=useState({}); const [ixToast,setIxToast]=useState(false);
   const [extracting,setExtracting]=useState(false);
@@ -277,11 +279,12 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
   },[]);
 
   const pick=async d=>{
-    setSel(d);setMono(null);setPedRes(null);setPedWt("");setExp({});setRes([]);
-    setQ(fdaName(d));setActiveInd(0);setMonoOpen(true);
+    setSel(d);setMono(null);setSnap(null);setPedRes(null);setPedWt("");setExp({});setRes([]);
+    setQ(fdaName(d));setActiveInd(0);setMonoOpen(false);setSnapCopied(false);
     const found=findDB(fdaGen(d)||fdaName(d),entityDB);
     setDbDrug(found);
-    // Auto-fire monograph immediately
+    // Fire snapshot and full monograph in parallel
+    triggerSnapshot(d, found);
     triggerMonograph(d, found);
     if(!found){
       setExtracting(true);
@@ -289,6 +292,43 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
       if(extracted){setDbDrug(extracted);onNewDrug(extracted);}
       setExtracting(false);
     }
+  };
+
+  const triggerSnapshot=async(fdaDrug, dbEntry)=>{
+    setSnapLoad(true);
+    try {
+      const name=fdaName(fdaDrug); const gen=fdaGen(fdaDrug);
+      const context=[
+        `Drug: ${name} (${gen})`,
+        fdaDrug.indications_and_usage?.[0]?`FDA Indications: ${trunc(fdaDrug.indications_and_usage[0],400)}`:"",
+        fdaDrug.dosage_and_administration?.[0]?`FDA Dosing: ${trunc(fdaDrug.dosage_and_administration[0],400)}`:"",
+        fdaDrug.warnings?.[0]?`Warnings: ${trunc(fdaDrug.warnings[0],250)}`:"",
+        fdaDrug.boxed_warning?.[0]?`BOXED WARNING: ${trunc(fdaDrug.boxed_warning[0],200)}`:"",
+        dbEntry?.peds?`Peds dose: ${dbEntry.peds}`:"",
+        dbEntry?.monitoring?`Monitoring: ${dbEntry.monitoring}`:"",
+      ].filter(Boolean).join("\n");
+
+      const r=await InvokeLLM({
+        prompt:`You are a senior emergency medicine pharmacist. Generate a concise ED bedside snapshot for ${name} (${gen}). Be direct, specific, and clinically actionable. ED context only — skip outpatient or chronic disease details unless critical to ED use.\n\n${context}`,
+        response_json_schema:{
+          type:"object",
+          properties:{
+            primary_ed_use:   {type:"string"},
+            adult_dose:       {type:"string"},
+            peds_dose:        {type:"string"},
+            route:            {type:"string"},
+            onset:            {type:"string"},
+            critical_safety:  {type:"string"},
+            duration_table:   {type:"array", items:{type:"object", properties:{indication:{type:"string"},duration:{type:"string"}}, required:["indication","duration"]}},
+            top_interactions: {type:"array", maxItems:2, items:{type:"object", properties:{drug:{type:"string"},severity:{type:"string",enum:["critical","major","moderate"]},effect:{type:"string"}}, required:["drug","severity","effect"]}},
+            ehr_line:         {type:"string"},
+          },
+          required:["primary_ed_use","adult_dose","peds_dose","route","critical_safety","ehr_line"],
+        },
+      });
+      setSnap(r);
+    } catch { setSnap({_err:true}); }
+    setSnapLoad(false);
   };
 
   const triggerMonograph=async(fdaDrug, dbEntry)=>{
@@ -498,6 +538,123 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
               <div style={{fontSize:11,color:T.mut,marginTop:8}}>{dbDrug.wt.note}</div>
             </div>
           )}
+
+          {/* ── ED Snapshot ────────────────────────────────────────────────── */}
+          <div style={{...gl({marginBottom:12,overflow:"hidden",border:`2px solid ${snapLoad?"rgba(0,180,216,.4)":snap&&!snap._err?T.teal+"55":T.bdr}`,background:snap&&!snap._err?"rgba(0,180,216,.04)":T.card})}}>
+            {/* Snapshot header */}
+            <div style={{padding:"11px 16px",display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:14}}>⚡</span>
+              <span style={{fontSize:13,fontWeight:700,color:T.teal}}>ED Snapshot</span>
+              {snapLoad&&(
+                <div style={{display:"flex",alignItems:"center",gap:7}}>
+                  <Sp/>
+                  <span className="u-pulse" style={{fontSize:11,color:T.teal}}>Generating bedside summary...</span>
+                </div>
+              )}
+              {snap&&!snap._err&&!snapLoad&&<span style={{...tg(T.green),fontSize:9}}>Ready</span>}
+              {snap?._err&&<span style={{...tg(T.coral),fontSize:9}}>Failed</span>}
+            </div>
+
+            {snap&&!snap._err&&!snapLoad&&(
+              <div className="u-in" style={{borderTop:`1px solid ${T.bdr}`,padding:"14px 18px"}}>
+
+                {/* Primary use — full-width top */}
+                <div style={{fontSize:13,fontWeight:700,color:T.txt,marginBottom:14,lineHeight:1.5,padding:"10px 14px",borderRadius:9,background:T.tD,border:`1px solid ${T.tB}`}}>
+                  {snap.primary_ed_use}
+                </div>
+
+                {/* Dose cards — adult | peds | route | onset */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:12}}>
+                  {[
+                    ["Adult Dose", snap.adult_dose, T.teal],
+                    ["Peds Dose",  snap.peds_dose,  T.gold],
+                    ["Route",      snap.route,      T.mut ],
+                    ["Onset",      snap.onset||"—", T.dim ],
+                  ].map(([l,v,c])=>(
+                    <div key={l} style={{background:T.card,borderRadius:9,padding:"10px 12px",border:`1px solid ${T.bdr}`}}>
+                      <div style={{fontSize:8,color:T.dim,fontFamily:"JetBrains Mono,monospace",letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>{l}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:c,fontFamily:"JetBrains Mono,monospace",lineHeight:1.4}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Critical safety — always red, always visible */}
+                {snap.critical_safety&&(
+                  <div style={{background:T.cD,borderRadius:9,padding:"10px 14px",marginBottom:12,border:`1px solid ${T.coral}40`,display:"flex",gap:10,alignItems:"flex-start"}}>
+                    <span style={{fontSize:16,flexShrink:0}}>⚠</span>
+                    <div>
+                      <div style={{fontSize:9,color:T.coral,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Critical Safety</div>
+                      <div style={{fontSize:13,color:T.txt,fontWeight:600,lineHeight:1.5}}>{snap.critical_safety}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Duration table + top interactions — side by side */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                  {/* Duration */}
+                  {snap.duration_table?.length>0&&(
+                    <div style={{...gl({padding:"11px 14px"})}}>
+                      <div style={{fontSize:9,color:T.purple,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Duration by Indication</div>
+                      {snap.duration_table.map((row,i)=>(
+                        <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",padding:"4px 0",borderBottom:i<snap.duration_table.length-1?`1px solid ${T.bdr}`:"none",gap:8}}>
+                          <span style={{fontSize:11,color:T.mut,flex:1,lineHeight:1.4}}>{row.indication}</span>
+                          <span style={{fontFamily:"JetBrains Mono,monospace",fontSize:11,fontWeight:700,color:T.purple,flexShrink:0}}>{row.duration}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Top interactions */}
+                  {snap.top_interactions?.length>0&&(
+                    <div style={{...gl({padding:"11px 14px"})}}>
+                      <div style={{fontSize:9,color:T.gold,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Key Interactions</div>
+                      {snap.top_interactions.map((ix,i)=>{
+                        const ixc=ix.severity==="critical"?T.coral:ix.severity==="major"?T.gold:T.mut;
+                        return(
+                          <div key={i} style={{padding:"5px 0",borderBottom:i<snap.top_interactions.length-1?`1px solid ${T.bdr}`:"none"}}>
+                            <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:2}}>
+                              <span style={{...tg(ixc),fontSize:9}}>{ix.severity.toUpperCase()}</span>
+                              <span style={{fontSize:12,fontWeight:700,color:T.txt}}>{ix.drug}</span>
+                            </div>
+                            <div style={{fontSize:11,color:T.mut,lineHeight:1.4}}>{ix.effect}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Copy for EHR button */}
+                {snap.ehr_line&&(
+                  <div style={{display:"flex",gap:10,alignItems:"center",padding:"10px 14px",borderRadius:9,background:"rgba(0,0,0,.2)",border:`1px solid ${T.bdr}`,flexWrap:"wrap"}}>
+                    <span style={{fontSize:11,color:T.mut,flex:1,fontFamily:"JetBrains Mono,monospace",lineHeight:1.5}}>{snap.ehr_line}</span>
+                    <button
+                      onClick={()=>{
+                        navigator.clipboard?.writeText(snap.ehr_line).then(()=>{
+                          setSnapCopied(true);
+                          setTimeout(()=>setSnapCopied(false),2000);
+                        });
+                      }}
+                      style={{...ab(snapCopied?T.green:T.teal,{padding:"5px 14px",fontSize:11,flexShrink:0})}}>
+                      {snapCopied?"✓ Copied":"📋 Copy for EHR"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Link to full monograph */}
+                <button onClick={()=>setMonoOpen(p=>!p)} style={{marginTop:12,background:"none",border:"none",color:T.teal,fontSize:11,cursor:"pointer",padding:0,fontFamily:"DM Sans,sans-serif",display:"flex",alignItems:"center",gap:5}}>
+                  {monoOpen?"▲ Collapse full monograph":"▼ View full clinical monograph"}
+                </button>
+              </div>
+            )}
+
+            {snap?._err&&(
+              <div style={{padding:"12px 16px",borderTop:`1px solid ${T.bdr}`}}>
+                <span style={{fontSize:12,color:T.coral}}>Snapshot unavailable.</span>
+                <button onClick={()=>triggerSnapshot(sel,dbDrug)} style={{...ab(T.teal,{marginLeft:10,padding:"4px 12px",fontSize:11})}}>Retry</button>
+              </div>
+            )}
+          </div>
 
           {/* ── Clinical Monograph ─────────────────────────────────────────── */}
           <div style={{...gl({marginBottom:12,overflow:"hidden",border:`1px solid ${monoLoad?T.teal+"40":mono&&!mono._err?T.teal+"30":T.bdr}`})}}>

@@ -1007,7 +1007,7 @@ const HUBS = [
     stats: ["FDA Drug Labels", "Drip Calculator", "AI Pharmacist"],
     badge: "AI-Powered",
     priority: 41.2,
-    essential: false,
+    essential: true,
   },
   {
     id: "critical-drip",
@@ -1456,7 +1456,7 @@ export default function HubSelectorPage() {
       return a.priority - b.priority;
     });
 
-  const featuredBase = filteredBase.sort((a, b) => a.priority - b.priority).slice(0, 3);
+  const featuredBase = [...filteredBase].sort((a, b) => a.priority - b.priority).slice(0, 3);
   const featuredIds = new Set(featuredBase.map(h => h.id));
   const featured = featuredBase;
   const rest = filtered.filter(h => !featuredIds.has(h.id));

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { InvokeLLM } from "@/integrations/Core";
-import { DrugDosing } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
+const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
+const DrugDosing = base44.entities.DrugDosing;
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (() => {
@@ -480,7 +481,7 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
-              <button onClick={()=>{setSel(null);setQ("");setDbDrug(null);setAiSum(null);}} style={{...ab(T.coral,{padding:"6px 12px",fontSize:11})}}>✕ Close</button>
+              <button onClick={()=>{setSel(null);setQ("");setDbDrug(null);setSnap(null);setMono(null);}} style={{...ab(T.coral,{padding:"6px 12px",fontSize:11})}}>✕ Close</button>
               <button onClick={addToIx} style={{...ab(T.teal,{padding:"6px 12px",fontSize:11})}}>➕ Add to Interactions</button>
               {ixToast&&<span className="u-in" style={{fontSize:10,color:T.green,fontWeight:700}}>✓ Added</span>}
             </div>

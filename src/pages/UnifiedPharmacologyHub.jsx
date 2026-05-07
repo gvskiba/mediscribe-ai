@@ -271,11 +271,48 @@ const ISMP = new Set(["vanc","morph","fent","midaz","succ","roc","enox","amio","
 // ── APIs ──────────────────────────────────────────────────────────────────────
 const searchFDA = async q => {
   const e=encodeURIComponent(q);
-  for (const u of [`https://api.fda.gov/drug/label.json?search=openfda.generic_name:"${e}"&limit=6`,
-                    `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${e}"&limit=6`]) {
-    try{const r=await fetch(u);if(r.ok){const d=await r.json();if(d.results?.length) return d.results;}}catch{}
+  // Try wildcard partial match first, then exact, then brand name
+  const urls=[
+    `https://api.fda.gov/drug/label.json?search=openfda.generic_name:${e}*&limit=8`,
+    `https://api.fda.gov/drug/label.json?search=openfda.brand_name:${e}*&limit=8`,
+    `https://api.fda.gov/drug/label.json?search=openfda.generic_name:"${e}"&limit=6`,
+    `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${e}"&limit=6`,
+  ];
+  const seen=new Set();
+  const results=[];
+  for (const u of urls) {
+    try{
+      const r=await fetch(u);
+      if(r.ok){
+        const d=await r.json();
+        for(const item of (d.results||[])){
+          const key=fdaName(item);
+          if(!seen.has(key)){seen.add(key);results.push(item);}
+          if(results.length>=8) return results;
+        }
+      }
+    }catch{}
   }
-  return [];
+  // Fallback: search local DB if FDA returns nothing
+  if(!results.length){
+    const lq=q.toLowerCase();
+    return DB
+      .filter(d=>d.name.toLowerCase().includes(lq)||d.gen.toLowerCase().includes(lq))
+      .map(d=>({
+        _localDB:true,
+        openfda:{
+          brand_name:[d.name],
+          generic_name:[d.gen],
+          route:[d.wt?.route||"IV"].filter(Boolean),
+          product_type:["LOCAL DB"],
+        },
+        indications_and_usage:[d.wt?.ind||d.sigs?.[0]||""],
+        dosage_and_administration:[d.sigs?.join("; ")||""],
+        warnings:[d.monitoring||""],
+        _dbDrug:d,
+      }));
+  }
+  return results;
 };
 const getRxCUI = async n => {
   try{const r=await fetch(`https://rxnav.nlm.nih.gov/REST/rxcui.json?name=${encodeURIComponent(n)}&search=1`);const d=await r.json();return d.idGroup?.rxnormId?.[0]||null;}catch{return null;}
@@ -351,7 +388,9 @@ function RxLookupTab({pt,crcl,onAddToIx}) {
 
   const pick=d=>{
     setSel(d);setAiSum(null);setPedRes(null);setPedWt("");setExp({});setRes([]);setQ(fdaName(d));
-    setDbDrug(findDB(fdaGen(d)||fdaName(d)));
+    // If it came from local DB fallback, use the embedded drug directly
+    const local=d._dbDrug||findDB(fdaGen(d)||fdaName(d));
+    setDbDrug(local||null);
   };
 
   const handleAI=async()=>{

@@ -1,0 +1,153 @@
+{
+  "name": "DrugDosing",
+  "type": "object",
+  "properties": {
+    "drug_id": {
+      "type": "string",
+      "description": "Short unique key e.g. vanc, fent"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "generic_name": {
+      "type": "string",
+      "description": "Generic drug name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "antibiotic",
+        "analgesic",
+        "rsi",
+        "sedation",
+        "cardiac",
+        "reversal",
+        "anticoagulant",
+        "pressor",
+        "neuro",
+        "metabolic",
+        "other"
+      ],
+      "default": "antibiotic"
+    },
+    "controlled": {
+      "type": "boolean",
+      "default": false
+    },
+    "schedule": {
+      "type": "string",
+      "description": "DEA schedule II-V"
+    },
+    "ismp_high_alert": {
+      "type": "boolean",
+      "default": false
+    },
+    "standard_dose": {
+      "type": "string"
+    },
+    "weight_based": {
+      "type": "boolean",
+      "default": false
+    },
+    "wt_indication": {
+      "type": "string"
+    },
+    "wt_route": {
+      "type": "string",
+      "default": "IV"
+    },
+    "wt_dpkg": {
+      "type": "number"
+    },
+    "wt_unit": {
+      "type": "string",
+      "enum": [
+        "mg",
+        "mcg"
+      ],
+      "default": "mg"
+    },
+    "wt_lo": {
+      "type": "number"
+    },
+    "wt_hi": {
+      "type": "number"
+    },
+    "wt_max": {
+      "type": "number"
+    },
+    "wt_conc": {
+      "type": "number"
+    },
+    "wt_note": {
+      "type": "string"
+    },
+    "is_drip": {
+      "type": "boolean",
+      "default": false
+    },
+    "drip_lo": {
+      "type": "number"
+    },
+    "drip_hi": {
+      "type": "number"
+    },
+    "drip_unit": {
+      "type": "string",
+      "default": "mcg/kg/min"
+    },
+    "drip_concs_json": {
+      "type": "string",
+      "description": "JSON array of [[label, concVal]]"
+    },
+    "drip_note": {
+      "type": "string"
+    },
+    "renal_tiers_json": {
+      "type": "string",
+      "description": "JSON array of [label, dose, ok|caution|avoid]"
+    },
+    "standard_sigs_json": {
+      "type": "string",
+      "description": "JSON array of sig strings"
+    },
+    "interactions_json": {
+      "type": "string",
+      "description": "JSON array of interaction strings"
+    },
+    "contraindications": {
+      "type": "string"
+    },
+    "peds_dose": {
+      "type": "string"
+    },
+    "hepatic_note": {
+      "type": "string"
+    },
+    "monitoring": {
+      "type": "string"
+    },
+    "dialysis_dose": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "static",
+        "ai_generated",
+        "fda_extracted",
+        "pharmacist_verified"
+      ],
+      "default": "static"
+    },
+    "last_verified": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "drug_id",
+    "name"
+  ]
+}

@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
-const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { InvokeLLM } from "@/integrations/Core";
+import { DrugDosing } from "@/api/entities";
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (() => {
@@ -46,201 +46,85 @@ const ab = (c=T.teal,x={}) => ({padding:"8px 18px",borderRadius:9,cursor:"pointe
 const tg = (c,x={}) => ({borderRadius:6,padding:"3px 9px",fontSize:11,fontWeight:700,background:`${c}18`,border:`1px solid ${c}30`,color:c,...x});
 const Sp = () => <span style={{display:"inline-block",width:13,height:13,border:"2px solid rgba(0,180,216,.2)",borderTopColor:T.teal,borderRadius:"50%",animation:"uSpin .7s linear infinite"}} />;
 
-// ── Unified Drug Database ─────────────────────────────────────────────────────
-// tiers:[label, dose, "ok"|"caution"|"avoid"]
-// wt:{ind,route,dpkg,lo,hi,max,conc,unit:"mg"|"mcg",note} — null if N/A
-// drip:{lo,hi,unit,concs:[[label,concVal]],note} — null if not a drip
-const DB = [
-  {id:"vanc",name:"Vancomycin",gen:"vancomycin",cat:"antibiotic",controlled:false,
-   tiers:[["eGFR >60","15-20 mg/kg IV q8-12h","ok"],["eGFR 30-60","15-20 mg/kg q24h","caution"],
-          ["eGFR <30","PK dosing required","caution"],["Dialysis","15-25 mg/kg post-HD","caution"]],
-   wt:{ind:"Serious Infection",route:"IV",dpkg:15,lo:15,hi:20,max:3000,conc:5,unit:"mg",
-       note:"Target AUC/MIC 400-600. Infuse 60-90 min/gram."},
-   drip:null,sigs:["15-20 mg/kg IV q8-12h (normal renal function)"],
-   interactions:["Nephrotoxins — additive AKI","Loop diuretics — ototoxicity"],
-   ci:["Vancomycin hypersensitivity"],peds:"15 mg/kg IV q6h; monitor levels",
-   hepatic:"No significant adjustment",monitoring:"AUC/MIC 400-600; SCr q48h"},
+// ── Entity → Internal Format ──────────────────────────────────────────────────
+// Normalizes a DrugDosing entity record into the same shape the UI expects.
+const normalizeEntityDrug = (r) => ({
+  id:           r.drug_id,
+  name:         r.name,
+  gen:          r.generic_name,
+  cat:          r.category,
+  controlled:   r.controlled||false,
+  schedule:     r.schedule||null,
+  ismp:         r.ismp_high_alert||false,
+  tiers:        (() => { try { return JSON.parse(r.renal_tiers_json||"[]"); } catch { return []; } })(),
+  wt: r.weight_based ? {
+    ind:  r.wt_indication, route: r.wt_route, dpkg: r.wt_dpkg,
+    lo:   r.wt_lo,        hi:    r.wt_hi,    max:  r.wt_max,
+    conc: r.wt_conc,      unit:  r.wt_unit,  note: r.wt_note,
+  } : null,
+  drip: r.is_drip ? {
+    lo:    r.drip_lo,   hi:   r.drip_hi,   unit: r.drip_unit,
+    concs: (() => { try { return JSON.parse(r.drip_concs_json||"[]"); } catch { return []; } })(),
+    note:  r.drip_note,
+  } : null,
+  sigs:         (() => { try { return JSON.parse(r.standard_sigs_json||"[]"); } catch { return []; } })(),
+  interactions: (() => { try { return JSON.parse(r.interactions_json||"[]"); } catch { return []; } })(),
+  ci:           r.contraindications ? r.contraindications.split("|").filter(Boolean) : [],
+  peds:         r.peds_dose||"",
+  hepatic:      r.hepatic_note||"",
+  monitoring:   r.monitoring||"",
+  _source:      r.source||"static",
+});
 
-  {id:"piptz",name:"Pip-Tazo 4.5g",gen:"piperacillin-tazobactam",cat:"antibiotic",controlled:false,
-   tiers:[["eGFR >40","4.5g IV q6h","ok"],["eGFR 20-40","3.375g IV q6h","caution"],
-          ["eGFR <20","2.25g IV q6h","caution"],["Dialysis","2.25g q12h + 0.75g post-HD","caution"]],
-   wt:null,drip:null,sigs:["4.5g IV q6h","4.5g IV q8h extended infusion"],
-   interactions:["Methotrexate — reduced clearance","Aminoglycosides — separate infusions"],
-   ci:["Penicillin allergy"],peds:"100 mg/kg q8h (pip component)",
-   hepatic:"No adjustment",monitoring:"Seizure/neurotoxicity in renal failure"},
-
-  {id:"ceftx",name:"Ceftriaxone",gen:"ceftriaxone",cat:"antibiotic",controlled:false,
-   tiers:[["Any eGFR","1-2g IV/IM q12-24h — no renal adjustment","ok"]],
-   wt:null,drip:null,sigs:["1g IV/IM q24h","2g IV q12h (meningitis/severe)"],
-   interactions:["IV Calcium — precipitation in neonates"],
-   ci:["Cephalosporin allergy","Neonatal hyperbilirubinemia"],
-   peds:"50-100 mg/kg/day divided q12-24h",hepatic:"No adjustment",
-   monitoring:"Biliary sludging with prolonged use"},
-
-  {id:"fent",name:"Fentanyl",gen:"fentanyl",cat:"analgesic",controlled:true,schedule:"II",
-   tiers:[["Any eGFR","Full dose — preferred opioid in renal failure","ok"]],
-   wt:{ind:"Acute Pain / RSI Premed",route:"IV",dpkg:1,lo:0.5,hi:2,max:200,conc:0.05,unit:"mcg",
-       note:"Onset 1-3 min. Safe in renal/hepatic failure. No active renal metabolites."},
-   drip:null,sigs:["25-100 mcg IV q1-2h PRN","1-2 mcg/kg IV (weight-based)"],
-   interactions:["CNS depressants — respiratory depression","MAOIs — contraindicated"],
-   ci:["Significant respiratory depression"],peds:"1-2 mcg/kg IV; 1.5 mcg/kg IN via MAD",
-   hepatic:"Reduce dose in severe hepatic failure",monitoring:"Respiratory status; chest wall rigidity risk"},
-
-  {id:"morph",name:"Morphine",gen:"morphine",cat:"analgesic",controlled:true,schedule:"II",
-   tiers:[["eGFR >60","0.1 mg/kg IV q2-4h","ok"],["eGFR 30-60","Reduce 25-50%; extend interval","caution"],
-          ["eGFR <30","AVOID — use fentanyl instead","avoid"],["Dialysis","Avoid — M6G accumulates","avoid"]],
-   wt:{ind:"Acute Pain",route:"IV",dpkg:0.1,lo:0.05,hi:0.15,max:10,conc:1,unit:"mg",
-       note:"Active metabolite M6G accumulates in renal failure. Titrate 2-4 mg increments."},
-   drip:null,sigs:["2-4 mg IV q2-4h PRN","0.1 mg/kg IV (weight-based)"],
-   interactions:["CNS depressants — respiratory depression","Benzodiazepines — FDA black box"],
-   ci:["Severe renal impairment","Respiratory depression"],peds:"0.1 mg/kg IV q2-4h (max 4 mg)",
-   hepatic:"Reduce dose 50% in severe hepatic disease",monitoring:"Respiratory status; sedation scale"},
-
-  {id:"ketam",name:"Ketamine",gen:"ketamine",cat:"rsi",controlled:true,schedule:"III",
-   tiers:[["Any eGFR","Full dose — no renal adjustment","ok"]],
-   wt:{ind:"RSI Induction",route:"IV",dpkg:1.5,lo:1.0,hi:2.0,max:200,conc:10,unit:"mg",
-       note:"Preferred in hemodynamic instability. Sub-dissociative analgesia: 0.1-0.5 mg/kg."},
-   drip:null,sigs:["1-2 mg/kg IV (RSI)","0.3 mg/kg IV (sub-dissociative)","4 mg/kg IM (no IV)"],
-   interactions:["Thyroid hormones — hypertension/tachycardia"],
-   ci:["Uncontrolled hypertension","Active psychosis (relative)"],peds:"1-2 mg/kg IV; 4 mg/kg IM",
-   hepatic:"Reduce dose in severe hepatic failure",monitoring:"BP, HR; emergence reactions"},
-
-  {id:"keto",name:"Ketorolac",gen:"ketorolac",cat:"analgesic",controlled:false,
-   tiers:[["eGFR >60","15-30 mg IV q6h (max 5 days)","ok"],
-          ["eGFR 30-60","15 mg IV q6h; short course only","caution"],
-          ["eGFR <30","AVOID — nephrotoxic NSAID","avoid"],["Dialysis","Contraindicated","avoid"]],
-   wt:null,drip:null,sigs:["15-30 mg IV q6h","10 mg PO q4-6h"],
-   interactions:["ACE/ARBs — AKI risk","Anticoagulants — GI bleeding","Other NSAIDs — avoid"],
-   ci:["Active GI bleed","CrCl <30","NSAID allergy","Age >75: avoid or reduce"],
-   peds:"0.5 mg/kg IV (max 30 mg)",hepatic:"Use with caution; reduce dose",
-   monitoring:"SCr, GI symptoms; max 5-day combined course"},
-
-  {id:"midaz",name:"Midazolam",gen:"midazolam",cat:"sedation",controlled:true,schedule:"IV",
-   tiers:[["eGFR >60","1-2.5 mg IV slow push","ok"],["eGFR 30-60","Start 1 mg; titrate","caution"],
-          ["eGFR <30","0.5-1 mg; prolonged effect expected","caution"]],
-   wt:{ind:"Procedural Sedation",route:"IV",dpkg:0.05,lo:0.025,hi:0.1,max:5,conc:1,unit:"mg",
-       note:"Titrate slowly. Active metabolite accumulates in renal failure. Reversal: flumazenil."},
-   drip:null,sigs:["1-2.5 mg IV PRN","0.07 mg/kg IM","0.2 mg/kg IN via MAD"],
-   interactions:["Opioids — respiratory depression (FDA black box)","CNS depressants — additive"],
-   ci:["Acute narrow-angle glaucoma"],peds:"0.1 mg/kg IV (max 5 mg); 0.5 mg/kg PO/IN",
-   hepatic:"Reduce dose in hepatic disease",monitoring:"Respiratory status; flumazenil available"},
-
-  {id:"prop",name:"Propofol",gen:"propofol",cat:"sedation",controlled:false,
-   tiers:[["Any eGFR","Full dose — no renal adjustment","ok"]],
-   wt:{ind:"Procedural Sedation",route:"IV",dpkg:1.0,lo:0.5,hi:1.5,max:150,conc:10,unit:"mg",
-       note:"Monitor BP closely — significant hypotension. Titrate in 0.5 mg/kg increments."},
-   drip:null,sigs:["0.5-1.5 mg/kg IV (procedural)","10-50 mcg/kg/min infusion (ICU)"],
-   interactions:["CNS depressants — additive hypotension"],
-   ci:["Egg/soy allergy (relative)","PRIS risk with prolonged high-dose infusion"],
-   peds:"1-2 mg/kg IV for procedural sedation ≥3 yr",
-   hepatic:"No significant adjustment",monitoring:"PRIS with prolonged infusion"},
-
-  {id:"etom",name:"Etomidate",gen:"etomidate",cat:"rsi",controlled:false,
-   tiers:[["Any eGFR","Full dose — no renal adjustment","ok"]],
-   wt:{ind:"RSI Induction",route:"IV",dpkg:0.3,lo:0.2,hi:0.4,max:60,conc:2,unit:"mg",
-       note:"Hemodynamically neutral. Inhibits cortisol synthesis — single dose acceptable."},
-   drip:null,sigs:["0.3 mg/kg IV (RSI)"],
-   interactions:["No significant interactions"],
-   ci:["Adrenal insufficiency (relative)"],peds:"0.3 mg/kg IV",
-   hepatic:"No adjustment",monitoring:"Adrenal suppression with repeat dosing"},
-
-  {id:"succ",name:"Succinylcholine",gen:"succinylcholine",cat:"rsi",controlled:false,
-   tiers:[["Any eGFR","Full dose — no renal adjustment","ok"]],
-   wt:{ind:"RSI Paralysis",route:"IV",dpkg:1.5,lo:1.0,hi:2.0,max:200,conc:20,unit:"mg",
-       note:"Gold standard RSI. Use 2 mg/kg in children <25 kg. Onset 45-60 sec, duration 8-12 min."},
-   drip:null,sigs:["1.5 mg/kg IV (RSI)","4 mg/kg IM (no IV access)"],
-   interactions:["Aminoglycosides — prolonged block","Cholinesterase inhibitors — prolonged block"],
-   ci:["Hyperkalemia","Burns/crush/denervation >48h","Myopathies","Malignant hyperthermia hx"],
-   peds:"2 mg/kg IV (<25 kg); 4 mg/kg IM",hepatic:"No adjustment",
-   monitoring:"Check K+ in at-risk patients; ensure succinylcholine is not expired"},
-
-  {id:"roc",name:"Rocuronium",gen:"rocuronium",cat:"rsi",controlled:false,
-   tiers:[["Any eGFR","Full dose — no renal adjustment","ok"]],
-   wt:{ind:"RSI Paralysis",route:"IV",dpkg:1.2,lo:0.9,hi:1.6,max:200,conc:10,unit:"mg",
-       note:"Preferred when succinylcholine CI. Onset 60-90 sec. Reversal: sugammadex 16 mg/kg."},
-   drip:null,sigs:["1.2 mg/kg IV (RSI)","0.6 mg/kg IV (facilitated intubation)"],
-   interactions:["Aminoglycosides — potentiated block"],
-   ci:[],peds:"1.2 mg/kg IV (RSI)",
-   hepatic:"Mild prolongation in hepatic failure",monitoring:"Ensure sugammadex 200 mg vials available"},
-
-  {id:"norep",name:"Norepinephrine",gen:"norepinephrine",cat:"pressor",controlled:false,
-   tiers:[["Any eGFR","Full dose — no renal adjustment","ok"]],
-   wt:null,
-   drip:{lo:0.01,hi:3.0,unit:"mcg/kg/min",
-         concs:[["4mg/250mL (16 mcg/mL)",16],["8mg/250mL (32 mcg/mL)",32]],
-         note:"First-line vasopressor for septic shock. Titrate to MAP ≥65 mmHg."},
-   sigs:["0.01-3 mcg/kg/min IV infusion"],
-   interactions:["MAOIs — severe hypertension"],
-   ci:["Uncorrected hypovolemia"],peds:"0.01-2 mcg/kg/min IV",
-   hepatic:"No adjustment",monitoring:"MAP q5-15 min; central line preferred"},
-
-  {id:"epi",name:"Epinephrine",gen:"epinephrine",cat:"cardiac",controlled:false,
-   tiers:[["Any eGFR","Full dose — no renal adjustment","ok"]],
-   wt:null,
-   drip:{lo:0.01,hi:1.0,unit:"mcg/kg/min",
-         concs:[["1mg/250mL (4 mcg/mL)",4],["2mg/250mL (8 mcg/mL)",8]],
-         note:"Anaphylaxis/arrest/cardiogenic shock. Arrhythmogenic at high doses."},
-   sigs:["0.3-0.5 mg IM (anaphylaxis)","1 mg IV q3-5 min (ACLS)","0.01-1 mcg/kg/min (drip)"],
-   interactions:["Beta-blockers — antagonism","MAOIs — severe hypertension"],
-   ci:["None absolute in emergency"],peds:"0.01 mg/kg IM (anaphylaxis); 0.01 mg/kg IV (ACLS)",
-   hepatic:"No adjustment",monitoring:"Continuous ECG; BP q5 min"},
-
-  {id:"amio",name:"Amiodarone",gen:"amiodarone",cat:"cardiac",controlled:false,
-   tiers:[["Any eGFR","Full dose — minimal renal clearance","ok"]],
-   wt:null,
-   drip:{lo:0.5,hi:1.0,unit:"mg/min",
-         concs:[["900mg/500mL (1.8 mg/mL)",1.8]],
-         note:"1 mg/min x6h then 0.5 mg/min x18h after loading. Dedicated line."},
-   sigs:["300 mg IV rapid (V-Fib)","150 mg IV over 10 min (stable VT/AFib)","200-400 mg PO daily (maintenance)"],
-   interactions:["Warfarin — markedly increases INR","Digoxin — increased levels","QTc agents — additive"],
-   ci:["Sinus node dysfunction without pacemaker"],peds:"5 mg/kg IV over 30-60 min (PALS)",
-   hepatic:"Use with caution — hepatotoxic",monitoring:"QTc, TFTs, PFTs, LFTs with long-term use"},
-
-  {id:"nalox",name:"Naloxone",gen:"naloxone",cat:"reversal",controlled:false,
-   tiers:[["Any eGFR","Full dose — no renal adjustment","ok"]],
-   wt:{ind:"Opioid Reversal",route:"IV",dpkg:0.01,lo:0.4,hi:2.0,max:10,conc:0.4,unit:"mg",
-       note:"Titrate to respiratory effort — not full reversal. May repeat q2-3 min. Duration 30-90 min."},
-   drip:null,sigs:["0.4-2 mg IV/IM/IN q2-3 min PRN","0.01 mg/kg IV (titrated reversal)","4 mg IN (community)"],
-   interactions:["Opioids — precipitates acute withdrawal"],
-   ci:[],peds:"0.01 mg/kg IV (max 0.4 mg); repeat PRN",
-   hepatic:"No significant adjustment",monitoring:"Resedation after short-acting naloxone — observe 2-4h"},
-
-  {id:"enox",name:"Enoxaparin",gen:"enoxaparin",cat:"anticoagulant",controlled:false,
-   tiers:[["CrCl >30","1 mg/kg SQ q12h (Tx); 40 mg SQ daily (prophylaxis)","ok"],
-          ["CrCl <30","1 mg/kg SQ q24h — Anti-Xa monitoring required","caution"],
-          ["Dialysis","UFH preferred","avoid"]],
-   wt:{ind:"VTE Treatment",route:"SQ",dpkg:1,lo:1,hi:1,max:180,conc:100,unit:"mg",
-       note:"Anti-Xa monitoring if CrCl <30. Peak 4h post-dose target 0.6-1.0 IU/mL."},
-   drip:null,sigs:["1 mg/kg SQ q12h (treatment)","40 mg SQ daily (prophylaxis)","0.5 mg/kg SQ q12h (ACS)"],
-   interactions:["Anticoagulants — additive bleeding","NSAIDs — GI bleed risk"],
-   ci:["CrCl <30 for treatment dosing","Active major bleeding"],
-   peds:"0.5 mg/kg SQ q12h (treatment); 1.5 mg/kg SQ q24h <2 mo",
-   hepatic:"Use with caution",monitoring:"Anti-Xa if CrCl <30 or extreme weight"},
-
-  {id:"levety",name:"Levetiracetam",gen:"levetiracetam",cat:"neuro",controlled:false,
-   tiers:[["eGFR >80","500-1500 mg IV/PO q12h","ok"],["eGFR 50-80","500-1000 mg q12h","ok"],
-          ["eGFR 30-50","250-750 mg q12h","caution"],["eGFR <30","250-500 mg q12h","caution"],
-          ["Dialysis","250-500 mg q12h + supplement 250-500 mg post-HD","caution"]],
-   wt:null,drip:null,sigs:["500-1500 mg IV/PO q12h","2000-4500 mg IV load (status epilepticus)"],
-   interactions:["CNS depressants — additive sedation"],
-   ci:[],peds:"20-30 mg/kg IV load (status); 10-20 mg/kg/day q12h maintenance",
-   hepatic:"No significant adjustment",monitoring:"Behavioral side effects; renal dose adjustment critical"},
-
-  {id:"apap",name:"Acetaminophen",gen:"acetaminophen",cat:"analgesic",controlled:false,
-   tiers:[["Any eGFR","650-1000 mg PO/IV q6-8h — no renal adjustment","ok"]],
-   wt:null,drip:null,sigs:["1000 mg IV/PO q6-8h (adults)","15 mg/kg IV (patients <50 kg)","650 mg PO q6h (elderly)"],
-   interactions:["Warfarin — slightly increased INR (large doses)","Hepatotoxins — liver failure risk"],
-   ci:["Severe hepatic impairment"],peds:"15 mg/kg PO/IV q4-6h (max 75 mg/kg/day)",
-   hepatic:"Reduce max to 2g/day in hepatic disease",monitoring:"Max 4g/day adults; hepatotoxicity in OD"},
-
-  {id:"aden",name:"Adenosine",gen:"adenosine",cat:"cardiac",controlled:false,
-   tiers:[["Any eGFR","Full dose — no renal adjustment","ok"]],
-   wt:null,drip:null,sigs:["6 mg IV rapid push (SVT — 1st dose)","12 mg IV rapid push x2 if no response"],
-   interactions:["Dipyridamole — potentiates (reduce dose to 3 mg)","Theophylline/caffeine — antagonizes","Carbamazepine — prolonged AV block"],
-   ci:["2nd/3rd degree AV block without pacemaker","Sick sinus syndrome","Asthma (relative)"],
-   peds:"0.1 mg/kg IV (max 6 mg); 0.2 mg/kg if no response",
-   hepatic:"No adjustment",monitoring:"Continuous ECG; warn patient of transient chest tightness"},
-];
+// ── AI-powered FDA→Entity extraction and writeback ────────────────────────────
+// Called when a drug is looked up in Rx Lookup but NOT found in the entity DB.
+// Extracts structured dosing from FDA label text, saves to entity, returns drug obj.
+const extractAndSaveDrug = async (fdaDrug) => {
+  const name = fdaDrug?.openfda?.brand_name?.[0]||fdaDrug?.openfda?.generic_name?.[0]||"";
+  const gen  = fdaDrug?.openfda?.generic_name?.[0]||fdaDrug?.openfda?.substance_name?.[0]||"";
+  if (!name) return null;
+  try {
+    const r = await InvokeLLM({
+      prompt: `Extract structured dosing data for ${name} (${gen}) from this FDA label.
+Indications: ${(fdaDrug.indications_and_usage?.[0]||"").slice(0,600)}
+Dosage: ${(fdaDrug.dosage_and_administration?.[0]||"").slice(0,600)}
+Warnings: ${(fdaDrug.warnings?.[0]||"").slice(0,400)}`,
+      response_json_schema: {
+        type:"object", properties:{
+          category:{type:"string",enum:["antibiotic","analgesic","rsi","sedation","cardiac","reversal","anticoagulant","pressor","neuro","metabolic","other"]},
+          standard_dose:{type:"string"}, weight_based:{type:"boolean"},
+          wt_dpkg:{type:"number"}, wt_unit:{type:"string",enum:["mg","mcg"]},
+          wt_max:{type:"number"}, wt_route:{type:"string"}, wt_note:{type:"string"},
+          renal_tiers:{type:"array",items:{type:"array",items:{type:"string"}}},
+          sigs:{type:"array",items:{type:"string"}},
+          interactions:{type:"array",items:{type:"string"}},
+          contraindications:{type:"string"}, peds_dose:{type:"string"},
+          monitoring:{type:"string"}, ismp_high_alert:{type:"boolean"},
+        },
+        required:["category","standard_dose","weight_based"],
+      },
+    });
+    const drugId = gen.toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12)||name.toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12);
+    const record = {
+      drug_id: drugId, name, generic_name: gen,
+      category: r.category||"other", source: "ai_generated",
+      last_verified: new Date().toISOString().slice(0,10),
+      standard_dose: r.standard_dose||"", weight_based: !!r.weight_based,
+      wt_dpkg: r.wt_dpkg||null, wt_unit: r.wt_unit||"mg",
+      wt_max: r.wt_max||null, wt_route: r.wt_route||null,
+      wt_note: r.wt_note||null,
+      renal_tiers_json: JSON.stringify(r.renal_tiers||[]),
+      standard_sigs_json: JSON.stringify(r.sigs||[]),
+      interactions_json: JSON.stringify(r.interactions||[]),
+      contraindications: r.contraindications||"",
+      peds_dose: r.peds_dose||"", monitoring: r.monitoring||"",
+      ismp_high_alert: !!r.ismp_high_alert,
+      is_drip: false,
+    };
+    await DrugDosing.create(record);
+    return normalizeEntityDrug(record);
+  } catch { return null; }
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const calcCrCl = ({age,wt,scr,sex}) => {
@@ -264,55 +148,23 @@ const getActiveTier = (drug,crcl) => {
   }
   return drug.tiers[drug.tiers.length-1];
 };
-const findDB = n => { const q=n.toLowerCase(); return DB.find(d=>d.name.toLowerCase().includes(q)||d.gen.toLowerCase().includes(q))||null; };
+const findDB = (n, entityDB) => {
+  const q=n.toLowerCase();
+  return entityDB.find(d=>d.name.toLowerCase().includes(q)||d.gen.toLowerCase().includes(q))||null;
+};
 const FLAG = {ok:{c:T.green,l:"Normal Dose"},caution:{c:T.gold,l:"Adjust Dose"},avoid:{c:T.coral,l:"AVOID"}};
-const ISMP = new Set(["vanc","morph","fent","midaz","succ","roc","enox","amio","prop","ketam","epi","norep"]);
+// ISMP check uses entity flag when available, fallback set for known agents
+const ISMP_FALLBACK = new Set(["vanc","morph","fent","midaz","succ","roc","enox","amio","prop","ketam","epi","norep"]);
+const isISMP = (drug) => drug?.ismp || ISMP_FALLBACK.has(drug?.id);
 
 // ── APIs ──────────────────────────────────────────────────────────────────────
 const searchFDA = async q => {
   const e=encodeURIComponent(q);
-  // Try wildcard partial match first, then exact, then brand name
-  const urls=[
-    `https://api.fda.gov/drug/label.json?search=openfda.generic_name:${e}*&limit=8`,
-    `https://api.fda.gov/drug/label.json?search=openfda.brand_name:${e}*&limit=8`,
-    `https://api.fda.gov/drug/label.json?search=openfda.generic_name:"${e}"&limit=6`,
-    `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${e}"&limit=6`,
-  ];
-  const seen=new Set();
-  const results=[];
-  for (const u of urls) {
-    try{
-      const r=await fetch(u);
-      if(r.ok){
-        const d=await r.json();
-        for(const item of (d.results||[])){
-          const key=fdaName(item);
-          if(!seen.has(key)){seen.add(key);results.push(item);}
-          if(results.length>=8) return results;
-        }
-      }
-    }catch{}
+  for (const u of [`https://api.fda.gov/drug/label.json?search=openfda.generic_name:"${e}"&limit=6`,
+                    `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${e}"&limit=6`]) {
+    try{const r=await fetch(u);if(r.ok){const d=await r.json();if(d.results?.length) return d.results;}}catch{}
   }
-  // Fallback: search local DB if FDA returns nothing
-  if(!results.length){
-    const lq=q.toLowerCase();
-    return DB
-      .filter(d=>d.name.toLowerCase().includes(lq)||d.gen.toLowerCase().includes(lq))
-      .map(d=>({
-        _localDB:true,
-        openfda:{
-          brand_name:[d.name],
-          generic_name:[d.gen],
-          route:[d.wt?.route||"IV"].filter(Boolean),
-          product_type:["LOCAL DB"],
-        },
-        indications_and_usage:[d.wt?.ind||d.sigs?.[0]||""],
-        dosage_and_administration:[d.sigs?.join("; ")||""],
-        warnings:[d.monitoring||""],
-        _dbDrug:d,
-      }));
-  }
-  return results;
+  return [];
 };
 const getRxCUI = async n => {
   try{const r=await fetch(`https://rxnav.nlm.nih.gov/REST/rxcui.json?name=${encodeURIComponent(n)}&search=1`);const d=await r.json();return d.idGroup?.rxnormId?.[0]||null;}catch{return null;}
@@ -323,6 +175,34 @@ const getIxs = async rxcuis => {
 const fdaName = d=>d?.openfda?.brand_name?.[0]||d?.openfda?.generic_name?.[0]||d?.openfda?.substance_name?.[0]||"Unknown";
 const fdaGen  = d=>d?.openfda?.generic_name?.[0]||d?.openfda?.substance_name?.[0]||"";
 const trunc   = (s="",n=320)=>s.length>n?s.slice(0,n)+"...":s;
+
+// ── Allergy Cross-Check ───────────────────────────────────────────────────────
+const CROSS_REACT = {
+  penicillin: {drugs:["ceftx","cefep","ampsulb","nafcil","piptz"],label:"Penicillin-cephalosporin cross-reactivity ~1-2%",severity:"relative"},
+  "beta-lactam": {drugs:["mero","erta","ceftx","cefep","ampsulb","nafcil","piptz"],label:"Beta-lactam class cross-reactivity",severity:"relative"},
+};
+const checkAllergy = (allergyStr, drug) => {
+  if (!allergyStr||!drug) return [];
+  const allergies = allergyStr.toLowerCase().split(/[,;]/).map(a=>a.trim()).filter(Boolean);
+  const warnings = [];
+  const ciList = (drug.ci||[]).map(c=>c.toLowerCase());
+  for (const allergy of allergies) {
+    for (const ci of ciList) {
+      if (ci.includes(allergy)||(allergy.length>3&&ci.split(" ").some(w=>w.startsWith(allergy.slice(0,5))))) {
+        warnings.push({allergy, ci, severity:"contraindicated", msg:`${drug.name}: ${ci}`});
+      }
+    }
+    // Cross-reactivity checks
+    for (const [key, cfg] of Object.entries(CROSS_REACT)) {
+      if (allergy.includes(key) && cfg.drugs.includes(drug.id)) {
+        if (!warnings.find(w=>w.msg?.includes(drug.name)&&w.severity==="cross-reactivity")) {
+          warnings.push({allergy, ci:cfg.label, severity:"cross-reactivity", msg:`${drug.name}: ${cfg.label}`});
+        }
+      }
+    }
+  }
+  return warnings;
+};
 
 // ── Patient Banner ────────────────────────────────────────────────────────────
 function PatientBanner({pt,setPt,crcl,ibw}) {
@@ -353,6 +233,13 @@ function PatientBanner({pt,setPt,crcl,ibw}) {
         <button onClick={()=>f("dialysis",!pt.dialysis)} style={{padding:"6px 12px",borderRadius:7,cursor:"pointer",border:`1px solid ${pt.dialysis?T.purple+"55":T.bdr}`,background:pt.dialysis?T.pD:"transparent",color:pt.dialysis?T.purple:T.mut,fontSize:11,fontWeight:700,fontFamily:"JetBrains Mono,monospace"}}>
           {pt.dialysis?"✓ DIALYSIS":"+ Dialysis"}
         </button>
+        {/* Allergy field */}
+        <div style={{flex:"1 1 200px",minWidth:180}}>
+          <div style={{fontSize:8,fontFamily:"JetBrains Mono,monospace",color:T.coral,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>Allergies</div>
+          <input value={pt.allergy||""} onChange={e=>f("allergy",e.target.value)}
+            placeholder="e.g. Penicillin, Sulfa, NSAID"
+            style={{...ib({fontSize:12,padding:"6px 10px",border:`1px solid ${pt.allergy?T.coral+"50":T.bdr}`})}} />
+        </div>
         {crcl!==null&&(
           <div style={{padding:"6px 12px",borderRadius:20,border:`1px solid ${crclColor}30`,background:`${crclColor}0d`,display:"flex",alignItems:"center",gap:6}}>
             <span style={{fontFamily:"JetBrains Mono,monospace",fontWeight:700,fontSize:14,color:crclColor}}>{Math.round(crcl)}</span>
@@ -365,18 +252,21 @@ function PatientBanner({pt,setPt,crcl,ibw}) {
             <span style={{fontSize:10,color:T.dim,marginLeft:4}}>kg IBW</span>
           </div>
         )}
+        {pt.allergy&&<span style={{...tg(T.coral),fontSize:10,alignSelf:"flex-end",marginBottom:2}}>⚠ Allergy active</span>}
       </div>
     </div>
   );
 }
 
 // ── Tab 1: Rx Lookup ──────────────────────────────────────────────────────────
-function RxLookupTab({pt,crcl,onAddToIx}) {
+function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
   const [q,setQ]=useState(""); const [res,setRes]=useState([]); const [busy,setBusy]=useState(false);
   const [sel,setSel]=useState(null); const [dbDrug,setDbDrug]=useState(null);
-  const [aiSum,setAiSum]=useState(null); const [aiLoad,setAiLoad]=useState(false);
+  const [mono,setMono]=useState(null); const [monoLoad,setMonoLoad]=useState(false);
+  const [monoOpen,setMonoOpen]=useState(true); const [activeInd,setActiveInd]=useState(0);
   const [pedWt,setPedWt]=useState(""); const [pedRes,setPedRes]=useState(null); const [pedLoad,setPedLoad]=useState(false);
   const [exp,setExp]=useState({}); const [ixToast,setIxToast]=useState(false);
+  const [extracting,setExtracting]=useState(false);
   const deb=useRef(null); const ixRef=useRef(null);
 
   const doSearch=useCallback(v=>{
@@ -386,31 +276,90 @@ function RxLookupTab({pt,crcl,onAddToIx}) {
     deb.current=setTimeout(async()=>{setBusy(true);const r=await searchFDA(v);setRes(r);setBusy(false);},400);
   },[]);
 
-  const pick=d=>{
-    setSel(d);setAiSum(null);setPedRes(null);setPedWt("");setExp({});setRes([]);setQ(fdaName(d));
-    // If it came from local DB fallback, use the embedded drug directly
-    const local=d._dbDrug||findDB(fdaGen(d)||fdaName(d));
-    setDbDrug(local||null);
+  const pick=async d=>{
+    setSel(d);setMono(null);setPedRes(null);setPedWt("");setExp({});setRes([]);
+    setQ(fdaName(d));setActiveInd(0);setMonoOpen(true);
+    const found=findDB(fdaGen(d)||fdaName(d),entityDB);
+    setDbDrug(found);
+    // Auto-fire monograph immediately
+    triggerMonograph(d, found);
+    if(!found){
+      setExtracting(true);
+      const extracted=await extractAndSaveDrug(d);
+      if(extracted){setDbDrug(extracted);onNewDrug(extracted);}
+      setExtracting(false);
+    }
   };
 
-  const handleAI=async()=>{
-    if(!sel||aiLoad) return;
-    setAiLoad(true);
+  const triggerMonograph=async(fdaDrug, dbEntry)=>{
+    setMonoLoad(true);
     try {
+      const name=fdaName(fdaDrug); const gen=fdaGen(fdaDrug);
+      const context=[
+        `Drug: ${name} (${gen})`,
+        fdaDrug.indications_and_usage?.[0]?`FDA Indications: ${trunc(fdaDrug.indications_and_usage[0],700)}`:"",
+        fdaDrug.dosage_and_administration?.[0]?`FDA Dosing: ${trunc(fdaDrug.dosage_and_administration[0],700)}`:"",
+        fdaDrug.contraindications?.[0]?`FDA Contraindications: ${trunc(fdaDrug.contraindications[0],400)}`:"",
+        fdaDrug.warnings?.[0]?`FDA Warnings: ${trunc(fdaDrug.warnings[0],400)}`:"",
+        fdaDrug.boxed_warning?.[0]?`BOXED WARNING: ${trunc(fdaDrug.boxed_warning[0],300)}`:"",
+        fdaDrug.drug_interactions?.[0]?`FDA Drug Interactions: ${trunc(fdaDrug.drug_interactions[0],300)}`:"",
+        dbEntry?.peds?`Known peds dose: ${dbEntry.peds}`:"",
+        dbEntry?.monitoring?`Monitoring: ${dbEntry.monitoring}`:"",
+        dbEntry?.hepatic?`Hepatic: ${dbEntry.hepatic}`:"",
+      ].filter(Boolean).join("\n");
+
       const r=await InvokeLLM({
-        prompt:`You are a clinical ED pharmacist. Provide an emergency medicine drug summary for: ${fdaName(sel)} (${fdaGen(sel)}).
-FDA indications: ${trunc(sel.indications_and_usage?.[0]||"",400)}
-FDA dosage: ${trunc(sel.dosage_and_administration?.[0]||"",400)}
-FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
-        response_json_schema:{type:"object",properties:{
-          ed_indication:{type:"string"},typical_ed_dose:{type:"string"},route:{type:"string"},
-          onset_duration:{type:"string"},critical_warnings:{type:"array",items:{type:"string"}},
-          clinical_pearls:{type:"array",items:{type:"string"}}},
-          required:["ed_indication","typical_ed_dose","route","onset_duration","critical_warnings","clinical_pearls"]},
+        prompt:`You are a clinical pharmacist generating a comprehensive drug monograph for an emergency department physician. Use all provided FDA label data and your clinical knowledge. Be specific, evidence-based, and clinically useful.\n\n${context}`,
+        response_json_schema:{
+          type:"object",
+          properties:{
+            drug_class:{type:"string"},
+            mechanism:{type:"string"},
+            summary:{type:"string"},
+            indications:{
+              type:"array",
+              items:{
+                type:"object",
+                properties:{
+                  name:{type:"string"},
+                  adult_dose:{type:"string"},
+                  adult_formulations:{type:"array",items:{type:"string"}},
+                  peds_dose:{type:"string"},
+                  peds_formulations:{type:"array",items:{type:"string"}},
+                  peds_age_note:{type:"string"},
+                  duration:{type:"string"},
+                  route:{type:"string"},
+                  notes:{type:"string"},
+                },
+                required:["name","adult_dose","duration","route"],
+              },
+            },
+            contraindications:{
+              type:"array",
+              items:{
+                type:"object",
+                properties:{
+                  item:{type:"string"},
+                  severity:{type:"string",enum:["absolute","relative"]},
+                  reason:{type:"string"},
+                },
+                required:["item","severity"],
+              },
+            },
+            warnings:{type:"array",items:{type:"string"}},
+            renal_adjustment:{type:"string"},
+            hepatic_adjustment:{type:"string"},
+            pregnancy_safety:{type:"string"},
+            key_interactions:{type:"array",items:{type:"string"}},
+            monitoring_parameters:{type:"array",items:{type:"string"}},
+            clinical_pearls:{type:"array",items:{type:"string"}},
+          },
+          required:["drug_class","summary","indications","contraindications","warnings","clinical_pearls"],
+        },
       });
-      setAiSum(r);
-    } catch{setAiSum({_err:true});}
-    setAiLoad(false);
+      setMono(r);
+    } catch{setMono({_err:true});}
+    setMonoLoad(false);
   };
 
   const handlePed=async()=>{
@@ -442,6 +391,7 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
 
   const activeTier=dbDrug?getActiveTier(dbDrug,crcl):null;
   const flagCfg=activeTier?FLAG[activeTier[2]]||FLAG.ok:null;
+  const allergyWarnings=useMemo(()=>checkAllergy(pt.allergy,dbDrug),[pt.allergy,dbDrug]);
 
   const LABEL_SECS=[
     {k:"boxed_warning",l:"Boxed Warning",c:T.coral},{k:"indications_and_usage",l:"Indications & Usage",c:T.teal},
@@ -479,7 +429,9 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
                 <h2 style={{margin:0,fontFamily:"Playfair Display,serif",fontSize:20,color:T.teal,lineHeight:1.1}}>{fdaName(sel)}</h2>
                 {flagCfg&&<span style={{...tg(flagCfg.c),fontSize:10}}>{flagCfg.l}</span>}
                 {dbDrug?.controlled&&<span style={{...tg(T.coral),fontSize:10}}>Sch {dbDrug.schedule}</span>}
-                {ISMP.has(dbDrug?.id)&&<span style={{borderRadius:6,padding:"3px 9px",fontSize:10,fontWeight:700,background:"rgba(255,96,96,0.22)",border:`1px solid ${T.coral}55`,color:T.coral}}>⚠ ISMP High-Alert</span>}
+                {isISMP(dbDrug)&&<span style={{borderRadius:6,padding:"3px 9px",fontSize:10,fontWeight:700,background:"rgba(255,96,96,0.22)",border:`1px solid ${T.coral}55`,color:T.coral}}>⚠ ISMP High-Alert</span>}
+                {extracting&&<span style={{fontSize:10,color:T.gold}} className="u-pulse">Extracting dosing data...</span>}
+                {dbDrug?._source==="ai_generated"&&<span style={{...tg(T.teal),fontSize:9}}>AI-extracted · verify</span>}
               </div>
               {fdaGen(sel)&&<div style={{fontSize:12,color:T.mut,fontStyle:"italic",marginBottom:8}}>{fdaGen(sel)}</div>}
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
@@ -493,6 +445,19 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
               {ixToast&&<span className="u-in" style={{fontSize:10,color:T.green,fontWeight:700}}>✓ Added</span>}
             </div>
           </div>
+
+          {/* Allergy warnings */}
+          {allergyWarnings?.length>0&&(
+            <div className="u-in" style={{...gl({padding:"12px 16px",marginBottom:12,border:`2px solid ${T.coral}55`,background:T.cD})}}>
+              <div style={{fontSize:10,color:T.coral,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>⚠ Allergy Alert — Verify Before Prescribing</div>
+              {allergyWarnings.map((w,i)=>(
+                <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"6px 0",borderBottom:i<allergyWarnings.length-1?`1px solid ${T.bdr}`:"none"}}>
+                  <span style={{...tg(w.severity==="contraindicated"?T.coral:T.gold),fontSize:9,flexShrink:0}}>{w.severity==="contraindicated"?"CONTRAINDICATED":"CROSS-REACTIVITY"}</span>
+                  <span style={{fontSize:12,color:T.txt,lineHeight:1.5}}>{w.msg}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Patient-specific renal dose */}
           {dbDrug&&activeTier&&(
@@ -534,42 +499,213 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
             </div>
           )}
 
-          {/* AI Summary */}
-          {!aiSum?(
-            <button onClick={handleAI} disabled={aiLoad} style={{...ab(T.teal,{marginBottom:12,display:"flex",alignItems:"center",gap:8,opacity:aiLoad?.6:1})}}>
-              {aiLoad?<><Sp/> Generating ED Summary...</>:"⚡ Generate AI ED Summary"}
+          {/* ── Clinical Monograph ─────────────────────────────────────────── */}
+          <div style={{...gl({marginBottom:12,overflow:"hidden",border:`1px solid ${monoLoad?T.teal+"40":mono&&!mono._err?T.teal+"30":T.bdr}`})}}>
+            {/* Monograph header */}
+            <button onClick={()=>setMonoOpen(p=>!p)} style={{width:"100%",background:"none",border:"none",padding:"12px 16px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:14}}>📋</span>
+                <span style={{fontSize:13,fontWeight:700,color:T.teal}}>Clinical Monograph</span>
+                {monoLoad&&<span className="u-pulse" style={{fontSize:11,color:T.teal}}>Generating...</span>}
+                {mono&&!mono._err&&!monoLoad&&<span style={{...tg(T.green),fontSize:9}}>Complete</span>}
+                {mono&&!mono._err&&mono.indications?.length>0&&<span style={{...tg(T.teal),fontSize:9}}>{mono.indications.length} indication{mono.indications.length!==1?"s":""}</span>}
+              </div>
+              <span style={{color:T.dim,fontSize:12}}>{monoOpen?"▲":"▼"}</span>
             </button>
-          ):(
-            !aiSum._err&&(
-              <div className="u-in" style={{...gl({padding:"16px 18px",marginBottom:12,border:`1px solid ${T.teal}35`})}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
-                  <span style={{fontSize:12,fontWeight:700,color:T.teal}}>⚡ AI ED Summary</span>
-                  <span style={{fontSize:10,color:T.dim}}>AI-generated · Verify clinically</span>
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                  {[["Indication",aiSum.ed_indication,T.tD],["Typical ED Dose",aiSum.typical_ed_dose,T.gD],
-                    ["Route",aiSum.route,T.card],["Onset / Duration",aiSum.onset_duration,T.card]].map(([l,v,bg])=>(
-                    <div key={l} style={{background:bg,borderRadius:8,padding:"10px 12px",border:`1px solid ${T.bdr}`}}>
-                      <div style={{fontSize:9,color:T.dim,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-                      <div style={{fontSize:12,color:T.txt,fontWeight:600}}>{v}</div>
-                    </div>
-                  ))}
-                </div>
-                {aiSum.critical_warnings?.length>0&&(
-                  <div style={{marginBottom:8}}>
-                    <div style={{fontSize:9,color:T.coral,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>⚠ Critical Warnings</div>
-                    {aiSum.critical_warnings.map((w,i)=><div key={i} style={{background:T.cD,borderRadius:6,padding:"6px 10px",marginBottom:4,fontSize:12,color:T.txt,borderLeft:`3px solid ${T.coral}`}}>{w}</div>)}
+
+            {monoOpen&&(
+              <div style={{borderTop:`1px solid ${T.bdr}`,padding:"16px 18px"}}>
+
+                {monoLoad&&(
+                  <div style={{textAlign:"center",padding:"30px 20px"}}>
+                    <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Sp/></div>
+                    <div style={{fontSize:12,color:T.mut}}>Analyzing FDA label, dosing data, and clinical references...</div>
                   </div>
                 )}
-                {aiSum.clinical_pearls?.length>0&&(
-                  <div>
-                    <div style={{fontSize:9,color:T.gold,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>★ Clinical Pearls</div>
-                    {aiSum.clinical_pearls.map((p,i)=><div key={i} style={{background:T.gD,borderRadius:6,padding:"6px 10px",marginBottom:4,fontSize:12,color:T.txt,borderLeft:`3px solid ${T.gold}`}}>{p}</div>)}
+
+                {mono?._err&&(
+                  <div style={{fontSize:12,color:T.coral,padding:"10px 0"}}>
+                    Monograph generation failed.
+                    <button onClick={()=>triggerMonograph(sel,dbDrug)} style={{...ab(T.teal,{marginLeft:10,padding:"4px 12px",fontSize:11})}}>Retry</button>
+                  </div>
+                )}
+
+                {mono&&!mono._err&&!monoLoad&&(
+                  <div className="u-in">
+
+                    {/* Drug class + mechanism + summary */}
+                    <div style={{...gl({padding:"12px 14px",marginBottom:14,background:T.tD,border:`1px solid ${T.tB}`})}}>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
+                        {mono.drug_class&&<span style={{...tg(T.teal),fontSize:10}}>{mono.drug_class}</span>}
+                        {mono.pregnancy_safety&&<span style={{...tg(T.gold),fontSize:10}}>Pregnancy: {mono.pregnancy_safety}</span>}
+                      </div>
+                      {mono.mechanism&&<div style={{fontSize:11,color:T.mut,marginBottom:6,lineHeight:1.55}}><strong style={{color:T.dim}}>Mechanism: </strong>{mono.mechanism}</div>}
+                      {mono.summary&&<div style={{fontSize:12,color:T.txt,lineHeight:1.6}}>{mono.summary}</div>}
+                    </div>
+
+                    {/* Indications — tab strip + detail */}
+                    {mono.indications?.length>0&&(
+                      <div style={{marginBottom:14}}>
+                        <div style={{fontSize:9,color:T.teal,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Indications & Dosing</div>
+
+                        {/* Indication tabs */}
+                        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>
+                          {mono.indications.map((ind,i)=>(
+                            <button key={i} onClick={()=>setActiveInd(i)} style={{padding:"5px 13px",borderRadius:7,cursor:"pointer",border:`1px solid ${activeInd===i?T.teal+"55":T.bdr}`,background:activeInd===i?T.tD:"transparent",color:activeInd===i?T.teal:T.mut,fontSize:11,fontWeight:activeInd===i?700:500,fontFamily:"DM Sans,sans-serif",transition:"all .14s"}}>
+                              {ind.name}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Active indication detail */}
+                        {(()=>{
+                          const ind=mono.indications[activeInd];
+                          if(!ind) return null;
+                          return(
+                            <div className="u-in" style={{...gl({padding:"14px 16px",border:`1px solid ${T.teal}25`})}}>
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+
+                                {/* Adult dosing */}
+                                <div style={{background:T.tD,borderRadius:9,padding:"12px 14px",border:`1px solid ${T.tB}`}}>
+                                  <div style={{fontSize:9,color:T.teal,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Adult Dosing</div>
+                                  <div style={{fontSize:14,fontWeight:700,color:T.txt,fontFamily:"JetBrains Mono,monospace",marginBottom:6,lineHeight:1.4}}>{ind.adult_dose}</div>
+                                  {ind.route&&<div style={{fontSize:11,color:T.mut,marginBottom:6}}>Route: <strong style={{color:T.txt}}>{ind.route}</strong></div>}
+                                  {ind.adult_formulations?.length>0&&(
+                                    <div>
+                                      <div style={{fontSize:9,color:T.dim,marginBottom:4}}>Available Formulations</div>
+                                      {ind.adult_formulations.map((f,i)=>(
+                                        <div key={i} style={{fontSize:10,color:T.mut,padding:"2px 0"}}>{f}</div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Peds dosing */}
+                                <div style={{background:T.gD,borderRadius:9,padding:"12px 14px",border:`1px solid ${T.gold}25`}}>
+                                  <div style={{fontSize:9,color:T.gold,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Pediatric Dosing</div>
+                                  {ind.peds_dose?(
+                                    <>
+                                      <div style={{fontSize:13,fontWeight:700,color:T.txt,fontFamily:"JetBrains Mono,monospace",marginBottom:6,lineHeight:1.4}}>{ind.peds_dose}</div>
+                                      {ind.peds_age_note&&<div style={{fontSize:10,color:T.coral,marginBottom:6}}>{ind.peds_age_note}</div>}
+                                      {ind.peds_formulations?.length>0&&(
+                                        <div>
+                                          <div style={{fontSize:9,color:T.dim,marginBottom:4}}>Available Formulations</div>
+                                          {ind.peds_formulations.map((f,i)=>(
+                                            <div key={i} style={{fontSize:10,color:T.mut,padding:"2px 0"}}>{f}</div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </>
+                                  ):(
+                                    <div style={{fontSize:11,color:T.dim,fontStyle:"italic"}}>See peds dosing calculator below or consult pediatric pharmacist</div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Duration */}
+                              {ind.duration&&(
+                                <div style={{background:T.pD,borderRadius:8,padding:"10px 12px",marginBottom:10,border:`1px solid ${T.purple}25`}}>
+                                  <div style={{fontSize:9,color:T.purple,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Recommended Duration</div>
+                                  <div style={{fontSize:13,color:T.txt,fontWeight:600}}>{ind.duration}</div>
+                                </div>
+                              )}
+
+                              {/* Indication notes */}
+                              {ind.notes&&(
+                                <div style={{fontSize:11,color:T.mut,lineHeight:1.6,padding:"8px 10px",borderRadius:7,border:`1px solid ${T.bdr}`,background:T.card}}>
+                                  {ind.notes}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Contraindications */}
+                    {mono.contraindications?.length>0&&(
+                      <div style={{marginBottom:14}}>
+                        <div style={{fontSize:9,color:T.coral,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Contraindications</div>
+                        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                          {mono.contraindications.map((ci,i)=>(
+                            <div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"8px 12px",borderRadius:8,background:ci.severity==="absolute"?T.cD:"rgba(240,165,0,.07)",border:`1px solid ${ci.severity==="absolute"?T.coral+"30":T.gold+"30"}`}}>
+                              <span style={{...tg(ci.severity==="absolute"?T.coral:T.gold),fontSize:9,flexShrink:0,marginTop:1}}>{ci.severity==="absolute"?"ABSOLUTE":"RELATIVE"}</span>
+                              <div>
+                                <div style={{fontSize:12,fontWeight:700,color:T.txt}}>{ci.item}</div>
+                                {ci.reason&&<div style={{fontSize:11,color:T.mut,marginTop:2}}>{ci.reason}</div>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Warnings */}
+                    {mono.warnings?.length>0&&(
+                      <div style={{marginBottom:14}}>
+                        <div style={{fontSize:9,color:T.coral,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Warnings</div>
+                        {mono.warnings.map((w,i)=>(
+                          <div key={i} style={{fontSize:12,color:T.mut,padding:"5px 10px",borderLeft:`3px solid ${T.coral}55`,marginBottom:4,lineHeight:1.55}}>{w}</div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 3-col: Renal / Hepatic / Interactions */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+                      {mono.renal_adjustment&&(
+                        <div style={{...gl({padding:"11px 14px",borderLeft:`3px solid ${T.gold}`})}}>
+                          <div style={{fontSize:9,color:T.gold,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Renal Adjustment</div>
+                          <div style={{fontSize:11,color:T.txt,lineHeight:1.6}}>{mono.renal_adjustment}</div>
+                        </div>
+                      )}
+                      {mono.hepatic_adjustment&&(
+                        <div style={{...gl({padding:"11px 14px",borderLeft:`3px solid ${T.orange}`})}}>
+                          <div style={{fontSize:9,color:T.orange,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Hepatic Adjustment</div>
+                          <div style={{fontSize:11,color:T.txt,lineHeight:1.6}}>{mono.hepatic_adjustment}</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Key interactions */}
+                    {mono.key_interactions?.length>0&&(
+                      <div style={{marginBottom:14}}>
+                        <div style={{fontSize:9,color:T.gold,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Key Drug Interactions</div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                          {mono.key_interactions.map((x,i)=>(
+                            <div key={i} style={{fontSize:11,color:T.mut,padding:"5px 9px",borderRadius:6,background:T.gD,borderLeft:`2px solid ${T.gold}55`,lineHeight:1.5}}>{x}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Monitoring parameters */}
+                    {mono.monitoring_parameters?.length>0&&(
+                      <div style={{marginBottom:14}}>
+                        <div style={{fontSize:9,color:T.purple,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Monitoring Parameters</div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                          {mono.monitoring_parameters.map((m,i)=>(
+                            <span key={i} style={{...tg(T.purple),fontSize:10}}>{m}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Clinical pearls */}
+                    {mono.clinical_pearls?.length>0&&(
+                      <div>
+                        <div style={{fontSize:9,color:T.teal,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>★ Clinical Pearls</div>
+                        {mono.clinical_pearls.map((p,i)=>(
+                          <div key={i} style={{fontSize:12,color:T.txt,padding:"7px 12px",borderRadius:7,background:T.tD,borderLeft:`3px solid ${T.teal}`,marginBottom:6,lineHeight:1.6}}>{p}</div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div style={{fontSize:9,color:T.dim,marginTop:10}}>AI-synthesized from FDA label + clinical references · Always verify against current prescribing information</div>
                   </div>
                 )}
               </div>
-            )
-          )}
+            )}
+          </div>
 
           {/* Ped Calc */}
           <div style={{...gl({marginBottom:12,overflow:"hidden"}),border:`1px solid ${T.bdr}`}}>
@@ -639,7 +775,7 @@ FDA warnings: ${trunc(sel.warnings?.[0]||sel.boxed_warning?.[0]||"",300)}`,
 }
 
 // ── Tab 2: Weight & Drip ──────────────────────────────────────────────────────
-function WeightDripTab({pt}) {
+function WeightDripTab({pt,entityDB}) {
   const [mode,setMode]=useState("wt"); // "wt" | "drip" | "rsi" | "cp"
   const [selDrug,setSelDrug]=useState(null);
   const [localWt,setLocalWt]=useState("");
@@ -652,10 +788,10 @@ function WeightDripTab({pt}) {
   const [cpEnc,setCpEnc]=useState("none");
 
   const wt=parseFloat(pt.wt||localWt)||0;
-  const wtDrugs=DB.filter(d=>d.wt!==null);
-  const dripDrugs=DB.filter(d=>d.drip!==null);
-  const rsiInductions=DB.filter(d=>["etom","ketam","prop"].includes(d.id));
-  const rsiParalytics=DB.filter(d=>["succ","roc"].includes(d.id));
+  const wtDrugs=entityDB.filter(d=>d.wt!==null);
+  const dripDrugs=entityDB.filter(d=>d.drip!==null);
+  const rsiInductions=entityDB.filter(d=>["etom","ketam","prop"].includes(d.id));
+  const rsiParalytics=entityDB.filter(d=>["succ","roc"].includes(d.id));
 
   const calcDose=(drug)=>{
     if(!drug?.wt||!wt) return null;
@@ -733,7 +869,7 @@ function WeightDripTab({pt}) {
                   {drugs.map(d=>(
                     <button key={d.id} onClick={()=>setSelDrug(d)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",textAlign:"left",padding:"7px 10px",borderRadius:7,border:`1px solid ${selDrug?.id===d.id?T.teal+"55":T.bdr}`,background:selDrug?.id===d.id?T.tD:T.card,color:T.txt,fontSize:12,fontFamily:"DM Sans,sans-serif",cursor:"pointer",marginBottom:3}}>
                       <span>{d.name}</span>
-                      {ISMP.has(d.id)&&<span style={{fontSize:8,color:T.coral,fontWeight:700,flexShrink:0}}>⚠</span>}
+                      {isISMP(d)&&<span style={{fontSize:8,color:T.coral,fontWeight:700,flexShrink:0}}>⚠</span>}
                     </button>
                   ))}
                 </div>
@@ -839,7 +975,7 @@ function WeightDripTab({pt}) {
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            {[DB.find(d=>d.id===rsiInd),DB.find(d=>d.id===rsiPar)].filter(Boolean).map(drug=>{
+            {[entityDB.find(d=>d.id===rsiInd),entityDB.find(d=>d.id===rsiPar)].filter(Boolean).map(drug=>{
               const r=calcDose(drug);
               const col=drug.cat==="rsi"&&["succ","roc"].includes(drug.id)?T.purple:T.coral;
               return(
@@ -1064,7 +1200,7 @@ const PHARMACIES=[
   {id:"amz",name:"Amazon Pharmacy",chain:"AMAZON",addr:"Delivery to patient",phone:"1-855-745-5725",epcs:true,open24h:true,hours:"24/7 delivery"},
   {id:"wal",name:"Walmart Pharmacy #4421",chain:"WAL",addr:"2200 Commerce Blvd",phone:"(217) 555-4421",epcs:false,open24h:false,hours:"Open until 9pm"},
 ];
-function RxBuilderTab({pt,crcl}) {
+function RxBuilderTab({pt,crcl,entityDB}) {
   const [rx,setRx]=useState({drug:"",dose:"",route:"PO",freq:"",qty:"",refills:"0",indication:"",ptName:"",dob:"",allergy:""});
   const [pharmacy,setPharmacy]=useState(null);
   const [copied,setCopied]=useState(false);
@@ -1072,12 +1208,12 @@ function RxBuilderTab({pt,crcl}) {
 
   const renalSig=useMemo(()=>{
     if(!rx.drug||!crcl) return null;
-    const d=findDB(rx.drug);
+    const d=findDB(rx.drug,entityDB);
     if(!d) return null;
     const tier=getActiveTier(d,crcl);
     if(!tier||tier[2]==="ok") return null;
     return {drug:d.name,dose:tier[1],flag:tier[2],label:tier[0]};
-  },[rx.drug,crcl]);
+  },[rx.drug,crcl,entityDB]);
 
   const preview=rx.drug?[
     `Patient: ${rx.ptName||"[Name]"} | DOB: ${rx.dob||"[DOB]"}`,
@@ -1250,9 +1386,18 @@ function AIPharmacistTab({pt,crcl,ibw}) {
 
 // ── Main Export ───────────────────────────────────────────────────────────────
 export default function UnifiedPharmacologyHub() {
-  const [pt,setPt]=useState({age:"",wt:"",ht:"",scr:"",sex:"M",dialysis:false});
+  const [pt,setPt]=useState({age:"",wt:"",ht:"",scr:"",sex:"M",dialysis:false,allergy:""});
   const [tab,setTab]=useState("rx");
   const [ixDrugs,setIxDrugs]=useState([]);
+  const [entityDB,setEntityDB]=useState([]);
+  const [dbLoaded,setDbLoaded]=useState(false);
+
+  useEffect(()=>{
+    DrugDosing.filter({},{limit:500}).then(records=>{
+      setEntityDB(records.map(normalizeEntityDrug));
+      setDbLoaded(true);
+    }).catch(()=>setDbLoaded(true));
+  },[]);
 
   const crcl=useMemo(()=>calcCrCl({age:pt.age,wt:pt.wt,scr:pt.scr,sex:pt.sex}),[pt.age,pt.wt,pt.scr,pt.sex]);
   const ibw=useMemo(()=>calcIBW(pt.ht,pt.sex),[pt.ht,pt.sex]);
@@ -1280,7 +1425,7 @@ export default function UnifiedPharmacologyHub() {
         <div style={{width:44,height:44,borderRadius:11,background:T.tD,border:`1px solid ${T.tB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>⚗</div>
         <div>
           <h1 style={{margin:0,fontFamily:"Playfair Display,serif",fontSize:22,color:T.teal,letterSpacing:"-0.5px",lineHeight:1}}>Unified PharmacologyHub</h1>
-          <p style={{margin:"3px 0 0",fontSize:12,color:T.mut}}>Rx Lookup · Weight Dosing · Interactions · Rx Builder · AI Pharmacist · {DB.length} drugs</p>
+          <p style={{margin:"3px 0 0",fontSize:12,color:T.mut}}>Rx Lookup · Weight Dosing · Interactions · Rx Builder · AI Pharmacist · {entityDB.length} drugs loaded</p>
         </div>
       </div>
 
@@ -1298,10 +1443,10 @@ export default function UnifiedPharmacologyHub() {
       </div>
 
       {/* Tab content */}
-      {tab==="rx"  &&<RxLookupTab   pt={pt} crcl={crcl} onAddToIx={addToIx}/>}
-      {tab==="wt"  &&<WeightDripTab pt={pt}/>}
+      {tab==="rx"  &&<RxLookupTab   pt={pt} crcl={crcl} onAddToIx={addToIx} entityDB={entityDB} onNewDrug={d=>setEntityDB(p=>[...p,d])}/>}
+      {tab==="wt"  &&<WeightDripTab pt={pt} entityDB={entityDB}/>}
       {tab==="ix"  &&<InteractionTab ixDrugs={ixDrugs} setIxDrugs={setIxDrugs}/>}
-      {tab==="build"&&<RxBuilderTab pt={pt} crcl={crcl}/>}
+      {tab==="build"&&<RxBuilderTab pt={pt} crcl={crcl} entityDB={entityDB}/>}
       {tab==="ai"  &&<AIPharmacistTab pt={pt} crcl={crcl} ibw={ibw}/>}
 
       <div style={{marginTop:40,textAlign:"center"}}>

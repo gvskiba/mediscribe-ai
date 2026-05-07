@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
-const DrugDosing = base44.entities.DrugDosing;
+import { InvokeLLM } from "@/integrations/Core";
+import { DrugDosing } from "@/api/entities";
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (() => {
@@ -310,25 +309,25 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
       ].filter(Boolean).join("\n");
 
       const r=await InvokeLLM({
-        prompt:`You are a senior emergency medicine pharmacist. Generate a concise ED bedside snapshot for ${name} (${gen}). Be direct, specific, and clinically actionable. ED context only — skip outpatient or chronic disease details unless critical to ED use.\n\n${context}`,
+        prompt:`You are a senior emergency medicine pharmacist. Generate a concise ED bedside snapshot for ${name} (${gen}). Be direct, specific, and clinically actionable. ED context only.\n\n${context}\n\nFor duration_by_indication provide strings formatted as "Indication: duration" e.g. "CAP: 5-7 days". For top_interactions provide strings formatted as "Drug (SEVERITY) — effect" e.g. "Warfarin (MAJOR) — significant INR increase". Limit top_interactions to 2 entries maximum.`,
         response_json_schema:{
           type:"object",
           properties:{
-            primary_ed_use:   {type:"string"},
-            adult_dose:       {type:"string"},
-            peds_dose:        {type:"string"},
-            route:            {type:"string"},
-            onset:            {type:"string"},
-            critical_safety:  {type:"string"},
-            duration_table:   {type:"array", items:{type:"object", properties:{indication:{type:"string"},duration:{type:"string"}}, required:["indication","duration"]}},
-            top_interactions: {type:"array", maxItems:2, items:{type:"object", properties:{drug:{type:"string"},severity:{type:"string",enum:["critical","major","moderate"]},effect:{type:"string"}}, required:["drug","severity","effect"]}},
-            ehr_line:         {type:"string"},
+            primary_ed_use:       {type:"string"},
+            adult_dose:           {type:"string"},
+            peds_dose:            {type:"string"},
+            route:                {type:"string"},
+            onset:                {type:"string"},
+            critical_safety:      {type:"string"},
+            duration_by_indication:{type:"array", items:{type:"string"}},
+            top_interactions:     {type:"array", items:{type:"string"}},
+            ehr_line:             {type:"string"},
           },
-          required:["primary_ed_use","adult_dose","peds_dose","route","critical_safety","ehr_line"],
+          required:["primary_ed_use","adult_dose","peds_dose","route","critical_safety","duration_by_indication","top_interactions","ehr_line"],
         },
       });
       setSnap(r);
-    } catch { setSnap({_err:true}); }
+    } catch(e) { setSnap({_err:true,msg:String(e)}); }
     setSnapLoad(false);
   };
 
@@ -481,7 +480,7 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
-              <button onClick={()=>{setSel(null);setQ("");setDbDrug(null);setSnap(null);setMono(null);}} style={{...ab(T.coral,{padding:"6px 12px",fontSize:11})}}>✕ Close</button>
+              <button onClick={()=>{setSel(null);setQ("");setDbDrug(null);setAiSum(null);}} style={{...ab(T.coral,{padding:"6px 12px",fontSize:11})}}>✕ Close</button>
               <button onClick={addToIx} style={{...ab(T.teal,{padding:"6px 12px",fontSize:11})}}>➕ Add to Interactions</button>
               {ixToast&&<span className="u-in" style={{fontSize:10,color:T.green,fontWeight:700}}>✓ Added</span>}
             </div>
@@ -593,15 +592,18 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
                 {/* Duration table + top interactions — side by side */}
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
                   {/* Duration */}
-                  {snap.duration_table?.length>0&&(
+                  {snap.duration_by_indication?.length>0&&(
                     <div style={{...gl({padding:"11px 14px"})}}>
                       <div style={{fontSize:9,color:T.purple,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Duration by Indication</div>
-                      {snap.duration_table.map((row,i)=>(
-                        <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",padding:"4px 0",borderBottom:i<snap.duration_table.length-1?`1px solid ${T.bdr}`:"none",gap:8}}>
-                          <span style={{fontSize:11,color:T.mut,flex:1,lineHeight:1.4}}>{row.indication}</span>
-                          <span style={{fontFamily:"JetBrains Mono,monospace",fontSize:11,fontWeight:700,color:T.purple,flexShrink:0}}>{row.duration}</span>
-                        </div>
-                      ))}
+                      {snap.duration_by_indication.map((row,i)=>{
+                        const parts=row.split(":"); const ind=parts[0]||row; const dur=parts.slice(1).join(":").trim();
+                        return(
+                          <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",padding:"4px 0",borderBottom:i<snap.duration_by_indication.length-1?`1px solid ${T.bdr}`:"none",gap:8}}>
+                            <span style={{fontSize:11,color:T.mut,flex:1,lineHeight:1.4}}>{ind}</span>
+                            {dur&&<span style={{fontFamily:"JetBrains Mono,monospace",fontSize:11,fontWeight:700,color:T.purple,flexShrink:0}}>{dur}</span>}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -610,14 +612,11 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
                     <div style={{...gl({padding:"11px 14px"})}}>
                       <div style={{fontSize:9,color:T.gold,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Key Interactions</div>
                       {snap.top_interactions.map((ix,i)=>{
-                        const ixc=ix.severity==="critical"?T.coral:ix.severity==="major"?T.gold:T.mut;
+                        const isMajor=ix.toLowerCase().includes("major")||ix.toLowerCase().includes("critical");
+                        const ixc=isMajor?T.coral:T.gold;
                         return(
                           <div key={i} style={{padding:"5px 0",borderBottom:i<snap.top_interactions.length-1?`1px solid ${T.bdr}`:"none"}}>
-                            <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:2}}>
-                              <span style={{...tg(ixc),fontSize:9}}>{ix.severity.toUpperCase()}</span>
-                              <span style={{fontSize:12,fontWeight:700,color:T.txt}}>{ix.drug}</span>
-                            </div>
-                            <div style={{fontSize:11,color:T.mut,lineHeight:1.4}}>{ix.effect}</div>
+                            <div style={{fontSize:11,color:T.mut,lineHeight:1.5}}><span style={{color:ixc,fontWeight:700}}>→ </span>{ix}</div>
                           </div>
                         );
                       })}
@@ -651,7 +650,7 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
 
             {snap?._err&&(
               <div style={{padding:"12px 16px",borderTop:`1px solid ${T.bdr}`}}>
-                <span style={{fontSize:12,color:T.coral}}>Snapshot unavailable.</span>
+                <span style={{fontSize:12,color:T.coral}}>Snapshot unavailable — schema error or timeout.</span>
                 <button onClick={()=>triggerSnapshot(sel,dbDrug)} style={{...ab(T.teal,{marginLeft:10,padding:"4px 12px",fontSize:11})}}>Retry</button>
               </div>
             )}

@@ -1079,7 +1079,7 @@ const HUBS = [
     stats: ["Dental Emergencies", "Nerve Blocks", "Abscess Mgmt"],
     badge: "Live",
     priority: 54,
-    essential: false,
+    essential: true,
   },
   {
     id: "ed-procedure-notes",
@@ -1097,7 +1097,7 @@ const HUBS = [
     stats: ["Note Templates", "Consent Forms", "Documentation"],
     badge: "Live",
     priority: 53,
-    essential: false,
+    essential: true,
   },
 ];
 const ESSENTIAL_IDS = new Set(HUBS.filter(h => h.essential).map(h => h.id));
@@ -1394,7 +1394,9 @@ export default function HubSelectorPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   // DEFAULT: Essential-only. "Browse all" button or ⌘K expands to full catalog.
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory] = useState(() => {
+    try { return localStorage.getItem("notrya_hub_cat") || "All"; } catch { return "All"; }
+  });
   const [sortBy, setSortBy] = useState(() => {
     try { return localStorage.getItem("notrya_hub_sort") || "priority"; } catch { return "priority"; }
   });
@@ -1405,6 +1407,18 @@ export default function HubSelectorPage() {
   useEffect(() => {
     try { localStorage.setItem("notrya_hub_sort", sortBy); } catch {}
   }, [sortBy]);
+
+  useEffect(() => {
+    try { localStorage.setItem("notrya_hub_cat", activeCategory); } catch {}
+  }, [activeCategory]);
+
+  // One-time migration: reset stale "Essential" default to "All"
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("notrya_hub_cat");
+      if (!stored) localStorage.setItem("notrya_hub_cat", "All");
+    } catch {}
+  }, []);
 
   useEffect(() => {
     base44.auth.me().then(user => {

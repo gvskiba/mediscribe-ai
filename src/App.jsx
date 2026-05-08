@@ -99,7 +99,7 @@ import SepsisBundleTracker from '@/pages/SepsisBundleTracker';
 import MedRecHub from '@/pages/MedRecHub';
 import ClinicalPresentationHub from '@/pages/ClinicalPresentationHub';
 import EDNoteGenerator from '@/pages/EdNoteGenerator';
-import DischargeRxCard from '@/pages/DischargeRxCard.jsx';
+import DischargeRxCard from '@/pages/DischargeRxCard';
 import AIFlagReview from '@/pages/AIFlagReview';
 import TemplateStudio from '@/pages/TemplateStudio';
 
@@ -304,7 +304,6 @@ const AuthenticatedApp = () => {
       <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />
       <Route path="/EdNoteGenerator" element={<EDNoteGenerator />} />
       <Route path="/DischargeRxCard" element={<DischargeRxCard />} />
-      <Route path="/EdNoteGenerator" element={<EDNoteGenerator />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

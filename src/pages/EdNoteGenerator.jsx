@@ -41,6 +41,7 @@ const gl = (x={}) => ({backdropFilter:"blur(14px)",background:T.card,border:`1px
 const ib = (x={}) => ({width:"100%",background:"rgba(13,27,46,.8)",border:`1px solid ${T.bdr}`,borderRadius:8,padding:"8px 12px",color:T.txt,fontFamily:"DM Sans,sans-serif",fontSize:13,transition:"border-color .15s",...x});
 const Sp = () => <span style={{display:"inline-block",width:12,height:12,border:"2px solid rgba(0,180,216,.2)",borderTopColor:T.teal,borderRadius:"50%",animation:"ngSpin .7s linear infinite"}}/>;
 
+// ── ROS Systems ────────────────────────────────────────────────────────────────
 const ROS_SYSTEMS = [
   { id:"const",   label:"Constitutional",   negatives:["fever","chills","night sweats","fatigue","weight loss","weight gain","appetite changes"] },
   { id:"heent",   label:"HEENT",            negatives:["headache","vision changes","diplopia","hearing loss","tinnitus","nasal congestion","sore throat","difficulty swallowing"] },
@@ -56,6 +57,7 @@ const ROS_SYSTEMS = [
   { id:"heme",    label:"Hematologic",      negatives:["easy bruising","easy bleeding","lymph node swelling","frequent infections"] },
 ];
 
+// ── PE Systems ────────────────────────────────────────────────────────────────
 const PE_SYSTEMS = [
   { id:"gen",   label:"General" },
   { id:"heent", label:"HEENT" },
@@ -69,6 +71,7 @@ const PE_SYSTEMS = [
   { id:"psych", label:"Psychiatric" },
 ];
 
+// ── Copy Button ───────────────────────────────────────────────────────────────
 function CopyBtn({text, label="Copy", color=T.teal, small=false}) {
   const [done, setDone] = useState(false);
   const copy = () => {
@@ -93,6 +96,7 @@ function CopyBtn({text, label="Copy", color=T.teal, small=false}) {
   );
 }
 
+// ── Section Card ──────────────────────────────────────────────────────────────
 function SectionCard({label, color=T.teal, icon, text, extra, loading, children}) {
   return(
     <div style={{...gl({marginBottom:10,overflow:"hidden",borderLeft:`3px solid ${color}55`})}}>
@@ -114,7 +118,9 @@ function SectionCard({label, color=T.teal, icon, text, extra, loading, children}
   );
 }
 
+// ── Main Component ─────────────────────────────────────────────────────────────
 export default function EDNoteGenerator() {
+  // ── Core inputs
   const [cc,setCc]=useState("");
   const [duration,setDuration]=useState("");
   const [hpiPoints,setHpiPoints]=useState("");
@@ -124,16 +130,20 @@ export default function EDNoteGenerator() {
   const [disposition,setDisposition]=useState("");
   const [mdmComplexity,setMdmComplexity]=useState("moderate");
 
+  // ── ROS state: {system_id: {reviewed, positives, negatives:[checked]}}
   const [ros,setRos]=useState(()=>Object.fromEntries(ROS_SYSTEMS.map(s=>[s.id,{reviewed:false,positives:"",negChecked:[]}])));
+
+  // ── PE state: {system_id: text}
   const [pe,setPe]=useState(()=>Object.fromEntries(PE_SYSTEMS.map(s=>[s.id,""])));
 
+  // ── AI state
   const [hpiText,setHpiText]=useState("");
   const [hpiLoad,setHpiLoad]=useState(false);
   const [mdmText,setMdmText]=useState("");
   const [mdmLoad,setMdmLoad]=useState(false);
 
+  // ── Include-heading toggle (some EHRs want just the value, not the label)
   const [inclHeading,setInclHeading]=useState(true);
-  const [activeTab,setActiveTab]=useState("hpi");
 
   const setRosField=(id,field,val)=>setRos(p=>({...p,[id]:{...p[id],[field]:val}}));
   const toggleNeg=(sysId,neg)=>setRos(p=>{
@@ -142,6 +152,7 @@ export default function EDNoteGenerator() {
   });
   const setAllNegs=(sysId,all)=>setRos(p=>({...p,[sysId]:{...p[sysId],negChecked:all?ROS_SYSTEMS.find(s=>s.id===sysId).negatives:[]}}));
 
+  // ── Generate ROS text per system ──────────────────────────────────────────────
   const rosText = useCallback((sysId) => {
     const r = ros[sysId];
     if(!r.reviewed) return "";
@@ -161,10 +172,12 @@ export default function EDNoteGenerator() {
 
   const reviewedSystems = ROS_SYSTEMS.filter(s=>ros[s.id].reviewed);
 
+  // ── Full ROS block
   const fullRosText = useMemo(()=>
     reviewedSystems.map(s=>rosSystemText(s.id)).filter(Boolean).join("\n")
   ,[reviewedSystems,rosSystemText]);
 
+  // ── Vitals text
   const vitalsText = useMemo(()=>{
     const v=vitals;
     const parts=[v.bp&&`BP ${v.bp}`,v.hr&&`HR ${v.hr}`,v.rr&&`RR ${v.rr}`,
@@ -172,6 +185,7 @@ export default function EDNoteGenerator() {
     return parts.join(" | ");
   },[vitals]);
 
+  // ── PE text per system
   const peText = useCallback((sysId) => {
     const t = pe[sysId]?.trim();
     if(!t) return "";
@@ -183,6 +197,7 @@ export default function EDNoteGenerator() {
     PE_SYSTEMS.map(s=>pe[s.id]?.trim()?peText(s.id):"").filter(Boolean).join("\n")
   ,[pe,peText]);
 
+  // ── Generate HPI via AI
   const genHPI = async() => {
     if(!cc||hpiLoad) return;
     setHpiLoad(true);
@@ -201,6 +216,7 @@ Write in past tense, third person. One paragraph, 3-5 sentences. Clinical, chart
     setHpiLoad(false);
   };
 
+  // ── Generate MDM via AI
   const genMDM = async() => {
     if(!dx||mdmLoad) return;
     setMdmLoad(true);
@@ -219,11 +235,13 @@ Include: problem addressed, data reviewed/ordered, risk of complications, treatm
     setMdmLoad(false);
   };
 
+  // ── A/P text
   const apText = useMemo(()=>{
     const lines=[dx&&`Assessment: ${dx}`,plan&&`Plan: ${plan}`,disposition&&`Disposition: ${disposition}`].filter(Boolean);
     return lines.join("\n");
   },[dx,plan,disposition]);
 
+  // ── Full note
   const fullNote = useMemo(()=>[
     cc&&`CC: ${cc}${duration?` x ${duration}`:""}`,
     vitalsText&&`Vitals: ${vitalsText}`,
@@ -234,6 +252,7 @@ Include: problem addressed, data reviewed/ordered, risk of complications, treatm
     apText&&`${apText}`,
   ].filter(Boolean).join("\n\n"),[cc,duration,vitalsText,hpiText,fullRosText,fullPeText,mdmText,apText]);
 
+  const [activeTab,setActiveTab]=useState("hpi");
   const TABS=[["hpi","📝 HPI"],["ros","🔍 ROS"],["pe","🩺 PE"],["ap","📋 A/P"]];
 
   return(
@@ -242,6 +261,7 @@ Include: problem addressed, data reviewed/ordered, risk of complications, treatm
       {/* ── LEFT: Input Panel ─────────────────────────────────────────────── */}
       <div style={{padding:"20px 18px 60px",borderRight:`1px solid ${T.bdr}`,minHeight:"100vh"}}>
 
+        {/* Header */}
         <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20}}>
           <div style={{width:44,height:44,borderRadius:11,background:T.tD,border:`1px solid ${T.tB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>📝</div>
           <div>
@@ -322,6 +342,7 @@ Include: problem addressed, data reviewed/ordered, risk of complications, treatm
               const r=ros[sys.id];
               return(
                 <div key={sys.id} style={{...gl({marginBottom:7,overflow:"hidden",opacity:r.reviewed?1:.55,transition:"opacity .15s"})}}>
+                  {/* System header */}
                   <div style={{padding:"8px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",background:r.reviewed?T.tD:"transparent",transition:"background .15s"}}
                     onClick={()=>setRosField(sys.id,"reviewed",!r.reviewed)}>
                     <div style={{width:18,height:18,borderRadius:5,border:`2px solid ${r.reviewed?T.teal:T.bdr}`,background:r.reviewed?T.teal:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
@@ -332,14 +353,17 @@ Include: problem addressed, data reviewed/ordered, risk of complications, treatm
                       <span style={{fontSize:10,color:T.mut,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rosText(sys.id).slice(0,60)}...</span>
                     )}
                   </div>
+
                   {r.reviewed&&(
                     <div style={{padding:"8px 14px",borderTop:`1px solid ${T.bdr}`}}>
+                      {/* Positives */}
                       <div style={{marginBottom:8}}>
                         <div style={{fontSize:8,color:T.coral,fontFamily:"JetBrains Mono,monospace",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Positive Findings</div>
                         <input value={r.positives} onChange={e=>setRosField(sys.id,"positives",e.target.value)}
                           placeholder="e.g. chest pain x 2h radiating to left arm..."
                           style={{...ib({fontSize:12,padding:"6px 10px"})}}/>
                       </div>
+                      {/* Negatives */}
                       <div style={{marginBottom:8}}>
                         <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
                           <div style={{fontSize:8,color:T.dim,fontFamily:"JetBrains Mono,monospace",letterSpacing:1,textTransform:"uppercase"}}>Pertinent Negatives</div>
@@ -431,6 +455,7 @@ Include: problem addressed, data reviewed/ordered, risk of complications, treatm
       {/* ── RIGHT: Output Panel ───────────────────────────────────────────── */}
       <div style={{padding:"20px 18px 60px",position:"sticky",top:0,maxHeight:"100vh",overflowY:"auto"}}>
 
+        {/* Output header */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div>
             <div style={{fontFamily:"Playfair Display,serif",fontSize:16,color:T.teal,fontWeight:700}}>Note Output</div>
@@ -444,16 +469,19 @@ Include: problem addressed, data reviewed/ordered, risk of complications, treatm
           </div>
         </div>
 
+        {/* CC + Vitals */}
         {(cc||vitalsText)&&(
           <SectionCard label="CC / Vitals" color={T.gold} icon="🏥"
             text={[cc&&`${cc}${duration?` x ${duration}`:""}`,vitalsText].filter(Boolean).join("\n")}>
           </SectionCard>
         )}
 
+        {/* HPI */}
         <SectionCard label="HPI" color={T.teal} icon="📝" text={hpiText} loading={hpiLoad}>
           {!hpiText&&!hpiLoad&&<p style={{margin:0,fontSize:11,color:T.dim,fontStyle:"italic"}}>Complete HPI tab and generate prose →</p>}
         </SectionCard>
 
+        {/* ROS — each system individually */}
         {reviewedSystems.length>0&&(
           <div style={{...gl({marginBottom:10,overflow:"hidden",borderLeft:`3px solid ${T.purple}55`})}}>
             <div style={{padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${T.bdr}`}}>
@@ -481,6 +509,7 @@ Include: problem addressed, data reviewed/ordered, risk of complications, treatm
           </div>
         )}
 
+        {/* PE — each system individually */}
         {PE_SYSTEMS.some(s=>pe[s.id]?.trim())&&(
           <div style={{...gl({marginBottom:10,overflow:"hidden",borderLeft:`3px solid ${T.gold}55`})}}>
             <div style={{padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${T.bdr}`}}>
@@ -507,12 +536,15 @@ Include: problem addressed, data reviewed/ordered, risk of complications, treatm
           </div>
         )}
 
+        {/* MDM */}
         <SectionCard label="MDM" color={T.purple} icon="🧠" text={mdmText} loading={mdmLoad}>
           {!mdmText&&!mdmLoad&&<p style={{margin:0,fontSize:11,color:T.dim,fontStyle:"italic"}}>Complete A/P tab and generate MDM →</p>}
         </SectionCard>
 
+        {/* A/P */}
         {apText&&<SectionCard label="Assessment / Plan" color={T.coral} icon="📋" text={apText}/>}
 
+        {/* Empty state */}
         {!cc&&!hpiText&&reviewedSystems.length===0&&!PE_SYSTEMS.some(s=>pe[s.id])&&!apText&&(
           <div style={{textAlign:"center",padding:"40px 20px",color:T.dim}}>
             <div style={{fontSize:32,marginBottom:10}}>📝</div>

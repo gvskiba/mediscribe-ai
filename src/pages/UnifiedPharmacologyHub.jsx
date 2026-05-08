@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { InvokeLLM } from "@/integrations/Core";
 import { DrugDosing } from "@/api/entities";
-const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (() => {
@@ -484,7 +483,6 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug,onRecent}) {
       )}
 
       {/* FDA search results */}
-      {res.length>0&&(
         <div style={{...gl({maxWidth:520,marginBottom:16,overflow:"hidden"})}}>
           {res.map((d,i)=>(
             <div key={i} className="u-hov" onClick={()=>pick(d)} style={{padding:"10px 15px",cursor:"pointer",borderBottom:i<res.length-1?`1px solid ${T.bdr}`:"none"}}>

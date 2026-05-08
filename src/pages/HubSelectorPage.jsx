@@ -1394,9 +1394,7 @@ export default function HubSelectorPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   // DEFAULT: Essential-only. "Browse all" button or ⌘K expands to full catalog.
-  const [activeCategory, setActiveCategory] = useState(() => {
-    try { return localStorage.getItem("notrya_hub_cat") || "All"; } catch { return "All"; }
-  });
+  const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState(() => {
     try { return localStorage.getItem("notrya_hub_sort") || "priority"; } catch { return "priority"; }
   });
@@ -1408,17 +1406,7 @@ export default function HubSelectorPage() {
     try { localStorage.setItem("notrya_hub_sort", sortBy); } catch {}
   }, [sortBy]);
 
-  useEffect(() => {
-    try { localStorage.setItem("notrya_hub_cat", activeCategory); } catch {}
-  }, [activeCategory]);
 
-  // One-time migration: reset stale "Essential" default to "All"
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("notrya_hub_cat");
-      if (!stored) localStorage.setItem("notrya_hub_cat", "All");
-    } catch {}
-  }, []);
 
   useEffect(() => {
     base44.auth.me().then(user => {
@@ -1614,41 +1602,29 @@ export default function HubSelectorPage() {
           </div>
         )}
 
-        {!search && activeCategory === "All" && (
+        {activeCategory === "All" && (
           <>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, animation: "hub-appear 0.5s ease both 0.14s" }}>
-              <div style={{ height: 1, width: 24, background: "rgba(0,229,192,0.4)", borderRadius: 1 }} />
-              <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#00e5c0", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>Featured</span>
-              <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(0,229,192,0.2), transparent)" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ height: 1, width: 24, background: "rgba(42,79,122,0.6)", borderRadius: 1 }} />
+              <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#8aaccc", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>All Hubs</span>
+              <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(42,79,122,0.4), transparent)" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontSize: 10, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace" }}>Sort:</span>
+                {[{id:"priority",label:"Default"},{id:"alpha",label:"A-Z"},{id:"category",label:"Category"},{id:"live",label:"Live First"}].map(opt => (
+                  <button key={opt.id} onClick={() => setSortBy(opt.id)}
+                    style={{ padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: sortBy === opt.id ? "rgba(155,109,255,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${sortBy === opt.id ? "rgba(155,109,255,0.45)" : "rgba(42,79,122,0.5)"}`, color: sortBy === opt.id ? "#9b6dff" : "#c8d8ee", backdropFilter: "blur(12px)" }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 24 }}>
-              {featured.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="large" isEssential={userEssentials.has(hub.id)} onToggleEssential={toggleEssential} />)}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+              {filtered.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i} size="normal" isEssential={userEssentials.has(hub.id)} onToggleEssential={toggleEssential} />)}
             </div>
-            {rest.length > 0 && (
-              <>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  <div style={{ height: 1, width: 24, background: "rgba(42,79,122,0.6)", borderRadius: 1 }} />
-                  <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "#8aaccc", textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 700 }}>All</span>
-                  <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(42,79,122,0.4), transparent)" }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <span style={{ fontSize: 10, color: "#8aaccc", fontFamily: "'JetBrains Mono',monospace" }}>Sort:</span>
-                    {[{id:"priority",label:"Default"},{id:"alpha",label:"A-Z"},{id:"category",label:"Category"},{id:"live",label:"Live First"}].map(opt => (
-                      <button key={opt.id} onClick={() => setSortBy(opt.id)}
-                        style={{ padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s", background: sortBy === opt.id ? "rgba(155,109,255,0.15)" : "rgba(8,22,40,0.75)", border: `1px solid ${sortBy === opt.id ? "rgba(155,109,255,0.45)" : "rgba(42,79,122,0.5)"}`, color: sortBy === opt.id ? "#9b6dff" : "#c8d8ee", backdropFilter: "blur(12px)" }}>
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-                  {rest.map((hub, i) => <HubCard key={hub.id} hub={hub} onNavigate={handleNavigate} index={i + 3} size="normal" isEssential={userEssentials.has(hub.id)} onToggleEssential={toggleEssential} />)}
-                </div>
-              </>
-            )}
           </>
         )}
 
-        {(search || (activeCategory !== "All" && activeCategory !== "Essential")) && (
+        {activeCategory !== "All" && activeCategory !== "Essential" && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <div style={{ height: 1, width: 24, background: "rgba(42,79,122,0.6)", borderRadius: 1 }} />

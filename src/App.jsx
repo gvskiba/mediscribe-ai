@@ -96,6 +96,7 @@ import CriticalCareDripHub from '@/pages/CriticalCareDripHub';
 import DrugFormularyAdmin from '@/pages/DrugFormularyAdmin';
 import DrugComparisonHub from '@/pages/DrugComparisonHub';
 import SepsisBundleTracker from '@/pages/SepsisBundleTracker';
+import MedRecHub from '@/pages/MedRecHub';
 import AIFlagReview from '@/pages/AIFlagReview';
 import TemplateStudio from '@/pages/TemplateStudio';
 
@@ -296,6 +297,7 @@ const AuthenticatedApp = () => {
       <Route path="/DrugFormularyAdmin" element={<DrugFormularyAdmin />} />
       <Route path="/DrugComparisonHub" element={<DrugComparisonHub />} />
       <Route path="/SepsisBundleTracker" element={<SepsisBundleTracker />} />
+      <Route path="/MedRecHub" element={<MedRecHub />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -20,6 +20,7 @@ import { TimelineCard } from "./QuickNoteTimeline";
 import { SepsisBanner } from "./QuickNoteSepsis";
 import { ProcedureNoteModal } from "./QuickNoteProcedure";
 import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
+import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
@@ -1194,6 +1195,8 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
           patientWeight={patientWeight} setPatientWeight={setPatientWeight}
           smartExpansions={smartExpansions}
         />
+
+        <QuickNoteROSHelper ros={ros} />
 
         {/* MDM Result */}
         {mdmResult && (

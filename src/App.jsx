@@ -104,6 +104,7 @@ import VitalsHub from '@/pages/VitalsHub';
 import UserPreferences from '@/pages/UserPreferences';
 import ShiftDashboard from '@/pages/ShiftDashboard';
 import ClinicalDecisionHub from '@/pages/ClinicalDecisionHub';
+import HubIndex from '@/pages/HubIndex';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -207,6 +208,7 @@ const AuthenticatedApp = () => {
         <Route path="/critical-inbox"        element={<CriticalResultsInbox />} />
         <Route path="/imaging-interpreter"   element={<ImagingInterpreter />} />
         <Route path="/ClinicalDecisionHub"   element={<ClinicalDecisionHub />} />
+        <Route path="/hub-index"              element={<HubIndex />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />
 
         {/* Pharmacology */}

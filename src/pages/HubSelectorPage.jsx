@@ -1394,7 +1394,7 @@ export default function HubSelectorPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   // DEFAULT: Essential-only. "Browse all" button or ⌘K expands to full catalog.
-  const [activeCategory, setActiveCategory] = useState("Essential");
+  const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState(() => {
     try { return localStorage.getItem("notrya_hub_sort") || "priority"; } catch { return "priority"; }
   });

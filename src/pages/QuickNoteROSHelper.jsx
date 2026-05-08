@@ -6,6 +6,7 @@
 import { useState, useMemo } from "react";
 
 // ── System label registry ─────────────────────────────────────────────────────
+// All labels the auto-ROS or manual entry might produce (case-insensitive).
 const SYSTEM_LABELS = [
   "Constitutional","HEENT","Eyes","Ears","Nose","Throat","ENT",
   "Cardiovascular","CV","Cardiac",
@@ -22,6 +23,7 @@ const SYSTEM_LABELS = [
   "Vascular","Extremities","Back","Neck","Musculoskeletal/Extremities",
 ];
 
+// Build a regex that matches any known system label followed by a colon
 const SYSTEM_RE = new RegExp(
   `(${SYSTEM_LABELS.map(l => l.replace(/[-/]/g, "[-/]")).join("|")})\\s*:`,
   "gi"
@@ -33,13 +35,14 @@ function parseROSBySystems(rosText) {
 
   const matches = [...rosText.matchAll(SYSTEM_RE)];
   if (matches.length === 0) {
+    // No system labels found — return whole block as one entry
     return [{ label: "ROS", text: rosText.trim() }];
   }
 
   const parts = [];
   for (let i = 0; i < matches.length; i++) {
     const m     = matches[i];
-    const label = m[1];
+    const label = m[1]; // captured system name
     const start = m.index + m[0].length;
     const end   = matches[i + 1]?.index ?? rosText.length;
     const text  = rosText.slice(start, end).trim().replace(/\.\s*$/, "");
@@ -48,7 +51,7 @@ function parseROSBySystems(rosText) {
   return parts;
 }
 
-// ── Per-system copy button ────────────────────────────────────────────────────
+// ── Per-system copy button ─────────────────────────────────────────────────────
 function SysCopyBtn({ text }) {
   const [done, setDone] = useState(false);
   const go = () => {
@@ -230,6 +233,7 @@ export function QuickNoteROSHelper({ ros }) {
                 background: i % 2 === 0 ? "rgba(255,255,255,.02)" : "transparent",
               }}
             >
+              {/* System label */}
               <span
                 style={{
                   fontFamily: "'JetBrains Mono',monospace",
@@ -245,6 +249,7 @@ export function QuickNoteROSHelper({ ros }) {
                 {sys.label}
               </span>
 
+              {/* System text */}
               <span
                 style={{
                   flex: 1,
@@ -257,6 +262,7 @@ export function QuickNoteROSHelper({ ros }) {
                 {sys.text}
               </span>
 
+              {/* Copy button */}
               <SysCopyBtn text={copySystem(sys)} />
             </div>
           ))}
@@ -279,5 +285,3 @@ export function QuickNoteROSHelper({ ros }) {
     </div>
   );
 }
-
-export default QuickNoteROSHelper;

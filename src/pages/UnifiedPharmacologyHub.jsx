@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { InvokeLLM } from "@/integrations/Core";
-import { DrugDosing } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
+const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
+const DrugDosing = base44.entities.DrugDosing;
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (() => {
@@ -274,8 +275,8 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
   const doSearch=useCallback(v=>{
     setQ(v);
     if(deb.current) clearTimeout(deb.current);
-    if(!v.trim()||v.length<2){setRes([]);return;}
-    deb.current=setTimeout(async()=>{setBusy(true);const r=await searchFDA(v);setRes(r);setBusy(false);},400);
+    if(!v.trim()||v.length<1){setRes([]);return;}
+    deb.current=setTimeout(async()=>{setBusy(true);const r=await searchFDA(v);setRes(r);setBusy(false);},300);
   },[]);
 
   const pick=async d=>{
@@ -480,7 +481,7 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
-              <button onClick={()=>{setSel(null);setQ("");setDbDrug(null);setAiSum(null);}} style={{...ab(T.coral,{padding:"6px 12px",fontSize:11})}}>✕ Close</button>
+              <button onClick={()=>{setSel(null);setQ("");setDbDrug(null);setSnap(null);setMono(null);}} style={{...ab(T.coral,{padding:"6px 12px",fontSize:11})}}>✕ Close</button>
               <button onClick={addToIx} style={{...ab(T.teal,{padding:"6px 12px",fontSize:11})}}>➕ Add to Interactions</button>
               {ixToast&&<span className="u-in" style={{fontSize:10,color:T.green,fontWeight:700}}>✓ Added</span>}
             </div>
@@ -1550,8 +1551,8 @@ export default function UnifiedPharmacologyHub() {
   const [dbLoaded,setDbLoaded]=useState(false);
 
   useEffect(()=>{
-    DrugDosing.filter({},{limit:500}).then(records=>{
-      setEntityDB(records.map(normalizeEntityDrug));
+    DrugDosing.list(null, 500).then(records=>{
+      setEntityDB((records||[]).map(normalizeEntityDrug));
       setDbLoaded(true);
     }).catch(()=>setDbLoaded(true));
   },[]);

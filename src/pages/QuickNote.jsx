@@ -22,9 +22,9 @@ import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEn
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
 import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
 import { QuickNoteExamHelper } from "@/components/quicknote/QuickNoteExamHelper";
-import { QuickNoteAbnormals } from "./QuickNoteAbnormals";
-import { GuidelineAssist } from "./QuickNoteGuidelines";
-import { DispositionCriteriaBuilder } from "./QuickNoteDispositionCriteria";
+import { QuickNoteAbnormals } from "@/components/quicknote/QuickNoteAbnormals";
+import { GuidelineAssist } from "@/components/quicknote/QuickNoteGuidelines";
+import { DispositionCriteriaBuilder } from "@/components/quicknote/QuickNoteDispositionCriteria";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,

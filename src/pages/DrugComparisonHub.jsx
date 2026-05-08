@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
-const DrugDosing = base44.entities.DrugDosing;
+import { DrugDosing } from "@/api/entities";
 
 (() => {
   if (document.getElementById("dcmp-css")) return;
@@ -8,7 +7,7 @@ const DrugDosing = base44.entities.DrugDosing;
   l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
   document.head.appendChild(l);
   const s = document.createElement("style"); s.id = "dcmp-css";
-  s.textContent = `*{box-sizing:border-box;}@keyframes dcIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}.dc-in{animation:dcIn .2s ease both;}.dc-hov:hover{background:rgba(255,255,255,.06)!important;}::-webkit-scrollbar{width:3px;height:3px;}::-webkit-scrollbar-thumb{background:rgba(0,180,216,.25);border-radius:2px;}select option{background:#0d1b2e;}`;
+  s.textContent = `*{box-sizing:border-box;}@keyframes dcIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}.dc-in{animation:dcIn .2s ease both.}.dc-hov:hover{background:rgba(255,255,255,.06)!important;}::-webkit-scrollbar{width:3px;height:3px;}::-webkit-scrollbar-thumb{background:rgba(0,180,216,.25);border-radius:2px;}select option{background:#0d1b2e;}`;
   document.head.appendChild(s);
 })();
 
@@ -53,13 +52,13 @@ export default function DrugComparisonHub() {
   const [search,setSearch]=useState("");
   const [slots,setSlots]=useState(2);
 
-  useEffect(()=>{DrugDosing.list(null,500).then(r=>setDb(r.map(normalize))).catch(()=>{});},[]);
+  useEffect(()=>{DrugDosing.filter({},{limit:500}).then(r=>setDb(r.map(normalize))).catch(()=>{});},[]);
 
-  const cats=useMemo(()=>["all",...[...new Set(db.map(d=>d.cat))].sort()],[db]);
+  const cats=useMemo(()=>["all",...new Set(db.map(d=>d.cat)).values()].sort(),[db]);
   const filtered=useMemo(()=>{
     let list=db;
     if(catFilter!=="all") list=list.filter(d=>d.cat===catFilter);
-    if(search.trim()){const q=search.toLowerCase();list=list.filter(d=>d.name.toLowerCase().includes(q)||(d.gen||"").toLowerCase().includes(q));}
+    if(search.trim()){const q=search.toLowerCase();list=list.filter(d=>d.name.toLowerCase().includes(q)||d.gen.toLowerCase().includes(q));}
     return list;
   },[db,catFilter,search]);
 
@@ -165,9 +164,6 @@ export default function DrugComparisonHub() {
             </div>
           );
         })}
-        {filtered.length===0&&db.length>0&&(
-          <div style={{gridColumn:"1/-1",textAlign:"center",padding:"30px",color:T.dim,fontSize:12}}>No drugs match your filter</div>
-        )}
       </div>
 
       {/* Comparison table */}

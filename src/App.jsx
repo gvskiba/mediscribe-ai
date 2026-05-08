@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { PatientProvider } from '@/lib/PatientContext';
@@ -15,7 +15,6 @@ import ProviderStudio from '@/pages/ProviderStudio';
 import NoteHistory from '@/pages/NoteHistory';
 import NPIDemo from '@/pages/NPIDemo';
 import BaseTemplate from '@/pages/BaseTemplate';
-import EDProcedureNotesNew from '@/pages/EDProcedureNotes';
 import PediatricDosingCalculator from '@/pages/PediatricDosingCalculator';
 import StrokeHub from '@/pages/StrokeAssessment';
 import EDOrders from '@/pages/EDOrders';
@@ -56,21 +55,19 @@ import DDxEngine from '@/pages/DDxEngine';
 import CriticalResultsInbox from '@/pages/CriticalResultsInbox';
 import ClinicalNarrativeEngine from '@/pages/ClinicalNarrativeEngine';
 import NotryaLanding from '@/pages/NotryaLanding';
-import ProviderCommandCenter from '@/pages/ProviderCommandCenter';
 import CommandCenterWrapper from '@/pages/CommandCenterWrapper';
 import PatientWorkspace from '@/pages/PatientWorkspace';
 import ShiftSignout from '@/pages/ShiftSignout';
 import GlobalNav from '@/components/GlobalNav';
 import CommandPalette from '@/components/CommandPalette';
 import NotryaFloatingAI from '@/components/ai/NotryaFloatingAI';
-import { useLocation } from 'react-router-dom';
 import AddendumManager from '@/pages/AddendumManager';
 import ClinicalNoteV2 from '@/pages/ClinicalNoteV2';
 import NotryaNewTechnology from '@/pages/NotryaNewTechnology';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 import DischargeDisposition from '@/pages/DischargeDisposition';
 import ScoreHub from '@/pages/ScoreHub';
-import EDProcedureNotesStandalone from '@/pages/EDProcedureNotes';
+import EDProcedureNotes from '@/pages/EDProcedureNotes';
 import PainHub from '@/pages/PainHub';
 import SyncopeHub from '@/pages/SyncopeHub';
 import ImagingInterpreter from '@/pages/ImagingInterpreter';
@@ -107,8 +104,6 @@ import VitalsHub from '@/pages/VitalsHub';
 import UserPreferences from '@/pages/UserPreferences';
 import ShiftDashboard from '@/pages/ShiftDashboard';
 import ClinicalDecisionHub from '@/pages/ClinicalDecisionHub';
-
-
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -244,7 +239,7 @@ const AuthenticatedApp = () => {
       <Route path="/weight-dose" element={<UnifiedPharmacologyHub />} />
       <Route path="/stroke-hub" element={<StrokeHub />} />
       <Route path="/StrokeHub" element={<StrokeHub />} />
-      <Route path="/ed-procedure-notes" element={<EDProcedureNotesStandalone />} />
+      <Route path="/ed-procedure-notes" element={<EDProcedureNotes />} />
       <Route path="/pain-hub" element={<PainHub />} />
       <Route path="/syncope-hub" element={<SyncopeHub />} />
       <Route path="/imaging-interpreter" element={<ImagingInterpreter />} />
@@ -261,7 +256,6 @@ const AuthenticatedApp = () => {
       {/* ── Alias routes for updated Home.jsx hub catalog ── */}
       <Route path="/PediatricHub" element={<PedsHub />} />
       <Route path="/ResusHub" element={<ResusHub />} />
-      <Route path="/StrokeHub" element={<StrokeHub />} />
       <Route path="/ECGHub" element={<ECGHub />} />
       <Route path="/LabInterpreter" element={<LabHub />} />
       <Route path="/ScoreHub" element={<ScoreHub />} />
@@ -310,7 +304,6 @@ const AuthenticatedApp = () => {
     </>
   );
 };
-
 
 function App() {
   return (

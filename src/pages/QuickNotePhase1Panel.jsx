@@ -4,6 +4,7 @@
 
 import React from "react";
 import { InputZone, MedsAllergyZone, QuickDDxCard } from "./QuickNoteComponents";
+import MedTermHighlighter from "@/components/MedTermHighlighter";
 
 export function Phase1Panel({
   // Core inputs
@@ -173,6 +174,11 @@ export function Phase1Panel({
             fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-coral)" }}>
             {hpiSumError}
           </div>
+        )}
+
+        {/* Medical term auto-linker */}
+        {hpi.trim().length > 20 && (
+          <MedTermHighlighter text={hpi} />
         )}
 
         {/* HPI Summary preview card */}

@@ -1,7 +1,5 @@
 import { useState, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
-
-const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
+import { InvokeLLM } from "@/integrations/Core";
 
 (() => {
   if (document.getElementById("mrc-css")) return;
@@ -119,7 +117,7 @@ Be specific, clinical, and actionable. Flag severity: critical, major, moderate.
           <div style={{...gl({padding:"12px 16px"})}}>
             <div style={{fontSize:9,color:T.teal,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Patient Context</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-              {[["Age","age",age,setAge,"yr"],["CrCl","crcl",crcl,setCrcl,"mL/min"]].map(([l,k,v,set,u])=>(
+              {[["Age","age",age,setAge,"yr",70],["CrCl","crcl",crcl,setCrcl,"mL/min",100]].map(([l,k,v,set,u,w])=>(
                 <div key={k}>
                   <div style={{fontSize:8,color:T.dim,fontFamily:"JetBrains Mono,monospace",letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{l}</div>
                   <div style={{position:"relative"}}>

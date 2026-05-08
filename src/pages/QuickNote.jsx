@@ -21,7 +21,7 @@ import { ProcedureNoteModal } from "./QuickNoteProcedure";
 import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
 import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
-import { QuickNoteExamHelper } from "./QuickNoteExamHelper";
+import { QuickNoteExamHelper } from "@/components/quicknote/QuickNoteExamHelper";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,

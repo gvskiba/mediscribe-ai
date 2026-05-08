@@ -1,5 +1,5 @@
 // QuickNoteDispositionCriteria.jsx — P5: Structured Disposition Criteria Builder
-import { useState } from "react";
+import React, { useState } from "react";
 
 const DISCHARGE = [
   { id:"pain",      label:"Pain / symptoms adequately controlled" },

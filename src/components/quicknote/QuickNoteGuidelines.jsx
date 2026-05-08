@@ -1,5 +1,5 @@
 // QuickNoteGuidelines.jsx — P2: Guideline-Grounded MDM Sentence Inserts
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 
 // ── Static guideline seed map (dx keyword → relevant guidelines) ─────────────

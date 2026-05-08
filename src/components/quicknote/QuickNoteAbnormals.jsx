@@ -1,5 +1,5 @@
 // QuickNoteAbnormals.jsx — P1: Abnormal-Only Results Extractor + P6: Manage → MDM
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 
 // ── Expanded lab normal-range ruleset ────────────────────────────────────────

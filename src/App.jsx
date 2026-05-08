@@ -98,6 +98,7 @@ import DrugComparisonHub from '@/pages/DrugComparisonHub';
 import SepsisBundleTracker from '@/pages/SepsisBundleTracker';
 import MedRecHub from '@/pages/MedRecHub';
 import ClinicalPresentationHub from '@/pages/ClinicalPresentationHub';
+import EDNoteGenerator from '@/pages/EdNoteGenerator';
 import AIFlagReview from '@/pages/AIFlagReview';
 import TemplateStudio from '@/pages/TemplateStudio';
 
@@ -300,6 +301,7 @@ const AuthenticatedApp = () => {
       <Route path="/SepsisBundleTracker" element={<SepsisBundleTracker />} />
       <Route path="/MedRecHub" element={<MedRecHub />} />
       <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />
+      <Route path="/EdNoteGenerator" element={<EDNoteGenerator />} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

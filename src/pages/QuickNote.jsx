@@ -21,7 +21,7 @@ import { ProcedureNoteModal } from "./QuickNoteProcedure";
 import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
 import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
-import { QuickNoteExamHelper } from "./QuickNoteExamHelper";
+import { QuickNoteExamHelper } from "@/components/quicknote/QuickNoteExamHelper";
 import { QuickNoteAbnormals } from "./QuickNoteAbnormals";
 import { GuidelineAssist } from "./QuickNoteGuidelines";
 import { DispositionCriteriaBuilder } from "./QuickNoteDispositionCriteria";
@@ -526,13 +526,14 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
       });
       setMdmResult(res);
       // P7: push addendum as interval update to version history
-      { const ts = new Date().toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit" });
-        setMdmHistory(prev => [...prev, {
-          ts, trigger:"Interval Update",
-          working_diagnosis: res.working_diagnosis || "",
-          mdm_level: res.mdm_level || "",
-          mdm_narrative: res.mdm_narrative || "",
-        }]); }
+      const ts = new Date().toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit" });
+      setMdmHistory(prev => [...prev, {
+        ts, trigger:"Interval Update",
+        working_diagnosis: res.working_diagnosis || "",
+        mdm_level: res.mdm_level || "",
+        mdm_narrative: res.mdm_narrative || "",
+      }]);
+    } catch (e) { console.error("Addendum re-run failed:", e); }
     finally { setRerunAddendumBusy(false); }
   }, [mdmResult, cc, vitals, hpi, ros, exam, labs, imaging, ekg, newVitals,
       vhAnalysis, parsedMeds, parsedAllergies, encounterType, rerunAddendumBusy]);

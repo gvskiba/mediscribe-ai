@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
-const DrugDosing = base44.entities.DrugDosing;
+import { InvokeLLM } from "@/integrations/Core";
+import { DrugDosing } from "@/api/entities";
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (() => {
@@ -260,7 +259,7 @@ function PatientBanner({pt,setPt,crcl,ibw}) {
 }
 
 // ── Tab 1: Rx Lookup ──────────────────────────────────────────────────────────
-function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
+function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug,onRecent}) {
   const [q,setQ]=useState(""); const [res,setRes]=useState([]); const [busy,setBusy]=useState(false);
   const [sel,setSel]=useState(null); const [dbDrug,setDbDrug]=useState(null);
   const [mono,setMono]=useState(null); const [monoLoad,setMonoLoad]=useState(false);
@@ -270,21 +269,35 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
   const [pedWt,setPedWt]=useState(""); const [pedRes,setPedRes]=useState(null); const [pedLoad,setPedLoad]=useState(false);
   const [exp,setExp]=useState({}); const [ixToast,setIxToast]=useState(false);
   const [extracting,setExtracting]=useState(false);
+  const [localRes,setLocalRes]=useState([]);
   const deb=useRef(null); const ixRef=useRef(null);
 
   const doSearch=useCallback(v=>{
     setQ(v);
     if(deb.current) clearTimeout(deb.current);
-    if(!v.trim()||v.length<1){setRes([]);return;}
-    deb.current=setTimeout(async()=>{setBusy(true);const r=await searchFDA(v);setRes(r);setBusy(false);},300);
-  },[]);
+    if(!v.trim()||v.length<1){setRes([]);setLocalRes([]);return;}
+    // Show entity DB matches immediately (no latency)
+    const lq=v.toLowerCase();
+    setLocalRes(entityDB.filter(d=>d.name.toLowerCase().includes(lq)||d.gen.toLowerCase().includes(lq)).slice(0,5));
+    deb.current=setTimeout(async()=>{setBusy(true);const r=await searchFDA(v);setRes(r);setBusy(false);},250);
+  },[entityDB]);
 
   const pick=async d=>{
-    setSel(d);setMono(null);setSnap(null);setPedRes(null);setPedWt("");setExp({});setRes([]);
-    setQ(fdaName(d));setActiveInd(0);setMonoOpen(false);setSnapCopied(false);
-    const found=findDB(fdaGen(d)||fdaName(d),entityDB);
+    setSel(d);setMono(null);setSnap(null);setPedRes(null);setPedWt("");setExp({});setRes([]);setLocalRes([]);
+    setQ(d.name||fdaName(d));setActiveInd(0);setMonoOpen(false);setSnapCopied(false);
+    const found=d._entityOnly ? d : findDB(fdaGen(d)||fdaName(d),entityDB);
     setDbDrug(found);
-    // Fire snapshot and full monograph in parallel
+    if(found) onRecent?.(found);
+    if(d._entityOnly){
+      // Entity-only pick: use entity data directly, fire AI calls with entity data as context
+      const syntheticFda={openfda:{brand_name:[d.name],generic_name:[d.gen]},
+        indications_and_usage:[d.sigs?.join(". ")||""],
+        dosage_and_administration:[d.sigs?.join(". ")||""],
+        warnings:[d.monitoring||""],boxed_warning:[]};
+      triggerSnapshot(syntheticFda, found);
+      triggerMonograph(syntheticFda, found);
+      return;
+    }
     triggerSnapshot(d, found);
     triggerMonograph(d, found);
     if(!found){
@@ -450,7 +463,26 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug}) {
         {busy&&<span style={{position:"absolute",right:13,top:"50%",transform:"translateY(-50%)",fontSize:11,color:T.dim}}>Searching...</span>}
       </div>
 
-      {res.length>0&&(
+      {/* Entity DB quick results — instant, no API */}
+      {localRes.length>0&&!sel&&(
+        <div style={{...gl({maxWidth:520,marginBottom:8,overflow:"hidden",border:`1px solid ${T.teal}30`})}}>
+          <div style={{padding:"5px 12px",fontSize:8,color:T.teal,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",borderBottom:`1px solid ${T.bdr}`}}>⚡ Quick Match — Formulary</div>
+          {localRes.map((d,i)=>(
+            <div key={i} className="u-hov" onClick={()=>pick({...d,_entityOnly:true})} style={{padding:"9px 14px",cursor:"pointer",borderBottom:i<localRes.length-1?`1px solid ${T.bdr}`:"none",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontWeight:700,fontSize:13,color:T.teal}}>{d.name}</div>
+                <div style={{fontSize:11,color:T.mut}}>{d.gen} · {d.cat}</div>
+              </div>
+              <div style={{display:"flex",gap:5}}>
+                {d.ismp&&<span style={{fontSize:9,color:T.coral,fontWeight:700}}>⚠ ISMP</span>}
+                <span style={{fontSize:9,color:T.teal}}>→</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* FDA search results */}
         <div style={{...gl({maxWidth:520,marginBottom:16,overflow:"hidden"})}}>
           {res.map((d,i)=>(
             <div key={i} className="u-hov" onClick={()=>pick(d)} style={{padding:"10px 15px",cursor:"pointer",borderBottom:i<res.length-1?`1px solid ${T.bdr}`:"none"}}>
@@ -1017,10 +1049,10 @@ function WeightDripTab({pt,entityDB}) {
       {mode==="wt"&&(
         <div style={{display:"grid",gridTemplateColumns:"200px 1fr",gap:14,minHeight:300}}>
           <div style={{...gl({padding:"8px",overflow:"auto",maxHeight:500})}}>
-            {["rsi","sedation","analgesic","antibiotic","cardiac","reversal","anticoagulant"].map(cat=>{
+            {[...new Set(wtDrugs.map(d=>d.cat))].sort().map(cat=>{
               const drugs=wtDrugs.filter(d=>d.cat===cat);
               if(!drugs.length) return null;
-              const catLabel={rsi:"RSI",sedation:"Sedation",analgesic:"Analgesia",antibiotic:"Antibiotics",cardiac:"Cardiac",reversal:"Reversal",anticoagulant:"Anticoagulation"}[cat]||cat;
+              const catLabel={rsi:"RSI",sedation:"Sedation",analgesic:"Analgesia",antibiotic:"Antibiotics",cardiac:"Cardiac",reversal:"Reversal",anticoagulant:"Anticoagulation",pressor:"Pressors",neuro:"Neuro",metabolic:"Metabolic",other:"Other"}[cat]||cat;
               return(
                 <div key={cat} style={{marginBottom:8}}>
                   <div style={{fontSize:8,color:T.dim,fontFamily:"JetBrains Mono,monospace",letterSpacing:1.5,textTransform:"uppercase",padding:"2px 6px",marginBottom:3}}>{catLabel}</div>
@@ -1245,8 +1277,8 @@ function InteractionTab({ixDrugs,setIxDrugs}) {
   const doSearch=useCallback(v=>{
     setQ(v);
     if(deb.current) clearTimeout(deb.current);
-    if(!v.trim()||v.length<2){setRes([]);return;}
-    deb.current=setTimeout(async()=>{setBusy(true);const r=await searchFDA(v);setRes(r.slice(0,5));setBusy(false);},400);
+    if(!v.trim()||v.length<1){setRes([]);return;}
+    deb.current=setTimeout(async()=>{setBusy(true);const r=await searchFDA(v);setRes(r.slice(0,5));setBusy(false);},250);
   },[]);
 
   const addDrug=async d=>{
@@ -1495,7 +1527,8 @@ function AIPharmacistTab({pt,crcl,ibw}) {
     try {
       const ctx=[pt.age?`Age: ${pt.age}yr`:"",pt.wt?`Weight: ${pt.wt}kg`:"",pt.ht?`Height: ${pt.ht}cm`:"",
         pt.scr?`SCr: ${pt.scr} mg/dL`:"",crcl?`CrCl: ${Math.round(crcl)} mL/min`:"",
-        ibw?`IBW: ${Math.round(ibw)}kg`:"",pt.dialysis?"On dialysis":""].filter(Boolean).join(", ");
+        ibw?`IBW: ${Math.round(ibw)}kg`:"",pt.dialysis?"On dialysis":"",
+        pt.allergy?`Allergies: ${pt.allergy}`:""].filter(Boolean).join(", ");
       const r=await InvokeLLM({
         prompt:`You are a clinical ED pharmacist expert. Patient context: ${ctx||"No parameters entered"}.\n\nQuestion: ${q}\n\nRespond with: 1) Direct recommendation, 2) Key dosing details, 3) Primary safety concern. Clinical language, max 160 words.`,
         response_json_schema:{type:"object",properties:{recommendation:{type:"string"},dosing_details:{type:"string"},safety_concern:{type:"string"},confidence:{type:"string",enum:["High","Moderate","Low"]}},required:["recommendation","dosing_details","safety_concern","confidence"]},
@@ -1542,17 +1575,203 @@ function AIPharmacistTab({pt,crcl,ibw}) {
   );
 }
 
-// ── Main Export ───────────────────────────────────────────────────────────────
+// ── Tab 6: Scenario Protocols ─────────────────────────────────────────────────
+const SCENARIOS=[
+  {id:"sepsis",   label:"Septic Shock",           icon:"🚨",color:"#ff6060",drugs:["Pip-Tazo 4.5g","Vancomycin","Norepinephrine"],tags:["Hour-1 bundle","Blood cultures x2","30 mL/kg IVF"]},
+  {id:"anaph",    label:"Anaphylaxis",             icon:"⚠️",color:"#ff9f43",drugs:["Epinephrine","Diphenhydramine","Methylprednisolone"],tags:["Epi IM first-line","0.3 mg IM anterolateral thigh","Repeat q5-15 min"]},
+  {id:"status",   label:"Status Epilepticus",      icon:"🧠",color:"#9b6dff",drugs:["Lorazepam","Levetiracetam","Phenytoin"],tags:["4 mg IV x2 lorazepam","Keppra load 2000-4500 mg","Recheck glucose"]},
+  {id:"dka",      label:"DKA",                     icon:"⚗️",color:"#f0a500",drugs:["Insulin Regular","Potassium","Normal Saline"],tags:["Hold insulin if K+ <3.5","Fluid resuscitation first","q1h glucose monitoring"]},
+  {id:"htn",      label:"Hypertensive Emergency",  icon:"💢",color:"#ff6060",drugs:["Labetalol","Nicardipine","Hydralazine"],tags:["Reduce MAP 20-25% over 1h","Avoid rapid correction","Check for end-organ damage"]},
+  {id:"afib",     label:"AFib with RVR",           icon:"🫀",color:"#00b4d8",drugs:["Diltiazem","Metoprolol IV","Amiodarone"],tags:["Rate control target HR <100","Check CHADS2-VASc","Heparin if >48h or unknown onset"]},
+  {id:"chf",      label:"Acute Pulmonary Edema",   icon:"🫁",color:"#3b9eff",drugs:["Furosemide","Nitroglycerin","Morphine"],tags:["Furosemide IV 1-2x PO dose","Nitro if SBP >100","CPAP/BiPAP early"]},
+  {id:"rsi",      label:"RSI / Airway Emergency",  icon:"🫁",color:"#ff6060",drugs:["Etomidate","Ketamine","Succinylcholine","Rocuronium"],tags:["Pre-oxygenate x3 min","SALAD technique","BVM backup ready"]},
+  {id:"opo",      label:"Opioid Overdose",         icon:"💊",color:"#4ade80",drugs:["Naloxone"],tags:["0.4 mg IV/IN titrated","Avoid full reversal","Observe 2-4h post-naloxone"]},
+  {id:"tca",      label:"TCA / Na-Channel Toxicity",icon:"⚡",color:"#f0a500",drugs:["Sodium Bicarbonate","Norepinephrine"],tags:["NaHCO3 1-2 mEq/kg IV bolus","Titrate to QRS <120 ms","Avoid physostigmine"]},
+  {id:"asthma",   label:"Severe Asthma",           icon:"🌬️",color:"#00b4d8",drugs:["Albuterol","Magnesium Sulfate","Dexamethasone"],tags:["Continuous neb albuterol","MgSO4 2g IV over 20 min","Consider HeliOx","Early intubation is high-risk"]},
+  {id:"ppe",      label:"PE (Massive)",             icon:"🩺",color:"#ff6060",drugs:["Alteplase","Unfractionated Heparin"],tags:["tPA 100 mg over 2h","Heparin as bridge if PCI planned","Systolic BP <90 = massive"]},
+];
+
+function ScenarioTab({pt,crcl,entityDB}) {
+  const [sel,setSel]=useState(null);
+  const [proto,setProto]=useState(null);
+  const [load,setLoad]=useState(false);
+  const [copied,setCopied]=useState(false);
+
+  const run=async(scenario)=>{
+    setSel(scenario); setProto(null); setLoad(true);
+    const wt=pt.wt||"unknown";
+    const crclStr=crcl?`CrCl ${Math.round(crcl)} mL/min`:"renal function unknown";
+    const allergy=pt.allergy?`Known allergies: ${pt.allergy}`:"No known allergies";
+    const localDrugs=scenario.drugs.map(name=>{
+      const d=entityDB.find(x=>x.name.toLowerCase().includes(name.toLowerCase()));
+      return d?`${d.name}: ${d.sigs?.[0]||d.monitoring||"see monograph"}`:`${name}: see formulary`;
+    }).join("\n");
+    try {
+      const r=await InvokeLLM({
+        prompt:`You are a senior ED clinical pharmacist. Generate an ED management protocol for: ${scenario.label}.
+Patient: weight ${wt} kg, ${crclStr}, ${allergy}.
+Available drugs and sigs from formulary:\n${localDrugs}
+Provide a structured ED protocol — step-by-step, with specific doses, timing, and escalation triggers. Be concise and clinically actionable. Max 200 words.`,
+        response_json_schema:{type:"object",properties:{
+          first_line:{type:"string"},
+          second_line:{type:"string"},
+          monitoring:{type:"string"},
+          escalation:{type:"string"},
+          key_pitfalls:{type:"array",items:{type:"string"}},
+        },required:["first_line","second_line","monitoring","escalation","key_pitfalls"]},
+      });
+      setProto(r);
+    } catch { setProto({_err:true}); }
+    setLoad(false);
+  };
+
+  const copyProto=()=>{
+    if(!proto||!sel) return;
+    const txt=[`=== ${sel.label} — ED Protocol ===`,
+      `FIRST LINE: ${proto.first_line}`,`SECOND LINE: ${proto.second_line}`,
+      `MONITORING: ${proto.monitoring}`,`ESCALATION: ${proto.escalation}`,
+      `PITFALLS: ${proto.key_pitfalls?.join("; ")}`].join("\n\n");
+    navigator.clipboard?.writeText(txt).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});
+  };
+
+  return(
+    <div className="u-in" style={{display:"grid",gridTemplateColumns:"220px 1fr",gap:14,alignItems:"start"}}>
+      {/* Scenario list */}
+      <div style={{...gl({padding:"8px",overflow:"auto",maxHeight:560})}}>
+        {SCENARIOS.map(s=>(
+          <button key={s.id} onClick={()=>run(s)} style={{display:"flex",alignItems:"center",gap:9,width:"100%",textAlign:"left",padding:"9px 11px",borderRadius:9,border:`1px solid ${sel?.id===s.id?s.color+"55":T.bdr}`,background:sel?.id===s.id?`${s.color}12`:T.card,cursor:"pointer",marginBottom:5,transition:"all .15s"}}>
+            <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span>
+            <div>
+              <div style={{fontSize:12,fontWeight:700,color:sel?.id===s.id?s.color:T.txt}}>{s.label}</div>
+              <div style={{fontSize:9,color:T.dim,marginTop:1}}>{s.drugs.slice(0,2).join(", ")}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Protocol panel */}
+      <div>
+        {!sel&&(
+          <div style={{textAlign:"center",padding:"60px 20px",color:T.dim}}>
+            <div style={{fontSize:36,marginBottom:12}}>🚨</div>
+            <div style={{fontSize:14,color:T.mut,marginBottom:5}}>Select a clinical scenario</div>
+            <div style={{fontSize:11}}>AI-generated ED protocol with patient-specific context</div>
+          </div>
+        )}
+        {sel&&(
+          <div className="u-in">
+            <div style={{...gl({padding:"14px 18px",marginBottom:12,borderLeft:`4px solid ${sel.color}`,background:`${sel.color}08`})}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10,marginBottom:10}}>
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:6}}>
+                    <span style={{fontSize:22}}>{sel.icon}</span>
+                    <h3 style={{margin:0,fontFamily:"Playfair Display,serif",fontSize:18,color:sel.color,lineHeight:1.1}}>{sel.label}</h3>
+                  </div>
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                    {sel.tags.map((t,i)=><span key={i} style={{borderRadius:6,padding:"2px 8px",fontSize:10,background:`${sel.color}15`,border:`1px solid ${sel.color}30`,color:sel.color}}>{t}</span>)}
+                  </div>
+                </div>
+                {proto&&!proto._err&&(
+                  <button onClick={copyProto} style={{...ab(sel.color,{padding:"5px 12px",fontSize:11})}}>
+                    {copied?"✓ Copied":"📋 Copy Protocol"}
+                  </button>
+                )}
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {sel.drugs.map((d,i)=>{
+                  const dbD=entityDB.find(x=>x.name.toLowerCase().includes(d.toLowerCase()));
+                  return <span key={i} style={{borderRadius:6,padding:"3px 10px",fontSize:11,fontWeight:700,background:T.tD,border:`1px solid ${T.tB}`,color:T.teal}}>{d}{dbD?"":" *"}</span>;
+                })}
+              </div>
+            </div>
+
+            {load&&(
+              <div style={{...gl({padding:"24px",textAlign:"center"})}}>
+                <Sp/>
+                <div style={{fontSize:12,color:T.mut,marginTop:10}} className="u-pulse">Generating {sel.label} protocol...</div>
+              </div>
+            )}
+
+            {proto&&!proto._err&&!load&&(
+              <div className="u-in">
+                {[["First Line",proto.first_line,sel.color],["Second Line / Escalation",proto.second_line,T.gold],
+                  ["Monitoring",proto.monitoring,T.teal],["Escalation Triggers",proto.escalation,T.coral]].map(([l,v,c])=>v&&(
+                  <div key={l} style={{...gl({padding:"12px 16px",marginBottom:10,borderLeft:`3px solid ${c}55`})}}>
+                    <div style={{fontSize:9,color:c,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>{l}</div>
+                    <div style={{fontSize:13,color:T.txt,lineHeight:1.65}}>{v}</div>
+                  </div>
+                ))}
+                {proto.key_pitfalls?.length>0&&(
+                  <div style={{...gl({padding:"12px 16px",borderLeft:`3px solid ${T.gold}`})}}>
+                    <div style={{fontSize:9,color:T.gold,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>⚠ Key Pitfalls</div>
+                    {proto.key_pitfalls.map((p,i)=><div key={i} style={{fontSize:12,color:T.mut,padding:"3px 0",lineHeight:1.55}}>• {p}</div>)}
+                  </div>
+                )}
+                <div style={{fontSize:9,color:T.dim,marginTop:8}}>AI-generated with patient context · Verify against current ED protocols</div>
+              </div>
+            )}
+            {proto?._err&&<div style={{fontSize:12,color:T.coral,marginTop:8}}>Protocol generation failed. Retry or consult clinical resources.</div>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Tab 7: Recent / Favorites ─────────────────────────────────────────────────
+function RecentTab({recent,favorites,onPick,onFav,onUnfav}) {
+  return(
+    <div className="u-in" style={{maxWidth:600}}>
+      {favorites.length>0&&(
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:9,color:T.gold,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>★ Pinned Favorites</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {favorites.map((d,i)=>(
+              <div key={i} style={{...gl({padding:"9px 14px",display:"flex",alignItems:"center",gap:10})}}>
+                <button onClick={()=>onPick(d)} style={{background:"none",border:"none",cursor:"pointer",textAlign:"left",padding:0}}>
+                  <div style={{fontSize:13,fontWeight:700,color:T.teal}}>{d.name}</div>
+                  <div style={{fontSize:10,color:T.mut}}>{d.gen}</div>
+                </button>
+                <button onClick={()=>onUnfav(d)} style={{background:"none",border:"none",color:T.dim,cursor:"pointer",fontSize:14,padding:0,lineHeight:1}}>✕</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div>
+        <div style={{fontSize:9,color:T.teal,fontFamily:"JetBrains Mono,monospace",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>🕐 Recent Lookups</div>
+        {recent.length===0?(
+          <div style={{textAlign:"center",padding:"40px 20px",color:T.dim,fontSize:12}}>No recent lookups yet — search a drug in Rx Lookup to populate history</div>
+        ):(
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {recent.map((d,i)=>(
+              <div key={i} className="u-hov" style={{...gl({padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"})}}>
+                <button onClick={()=>onPick(d)} style={{background:"none",border:"none",cursor:"pointer",textAlign:"left",flex:1,padding:0}}>
+                  <div style={{fontSize:13,fontWeight:700,color:T.txt}}>{d.name}</div>
+                  <div style={{fontSize:10,color:T.mut}}>{d.gen} · {d.cat}</div>
+                </button>
+                <button onClick={()=>onFav(d)} title="Pin to favorites"
+                  style={{background:"none",border:"none",color:favorites.find(f=>f.name===d.name)?T.gold:T.dim,cursor:"pointer",fontSize:16,padding:"0 4px"}}>★</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 export default function UnifiedPharmacologyHub() {
   const [pt,setPt]=useState({age:"",wt:"",ht:"",scr:"",sex:"M",dialysis:false,allergy:""});
   const [tab,setTab]=useState("rx");
   const [ixDrugs,setIxDrugs]=useState([]);
   const [entityDB,setEntityDB]=useState([]);
   const [dbLoaded,setDbLoaded]=useState(false);
+  const [recent,setRecent]=useState([]);
+  const [favorites,setFavorites]=useState([]);
 
   useEffect(()=>{
-    DrugDosing.list(null, 500).then(records=>{
-      setEntityDB((records||[]).map(normalizeEntityDrug));
+    DrugDosing.filter({},{limit:500}).then(records=>{
+      setEntityDB(records.map(normalizeEntityDrug));
       setDbLoaded(true);
     }).catch(()=>setDbLoaded(true));
   },[]);
@@ -1567,12 +1786,19 @@ export default function UnifiedPharmacologyHub() {
     setIxDrugs(p=>p.map(d=>d.name===name?{...d,rxcui,resolving:false}:d));
   },[ixDrugs]);
 
+  const addToRecent=useCallback((drug)=>{
+    const entry={name:drug.name||"",gen:drug.gen||"",cat:drug.cat||"",id:drug.id||""};
+    setRecent(p=>[entry,...p.filter(d=>d.name!==entry.name)].slice(0,10));
+  },[]);
+
   const TABS=[
-    {id:"rx",    icon:"⚗",  label:"Rx Lookup"},
-    {id:"wt",    icon:"⚖",  label:"Weight / Drip"},
-    {id:"ix",    icon:"🔬", label:"Interactions",badge:ixDrugs.length>0?ixDrugs.length:null},
-    {id:"build", icon:"📋", label:"Rx Builder"},
-    {id:"ai",    icon:"🤖", label:"AI Pharmacist"},
+    {id:"rx",       icon:"⚗",  label:"Rx Lookup"},
+    {id:"scenario", icon:"🚨", label:"Scenarios"},
+    {id:"wt",       icon:"⚖",  label:"Weight / Drip"},
+    {id:"ix",       icon:"🔬", label:"Interactions",badge:ixDrugs.length>0?ixDrugs.length:null},
+    {id:"build",    icon:"📋", label:"Rx Builder"},
+    {id:"ai",       icon:"🤖", label:"AI Pharmacist"},
+    {id:"recent",   icon:"🕐", label:"Recent",badge:recent.length>0?recent.length:null},
   ];
 
   return(
@@ -1601,11 +1827,16 @@ export default function UnifiedPharmacologyHub() {
       </div>
 
       {/* Tab content */}
-      {tab==="rx"  &&<RxLookupTab   pt={pt} crcl={crcl} onAddToIx={addToIx} entityDB={entityDB} onNewDrug={d=>setEntityDB(p=>[...p,d])}/>}
-      {tab==="wt"  &&<WeightDripTab pt={pt} entityDB={entityDB}/>}
-      {tab==="ix"  &&<InteractionTab ixDrugs={ixDrugs} setIxDrugs={setIxDrugs}/>}
-      {tab==="build"&&<RxBuilderTab pt={pt} crcl={crcl} entityDB={entityDB}/>}
-      {tab==="ai"  &&<AIPharmacistTab pt={pt} crcl={crcl} ibw={ibw}/>}
+      {tab==="rx"      &&<RxLookupTab   pt={pt} crcl={crcl} onAddToIx={addToIx} entityDB={entityDB} onNewDrug={d=>setEntityDB(p=>[...p,d])} onRecent={addToRecent}/>}
+      {tab==="scenario" &&<ScenarioTab    pt={pt} crcl={crcl} entityDB={entityDB}/>}
+      {tab==="wt"       &&<WeightDripTab  pt={pt} entityDB={entityDB}/>}
+      {tab==="ix"       &&<InteractionTab ixDrugs={ixDrugs} setIxDrugs={setIxDrugs}/>}
+      {tab==="build"    &&<RxBuilderTab   pt={pt} crcl={crcl} entityDB={entityDB}/>}
+      {tab==="ai"       &&<AIPharmacistTab pt={pt} crcl={crcl} ibw={ibw}/>}
+      {tab==="recent"   &&<RecentTab recent={recent} favorites={favorites}
+          onPick={d=>{setTab("rx");addToRecent(d);}}
+          onFav={d=>setFavorites(p=>p.find(f=>f.name===d.name)?p:[...p,d])}
+          onUnfav={d=>setFavorites(p=>p.filter(f=>f.name!==d.name))}/>}
 
       <div style={{marginTop:40,textAlign:"center"}}>
         <span style={{fontFamily:"JetBrains Mono,monospace",fontSize:9,color:T.dim,letterSpacing:1.5}}>

@@ -21,6 +21,7 @@ import { ProcedureNoteModal } from "./QuickNoteProcedure";
 import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
 import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
+import { QuickNoteExamHelper } from "./QuickNoteExamHelper";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
@@ -104,6 +105,12 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
 
   // EKG AI interpret state
   const [ekgBusy, setEkgBusy] = useState(false);
+
+  // Auto-PE from CC
+  const [autoExamBusy, setAutoExamBusy] = useState(false);
+
+  // HPI scaffold
+  const [scaffoldOpen, setScaffoldOpen] = useState(false);
 
   // Workup rationale
   const [workupRationale,     setWorkupRationale]     = useState(null);
@@ -362,7 +369,64 @@ Only include body systems that have at least one symptom explicitly mentioned in
     finally { setAutoRosBusy(false); }
   }, [hpi, autoRosBusy]);
 
-  // ── Load prior visits ──────────────────────────────────────────────────────
+  // ── Auto-PE from CC ────────────────────────────────────────────────────────
+  const autoExamFromCC = useCallback(async () => {
+    if (!cc.trim() || autoExamBusy) return;
+    setAutoExamBusy(true);
+    try {
+      const schema = { type:"object", required:["exam_text"], properties:{ exam_text:{ type:"string" } } };
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an emergency physician generating a physical exam documentation template.
+Chief complaint: "${cc}"
+Generate a pertinent physical exam template for this ED chief complaint. Include ONLY relevant organ systems. Use standard format: "SystemName: [findings]."
+Use brackets for findings the physician must fill in. Include normal findings as defaults where appropriate.
+Example for chest pain: "General: Alert and oriented x3, [in/not in] acute distress. Cardiovascular: [Regular/Irregular] rate and rhythm, [no murmurs/murmur present]. Respiratory: [Clear to auscultation bilaterally/decreased breath sounds]. Abdomen: Soft, non-tender, non-distended."
+Return JSON: { "exam_text": "..." }`,
+        response_json_schema: schema,
+      });
+      if (res?.exam_text?.trim()) setExam(res.exam_text.trim());
+    } catch (e) { console.error("Auto-exam failed:", e); }
+    finally { setAutoExamBusy(false); }
+  }, [cc, autoExamBusy]);
+
+  // ── HPI Scaffold data ──────────────────────────────────────────────────────
+  const HPI_SCAFFOLDS = {
+    "chest pain":"Onset: [sudden/gradual], starting [today/X hours ago]. Character: [pressure/sharp/burning/tightness/aching]. Location: [substernal/left chest/diffuse]. Radiation: [to left arm/jaw/back/none]. Severity: [X/10]. Timing: [constant/intermittent]. Aggravating: [exertion/deep breath/position]. Relieving: [rest/nitroglycerin/antacids]. Associated: [dyspnea/diaphoresis/nausea/vomiting/palpitations/near-syncope]. Cardiac history: [CAD/prior MI/stents/CABG/none].",
+    "shortness of breath":"Onset: [sudden/gradual], starting [today/X hours ago]. Severity: [X/10], [resting/exertional only]. Timing: [constant/intermittent/paroxysmal nocturnal]. Aggravating: [exertion/lying flat/allergen exposure]. Relieving: [sitting upright/inhaler/rest]. Associated: [cough (productive/dry)/wheezing/stridor/chest pain/fever/leg swelling/orthopnea/PND]. History: [asthma/COPD/CHF/prior PE/prior intubation].",
+    "abdominal pain":"Onset: [sudden/gradual], starting [today/X hours ago]. Character: [crampy/sharp/dull/colicky/burning]. Location: [RUQ/RLQ/LUQ/LLQ/epigastric/periumbilical/diffuse]. Radiation: [to back/right shoulder/groin/none]. Severity: [X/10]. Timing: [constant/intermittent]. Aggravating: [food/movement/palpation]. Relieving: [food/antacids/bowel movement]. Associated: [nausea/vomiting/diarrhea/constipation/fever/dysuria/vaginal discharge]. Last BM: [today/X days ago]. LMP: [date/N/A].",
+    "headache":"Onset: [sudden/thunderclap/gradual], starting [today/X hours ago]. Character: [throbbing/pressure/stabbing/band-like]. Location: [bilateral/unilateral/frontal/occipital/temporal]. Severity: [X/10]. Worst headache of life: [yes/no]. Timing: [constant/intermittent]. Aggravating: [light/noise/movement/Valsalva]. Relieving: [dark room/sleep/analgesics]. Associated: [nausea/vomiting/photophobia/phonophobia/visual changes/focal neuro sx/neck stiffness/fever/recent trauma]. Prior similar headaches: [yes/no].",
+    "back pain":"Onset: [sudden/gradual], starting [today/X days ago], [with/without] precipitant: [lifting/trauma/none]. Character: [sharp/dull/aching/burning]. Location: [cervical/thoracic/lumbar/sacral]. Radiation: [to buttocks/down left leg/down right leg/bilateral/none]. Severity: [X/10]. Timing: [constant/worse with movement]. Aggravating: [movement/cough/Valsalva/sitting/standing]. Relieving: [rest/position/analgesics]. Associated: [weakness/numbness/tingling/bowel or bladder changes/saddle anesthesia/fever/weight loss]. Prior episodes: [yes/no].",
+    "dizziness":"Character: [vertigo (room spinning)/presyncope (lightheadedness)/disequilibrium (unsteadiness)]. Onset: [sudden/gradual], duration [seconds/minutes/hours/constant]. Triggers: [head movement/position change/standing/exertion/none]. Aggravating: [specific head positions/Valsalva]. Relieving: [lying still/closing eyes]. Associated: [nausea/vomiting/hearing loss/tinnitus/diplopia/dysarthria/ataxia/focal weakness/recent viral illness/headache]. Prior episodes: [yes/no].",
+    "syncope":"Prodrome: [no warning/lightheadedness/diaphoresis/nausea/palpitations/chest pain]. Duration LOC: [seconds/minutes]. Precipitant: [prolonged standing/Valsalva/exertion/emotional stress/none]. Recovery: [immediate/prolonged confusion]. Witnessed: [yes/no]. Injuries sustained: [yes/no]. Associated: [palpitations/chest pain/dyspnea/tongue biting/incontinence]. Prior episodes: [yes/no]. Cardiac history: [yes/no].",
+    "palpitations":"Onset: [sudden/gradual], duration: [seconds/minutes/hours/still present]. Character: [racing/irregular/fluttering/pounding/skipped beats]. Triggers: [exertion/caffeine/stress/position/none]. Termination: [sudden/gradual/spontaneous/with Valsalva]. Associated: [lightheadedness/near-syncope/chest pain/dyspnea/diaphoresis]. Prior episodes: [yes/no — frequency]. Cardiac history / medications / stimulant use: [details].",
+    "altered mental status":"Onset: [acute/subacute], baseline mental status: [normal/baseline dementia]. Change noted by: [family/staff/EMS] at [time]. Character: [confusion/agitation/lethargy/obtundation/combativeness]. Progression: [worsening/fluctuating/improving]. Associated: [fever/headache/vomiting/focal weakness/seizure-like activity/urinary incontinence/recent fall/trauma/medication changes/sick contacts]. Last known well: [time/date]. Recent medications: [insulin/anticoagulants/psych meds — list].",
+    "fever":"Temperature: [X°F]. Onset: [today/X days ago]. Associated: [chills/rigors/cough/sore throat/ear pain/rhinorrhea/dyspnea/dysuria/frequency/diarrhea/abdominal pain/headache/stiff neck/rash/joint pain/wound]. Sick contacts: [yes/no]. Recent travel: [yes — where/no]. Immunocompromised: [yes/no]. Recent procedures/hospitalizations: [yes/no]. Current antibiotics: [yes — started when/no].",
+    "nausea":"Onset: [today/X hours ago]. Vomiting: [yes — frequency, bilious/bloody/feculent/no]. Last PO: [X hours ago]. Diarrhea: [yes — frequency, blood/no]. Abdominal pain: [yes — location, character/no]. Precipitant: [food (last meal X hours ago)/medications/motion/pregnancy/none]. Associated: [fever/headache/dizziness/sick contacts]. Last BM: [today/X days ago]. Pregnancy status if applicable:",
+  };
+  const HPI_ALIASES = {
+    "sob":"shortness of breath","dyspnea":"shortness of breath","difficulty breathing":"shortness of breath",
+    "abd pain":"abdominal pain","stomach pain":"abdominal pain","belly pain":"abdominal pain","stomach ache":"abdominal pain",
+    "ha":"headache","migraine":"headache","head pain":"headache",
+    "cp":"chest pain","chest pressure":"chest pain","chest tightness":"chest pain","chest discomfort":"chest pain",
+    "lbp":"back pain","low back pain":"back pain","low back":"back pain",
+    "dizzy":"dizziness","vertigo":"dizziness","lightheadedness":"dizziness",
+    "passed out":"syncope","fainted":"syncope","loss of consciousness":"syncope","loc":"syncope",
+    "palp":"palpitations","heart racing":"palpitations","heart pounding":"palpitations","racing heart":"palpitations",
+    "ams":"altered mental status","confusion":"altered mental status","altered":"altered mental status",
+    "n/v":"nausea","nausea and vomiting":"nausea","vomiting":"nausea","n/v/d":"nausea",
+    "temp":"fever","high fever":"fever","febrile":"fever",
+  };
+  const getScaffold = useCallback((ccText) => {
+    if (!ccText?.trim()) return null;
+    const lower = ccText.toLowerCase().trim();
+    if (HPI_SCAFFOLDS[lower]) return { text:HPI_SCAFFOLDS[lower], cc:lower };
+    if (HPI_ALIASES[lower]) return { text:HPI_SCAFFOLDS[HPI_ALIASES[lower]], cc:HPI_ALIASES[lower] };
+    for (const [key] of Object.entries(HPI_SCAFFOLDS))
+      { if (lower.includes(key)) return { text:HPI_SCAFFOLDS[key], cc:key }; }
+    for (const [alias,target] of Object.entries(HPI_ALIASES))
+      { if (lower.includes(alias)) return { text:HPI_SCAFFOLDS[target], cc:target }; }
+    return null;
+  }, []);
   const loadPriorVisits = useCallback(async () => {
     if (priorVisitsLoading) return;
     setPriorVisitsLoading(true);
@@ -1183,6 +1247,79 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
         {/* Per-system ROS copy — parses ros text and renders individual copy buttons per organ system */}
         <QuickNoteROSHelper ros={ros} />
 
+        {/* Per-system PE copy + Auto-PE button */}
+        <QuickNoteExamHelper
+          exam={exam} cc={cc}
+          autoExamFromCC={autoExamFromCC}
+          autoExamBusy={autoExamBusy}
+        />
+
+        {/* HPI Scaffold — appears when CC is populated and HPI is empty */}
+        {cc.trim() && !hpi.trim() && (()=>{
+          const scaffold = getScaffold(cc);
+          if (!scaffold) return null;
+          return (
+            <div style={{
+              marginBottom:10,
+              background:"rgba(59,158,255,.04)",
+              border:"1px solid rgba(59,158,255,.2)",
+              borderRadius:12, overflow:"hidden",
+            }}>
+              <div style={{
+                display:"flex", alignItems:"center", justifyContent:"space-between",
+                padding:"7px 14px",
+                borderBottom: scaffoldOpen ? "1px solid rgba(59,158,255,.15)" : "none",
+                cursor:"pointer",
+              }} onClick={() => setScaffoldOpen(p => !p)}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+                    color:"var(--qn-blue)", letterSpacing:1.5, textTransform:"uppercase",
+                  }}>💡 HPI Scaffold — {scaffold.cc}</span>
+                  <span style={{
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                    color:"var(--qn-txt4)", background:"rgba(59,158,255,.1)",
+                    border:"1px solid rgba(59,158,255,.2)", borderRadius:4, padding:"1px 6px",
+                  }}>Click to expand</span>
+                </div>
+                <span style={{ color:"var(--qn-txt4)", fontSize:11 }}>{scaffoldOpen?"▲":"▼"}</span>
+              </div>
+              {scaffoldOpen && (
+                <div style={{ padding:"10px 14px" }}>
+                  <p style={{
+                    margin:"0 0 10px",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                    color:"var(--qn-txt2)", lineHeight:1.7,
+                    background:"rgba(59,158,255,.04)", borderRadius:8,
+                    padding:"8px 12px",
+                    border:"1px solid rgba(59,158,255,.12)",
+                  }}>
+                    {scaffold.text}
+                  </p>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={() => { setHpi(scaffold.text); setScaffoldOpen(false); }}
+                      style={{
+                        padding:"5px 14px", borderRadius:7, cursor:"pointer",
+                        border:"1px solid rgba(59,158,255,.45)",
+                        background:"rgba(59,158,255,.1)", color:"var(--qn-blue)",
+                        fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700,
+                        transition:"all .14s",
+                      }}>
+                      ↓ Insert into HPI
+                    </button>
+                    <span style={{
+                      fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                      color:"var(--qn-txt4)", alignSelf:"center",
+                    }}>
+                      Edit the inserted text to match your patient
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* MDM Result */}
         {mdmResult && (
           <div style={{ marginBottom:14, padding:"16px", background:"rgba(8,22,40,.5)",
@@ -1363,6 +1500,21 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
                   {copiedDischargeOnly ? "✓ Discharge Instructions Copied" : "🖨 Copy Discharge Instructions"}
                   {!copiedDischargeOnly && <span style={{ fontFamily:"'JetBrains Mono',monospace",
                     fontSize:8, opacity:.5, marginLeft:6 }}>[Shift+4]</span>}
+                </button>
+                <button onClick={() => {
+                  const dx = encodeURIComponent(dispResult?.final_diagnosis || mdmResult?.working_diagnosis || "");
+                  navigator.clipboard?.writeText(dispResult?.final_diagnosis || mdmResult?.working_diagnosis || "").catch(()=>{});
+                  window.open(`/DischargeRxCard${dx?"?dx="+dx:""}`, "_blank");
+                }} style={{
+                  padding:"7px 16px", borderRadius:8, cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                  border:"1px solid rgba(245,200,66,.4)",
+                  background:"rgba(245,200,66,.07)",
+                  color:"var(--qn-gold)", transition:"all .15s",
+                }}>
+                  💊 Open Rx Card
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace",
+                    fontSize:8, opacity:.5, marginLeft:6 }}>diagnosis pre-filled</span>
                 </button>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                   color:"var(--qn-txt4)", letterSpacing:.4 }}>Patient-facing — no clinical codes</span>

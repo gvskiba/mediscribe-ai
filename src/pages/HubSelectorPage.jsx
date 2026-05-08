@@ -1165,6 +1165,7 @@ const LIVE_ROUTES = new Set([
   "/airway-hub", "/tox-hub", "/StrokeAssessment", "/Calculators",
   "/peds-hub", "/Procedures", "/erx", "/AutoCoder", "/NewPatientInput",
   "/KnowledgeBaseV2", "/Calendar", "/LabsImaging", "/triage-hub", "/rapid-assessment-hub",
+  "/ShiftDashboard", "/VitalsHub",
   "/psyche-hub", "/surgical-airway-hub", "/shock-hub", "/pocus-hub",
   "/ortho-hub", "/resus-hub", "/antidote-hub", "/radiology-hub", "/Results",
   "/consult-hub", "/procedure-hub", "/id-hub", "/discharge-hub", "/wound-hub",

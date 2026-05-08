@@ -21,7 +21,10 @@ import { ProcedureNoteModal } from "./QuickNoteProcedure";
 import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
 import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
-import { QuickNoteExamHelper } from "@/components/quicknote/QuickNoteExamHelper";
+import { QuickNoteExamHelper } from "./QuickNoteExamHelper";
+import { QuickNoteAbnormals } from "./QuickNoteAbnormals";
+import { GuidelineAssist } from "./QuickNoteGuidelines";
+import { DispositionCriteriaBuilder } from "./QuickNoteDispositionCriteria";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
@@ -132,6 +135,14 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [showAttestation,   setShowAttestation]   = useState(false);
   const [showNursingHandoff,setShowNursingHandoff]= useState(false);
   const [rerunAddendumBusy, setRerunAddendumBusy] = useState(false);
+
+  // P4: Patient response to treatment
+  const [patientResponse,     setPatientResponse]     = useState("");
+  // P7: MDM version history (Initial Impression + any addendum updates)
+  const [mdmHistory,          setMdmHistory]          = useState([]);
+  // P3: Timestamp for initial impression
+  const [mdmInitialTs,        setMdmInitialTs]        = useState(null);
+  const [showMdmHistory,      setShowMdmHistory]      = useState(false);
 
   // Physician plan entry (shown below MDM, included in copy)
   const [treatmentPlan, setTreatmentPlan] = useState("");
@@ -273,6 +284,16 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         response_json_schema: MDM_SCHEMA,
       });
       setMdmResult(res); setP2Open(true);
+      // P3: record initial impression timestamp
+      const ts = new Date().toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit" });
+      setMdmInitialTs(ts);
+      // P7: push to version history
+      setMdmHistory([{
+        ts, trigger:"Initial Impression",
+        working_diagnosis: res.working_diagnosis || "",
+        mdm_level: res.mdm_level || "",
+        mdm_narrative: res.mdm_narrative || "",
+      }]);
       setIcdSuggestions([]); setIcdSelected([]); setIcdError(null);
       setInterventions([]); setIntGenerated(false);
       setQuickDDxDismissed(true);
@@ -289,7 +310,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         ? `\nCONSULTS OBTAINED:\n${consults.map(c => `  ${c.service}${c.provider ? " — Dr. "+c.provider : ""}${c.time ? " at "+c.time : ""}: ${c.recommendation}`).join("\n")}`
         : "";
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, parsedMeds, parsedAllergies, ekg) + consultContext,
+        prompt: buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, parsedMeds, parsedAllergies, ekg) + consultContext + (patientResponse.trim() ? `\n\nPATIENT RESPONSE TO TREATMENT:\n${patientResponse}\n\nIncorporate the patient's response to treatment into the final MDM narrative and disposition rationale. Document response to interventions as part of clinical decision making.` : ""),
         response_json_schema: DISP_SCHEMA,
       });
       setDispResult(res); setIntGenerated(false); setIntLoading(false);
@@ -504,7 +525,14 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
         response_json_schema: MDM_SCHEMA,
       });
       setMdmResult(res);
-    } catch (e) { console.error("Addendum re-run failed:", e); }
+      // P7: push addendum as interval update to version history
+      { const ts = new Date().toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit" });
+        setMdmHistory(prev => [...prev, {
+          ts, trigger:"Interval Update",
+          working_diagnosis: res.working_diagnosis || "",
+          mdm_level: res.mdm_level || "",
+          mdm_narrative: res.mdm_narrative || "",
+        }]); }
     finally { setRerunAddendumBusy(false); }
   }, [mdmResult, cc, vitals, hpi, ros, exam, labs, imaging, ekg, newVitals,
       vhAnalysis, parsedMeds, parsedAllergies, encounterType, rerunAddendumBusy]);
@@ -825,6 +853,7 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
     setWorkupRationale(null); setConsults([]);
     setQuickDDxDismissed(false); setIsBounceback(false);
     setTreatmentPlan(""); setActionPlan("");
+    setPatientResponse(""); setMdmHistory([]); setMdmInitialTs(null);
     setShowUndo(true);
     const t = setTimeout(() => { setShowUndo(false); setUndoData(null); }, 6000);
     setUndoTimer(t);
@@ -1326,7 +1355,13 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
             border:"1px solid rgba(0,229,192,.2)", borderRadius:14 }} className="print-body">
             <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:14, flexWrap:"wrap" }}>
               <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
-                fontSize:15, color:"var(--qn-teal)" }}>Medical Decision Making</span>
+                fontSize:15, color:"var(--qn-teal)" }}>Initial Impression</span>
+              {mdmInitialTs && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-teal)", letterSpacing:.5,
+                  background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.25)",
+                  borderRadius:4, padding:"2px 7px" }}>⏱ {mdmInitialTs}</span>
+              )}
               <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                 color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase",
                 background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.2)",
@@ -1381,6 +1416,16 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
             <MDMPlanEntry
               treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan}
               actionPlan={actionPlan}       setActionPlan={setActionPlan}
+            />
+
+            {/* P2: Guideline Assist — sentence inserts grounded in evidence-based guidelines */}
+            <GuidelineAssist
+              workingDx={mdmResult?.working_diagnosis || ""}
+              mdmNarrative={mdmResult?.mdm_narrative || ""}
+              onInsertSentence={text => setMdmResult(prev => ({
+                ...prev,
+                mdm_narrative: prev?.mdm_narrative ? prev.mdm_narrative + "\n\n" + text : text,
+              }))}
             />
 
             {/* MDM Level Explainer */}
@@ -1456,6 +1501,57 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
                 </div>
               </div>
             )}
+
+            {/* P7: MDM Version Log — Clinical Progression audit trail */}
+            {mdmHistory.length > 1 && (
+              <div style={{ marginTop:10 }}>
+                <button onClick={() => setShowMdmHistory(p => !p)} style={{
+                  padding:"3px 10px", borderRadius:6, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                  border:`1px solid ${showMdmHistory?"rgba(155,109,255,.5)":"rgba(42,79,122,.35)"}`,
+                  background:showMdmHistory?"rgba(155,109,255,.08)":"transparent",
+                  color:showMdmHistory?"var(--qn-purple)":"var(--qn-txt4)",
+                  letterSpacing:.5, transition:"all .14s",
+                }}>
+                  {showMdmHistory ? "▲" : "▼"} Clinical Progression ({mdmHistory.length} entries)
+                </button>
+                {showMdmHistory && (
+                  <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
+                    {mdmHistory.map((h, i) => (
+                      <div key={i} style={{
+                        padding:"9px 12px", borderRadius:8,
+                        background: i === mdmHistory.length-1 ? "rgba(155,109,255,.07)" : "rgba(14,37,68,.4)",
+                        border:`1px solid ${i === mdmHistory.length-1 ? "rgba(155,109,255,.3)" : "rgba(42,79,122,.25)"}`,
+                      }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                            color: i === mdmHistory.length-1 ? "var(--qn-purple)" : "var(--qn-txt4)",
+                            letterSpacing:.8, textTransform:"uppercase" }}>
+                            {h.trigger}
+                          </span>
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--qn-txt4)" }}>
+                            {h.ts}
+                          </span>
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                            color:"var(--qn-gold)", background:"rgba(245,200,66,.1)",
+                            border:"1px solid rgba(245,200,66,.25)", borderRadius:3, padding:"1px 5px" }}>
+                            {h.mdm_level}
+                          </span>
+                          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-txt2)", flex:1 }}>
+                            {h.working_diagnosis}
+                          </span>
+                        </div>
+                        {h.mdm_narrative && (
+                          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-txt3)", lineHeight:1.5 }}>
+                            {h.mdm_narrative.slice(0,200)}{h.mdm_narrative.length > 200 ? "…" : ""}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1473,12 +1569,56 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
           />
         )}
 
+        {/* P1: Pertinent Abnormals — shown when Phase 2 is open and any result field has content */}
+        {p2Open && (labs || imaging || ekg) && (
+          <QuickNoteAbnormals
+            labs={labs} imaging={imaging} ekg={ekg}
+            onAddToMDM={text => setMdmResult(prev => ({
+              ...prev,
+              mdm_narrative: prev?.mdm_narrative ? prev.mdm_narrative + "\n\n" + text : text,
+            }))}
+          />
+        )}
+
+        {/* P4: Patient Response to Treatment */}
+        {p2Open && !dispResult && (
+          <div style={{ marginBottom:10 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+              color:"var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase", marginBottom:5 }}>
+              Patient Response to Treatment
+              <span style={{ fontWeight:400, letterSpacing:.4, marginLeft:8, textTransform:"none" }}>
+                — documented in MDM &amp; disposition rationale
+              </span>
+            </div>
+            <textarea
+              value={patientResponse}
+              onChange={e => setPatientResponse(e.target.value)}
+              placeholder="e.g., Patient received 2L NS IV and morphine 4mg IV. Reassessment at 60 min: pain improved from 8/10 to 3/10, BP normalized to 128/76, patient ambulating without difficulty…"
+              rows={3}
+              style={{
+                width:"100%", boxSizing:"border-box", resize:"vertical",
+                padding:"9px 12px", borderRadius:8,
+                background:"rgba(14,37,68,.5)", border:"1px solid rgba(42,79,122,.4)",
+                color:"var(--qn-txt1)", fontFamily:"'DM Sans',sans-serif", fontSize:12, lineHeight:1.55,
+                outline:"none", transition:"border-color .15s",
+              }}
+              onFocus={e => e.target.style.borderColor="rgba(0,229,192,.5)"}
+              onBlur={e => e.target.style.borderColor="rgba(42,79,122,.4)"}
+            />
+          </div>
+        )}
+
         {dispResult && (
           <div style={{ marginBottom:14, padding:"16px", background:"rgba(8,22,40,.5)",
             border:`1px solid ${dispColor(dispResult.disposition)}30`, borderRadius:14 }} className="print-body">
             <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:14 }}>
               <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
-                fontSize:15, color:dispColor(dispResult.disposition) }}>Reevaluation &amp; Disposition</span>
+                fontSize:15, color:dispColor(dispResult.disposition) }}>Final Impression</span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                color:dispColor(dispResult.disposition), letterSpacing:.5,
+                background:`${dispColor(dispResult.disposition)}18`,
+                border:`1px solid ${dispColor(dispResult.disposition)}40`,
+                borderRadius:4, padding:"2px 7px" }}>Post-Results</span>
               <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--qn-txt4)",
                 letterSpacing:1, textTransform:"uppercase", background:"rgba(59,158,255,.1)",
                 border:"1px solid rgba(59,158,255,.2)", borderRadius:4, padding:"2px 7px" }}>ACEP Guidelines</span>
@@ -1486,6 +1626,15 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
             <DispositionResult result={dispResult} copiedDisch={copiedDisch} setCopiedDisch={setCopiedDisch}
               onDiagExplanationEdit={text => setDispResult(prev => ({
                 ...prev, discharge_instructions:{ ...(prev.discharge_instructions||{}), diagnosis_explanation:text } }))} />
+
+            {/* P5: Structured Disposition Criteria Builder */}
+            <DispositionCriteriaBuilder
+              disposition={dispResult.disposition}
+              onAddToNote={text => setDispResult(prev => ({
+                ...prev,
+                disposition_rationale: (prev.disposition_rationale ? prev.disposition_rationale + " " : "") + text,
+              }))}
+            />
             {dispResult?.discharge_instructions?.diagnosis_explanation &&
              dispResult?.disposition &&
              !dispResult.disposition.toLowerCase().includes("admit") &&

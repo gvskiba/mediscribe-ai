@@ -482,7 +482,7 @@ function RxLookupTab({pt,crcl,onAddToIx,entityDB,onNewDrug,onRecent}) {
         </div>
       )}
 
-      {/* FDA search results */}
+      {res.length>0&&(
         <div style={{...gl({maxWidth:520,marginBottom:16,overflow:"hidden"})}}>
           {res.map((d,i)=>(
             <div key={i} className="u-hov" onClick={()=>pick(d)} style={{padding:"10px 15px",cursor:"pointer",borderBottom:i<res.length-1?`1px solid ${T.bdr}`:"none"}}>

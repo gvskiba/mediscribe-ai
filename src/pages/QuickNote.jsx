@@ -8,7 +8,6 @@ import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
-import { AtAGlanceCard } from "./AtAGlanceCard";
 import { injectQNStyles } from "./QuickNoteStyle.jsx";
 import { PatientBanner, FatigueBanner, UndoToast, NhResumeBanner,
          VhImportBanner, VhAnalysisCard, AddendumBanner } from "./QuickNoteBanners";
@@ -20,8 +19,8 @@ import { TimelineCard } from "./QuickNoteTimeline";
 import { SepsisBanner } from "./QuickNoteSepsis";
 import { ProcedureNoteModal } from "./QuickNoteProcedure";
 import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
-import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
+import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
@@ -760,9 +759,6 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
     setMdmResult(null); setDispResult(null);
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
-    setHpiSummary(null); setHpiMode("original");
-    setIcdSuggestions([]); setIcdSelected([]); setInterventions([]); setIntGenerated(false);
-    setTimestamps(DEFAULT_EVENTS.map(e => ({ ...e, time:"", notes:"" })));
     setQuickDDxDismissed(false); setIsBounceback(false);
     setTreatmentPlan(""); setActionPlan("");
     setShowUndo(true);
@@ -962,18 +958,6 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
         )}
 
         <PatientBanner demo={demo} />
-
-        {/* At a Glance — appears once Phase 1 has content, updates through both phases */}
-        <AtAGlanceCard
-          cc={cc} vitals={vitals} hpi={hpi}
-          mdmResult={mdmResult} dispResult={dispResult}
-          labs={labs} imaging={imaging} newVitals={newVitals}
-          demo={demo}
-          parsedMeds={parsedMeds} parsedAllergies={parsedAllergies}
-          treatmentPlan={treatmentPlan} actionPlan={actionPlan}
-          interventions={interventions}
-        />
-
         {isFatigueRisk && !fatigueDismissed && <FatigueBanner onDismiss={() => setFatigueDismissed(true)} />}
         <StepProgress phase1Done={Boolean(mdmResult)} phase2Done={Boolean(dispResult)} p2Open={p2Open} />
 
@@ -1196,6 +1180,7 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
           smartExpansions={smartExpansions}
         />
 
+        {/* Per-system ROS copy — parses ros text and renders individual copy buttons per organ system */}
         <QuickNoteROSHelper ros={ros} />
 
         {/* MDM Result */}
@@ -1259,9 +1244,6 @@ Revise the MDM if warranted. Preserve prior working diagnosis unless new data cl
             <MDMPlanEntry
               treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan}
               actionPlan={actionPlan}       setActionPlan={setActionPlan}
-              mdmResult={mdmResult}
-              interventions={interventions}
-              base44={base44}
             />
 
             {/* MDM Level Explainer */}

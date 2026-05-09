@@ -595,8 +595,6 @@ function HFNCTracker() {
 /* ═══ AIRWAY TIMERS (Item 7) ════════════════════════════════════════ */
 function AirwayTimers() {
   const [timers, setTimers] = useState({preox:{label:"Pre-Ox",dur:240,elapsed:0,running:false,color:T.gold},sbt:{label:"SBT",dur:1800,elapsed:0,running:false,color:T.teal},attempt:{label:"Attempt",dur:0,elapsed:0,running:false,color:T.coral}});
-  const refs = {preox:useState(null)[0], sbt:useState(null)[0], attempt:useState(null)[0]};
-  const tick = (key) => setTimers(p=>({...p,[key]:{...p[key],elapsed:p[key].elapsed+1}}));
   const toggle = (key) => {
     setTimers(p=>{
       const t=p[key];

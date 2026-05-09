@@ -5,7 +5,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ClinicalNote } from "@/api/entities";
-// UploadFile is accessed via base44.integrations.Core.UploadFile
+import { UploadFile } from "@/api/storage";
 import ECGNSTEMIHub from "@/components/ecg/ECGNSTEMIHub";
 import ECGAFPathway  from "@/components/ecg/ECGAFPathway";
 
@@ -27,7 +27,7 @@ import ECGAFPathway  from "@/components/ecg/ECGAFPathway";
 const T = {
   bg:"#050f1e", panel:"#081628", up:"#0e2544",
   b:"rgba(26,53,85,0.8)", bhi:"rgba(42,79,122,0.9)",
-  txt:"#e8f0fe", txt2:"#aac8e8", txt3:"#6e94b8", txt4:"#4e7098",
+  txt:"#e8f0fe", txt2:"#aac8e8", txt3:"#90b8d4", txt4:"#6898b4",
   red:"#ff4444", orange:"#ff9f43", gold:"#f5c842",
   blue:"#3b9eff", purple:"#9b6dff", teal:"#00e5c0", coral:"#ff6b6b",
 };
@@ -95,7 +95,7 @@ function stemiTerritory(ls) {
     return {label:"Lateral STEMI",culprit:"LCx or First Diagonal (D1)",color:T.orange,
       action:"Activate cath. Check inferior leads — lateral STEMI frequently extends. Radial preferred.",
       pitfall:"High lateral MI (I, aVL only) has small STE — easy to underread. Reciprocal STD in II/III/aVF is the tip-off.",source:"2025 ACC/AHA ACS Guideline (Class 1)"};
-  return {label:"Nonspecific / Pattern Unclear",culprit:"Indeterminate",color:T.txt4,
+  return {label:"Nonspecific / Pattern Unclear",culprit:"Indeterminate",color:T.txt3,
     action:"Serial ECGs at 0, 30, 60 min. Obtain posterior (V7-V9) and right-sided (V4R) leads if territory unclear. hs-cTn at 0 and 1-2h.",
     pitfall:"Normal or nonspecific ECG does not rule out complete coronary occlusion (OMI paradigm). Serial ECG + troponin mandatory.",source:"2025 ACC/AHA ACS Guideline"};
 }
@@ -118,7 +118,7 @@ function STEMILocalizer() {
           </button>;
         })}
       </div>
-      <button onClick={()=>setLeadStates({})} style={{marginBottom:12,padding:"3px 10px",borderRadius:5,border:"1px solid rgba(42,79,122,0.35)",background:"transparent",color:T.txt4,fontFamily:"'JetBrains Mono',monospace",fontSize:8,letterSpacing:1,textTransform:"uppercase",cursor:"pointer"}}>Clear All</button>
+      <button onClick={()=>setLeadStates({})} style={{marginBottom:12,padding:"3px 10px",borderRadius:5,border:"1px solid rgba(42,79,122,0.35)",background:"transparent",color:T.txt3,fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:1,textTransform:"uppercase",cursor:"pointer"}}>Clear All</button>
       {result?(
         <div className="ecg-fade" style={{padding:"14px 16px",borderRadius:12,background:`${result.color}0d`,border:`1px solid ${result.color}33`}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:16,color:result.color,marginBottom:3}}>{result.label}</div>
@@ -133,10 +133,10 @@ function STEMILocalizer() {
               <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2,lineHeight:1.5,fontStyle:"italic"}}>{result.pitfall}</div>
             </div>
           </div>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,textAlign:"right"}}>{result.source}</div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,textAlign:"right"}}>{result.source}</div>
         </div>
       ):(
-        <div style={{padding:"14px",borderRadius:10,textAlign:"center",background:"rgba(42,79,122,0.1)",border:"1px solid rgba(42,79,122,0.25)",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt4}}>
+        <div style={{padding:"14px",borderRadius:10,textAlign:"center",background:"rgba(42,79,122,0.1)",border:"1px solid rgba(42,79,122,0.25)",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt3}}>
           Select lead findings above to localize territory and culprit artery
         </div>
       )}
@@ -226,8 +226,8 @@ function AVBlockTab() {
     <div>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
         {path.length>0&&<button onClick={()=>{const prev=path[path.length-1];setPath(p=>p.slice(0,-1));setStep(prev);}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid rgba(42,79,122,0.5)",background:"transparent",color:T.txt3,fontSize:11,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>← Back</button>}
-        {path.length>0&&<div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4}}>Step {path.length}</div>}
-        <button onClick={()=>{setStep("ratio");setPath([]);}} style={{marginLeft:"auto",padding:"3px 9px",borderRadius:5,border:"1px solid rgba(42,79,122,0.4)",background:"transparent",color:T.txt4,fontSize:9,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",letterSpacing:1,textTransform:"uppercase"}}>Reset</button>
+        {path.length>0&&<div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3}}>Step {path.length}</div>}
+        <button onClick={()=>{setStep("ratio");setPath([]);}} style={{marginLeft:"auto",padding:"3px 9px",borderRadius:5,border:"1px solid rgba(42,79,122,0.4)",background:"transparent",color:T.txt3,fontSize:10,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",letterSpacing:1,textTransform:"uppercase"}}>Reset</button>
       </div>
       {result ? (
         <div className="ecg-fade" style={{padding:"16px 18px",borderRadius:12,background:`${result.color}0d`,border:`2px solid ${result.color}44`,borderLeft:`5px solid ${result.color}`}}>
@@ -236,7 +236,7 @@ function AVBlockTab() {
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20,background:`${result.color}20`,border:`1px solid ${result.color}44`,color:result.color}}>{result.urgency}</span>
           </div>
           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt,lineHeight:1.65,marginBottom:10}}>{result.action}</div>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4}}>{result.source}</div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4}}>{result.source}</div>
           <SgarbossaChecker/>
         </div>
       ) : question ? (
@@ -245,7 +245,7 @@ function AVBlockTab() {
           {question.options.map((opt,i)=>(
             <button key={i} onClick={()=>{setPath(p=>[...p,step]);setStep(opt.next);}}
               style={{display:"flex",alignItems:"center",gap:14,width:"100%",minHeight:52,padding:"12px 14px",borderRadius:10,cursor:"pointer",textAlign:"left",border:"1.5px solid rgba(42,79,122,0.6)",marginBottom:8,transition:"all .12s",background:"rgba(14,28,58,0.75)",fontFamily:"'DM Sans',sans-serif",fontSize:13,color:T.txt2}}>
-              <div style={{width:28,height:28,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(18,40,80,0.8)",fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:T.txt4}}>{i+1}</div>
+              <div style={{width:28,height:28,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(18,40,80,0.8)",fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:T.txt3}}>{i+1}</div>
               {opt.label}
             </button>
           ))}
@@ -269,32 +269,32 @@ function QTcTab() {
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:10,alignItems:"end"}}>
         {[{label:"QT Interval (ms)",val:qt,set:setQt,ph:"400"},{label:"Heart Rate (bpm)",val:hr,set:setHr,ph:"72"}].map(f=>(
           <div key={f.label}>
-            <div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>{f.label}</div>
+            <div style={{fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>{f.label}</div>
             <input type="number" value={f.val} onChange={e=>f.set(e.target.value)} placeholder={f.ph} style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid rgba(26,53,85,.8)",borderRadius:6,padding:"8px 10px",color:T.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:15,fontWeight:700,outline:"none",textAlign:"center"}}/>
           </div>
         ))}
         <div>
-          <div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>Sex</div>
+          <div style={{fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>Sex</div>
           <div style={{display:"flex",gap:4}}>{["M","F"].map(s=><button key={s} onClick={()=>setSex(s)} style={{flex:1,padding:"8px 0",borderRadius:6,cursor:"pointer",border:`1px solid ${sex===s?"rgba(59,158,255,.5)":"rgba(26,53,85,.7)"}`,background:sex===s?"rgba(59,158,255,.15)":"rgba(14,37,68,.4)",color:sex===s?T.blue:T.txt4,fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700}}>{s}</button>)}</div>
         </div>
       </div>
       {qtcMs&&(
         <div className="ecg-fade" style={{padding:"18px 20px",borderRadius:12,background:`${rCol}0d`,border:`2px solid ${rCol}44`,textAlign:"center"}}>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>QTc (Bazett)</div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>QTc (Bazett)</div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:52,fontWeight:900,color:rCol,lineHeight:1,marginBottom:6}}>{qtcMs} ms</div>
           <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:rCol,marginBottom:4}}>{risk}</div>
           <div style={{fontSize:11,color:T.txt3}}>Normal limit: {norm}ms ({sex==="M"?"male":"female"}) · RR interval: {qt&&hr?(60/parseFloat(hr)*1000).toFixed(0):"—"} ms</div>
         </div>
       )}
       <div style={{...glass,padding:"14px 16px"}}>
-        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:1,marginBottom:10,fontWeight:700}}>QTc Risk Thresholds</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:1,marginBottom:10,fontWeight:700}}>QTc Risk Thresholds</div>
         {[["< 440ms (♂) / < 460ms (♀)","Normal","#00e5c0"],["440–499ms","Borderline — review drugs, electrolytes",T.gold],["≥ 500ms","High TdP risk — hold offending drugs, Mg²⁺ 2g IV, monitor",T.coral],["≥ 600ms","Imminent TdP — Mg²⁺ IV, overdrive pacing, EP consult",T.red]].map(([r,d,c])=>(
           <div key={r} style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:10,marginBottom:8,paddingBottom:8,borderBottom:"1px solid rgba(26,53,85,.4)"}}>
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:c}}>{r}</div>
             <div style={{fontSize:11,color:T.txt2}}>{d}</div>
           </div>
         ))}
-        <div style={{fontSize:10,color:T.txt4,lineHeight:1.6,marginTop:4,fontStyle:"italic"}}>Always measure QTc manually — automated values are incorrect in ~30% of cases. Use the lead with the longest visible T wave. Measure in a long-cycle RR interval.</div>
+        <div style={{fontSize:11,color:T.txt3,lineHeight:1.6,marginTop:4,fontStyle:"italic"}}>Always measure QTc manually — automated values are incorrect in ~30% of cases. Use the lead with the longest visible T wave. Measure in a long-cycle RR interval.</div>
       </div>
     </div>
   );
@@ -340,7 +340,7 @@ function CHADSTab() {
         })}
       </div>
       <div style={{...glass,padding:"12px 14px"}}>
-        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:1,marginBottom:8,fontWeight:700}}>2023 ACC/AHA AF Guideline — Anticoagulation Thresholds</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:1,marginBottom:8,fontWeight:700}}>2023 ACC/AHA AF Guideline — Anticoagulation Thresholds</div>
         {[["Score 0 (male)","No anticoagulation recommended",T.teal],["Score 1 (female only)","No net benefit — female sex alone does not count",T.gold],["Score ≥2 (or 1 if male)","Anticoagulate — DOAC preferred over warfarin (Class 1)",T.coral]].map(([r,d,c])=>(
           <div key={r} style={{display:"flex",gap:10,marginBottom:7,paddingBottom:7,borderBottom:"1px solid rgba(26,53,85,.4)"}}>
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:c,minWidth:130}}>{r}</div>
@@ -466,7 +466,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
       let url=imgUrl;
       if(!url){
         setImgUploading(true);
-        const res=await base44.integrations.Core.UploadFile({file:imgFile});
+        const res=await UploadFile({file:imgFile});
         url=res.file_url;
         setImgUrl(url);
         setImgUploading(false);
@@ -532,7 +532,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
   };
 
   const Chip=({label,active,color,onClick})=>(
-    <button onClick={onClick} style={{padding:"4px 10px",borderRadius:20,fontSize:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:active?700:400,border:`1px solid ${active?color+"88":"rgba(26,53,85,.6)"}`,background:active?`${color}16`:"rgba(14,37,68,.35)",color:active?color:T.txt4,transition:"all .1s"}}>
+    <button onClick={onClick} style={{padding:"4px 10px",borderRadius:20,fontSize:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:active?700:400,border:`1px solid ${active?color+"88":"rgba(26,53,85,.6)"}`,background:active?`${color}16`:"rgba(14,37,68,.35)",color:active?color:T.txt3,transition:"all .1s"}}>
       {label}
     </button>
   );
@@ -554,7 +554,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             <button key={m.id} onClick={()=>{setMode(m.id);setResult(null);setErrMsg(null);}}
               style={{padding:"10px 8px",borderRadius:10,cursor:"pointer",textAlign:"center",border:`1.5px solid ${sel?"rgba(0,229,192,.4)":"rgba(26,53,85,.6)"}`,background:sel?"rgba(0,229,192,.1)":"rgba(14,37,68,.4)",transition:"all .15s",fontFamily:"'DM Sans',sans-serif"}}>
               <div style={{fontSize:13,fontWeight:700,color:sel?T.teal:T.txt2,marginBottom:2}}>{m.icon} {m.label}</div>
-              <div style={{fontSize:9,color:sel?T.txt3:T.txt4,fontFamily:"'JetBrains Mono',monospace"}}>{m.desc}</div>
+              <div style={{fontSize:10,color:T.txt3,fontFamily:"'JetBrains Mono',monospace"}}>{m.desc}</div>
             </button>
           );
         })}
@@ -584,7 +584,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             <label htmlFor="ecg-img-input" style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:"30px 20px",borderRadius:10,border:"2px dashed rgba(0,229,192,.3)",background:"rgba(0,229,192,.04)",cursor:"pointer",transition:"all .15s"}}>
               <span style={{fontSize:32}}>📸</span>
               <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:700,color:T.teal}}>Tap to upload ECG image</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,letterSpacing:1}}>JPG · PNG · HEIC</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,letterSpacing:1}}>JPG · PNG · HEIC</span>
               <input id="ecg-img-input" type="file" accept="image/*" onChange={handleImageSelect} style={{display:"none"}}/>
             </label>
           ):(
@@ -610,11 +610,11 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,letterSpacing:1.2,textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Rate & Rhythm</div>
             <div style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:10}}>
               <div>
-                <div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>Rate (bpm)</div>
+                <div style={{fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>Rate (bpm)</div>
                 <input type="number" value={rate} onChange={e=>setRate(e.target.value)} placeholder="72" style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid rgba(26,53,85,.8)",borderRadius:6,padding:"8px 10px",color:T.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:15,fontWeight:700,outline:"none",textAlign:"center"}}/>
               </div>
               <div>
-                <div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>Rhythm</div>
+                <div style={{fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>Rhythm</div>
                 <select value={rhythm} onChange={e=>setRhythm(e.target.value)} style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid rgba(26,53,85,.8)",borderRadius:6,padding:"8px 10px",color:rhythm?T.txt:T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:13,outline:"none"}}>
                   <option value="">— Select rhythm —</option>
                   {RHYTHMS_LIST.map(r=><option key={r} value={r}>{r}</option>)}
@@ -627,12 +627,12 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
               {[{label:"PR (ms)",val:pr,set:setPr,ph:"160"},{label:"QRS (ms)",val:qrs,set:setQrs,ph:"80"},{label:"QT (ms)",val:qt,set:setQt,ph:"400"}].map(f=>(
                 <div key={f.label}>
-                  <div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>{f.label}</div>
+                  <div style={{fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>{f.label}</div>
                   <input type="number" value={f.val} onChange={e=>f.set(e.target.value)} placeholder={f.ph} style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid rgba(26,53,85,.8)",borderRadius:6,padding:"8px 8px",color:T.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,outline:"none",textAlign:"center"}}/>
                 </div>
               ))}
               <div>
-                <div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>QTc (Bazett)</div>
+                <div style={{fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:".06em",fontWeight:700,marginBottom:4}}>QTc (Bazett)</div>
                 <div style={{background:"rgba(14,37,68,.3)",border:`1px solid ${qtcMs&&qtcMs>=500?"rgba(255,107,107,.5)":qtcMs&&qtcMs>=440?"rgba(245,200,66,.4)":"rgba(26,53,85,.7)"}`,borderRadius:6,padding:"8px 8px",textAlign:"center",fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,color:qtcMs&&qtcMs>=500?T.coral:qtcMs&&qtcMs>=440?T.gold:qtcMs?T.teal:T.txt4}}>
                   {qtcMs?`${qtcMs} ms`:"auto"}
                 </div>
@@ -656,7 +656,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:5,marginBottom:8}}>
               {["I","II","III","aVF","aVL","aVR","V1","V2","V3","V4","V5","V6","V7","V4R"].map(lead=>{const st=stChanges[lead]||"normal";const bc=st==="ste"?T.red:st==="std"?T.blue:"rgba(42,79,122,0.4)";const bg=st==="ste"?`${T.red}18`:st==="std"?`${T.blue}18`:"rgba(8,22,40,0.5)";return<button key={lead} onClick={()=>cycleSTLead(lead)} style={{padding:"8px 3px",borderRadius:7,border:`1px solid ${bc}`,background:bg,color:bc,fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,cursor:"pointer",textAlign:"center",lineHeight:1.2}}>{lead}{st!=="normal"&&<div style={{fontSize:7,marginTop:1}}>{st.toUpperCase()}</div>}</button>;})}
             </div>
-            <button onClick={()=>setStChanges({})} style={{padding:"3px 10px",borderRadius:5,border:"1px solid rgba(26,53,85,.5)",background:"transparent",color:T.txt4,fontFamily:"'JetBrains Mono',monospace",fontSize:8,letterSpacing:1,textTransform:"uppercase",cursor:"pointer"}}>Clear ST</button>
+            <button onClick={()=>setStChanges({})} style={{padding:"3px 10px",borderRadius:5,border:"1px solid rgba(26,53,85,.5)",background:"transparent",color:T.txt3,fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:1,textTransform:"uppercase",cursor:"pointer"}}>Clear ST</button>
           </div>
           <div style={{...glass,padding:"14px 16px"}}>
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,letterSpacing:1.2,textTransform:"uppercase",fontWeight:700,marginBottom:10}}>T Wave Changes</div>
@@ -674,7 +674,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
       {/* Clinical Context — shared */}
       <div style={{...glass,padding:"12px 14px"}}>
         <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,letterSpacing:1.2,textTransform:"uppercase",fontWeight:700,marginBottom:6}}>
-          Clinical Context <span style={{color:T.txt4,fontWeight:400,letterSpacing:0,textTransform:"none",fontSize:9}}>(optional — improves accuracy)</span>
+          Clinical Context <span style={{color:T.txt3,fontWeight:400,letterSpacing:0,textTransform:"none",fontSize:10}}>(optional — improves accuracy)</span>
         </div>
         <textarea value={context} onChange={e=>setContext(e.target.value)} rows={2}
           placeholder="e.g. 58M, acute chest pain × 2h, diaphoretic, BP 90/60. Prior ECG normal 6 months ago. On metoprolol."
@@ -716,7 +716,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
           {/* Parsed findings — paste/image only */}
           {result.parsed_findings?.length>0&&(
             <div style={{...glass,padding:"12px 14px"}}>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:8}}>Parsed ECG Measurements</div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:8}}>Parsed ECG Measurements</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
                 {result.parsed_findings.map((f,i)=><span key={i} style={{padding:"3px 9px",borderRadius:20,background:"rgba(14,37,68,.6)",border:"1px solid rgba(42,79,122,.5)",fontSize:10,color:T.txt3,fontFamily:"'JetBrains Mono',monospace"}}>{f}</span>)}
               </div>
@@ -773,7 +773,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
           <button onClick={sendToQuickNote} style={{width:"100%",padding:"10px 0",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:"1px solid rgba(155,109,255,.35)",background:"rgba(155,109,255,.08)",color:T.purple,transition:"all .2s"}}>
             ↗ Send Interpretation to QuickNote MDM
           </button>
-          <button onClick={reset} style={{padding:"9px 0",borderRadius:8,background:"transparent",border:"1px solid rgba(26,53,85,.6)",color:T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:12,cursor:"pointer"}}>
+          <button onClick={reset} style={{padding:"9px 0",borderRadius:8,background:"transparent",border:"1px solid rgba(26,53,85,.6)",color:T.txt3,fontFamily:"'DM Sans',sans-serif",fontSize:12,cursor:"pointer"}}>
             Reset — New ECG
           </button>
         </div>
@@ -870,10 +870,10 @@ Return ONLY valid JSON — no preamble, no markdown:
           {/* Elapsed + target strip */}
           <div style={{...glass,padding:"14px 16px"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
-              <div><div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Elapsed</div>
+              <div><div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Elapsed</div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:36,fontWeight:900,color:elMin>=60?T.coral:elMin>=30?T.gold:T.teal,lineHeight:1}}>{elMin} <span style={{fontSize:14,fontWeight:400,color:T.txt3}}>min</span></div>
               </div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4}}>Started {fmt(t0)}</div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3}}>Started {fmt(t0)}</div>
               <button onClick={()=>{setT0(null);setEcgLog([]);setNote("");setSent(false);setCmpOpen(false);setCmpResult(null);}} style={{padding:"4px 12px",borderRadius:6,border:"1px solid rgba(255,107,107,.3)",background:"rgba(255,107,107,.07)",color:T.coral,fontFamily:"'DM Sans',sans-serif",fontSize:11,cursor:"pointer"}}>Reset</button>
             </div>
             <div style={{display:"flex",gap:8}}>
@@ -884,7 +884,7 @@ Return ONLY valid JSON — no preamble, no markdown:
                   <div key={tg.label} style={{flex:1,padding:"9px 10px",borderRadius:8,background:done?"rgba(0,229,192,.06)":due?`${tg.c}0f`:"rgba(14,37,68,.4)",border:`1px solid ${done?"rgba(0,229,192,.3)":due?tg.c+"44":"rgba(26,53,85,.6)"}`,textAlign:"center"}}>
                     <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:done?T.teal:due?tg.c:T.txt4,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>{done?"✓ Done":due?"DUE NOW":"Upcoming"}</div>
                     <div style={{fontSize:11,color:done?T.teal:due?tg.c:T.txt3,fontWeight:600}}>{tg.label}</div>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt4}}>+{tg.mins} min</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3}}>+{tg.mins} min</div>
                   </div>
                 );
               })}
@@ -937,7 +937,7 @@ Return ONLY valid JSON — no preamble, no markdown:
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
                 {[{label:"ECG A",sel:selA,setSel:setSelA,find:findA,setFind:setFindA},{label:"ECG B",sel:selB,setSel:setSelB,find:findB,setFind:setFindB}].map(({label,sel,setSel,find,setFind})=>(
                   <div key={label}>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>{label}</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>{label}</div>
                     <select value={sel} onChange={e=>setSel(Number(e.target.value))} style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid rgba(26,53,85,.8)",borderRadius:6,padding:"7px 8px",color:T.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:12,outline:"none",marginBottom:5}}>
                       {ecgLog.map((e,i)=><option key={i} value={i}>ECG #{e.n} — +{e.mins} min</option>)}
                     </select>
@@ -1071,7 +1071,7 @@ function PedsTab() {
         {AGE.map((g,i)=>{const sel=ageIdx===i;return(
           <button key={i} onClick={()=>setAgeIdx(sel?null:i)} style={{padding:"8px 12px",borderRadius:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",border:`1.5px solid ${sel?"rgba(0,229,192,.45)":"rgba(26,53,85,.6)"}`,background:sel?"rgba(0,229,192,.1)":"rgba(14,37,68,.4)",transition:"all .12s"}}>
             <div style={{fontSize:12,fontWeight:700,color:sel?T.teal:T.txt2}}>{g.label}</div>
-            <div style={{fontSize:9,color:sel?T.txt3:T.txt4,fontFamily:"'JetBrains Mono',monospace"}}>{g.sub}</div>
+            <div style={{fontSize:10,color:T.txt3,fontFamily:"'JetBrains Mono',monospace"}}>{g.sub}</div>
           </button>
         );})}
       </div>
@@ -1081,7 +1081,7 @@ function PedsTab() {
           <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8,marginBottom:12}}>
             {[{l:"Heart Rate",v:g.hr+" bpm"},{l:"PR Interval",v:g.pr+" ms"},{l:"QRS Duration",v:g.qrs+" ms"},{l:"QTc",v:g.qtc+" ms"}].map(f=>(
               <div key={f.l} style={{padding:"9px 11px",borderRadius:8,background:"rgba(14,37,68,.5)",border:"1px solid rgba(26,53,85,.7)"}}>
-                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>{f.l}</div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>{f.l}</div>
                 <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:15,fontWeight:700,color:T.teal}}>{f.v}</div>
               </div>
             ))}
@@ -1126,7 +1126,7 @@ export default function ECGHub({ embedded = false, onBack }) {
               </div>
             </div>
             <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:900,letterSpacing:-0.5,lineHeight:1.1,color:T.txt,marginBottom:4}}>ECG Hub</h1>
-            <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt4}}>AI ECG Interpretation · STEMI Localizer · AV Block · QTc · CHA₂DS₂-VASc · Hyperkalemia · Peds ECG · AF Pathway</p>
+            <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt3}}>AI ECG Interpretation · STEMI Localizer · AV Block · QTc · CHA₂DS₂-VASc · Hyperkalemia · Peds ECG · AF Pathway</p>
           </div>
         )}
 

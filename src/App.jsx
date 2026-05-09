@@ -106,6 +106,7 @@ import ShiftDashboard from '@/pages/ShiftDashboard';
 import ClinicalDecisionHub from '@/pages/ClinicalDecisionHub';
 import HubIndex from '@/pages/HubIndex';
 import RSIPage from '@/pages/RsiPage';
+import NIVPage from '@/pages/NIVPage';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -212,6 +213,8 @@ const AuthenticatedApp = () => {
         <Route path="/hub-index"              element={<HubIndex />} />
         <Route path="/RsiPage"                element={<RSIPage />} />
         <Route path="/rsi-page"               element={<RSIPage />} />
+        <Route path="/NIVPage"                element={<NIVPage />} />
+        <Route path="/niv-page"               element={<NIVPage />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />
 
         {/* Pharmacology */}

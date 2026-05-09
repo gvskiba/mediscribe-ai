@@ -111,7 +111,7 @@ function ROXCalc() {
         </div>
       )}
       <div style={{marginTop:8,display:"flex",gap:6}}>
-        {[["<3.47",T.coral,"High fail"],["3.47\u20134.88",T.gold,"Monitor"],["\u22654.88",T.green,"Success"]].map(([v,c,l])=>(
+        {[["<3.47",T.coral,"High fail"],["3.47\u20134.88",T.gold,"Monitor"],["≥4.88",T.green,"Success"]].map(([v,c,l])=>(
           <div key={v} style={{flex:1,textAlign:"center",padding:"5px",background:`${c}10`,border:`1px solid ${c}25`,borderRadius:7}}>
             <div style={{fontSize:11,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div>
             <div style={{fontSize:8,color:T.txt4}}>{l}</div>
@@ -126,8 +126,8 @@ function ROXCalc() {
 function HFNCTracker() {
   const times=["Init","2h","6h","12h","24h"];
   const [rows,setRows]=useState(times.map(t=>({time:t,spo2:"",fio2:"",rr:"",rox:""})));
-  const calcRox=(spo2,fio2,rr)=>{const s=parseFloat(spo2),f=parseFloat(fio2),r=parseFloat(rr);return(!isNaN(s)&&!isNaN(f)&&!isNaN(r)&&f>0&&r>0)?Math.round(((s/f)/r)*100)/100:null;};
-  const update=(i,k,v)=>setRows(rows.map((row,idx)=>{if(idx!==i)return row;const nr={...row,[k]:v};nr.rox=calcRox(k==="spo2"?v:nr.spo2,k==="fio2"?v:nr.fio2,k==="rr"?v:nr.rr);return nr;}));
+  const calc=(spo2,fio2,rr)=>{const s=parseFloat(spo2),f=parseFloat(fio2),r=parseFloat(rr);return(!isNaN(s)&&!isNaN(f)&&!isNaN(r)&&f>0&&r>0)?Math.round(((s/f)/r)*100)/100:null;};
+  const update=(i,k,v)=>setRows(rows.map((r,idx)=>{if(idx!==i)return r;const nr={...r,[k]:v};nr.rox=calc(idx===i&&k==="spo2"?v:nr.spo2,idx===i&&k==="fio2"?v:nr.fio2,idx===i&&k==="rr"?v:nr.rr);return nr;}));
   const riskColor=v=>v===null?T.txt4:v>=4.88?T.green:v>=3.47?T.gold:T.coral;
   const inp2={background:"rgba(14,37,68,0.6)",border:`1px solid ${T.b}`,borderRadius:5,padding:"4px 6px",color:T.txt,fontFamily:"monospace",fontSize:11,outline:"none",width:"100%",textAlign:"center"};
   return (
@@ -146,7 +146,7 @@ function HFNCTracker() {
         </table>
       </div>
       <div style={{marginTop:8,display:"flex",gap:6}}>
-        {[["<3.47",T.coral,"Prepare escalation"],["3.47\u20134.88",T.gold,"Monitor closely"],["\u22654.88",T.green,"HFNC success"]].map(([v,c,l])=>(
+        {[["<3.47",T.coral,"Prepare escalation"],["3.47\u20134.88",T.gold,"Monitor closely"],["≥4.88",T.green,"HFNC success"]].map(([v,c,l])=>(
           <div key={v} style={{flex:1,padding:"4px",background:`${c}10`,border:`1px solid ${c}25`,borderRadius:6,textAlign:"center"}}>
             <div style={{fontSize:10,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div>
             <div style={{fontSize:8,color:T.txt4}}>{l}</div>
@@ -166,9 +166,11 @@ function ABGInterpreter() {
     const PH=parseFloat(pH),PCO2=parseFloat(pco2),HCO3=parseFloat(hco3),PO2=parseFloat(po2),FIO2=parseFloat(fio2),NA=parseFloat(na),CL=parseFloat(cl);
     if(isNaN(PH)||isNaN(PCO2)||isNaN(HCO3))return null;
     const lines=[];const push=(label,val,color)=>lines.push({label,val,color});
-    const acidemic=PH<7.35,alkalemic=PH>7.45;
+    // Step 1: pH
+    const acidemic=PH<7.35,alkalemic=PH>7.45,normal=PH>=7.35&&PH<=7.45;
     push("pH Assessment",acidemic?"Acidemia (pH <7.35)":alkalemic?"Alkalemia (pH >7.45)":"Normal pH (7.35\u20137.45)",acidemic?T.coral:alkalemic?T.gold:T.green);
-    let primary="";let comp_expected="";
+    // Step 2: Primary disorder
+    let primary=""; let comp_expected="";
     if(acidemic){
       if(PCO2>44){primary="Respiratory Acidosis";comp_expected=`Expected HCO\u2083: Acute = ${(24+1*(PCO2-40)/10).toFixed(1)} (rise 1/10) \xb7 Chronic = ${(24+3.5*(PCO2-40)/10).toFixed(1)} (rise 3.5/10)`;}
       else if(HCO3<22){primary="Metabolic Acidosis";const exp=Math.round(1.5*HCO3+8);comp_expected=`Winter's formula expected pCO\u2082: ${exp-2}\u2013${exp+2} mmHg \xb7 Actual: ${PCO2} mmHg`;}
@@ -179,17 +181,21 @@ function ABGInterpreter() {
       else primary="Mixed Alkalemia";
     } else primary="Normal or Compensated";
     push("Primary Disorder",primary,T.cyan);
+    // Step 3: Compensation
     if(comp_expected) push("Compensation Check",comp_expected,T.blue);
+    // Step 4: Mixed disorder
     if((acidemic&&HCO3<22&&PCO2>44)||(alkalemic&&HCO3>26&&PCO2<36)) push("Mixed Disorder","MIXED acid-base disturbance detected \u2014 both primary and secondary abnormalities present",T.orange);
+    // Step 5: Oxygenation
     if(!isNaN(PO2)&&!isNaN(FIO2)){
-      const pao2_expected=FIO2*713-PCO2/0.8;const aa=Math.round(pao2_expected-PO2);
+      const pao2_expected=FIO2*713-PCO2/0.8;const aa=Math.round(pao2_expected-PO2);const age_norm=15;
       const pf=Math.round(PO2/FIO2);
-      push("Oxygenation",`P/F ratio: ${pf} \xb7 A-a gradient: ${aa} mmHg (normal <15)\n${pf<100?"Severe hypoxemia (Berlin ARDS criteria)":pf<200?"Moderate hypoxemia":pf<300?"Mild hypoxemia":"Oxygenation adequate"}`,pf<200?T.coral:pf<300?T.gold:T.green);
+      push("Oxygenation",`P/F ratio: ${pf} \xb7 A-a gradient: ${aa} mmHg (normal <${age_norm})\n${pf<100?"Severe hypoxemia (Berlin ARDS criteria)":pf<200?"Moderate hypoxemia":pf<300?"Mild hypoxemia":"Oxygenation adequate"}`,pf<200?T.coral:pf<300?T.gold:T.green);
     }
+    // Step 6: Anion gap
     if(!isNaN(NA)&&!isNaN(CL)){
-      const ag=Math.round(NA-(CL+HCO3));const agHigh=ag>12;
-      push("Anion Gap",`AG = Na \u2212 (Cl + HCO\u2083) = ${NA} \u2212 (${CL}+${HCO3}) = ${ag} ${agHigh?"[ELEVATED > 12]":"[Normal \u226412]"}`,agHigh?T.coral:T.green);
-      if(agHigh&&primary.includes("Metabolic Acidosis")){const delta=(ag-12)/(24-HCO3);push("Delta-Delta Ratio",`\u03b4-\u03b4 = (AG-12)/(24-HCO\u2083) = ${delta.toFixed(2)} \u2014 ${delta<0.4?"Non-AG metabolic acidosis":delta<1?"Possible mixed AG + non-AG":delta<=2?"Pure AG metabolic acidosis":"AG metabolic acidosis + concurrent metabolic alkalosis"}`,T.purple);}
+      const ag=Math.round(NA-(CL+HCO3));const agNorm=ag>12;
+      push("Anion Gap",`AG = Na \u2212 (Cl + HCO\u2083) = ${NA} \u2212 (${CL}+${HCO3}) = ${ag} ${agNorm?"[ELEVATED > 12]":"[Normal \u226412]"}`,agNorm?T.coral:T.green);
+      if(agNorm&&primary.includes("Metabolic Acidosis")){const delta=(ag-12)/(24-HCO3);push("Delta-Delta Ratio",`\u03b4-\u03b4 = (AG-12)/(24-HCO\u2083) = ${delta.toFixed(2)} \u2014 ${delta<0.4?"Non-AG metabolic acidosis":delta<1?"Possible mixed AG + non-AG":delta<=2?"Pure AG metabolic acidosis":"AG metabolic acidosis + concurrent metabolic alkalosis"}`,T.purple);}
     }
     return lines;
   };
@@ -206,12 +212,12 @@ function ABGInterpreter() {
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8,marginBottom:8}}>
         {[["pO\u2082 (75\u2013100)",po2,setPo2,"68"],["FiO\u2082 (0.21\u20131.0)",fio2,setFio2,"0.4"]].map(([l,v,sv,ph])=>(
-          <div key={l}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:3}}>{l} <span style={{opacity:.6}}>(optional)</span></div><input type="number" step="0.01" placeholder={ph} value={v} onChange={e=>sv(e.target.value)} style={inp} /></div>
+          <div key={l}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:3}}>{l} <span style={{color:T.txt4,opacity:.6}}>(optional)</span></div><input type="number" step="0.01" placeholder={ph} value={v} onChange={e=>sv(e.target.value)} style={inp} /></div>
         ))}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
         {[["Na\u207a (mEq/L)",na,setNa,"140"],["Cl\u207b (mEq/L)",cl,setCl,"102"]].map(([l,v,sv,ph])=>(
-          <div key={l}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:3}}>{l} <span style={{opacity:.6}}>(for AG)</span></div><input type="number" placeholder={ph} value={v} onChange={e=>sv(e.target.value)} style={inp} /></div>
+          <div key={l}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:3}}>{l} <span style={{color:T.txt4,opacity:.6}}>(for AG)</span></div><input type="number" placeholder={ph} value={v} onChange={e=>sv(e.target.value)} style={inp} /></div>
         ))}
       </div>
       <button onClick={()=>setShow(!show)} style={{width:"100%",padding:"9px",borderRadius:9,cursor:"pointer",fontFamily:"sans-serif",border:"1px solid rgba(0,212,255,0.35)",background:"rgba(0,212,255,0.08)",color:T.cyan,fontSize:11,fontWeight:700}}>{show?"Hide Results":"Interpret ABG"}</button>
@@ -249,7 +255,7 @@ function NebuMeds() {
             <div onClick={()=>setOpen(open===i?null:i)} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:open===i?`${m.color}10`:"rgba(14,37,68,0.45)",border:`1px solid ${open===i?m.color+"40":T.b}`,borderRadius:open===i?"9px 9px 0 0":9,cursor:"pointer",transition:"all .15s"}}>
               <div style={{width:8,height:8,borderRadius:"50%",background:m.color,flexShrink:0}} />
               <span style={{fontSize:11,fontWeight:600,color:open===i?m.color:T.txt,flex:1}}>{m.drug}</span>
-              <span style={{fontSize:9,color:T.txt4}}>{open===i?"\u25b2":"\u25bc"}</span>
+              <span style={{fontSize:9,color:T.txt4}}>{open===i?"▲":"▼"}</span>
             </div>
             {open===i&&<div style={{background:"rgba(8,18,35,0.7)",border:`1px solid ${m.color}30`,borderTop:"none",borderRadius:"0 0 9px 9px",padding:"10px 14px"}}>
               <div style={{fontSize:9,color:m.color,textTransform:"uppercase",letterSpacing:".06em",marginBottom:5}}>Dosing</div>
@@ -291,8 +297,8 @@ function DrugRow({rx}) {
 }
 
 function MDMSnippet({condId}) {
-  const [fields,setFields]=useState({});const [copied,setCopied]=useState(false);const [show,setShow]=useState(false);
   const tmpl=MDM_DATA[condId]; if(!tmpl)return null;
+  const [fields,setFields]=useState({});const [copied,setCopied]=useState(false);const [show,setShow]=useState(false);
   const note=tmpl.t(fields);
   const copy=()=>navigator.clipboard.writeText(note).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
   return (
@@ -314,8 +320,8 @@ function MDMSnippet({condId}) {
 }
 
 function OrderSetPanel({condId}) {
-  const [active,setActive]=useState(null);const [copied,setCopied]=useState(null);
   const os=ORDER_SETS[condId]; if(!os)return null;
+  const [active,setActive]=useState(null);const [copied,setCopied]=useState(null);
   const copy=(i,text)=>navigator.clipboard.writeText(text).then(()=>{setCopied(i);setTimeout(()=>setCopied(null),2500);});
   return (
     <div style={{background:`${os.color}08`,border:`1px solid ${os.color}28`,borderRadius:10,marginBottom:10,overflow:"hidden"}}>
@@ -382,7 +388,8 @@ function ConditionPage({cond,onBack}) {
           <div style={{background:"rgba(14,37,68,0.5)",border:`1px solid ${cond.br}`,borderLeft:`3px solid ${cond.color}`,borderRadius:8,padding:"12px 14px",marginBottom:14,fontSize:12,color:T.txt2,lineHeight:1.7}}>{ov.def}</div>
           {ov.bullets?.map((b,i)=><div key={i} style={{display:"flex",gap:10,padding:"7px 0",borderBottom:i<ov.bullets.length-1?"1px solid rgba(26,53,85,0.4)":"none"}}><div style={{width:14,height:14,borderRadius:3,background:cond.gl,border:`1px solid ${cond.br}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:cond.color,marginTop:2}}>\u25aa</div><div style={{fontSize:12,color:T.txt2,lineHeight:1.55}}>{b}</div></div>)}
           {cond.id==="hfnc"&&<div style={{marginTop:14}}><ROXCalc /><HFNCTracker /></div>}
-          {(cond.id==="o2"||cond.id==="cpap"||cond.id==="bipap")&&<div style={{marginTop:14}}><ABGInterpreter /></div>}
+          {cond.id==="o2"&&<div style={{marginTop:14}}><ABGInterpreter /></div>}
+          {(cond.id==="cpap"||cond.id==="bipap")&&<div style={{marginTop:14}}><ABGInterpreter /></div>}
           <QuickRefCard condId={cond.id} />
         </div>}
         {tab==="workup"&&<div>
@@ -434,6 +441,7 @@ export default function NIVPage() {
           </div>
         </div>
       </div>
+      {/* ABG always visible at top */}
       <div style={{padding:"12px 20px 0",flexShrink:0}}><ABGInterpreter /></div>
       <div style={{flex:1,overflowY:"auto",padding:"8px 20px 24px"}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))",gap:12}}>

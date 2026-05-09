@@ -568,15 +568,40 @@ function ECGAITab({ embedded=false }) {
     return r;
   };
 
+  const refreshLog = useCallback(()=>{
+    base44.entities.ClinicalNote.filter({source:"ECG-Saved"},"-created_date",10).then(notes=>{
+      if(!Array.isArray(notes))return;
+      setSavedLog(notes.map(n=>{try{return{...JSON.parse(n.raw_note||n.content||"{}"),id:n.id,patient_name:n.patient_name};}catch{return null;}}).filter(Boolean));
+    }).catch(()=>{});
+  },[]);
+
+  const autoSaveResult = useCallback(async(res, pid)=>{
+    try {
+      await base44.entities.ClinicalNote.create({
+        raw_note: JSON.stringify(res),
+        source: "ECG-Saved",
+        status: "ecg-interp",
+        patient_name: pid || "Unknown",
+        cc: res.interpretation?.slice(0,80) || "",
+        working_diagnosis: res.urgency || "",
+      });
+      refreshLog();
+    } catch {}
+  }, [refreshLog]);
+
   const analyzeManual = useCallback(async()=>{
     const findings=buildFindings();
     if(!findings.trim()){setErrMsg("Enter at least one ECG finding before analyzing.");return;}
     setLoading(true);setResult(null);setErrMsg(null);
     const PROMPT=`You are an expert emergency medicine ECG interpreter following 2025 ACC/AHA/ACEP guidelines. Analyze these structured ECG findings. Flag STEMI equivalents (Wellens, De Winter, posterior MI, Brugada type 1, new LBBB, aVR STE+diffuse STD), dangerous patterns (WPW+AF, TCA toxicity, hyperkalemia, long QT/TdP), and give actionable ED recommendations.\n\nECG FINDINGS:\n${findings}\n\nReturn ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
-    try{setResult(parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT})));}
+    try{
+      const res=parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT}));
+      setResult(res);
+      autoSaveResult(res, patientId);
+    }
     catch(e){setErrMsg("AI interpretation failed — check connection and try again.");}
     finally{setLoading(false);}
-  },[buildFindings]);
+  },[buildFindings, autoSaveResult, patientId]);
 
   const analyzePaste = useCallback(async()=>{
     if(!pasteText.trim()){setErrMsg("Paste ECG text or machine output before analyzing.");return;}
@@ -594,10 +619,14 @@ ${pasteText}
 ${context?`\nCLINICAL CONTEXT: ${context}`:""}
 
 Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
-    try{setResult(parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT})));}
+    try{
+      const res=parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT}));
+      setResult(res);
+      autoSaveResult(res, patientId);
+    }
     catch(e){setErrMsg("AI interpretation failed — check connection and try again.");}
     finally{setLoading(false);}
-  },[pasteText,context]);
+  },[pasteText, context, autoSaveResult, patientId]);
 
   const handleImageSelect = e=>{
     const file=e.target.files?.[0];
@@ -644,12 +673,14 @@ CRITICAL PATTERNS TO ACTIVELY SEEK — DO NOT MISS:
 ${context?`\nCLINICAL CONTEXT: ${context}`:""}
 
 Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
-      setResult(parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT,image_url:url})));
+      const res=parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT,image_url:url}));
+      setResult(res);
+      autoSaveResult(res, patientId);
     }catch(e){
       setImgUploading(false);
       setErrMsg("Image analysis failed. Ensure the ECG is well-lit with the full tracing visible, then try again.");
     }finally{setLoading(false);}
-  },[imgFile,imgUrl,context]);
+  },[imgFile, imgUrl, context, autoSaveResult, patientId]);
 
   const analyze = mode==="paste"?analyzePaste:mode==="image"?analyzeImage:analyzeManual;
 
@@ -663,12 +694,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
   },[mode,patientId,rate,rhythm,pr,qrs,qt,axis,morph,stChanges,tWaves,other,pasteText,context,result]);
 
   // Load saved interpretations on mount
-  useEffect(()=>{
-    base44.entities.ClinicalNote.filter({source:"ECG-Saved"},"-created_date",10).then(notes=>{
-      if(!Array.isArray(notes))return;
-      setSavedLog(notes.map(n=>{try{return{...JSON.parse(n.content),id:n.id};}catch(e){return null;}}).filter(Boolean));
-    }).catch(()=>{});
-  },[]);
+  useEffect(()=>{ refreshLog(); },[refreshLog]);
 
   // Read incoming context from QuickNote URL param on mount
   useEffect(()=>{
@@ -758,7 +784,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
           {savedLog.map((log,i)=>(
             <div key={i} style={{display:"grid",gridTemplateColumns:"80px 80px 1fr auto",gap:8,alignItems:"center",padding:"6px 0",borderBottom:i<savedLog.length-1?"1px solid rgba(26,53,85,.4)":"none"}}>
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:log.urgency==="Critical"?T.red:log.urgency==="High"?T.coral:log.urgency==="Moderate"?T.gold:T.teal,fontWeight:700}}>{log.urgency||"—"}</div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4}}>{(log.patientId||"—").slice(0,14)}</div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4}}>{(log.patient_name||log.patientId||"—").slice(0,14)}</div>
               <div style={{fontSize:10,color:T.txt3,lineHeight:1.3}}>{(log.interpretation||"").slice(0,80)}{(log.interpretation||"").length>80?"…":""}</div>
               <button onClick={()=>generateECGReport({
                   urgency:log.urgency,
@@ -1003,10 +1029,9 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             📄 Generate Report / Export PDF
           </button>
 
-          <button onClick={saveInterpretation} disabled={saving||savedOk}
-            style={{width:"100%",padding:"10px 0",borderRadius:8,cursor:saving?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:`1px solid ${savedOk?"rgba(0,229,192,.4)":"rgba(0,229,192,.25)"}`,background:savedOk?"rgba(0,229,192,.1)":"transparent",color:savedOk?T.teal:T.txt3,transition:"all .2s"}}>
-            {savedOk?"✓ Saved to Log":saving?"Saving…":"💾 Save to Interpretation Log"}
-          </button>
+          <div style={{padding:"6px 12px",borderRadius:8,background:"rgba(0,229,192,.06)",border:"1px solid rgba(0,229,192,.2)",fontSize:11,color:T.teal,textAlign:"center",fontFamily:"'JetBrains Mono',monospace",letterSpacing:.5}}>
+            ✓ Auto-saved to Interpretation Log
+          </div>
 
           <button onClick={sendToQuickNote} style={{width:"100%",padding:"10px 0",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:"1px solid rgba(155,109,255,.35)",background:"rgba(155,109,255,.08)",color:T.purple,transition:"all .2s"}}>
             {embedded?"📋 Copy Interpretation to QuickNote":"↗ Send Interpretation to QuickNote MDM"}

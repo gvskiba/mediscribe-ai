@@ -11,6 +11,7 @@ import ECGToxTab          from "@/components/ecg/ECGToxTab";
 import ECGSyncopeTab      from "@/components/ecg/ECGSyncopeTab";
 import ECGElectrolyteTab  from "@/components/ecg/EcgElectrolyteTab";
 import ECGPEATab          from "@/components/ecg/ECGPEATab";
+import ECGHEARTScore      from "@/components/ecg/ECGHEARTScore";
 
 (() => {
   if (typeof document === "undefined") return;
@@ -65,6 +66,7 @@ const TABS = [
   {id:"syncope",  label:"Syncope",        icon:"🔄"},
   {id:"lytes",    label:"Electrolytes",   icon:"⚗"},
   {id:"pea",      label:"PEA / Arrest",   icon:"💀"},
+  {id:"heart",    label:"HEART Score",    icon:"🫀"},
 ];
 
 // ── STEMI Localizer ──────────────────────────────────────────
@@ -1605,6 +1607,7 @@ export default function ECGHub({ embedded = false, onBack }) {
           {tab==="syncope"  &&<ECGSyncopeTab/>}
           {tab==="lytes"    &&<ECGElectrolyteTab/>}
           {tab==="pea"      &&<ECGPEATab/>}
+          {tab==="heart"    &&<ECGHEARTScore/>}
         </div>
 
         {!embedded&&(

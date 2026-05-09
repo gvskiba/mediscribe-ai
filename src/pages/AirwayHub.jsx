@@ -9,24 +9,24 @@ const T = {
 
 const HUBS = [
   {
-    id:"RSIPage",icon:"\ud83d\udc89",title:"Intubation Suite",
-    sub:"RSI \xb7 Difficult Airway \xb7 DSI \xb7 Pediatric \xb7 Awake Intubation",
+    id:"RSIPage",icon:"💉",title:"Intubation Suite",
+    sub:"RSI · Difficult Airway · DSI · Pediatric · Awake Intubation",
     color:"#f5c842",gl:"rgba(245,200,66,0.07)",br:"rgba(245,200,66,0.28)",
     badge:"DAS 2022",
     conditions:["RSI Protocol","Difficult Airway","DSI Protocol","Pediatric Airway","Awake Intubation"],
     tools:["RSI Proc Note","SOAP-ME Checklist","LEMON / HEAVEN","Push-Dose Epi","CICO Mode","Peds Tube Sizing"],
   },
   {
-    id:"NIVPage",icon:"\ud83c\udf2c\ufe0f",title:"Oxygenation & NIV",
-    sub:"Supplemental O\u2082 \xb7 HFNC \xb7 CPAP \xb7 BiPAP \xb7 ABG Interpreter",
+    id:"NIVPage",icon:"🌬️",title:"Oxygenation & NIV",
+    sub:"Supplemental O₂ · HFNC · CPAP · BiPAP · ABG Interpreter",
     color:"#00d4ff",gl:"rgba(0,212,255,0.07)",br:"rgba(0,212,255,0.28)",
     badge:"BTS 2017",
-    conditions:["Supplemental O\u2082","HFNC","CPAP","BiPAP / NIV"],
+    conditions:["Supplemental O₂","HFNC","CPAP","BiPAP / NIV"],
     tools:["ROX Index Tracker","ABG Interpreter","Nebulized Meds","MDM Snippets","Order Sets","HFNC Failure Criteria"],
   },
   {
-    id:"VentPage",icon:"\u2699\ufe0f",title:"Invasive Ventilation",
-    sub:"ARDS \xb7 ARDSNet \xb7 Vent Management \xb7 Weaning & Liberation",
+    id:"VentPage",icon:"⚙️",title:"Invasive Ventilation",
+    sub:"ARDS · ARDSNet · Vent Management · Weaning & Liberation",
     color:"#ff6b6b",gl:"rgba(255,107,107,0.07)",br:"rgba(255,107,107,0.28)",
     badge:"ARDSNet 2000",
     conditions:["ARDS / ARDSNet","Ventilator Management","Weaning & Liberation"],
@@ -35,10 +35,10 @@ const HUBS = [
 ];
 
 const STATS = [
-  {icon:"\u23f1",label:"Pre-oxygenation",val:"\u22653 min",color:"#f5c842"},
-  {icon:"\ud83c\udfaf",label:"Max attempts",val:"\u22643 total",color:"#ff6b6b"},
-  {icon:"\ud83d\udcca",label:"ETT confirm",val:"ETCO\u2082 waveform",color:"#00e5c0"},
-  {icon:"\ud83d\udca4",label:"RASS target",val:"-1 to 0",color:"#3b9eff"},
+  {icon:"⏱",label:"Pre-oxygenation",val:"≥3 min",color:"#f5c842"},
+  {icon:"🏃",label:"Max attempts",val:"≤3 total",color:"#ff6b6b"},
+  {icon:"📊",label:"ETT confirm",val:"ETCO₂ waveform",color:"#00e5c0"},
+  {icon:"💤",label:"RASS target",val:"-1 to 0",color:"#3b9eff"},
 ];
 
 const EV = ["DAS 2022","ARDSNet NEJM 2000","PROSEVA 2013","FLORALI 2015","BTS 2017","PADIS 2018","ABC Trial 2008","Roca ROX 2019","Hernandez JAMA 2016"];
@@ -52,10 +52,10 @@ export default function AirwayHub() {
       <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"14px 20px",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
           <button onClick={()=>navigate("/hub")} style={{padding:"5px 12px",borderRadius:7,border:"1px solid rgba(59,158,255,0.3)",background:"rgba(8,22,40,0.7)",color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer"}}>
-            \u2190 Hub
+            ← Hub
           </button>
           <div style={{width:42,height:42,borderRadius:11,background:"rgba(59,158,255,0.1)",border:"1px solid rgba(59,158,255,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
-            \ud83c\udf2c\ufe0f
+            🌬️
           </div>
           <div>
             <div style={{fontSize:19,fontWeight:700,color:T.txt,fontFamily:"'Playfair Display',serif",lineHeight:1.2}}>Airway Hub</div>
@@ -108,7 +108,7 @@ export default function AirwayHub() {
                   {h.tools.map(t=><span key={t} style={{fontSize:9,padding:"3px 9px",borderRadius:20,background:"rgba(14,37,68,0.55)",border:`1px solid ${T.b}`,color:T.txt4}}>{t}</span>)}
                 </div>
               </div>
-              <div style={{position:"absolute",bottom:16,right:16,fontSize:20,color:h.color,opacity:.5,fontWeight:700}}>\u2192</div>
+              <div style={{position:"absolute",bottom:16,right:16,fontSize:20,color:h.color,opacity:.5,fontWeight:700}}>→</div>
             </div>
           ))}
         </div>

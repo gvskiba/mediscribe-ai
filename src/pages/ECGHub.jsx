@@ -10,7 +10,7 @@ import ECGAFPathway  from "@/components/ecg/ECGAFPathway";
 import ECGDTBTimer     from "@/components/ecg/ECGDTBTimer";
 import ECGToxTab       from "@/components/ecg/ECGToxTab";
 import ECGSyncopeTab   from "@/components/ecg/ECGSyncopeTab";
-import ECGElectrolyteTab from "@/components/ecg/ECGElectrolyteTab";
+import ECGElectrolyteTab from "@/components/ecg/EcgElectrolyteTab";
 import ECGPEATab       from "@/components/ecg/ECGPEATab";
 import ECGHEARTScore   from "@/components/ecg/ECGHEARTScore";
 
@@ -1095,18 +1095,38 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             📞 {consultOpen?"Hide":"Generate"} Cardiology Phone Script
           </button>
 
-          {consultOpen&&(
+          {consultOpen&&(()=>{
+            const vitals = [ptBP&&("BP "+ptBP), ptHR&&("HR "+ptHR), ptSpO2&&("SpO2 "+ptSpO2+"%")].filter(Boolean).join(", ");
+            const actions = (result.recommended_actions||[]).slice(0,3).map((a,i)=>((i+1)+") "+a)).join(" ");
+            const dx = (result.differentials||["See ECG interpretation"])[0];
+            const script = [
+              patientId ? ("Patient: "+patientId+". ") : "",
+              ptAge ? (ptAge+"yo ") : "",
+              ptSex ? (ptSex+". ") : "",
+              ptCC ? ("Presenting with "+ptCC+". ") : "",
+              vitals ? ("Vitals: "+vitals+". ") : "",
+              context || "",
+              "\n\nECG shows "+(result.interpretation||"significant findings")+". Urgency: "+(result.urgency||"High")+".",
+              result.stemi_equivalent ? " This is a STEMI equivalent — I am requesting immediate cath lab activation." : "",
+              (result.dangerous_pattern&&result.dangerous_pattern!=="null") ? ("\nDangerous pattern: "+result.dangerous_pattern+".") : "",
+              "\n\nMy actions: "+actions,
+              "\n\nWorking diagnosis: "+dx+".",
+              result.do_not_miss ? ("\n\nDo not miss: "+result.do_not_miss) : "",
+              "\nRequesting: "+(result.stemi_equivalent?"emergent cath lab activation":"cardiology consultation and admission guidance")+".",
+            ].join("");
+            return (
             <div className="ecg-fade" style={{...glass,padding:"14px 16px"}}>
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:8}}>Cardiology Consult Script — Read Aloud</div>
               <div style={{fontSize:11,color:T.txt,lineHeight:1.9,background:"rgba(14,37,68,.5)",borderRadius:8,padding:"12px 14px",fontFamily:"'DM Sans',sans-serif",whiteSpace:"pre-line",userSelect:"all",marginBottom:8}}>
-{`${patientId?`Patient: ${patientId}. `:""}${ptAge?ptAge+"yo ":""}${ptSex?ptSex+". ":""}${ptCC?`Presenting with ${ptCC}. `:""}${ptBP||ptHR||ptSpO2?`Vitals: ${[ptBP&&"BP "+ptBP,ptHR&&"HR "+ptHR,ptSpO2&&"SpO₂ "+ptSpO2+"%"].filter(Boolean).join(", ")}. ":""}${context||""}\n\nECG shows ${result.interpretation||"significant findings"}. Urgency: ${result.urgency||"High"}.${result.stemi_equivalent?" This is a STEMI equivalent — I am requesting immediate cath lab activation.":""}${result.dangerous_pattern&&result.dangerous_pattern!=="null"?`\nDangerous pattern: ${result.dangerous_pattern}.`:""}\n\nMy actions: ${(result.recommended_actions||[]).slice(0,3).map((a,i)=>`${i+1}) ${a}`).join(" ")}\n\nWorking diagnosis: ${(result.differentials||["See ECG interpretation"])[0]}.\n${result.do_not_miss?`\nDo not miss: ${result.do_not_miss}\n`:""}\nRequesting: ${result.stemi_equivalent?"emergent cath lab activation":"cardiology consultation and admission guidance"}.`}
+                {script}
               </div>
-              <button onClick={()=>navigator.clipboard?.writeText(`${patientId?`Patient: ${patientId}. `:""}${context||"Presenting to ED."}\n\nECG: ${result.interpretation}. Urgency: ${result.urgency}.${result.stemi_equivalent?" STEMI EQUIVALENT.":""}\n\nActions: ${(result.recommended_actions||[]).slice(0,3).join("; ")}\n\nDx: ${(result.differentials||[""])[0]}. Requesting: ${result.stemi_equivalent?"cath activation":"cardiology consult"}.`).catch(()=>{})}
+              <button onClick={()=>navigator.clipboard?.writeText(script).catch(()=>{})}
                 style={{padding:"5px 14px",borderRadius:7,border:"1px solid rgba(0,229,192,.3)",background:"rgba(0,229,192,.06)",color:T.teal,fontFamily:"'DM Sans',sans-serif",fontSize:11,cursor:"pointer",fontWeight:700}}>
                 📋 Copy to Clipboard
               </button>
             </div>
-          )}
+            );
+          })()}
 
           <button onClick={saveInterpretation} disabled={saving||savedOk}
             style={{width:"100%",padding:"10px 0",borderRadius:8,cursor:saving?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:`1px solid ${savedOk?"rgba(0,229,192,.4)":"rgba(0,229,192,.25)"}`,background:savedOk?"rgba(0,229,192,.1)":"transparent",color:savedOk?T.teal:T.txt3,transition:"all .2s"}}>
@@ -1474,6 +1494,9 @@ Return ONLY valid JSON — no preamble, no markdown:
             )}
             {!tropLog.length&&<div style={{fontSize:10,color:T.txt4,fontStyle:"italic"}}>Log troponin values at each draw time point</div>}
           </div>
+
+          {/* Compare Panel */}
+          {cmpOpen&&ecgLog.length>=2&&(
             <div className="ecg-fade" style={{...glass,padding:"16px 18px"}}>
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.purple,textTransform:"uppercase",letterSpacing:1.2,fontWeight:700,marginBottom:10}}>AI Interval Comparison</div>
               <div style={{fontSize:11,color:T.txt3,marginBottom:12,lineHeight:1.5}}>Select two ECGs to compare. Add key findings for each to improve analysis.</div>

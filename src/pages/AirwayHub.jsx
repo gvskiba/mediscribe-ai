@@ -71,7 +71,7 @@ export default function AirwayHub() {
           {STATS.map((s,i)=>(
             <div key={i} style={{background:"rgba(14,37,68,0.5)",border:`1px solid ${s.color}28`,borderRadius:9,padding:"8px 10px",textAlign:"center"}}>
               <div style={{fontSize:16,marginBottom:3}}>{s.icon}</div>
-              <div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",letterSpacing:".06em",marginBottom:2}}>{s.label}</div>
+              <div style={{fontSize:8,color:T.txt2,textTransform:"uppercase",letterSpacing:".06em",marginBottom:2}}>{s.label}</div>
               <div style={{fontSize:12,fontWeight:700,color:s.color,fontFamily:"monospace"}}>{s.val}</div>
             </div>
           ))}
@@ -97,15 +97,15 @@ export default function AirwayHub() {
                 </div>
               </div>
               <div style={{marginBottom:12}}>
-                <div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:".07em",marginBottom:6}}>Conditions</div>
+                <div style={{fontSize:9,color:T.txt2,textTransform:"uppercase",letterSpacing:".07em",marginBottom:6}}>Conditions</div>
                 <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                   {h.conditions.map(c=><span key={c} style={{fontSize:9,padding:"3px 9px",borderRadius:20,background:`${h.color}12`,border:`1px solid ${h.color}28`,color:h.color}}>{c}</span>)}
                 </div>
               </div>
               <div>
-                <div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",letterSpacing:".07em",marginBottom:6}}>Clinical Tools</div>
+                <div style={{fontSize:9,color:T.txt2,textTransform:"uppercase",letterSpacing:".07em",marginBottom:6}}>Clinical Tools</div>
                 <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                  {h.tools.map(t=><span key={t} style={{fontSize:9,padding:"3px 9px",borderRadius:20,background:"rgba(14,37,68,0.55)",border:`1px solid ${T.b}`,color:T.txt4}}>{t}</span>)}
+                  {h.tools.map(t=><span key={t} style={{fontSize:9,padding:"3px 9px",borderRadius:20,background:"rgba(14,37,68,0.55)",border:`1px solid ${T.b}`,color:T.txt2}}>{t}</span>)}
                 </div>
               </div>
               <div style={{position:"absolute",bottom:16,right:16,fontSize:20,color:h.color,opacity:.5,fontWeight:700}}>→</div>
@@ -114,8 +114,8 @@ export default function AirwayHub() {
         </div>
 
         <div style={{padding:"10px 16px",background:"rgba(14,37,68,0.4)",border:`1px solid ${T.b}`,borderRadius:10,display:"flex",gap:14,flexWrap:"wrap",alignItems:"center"}}>
-          <span style={{fontSize:9,fontWeight:700,color:T.txt4,textTransform:"uppercase",letterSpacing:".07em",flexShrink:0}}>Evidence Base</span>
-          {EV.map(e=><span key={e} style={{fontSize:9,color:T.txt4,fontFamily:"monospace"}}>{e}</span>)}
+          <span style={{fontSize:9,fontWeight:700,color:T.txt2,textTransform:"uppercase",letterSpacing:".07em",flexShrink:0}}>Evidence Base</span>
+          {EV.map(e=><span key={e} style={{fontSize:9,color:T.txt2,fontFamily:"monospace"}}>{e}</span>)}
         </div>
       </div>
     </div>

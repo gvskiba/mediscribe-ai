@@ -396,15 +396,14 @@ export default function NIVPage() {
   const navigate=useNavigate();
   const [selected,setSelected]=useState(null);
   const cond=CONDITIONS.find(c=>c.id===selected);
+  const pageStyle={height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"};
+  const styleTag=<style>{`*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(26,53,85,0.9);border-radius:2px}input,button,textarea{font-family:inherit}`}</style>;
   if(cond) return (
-    <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-      <style>{`*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(26,53,85,0.9);border-radius:2px}input,button,textarea{font-family:inherit}`}</style>
-      <ConditionPage cond={cond} onBack={()=>setSelected(null)} />
-    </div>
+    <div style={pageStyle}>{styleTag}<ConditionPage cond={cond} onBack={()=>setSelected(null)} /></div>
   );
   return (
-    <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-      <style>{`*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(26,53,85,0.9);border-radius:2px}input,button,textarea{font-family:inherit}`}</style>
+    <div style={pageStyle}>
+      {styleTag}
       <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"14px 20px",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <button onClick={()=>navigate("/AirwayHub")} style={{padding:"5px 12px",borderRadius:7,border:"1px solid rgba(0,212,255,0.35)",background:"rgba(8,22,40,0.7)",color:T.cyan,fontSize:11,fontWeight:700,cursor:"pointer"}}>← Airway Hub</button>

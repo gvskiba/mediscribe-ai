@@ -759,10 +759,9 @@ export default function SepsisHub() {
 
   const filtered = activeCat==="All" ? CONDITIONS : CONDITIONS.filter(c=>c.cat===activeCat);
   const catCounts = CATS.reduce((a,c)=>({...a,[c]:CONDITIONS.filter(x=>x.cat===c).length}),{});
+  const cond = selected ? CONDITIONS.find(c=>c.id===selected) : null;
 
-  if (selected) {
-    const cond = CONDITIONS.find(c=>c.id===selected);
-    if (!cond) { return null; }
+  if (cond) {
     return (
       <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
         <ConditionPage cond={cond} onBack={()=>setSelected(null)} />

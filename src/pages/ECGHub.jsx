@@ -496,38 +496,56 @@ const OTHER_OPTS   = ["New LBBB (STEMI equivalent)","De Winter T-wave pattern (p
 
 const URGENCY_COLOR = {Critical:T.red, High:T.coral, Moderate:T.gold, Low:T.teal};
 
+const LS_KEY = "ecghub_draft";
+
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; }
+}
+
 function ECGAITab({ embedded=false }) {
-  const [mode,       setMode]       = useState("paste");
+  const draft = loadDraft();
+  const [mode,       setMode]       = useState(draft.mode       || "paste");
   // Patient identifier
-  const [patientId,  setPatientId]  = useState("");
+  const [patientId,  setPatientId]  = useState(draft.patientId  || "");
   // Saved log
   const [savedLog,   setSavedLog]   = useState([]);
   const [logOpen,    setLogOpen]    = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [savedOk,    setSavedOk]    = useState(false);
   // Manual state
-  const [rate,       setRate]       = useState("");
-  const [rhythm,     setRhythm]     = useState("");
-  const [pr,         setPr]         = useState("");
-  const [qrs,        setQrs]        = useState("");
-  const [qt,         setQt]         = useState("");
-  const [axis,       setAxis]       = useState("");
-  const [morph,      setMorph]      = useState(new Set());
-  const [stChanges,  setStChanges]  = useState({});
-  const [tWaves,     setTWaves]     = useState(new Set());
-  const [other,      setOther]      = useState(new Set());
+  const [rate,       setRate]       = useState(draft.rate        || "");
+  const [rhythm,     setRhythm]     = useState(draft.rhythm      || "");
+  const [pr,         setPr]         = useState(draft.pr          || "");
+  const [qrs,        setQrs]        = useState(draft.qrs         || "");
+  const [qt,         setQt]         = useState(draft.qt          || "");
+  const [axis,       setAxis]       = useState(draft.axis        || "");
+  const [morph,      setMorph]      = useState(new Set(draft.morph      || []));
+  const [stChanges,  setStChanges]  = useState(draft.stChanges   || {});
+  const [tWaves,     setTWaves]     = useState(new Set(draft.tWaves     || []));
+  const [other,      setOther]      = useState(new Set(draft.other      || []));
   // Paste state
-  const [pasteText,  setPasteText]  = useState("");
+  const [pasteText,  setPasteText]  = useState(draft.pasteText   || "");
   // Image state
   const [imgFile,    setImgFile]    = useState(null);
   const [imgPreview, setImgPreview] = useState(null);
   const [imgUrl,     setImgUrl]     = useState(null);
   const [imgUploading,setImgUploading]=useState(false);
   // Shared
-  const [context,    setContext]    = useState("");
+  const [context,    setContext]    = useState(draft.context      || "");
   const [loading,    setLoading]    = useState(false);
-  const [result,     setResult]     = useState(null);
+  const [result,     setResult]     = useState(draft.result       || null);
   const [errMsg,     setErrMsg]     = useState(null);
+
+  // Auto-save draft to localStorage whenever inputs change
+  useEffect(()=>{
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        mode, patientId, rate, rhythm, pr, qrs, qt, axis,
+        morph: [...morph], stChanges, tWaves: [...tWaves],
+        other: [...other], pasteText, context, result,
+      }));
+    } catch {}
+  }, [mode, patientId, rate, rhythm, pr, qrs, qt, axis, morph, stChanges, tWaves, other, pasteText, context, result]);
 
   const qtcMs = useMemo(()=>{const q=parseFloat(qt),h=parseFloat(rate);if(isNaN(q)||isNaN(h)||h<=0)return null;return Math.round(q/Math.sqrt(60/h));},[qt,rate]);
   const toggle = useCallback((setter,val)=>setter(prev=>{const n=new Set(prev);n.has(val)?n.delete(val):n.add(val);return n;}),[]);
@@ -702,7 +720,8 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
     setRate("");setRhythm("");setPr("");setQrs("");setQt("");setAxis("");
     setMorph(new Set());setStChanges({});setTWaves(new Set());setOther(new Set());
     setPasteText("");setImgFile(null);setImgPreview(null);setImgUrl(null);
-    setContext("");setResult(null);setErrMsg(null);
+    setContext("");setResult(null);setErrMsg(null);setMode("paste");setPatientId("");
+    try { localStorage.removeItem(LS_KEY); } catch {}
   };
 
   const Chip=({label,active,color,onClick})=>(

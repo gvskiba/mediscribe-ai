@@ -794,11 +794,11 @@ const MDM_DATA = {
 
 /* ═══ MDM SNIPPET COMPONENT ═════════════════════════════════════════ */
 function MDMSnippet({ condId }) {
-  const tmpl = MDM_DATA[condId];
-  if (!tmpl) return null;
   const [fields, setFields] = useState({});
   const [copied, setCopied] = useState(false);
   const [show, setShow] = useState(false);
+  const tmpl = MDM_DATA[condId];
+  if (!tmpl) return null;
   const note = tmpl.t(fields);
   const copy = () => navigator.clipboard.writeText(note).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2500); });
   return (
@@ -956,10 +956,10 @@ Analgesia: Multimodal — acetaminophen + opioid PRN (avoid sedation if possible
 
 /* ═══ ORDER SET PANEL ═══════════════════════════════════════════════ */
 function OrderSetPanel({ condId }) {
-  const os = ORDER_SETS[condId];
-  if (!os) return null;
   const [active, setActive] = useState(null);
   const [copied, setCopied] = useState(null);
+  const os = ORDER_SETS[condId];
+  if (!os) return null;
   const copy = (idx, text) => {
     navigator.clipboard.writeText(text).then(()=>{
       setCopied(idx); setTimeout(()=>setCopied(null), 2500);

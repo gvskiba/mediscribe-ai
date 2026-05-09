@@ -505,8 +505,34 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
 
   const analyze = mode==="paste"?analyzePaste:mode==="image"?analyzeImage:analyzeManual;
 
-  // Read incoming context from QuickNote URL param on mount
+  // Auto-save inputs to localStorage on change
   useEffect(()=>{
+    const draft={mode,pasteText,context,rate,rhythm,pr,qrs,qt,axis,
+      morph:[...morph],stChanges,tWaves:[...tWaves],other:[...other]};
+    try{localStorage.setItem("ecghub_draft",JSON.stringify(draft));}catch(e){}
+  },[mode,pasteText,context,rate,rhythm,pr,qrs,qt,axis,morph,stChanges,tWaves,other]);
+
+  // Restore from localStorage + read QuickNote URL param on mount
+  useEffect(()=>{
+    try{
+      const saved=localStorage.getItem("ecghub_draft");
+      if(saved){
+        const d=JSON.parse(saved);
+        if(d.mode)setMode(d.mode);
+        if(d.pasteText)setPasteText(d.pasteText);
+        if(d.rate)setRate(d.rate);
+        if(d.rhythm)setRhythm(d.rhythm);
+        if(d.pr)setPr(d.pr);
+        if(d.qrs)setQrs(d.qrs);
+        if(d.qt)setQt(d.qt);
+        if(d.axis)setAxis(d.axis);
+        if(d.morph)setMorph(new Set(d.morph));
+        if(d.stChanges)setStChanges(d.stChanges);
+        if(d.tWaves)setTWaves(new Set(d.tWaves));
+        if(d.other)setOther(new Set(d.other));
+        if(d.context)setContext(d.context);
+      }
+    }catch(e){}
     const p=new URLSearchParams(window.location.search);
     const ctx=p.get("ecg_context")||p.get("patient_context");
     if(ctx){try{setContext(decodeURIComponent(ctx));}catch(e){}}
@@ -530,6 +556,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
     setMorph(new Set());setStChanges({});setTWaves(new Set());setOther(new Set());
     setPasteText("");setImgFile(null);setImgPreview(null);setImgUrl(null);
     setContext("");setResult(null);setErrMsg(null);
+    try{localStorage.removeItem("ecghub_draft");}catch(e){}
   };
 
   const Chip=({label,active,color,onClick})=>(

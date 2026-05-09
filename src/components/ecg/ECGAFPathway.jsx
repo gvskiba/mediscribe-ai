@@ -10,7 +10,7 @@
 // Constraints: no Router, no localStorage, no form/alert, straight quotes,
 //   typeof document guard.
 
-import { useState } from "react";
+import React, { useState } from "react";
 
 (() => {
   if (typeof document === "undefined") return;

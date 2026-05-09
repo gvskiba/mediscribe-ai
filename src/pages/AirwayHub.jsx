@@ -68,30 +68,30 @@ const OVERVIEW = {
 const WORKUP = {
   o2:[
     {icon:"\ud83d\udcca",label:"Pulse Oximetry (SpO\u2082)",detail:"Continuous SpO\u2082 monitoring. Target 92\u201396% (most adults) or 88\u201392% (COPD). Titrate O\u2082 delivery to achieve target \u2014 not to maximum."},
-    {icon:"\ud83e\fde1",label:"ABG (if hypercapnia concern)",detail:"pH, PaO\u2082, PaCO\u2082, HCO\u2083. SpO\u2082 does not detect hypercapnia. ABG essential in COPD exacerbation, hypoventilation, or concerning mental status change."},
+    {icon:"🫁",label:"ABG (if hypercapnia concern)",detail:"pH, PaO\u2082, PaCO\u2082, HCO\u2083. SpO\u2082 does not detect hypercapnia. ABG essential in COPD exacerbation, hypoventilation, or concerning mental status change."},
     {icon:"\ud83d\udcf8",label:"CXR",detail:"Identify underlying cause of hypoxemia: pneumonia, pulmonary edema, pneumothorax, pleural effusion, ARDS."},
-    {icon:"\ud83fafe0",label:"EKG + Troponin",detail:"Rule out ACS as cause of acute hypoxemia (type 1 MI, STEMI with acute pulmonary edema). PE workup (S1Q3T3, sinus tach) if indicated."},
+    {icon:"🫀",label:"EKG + Troponin",detail:"Rule out ACS as cause of acute hypoxemia (type 1 MI, STEMI with acute pulmonary edema). PE workup (S1Q3T3, sinus tach) if indicated."},
     {icon:"\ud83d\udcc9",label:"ETCO\u2082 / Capnography",detail:"Non-invasive ventilation monitoring. Waveform capnography identifies hypoventilation, obstructive pattern, or esophageal misplacement."},
   ],
   hfnc:[
     {icon:"\ud83d\udcca",label:"ROX Index (q2h initially)",detail:"ROX = (SpO\u2082/FiO\u2082) / RR. Calculate at 2h, 6h, 12h after initiation. ROX <2.85 at 2h = high failure risk \u2192 escalate to BiPAP or intubation."},
-    {icon:"\ud83e\fde1",label:"ABG (1\u20132h after initiation)",detail:"Confirm pCO\u2082 not rising. HFNC does not reliably correct hypercapnia. If pCO\u2082 rising or pH <7.30 \u2192 switch to BiPAP or intubate."},
+    {icon:"🫁",label:"ABG (1\u20132h after initiation)",detail:"Confirm pCO\u2082 not rising. HFNC does not reliably correct hypercapnia. If pCO\u2082 rising or pH <7.30 \u2192 switch to BiPAP or intubate."},
     {icon:"\ud83d\udcf8",label:"CXR",detail:"Characterize extent of lung disease. Bilateral infiltrates \u2192 consider ARDS workup. Unilateral \u2192 may have different response to HFNC."},
     {icon:"\ud83d\udca7",label:"SpO\u2082 + RR Continuous Monitoring",detail:"Trending RR is a key indicator of HFNC tolerance. Falling RR = improving; rising RR = tiring. Both needed for ROX calculation."},
-    {icon:"\ud83fafe0",label:"Bedside POCUS (if indicated)",detail:"IVC for volume status, LV function (cardiogenic vs non-cardiogenic), lung ultrasound (B-lines = cardiogenic; consolidation = pneumonia/ARDS)."},
+    {icon:"🫀",label:"Bedside POCUS (if indicated)",detail:"IVC for volume status, LV function (cardiogenic vs non-cardiogenic), lung ultrasound (B-lines = cardiogenic; consolidation = pneumonia/ARDS)."},
   ],
   cpap:[
     {icon:"\ud83c\udf19",label:"Polysomnography / Home Sleep Study",detail:"Diagnosis of OSA: AHI \u22655/h (symptomatic) or \u226515/h (asymptomatic). AHI \u226530 = severe OSA. Required for insurance authorization in many US states."},
-    {icon:"\ud83e\fde1",label:"Morning ABG (OHS workup)",detail:"Obesity Hypoventilation Syndrome: awake hypercapnia (pCO\u2082 >45 mmHg) + BMI >30 + no other cause. BiPAP preferred over CPAP in OHS."},
+    {icon:"🫁",label:"Morning ABG (OHS workup)",detail:"Obesity Hypoventilation Syndrome: awake hypercapnia (pCO\u2082 >45 mmHg) + BMI >30 + no other cause. BiPAP preferred over CPAP in OHS."},
     {icon:"\ud83d\udcca",label:"SpO\u2082 Monitoring During CPAP Trial",detail:"Nocturnal oximetry to assess response to CPAP. SpO\u2082 <88% for >5 min cumulative = inadequate oxygenation despite CPAP."},
     {icon:"\ud83d\udcf8",label:"CXR (acute respiratory failure)",detail:"Cardiogenic pulmonary edema (bat-wing, cephalization, Kerley B lines, effusions). Guide CPAP/BiPAP decision."},
-    {icon:"\ud83fafe0",label:"Echo / BNP (CHF Workup)",detail:"BNP >400 supports CHF diagnosis. Echo for EF, wall motion, diastolic dysfunction. CPAP or BiPAP equivalent for acute CPE."},
+    {icon:"🫀",label:"Echo / BNP (CHF Workup)",detail:"BNP >400 supports CHF diagnosis. Echo for EF, wall motion, diastolic dysfunction. CPAP or BiPAP equivalent for acute CPE."},
   ],
   bipap:[
-    {icon:"\ud83e\fde1",label:"ABG \u2014 Baseline + 1-2h Post-NIV",detail:"MANDATORY. Baseline pH + pCO\u2082 establishes indication. Repeat 1\u20132h after NIV initiation \u2014 no improvement = likely NIV failure. Intubate promptly."},
+    {icon:"🫁",label:"ABG \u2014 Baseline + 1-2h Post-NIV",detail:"MANDATORY. Baseline pH + pCO\u2082 establishes indication. Repeat 1\u20132h after NIV initiation \u2014 no improvement = likely NIV failure. Intubate promptly."},
     {icon:"\ud83d\udcca",label:"SpO\u2082 + RR + ETCO\u2082 (Continuous)",detail:"Continuous oximetry, trending RR, non-invasive ETCO\u2082 if available. Rising pCO\u2082 trend = NIV failing."},
     {icon:"\ud83d\udcf8",label:"CXR",detail:"Bilateral infiltrates (ARDS \u2014 NIV controversial), cardiogenic edema, COPD hyperinflation, pneumothorax (contraindication to NIV)."},
-    {icon:"\ud83fafe0",label:"EKG + Troponin",detail:"Dysrhythmia contributing to acute decompensation? ACS precipitating acute CHF exacerbation?"},
+    {icon:"🫀",label:"EKG + Troponin",detail:"Dysrhythmia contributing to acute decompensation? ACS precipitating acute CHF exacerbation?"},
     {icon:"\ud83d\udccb",label:"NIV Failure Risk Assessment",detail:"Assign failure criteria before starting: pH threshold, RR threshold, SpO\u2082 threshold, duration. Document and communicate to team."},
   ],
   rsi:[
@@ -110,9 +110,9 @@ const WORKUP = {
     {icon:"\ud83d\udccb",label:"Communicate Plan A, B, C, D to Team",detail:"Verbally declare plan before proceeding: 'Plan A = VL, Plan B = iGEL, Plan C = awake technique, Plan D = surgical airway.' Assign roles."},
   ],
   ards:[
-    {icon:"\ud83e\fde1",label:"ABG (PaO\u2082/FiO\u2082 ratio)",detail:"Berlin criteria: ARDS if P/F <300 on PEEP \u22655 cmH\u2082O within 1 week of insult. Severe: P/F <100. Serial ABGs to guide ARDSNet adjustments."},
+    {icon:"🫁",label:"ABG (PaO\u2082/FiO\u2082 ratio)",detail:"Berlin criteria: ARDS if P/F <300 on PEEP \u22655 cmH\u2082O within 1 week of insult. Severe: P/F <100. Serial ABGs to guide ARDSNet adjustments."},
     {icon:"\ud83d\udcf8",label:"CXR / CT Chest",detail:"Bilateral opacities (not fully explained by effusions, collapse, or nodules). CT may reveal heterogeneity \u2014 guide prone positioning and PEEP titration."},
-    {icon:"\ud83fafe0",label:"ECHO (Rule out cardiogenic)",detail:"Exclude cardiogenic pulmonary edema (high wedge pressure). ARDS requires absence of fully explained cardiac cause. LVEF, diastolic dysfunction, RV strain assessment."},
+    {icon:"🫀",label:"ECHO (Rule out cardiogenic)",detail:"Exclude cardiogenic pulmonary edema (high wedge pressure). ARDS requires absence of fully explained cardiac cause. LVEF, diastolic dysfunction, RV strain assessment."},
     {icon:"\ud83d\udcca",label:"Plateau Pressure (Inspiratory Pause)",detail:"Set inspiratory pause 0.5s \u2192 read Pplat. MUST be \u226430 cmH\u2082O. Driving pressure = Pplat \u2212 PEEP; target \u226415 cmH\u2082O. Check daily."},
     {icon:"\ud83e\uddeb",label:"Cultures + Causative Workup",detail:"ARDS is a syndrome \u2014 identify cause: pneumonia (BAL, sputum, blood cultures), aspiration, sepsis, pancreatitis, trauma. Treat underlying cause simultaneously."},
     {icon:"\ud83d\udcc9",label:"IBW Calculation (for TV)",detail:"Male: 50 + 2.3 \xd7 (height in inches \u2212 60). Female: 45.5 + 2.3 \xd7 (height in inches \u2212 60). TV = IBW \xd7 6 mL/kg. NEVER use actual body weight."},
@@ -127,7 +127,7 @@ const WORKUP = {
   ],
   wean:[
     {icon:"\u2705",label:"SAT Safety Screen (Daily, AM)",detail:"FiO\u2082 \u22640.7, PEEP \u226410; no active seizures; no alcohol/benzo withdrawal; no escalating vasopressors; no active NMBA; no agitation. All must be met."},
-    {icon:"\ud83e\fde1",label:"SBT Safety Screen",detail:"SAT passed; P/F >150; PEEP \u22648; RR/TV ratio trending down; no increased WOB at rest; some inspiratory effort present; hemodynamically stable."},
+    {icon:"🫁",label:"SBT Safety Screen",detail:"SAT passed; P/F >150; PEEP \u22648; RR/TV ratio trending down; no increased WOB at rest; some inspiratory effort present; hemodynamically stable."},
     {icon:"\ud83d\udcca",label:"RSBI Measurement",detail:"During 1\u20132 min of spontaneous effort (T-piece or minimal PS). RSBI = RR \xf7 (TV in L). <105 = likely success. Measure immediately before SBT decision."},
     {icon:"\ud83d\udde3\ufe0f",label:"Cough Assessment",detail:"Ask patient to cough. Assess peak cough flow \u2014 vigorous cough = good secretion management. White card test: secretions on card during cough = high volume/thin secretions."},
     {icon:"\ud83d\udd14",label:"Cuff Leak Test",detail:"Deflate cuff \u2192 occlude ETT \u2192 listen for leak around tube with each breath. Absent leak = post-extubation stridor risk \u2192 dexamethasone 0.1 mg/kg q8h \xd7 3 doses before extubation."},
@@ -1182,7 +1182,7 @@ POST-INTUBATION MANAGEMENT:
 
       {/* Pre-oxygenation */}
       {section(<>
-        {sHd("\ud83e\fde1","Pre-Oxygenation")}
+        {sHd("🫁","Pre-Oxygenation")}
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
           {PREOX_OPTS.map(v=>togBtn(v, preoxMethods.includes(v), ()=>toggleArr(preoxMethods,setPreoxMethods,v), T.blue))}
         </div>

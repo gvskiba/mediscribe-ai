@@ -125,6 +125,7 @@ const SOAP_ITEMS = [
   {key:"M",label:"Monitoring",color:T.orange,items:["SpO\u2082 continuous \u2014 displayed prominently","EKG \u2014 rate visible","BP cuff cycling q2\u20133 min","At least one large-bore IV access confirmed patent","Bed in flat/ramped position"]},
   {key:"E",label:"End-Tidal CO\u2082",color:T.green,items:["Waveform ETCO\u2082 ready and confirmed","Colorimetric detector backup present","Ventilator settings pre-set","Team roles verbalized: intubator, medications, documentation, monitoring"]},
 ];
+
 function SOAPMe() {
   const [done,setDone] = useState({});
   const total = SOAP_ITEMS.reduce((a,s)=>a+s.items.length,0);
@@ -190,7 +191,7 @@ function LemonHeaven() {
   const hScore = HEAVEN_C.filter(c=>heaven[c.k]).length;
   const lRisk = lScore<3?{l:"Low Risk",c:T.teal}:lScore<6?{l:"Moderate Difficulty",c:T.gold}:{l:"High Difficulty",c:T.coral};
   const hRisk = hScore<2?{l:"Standard Risk",c:T.teal}:hScore<4?{l:"Elevated Risk",c:T.gold}:{l:"High Failure Risk",c:T.coral};
-  const tog = (obj,set,k)=>set(p=>({...p,[k]:!p[k]}));
+  const tog = (set,k)=>set(p=>({...p,[k]:!p[k]}));
   return (
     <div style={{background:"rgba(255,107,107,0.05)",border:"1px solid rgba(255,107,107,0.22)",borderRadius:12,padding:"14px 16px",marginBottom:12}}>
       <div style={{fontSize:11,fontWeight:700,color:T.txt,marginBottom:12}}>\ud83d\udc41\ufe0f LEMON / HEAVEN Airway Risk Assessment</div>
@@ -198,7 +199,7 @@ function LemonHeaven() {
         <div>
           <div style={{fontSize:9,fontWeight:700,color:T.coral,textTransform:"uppercase",letterSpacing:".07em",marginBottom:8}}>LEMON \u2014 Difficult Laryngoscopy</div>
           {LEMON_C.map(c=>(
-            <div key={c.k} onClick={()=>tog(lemon,setLemon,c.k)} style={{display:"flex",gap:7,padding:"5px 7px",borderRadius:7,border:`1px solid ${lemon[c.k]?T.coral+"45":T.b}`,background:lemon[c.k]?"rgba(255,107,107,0.09)":"rgba(8,22,40,0.4)",cursor:"pointer",marginBottom:3,alignItems:"flex-start"}}>
+            <div key={c.k} onClick={()=>tog(setLemon,c.k)} style={{display:"flex",gap:7,padding:"5px 7px",borderRadius:7,border:`1px solid ${lemon[c.k]?T.coral+"45":T.b}`,background:lemon[c.k]?"rgba(255,107,107,0.09)":"rgba(8,22,40,0.4)",cursor:"pointer",marginBottom:3,alignItems:"flex-start"}}>
               <div style={{width:14,height:14,borderRadius:3,border:`1px solid ${lemon[c.k]?T.coral+"60":T.b}`,background:lemon[c.k]?"rgba(255,107,107,0.25)":"transparent",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:T.coral}}>{lemon[c.k]?"\u2713":""}</div>
               <div><div style={{fontSize:10,color:lemon[c.k]?T.coral:T.txt2}}>{c.lbl}</div><div style={{fontSize:8,color:T.txt4}}>{c.detail} (+{c.pts})</div></div>
             </div>
@@ -211,7 +212,7 @@ function LemonHeaven() {
         <div>
           <div style={{fontSize:9,fontWeight:700,color:T.gold,textTransform:"uppercase",letterSpacing:".07em",marginBottom:8}}>HEAVEN \u2014 First-Pass Failure</div>
           {HEAVEN_C.map(c=>(
-            <div key={c.k} onClick={()=>tog(heaven,setHeaven,c.k)} style={{display:"flex",gap:7,padding:"5px 7px",borderRadius:7,border:`1px solid ${heaven[c.k]?T.gold+"45":T.b}`,background:heaven[c.k]?"rgba(245,200,66,0.09)":"rgba(8,22,40,0.4)",cursor:"pointer",marginBottom:3,alignItems:"flex-start"}}>
+            <div key={c.k} onClick={()=>tog(setHeaven,c.k)} style={{display:"flex",gap:7,padding:"5px 7px",borderRadius:7,border:`1px solid ${heaven[c.k]?T.gold+"45":T.b}`,background:heaven[c.k]?"rgba(245,200,66,0.09)":"rgba(8,22,40,0.4)",cursor:"pointer",marginBottom:3,alignItems:"flex-start"}}>
               <div style={{width:14,height:14,borderRadius:3,border:`1px solid ${heaven[c.k]?T.gold+"60":T.b}`,background:heaven[c.k]?"rgba(245,200,66,0.25)":"transparent",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:T.gold}}>{heaven[c.k]?"\u2713":""}</div>
               <div><div style={{fontSize:10,color:heaven[c.k]?T.gold:T.txt2}}>{c.lbl}</div><div style={{fontSize:8,color:T.txt4}}>{c.detail}</div></div>
             </div>
@@ -239,20 +240,20 @@ function HemoPanel() {
         <div style={{fontSize:10,fontWeight:700,color:T.gold,marginBottom:8}}>Push-Dose Epinephrine Preparation</div>
         <div style={{fontSize:10,color:T.txt2,lineHeight:1.8,fontFamily:"monospace"}}>
           Step 1: Start with Epi 1 mg/mL (standard 1:1000 amp)<br/>
-          Step 2: Take 1 mL epi \u2192 add 9 mL NS \u2192 = 100 mcg/mL<br/>
-          Step 3: Take 1 mL of that \u2192 add 9 mL NS \u2192 = <strong style={{color:T.gold}}>10 mcg/mL</strong><br/>
-          Dose: 10\u201320 mcg IV push (1\u20132 mL of 10 mcg/mL solution)
+          Step 2: Take 1 mL epi &rarr; add 9 mL NS &rarr; = 100 mcg/mL<br/>
+          Step 3: Take 1 mL of that &rarr; add 9 mL NS &rarr; = <strong style={{color:T.gold}}>10 mcg/mL</strong><br/>
+          Dose: 10&ndash;20 mcg IV push (1&ndash;2 mL of 10 mcg/mL solution)
         </div>
         <div style={{marginTop:8,display:"flex",gap:6,alignItems:"center"}}>
           <input type="number" placeholder="Weight (kg)" value={wt} onChange={e=>setWt(e.target.value)} style={{background:"rgba(14,37,68,0.7)",border:"1px solid rgba(245,200,66,0.3)",borderRadius:7,padding:"6px 10px",color:T.txt,fontFamily:"monospace",fontSize:11,outline:"none",width:130}} />
-          {valid && <span style={{fontSize:11,color:T.gold,fontFamily:"monospace"}}>Push-dose epi: <strong>{(wKg*0.1).toFixed(0)}\u2013{(wKg*0.2).toFixed(0)} mcg</strong> (0.1\u20130.2 mcg/kg)</span>}
+          {valid && <span style={{fontSize:11,color:T.gold,fontFamily:"monospace"}}>Push-dose epi: <strong>{(wKg*0.1).toFixed(0)}&ndash;{(wKg*0.2).toFixed(0)} mcg</strong> (0.1&ndash;0.2 mcg/kg)</span>}
         </div>
       </div>
       <div style={{fontSize:9,fontWeight:700,color:T.coral,textTransform:"uppercase",letterSpacing:".07em",marginBottom:8}}>Post-Intubation Hypotension Differential</div>
-      {[["Tension PTX","\u26a0\ufe0f","Absent unilateral BS \xb7 tracheal deviation \xb7 POCUS \u2192 needle decompression 2nd ICS MCL"],["Auto-PEEP","\ud83c\udf2c\ufe0f","COPD/asthma \u2192 disconnect ventilator briefly \u2192 passive exhalation restores hemodynamics"],["Pericardial Tamponade","\ud83d\udccc","Beck triad: hypotension, JVD, muffled heart sounds \u2192 POCUS \u2192 pericardiocentesis"],["Post-intubation Vasodilation","\ud83d\udc89","Propofol/meds \u2192 500 mL fluid bolus + push-dose epi \u2192 vasopressor if persistent"],["Relative Hypovolemia","\ud83d\udca7","Pre-existing hypovolemia unmasked by positive pressure \u2192 fluid bolus 500\u20131000 mL"]].map(([t,ic,d])=>(
+      {[["Tension PTX","\u26a0\ufe0f","Absent unilateral BS \xb7 tracheal deviation \xb7 POCUS \u2192 needle decompression 2nd ICS MCL"],["Auto-PEEP","\ud83c\udf2c\ufe0f","COPD/asthma \u2192 disconnect ventilator briefly \u2192 passive exhalation restores hemodynamics"],["Pericardial Tamponade","\ud83d\udccc","Beck triad: hypotension, JVD, muffled heart sounds \u2192 POCUS \u2192 pericardiocentesis"],["Post-intubation Vasodilation","\ud83d\udc89","Propofol/meds \u2192 500 mL fluid bolus + push-dose epi \u2192 vasopressor if persistent"],["Relative Hypovolemia","\ud83d\udca7","Pre-existing hypovolemia unmasked by positive pressure \u2192 fluid bolus 500\u20131000 mL"]].map(([t,ic,dd])=>(
         <div key={t} style={{display:"flex",gap:8,padding:"7px 10px",background:"rgba(14,37,68,0.4)",border:`1px solid ${T.b}`,borderRadius:8,marginBottom:4,alignItems:"flex-start"}}>
           <span style={{fontSize:14,flexShrink:0}}>{ic}</span>
-          <div><div style={{fontSize:10,fontWeight:600,color:T.txt}}>{t}</div><div style={{fontSize:9,color:T.txt3}}>{d}</div></div>
+          <div><div style={{fontSize:10,fontWeight:600,color:T.txt}}>{t}</div><div style={{fontSize:9,color:T.txt3}}>{dd}</div></div>
         </div>
       ))}
     </div>
@@ -285,24 +286,24 @@ function PedsAirway() {
       {validA && (
         <div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:10}}>
-            {[["ETT Uncuffed",ettUncuffed+" mm",T.teal],["ETT Cuffed",ettCuffed+" mm",T.blue],["Oral Depth",depth+" cm",T.gold]].map(([l,v,c])=>(
+            {[["ETT Uncuffed",ettUncuffed+" mm",T.teal],["ETT Cuffed",ettCuffed+" mm",T.blue],["Oral Depth",depth+" cm",T.gold]].map(([l,val,c])=>(
               <div key={l} style={{textAlign:"center",background:`${c}10`,border:`1px solid ${c}30`,borderRadius:8,padding:"8px"}}>
                 <div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>{l}</div>
-                <div style={{fontSize:16,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div>
+                <div style={{fontSize:16,fontWeight:700,color:c,fontFamily:"monospace"}}>{val}</div>
               </div>
             ))}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6,marginBottom:8}}>
-            {[["Blade",blade],["Est. Weight",estWt+" kg"],["Atropine (0.02 mg/kg)",atrop],["Etomidate 0.3",etomid]].map(([l,v])=>(
+            {[["Blade",blade],["Est. Weight",estWt+" kg"],["Atropine (0.02 mg/kg)",atrop],["Etomidate 0.3",etomid]].map(([l,val])=>(
               <div key={l} style={{background:"rgba(14,37,68,0.5)",border:`1px solid ${T.b}`,borderRadius:7,padding:"6px 10px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:9,color:T.txt3}}>{l}</span><span style={{fontSize:11,fontWeight:700,color:T.txt,fontFamily:"monospace"}}>{v}</span>
+                <span style={{fontSize:9,color:T.txt3}}>{l}</span><span style={{fontSize:11,fontWeight:700,color:T.txt,fontFamily:"monospace"}}>{val}</span>
               </div>
             ))}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-            {[["Succinylcholine 1.5",succin],["Rocuronium 1.2",roc]].map(([l,v])=>(
+            {[["Succinylcholine 1.5",succin],["Rocuronium 1.2",roc]].map(([l,val])=>(
               <div key={l} style={{background:"rgba(14,37,68,0.5)",border:`1px solid ${T.b}`,borderRadius:7,padding:"6px 10px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:9,color:T.txt3}}>{l}</span><span style={{fontSize:11,fontWeight:700,color:T.coral,fontFamily:"monospace"}}>{v}</span>
+                <span style={{fontSize:9,color:T.txt3}}>{l}</span><span style={{fontSize:11,fontWeight:700,color:T.coral,fontFamily:"monospace"}}>{val}</span>
               </div>
             ))}
           </div>
@@ -341,11 +342,8 @@ function DSIProtocol() {
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
         <span style={{fontSize:14}}>\ud83d\udd2e</span>
         <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,color:T.txt}}>DSI \u2014 Delayed Sequence Intubation</div><div style={{fontSize:9,color:T.txt4}}>Weingart protocol \xb7 ketamine pre-oxygenation window</div></div>
-        <div style={{display:"flex",gap:4}}>
-          <input type="number" placeholder="Weight kg" value={wt} onChange={e=>setWt(e.target.value)} style={{width:90,background:"rgba(14,37,68,0.7)",border:"1px solid rgba(155,109,255,0.3)",borderRadius:7,padding:"5px 8px",color:T.txt,fontFamily:"monospace",fontSize:11,outline:"none"}} />
-        </div>
+        <input type="number" placeholder="Weight kg" value={wt} onChange={e=>setWt(e.target.value)} style={{width:90,background:"rgba(14,37,68,0.7)",border:"1px solid rgba(155,109,255,0.3)",borderRadius:7,padding:"5px 8px",color:T.txt,fontFamily:"monospace",fontSize:11,outline:"none"}} />
       </div>
-      {/* Step nav */}
       <div style={{display:"flex",gap:4,marginBottom:12}}>
         {STEPS.map((st,i)=><div key={i} onClick={()=>setStep(i)} style={{flex:1,height:4,borderRadius:2,background:i===step?st.color:i<step?"rgba(61,255,160,0.5)":"rgba(26,53,85,0.6)",cursor:"pointer"}} />)}
       </div>
@@ -390,7 +388,8 @@ function DSIProtocol() {
 /* ═══ AWAKE INTUBATION GUIDE ════════════════════════════════════════ */
 function AwakeIntubation() {
   const [wt,setWt]=useState(""); const wKg=parseFloat(wt); const v=!isNaN(wKg)&&wKg>0;
-  const steps=[{t:"Glycopyrrolate (5 min prior)",c:T.teal,body:"0.2 mg IV \u2014 dries secretions, improves topicalization. Give 5\u20130 minutes before starting topicalization."},
+  const steps=[
+    {t:"Glycopyrrolate (5 min prior)",c:T.teal,body:"0.2 mg IV \u2014 dries secretions, improves topicalization. Give 5\u20130 minutes before starting topicalization."},
     {t:"Topicalization",c:T.gold,body:"Option A: Atomized lidocaine 4% (MAD device) \u2014 oropharynx + posterior tongue\nOption B: Nebulized lidocaine 4% via aerosol mask \xd7 10 minutes\nOption C: Transtracheal injection \u2014 4% lidocaine 3 mL through CTM\nDon\u2019t forget: topical vasoconstrictor to nose if nasal route (oxymetazoline 0.05% spray)"},
     {t:"Sedation",c:T.purple,body:`Ketamine ${v?(wKg*0.4).toFixed(0)+" mg":"0.3\u20130.5 mg/kg"} IV \u2014 dissociative (patient awake, cooperative, analgesic)\nALT: Dexmedetomidine 0.5\u20131 mcg/kg load over 10 min \u2192 0.2\u20130.7 mcg/kg/h\nALT: Remifentanil 0.1\u20130.2 mcg/kg/min infusion (if available)\nDo NOT use benzodiazepines alone \u2014 does not provide airway topical anesthesia`},
     {t:"Technique",c:T.blue,body:"FOB-guided: pass bronchoscope nasally or orally while patient awake. Rail-load ETT once at carina.\nVL-guided: topicalized awake VL with patient slightly sedated. Use DL or VL.\nNasal: better tolerated, useful for limited mouth opening. Lubricate, use smaller tube (7.0 or RAE)."},
@@ -425,6 +424,7 @@ const CICO_STEPS=[
   {plan:"PLAN C \u2014 Oxygenate / Awaken",icon:"\ud83d\udca4",color:"#9b6dff",steps:["Maximize BVM oxygenation (2-person technique)","Sugammadex 16 mg/kg IV push if rocuronium used (reverses in ~3 min)","If succinylcholine used: await spontaneous recovery (~10\u201315 min)","If oxygenation achievable: awaken, plan awake intubation"]},
   {plan:"PLAN D \u2014 SURGICAL AIRWAY",icon:"\u2702\ufe0f",color:"#3dffa0",steps:["KNIFE: stab incision through cricothyroid membrane","FINGER: dilate opening, confirm trachea","TUBE: bougie \u2192 ETT 6.0 cuffed (or Melker kit)","Inflate cuff \u2192 ventilate \u2192 confirm ETCO\u2082 waveform","Target: CICO declaration to airway in <2 minutes"]},
 ];
+
 function CICOMode({onClose}) {
   const [step,setStep]=useState(0);const [done,setDone]=useState({});const s=CICO_STEPS[step];
   return (
@@ -460,19 +460,19 @@ function CICOMode({onClose}) {
 function DiffAirwayAlert() {
   const [f,setF]=useState({name:"",enc:"",outcome:"",ettsz:"",depth:""});
   const [copied,setCopied]=useState(false);const [show,setShow]=useState(false);
-  const u=(k,v)=>setF(p=>({...p,[k]:v}));
-  const note=`\u26a0\ufe0f DIFFICULT AIRWAY ALERT \u26a0\ufe0f\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\nPatient: ${f.name||"[Name]"} \u2502 Date: ${new Date().toLocaleDateString()}\n\nAIRWAY ENCOUNTER:\n${f.enc||"[Describe difficulty]"}\n\nOUTCOME: ${f.outcome||"[Final airway outcome]"}\n${f.ettsz?`ETT: ${f.ettsz} mm at ${f.depth||"[X]"} cm at lip\n`:""}\nALERT: All future airway providers must be notified of this patient's\ndifficult airway history. Awake intubation or experienced provider\npresence is strongly recommended for future intubations.\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501`;
+  const u=(k,val)=>setF(p=>({...p,[k]:val}));
+  const note=`\u26a0\ufe0f DIFFICULT AIRWAY ALERT \u26a0\ufe0f\n${"━".repeat(28)}\nPatient: ${f.name||"[Name]"} \u2502 Date: ${new Date().toLocaleDateString()}\n\nAIRWAY ENCOUNTER:\n${f.enc||"[Describe difficulty]"}\n\nOUTCOME: ${f.outcome||"[Final airway outcome]"}\n${f.ettsz?`ETT: ${f.ettsz} mm at ${f.depth||"[X]"} cm at lip\n`:""}\nALERT: All future airway providers must be notified of this patient's\ndifficult airway history. Awake intubation or experienced provider\npresence is strongly recommended for future intubations.\n${"━".repeat(28)}`;
   const copy=()=>navigator.clipboard.writeText(note).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
   const inp2={background:"rgba(14,37,68,0.7)",border:`1px solid ${T.b}`,borderRadius:7,padding:"7px 9px",color:T.txt,fontFamily:"monospace",fontSize:11,outline:"none",width:"100%"};
   return (
     <div style={{background:"rgba(255,107,107,0.05)",border:"1px solid rgba(255,107,107,0.22)",borderRadius:10,padding:"12px 14px",marginTop:10}}>
       <div style={{fontSize:11,fontWeight:700,color:T.coral,marginBottom:10}}>\u26a0\ufe0f Difficult Airway Alert Generator</div>
       <div style={{marginBottom:6}}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>Patient Name</div><input type="text" placeholder="Patient name" value={f.name} onChange={e=>u("name",e.target.value)} style={inp2}/></div>
-      <div style={{marginBottom:6}}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>Airway Encounter (C-L grade, attempts, technique)</div><textarea rows={2} value={f.enc} onChange={e=>u("enc",e.target.value)} placeholder="e.g., Grade III view on VL, 2 attempts with bougie, Plan B iGEL used..." style={{...inp2,resize:"vertical"}}/></div>
+      <div style={{marginBottom:6}}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>Airway Encounter</div><textarea rows={2} value={f.enc} onChange={e=>u("enc",e.target.value)} placeholder="e.g., Grade III view on VL, 2 attempts with bougie, Plan B iGEL used..." style={{...inp2,resize:"vertical"}}/></div>
       <div style={{marginBottom:6}}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>Outcome</div><textarea rows={2} value={f.outcome} onChange={e=>u("outcome",e.target.value)} placeholder="e.g., 7.5mm ETT via VL on 3rd attempt, 23 cm at lip" style={{...inp2,resize:"vertical"}}/></div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-        {[["ETT Size (mm)",f.ettsz,"ettsz"],["Depth at Lip (cm)",f.depth,"depth"]].map(([l,v,k])=>(
-          <div key={k}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>{l}</div><input type="text" value={v} onChange={e=>u(k,e.target.value)} placeholder={l} style={inp2}/></div>
+        {[["ETT Size (mm)",f.ettsz,"ettsz"],["Depth at Lip (cm)",f.depth,"depth"]].map(([l,val,k])=>(
+          <div key={k}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>{l}</div><input type="text" value={val} onChange={e=>u(k,e.target.value)} placeholder={l} style={inp2}/></div>
         ))}
       </div>
       <div style={{display:"flex",gap:8}}>
@@ -498,7 +498,7 @@ function RSIProcNote() {
   const wKg=wu==="lb"?parseFloat(wt)*0.453592:parseFloat(wt); const valid=!isNaN(wKg)&&wKg>0;
   const ID={Etomidate:0.3,Ketamine:1.5,Propofol:1.5}; const PD={Succinylcholine:1.5,Rocuronium:1.2}; const PX={Succinylcholine:200,Rocuronium:null};
   const dd=(mg,mx)=>{if(!valid)return "[dose]";const x=Math.round(wKg*mg*10)/10;return (mx?Math.min(x,mx):x)+" mg";};
-  const tog=(arr,set,v)=>arr.includes(v)?set(arr.filter(x=>x!==v)):set([...arr,v]);
+  const tog=(arr,set,val)=>arr.includes(val)?set(arr.filter(x=>x!==val)):set([...arr,val]);
   const PRE=["NRB 15 L/min","NC 15 L/min (apneic)","HFNC 60 L/min (THRIVE)","BVM pre-oxygenation"];
   const COMP=["None","Esophageal intubation \u2014 recognized and corrected","Transient desaturation \u2014 recovered","Post-intubation hypotension \u2014 treated","Dental trauma","Other \u2014 see additional notes"];
   const SED=["Propofol + Fentanyl","Midazolam + Fentanyl","Propofol only","Fentanyl only"];
@@ -511,7 +511,7 @@ function RSIProcNote() {
   };
   const copy=()=>navigator.clipboard.writeText(generate()).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
   const inp3={background:"rgba(14,37,68,0.7)",border:`1px solid ${T.b}`,borderRadius:8,padding:"8px 10px",color:T.txt,fontFamily:"monospace",fontSize:12,outline:"none",width:"100%"};
-  const sel=(val,active,onClick,c=T.gold)=><button key={val} onClick={onClick} style={{padding:"5px 11px",borderRadius:20,cursor:"pointer",border:`1px solid ${active?c+"55":T.b}`,background:active?`${c}14`:"rgba(14,37,68,0.5)",color:active?c:T.txt3,fontSize:10,fontWeight:active?700:400,fontFamily:"sans-serif",transition:"all .15s"}}>{val}</button>;
+  const selBtn=(val,active,onClick,c=T.gold)=><button key={val} onClick={onClick} style={{padding:"5px 11px",borderRadius:20,cursor:"pointer",border:`1px solid ${active?c+"55":T.b}`,background:active?`${c}14`:"rgba(14,37,68,0.5)",color:active?c:T.txt3,fontSize:10,fontWeight:active?700:400,fontFamily:"sans-serif",transition:"all .15s"}}>{val}</button>;
   const sec=(children)=><div style={{background:"rgba(14,37,68,0.4)",border:`1px solid ${T.b}`,borderRadius:10,padding:"12px 14px",marginBottom:10}}>{children}</div>;
   const hdr=(ic,lbl,c=T.txt3)=><div style={{fontSize:9,fontWeight:700,color:c,textTransform:"uppercase",letterSpacing:".08em",marginBottom:8}}><span style={{marginRight:5}}>{ic}</span>{lbl}</div>;
   return (
@@ -528,9 +528,9 @@ function RSIProcNote() {
             <span key={n} style={{fontSize:9,padding:"2px 8px",borderRadius:6,background:`${c}12`,border:`1px solid ${c}28`,color:c}}>{n}: <strong style={{fontFamily:"monospace"}}>{dd(mg,mx)}</strong></span>
           ))}</div>}
       </>)}
-      {sec(<>{hdr("\ud83c\udfe5","Indication")}<textarea rows={2} placeholder="e.g., Acute hypoxic respiratory failure secondary to severe pneumonia..." value={ind} onChange={e=>setInd(e.target.value)} style={{...inp3,resize:"vertical"}} /></>)}
-      {sec(<>{hdr("\ud83e\fde1","Pre-Oxygenation")}
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>{PRE.map(v=>sel(v,preox.includes(v),()=>tog(preox,setPreox,v),T.blue))}</div>
+      {sec(<>{hdr("\ud83c\udfe5","Indication")}<textarea rows={2} placeholder="e.g., Acute hypoxic respiratory failure..." value={ind} onChange={e=>setInd(e.target.value)} style={{...inp3,resize:"vertical"}} /></>)}
+      {sec(<>{hdr("🫁","Pre-Oxygenation")}
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>{PRE.map(val=>selBtn(val,preox.includes(val),()=>tog(preox,setPreox,val),T.blue))}</div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontSize:10,color:T.txt3,whiteSpace:"nowrap"}}>Pre-induction SpO\u2082:</span><input type="number" placeholder="e.g. 97" value={spo2} onChange={e=>setSpo2(e.target.value)} style={{...inp3,width:70}} /><span style={{fontSize:10,color:T.txt3}}>%</span></div>
       </>)}
       {sec(<>{hdr("\ud83d\udc89","Medications")}
@@ -546,7 +546,7 @@ function RSIProcNote() {
       {sec(<>{hdr("\ud83d\udd26","Procedure")}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
           <div><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:5}}>Scope</div>
-            {[["video laryngoscopy (VL)","VL"],["direct laryngoscopy (DL)","DL"],["VL hyperangulated blade","VL Hyperangulated"]].map(([v,l])=><button key={v} onClick={()=>setScope(v)} style={{width:"100%",marginBottom:3,padding:"5px 8px",borderRadius:7,cursor:"pointer",fontFamily:"sans-serif",border:`1px solid ${scope===v?T.teal+"50":T.b}`,background:scope===v?"rgba(0,229,192,0.1)":"rgba(14,37,68,0.5)",color:scope===v?T.teal:T.txt3,fontSize:10,textAlign:"left"}}>{l}</button>)}
+            {[["video laryngoscopy (VL)","VL"],["direct laryngoscopy (DL)","DL"],["VL hyperangulated blade","VL Hyperangulated"]].map(([val,lbl])=><button key={val} onClick={()=>setScope(val)} style={{width:"100%",marginBottom:3,padding:"5px 8px",borderRadius:7,cursor:"pointer",fontFamily:"sans-serif",border:`1px solid ${scope===val?T.teal+"50":T.b}`,background:scope===val?"rgba(0,229,192,0.1)":"rgba(14,37,68,0.5)",color:scope===val?T.teal:T.txt3,fontSize:10,textAlign:"left"}}>{lbl}</button>)}
           </div>
           <div>
             <div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:5}}>C-L Grade</div>
@@ -556,8 +556,8 @@ function RSIProcNote() {
           </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          <div><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:5}}>ETT Size (mm)</div><div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{["6.0","6.5","7.0","7.5","8.0","8.5"].map(s=><button key={s} onClick={()=>setEttSz(s)} style={{padding:"4px 9px",borderRadius:6,cursor:"pointer",fontFamily:"monospace",border:`1px solid ${ettSz===s?T.blue+"55":T.b}`,background:ettSz===s?"rgba(59,158,255,0.15)":"rgba(14,37,68,0.5)",color:ettSz===s?T.blue:T.txt3,fontSize:10,fontWeight:700}}>{s}</button>)}</div></div>
-          <div><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:5}}>Depth at Lip (cm)</div><div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{["20","21","22","23","24","25","26"].map(d=><button key={d} onClick={()=>setEttD(d)} style={{padding:"4px 8px",borderRadius:6,cursor:"pointer",fontFamily:"monospace",border:`1px solid ${ettD===d?T.blue+"55":T.b}`,background:ettD===d?"rgba(59,158,255,0.15)":"rgba(14,37,68,0.5)",color:ettD===d?T.blue:T.txt3,fontSize:10,fontWeight:700}}>{d}</button>)}</div></div>
+          <div><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:5}}>ETT Size (mm)</div><div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{["6.0","6.5","7.0","7.5","8.0","8.5"].map(sz=><button key={sz} onClick={()=>setEttSz(sz)} style={{padding:"4px 9px",borderRadius:6,cursor:"pointer",fontFamily:"monospace",border:`1px solid ${ettSz===sz?T.blue+"55":T.b}`,background:ettSz===sz?"rgba(59,158,255,0.15)":"rgba(14,37,68,0.5)",color:ettSz===sz?T.blue:T.txt3,fontSize:10,fontWeight:700}}>{sz}</button>)}</div></div>
+          <div><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:5}}>Depth at Lip (cm)</div><div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{["20","21","22","23","24","25","26"].map(dep=><button key={dep} onClick={()=>setEttD(dep)} style={{padding:"4px 8px",borderRadius:6,cursor:"pointer",fontFamily:"monospace",border:`1px solid ${ettD===dep?T.blue+"55":T.b}`,background:ettD===dep?"rgba(59,158,255,0.15)":"rgba(14,37,68,0.5)",color:ettD===dep?T.blue:T.txt3,fontSize:10,fontWeight:700}}>{dep}</button>)}</div></div>
         </div>
       </>)}
       {sec(<>{hdr("\u26a0\ufe0f","Complications")}
@@ -567,11 +567,11 @@ function RSIProcNote() {
       </>)}
       {sec(<>{hdr("\u2699\ufe0f","Post-Intubation Vent + Sedation")}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:8}}>
-          {[["TV (mL)",vTV,setVTV,"420"],["RR (/min)",vRR,setVRR,"14"],["FiO\u2082",vFi,setVFi,"1.0"],["PEEP",vPEEP,setVPEEP,"5"]].map(([l,v,sv,ph])=>(
-            <div key={l}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:3}}>{l}</div><input type="number" placeholder={ph} value={v} onChange={e=>sv(e.target.value)} style={inp3} /></div>
+          {[["TV (mL)",vTV,setVTV,"420"],["RR (/min)",vRR,setVRR,"14"],["FiO\u2082",vFi,setVFi,"1.0"],["PEEP",vPEEP,setVPEEP,"5"]].map(([l,val,sv,ph])=>(
+            <div key={l}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:3}}>{l}</div><input type="number" placeholder={ph} value={val} onChange={e=>sv(e.target.value)} style={inp3} /></div>
           ))}
         </div>
-        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{SED.map(s=>sel(s,sed===s,()=>setSed(s),T.purple))}</div>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{SED.map(s=>selBtn(s,sed===s,()=>setSed(s),T.purple))}</div>
       </>)}
       {sec(<>{hdr("\ud83d\udcdd","Additional Notes")}<textarea rows={2} placeholder="Difficult airway notes, provider, trach timeline..." value={notes} onChange={e=>setNotes(e.target.value)} style={{...inp3,resize:"vertical"}} /></>)}
       <div style={{display:"flex",gap:8}}>
@@ -610,8 +610,9 @@ function DrugRow({rx}) {
 }
 
 function MDMSnippet({condId}) {
-  const tmpl=MDM_DATA[condId]; if(!tmpl)return null;
   const [fields,setFields]=useState({});const [copied,setCopied]=useState(false);const [show,setShow]=useState(false);
+  const tmpl=MDM_DATA[condId];
+  if(!tmpl)return null;
   const note=tmpl.t(fields);
   const copy=()=>navigator.clipboard.writeText(note).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
   return (
@@ -633,8 +634,9 @@ function MDMSnippet({condId}) {
 }
 
 function OrderSetPanel({condId}) {
-  const os=ORDER_SETS[condId]; if(!os)return null;
   const [active,setActive]=useState(null);const [copied,setCopied]=useState(null);
+  const os=ORDER_SETS[condId];
+  if(!os)return null;
   const copy=(i,text)=>navigator.clipboard.writeText(text).then(()=>{setCopied(i);setTimeout(()=>setCopied(null),2500);});
   return (
     <div style={{background:`${os.color}08`,border:`1px solid ${os.color}28`,borderRadius:10,marginBottom:10,overflow:"hidden"}}>

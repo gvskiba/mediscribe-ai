@@ -690,7 +690,7 @@ function ConditionPage({cond,onBack}) {
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {cicoOpen&&<CICOMode onClose={()=>setCicoOpen(false)} />}
       <div style={{padding:"14px 20px 0",flexShrink:0}}>
-        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(14,37,68,0.5)",border:`1px solid ${T.b}`,borderRadius:7,padding:"5px 12px",color:T.txt3,fontSize:11,cursor:"pointer",marginBottom:12}}>\u2190 Back</button>
+        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(14,37,68,0.5)",border:`1px solid ${T.b}`,borderRadius:7,padding:"5px 12px",color:T.txt3,fontSize:11,cursor:"pointer",marginBottom:12}}>← Back</button>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
           <div style={{width:44,height:44,borderRadius:12,background:cond.gl,border:`1px solid ${cond.br}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{cond.icon}</div>
           <div>
@@ -765,7 +765,7 @@ export default function RSIPage() {
       <style>{`*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(26,53,85,0.9);border-radius:2px}input,button,textarea{font-family:inherit}`}</style>
       <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"14px 20px",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <button onClick={()=>navigate("/AirwayHub")} style={{padding:"5px 12px",borderRadius:7,border:"1px solid rgba(245,200,66,0.35)",background:"rgba(8,22,40,0.7)",color:T.gold,fontSize:11,fontWeight:700,cursor:"pointer"}}>\u2190 Airway Hub</button>
+          <button onClick={()=>navigate("/AirwayHub")} style={{padding:"5px 12px",borderRadius:7,border:"1px solid rgba(245,200,66,0.35)",background:"rgba(8,22,40,0.7)",color:T.gold,fontSize:11,fontWeight:700,cursor:"pointer"}}>← Airway Hub</button>
           <div style={{width:40,height:40,borderRadius:11,background:"rgba(245,200,66,0.1)",border:"1px solid rgba(245,200,66,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>💉</div>
           <div>
             <div style={{fontSize:17,fontWeight:700,color:T.txt,fontFamily:"'Playfair Display',serif"}}>Intubation Suite</div>

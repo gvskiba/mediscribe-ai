@@ -649,9 +649,9 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
 
   // Load saved interpretations on mount
   useEffect(()=>{
-    ClinicalNote.getAll().then(notes=>{
+    base44.entities.ClinicalNote.filter({source:"ECG-Saved"},"-created_date",10).then(notes=>{
       if(!Array.isArray(notes))return;
-      setSavedLog(notes.filter(n=>n.source==="ECG-Saved").slice(0,10).map(n=>{try{return{...JSON.parse(n.content),id:n.id};}catch(e){return null;}}).filter(Boolean));
+      setSavedLog(notes.map(n=>{try{return{...JSON.parse(n.content),id:n.id};}catch(e){return null;}}).filter(Boolean));
     }).catch(()=>{});
   },[]);
 

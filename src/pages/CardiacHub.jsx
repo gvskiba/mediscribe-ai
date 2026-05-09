@@ -34,12 +34,12 @@ function ProtocolCard({ p, onClick, index }) {
       </div>
       <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,color:p.accent,letterSpacing:".12em",textTransform:"uppercase",marginBottom:4,opacity:0.85}}>{p.abbr}</div>
       <div style={{fontSize:15,fontFamily:"'Playfair Display',serif",fontWeight:600,color:"#e8f0fe",lineHeight:1.3,marginBottom:4}}>{p.title}</div>
-      <div style={{fontSize:11,color:"#4a6a8a",marginBottom:14,lineHeight:1.4}}>{p.subtitle}</div>
+      <div style={{fontSize:11,color:"#7eb8e0",marginBottom:14,lineHeight:1.4}}>{p.subtitle}</div>
       <div style={{height:1,background:`linear-gradient(90deg, ${p.border}, transparent)`,marginBottom:12}}/>
       <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:12}}>
         <span style={{fontSize:22,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:p.color}}>{p.stat.value}</span>
         <span style={{fontSize:11,color:p.accent,fontFamily:"'JetBrains Mono',monospace"}}>{p.stat.unit}</span>
-        <span style={{fontSize:10,color:"#4a6a8a",marginLeft:4}}>{p.stat.label}</span>
+        <span style={{fontSize:10,color:"#7eb8e0",marginLeft:4}}>{p.stat.label}</span>
       </div>
       <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{p.tags.map((t,i)=><span key={i} style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:p.glass,border:`1px solid ${p.border.replace("0.25","0.18")}`,color:"#8aaccc",backdropFilter:"blur(4px)"}}>{t}</span>)}</div>
       <div style={{position:"absolute",bottom:18,right:18,width:28,height:28,borderRadius:"50%",background:p.glass.replace("0.06","0.18"),border:`1px solid ${p.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:p.color,opacity:hov?1:0,transform:hov?"scale(1) translateX(0)":"scale(0.7) translateX(-4px)",transition:"all 0.25s ease"}}>→</div>
@@ -76,10 +76,10 @@ function ACSHomePage({ onNavigate }) {
                 <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,color:"#e8f0fe",letterSpacing:"-0.01em"}}>Cardiac Protocol Hub</span>
                 <span style={{fontSize:9,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,padding:"3px 10px",borderRadius:20,background:"rgba(0,229,192,0.1)",color:"#00e5c0",border:"1px solid rgba(0,229,192,0.3)",letterSpacing:".06em"}}>NOTRYA TOOLS</span>
               </div>
-              <p style={{fontSize:13,color:"#8aaccc",margin:0,lineHeight:1.6,maxWidth:560}}>Evidence-based algorithms for the emergency physician — guideline-integrated cardiac protocols spanning the full spectrum of acute cardiovascular emergencies.</p>
+              <p style={{fontSize:13,color:"#b8d4f0",margin:0,lineHeight:1.6,maxWidth:560}}>Evidence-based algorithms for the emergency physician — guideline-integrated cardiac protocols spanning the full spectrum of acute cardiovascular emergencies.</p>
             </div>
             <div style={{borderRadius:12,padding:"10px 14px",background:"rgba(8,22,40,0.85)",border:"1px solid rgba(26,53,85,0.9)",textAlign:"center",flexShrink:0}}>
-              <div style={{fontSize:9,color:"#4a6a8a",textTransform:"uppercase",letterSpacing:".07em",marginBottom:4}}>Protocols</div>
+              <div style={{fontSize:9,color:"#7eb8e0",textTransform:"uppercase",letterSpacing:".07em",marginBottom:4}}>Protocols</div>
               <div style={{fontSize:28,fontWeight:700,color:"#3b9eff",fontFamily:"'JetBrains Mono',monospace",lineHeight:1}}>8</div>
               <div style={{fontSize:9,color:"#4a6a8a",marginTop:2}}>available</div>
             </div>
@@ -504,7 +504,7 @@ export default function NotryaApp(){
 
 const CSS=`
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
-:root{--bg:#050f1e;--bg-panel:#081628;--bg-card:#0b1e36;--bg-up:#0e2544;--border:#1a3555;--border-hi:#2a4f7a;--blue:#3b9eff;--cyan:#00d4ff;--teal:#00e5c0;--gold:#f5c842;--purple:#9b6dff;--coral:#ff6b6b;--green:#3dffa0;--orange:#ff9f43;--txt:#e8f0fe;--txt2:#8aaccc;--txt3:#4a6a8a;--txt4:#2e4a6a;--icon-sb:56px;--top-h:88px;--bot-h:108px;--r:8px;--rl:12px;}
+:root{--bg:#050f1e;--bg-panel:#081628;--bg-card:#0b1e36;--bg-up:#0e2544;--border:#1a3555;--border-hi:#2a4f7a;--blue:#3b9eff;--cyan:#00d4ff;--teal:#00e5c0;--gold:#f5c842;--purple:#9b6dff;--coral:#ff6b6b;--green:#3dffa0;--orange:#ff9f43;--txt:#f0f6ff;--txt2:#b8d4f0;--txt3:#7eb8e0;--txt4:#6698c0;--icon-sb:56px;--top-h:88px;--bot-h:108px;--r:8px;--rl:12px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body,#root{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;overflow:hidden}
 .icon-sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--icon-sb);background:#040d19;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;z-index:200}

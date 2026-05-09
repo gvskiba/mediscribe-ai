@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 
 const T = {
   bg:"#050f1e",panel:"#081628",b:"rgba(26,53,85,0.8)",
-  txt:"#e8f0fe",txt2:"#8aaccc",txt3:"#4a6a8a",txt4:"#2e4a6a",
+  txt:"#f0f6ff",txt2:"#b8d4f0",txt3:"#7eb8e0",txt4:"#6698c0",
   coral:"#ff6b6b",gold:"#f5c842",teal:"#00e5c0",blue:"#3b9eff",
   orange:"#ff9f43",purple:"#9b6dff",green:"#3dffa0",cyan:"#00d4ff",
 };

@@ -20,7 +20,7 @@ import { useState, useCallback, useMemo } from "react";
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
   bg:"#050f1e", panel:"#081628", card:"#0b1e36", up:"#0e2544",
-  bd:"rgba(26,53,85,0.8)", txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
+  bd:"rgba(26,53,85,0.8)", txt:"#f2f7ff", txt2:"#c8e0f8", txt3:"#96c0e0", txt4:"#78a8cc",
   teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
   orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0",
   accent:"#3b9eff",  // hub accent — blue for peds

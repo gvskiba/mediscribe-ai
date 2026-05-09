@@ -83,10 +83,11 @@ const QUICK_REF = {
 function ARDSCalc() {
   const params=new URLSearchParams(window.location.search);
   const [ht,setHt]=useState(params.get("height")||"");const [unit,setUnit]=useState(params.get("heightUnit")||"in");const [sex,setSex]=useState(params.get("sex")||"M");
-  const [pplat,setPplat]=useState("");const [peepV,setPeepV]=useState("");
+  const [fio2,setFio2]=useState("");const [peep,setPeep]=useState("");const [pplat,setPplat]=useState("");const [peepV,setPeepV]=useState("");
   const htIn=unit==="cm"?parseFloat(ht)/2.54:parseFloat(ht);
-  const ibw=!isNaN(htIn)&&htIn>0?Math.round(sex==="M"?(50+2.3*(htIn-60)):(45.5+2.3*(htIn-60))):null;
+  const ibw=!isNaN(htIn)?Math.round(sex==="M"?(50+2.3*(htIn-60)):(45.5+2.3*(htIn-60))):null;
   const tv6=ibw?ibw*6:null; const tv8=ibw?ibw*8:null;
+  const pf=fio2&&peep?(parseFloat(fio2)||1):null;
   const dp=pplat&&peepV?parseFloat(pplat)-parseFloat(peepV):null;
   const inp={background:"rgba(14,37,68,0.7)",border:"1px solid rgba(255,107,107,0.3)",borderRadius:8,padding:"7px 9px",color:T.txt,fontFamily:"monospace",fontSize:12,outline:"none"};
   return (
@@ -111,7 +112,7 @@ function ARDSCalc() {
           </div>
         </div>
       </div>
-      {ibw&&ibw>0&&(<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
+      {ibw&&(<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
         {[["IBW",ibw+" kg",T.txt],["TV at 6 mL/kg",tv6+" mL",T.coral],["TV at 8 mL/kg",tv8+" mL",T.gold]].map(([l,v,c])=>(
           <div key={l} style={{textAlign:"center",background:`${c}10`,border:`1px solid ${c}28`,borderRadius:8,padding:"8px"}}>
             <div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>{l}</div>
@@ -167,7 +168,7 @@ function RSBICalc() {
         </div>
       )}
       <div style={{marginTop:8,display:"flex",gap:6}}>
-        {[["<80",T.green,"Extubate"],["80\u2013105",T.gold,"Assess"],["\u2265105",T.coral,"High fail"]].map(([v,c,l])=>(
+        {[["<80",T.green,"Extubate"],["80\u2013105",T.gold,"Assess"],["≥105",T.coral,"High fail"]].map(([v,c,l])=>(
           <div key={v} style={{flex:1,textAlign:"center",padding:"4px",background:`${c}10`,border:`1px solid ${c}25`,borderRadius:7}}>
             <div style={{fontSize:11,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div>
             <div style={{fontSize:8,color:T.txt4}}>{l}</div>
@@ -268,9 +269,8 @@ function DrugRow({rx}) {
 }
 
 function MDMSnippet({condId}) {
-  const tmpl=MDM_DATA[condId];
+  const tmpl=MDM_DATA[condId]; if(!tmpl)return null;
   const [fields,setFields]=useState({});const [copied,setCopied]=useState(false);const [show,setShow]=useState(false);
-  if(!tmpl)return null;
   const note=tmpl.t(fields);
   const copy=()=>navigator.clipboard.writeText(note).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
   return (
@@ -292,9 +292,8 @@ function MDMSnippet({condId}) {
 }
 
 function OrderSetPanel({condId}) {
-  const os=ORDER_SETS[condId];
+  const os=ORDER_SETS[condId]; if(!os)return null;
   const [active,setActive]=useState(null);const [copied,setCopied]=useState(null);
-  if(!os)return null;
   const copy=(i,text)=>navigator.clipboard.writeText(text).then(()=>{setCopied(i);setTimeout(()=>setCopied(null),2500);});
   return (
     <div style={{background:`${os.color}08`,border:`1px solid ${os.color}28`,borderRadius:10,marginBottom:10,overflow:"hidden"}}>
@@ -318,8 +317,7 @@ function OrderSetPanel({condId}) {
 }
 
 function QuickRefCard({condId}) {
-  const refs=QUICK_REF[condId];
-  if(!refs)return null;
+  const refs=QUICK_REF[condId]; if(!refs)return null;
   return (
     <div style={{background:"rgba(255,107,107,0.05)",border:"1px solid rgba(255,107,107,0.2)",borderRadius:10,padding:"12px 14px",marginTop:10}}>
       <div style={{fontSize:9,fontWeight:700,color:T.coral,textTransform:"uppercase",letterSpacing:".07em",marginBottom:8}}>\u26a1 Quick-Ref \u2014 5 Critical Numbers</div>
@@ -431,6 +429,7 @@ export default function VentPage() {
             </div>
           ))}
         </div>
+        {/* Always-visible tools at hub level */}
         <div style={{borderTop:`1px solid ${T.b}`,paddingTop:14}}>
           <div style={{fontSize:9,fontWeight:700,color:T.txt4,textTransform:"uppercase",letterSpacing:".07em",marginBottom:10}}>Quick Access Tools</div>
           <ARDSCalc />

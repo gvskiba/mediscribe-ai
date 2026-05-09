@@ -5,7 +5,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ClinicalNote } from "@/api/entities";
-
 import ECGNSTEMIHub from "@/components/ecg/ECGNSTEMIHub";
 import ECGAFPathway  from "@/components/ecg/ECGAFPathway";
 
@@ -487,6 +486,12 @@ ${chips?`<div class="box" style="margin-bottom:12px"><div class="lbl" style="col
   w.document.close();
 }
 
+const LS_KEY = "ecghub_draft";
+
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; }
+}
+
 // ── AI Interpreter ───────────────────────────────────────────
 const RHYTHMS_LIST = ["Normal Sinus Rhythm","Sinus Tachycardia","Sinus Bradycardia","Atrial Fibrillation","Atrial Flutter","SVT / AVNRT","AVRT","Junctional Rhythm","Accelerated Idioventricular","Ventricular Tachycardia","Ventricular Fibrillation","Paced Rhythm","Sinus Pause / SA Block","Other"];
 const AXES_LIST    = ["Normal (−30° to +90°)","Left Axis Deviation (< −30°)","Right Axis Deviation (> +90°)","Extreme / Northwest (< −90°)"];
@@ -495,12 +500,6 @@ const TWAVE_OPTS   = ["T inversions — anterior (V1-V4)","T inversions — infe
 const OTHER_OPTS   = ["New LBBB (STEMI equivalent)","De Winter T-wave pattern (proximal LAD)","Diffuse saddle-shaped STE + PR depression (pericarditis)","PR depression (pericarditis)","aVR STE + diffuse STD (LMCA / 3VD)","Terminal R in aVR ≥ 3mm (TCA toxicity)","Electrical alternans","QRS widening (toxicology / hyperkalemia)","Prolonged QTc > 500ms","PVCs — frequent or runs","Pacemaker malfunction","P pulmonale (peaked P > 2.5mm)","P mitrale (notched, wide P)"];
 
 const URGENCY_COLOR = {Critical:T.red, High:T.coral, Moderate:T.gold, Low:T.teal};
-
-const LS_KEY = "ecghub_draft";
-
-function loadDraft() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; }
-}
 
 function ECGAITab({ embedded=false }) {
   const draft = loadDraft();
@@ -513,39 +512,28 @@ function ECGAITab({ embedded=false }) {
   const [saving,     setSaving]     = useState(false);
   const [savedOk,    setSavedOk]    = useState(false);
   // Manual state
-  const [rate,       setRate]       = useState(draft.rate        || "");
-  const [rhythm,     setRhythm]     = useState(draft.rhythm      || "");
-  const [pr,         setPr]         = useState(draft.pr          || "");
-  const [qrs,        setQrs]        = useState(draft.qrs         || "");
-  const [qt,         setQt]         = useState(draft.qt          || "");
-  const [axis,       setAxis]       = useState(draft.axis        || "");
+  const [rate,       setRate]       = useState(draft.rate       || "");
+  const [rhythm,     setRhythm]     = useState(draft.rhythm     || "");
+  const [pr,         setPr]         = useState(draft.pr         || "");
+  const [qrs,        setQrs]        = useState(draft.qrs        || "");
+  const [qt,         setQt]         = useState(draft.qt         || "");
+  const [axis,       setAxis]       = useState(draft.axis       || "");
   const [morph,      setMorph]      = useState(new Set(draft.morph      || []));
-  const [stChanges,  setStChanges]  = useState(draft.stChanges   || {});
+  const [stChanges,  setStChanges]  = useState(draft.stChanges  || {});
   const [tWaves,     setTWaves]     = useState(new Set(draft.tWaves     || []));
   const [other,      setOther]      = useState(new Set(draft.other      || []));
   // Paste state
-  const [pasteText,  setPasteText]  = useState(draft.pasteText   || "");
+  const [pasteText,  setPasteText]  = useState(draft.pasteText  || "");
   // Image state
   const [imgFile,    setImgFile]    = useState(null);
   const [imgPreview, setImgPreview] = useState(null);
   const [imgUrl,     setImgUrl]     = useState(null);
   const [imgUploading,setImgUploading]=useState(false);
   // Shared
-  const [context,    setContext]    = useState(draft.context      || "");
+  const [context,    setContext]    = useState(draft.context  || "");
   const [loading,    setLoading]    = useState(false);
-  const [result,     setResult]     = useState(draft.result       || null);
+  const [result,     setResult]     = useState(draft.result   || null);
   const [errMsg,     setErrMsg]     = useState(null);
-
-  // Auto-save draft to localStorage whenever inputs change
-  useEffect(()=>{
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify({
-        mode, patientId, rate, rhythm, pr, qrs, qt, axis,
-        morph: [...morph], stChanges, tWaves: [...tWaves],
-        other: [...other], pasteText, context, result,
-      }));
-    } catch {}
-  }, [mode, patientId, rate, rhythm, pr, qrs, qt, axis, morph, stChanges, tWaves, other, pasteText, context, result]);
 
   const qtcMs = useMemo(()=>{const q=parseFloat(qt),h=parseFloat(rate);if(isNaN(q)||isNaN(h)||h<=0)return null;return Math.round(q/Math.sqrt(60/h));},[qt,rate]);
   const toggle = useCallback((setter,val)=>setter(prev=>{const n=new Set(prev);n.has(val)?n.delete(val):n.add(val);return n;}),[]);
@@ -665,6 +653,15 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
 
   const analyze = mode==="paste"?analyzePaste:mode==="image"?analyzeImage:analyzeManual;
 
+  // Auto-save draft to localStorage on input changes
+  useEffect(()=>{
+    try{localStorage.setItem(LS_KEY,JSON.stringify({
+      mode,patientId,rate,rhythm,pr,qrs,qt,axis,
+      morph:[...morph],stChanges,tWaves:[...tWaves],
+      other:[...other],pasteText,context,result,
+    }));}catch{}
+  },[mode,patientId,rate,rhythm,pr,qrs,qt,axis,morph,stChanges,tWaves,other,pasteText,context,result]);
+
   // Load saved interpretations on mount
   useEffect(()=>{
     base44.entities.ClinicalNote.filter({source:"ECG-Saved"},"-created_date",10).then(notes=>{
@@ -721,7 +718,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
     setMorph(new Set());setStChanges({});setTWaves(new Set());setOther(new Set());
     setPasteText("");setImgFile(null);setImgPreview(null);setImgUrl(null);
     setContext("");setResult(null);setErrMsg(null);setMode("paste");setPatientId("");
-    try { localStorage.removeItem(LS_KEY); } catch {}
+    try{localStorage.removeItem(LS_KEY);}catch{}
   };
 
   const Chip=({label,active,color,onClick})=>(

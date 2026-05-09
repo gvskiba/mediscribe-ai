@@ -275,8 +275,10 @@ function DrugRow({rx}) {
 }
 
 function MDMSnippet({condId}) {
-  const [fields,setFields]=useState({});const [copied,setCopied]=useState(false);const [show,setShow]=useState(false);
   const tmpl=MDM_DATA[condId];
+  const [fields,setFields]=useState({});
+  const [copied,setCopied]=useState(false);
+  const [show,setShow]=useState(false);
   if(!tmpl)return null;
   const note=tmpl.t(fields);
   const copy=()=>navigator.clipboard.writeText(note).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
@@ -299,8 +301,9 @@ function MDMSnippet({condId}) {
 }
 
 function OrderSetPanel({condId}) {
-  const [active,setActive]=useState(null);const [copied,setCopied]=useState(null);
   const os=ORDER_SETS[condId];
+  const [active,setActive]=useState(null);
+  const [copied,setCopied]=useState(null);
   if(!os)return null;
   const copy=(i,text)=>navigator.clipboard.writeText(text).then(()=>{setCopied(i);setTimeout(()=>setCopied(null),2500);});
   return (

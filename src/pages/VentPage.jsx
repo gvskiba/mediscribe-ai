@@ -269,8 +269,11 @@ function DrugRow({rx}) {
 }
 
 function MDMSnippet({condId}) {
-  const tmpl=MDM_DATA[condId]; if(!tmpl)return null;
-  const [fields,setFields]=useState({});const [copied,setCopied]=useState(false);const [show,setShow]=useState(false);
+  const tmpl=MDM_DATA[condId];
+  const [fields,setFields]=useState({});
+  const [copied,setCopied]=useState(false);
+  const [show,setShow]=useState(false);
+  if(!tmpl)return null;
   const note=tmpl.t(fields);
   const copy=()=>navigator.clipboard.writeText(note).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
   return (
@@ -292,8 +295,10 @@ function MDMSnippet({condId}) {
 }
 
 function OrderSetPanel({condId}) {
-  const os=ORDER_SETS[condId]; if(!os)return null;
-  const [active,setActive]=useState(null);const [copied,setCopied]=useState(null);
+  const os=ORDER_SETS[condId];
+  const [active,setActive]=useState(null);
+  const [copied,setCopied]=useState(null);
+  if(!os)return null;
   const copy=(i,text)=>navigator.clipboard.writeText(text).then(()=>{setCopied(i);setTimeout(()=>setCopied(null),2500);});
   return (
     <div style={{background:`${os.color}08`,border:`1px solid ${os.color}28`,borderRadius:10,marginBottom:10,overflow:"hidden"}}>

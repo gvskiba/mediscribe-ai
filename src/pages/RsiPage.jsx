@@ -9,11 +9,11 @@ const T = {
 };
 
 const CONDITIONS = [
-  {id:"rsi",icon:"\ud83d\udc89",title:"RSI Protocol",sub:"Pre-ox \xb7 Induction \xb7 Paralysis \xb7 Post-intubation",color:"#f5c842",gl:"rgba(245,200,66,0.07)",br:"rgba(245,200,66,0.28)"},
-  {id:"daw",icon:"\ud83d\udea8",title:"Difficult Airway",sub:"LEMON \xb7 CICO \xb7 VL \xb7 LMA \xb7 Surgical Airway",color:"#ff6b6b",gl:"rgba(255,107,107,0.07)",br:"rgba(255,107,107,0.28)"},
-  {id:"dsi",icon:"\ud83d\udd2e",title:"DSI Protocol",sub:"Delayed Sequence Intubation \xb7 Ketamine Pre-ox",color:"#9b6dff",gl:"rgba(155,109,255,0.07)",br:"rgba(155,109,255,0.28)"},
-  {id:"peds",icon:"\ud83d\udc76",title:"Pediatric Airway",sub:"Tube Sizing \xb7 Weight Estimation \xb7 Age-Based Dosing",color:"#00e5c0",gl:"rgba(0,229,192,0.07)",br:"rgba(0,229,192,0.28)"},
-  {id:"awake",icon:"\ud83d\udc41\ufe0f",title:"Awake Intubation",sub:"Topicalization \xb7 Sedation \xb7 FOB \xb7 VL Technique",color:"#ff9f43",gl:"rgba(255,159,67,0.07)",br:"rgba(255,159,67,0.28)"},
+  {id:"rsi",icon:"💉",title:"RSI Protocol",sub:"Pre-ox \xb7 Induction \xb7 Paralysis \xb7 Post-intubation",color:"#f5c842",gl:"rgba(245,200,66,0.07)",br:"rgba(245,200,66,0.28)"},
+  {id:"daw",icon:"🚨",title:"Difficult Airway",sub:"LEMON \xb7 CICO \xb7 VL \xb7 LMA \xb7 Surgical Airway",color:"#ff6b6b",gl:"rgba(255,107,107,0.07)",br:"rgba(255,107,107,0.28)"},
+  {id:"dsi",icon:"🔎",title:"DSI Protocol",sub:"Delayed Sequence Intubation \xb7 Ketamine Pre-ox",color:"#9b6dff",gl:"rgba(155,109,255,0.07)",br:"rgba(155,109,255,0.28)"},
+  {id:"peds",icon:"👶",title:"Pediatric Airway",sub:"Tube Sizing \xb7 Weight Estimation \xb7 Age-Based Dosing",color:"#00e5c0",gl:"rgba(0,229,192,0.07)",br:"rgba(0,229,192,0.28)"},
+  {id:"awake",icon:"👁️",title:"Awake Intubation",sub:"Topicalization \xb7 Sedation \xb7 FOB \xb7 VL Technique",color:"#ff9f43",gl:"rgba(255,159,67,0.07)",br:"rgba(255,159,67,0.28)"},
 ];
 
 const OVERVIEW = {
@@ -25,11 +25,11 @@ const OVERVIEW = {
 };
 
 const WORKUP = {
-  rsi:[{icon:"\ud83d\udc41\ufe0f",label:"LEMON Airway Assessment",detail:"Look (facies, trauma, beard, obesity) \xb7 Evaluate 3-3-2 (mouth \u22653 fingers, thyroid-chin \u22653, hyoid-mouth \u22652) \xb7 Mallampati (III/IV = difficult) \xb7 Obstruction \xb7 Neck mobility."},{icon:"\ud83d\udc89",label:"IV Access + Medications Drawn",detail:"Large-bore IV \xd71 min. All RSI meds drawn and labeled. Push-dose epi (10 mcg/mL) ready. Vasopressor on hand."},{icon:"\ud83d\udcca",label:"Pre-oxygenation SpO\u2082",detail:"Target SpO\u2082 >93% before induction. If unable to reach 88% \u2192 do NOT withhold BMV."},{icon:"\ud83c\udf2c\ufe0f",label:"ETCO\u2082 Ready",detail:"Waveform capnography connected and tested before RSI. Colorimetric detector backup."},{icon:"\ud83d\udd27",label:"Difficult Airway Equipment",detail:"VL (charged), DL blades, ETT 6.0\u20138.5, stylet, bougie, iGEL/LMA sizes, 10cc syringe, surgical airway kit."},{icon:"\ud83e\ude7a",label:"Post-Intubation Plan",detail:"CXR (ETT position), ABG, vent settings ordered, sedation + analgesia orders written before intubation."}],
-  daw:[{icon:"\ud83d\udc41\ufe0f",label:"LEMON Score",detail:"Look 2pts, 3-3-2 (each criterion 1pt), Mallampati III=1pt/IV=2pts, Obstruction 2pts, Neck 1pt. Score \u22653 = high probability difficult."},{icon:"\ud83d\udea8",label:"HEAVEN Score",detail:"Hypoxemia, Extremes of size, Anatomy, Vomit/blood, Exsanguination, No NMBA. \u22653 = high first-pass failure risk."},{icon:"\ud83d\udd27",label:"Difficult Airway Cart",detail:"VL charged \xb7 all blade sizes \xb7 iGEL/LMA sizes 3\u20135 \xb7 bougie \xb7 Sugammadex 16 mg/kg drawn \xb7 scalpel/ETT 6.0 surgical kit."},{icon:"\ud83d\udc8a",label:"Sugammadex 16 mg/kg",detail:"Draw up BEFORE RSI if using rocuronium. IV push undiluted. Reverses NMB in ~3 min."},{icon:"\ud83d\udccb",label:"Verbalize Plans A\u2013D",detail:"Aloud: Plan A=VL, Plan B=iGEL, Plan C=awaken/topicalize, Plan D=surgical airway. Assign team roles."}],
-  dsi:[{icon:"\ud83d\udcca",label:"SpO\u2082 (pre-DSI)",detail:"Document baseline SpO\u2082 on current support. DSI indicated when SpO\u2082 <93% AND patient preventing adequate pre-oxygenation due to agitation."},{icon:"\ud83d\ude24",label:"Agitation Assessment",detail:"Reason for agitation: hypoxia, pain, encephalopathy, fear. Treating the underlying cause may resolve the problem without DSI."},{icon:"\ud83d\udc89",label:"Standard RSI Prep",detail:"All standard RSI equipment and medications prepared as normal. DSI adds ketamine pre-step only \u2014 the rest proceeds identically."}],
-  peds:[{icon:"\ud83d\udccc",label:"Broselow Tape",detail:"Measure height \u2192 color zone = weight + pre-calculated drug doses. Most reliable for children <35 kg. Overrides formula estimates."},{icon:"\ud83d\udc76",label:"Age + Weight",detail:"Confirm age and weight. Calculate: estimated weight = (age+4)\xd72. Verify against Broselow if available."},{icon:"\ud83d\udd27",label:"Equipment Sizing",detail:"ETT size, blade size, ETT depth, LMA size all age/weight-dependent. Calculate BEFORE airway emergency."}],
-  awake:[{icon:"\ud83d\udccb",label:"Airway Anatomy Assessment",detail:"LEMON + imaging if available. Identify specific challenge: limited mouth opening, fixed flexion, mass, tumor, prior surgery."},{icon:"\u23f1",label:"Time Available",detail:"Awake intubation requires 10\u201320 minutes for preparation (glycopyrrolate + topicalization). Confirm time allows this."},{icon:"\ud83d\udc89",label:"Equipment",detail:"FOB (charged/checked) OR VL with topicalization \xb7 Atomizer (MAD) or nebulizer for lidocaine \xb7 Glycopyrrolate \xb7 Sedation agents drawn."}],
+  rsi:[{icon:"👁️",label:"LEMON Airway Assessment",detail:"Look (facies, trauma, beard, obesity) \xb7 Evaluate 3-3-2 (mouth \u22653 fingers, thyroid-chin \u22653, hyoid-mouth \u22652) \xb7 Mallampati (III/IV = difficult) \xb7 Obstruction \xb7 Neck mobility."},{icon:"💉",label:"IV Access + Medications Drawn",detail:"Large-bore IV \xd71 min. All RSI meds drawn and labeled. Push-dose epi (10 mcg/mL) ready. Vasopressor on hand."},{icon:"📊",label:"Pre-oxygenation SpO\u2082",detail:"Target SpO\u2082 >93% before induction. If unable to reach 88% \u2192 do NOT withhold BMV."},{icon:"🌬️",label:"ETCO\u2082 Ready",detail:"Waveform capnography connected and tested before RSI. Colorimetric detector backup."},{icon:"🔧",label:"Difficult Airway Equipment",detail:"VL (charged), DL blades, ETT 6.0\u20138.5, stylet, bougie, iGEL/LMA sizes, 10cc syringe, surgical airway kit."},{icon:"🫺",label:"Post-Intubation Plan",detail:"CXR (ETT position), ABG, vent settings ordered, sedation + analgesia orders written before intubation."}],
+  daw:[{icon:"👁️",label:"LEMON Score",detail:"Look 2pts, 3-3-2 (each criterion 1pt), Mallampati III=1pt/IV=2pts, Obstruction 2pts, Neck 1pt. Score \u22653 = high probability difficult."},{icon:"🚨",label:"HEAVEN Score",detail:"Hypoxemia, Extremes of size, Anatomy, Vomit/blood, Exsanguination, No NMBA. \u22653 = high first-pass failure risk."},{icon:"🔧",label:"Difficult Airway Cart",detail:"VL charged \xb7 all blade sizes \xb7 iGEL/LMA sizes 3\u20135 \xb7 bougie \xb7 Sugammadex 16 mg/kg drawn \xb7 scalpel/ETT 6.0 surgical kit."},{icon:"💊",label:"Sugammadex 16 mg/kg",detail:"Draw up BEFORE RSI if using rocuronium. IV push undiluted. Reverses NMB in ~3 min."},{icon:"📋",label:"Verbalize Plans A\u2013D",detail:"Aloud: Plan A=VL, Plan B=iGEL, Plan C=awaken/topicalize, Plan D=surgical airway. Assign team roles."}],
+  dsi:[{icon:"📊",label:"SpO\u2082 (pre-DSI)",detail:"Document baseline SpO\u2082 on current support. DSI indicated when SpO\u2082 <93% AND patient preventing adequate pre-oxygenation due to agitation."},{icon:"😤",label:"Agitation Assessment",detail:"Reason for agitation: hypoxia, pain, encephalopathy, fear. Treating the underlying cause may resolve the problem without DSI."},{icon:"💉",label:"Standard RSI Prep",detail:"All standard RSI equipment and medications prepared as normal. DSI adds ketamine pre-step only \u2014 the rest proceeds identically."}],
+  peds:[{icon:"📌",label:"Broselow Tape",detail:"Measure height \u2192 color zone = weight + pre-calculated drug doses. Most reliable for children <35 kg. Overrides formula estimates."},{icon:"👶",label:"Age + Weight",detail:"Confirm age and weight. Calculate: estimated weight = (age+4)\xd72. Verify against Broselow if available."},{icon:"🔧",label:"Equipment Sizing",detail:"ETT size, blade size, ETT depth, LMA size all age/weight-dependent. Calculate BEFORE airway emergency."}],
+  awake:[{icon:"📋",label:"Airway Anatomy Assessment",detail:"LEMON + imaging if available. Identify specific challenge: limited mouth opening, fixed flexion, mass, tumor, prior surgery."},{icon:"⏱",label:"Time Available",detail:"Awake intubation requires 10\u201320 minutes for preparation (glycopyrrolate + topicalization). Confirm time allows this."},{icon:"💉",label:"Equipment",detail:"FOB (charged/checked) OR VL with topicalization \xb7 Atomizer (MAD) or nebulizer for lidocaine \xb7 Glycopyrrolate \xb7 Sedation agents drawn."}],
 };
 
 const TREATMENT = {
@@ -94,7 +94,7 @@ function RSICalc() {
   const inp = {background:"rgba(14,37,68,0.7)",border:`1px solid ${T.b}`,borderRadius:8,padding:"8px 12px",color:T.txt,fontFamily:"monospace",fontSize:13,outline:"none"};
   return (
     <div style={{background:"rgba(245,200,66,0.05)",border:"1px solid rgba(245,200,66,0.25)",borderRadius:12,padding:"14px 16px",marginBottom:12}}>
-      <div style={{fontSize:11,fontWeight:700,color:T.txt,marginBottom:10}}>\ud83d\udc89 RSI Weight-Based Drug Calculator</div>
+      <div style={{fontSize:11,fontWeight:700,color:T.txt,marginBottom:10}}>💉 RSI Weight-Based Drug Calculator</div>
       <div style={{display:"flex",gap:8,marginBottom:12}}>
         <input type="number" placeholder="Patient weight..." value={wt} onChange={e=>setWt(e.target.value)} style={{...inp,flex:1,border:"1px solid rgba(245,200,66,0.35)"}} />
         <div style={{display:"flex",borderRadius:8,overflow:"hidden",border:`1px solid ${T.b}`}}>
@@ -134,8 +134,8 @@ function SOAPMe() {
   return (
     <div style={{background:"rgba(14,37,68,0.4)",border:`1px solid ${T.b}`,borderRadius:12,padding:"14px 16px",marginBottom:12}}>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-        <span style={{fontSize:14}}>\ud83d\udccb</span>
-        <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,color:T.txt}}>SOAP-ME Pre-Intubation Checklist</div><div style={{fontSize:9,color:T.txt4}}>Complete all items before proceeding with RSI</div></div>
+         <span style={{fontSize:14}}>📋</span>
+         <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,color:T.txt}}>SOAP-ME Pre-Intubation Checklist</div><div style={{fontSize:9,color:T.txt4}}>Complete all items before proceeding with RSI</div></div>
         <div style={{textAlign:"right"}}>
           <div style={{fontSize:13,fontWeight:700,color:ready?T.green:T.gold,fontFamily:"monospace"}}>{checked}/{total}</div>
           {ready && <div style={{fontSize:9,color:T.green,fontWeight:700}}>\u2713 READY</div>}
@@ -194,7 +194,7 @@ function LemonHeaven() {
   const tog = (set,k)=>set(p=>({...p,[k]:!p[k]}));
   return (
     <div style={{background:"rgba(255,107,107,0.05)",border:"1px solid rgba(255,107,107,0.22)",borderRadius:12,padding:"14px 16px",marginBottom:12}}>
-      <div style={{fontSize:11,fontWeight:700,color:T.txt,marginBottom:12}}>\ud83d\udc41\ufe0f LEMON / HEAVEN Airway Risk Assessment</div>
+      <div style={{fontSize:11,fontWeight:700,color:T.txt,marginBottom:12}}>👁️ LEMON / HEAVEN Airway Risk Assessment</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         <div>
           <div style={{fontSize:9,fontWeight:700,color:T.coral,textTransform:"uppercase",letterSpacing:".07em",marginBottom:8}}>LEMON \u2014 Difficult Laryngoscopy</div>
@@ -223,7 +223,7 @@ function LemonHeaven() {
           </div>
         </div>
       </div>
-      {(lScore>=3||hScore>=3) && <div style={{marginTop:10,padding:"8px 12px",background:"rgba(255,107,107,0.1)",border:"1px solid rgba(255,107,107,0.3)",borderRadius:8,fontSize:10,color:T.coral,fontWeight:600}}>\u26a0\ufe0f High-risk airway: use video laryngoscopy first-line \xb7 have difficult airway equipment at bedside \xb7 verbalize Plans A\u2013D to team</div>}
+      {(lScore>=3||hScore>=3) && <div style={{marginTop:10,padding:"8px 12px",background:"rgba(255,107,107,0.1)",border:"1px solid rgba(255,107,107,0.3)",borderRadius:8,fontSize:10,color:T.coral,fontWeight:600}}>⚠️ High-risk airway: use video laryngoscopy first-line \xb7 have difficult airway equipment at bedside \xb7 verbalize Plans A\u2013D to team</div>}
     </div>
   );
 }
@@ -235,7 +235,7 @@ function HemoPanel() {
   const valid = !isNaN(wKg) && wKg>0;
   return (
     <div style={{background:"rgba(255,107,107,0.05)",border:"1px solid rgba(255,107,107,0.22)",borderRadius:12,padding:"14px 16px",marginBottom:12}}>
-      <div style={{fontSize:11,fontWeight:700,color:T.txt,marginBottom:10}}>\ud83d\udca9 Peri-Intubation Hemodynamics</div>
+      <div style={{fontSize:11,fontWeight:700,color:T.txt,marginBottom:10}}>💩 Peri-Intubation Hemodynamics</div>
       <div style={{background:"rgba(245,200,66,0.07)",border:"1px solid rgba(245,200,66,0.25)",borderRadius:10,padding:"12px",marginBottom:10}}>
         <div style={{fontSize:10,fontWeight:700,color:T.gold,marginBottom:8}}>Push-Dose Epinephrine Preparation</div>
         <div style={{fontSize:10,color:T.txt2,lineHeight:1.8,fontFamily:"monospace"}}>
@@ -278,7 +278,7 @@ function PedsAirway() {
   const inp = {background:"rgba(14,37,68,0.7)",border:"1px solid rgba(0,229,192,0.3)",borderRadius:7,padding:"7px 10px",color:T.txt,fontFamily:"monospace",fontSize:11,outline:"none"};
   return (
     <div style={{background:"rgba(0,229,192,0.05)",border:"1px solid rgba(0,229,192,0.22)",borderRadius:12,padding:"14px 16px",marginBottom:12}}>
-      <div style={{fontSize:11,fontWeight:700,color:T.txt,marginBottom:10}}>\ud83d\udc76 Pediatric Airway Calculator</div>
+      <div style={{fontSize:11,fontWeight:700,color:T.txt,marginBottom:10}}>👶 Pediatric Airway Calculator</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
         <div><div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",marginBottom:3}}>Age (years)</div><input type="number" placeholder="e.g. 5" value={age} onChange={e=>setAge(e.target.value)} style={{...inp,width:"100%"}} /></div>
         <div><div style={{fontSize:9,color:T.txt4,textTransform:"uppercase",marginBottom:3}}>Actual Weight (kg, optional)</div><input type="number" placeholder={validA?`Est. ${estWt} kg`:"—"} value={wt} onChange={e=>setWt(e.target.value)} style={{...inp,width:"100%"}} /></div>
@@ -340,8 +340,8 @@ function DSIProtocol() {
   return (
     <div style={{background:"rgba(155,109,255,0.06)",border:"1px solid rgba(155,109,255,0.25)",borderRadius:12,padding:"14px 16px",marginBottom:12}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-        <span style={{fontSize:14}}>\ud83d\udd2e</span>
-        <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,color:T.txt}}>DSI \u2014 Delayed Sequence Intubation</div><div style={{fontSize:9,color:T.txt4}}>Weingart protocol \xb7 ketamine pre-oxygenation window</div></div>
+         <span style={{fontSize:14}}>🔎</span>
+         <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,color:T.txt}}>DSI \u2014 Delayed Sequence Intubation</div><div style={{fontSize:9,color:T.txt4}}>Weingart protocol \xb7 ketamine pre-oxygenation window</div></div>
         <input type="number" placeholder="Weight kg" value={wt} onChange={e=>setWt(e.target.value)} style={{width:90,background:"rgba(14,37,68,0.7)",border:"1px solid rgba(155,109,255,0.3)",borderRadius:7,padding:"5px 8px",color:T.txt,fontFamily:"monospace",fontSize:11,outline:"none"}} />
       </div>
       <div style={{display:"flex",gap:4,marginBottom:12}}>
@@ -372,7 +372,7 @@ function DSIProtocol() {
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <input type="number" placeholder="e.g. 95" value={spo2} onChange={e=>setSpo2(e.target.value)} style={{width:80,background:"rgba(14,37,68,0.7)",border:"1px solid rgba(0,229,192,0.3)",borderRadius:7,padding:"6px 8px",color:T.txt,fontFamily:"monospace",fontSize:12,outline:"none"}} />
           <span style={{fontSize:11,color:T.txt3}}>%</span>
-          {parseFloat(spo2)>=93 && <span style={{fontSize:11,fontWeight:700,color:T.green}}>\u2713 SpO\u2082 target met \u2014 proceed to Step 4</span>}
+          {parseFloat(spo2)>=93 && <span style={{fontSize:11,fontWeight:700,color:T.green}}>✓ SpO₂ target met — proceed to Step 4</span>}
           {parseFloat(spo2)>0&&parseFloat(spo2)<93 && <span style={{fontSize:11,color:T.gold}}>\u26a0\ufe0f Continue pre-oxygenation</span>}
         </div>
       </div>}
@@ -398,8 +398,8 @@ function AwakeIntubation() {
   return (
     <div style={{background:"rgba(255,159,67,0.05)",border:"1px solid rgba(255,159,67,0.22)",borderRadius:12,padding:"14px 16px"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-        <span style={{fontSize:14}}>\ud83d\udc41\ufe0f</span>
-        <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,color:T.txt}}>Awake Intubation Protocol</div><div style={{fontSize:9,color:T.txt4}}>Patient remains spontaneously ventilating throughout \u2014 gold standard for anticipated CICO</div></div>
+         <span style={{fontSize:14}}>👁️</span>
+         <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,color:T.txt}}>Awake Intubation Protocol</div><div style={{fontSize:9,color:T.txt4}}>Patient remains spontaneously ventilating throughout \u2014 gold standard for anticipated CICO</div></div>
         <input type="number" placeholder="Wt (kg)" value={wt} onChange={e=>setWt(e.target.value)} style={{width:80,background:"rgba(14,37,68,0.7)",border:"1px solid rgba(255,159,67,0.3)",borderRadius:7,padding:"5px 8px",color:T.txt,fontFamily:"monospace",fontSize:11,outline:"none"}} />
       </div>
       {steps.map((s,i)=>(
@@ -411,18 +411,18 @@ function AwakeIntubation() {
           </div>
         </div>
       ))}
-      <div style={{padding:"8px 12px",background:"rgba(255,107,107,0.1)",border:"1px solid rgba(255,107,107,0.3)",borderRadius:8,fontSize:10,color:T.coral,fontWeight:600}}>\u274c NEVER: obtund the patient before tube is confirmed \u2022 lose spontaneous ventilation \u2022 skip topicalization</div>
+      <div style={{padding:"8px 12px",background:"rgba(255,107,107,0.1)",border:"1px solid rgba(255,107,107,0.3)",borderRadius:8,fontSize:10,color:T.coral,fontWeight:600}}>❌ NEVER: obtund the patient before tube is confirmed • lose spontaneous ventilation • skip topicalization</div>
     </div>
   );
 }
 
 /* ═══ CICO MODE ═════════════════════════════════════════════════════ */
 const CICO_STEPS=[
-  {plan:"DECLARE CICO",icon:"\ud83d\udea8",color:"#ff6b6b",steps:["STOP all laryngoscopy — do not attempt again","Call for help loudly and by name","Announce: 'CICO \u2014 Cannot Intubate, Cannot Oxygenate'","Insert oral/nasal airway + apply BVM with 2-person jaw thrust","Assign roles: airway holder, surgeon, medications, monitoring, timekeeper"]},
-  {plan:"PLAN A \u2014 Video Laryngoscopy",icon:"\ud83d\udd26",color:"#f5c842",steps:["Video laryngoscope (VL) with hyperangulated blade","External laryngeal manipulation (ELM/BURP)","Bougie-assisted intubation over epiglottis","Max 3 total attempts by any operator \u2014 then STOP"]},
-  {plan:"PLAN B \u2014 Supraglottic Airway",icon:"\ud83e\ude7c",color:"#ff9f43",steps:["Insert iGEL (size 3/4/5) OR LMA Supreme","Confirm: ETCO\u2082 + bilateral BS + seal >25 cmH\u2082O","Oxygenate and stabilize","FOB-guided intubation through SGA if available"]},
-  {plan:"PLAN C \u2014 Oxygenate / Awaken",icon:"\ud83d\udca4",color:"#9b6dff",steps:["Maximize BVM oxygenation (2-person technique)","Sugammadex 16 mg/kg IV push if rocuronium used (reverses in ~3 min)","If succinylcholine used: await spontaneous recovery (~10\u201315 min)","If oxygenation achievable: awaken, plan awake intubation"]},
-  {plan:"PLAN D \u2014 SURGICAL AIRWAY",icon:"\u2702\ufe0f",color:"#3dffa0",steps:["KNIFE: stab incision through cricothyroid membrane","FINGER: dilate opening, confirm trachea","TUBE: bougie \u2192 ETT 6.0 cuffed (or Melker kit)","Inflate cuff \u2192 ventilate \u2192 confirm ETCO\u2082 waveform","Target: CICO declaration to airway in <2 minutes"]},
+  {plan:"DECLARE CICO",icon:"🚨",color:"#ff6b6b",steps:["STOP all laryngoscopy — do not attempt again","Call for help loudly and by name","Announce: 'CICO \u2014 Cannot Intubate, Cannot Oxygenate'","Insert oral/nasal airway + apply BVM with 2-person jaw thrust","Assign roles: airway holder, surgeon, medications, monitoring, timekeeper"]},
+  {plan:"PLAN A \u2014 Video Laryngoscopy",icon:"🔦",color:"#f5c842",steps:["Video laryngoscope (VL) with hyperangulated blade","External laryngeal manipulation (ELM/BURP)","Bougie-assisted intubation over epiglottis","Max 3 total attempts by any operator \u2014 then STOP"]},
+  {plan:"PLAN B \u2014 Supraglottic Airway",icon:"🫼",color:"#ff9f43",steps:["Insert iGEL (size 3/4/5) OR LMA Supreme","Confirm: ETCO\u2082 + bilateral BS + seal >25 cmH\u2082O","Oxygenate and stabilize","FOB-guided intubation through SGA if available"]},
+  {plan:"PLAN C \u2014 Oxygenate / Awaken",icon:"💤",color:"#9b6dff",steps:["Maximize BVM oxygenation (2-person technique)","Sugammadex 16 mg/kg IV push if rocuronium used (reverses in ~3 min)","If succinylcholine used: await spontaneous recovery (~10\u201315 min)","If oxygenation achievable: awaken, plan awake intubation"]},
+  {plan:"PLAN D \u2014 SURGICAL AIRWAY",icon:"✂️",color:"#3dffa0",steps:["KNIFE: stab incision through cricothyroid membrane","FINGER: dilate opening, confirm trachea","TUBE: bougie \u2192 ETT 6.0 cuffed (or Melker kit)","Inflate cuff \u2192 ventilate \u2192 confirm ETCO\u2082 waveform","Target: CICO declaration to airway in <2 minutes"]},
 ];
 
 function CICOMode({onClose}) {
@@ -466,7 +466,7 @@ function DiffAirwayAlert() {
   const inp2={background:"rgba(14,37,68,0.7)",border:`1px solid ${T.b}`,borderRadius:7,padding:"7px 9px",color:T.txt,fontFamily:"monospace",fontSize:11,outline:"none",width:"100%"};
   return (
     <div style={{background:"rgba(255,107,107,0.05)",border:"1px solid rgba(255,107,107,0.22)",borderRadius:10,padding:"12px 14px",marginTop:10}}>
-      <div style={{fontSize:11,fontWeight:700,color:T.coral,marginBottom:10}}>\u26a0\ufe0f Difficult Airway Alert Generator</div>
+      <div style={{fontSize:11,fontWeight:700,color:T.coral,marginBottom:10}}>⚠️ Difficult Airway Alert Generator</div>
       <div style={{marginBottom:6}}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>Patient Name</div><input type="text" placeholder="Patient name" value={f.name} onChange={e=>u("name",e.target.value)} style={inp2}/></div>
       <div style={{marginBottom:6}}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>Airway Encounter</div><textarea rows={2} value={f.enc} onChange={e=>u("enc",e.target.value)} placeholder="e.g., Grade III view on VL, 2 attempts with bougie, Plan B iGEL used..." style={{...inp2,resize:"vertical"}}/></div>
       <div style={{marginBottom:6}}><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>Outcome</div><textarea rows={2} value={f.outcome} onChange={e=>u("outcome",e.target.value)} placeholder="e.g., 7.5mm ETT via VL on 3rd attempt, 23 cm at lip" style={{...inp2,resize:"vertical"}}/></div>
@@ -766,7 +766,7 @@ export default function RSIPage() {
       <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"14px 20px",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <button onClick={()=>navigate("/AirwayHub")} style={{padding:"5px 12px",borderRadius:7,border:"1px solid rgba(245,200,66,0.35)",background:"rgba(8,22,40,0.7)",color:T.gold,fontSize:11,fontWeight:700,cursor:"pointer"}}>\u2190 Airway Hub</button>
-          <div style={{width:40,height:40,borderRadius:11,background:"rgba(245,200,66,0.1)",border:"1px solid rgba(245,200,66,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>\ud83d\udc89</div>
+          <div style={{width:40,height:40,borderRadius:11,background:"rgba(245,200,66,0.1)",border:"1px solid rgba(245,200,66,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>💉</div>
           <div>
             <div style={{fontSize:17,fontWeight:700,color:T.txt,fontFamily:"'Playfair Display',serif"}}>Intubation Suite</div>
             <div style={{fontSize:10,color:T.txt3}}>RSI \xb7 Difficult Airway \xb7 DSI \xb7 Pediatric \xb7 Awake Intubation \xb7 CICO</div>

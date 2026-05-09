@@ -5,7 +5,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ClinicalNote } from "@/api/entities";
-import { UploadFile } from "@/api/storage";
+
 import ECGNSTEMIHub from "@/components/ecg/ECGNSTEMIHub";
 import ECGAFPathway  from "@/components/ecg/ECGAFPathway";
 
@@ -609,7 +609,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
       let url=imgUrl;
       if(!url){
         setImgUploading(true);
-        const res=await UploadFile({file:imgFile});
+        const res=await base44.integrations.Core.UploadFile({file:imgFile});
         url=res.file_url;
         setImgUrl(url);
         setImgUploading(false);

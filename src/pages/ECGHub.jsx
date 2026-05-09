@@ -10,6 +10,7 @@ import ECGDTBTimer        from "@/components/ecg/ECGDTBTimer";
 import ECGToxTab          from "@/components/ecg/ECGToxTab";
 import ECGSyncopeTab      from "@/components/ecg/ECGSyncopeTab";
 import ECGElectrolyteTab  from "@/components/ecg/EcgElectrolyteTab";
+import ECGPEATab          from "@/components/ecg/ECGPEATab";
 
 (() => {
   if (typeof document === "undefined") return;
@@ -63,6 +64,7 @@ const TABS = [
   {id:"tox",      label:"Tox ECG",        icon:"☠"},
   {id:"syncope",  label:"Syncope",        icon:"🔄"},
   {id:"lytes",    label:"Electrolytes",   icon:"⚗"},
+  {id:"pea",      label:"PEA / Arrest",   icon:"💀"},
 ];
 
 // ── STEMI Localizer ──────────────────────────────────────────
@@ -1602,6 +1604,7 @@ export default function ECGHub({ embedded = false, onBack }) {
           {tab==="tox"      &&<ECGToxTab/>}
           {tab==="syncope"  &&<ECGSyncopeTab/>}
           {tab==="lytes"    &&<ECGElectrolyteTab/>}
+          {tab==="pea"      &&<ECGPEATab/>}
         </div>
 
         {!embedded&&(

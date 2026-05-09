@@ -6,9 +6,10 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import ECGNSTEMIHub  from "@/components/ecg/ECGNSTEMIHub";
 import ECGAFPathway   from "@/components/ecg/ECGAFPathway";
-import ECGDTBTimer    from "@/components/ecg/ECGDTBTimer";
-import ECGToxTab      from "@/components/ecg/ECGToxTab";
-import ECGSyncopeTab  from "@/components/ecg/ECGSyncopeTab";
+import ECGDTBTimer        from "@/components/ecg/ECGDTBTimer";
+import ECGToxTab          from "@/components/ecg/ECGToxTab";
+import ECGSyncopeTab      from "@/components/ecg/ECGSyncopeTab";
+import ECGElectrolyteTab  from "@/components/ecg/EcgElectrolyteTab";
 
 (() => {
   if (typeof document === "undefined") return;
@@ -61,6 +62,7 @@ const TABS = [
   {id:"dtb",      label:"DTB Timer",      icon:"⏰"},
   {id:"tox",      label:"Tox ECG",        icon:"☠"},
   {id:"syncope",  label:"Syncope",        icon:"🔄"},
+  {id:"lytes",    label:"Electrolytes",   icon:"⚗"},
 ];
 
 // ── STEMI Localizer ──────────────────────────────────────────
@@ -1599,6 +1601,7 @@ export default function ECGHub({ embedded = false, onBack }) {
           {tab==="dtb"      &&<ECGDTBTimer/>}
           {tab==="tox"      &&<ECGToxTab/>}
           {tab==="syncope"  &&<ECGSyncopeTab/>}
+          {tab==="lytes"    &&<ECGElectrolyteTab/>}
         </div>
 
         {!embedded&&(

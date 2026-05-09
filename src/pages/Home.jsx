@@ -1015,6 +1015,81 @@ export default function NotryaHome({ patients = [] }) {
 
           {/* Right hub directory */}
           <div>
+            {/* Logo banner */}
+            <div style={{ marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid rgba(0,229,192,0.12)" }}>
+              <svg width="100%" viewBox="0 0 680 362" role="img" xmlns="http://www.w3.org/2000/svg" style={{ display:"block" }}>
+                <title>AI Vision Analysis — Notrya ECG Hub</title>
+                <desc>Stylized eye containing a live ECG trace, flanked by neural network nodes, representing AI-powered ECG image analysis</desc>
+                <defs>
+                  <clipPath id="eyeClip">
+                    <path d="M 200,155 C 218,104 288,88 340,88 C 392,88 462,104 480,155 C 462,206 392,222 340,222 C 288,222 218,206 200,155 Z"/>
+                  </clipPath>
+                </defs>
+                <rect width="680" height="362" rx="14" fill="#050f1e"/>
+                <g stroke="#0e2544" strokeWidth="0.5" opacity="0.7">
+                  <line x1="40" y1="73" x2="640" y2="73"/><line x1="40" y1="155" x2="640" y2="155"/><line x1="40" y1="237" x2="640" y2="237"/><line x1="40" y1="319" x2="640" y2="319"/>
+                  <line x1="155" y1="20" x2="155" y2="342"/><line x1="340" y1="20" x2="340" y2="342"/><line x1="525" y1="20" x2="525" y2="342"/>
+                </g>
+                <rect x="40" y="20" width="84" height="18" rx="4" fill="#0e2544" stroke="#1a3555" strokeWidth="0.5"/>
+                <text x="82" y="32.5" textAnchor="middle" fontFamily="'JetBrains Mono', monospace" fontSize="8" fill="#9b6dff" letterSpacing="2.5" fontWeight="700">NOTRYA</text>
+                <text x="640" y="32" textAnchor="end" fontFamily="'JetBrains Mono', monospace" fontSize="9" fill="#4e7098" letterSpacing="1">ECG HUB · IMAGE AI</text>
+                <path d="M 200,155 C 218,104 288,88 340,88 C 392,88 462,104 480,155 C 462,206 392,222 340,222 C 288,222 218,206 200,155 Z" fill="#060e1d"/>
+                <path d="M 194,106 L 194,85 L 215,85" fill="none" stroke="#00e5c0" strokeWidth="1.5" strokeLinecap="round" opacity="0.55"/>
+                <path d="M 486,106 L 486,85 L 465,85" fill="none" stroke="#00e5c0" strokeWidth="1.5" strokeLinecap="round" opacity="0.55"/>
+                <path d="M 194,204 L 194,225 L 215,225" fill="none" stroke="#00e5c0" strokeWidth="1.5" strokeLinecap="round" opacity="0.55"/>
+                <path d="M 486,204 L 486,225 L 465,225" fill="none" stroke="#00e5c0" strokeWidth="1.5" strokeLinecap="round" opacity="0.55"/>
+                <circle cx="340" cy="155" r="50" fill="#0b1d38" stroke="#00e5c0" strokeWidth="0.5" opacity="0.45"/>
+                <circle cx="340" cy="155" r="42" fill="none" stroke="#00e5c0" strokeWidth="0.5" opacity="0.2"/>
+                <line x1="340" y1="107" x2="340" y2="113" stroke="#00e5c0" strokeWidth="1" opacity="0.5"/>
+                <line x1="340" y1="197" x2="340" y2="203" stroke="#00e5c0" strokeWidth="1" opacity="0.5"/>
+                <line x1="292" y1="155" x2="298" y2="155" stroke="#00e5c0" strokeWidth="1" opacity="0.5"/>
+                <line x1="382" y1="155" x2="388" y2="155" stroke="#00e5c0" strokeWidth="1" opacity="0.5"/>
+                <line x1="305" y1="120" x2="309" y2="125" stroke="#00e5c0" strokeWidth="0.8" opacity="0.35"/>
+                <line x1="375" y1="120" x2="371" y2="125" stroke="#00e5c0" strokeWidth="0.8" opacity="0.35"/>
+                <line x1="305" y1="190" x2="309" y2="185" stroke="#00e5c0" strokeWidth="0.8" opacity="0.35"/>
+                <line x1="375" y1="190" x2="371" y2="185" stroke="#00e5c0" strokeWidth="0.8" opacity="0.35"/>
+                <circle cx="340" cy="155" r="22" fill="#050f1e" stroke="#00e5c0" strokeWidth="1.5"/>
+                <line x1="340" y1="141" x2="340" y2="137" stroke="#00e5c0" strokeWidth="1" opacity="0.6"/>
+                <line x1="340" y1="169" x2="340" y2="173" stroke="#00e5c0" strokeWidth="1" opacity="0.6"/>
+                <line x1="326" y1="155" x2="322" y2="155" stroke="#00e5c0" strokeWidth="1" opacity="0.6"/>
+                <line x1="354" y1="155" x2="358" y2="155" stroke="#00e5c0" strokeWidth="1" opacity="0.6"/>
+                <path clipPath="url(#eyeClip)" d="M 206,155 H 240 L 250,144 L 260,155 H 276 L 282,163 L 289,114 L 296,176 L 303,155 H 326 L 337,143 L 347,137 L 360,155 H 394 L 402,147 L 410,155 H 428 L 435,165 L 441,118 L 448,178 L 454,155 H 466 L 472,147 L 477,155" fill="none" stroke="#00e5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="289" cy="114" r="3" fill="#00e5c0" clipPath="url(#eyeClip)"/>
+                <circle cx="347" cy="137" r="2.5" fill="#00e5c0" opacity="0.8" clipPath="url(#eyeClip)"/>
+                <circle cx="441" cy="118" r="2.5" fill="#00e5c0" opacity="0.85" clipPath="url(#eyeClip)"/>
+                <path d="M 200,155 C 218,104 288,88 340,88 C 392,88 462,104 480,155 C 462,206 392,222 340,222 C 288,222 218,206 200,155 Z" fill="none" stroke="#00e5c0" strokeWidth="2"/>
+                <circle cx="200" cy="155" r="3" fill="#00e5c0"/>
+                <circle cx="480" cy="155" r="3" fill="#00e5c0"/>
+                <circle cx="126" cy="124" r="4.5" fill="#9b6dff" opacity="0.85"/>
+                <circle cx="105" cy="155" r="3.5" fill="#9b6dff" opacity="0.6"/>
+                <circle cx="132" cy="184" r="4.5" fill="#9b6dff" opacity="0.85"/>
+                <line x1="200" y1="144" x2="129" y2="126" stroke="#9b6dff" strokeWidth="0.5" opacity="0.4"/>
+                <line x1="200" y1="155" x2="109" y2="155" stroke="#9b6dff" strokeWidth="0.5" opacity="0.35"/>
+                <line x1="200" y1="166" x2="135" y2="182" stroke="#9b6dff" strokeWidth="0.5" opacity="0.4"/>
+                <line x1="126" y1="124" x2="105" y2="155" stroke="#9b6dff" strokeWidth="0.5" opacity="0.25"/>
+                <line x1="105" y1="155" x2="132" y2="184" stroke="#9b6dff" strokeWidth="0.5" opacity="0.25"/>
+                <circle cx="554" cy="124" r="4.5" fill="#9b6dff" opacity="0.85"/>
+                <circle cx="575" cy="155" r="3.5" fill="#9b6dff" opacity="0.6"/>
+                <circle cx="548" cy="185" r="4.5" fill="#9b6dff" opacity="0.85"/>
+                <line x1="480" y1="144" x2="551" y2="126" stroke="#9b6dff" strokeWidth="0.5" opacity="0.4"/>
+                <line x1="480" y1="155" x2="571" y2="155" stroke="#9b6dff" strokeWidth="0.5" opacity="0.35"/>
+                <line x1="480" y1="166" x2="551" y2="183" stroke="#9b6dff" strokeWidth="0.5" opacity="0.4"/>
+                <line x1="554" y1="124" x2="575" y2="155" stroke="#9b6dff" strokeWidth="0.5" opacity="0.25"/>
+                <line x1="575" y1="155" x2="548" y2="185" stroke="#9b6dff" strokeWidth="0.5" opacity="0.25"/>
+                <text x="340" y="264" textAnchor="middle" fontFamily="'Playfair Display', Georgia, serif" fontSize="34" fontWeight="900" fill="#e8f0fe" letterSpacing="-0.5">AI Vision Analysis</text>
+                <line x1="238" y1="276" x2="442" y2="276" stroke="#00e5c0" strokeWidth="0.5" opacity="0.45"/>
+                <text x="340" y="296" textAnchor="middle" fontFamily="'JetBrains Mono', 'Courier New', monospace" fontSize="10" fill="#6e94b8" letterSpacing="2">NOTRYA ECG HUB · IMAGE INTERPRETATION</text>
+                <rect x="186" y="314" width="90" height="18" rx="9" fill="#0e2544" stroke="#00e5c0" strokeWidth="0.5" opacity="0.4"/>
+                <text x="231" y="326.5" textAnchor="middle" fontFamily="'JetBrains Mono', monospace" fontSize="8" fill="#00e5c0" letterSpacing="1">MULTI-LEAD</text>
+                <rect x="290" y="314" width="76" height="18" rx="9" fill="#0e2544" stroke="#9b6dff" strokeWidth="0.5" opacity="0.4"/>
+                <text x="328" y="326.5" textAnchor="middle" fontFamily="'JetBrains Mono', monospace" fontSize="8" fill="#9b6dff" letterSpacing="1">SMART AI</text>
+                <rect x="380" y="314" width="90" height="18" rx="9" fill="#0e2544" stroke="#f5c842" strokeWidth="0.5" opacity="0.4"/>
+                <text x="425" y="326.5" textAnchor="middle" fontFamily="'JetBrains Mono', monospace" fontSize="8" fill="#f5c842" letterSpacing="1">REAL-TIME</text>
+                <path d="M 40,356 L 40,345 L 51,345" fill="none" stroke="#0e2544" strokeWidth="1"/>
+                <path d="M 640,356 L 640,345 L 629,345" fill="none" stroke="#0e2544" strokeWidth="1"/>
+              </svg>
+            </div>
+
             {/* Search */}
             <div style={{ display:"flex", alignItems:"center",
               gap:8, marginBottom:16 }}>

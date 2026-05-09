@@ -528,12 +528,12 @@ function RSIProcNote() {
             <span key={n} style={{fontSize:9,padding:"2px 8px",borderRadius:6,background:`${c}12`,border:`1px solid ${c}28`,color:c}}>{n}: <strong style={{fontFamily:"monospace"}}>{dd(mg,mx)}</strong></span>
           ))}</div>}
       </>)}
-      {sec(<>{hdr("\ud83c\udfe5","Indication")}<textarea rows={2} placeholder="e.g., Acute hypoxic respiratory failure..." value={ind} onChange={e=>setInd(e.target.value)} style={{...inp3,resize:"vertical"}} /></>)}
+      {sec(<>{hdr("🏥","Indication")}<textarea rows={2} placeholder="e.g., Acute hypoxic respiratory failure..." value={ind} onChange={e=>setInd(e.target.value)} style={{...inp3,resize:"vertical"}} /></>)}
       {sec(<>{hdr("🫁","Pre-Oxygenation")}
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>{PRE.map(val=>selBtn(val,preox.includes(val),()=>tog(preox,setPreox,val),T.blue))}</div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontSize:10,color:T.txt3,whiteSpace:"nowrap"}}>Pre-induction SpO\u2082:</span><input type="number" placeholder="e.g. 97" value={spo2} onChange={e=>setSpo2(e.target.value)} style={{...inp3,width:70}} /><span style={{fontSize:10,color:T.txt3}}>%</span></div>
       </>)}
-      {sec(<>{hdr("\ud83d\udc89","Medications")}
+      {sec(<>{hdr("💉","Medications")}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
           <div><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:5}}>Induction Agent</div>
             {["Etomidate","Ketamine","Propofol"].map(a=><button key={a} onClick={()=>setIa(a)} style={{width:"100%",marginBottom:3,padding:"6px 10px",borderRadius:7,cursor:"pointer",fontFamily:"sans-serif",border:`1px solid ${ia===a?T.gold+"50":T.b}`,background:ia===a?"rgba(245,200,66,0.12)":"rgba(14,37,68,0.5)",color:ia===a?T.gold:T.txt3,fontSize:10,display:"flex",justifyContent:"space-between"}}><span>{a}</span><span style={{fontFamily:"monospace",fontSize:9}}>{valid?dd(ID[a],null):ID[a]+" mg/kg"}</span></button>)}
@@ -543,7 +543,7 @@ function RSIProcNote() {
           </div>
         </div>
       </>)}
-      {sec(<>{hdr("\ud83d\udd26","Procedure")}
+      {sec(<>{hdr("🔦","Procedure")}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
           <div><div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:5}}>Scope</div>
             {[["video laryngoscopy (VL)","VL"],["direct laryngoscopy (DL)","DL"],["VL hyperangulated blade","VL Hyperangulated"]].map(([val,lbl])=><button key={val} onClick={()=>setScope(val)} style={{width:"100%",marginBottom:3,padding:"5px 8px",borderRadius:7,cursor:"pointer",fontFamily:"sans-serif",border:`1px solid ${scope===val?T.teal+"50":T.b}`,background:scope===val?"rgba(0,229,192,0.1)":"rgba(14,37,68,0.5)",color:scope===val?T.teal:T.txt3,fontSize:10,textAlign:"left"}}>{lbl}</button>)}
@@ -573,10 +573,10 @@ function RSIProcNote() {
         </div>
         <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{SED.map(s=>selBtn(s,sed===s,()=>setSed(s),T.purple))}</div>
       </>)}
-      {sec(<>{hdr("\ud83d\udcdd","Additional Notes")}<textarea rows={2} placeholder="Difficult airway notes, provider, trach timeline..." value={notes} onChange={e=>setNotes(e.target.value)} style={{...inp3,resize:"vertical"}} /></>)}
+      {sec(<>{hdr("📝","Additional Notes")}<textarea rows={2} placeholder="Difficult airway notes, provider, trach timeline..." value={notes} onChange={e=>setNotes(e.target.value)} style={{...inp3,resize:"vertical"}} /></>)}
       <div style={{display:"flex",gap:8}}>
         <button onClick={()=>setShow(!show)} style={{flex:1,padding:"10px",borderRadius:9,cursor:"pointer",fontFamily:"sans-serif",border:"1px solid rgba(245,200,66,0.35)",background:"rgba(245,200,66,0.08)",color:T.gold,fontSize:11,fontWeight:700}}>{show?"Hide Preview":"Preview Note"}</button>
-        <button onClick={copy} style={{flex:1,padding:"10px",borderRadius:9,cursor:"pointer",fontFamily:"sans-serif",transition:"all .2s",border:`1px solid ${copied?T.green+"55":"rgba(0,229,192,0.35)"}`,background:copied?"rgba(61,255,160,0.12)":"rgba(0,229,192,0.08)",color:copied?T.green:T.teal,fontSize:11,fontWeight:700}}>{copied?"\u2713 Copied":"\ud83d\udccb Copy Procedure Note"}</button>
+        <button onClick={copy} style={{flex:1,padding:"10px",borderRadius:9,cursor:"pointer",fontFamily:"sans-serif",transition:"all .2s",border:`1px solid ${copied?T.green+"55":"rgba(0,229,192,0.35)"}`,background:copied?"rgba(61,255,160,0.12)":"rgba(0,229,192,0.08)",color:copied?T.green:T.teal,fontSize:11,fontWeight:700}}>{copied?"✓ Copied":"📋 Copy Procedure Note"}</button>
       </div>
       {show&&<div style={{marginTop:8,background:"rgba(5,15,30,0.85)",border:"1px solid rgba(245,200,66,0.2)",borderRadius:10,padding:"14px 16px"}}><pre style={{fontSize:11,color:T.txt2,lineHeight:1.75,whiteSpace:"pre-wrap",fontFamily:"'JetBrains Mono',monospace",margin:0}}>{generate()}</pre></div>}
     </div>
@@ -586,7 +586,7 @@ function RSIProcNote() {
 /* ═══ SHARED COMPONENTS ═════════════════════════════════════════════ */
 function DrugRow({rx}) {
   const [open,setOpen]=useState(null);
-  const panels=[{k:"renal",icon:"\ud83d\udccb",label:"Details",color:T.blue},{k:"ivpo",icon:"\ud83d\udd27",label:"Alternative",color:T.teal},{k:"deesc",icon:"\ud83d\udcc9",label:"Monitoring",color:T.green}];
+  const panels=[{k:"renal",icon:"📋",label:"Details",color:T.blue},{k:"ivpo",icon:"🔧",label:"Alternative",color:T.teal},{k:"deesc",icon:"📉",label:"Monitoring",color:T.green}];
   return (
     <div style={{background:"rgba(14,37,68,0.45)",border:`1px solid ${T.b}`,borderRadius:10,marginBottom:8,overflow:"hidden"}}>
       <div style={{padding:"11px 14px"}}>
@@ -619,7 +619,7 @@ function MDMSnippet({condId}) {
   const copy=()=>navigator.clipboard.writeText(note).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
   return (
     <div style={{background:"rgba(0,229,192,0.04)",border:"1px solid rgba(0,229,192,0.22)",borderRadius:10,padding:"12px 14px",marginTop:12}}>
-      <div style={{fontSize:10,fontWeight:700,color:T.teal,marginBottom:8}}>\ud83d\udccb MDM Snippet Generator</div>
+      <div style={{fontSize:10,fontWeight:700,color:T.teal,marginBottom:8}}>📋 MDM Snippet Generator</div>
       {tmpl.fields.map(f=>(
         <div key={f.id} style={{marginBottom:6}}>
           <div style={{fontSize:8,color:T.txt4,textTransform:"uppercase",marginBottom:2}}>{f.lbl}</div>
@@ -628,7 +628,7 @@ function MDMSnippet({condId}) {
       ))}
       <div style={{display:"flex",gap:7,marginTop:8}}>
         <button onClick={()=>setShow(!show)} style={{flex:1,padding:"7px",borderRadius:7,cursor:"pointer",fontFamily:"sans-serif",border:"1px solid rgba(0,229,192,0.3)",background:"rgba(0,229,192,0.05)",color:T.teal,fontSize:10,fontWeight:700}}>{show?"Hide":"Preview"}</button>
-        <button onClick={copy} style={{flex:1,padding:"7px",borderRadius:7,cursor:"pointer",fontFamily:"sans-serif",transition:"all .2s",border:`1px solid ${copied?T.green+"55":"rgba(0,229,192,0.3)"}`,background:copied?"rgba(61,255,160,0.1)":"rgba(0,229,192,0.05)",color:copied?T.green:T.teal,fontSize:10,fontWeight:700}}>{copied?"\u2713 Copied":"\ud83d\udccb Copy MDM"}</button>
+        <button onClick={copy} style={{flex:1,padding:"7px",borderRadius:7,cursor:"pointer",fontFamily:"sans-serif",transition:"all .2s",border:`1px solid ${copied?T.green+"55":"rgba(0,229,192,0.3)"}`,background:copied?"rgba(61,255,160,0.1)":"rgba(0,229,192,0.05)",color:copied?T.green:T.teal,fontSize:10,fontWeight:700}}>{copied?"✓ Copied":"📋 Copy MDM"}</button>
       </div>
       {show&&<div style={{marginTop:8,background:"rgba(5,15,30,0.8)",border:"1px solid rgba(0,229,192,0.15)",borderRadius:8,padding:"10px 12px"}}><p style={{fontSize:11,color:T.txt2,lineHeight:1.75,margin:0,fontFamily:"'JetBrains Mono',monospace"}}>{note}</p></div>}
     </div>
@@ -653,7 +653,7 @@ function OrderSetPanel({condId}) {
             <button onClick={()=>setActive(active===i?null:i)} style={{width:"100%",padding:"6px 10px",borderRadius:7,cursor:"pointer",fontFamily:"sans-serif",border:`1px solid ${active===i?os.color+"55":T.b}`,background:active===i?`${os.color}14`:"rgba(14,37,68,0.5)",color:active===i?os.color:T.txt3,fontSize:10,fontWeight:active===i?700:400,textAlign:"left"}}>{s.title}</button>
             {active===i&&<div style={{marginTop:5,background:"rgba(5,15,30,0.85)",border:`1px solid ${os.color}22`,borderRadius:8,padding:"9px 11px"}}>
               <pre style={{fontSize:9,color:T.txt2,lineHeight:1.6,whiteSpace:"pre-wrap",fontFamily:"'JetBrains Mono',monospace",margin:0,marginBottom:7}}>{s.text}</pre>
-              <button onClick={()=>copy(i,s.text)} style={{width:"100%",padding:"6px",borderRadius:6,cursor:"pointer",fontFamily:"sans-serif",transition:"all .2s",border:`1px solid ${copied===i?T.green+"55":os.color+"40"}`,background:copied===i?"rgba(61,255,160,0.12)":`${os.color}08`,color:copied===i?T.green:os.color,fontSize:10,fontWeight:700}}>{copied===i?"\u2713 Copied":"\ud83d\udccb Copy"}</button>
+              <button onClick={()=>copy(i,s.text)} style={{width:"100%",padding:"6px",borderRadius:6,cursor:"pointer",fontFamily:"sans-serif",transition:"all .2s",border:`1px solid ${copied===i?T.green+"55":os.color+"40"}`,background:copied===i?"rgba(61,255,160,0.12)":`${os.color}08`,color:copied===i?T.green:os.color,fontSize:10,fontWeight:700}}>{copied===i?"✓ Copied":"📋 Copy"}</button>
             </div>}
           </div>
         ))}
@@ -682,10 +682,10 @@ function ConditionPage({cond,onBack}) {
   const [tab,setTab]=useState("overview");const [checked,setChecked]=useState({});const [cicoOpen,setCicoOpen]=useState(false);
   const ov=OVERVIEW[cond.id]||{};const rx=TREATMENT[cond.id]||[];const wu_=WORKUP[cond.id]||[];const fu=FOLLOWUP[cond.id]||[];
   const extraTabs={
-    rsi:[{id:"procnote",label:"Proc Note",icon:"\ud83d\udcdd",badge:"NEW"}],
-    daw:[{id:"dsi",label:"DSI",icon:"\ud83d\udd2e"},{id:"awake",label:"Awake Intubation",icon:"\ud83d\udc41\ufe0f"}],
+    rsi:[{id:"procnote",label:"Proc Note",icon:"📝",badge:"NEW"}],
+    daw:[{id:"dsi",label:"DSI",icon:"🔎"},{id:"awake",label:"Awake Intubation",icon:"👁️"}],
   };
-  const tabs=[{id:"overview",label:"Overview",icon:"\ud83d\udccb"},{id:"workup",label:"Workup",icon:"\u2705"},{id:"treatment",label:"Protocol",icon:"\u2699\ufe0f"},{id:"followup",label:"Follow-up",icon:"\ud83d\udcc5"},...(extraTabs[cond.id]||[])];
+  const tabs=[{id:"overview",label:"Overview",icon:"📋"},{id:"workup",label:"Workup",icon:"✅"},{id:"treatment",label:"Protocol",icon:"⚙️"},{id:"followup",label:"Follow-up",icon:"📅"},...(extraTabs[cond.id]||[])];
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {cicoOpen&&<CICOMode onClose={()=>setCicoOpen(false)} />}
@@ -698,7 +698,7 @@ function ConditionPage({cond,onBack}) {
             <div style={{fontSize:11,color:T.txt3}}>{cond.sub}</div>
           </div>
           <span style={{marginLeft:"auto",fontSize:9,fontFamily:"monospace",padding:"2px 8px",borderRadius:20,background:cond.gl,border:`1px solid ${cond.br}`,color:cond.color,fontWeight:700}}>RSI PAGE</span>
-          {cond.id==="daw"&&<button onClick={()=>setCicoOpen(true)} style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:"1px solid rgba(255,107,107,0.5)",background:"rgba(255,107,107,0.12)",color:T.coral,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"sans-serif"}}>\ud83d\udea8 CICO Mode</button>}
+          {cond.id==="daw"&&<button onClick={()=>setCicoOpen(true)} style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:"1px solid rgba(255,107,107,0.5)",background:"rgba(255,107,107,0.12)",color:T.coral,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"sans-serif"}}>🚨 CICO Mode</button>}
         </div>
         <div style={{display:"flex",gap:3,borderBottom:`1px solid ${T.b}`,overflowX:"auto"}}>
           {tabs.map(t=>(
@@ -712,7 +712,7 @@ function ConditionPage({cond,onBack}) {
       <div style={{flex:1,overflowY:"auto",padding:"16px 20px 24px"}}>
         {tab==="overview"&&<div>
           <div style={{background:"rgba(14,37,68,0.5)",border:`1px solid ${cond.br}`,borderLeft:`3px solid ${cond.color}`,borderRadius:8,padding:"12px 14px",marginBottom:14,fontSize:12,color:T.txt2,lineHeight:1.7}}>{ov.def}</div>
-          {ov.bullets?.map((b,i)=><div key={i} style={{display:"flex",gap:10,padding:"7px 0",borderBottom:i<ov.bullets.length-1?"1px solid rgba(26,53,85,0.4)":"none"}}><div style={{width:14,height:14,borderRadius:3,background:cond.gl,border:`1px solid ${cond.br}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:cond.color,marginTop:2}}>\u25aa</div><div style={{fontSize:12,color:T.txt2,lineHeight:1.55}}>{b}</div></div>)}
+          {ov.bullets?.map((b,i)=><div key={i} style={{display:"flex",gap:10,padding:"7px 0",borderBottom:i<ov.bullets.length-1?"1px solid rgba(26,53,85,0.4)":"none"}}><div style={{width:14,height:14,borderRadius:3,background:cond.gl,border:`1px solid ${cond.br}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:cond.color,marginTop:2}}>•</div><div style={{fontSize:12,color:T.txt2,lineHeight:1.55}}>{b}</div></div>)}
           {cond.id==="rsi"&&<><div style={{marginTop:16,fontSize:11,fontWeight:700,color:T.txt3,textTransform:"uppercase",letterSpacing:".07em",marginBottom:10}}>RSI Drug Calculator</div><RSICalc /><div style={{marginTop:12}}><SOAPMe /></div><HemoPanel /></>}
           {cond.id==="daw"&&<div style={{marginTop:12}}><LemonHeaven /></div>}
           {cond.id==="peds"&&<div style={{marginTop:12}}><PedsAirway /></div>}
@@ -737,7 +737,7 @@ function ConditionPage({cond,onBack}) {
         </div>}
         {tab==="procnote"&&cond.id==="rsi"&&<div>
           <div style={{background:"rgba(245,200,66,0.06)",border:"1px solid rgba(245,200,66,0.2)",borderRadius:8,padding:"10px 14px",marginBottom:14,display:"flex",gap:10,alignItems:"center"}}>
-            <span style={{fontSize:16}}>\ud83d\udcdd</span>
+            <span style={{fontSize:16}}>📝</span>
             <div><div style={{fontSize:11,fontWeight:700,color:T.gold}}>RSI Procedure Note Generator</div><div style={{fontSize:10,color:T.txt3}}>Fill fields below \u2014 generates EMR-ready note for copy-paste</div></div>
           </div>
           <RSIProcNote />
@@ -787,11 +787,11 @@ export default function RSIPage() {
                 <div><div style={{fontSize:13,fontWeight:700,color:T.txt}}>{c.title}</div><div style={{fontSize:10,color:T.txt3,marginTop:1}}>{c.sub}</div></div>
               </div>
               <div style={{display:"flex",gap:5,flexWrap:"wrap",fontSize:9}}>
-                {TREATMENT[c.id]?.length>0&&<span style={{padding:"2px 7px",borderRadius:20,background:"rgba(0,229,192,0.08)",border:"1px solid rgba(0,229,192,0.2)",color:T.teal}}>\u2699\ufe0f {TREATMENT[c.id].length} protocol steps</span>}
-                {c.id==="rsi"&&<span style={{padding:"2px 7px",borderRadius:20,background:"rgba(245,200,66,0.1)",border:"1px solid rgba(245,200,66,0.3)",color:T.gold,fontWeight:700}}>\ud83d\udcdd Proc Note</span>}
-                {c.id==="daw"&&<span style={{padding:"2px 7px",borderRadius:20,background:"rgba(255,107,107,0.1)",border:"1px solid rgba(255,107,107,0.3)",color:T.coral,fontWeight:700}}>\ud83d\udea8 CICO Mode</span>}
-                {c.id==="peds"&&<span style={{padding:"2px 7px",borderRadius:20,background:"rgba(0,229,192,0.08)",border:"1px solid rgba(0,229,192,0.2)",color:T.teal}}>\ud83e\uddee Tube Sizing Calc</span>}
-                {c.id==="dsi"&&<span style={{padding:"2px 7px",borderRadius:20,background:"rgba(155,109,255,0.08)",border:"1px solid rgba(155,109,255,0.2)",color:T.purple}}>\u23f1 Pre-ox Timer</span>}
+                {TREATMENT[c.id]?.length>0&&<span style={{padding:"2px 7px",borderRadius:20,background:"rgba(0,229,192,0.08)",border:"1px solid rgba(0,229,192,0.2)",color:T.teal}}>⚙️ {TREATMENT[c.id].length} protocol steps</span>}
+                {c.id==="rsi"&&<span style={{padding:"2px 7px",borderRadius:20,background:"rgba(245,200,66,0.1)",border:"1px solid rgba(245,200,66,0.3)",color:T.gold,fontWeight:700}}>📝 Proc Note</span>}
+                {c.id==="daw"&&<span style={{padding:"2px 7px",borderRadius:20,background:"rgba(255,107,107,0.1)",border:"1px solid rgba(255,107,107,0.3)",color:T.coral,fontWeight:700}}>🚨 CICO Mode</span>}
+                {c.id==="peds"&&<span style={{padding:"2px 7px",borderRadius:20,background:"rgba(0,229,192,0.08)",border:"1px solid rgba(0,229,192,0.2)",color:T.teal}}>🧮 Tube Sizing Calc</span>}
+                {c.id==="dsi"&&<span style={{padding:"2px 7px",borderRadius:20,background:"rgba(155,109,255,0.08)",border:"1px solid rgba(155,109,255,0.2)",color:T.purple}}>⏱ Pre-ox Timer</span>}
               </div>
             </div>
           ))}

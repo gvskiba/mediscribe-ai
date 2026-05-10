@@ -1136,6 +1136,24 @@ const HUBS = [
     essential: false,
   },
   {
+    id: "electrolyte-acidbase",
+    route: "/ElectrolyteAcidBaseHub",
+    icon: "⚗️",
+    abbr: "LYTES/ABG",
+    title: "Electrolyte & Acid-Base Hub",
+    subtitle: "ABG/VBG · Osmolar Gaps · K/Na/Ca/Mg/Phos · Hyperkalemia · SIADH vs CSW · QTc · Bicarb Drip · Tumor Lysis",
+    color: "#00bcd4",
+    glow: "rgba(0,188,212,0.4)",
+    glass: "rgba(0,188,212,0.07)",
+    border: "rgba(0,188,212,0.28)",
+    accent: "#33d6e8",
+    category: "Critical Care",
+    stats: ["ABG/VBG Interpreter", "Hyperkalemia Cascade", "SIADH vs CSW"],
+    badge: "Live",
+    priority: 24.2,
+    essential: false,
+  },
+  {
     id: "sepsis-bundle",
     route: "/SepsisBundleTracker",
     icon: "🦠",
@@ -1177,6 +1195,7 @@ const LIVE_ROUTES = new Set([
   "/stroke-hub", "/ddx-engine", "/EDTrackingBoard", "/narrative-engine", "/ed-procedure-notes",
   "/order-generator", "/QuickNote", "/unified-pharma", "/CriticalCareDripHub", "/FluidElectrolyteCalculator",
   "/AntibioticStewardshipHub", "/DrugComparisonHub", "/MedRecHub", "/SepsisBundleTracker",
+  "/ElectrolyteAcidBaseHub",
 ]);
 
 function Background() {

@@ -215,6 +215,7 @@ export const PAGES = [
   { id:"sepsis",        name:"SepsisHub",            icon:"🩸",  color:T.orange, cat:"Hubs",            desc:"Sepsis-3, antibiotics, qSOFA",           route:"/sepsis-hub"           },
   { id:"sepsisabx",     name:"Sepsis Abx Hub",       icon:"💊",  color:T.orange, cat:"Hubs",            desc:"Antibiotic selection & dosing",          route:"/sepsis-hub"           },
   { id:"idhub",         name:"Infectious Disease Hub",icon:"🦠", color:T.green,  cat:"Hubs",            desc:"Empiric abx, ID workup",                 route:"/id-hub"               },
+  { id:"electrolytes",  name:"Electrolyte & Acid-Base Hub", icon:"⚗️", color:"#00bcd4", cat:"Hubs", desc:"ABG/VBG · Osmolar gaps · Hyperkalemia · SIADH vs CSW · QTc · Tumor Lysis", route:"/ElectrolyteAcidBaseHub" },
   // Clinical Hubs — Neuro & Psych
   { id:"psych",         name:"PsychHub",             icon:"💭",  color:T.purple, cat:"Hubs",            desc:"Agitation, SI, intoxication",            route:"/psyche-hub"           },
   { id:"seizure",       name:"Seizure Hub",          icon:"⚡",  color:T.purple, cat:"Hubs",            desc:"Status epilepticus protocol",            route:"/seizure-hub"          },

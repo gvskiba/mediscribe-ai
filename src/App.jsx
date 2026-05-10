@@ -106,6 +106,7 @@ import ShiftDashboard from '@/pages/ShiftDashboard';
 import ClinicalDecisionHub from '@/pages/ClinicalDecisionHub';
 import HubIndex from '@/pages/HubIndex';
 import RSIPage from '@/pages/RsiPage';
+import ElectrolyteAcidBaseHub from '@/pages/ElectrolyteAcidBaseHub';
 import NIVPage from '@/pages/NIVPage';
 import VentPage from '@/pages/VentPage';
 
@@ -213,6 +214,8 @@ const AuthenticatedApp = () => {
         <Route path="/ClinicalDecisionHub"   element={<ClinicalDecisionHub />} />
         <Route path="/hub-index"              element={<HubIndex />} />
         <Route path="/RsiPage"                element={<RSIPage />} />
+        <Route path="/ElectrolyteAcidBaseHub" element={<ElectrolyteAcidBaseHub />} />
+        <Route path="/electrolyte-hub"        element={<ElectrolyteAcidBaseHub />} />
         <Route path="/rsi-page"               element={<RSIPage />} />
         <Route path="/NIVPage"                element={<NIVPage />} />
         <Route path="/VentPage"               element={<VentPage />} />

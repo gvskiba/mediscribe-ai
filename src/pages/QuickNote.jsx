@@ -409,7 +409,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
 
     setSlotCacheIds(newCacheIds);
     setSlotSaveTimes(newSaveTimes);
-    slotCavingRef: slotSavingRef.current = false;
+    slotSavingRef.current = false;
     setSlotSaving(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotSaveTimes]);
@@ -1038,9 +1038,6 @@ Return JSON: { "summary": "..." }`,
 
     // ── v11.3: Slot cache restore ─────────────────────────────────────────
     base44.entities.ClinicalNote.list({sort:"-created_date",limit:50}).then(results=>{
-      const EIGHT_HOURS = 8 * 3600000;
-      const cutoff = Date.now() - EIGHT_HOURS;
-
       const cacheRecords = (results||[]).filter(r=>
         r.source==="QN-SlotCache" && r.status==="active" &&
         // Check either created_date or a fallback — within 8 hours

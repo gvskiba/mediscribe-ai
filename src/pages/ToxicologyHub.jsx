@@ -242,7 +242,7 @@ const TSYNDROMES = [
   { name:"Sympathomimetic", color:T.red,    hallmarks:["mydriasis","tachycardia","agitation"],          supportive:["hyperthermia","diaphoresis"],
     antidotes:["Sodium Bicarbonate"], protocols:["sympathomimetic"] },
   { name:"Anticholinergic", color:T.gold,   hallmarks:["mydriasis","dry_skin","tachycardia"],           supportive:["hyperthermia","agitation","urinary_ret"],
-    antidotes:["Physostigmine"], protocols:["anticholinergic"] },
+    antidotes:["Physostigmine"], protocols:["sympathomimetic"] },
   { name:"Serotonin Syndrome",color:T.coral,hallmarks:["clonus","tachycardia","agitation"],             supportive:["hyperthermia","diaphoresis","mydriasis"],
     antidotes:["Cyproheptadine"], protocols:["serotonin"] },
   { name:"Sedative-Hypnotic",color:T.blue,  hallmarks:["sedation"],                                     supportive:["bradycardia","bradypnea"],
@@ -359,7 +359,7 @@ function DetailPanel({ item, isProtocol, onClose, globalWeight }) {
   const w      = parseFloat(globalWeight) || 0;
   const wDose  = !isProtocol && w > 0 && item.cardCalc ? item.cardCalc(w) : null;
   return (
-    <div className="panel-in" style={{ background:"rgba(8,22,40,0.97)",border:`1px solid ${color}44`,borderRadius:12,overflow:"hidden",position:"sticky",top:0 }}>
+    <div className="panel-in" style={{ background:"rgba(8,22,40,0.97)",border:`1px solid ${color}44`,borderRadius:12,overflow:"hidden",position:"sticky",top:8,maxHeight:"calc(100vh - 80px)",display:"flex",flexDirection:"column" }}>
       {/* Contraindication banner — must be seen before dosing */}
       {item.contraindication && (
         <div style={{ padding:"10px 14px",background:"rgba(255,44,44,0.18)",border:"none",borderBottom:"2px solid rgba(255,44,44,0.6)" }}>
@@ -385,7 +385,7 @@ function DetailPanel({ item, isProtocol, onClose, globalWeight }) {
         <button onClick={onClose} style={{ marginLeft:8,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:7,color:T.txt3,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,padding:"5px 11px",flexShrink:0 }}>✕</button>
       </div>
 
-      <div style={{ padding:"14px 16px",maxHeight:"calc(100vh - 220px)",overflowY:"auto" }}>
+      <div style={{ padding:"14px 16px",overflowY:"auto",flex:1 }}>
         {/* Weight-linked dose — prominent when weight is set */}
         {wDose && (
           <div style={{ padding:"12px 14px",borderRadius:10,marginBottom:12,background:`${color}18`,border:`2px solid ${color}50` }}>
@@ -605,7 +605,7 @@ function CalculateTab({ globalWeight, setGlobalWeight }) {
       {/* APAP Nomogram */}
       <div style={{ borderTop:"1px solid rgba(26,53,85,0.5)",paddingTop:18 }}>
         <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:T.orange,marginBottom:4 }}>APAP Nomogram</div>
-        <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4,marginBottom:12,lineHeight:1.5 }}>Acute single-ingestion only · level >=4h post-ingestion · invalid for extended-release APAP</div>
+        <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4,marginBottom:12,lineHeight:1.5 }}>{"Acute single-ingestion only · level ≥4h post-ingestion · invalid for extended-release APAP"}</div>
         <div style={{ display:"flex",gap:10,flexWrap:"wrap",marginBottom:12 }}>
           <div style={{ flex:"1 1 130px" }}>
             <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.3,textTransform:"uppercase",marginBottom:4 }}>Hours Since Ingestion</div>
@@ -726,8 +726,8 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
           </button>
         </div>
 
-        <div style={{ display:"flex",gap:14,alignItems:"flex-start" }}>
-          <div style={{ flex:1,minWidth:0 }}>
+        <div style={{ display:"flex",gap:14,alignItems:"flex-start",flexWrap:"wrap" }}>
+          <div style={{ flex:"1 1 480px",minWidth:0 }}>
 
             {/* ── SEARCH TAB ── */}
             {tab === "search" && (
@@ -872,7 +872,7 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
 
           {/* Detail panel */}
           {detail && (
-            <div style={{ flex:"0 0 420px",minWidth:300 }}>
+            <div style={{ flex:"0 0 400px",width:400,maxWidth:"100%" }}>
               <DetailPanel item={detail.item} isProtocol={detail.isProtocol} onClose={closeDetail} globalWeight={globalWeight} />
             </div>
           )}

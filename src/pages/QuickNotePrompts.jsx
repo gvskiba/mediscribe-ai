@@ -156,7 +156,7 @@ For mdm_narrative write a single clinically complete paragraph suitable for dire
 For mdm_confidence return EXACTLY ONE of: "Strong" (clearly meets criteria; no reasonable argument for a different level), "Borderline-up" (could reasonably be coded one level HIGHER given different clinical trajectory), or "Borderline-down" (could reasonably be coded one level LOWER).
 For mdm_confidence_note return ONE sentence: if Strong, state the strongest criteria anchoring this level. If Borderline-up, state what factor would push it higher. If Borderline-down, state what would lower it.
 
-Respond ONLY in valid JSON, no markdown fences.\`;
+Respond ONLY in valid JSON, no markdown fences.`;
 }
 
 
@@ -652,6 +652,8 @@ function buildSOAPNote(p1, mdm, p2, disp) {
 }
 
 export {
+  MDM_SCHEMA,
+  DISP_SCHEMA,
   buildMDMPrompt,
   buildDispPrompt,
   buildMDMBlock,

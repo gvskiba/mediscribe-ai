@@ -33,11 +33,165 @@ import QuickNoteDispositionCard from "./QuickNoteDispositionCard";
 import QuickNoteProgressDashboard from "./QuickNoteProgressDashboard";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
-  buildMDMPrompt, buildDispPrompt, buildMDMBlock,
+  buildMDMPrompt, buildDispPrompt, buildMDMBlock, buildSOAPNote,
   buildFullNote, buildPhase1Copy, buildPhase2Copy,
 } from "./QuickNotePrompts";
+import { MDMPhraseLibrary } from "@/components/quicknote/QuickNoteMDMPhrases";
+import { ShiftQueuePanel }  from "@/components/quicknote/QuickNoteShiftQueue";
 
 injectQNStyles();
+
+// ── Feature #1: Vitals interpreter ──────────────────────────────────────────
+function parseVitalsText(text) {
+  if (!text) return {};
+  const v = {};
+  const patterns = [
+    { key:"hr",   re:/\bHR\s*[:\-]?\s*(\d+)/i           },
+    { key:"sbp",  re:/\bBP\s*[:\-]?\s*(\d+)\/(\d+)/i    },
+    { key:"rr",   re:/\bRR\s*[:\-]?\s*(\d+)/i            },
+    { key:"spo2", re:/\bSpO2\s*[:\-]?\s*(\d+)/i          },
+    { key:"temp", re:/\bT(?:emp)?\s*[:\-]?\s*([0-9.]+)/i },
+  ];
+  patterns.forEach(({ key, re }) => { const m=text.match(re); if(m) v[key]=parseFloat(m[1]); });
+  return v;
+}
+
+function interpretVitals(vitalsText, encounterType) {
+  const v = parseVitalsText(vitalsText);
+  if (!Object.keys(v).length) return [];
+  const flags=[], isPeds=encounterType==="peds";
+  const hypotensive=v.sbp!==undefined&&v.sbp<(isPeds?70:90);
+  const tachycardic=v.hr!==undefined&&v.hr>(isPeds?160:100);
+  const bradycardic=v.hr!==undefined&&v.hr<(isPeds?60:50);
+  if (hypotensive&&tachycardic) flags.push({ level:"critical", label:"Hemodynamic Instability", detail:`HR ${v.hr} · SBP ${v.sbp} — Consider: septic shock, hemorrhagic shock, tension PTX, PE, cardiogenic shock` });
+  else if (hypotensive)         flags.push({ level:"critical", label:"Hypotension",              detail:`SBP ${v.sbp} — Consider: distributive, cardiogenic, obstructive, or hemorrhagic etiology` });
+  else if (tachycardic)         flags.push({ level:"warning",  label:"Tachycardia",              detail:`HR ${v.hr} — Consider: pain, anxiety, hypovolemia, fever, PE, arrhythmia` });
+  if (bradycardic&&v.sbp!==undefined&&v.sbp<100) flags.push({ level:"critical", label:"Bradycardia + Hypotension", detail:`HR ${v.hr} · SBP ${v.sbp} — Consider: heart block, cardiogenic shock, beta-blocker toxicity` });
+  else if (bradycardic) flags.push({ level:"warning", label:"Bradycardia", detail:`HR ${v.hr} — Consider: heart block, medication effect, hypothyroidism` });
+  if (v.spo2!==undefined) {
+    if (v.spo2<90)      flags.push({ level:"critical", label:"Severe Hypoxia", detail:`SpO2 ${v.spo2}% — Immediate O2; consider intubation threshold` });
+    else if (v.spo2<94) flags.push({ level:"warning",  label:"Hypoxia",        detail:`SpO2 ${v.spo2}% — Supplemental O2 indicated; evaluate for PE, pneumonia, CHF` });
+  }
+  if (v.temp!==undefined) {
+    const F=v.temp>45?v.temp:v.temp*9/5+32;
+    if (F>=104)              flags.push({ level:"critical", label:"High Fever",         detail:`T ${v.temp}° — Consider: heat stroke, CNS infection, drug-induced hyperthermia` });
+    else if (F>=100.4&&tachycardic) flags.push({ level:"warning", label:"Fever + Tachycardia", detail:`T ${v.temp}° · HR ${v.hr} — 2 of 4 SIRS criteria; evaluate for sepsis` });
+    else if (F<96)           flags.push({ level:"warning",  label:"Hypothermia",        detail:`T ${v.temp}° — Consider: exposure, sepsis, hypothyroidism` });
+    if (isPeds&&F>=100.4)    flags.push({ level:"warning",  label:"Pediatric Fever",    detail:`T ${v.temp}° — If <3 months: critical action required; evaluate for SBI` });
+  }
+  if (v.rr!==undefined) {
+    if (v.rr>=30)      flags.push({ level:"critical", label:"Severe Tachypnea", detail:`RR ${v.rr} — Impending respiratory failure; evaluate for ARDS, severe asthma, PE` });
+    else if (v.rr>=22) flags.push({ level:"warning",  label:"Tachypnea",        detail:`RR ${v.rr} — SIRS criteria met; evaluate for infection, metabolic acidosis, pain` });
+    else if (v.rr<10)  flags.push({ level:"warning",  label:"Bradypnea",        detail:`RR ${v.rr} — Consider: opioid toxicity, CNS depression` });
+  }
+  if (v.sbp!==undefined&&v.sbp>=180) flags.push({ level:"warning",
+    label:v.sbp>=220?"Hypertensive Emergency":"Hypertensive Urgency",
+    detail:`SBP ${v.sbp} — Evaluate for end-organ damage: neuro, cardiac, renal` });
+  return flags;
+}
+
+// ── Feature #8: Encounter presets ───────────────────────────────────────────
+const ENCOUNTER_PRESETS = {
+  trauma: {
+    ccPlaceholder:"Trauma — [MVC/fall/GSW/stab/assault] — mechanism: ___",
+    examTemplate:"PRIMARY SURVEY (ATLS):\nAirway: [patent / compromised — intervention: ___]\nBreathing: [bilateral breath sounds / decreased L / R — SpO2: ___]\nCirculation: [hemorrhage control — active bleeding: yes / no] [IV access: ___]\nDisability: GCS [___] — E[_]V[_]M[_] · Pupils: [___]\nExposure: [injuries identified: ___] · Temperature control maintained\n\nSECONDARY SURVEY:\nHead/Face: [___]\nNeck: [trachea midline / C-collar in place / ___]\nChest: [___]\nAbdomen: [___]\nPelvis: [stable / unstable — pelvic binder applied: yes / no]\nExtremities: [___] · Neurovascular: [intact / ___]\nBack: [log-rolled — spine tenderness: yes / no]",
+  },
+  psych: {
+    ccPlaceholder:"Psychiatric — [SI / HI / AMS / agitation / altered behavior]",
+    examTemplate:"MENTAL STATUS EXAM:\nAppearance: [groomed / disheveled / ___] · Behavior: [cooperative / agitated / ___]\nSpeech: [normal rate and volume / pressured / slow / slurred / ___]\nMood: [patient reports: \"___\"] · Affect: [congruent / labile / flat / blunted / ___]\nThought Process: [linear / tangential / circumstantial / loose associations / ___]\nThought Content: [SI: present / absent — plan: ___ · means: ___ · intent: ___]\n                 [HI: present / absent — target: ___]\nPerceptions: [hallucinations: auditory / visual / none · delusions: yes / no]\nCognition: [A&Ox3 / ___] · Insight: [present / limited / absent] · Judgment: [intact / impaired]\nSafety: [safe for discharge / requires hold — criteria: ___]\n\nMEDICAL CLEARANCE:\nGlucose: [___] · Vitals: [stable / ___] · Toxicology: [ordered / negative / ___]",
+  },
+  peds: {
+    ccPlaceholder:"Pediatric — [CC] — Age: ___ · Weight: ___ kg",
+    examTemplate:"General: [well-appearing / ill-appearing / toxic-appearing] · [in / not in] acute distress\nAlertness: [alert / lethargic / irritable] · Consolable: [yes / no]\nHead: [normocephalic / atraumatic / fontanelle: flat / bulging]\nEyes: [PERRL / ___]\nENT: [TMs: clear / erythematous / ___] · Throat: [clear / erythematous / ___]\nNeck: [supple / meningismus / ___]\nLungs: [clear / wheeze / retractions: mild / moderate / severe] · WOB: [normal / increased]\nCV: [RRR / no murmur / ___] · Cap refill: [<2s / ___]\nAbdomen: [soft / non-tender / ___]\nSkin: [warm / dry / no rash / ___] · Turgor: [normal / decreased]\nNeuro: [age-appropriate behavior / ___]",
+  },
+  obs: {
+    ccPlaceholder:"Observation — [chest pain / syncope / ___] — protocol: ___",
+    examTemplate:"General: [Alert and oriented x3, no acute distress]\nCV: [RRR, no murmurs / rubs / gallops]\nRespiratory: [Clear to auscultation bilaterally, no wheeze or crackles]\nAbdomen: [Soft, non-tender, non-distended]\nExtremities: [No edema, no calf tenderness]\nNeuro: [CN II–XII intact, no focal deficits]\n\nREASSESSMENT:\nSymptoms: [improved / unchanged / worsened]\nTelemetry: [NSR / ___] · Serial troponin: [pending / ___]\nOrthostatics: [not done / negative / positive]",
+  },
+  adult: { ccPlaceholder:"Chief complaint…", examTemplate:null },
+};
+
+// ── Feature #12: MDM confidence style helper ─────────────────────────────────
+function getMdmConfidenceStyle(confidence) {
+  if (confidence==="Strong")          return { color:"var(--qn-green)",  bg:"rgba(61,255,160,.1)",  border:"rgba(61,255,160,.35)",  icon:"✓", label:"Strong"       };
+  if (confidence==="Borderline-up")   return { color:"var(--qn-gold)",   bg:"rgba(245,200,66,.1)",  border:"rgba(245,200,66,.35)",  icon:"↑", label:"Borderline ↑" };
+  if (confidence==="Borderline-down") return { color:"var(--qn-purple)", bg:"rgba(155,109,255,.1)", border:"rgba(155,109,255,.35)", icon:"↓", label:"Borderline ↓" };
+  return null;
+}
+
+// ── Feature #7: Note audit modal ─────────────────────────────────────────────
+function NoteAuditModal({ note, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const savedAt = note.created_date
+    ? new Date(note.created_date).toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"})
+    : "Unknown";
+  const copyText = () => {
+    navigator.clipboard.writeText(note.full_note_text||note.raw_note||"").then(()=>{
+      setCopied(true); setTimeout(()=>setCopied(false),2500);
+    });
+  };
+  return (
+    <div style={{ position:"fixed",inset:0,zIndex:300,display:"flex",alignItems:"center",
+      justifyContent:"center",background:"rgba(3,8,20,.88)",backdropFilter:"blur(6px)",padding:"16px" }}>
+      <div style={{ width:"100%",maxWidth:720,maxHeight:"88vh",display:"flex",flexDirection:"column",
+        background:"rgba(8,22,40,.98)",border:"1px solid rgba(61,255,160,.3)",
+        borderRadius:16,overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,.65)" }}>
+        <div style={{ display:"flex",alignItems:"center",gap:12,padding:"13px 18px",
+          borderBottom:"1px solid rgba(42,79,122,.35)",background:"rgba(61,255,160,.04)",flexShrink:0 }}>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:"var(--qn-green)" }}>
+              Saved Note — Audit View
+            </div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"rgba(107,158,200,.5)",marginTop:3 }}>
+              Saved {savedAt} · ID: {note.id}
+            </div>
+          </div>
+          <button onClick={copyText} style={{ padding:"5px 13px",borderRadius:7,cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+            border:`1px solid ${copied?"rgba(61,255,160,.5)":"rgba(42,79,122,.4)"}`,
+            background:copied?"rgba(61,255,160,.1)":"transparent",
+            color:copied?"var(--qn-green)":"var(--qn-txt3)" }}>
+            {copied?"✓ Copied":"Copy text"}
+          </button>
+          <button onClick={onClose} style={{ padding:"5px 11px",borderRadius:7,cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace",fontSize:9,
+            border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)" }}>
+            ✕ Close
+          </button>
+        </div>
+        <div style={{ display:"flex",gap:7,flexWrap:"wrap",padding:"10px 18px",
+          borderBottom:"1px solid rgba(42,79,122,.2)",background:"rgba(14,37,68,.3)",flexShrink:0 }}>
+          {[{l:"CC",v:note.cc},{l:"Diagnosis",v:note.working_diagnosis},{l:"MDM",v:note.mdm_level},{l:"Disposition",v:note.disposition}]
+            .filter(f=>f.v).map(({l,v})=>(
+            <div key={l} style={{ display:"flex",alignItems:"center",gap:5,padding:"3px 9px",
+              borderRadius:5,background:"rgba(42,79,122,.2)",border:"1px solid rgba(42,79,122,.35)" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"var(--qn-txt4)",letterSpacing:.8,textTransform:"uppercase" }}>{l}</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",fontWeight:600 }}>{v}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ flex:1,overflowY:"auto",padding:"14px 18px" }}>
+          <pre style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,lineHeight:1.8,
+            color:"var(--qn-txt2)",background:"rgba(14,37,68,.5)",border:"1px solid rgba(42,79,122,.25)",
+            borderRadius:8,padding:"12px 14px",whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0 }}>
+            {note.full_note_text||note.raw_note||"No note text found."}
+          </pre>
+        </div>
+        <div style={{ padding:"9px 18px",borderTop:"1px solid rgba(42,79,122,.2)",
+          background:"rgba(14,37,68,.35)",flexShrink:0,display:"flex",alignItems:"center",gap:8 }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.35)",flex:1 }}>
+            Exact content saved to ClinicalNote entity. Verify before closing encounter.
+          </span>
+          <button onClick={onClose} style={{ padding:"6px 16px",borderRadius:7,cursor:"pointer",
+            fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:12,
+            border:"1px solid rgba(0,229,192,.4)",background:"rgba(0,229,192,.08)",color:"var(--qn-teal)" }}>
+            Verified — Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── CRITICAL VALUE DETECTOR ──────────────────────────────────────────────────
 function detectCriticalValues(labsText) {
@@ -558,6 +712,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         response_json_schema: MDM_SCHEMA,
       });
       setMdmResult(res); setP2Open(true);
+      stampTimeline("physician");
+      setDrugInteractions(null);
       const ts = new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
       setMdmInitialTs(ts);
       setMdmHistory([{ts,trigger:"Initial Impression",
@@ -584,6 +740,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         response_json_schema: DISP_SCHEMA,
       });
       setDispResult(res); setIntGenerated(false); setIntLoading(false);
+      stampTimeline("disposition");
     } catch(e) { setP2Error("Disposition generation failed: "+(e.message||"Check API")); }
     finally { setP2Busy(false); }
   }, [mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,p2Busy,ekg,parsedMeds,parsedAllergies,consults,patientResponse]);
@@ -992,9 +1149,15 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   const stripLabels = (text) => pasteReady!=="prose" ? text : text.replace(/^[A-Z][A-Z /&]+:\s*/gm,"").trim();
 
   const copyNote = useCallback(() => {
-    const text=buildFullNote({cc,vitals,hpi:effectiveHpi,ros,exam},mdmResult,{labs,imaging,newVitals},dispResult,{icdSelected,interventions,parsedMeds,parsedAllergies});
+    let text;
+    if (formatMode==="soap") {
+      text = buildSOAPNote({cc,vitals,hpi:effectiveHpi,ros,exam},mdmResult,{labs,imaging,ekg,newVitals},dispResult);
+    } else {
+      text = buildFullNote({cc,vitals,hpi:effectiveHpi,ros,exam},mdmResult,{labs,imaging,newVitals},dispResult,{icdSelected,interventions,parsedMeds,parsedAllergies});
+    }
+    if (formatMode==="dragon") text=text.replace(/^[A-Z][A-Z\s\/&]+:\s*/gm,"").replace(/^={3,}.*={3,}\s*/gm,"").replace(/\n{3,}/g,"\n\n").trim();
     navigator.clipboard.writeText(stripLabels(text)).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
-  }, [cc,vitals,effectiveHpi,ros,exam,mdmResult,labs,imaging,newVitals,dispResult,icdSelected,interventions,parsedMeds,parsedAllergies,pasteReady]);
+  }, [cc,vitals,effectiveHpi,ros,exam,mdmResult,labs,imaging,ekg,newVitals,dispResult,icdSelected,interventions,parsedMeds,parsedAllergies,pasteReady,formatMode]);
 
   const copyClinicalInputs = useCallback(() => {
     const sections=[
@@ -1102,7 +1265,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     try {
       const user=await base44.auth.me().catch(()=>null);
       const fullText=buildFullNote({cc,vitals,hpi,ros,exam},mdmResult,{labs,imaging,newVitals},dispResult,{icdSelected,interventions,parsedMeds,parsedAllergies});
-      await base44.entities.ClinicalNote.create({
+      const savedRecord = await base44.entities.ClinicalNote.create({
         source:"QuickNote",encounter_date:new Date().toISOString().split("T")[0],
         cc:cc||"",chief_complaint:cc||"",raw_note:fullText,full_note_text:fullText,
         working_diagnosis:mdmResult?.working_diagnosis||dispResult?.final_diagnosis||"",
@@ -1116,6 +1279,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         meds_json:parsedMeds.length?JSON.stringify(parsedMeds):"",
         allergies_json:parsedAllergies.length?JSON.stringify(parsedAllergies):"",
       });
+      if (savedRecord?.id) setSavedNoteId(savedRecord.id);
       setSavedNote(true); setTimeout(()=>setSavedNote(false),3000);
       setSlots(prev=>{const next=[...prev];next[activeSlot]={...next[activeSlot],savedNoteId:"saved"};return next;});
       clearSlotCache(activeSlot);
@@ -1152,6 +1316,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setWorkupRationale(null); setConsults([]);
     setQuickDDxDismissed(false); setIsBounceback(false);
     setTreatmentPlan(""); setActionPlan("");
+    setDrugInteractions(null); setDrugCheckDismissed(false);
     setPatientResponse(""); setMdmHistory([]); setMdmInitialTs(null);
     setHpiGaps([]); setLabRecs(null); setImagingRecs(null);
     setMedsFromHpi([]); setAllergiesFromHpi([]);
@@ -1254,6 +1419,12 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     return ()=>clearInterval(interval);
   },[saveAllSlots]);
 
+  // Feature #9: auto-trigger drug check when meds + MDM are available
+  useEffect(() => {
+    if (parsedMeds?.length>0&&mdmResult&&!drugInteractions&&!drugCheckBusy) runDrugInteractionCheck();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parsedMeds, mdmResult]);
+
   useEffect(()=>{
     try {
       const params=new URLSearchParams(window.location.search);
@@ -1350,6 +1521,81 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       patientAge:demo?.age||"",lastActivity:Date.now()};
   });
 
+  // Feature #1: vitals flags
+  const vitalsFlags = useMemo(() => interpretVitals(vitals, encounterType), [vitals, encounterType]);
+
+  // Feature #7: note audit
+  const [savedNoteId,   setSavedNoteId]   = useState(null);
+  const [showNoteAudit, setShowNoteAudit] = useState(false);
+  const [auditNote,     setAuditNote]     = useState(null);
+  const [auditLoading,  setAuditLoading]  = useState(false);
+
+  // Feature #9: drug interactions
+  const [drugInteractions,   setDrugInteractions]   = useState(null);
+  const [drugCheckBusy,      setDrugCheckBusy]      = useState(false);
+  const [drugCheckDismissed, setDrugCheckDismissed] = useState(false);
+
+  // Feature #7: view saved note
+  const viewSavedNote = useCallback(async () => {
+    if (!savedNoteId) return;
+    setAuditLoading(true);
+    try {
+      const note = await base44.entities.ClinicalNote.get(savedNoteId);
+      setAuditNote(note); setShowNoteAudit(true);
+    } catch(e) { console.error("Audit fetch failed:",e); }
+    finally { setAuditLoading(false); }
+  }, [savedNoteId]);
+
+  // Feature #8: encounter type change with exam template
+  const handleEncounterTypeChange = useCallback((type) => {
+    setEncounterType(type);
+    const preset = ENCOUNTER_PRESETS[type];
+    if (preset?.examTemplate && !exam.trim()) setExam(preset.examTemplate);
+  }, [exam]);
+
+  // Feature #9: drug interaction check
+  const runDrugInteractionCheck = useCallback(async () => {
+    if (!parsedMeds?.length||drugCheckBusy) return;
+    setDrugCheckBusy(true); setDrugInteractions(null); setDrugCheckDismissed(false);
+    try {
+      const schema={type:"object",required:["interactions","contraindications"],properties:{
+        interactions:{type:"array",items:{type:"object",required:["severity","drugs_involved","interaction","recommendation"],
+          properties:{severity:{type:"string"},drugs_involved:{type:"string"},interaction:{type:"string"},recommendation:{type:"string"}}}},
+        contraindications:{type:"array",items:{type:"object",required:["drug","reason","recommendation"],
+          properties:{drug:{type:"string"},reason:{type:"string"},recommendation:{type:"string"}}}},
+      }};
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt:`Clinical pharmacist drug review.
+WORKING DIAGNOSIS: ${mdmResult?.working_diagnosis||cc||"unknown"}
+CURRENT MEDICATIONS: ${parsedMeds.map(m=>`${m.name} ${m.dose} ${m.route}`.trim()).join(", ")}
+PLANNED TREATMENTS: ${(mdmResult?.treatment_recommendations||[]).map(t=>t.intervention).join(", ")||"none"}
+ALLERGIES: ${parsedAllergies?.map(a=>`${a.allergen} (${a.reaction})`).join(", ")||"NKDA"}
+Check for: major/moderate drug-drug interactions, diagnosis contraindications (metformin+contrast, NSAIDs+AKI, BB+cocaine), allergy cross-reactions. Return ONLY clinically significant findings. Empty arrays if none. JSON only.`,
+        response_json_schema:schema,
+      });
+      const total=(res?.interactions?.length||0)+(res?.contraindications?.length||0);
+      setDrugInteractions(total>0?res:{interactions:[],contraindications:[],clean:true});
+    } catch(e){ console.error("Drug check failed:",e); }
+    finally{ setDrugCheckBusy(false); }
+  }, [parsedMeds,parsedAllergies,mdmResult,cc,drugCheckBusy]);
+
+  // Feature #10: export PDF
+  const exportToPDF = useCallback(() => {
+    const orig = document.title;
+    const pat  = [demo?.firstName,demo?.lastName].filter(Boolean).join(" ")||"Patient";
+    const dx   = mdmResult?.working_diagnosis||dispResult?.final_diagnosis||cc||"ED Note";
+    const date = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+    document.title = `QuickNote — ${pat} — ${dx} — ${date}`;
+    window.print();
+    setTimeout(()=>{ document.title=orig; },1500);
+  }, [demo,mdmResult,dispResult,cc]);
+
+  // Feature #3: stamp timeline
+  const stampTimeline = useCallback((eventId) => {
+    const ts = new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+    setTimestamps(prev => prev.map(e => e.id===eventId&&!e.time ? {...e,time:ts} : e));
+  }, []);
+
   const isFatigueRisk = useMemo(()=>{ const h=new Date().getHours(); return h>=17||h<=7; },[]);
 
   // ── RENDER ─────────────────────────────────────────────────────────────────
@@ -1424,6 +1670,39 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         <PriorVisitsPanel visits={priorVisits} loading={priorVisitsLoading} onLoad={loadPriorVisits} />
         {(vitals.trim().length>10||labs.trim().length>5)&&<SepsisBanner vitalsText={vitals} labsText={labs} />}
 
+        {/* Feature #1: Vitals interpretation banner */}
+        {vitalsFlags.length>0&&(
+          <div style={{ marginBottom:10,borderRadius:10,overflow:"hidden",background:"rgba(8,22,40,.6)",
+            border:"1px solid rgba(255,107,107,.3)" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:8,padding:"7px 14px",
+              background:"rgba(255,107,107,.08)",borderBottom:"1px solid rgba(255,107,107,.2)" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+                color:"var(--qn-coral)",letterSpacing:1.5,textTransform:"uppercase" }}>⚡ Vitals Interpretation</span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(255,107,107,.5)" }}>
+                sync · no AI · triage vitals
+              </span>
+            </div>
+            <div style={{ padding:"8px 14px",display:"flex",flexDirection:"column",gap:6 }}>
+              {vitalsFlags.map((flag,i)=>(
+                <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"7px 10px",borderRadius:7,
+                  background:flag.level==="critical"?"rgba(255,107,107,.08)":"rgba(245,200,66,.06)",
+                  border:`1px solid ${flag.level==="critical"?"rgba(255,107,107,.3)":"rgba(245,200,66,.25)"}` }}>
+                  <div style={{ width:8,height:8,borderRadius:"50%",flexShrink:0,marginTop:3,
+                    background:flag.level==="critical"?"var(--qn-coral)":"var(--qn-gold)",
+                    boxShadow:flag.level==="critical"?"0 0 6px rgba(255,107,107,.5)":"0 0 6px rgba(245,200,66,.4)" }} />
+                  <div style={{ flex:1 }}>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,marginRight:8,
+                      color:flag.level==="critical"?"var(--qn-coral)":"var(--qn-gold)" }}>{flag.label}</span>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt3)",lineHeight:1.5 }}>
+                      {flag.detail}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Phase1Panel
           cc={cc} setCC={setCC} vitals={vitals} setVitals={setVitals}
           hpi={hpi} setHpi={setHpi} ros={ros} setRos={setRos} exam={exam} setExam={setExam}
@@ -1497,6 +1776,80 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           />
         )}
 
+        {/* Feature #9: Drug interaction banner */}
+        {(drugCheckBusy||(drugInteractions&&!drugCheckDismissed))&&(
+          <div style={{ marginBottom:10,borderRadius:10,overflow:"hidden",background:"rgba(8,22,40,.55)",
+            border:`1px solid ${drugCheckBusy?"rgba(42,79,122,.35)":drugInteractions?.clean?"rgba(61,255,160,.3)":"rgba(255,107,107,.35)"}` }}>
+            <div style={{ display:"flex",alignItems:"center",gap:9,padding:"8px 14px",
+              background:drugInteractions?.clean?"rgba(61,255,160,.05)":"rgba(255,107,107,.05)" }}>
+              <span style={{ fontSize:13 }}>{drugCheckBusy?"⏳":drugInteractions?.clean?"✓":"⚠"}</span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,letterSpacing:1,
+                textTransform:"uppercase",flex:1,
+                color:drugCheckBusy?"var(--qn-txt4)":drugInteractions?.clean?"var(--qn-green)":"var(--qn-coral)" }}>
+                {drugCheckBusy?"Checking drug interactions…":drugInteractions?.clean?"No significant interactions found":"Drug Safety Alert"}
+              </span>
+              {!drugCheckBusy&&parsedMeds?.length>0&&(
+                <button onClick={runDrugInteractionCheck} style={{ padding:"3px 10px",borderRadius:5,cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+                  border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)" }}>↻ Re-run</button>
+              )}
+              {!drugCheckBusy&&(
+                <button onClick={()=>setDrugCheckDismissed(true)} style={{ padding:"3px 8px",borderRadius:5,cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace",fontSize:8,
+                  border:"1px solid rgba(42,79,122,.3)",background:"transparent",color:"var(--qn-txt4)" }}>✕</button>
+              )}
+            </div>
+            {!drugCheckBusy&&!drugInteractions?.clean&&(
+              <div style={{ padding:"10px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                {drugInteractions?.interactions?.map((item,i)=>(
+                  <div key={`int-${i}`} style={{ padding:"9px 12px",borderRadius:8,
+                    background:item.severity==="major"?"rgba(255,107,107,.08)":"rgba(245,200,66,.06)",
+                    border:`1px solid ${item.severity==="major"?"rgba(255,107,107,.3)":"rgba(245,200,66,.25)"}` }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:5 }}>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,
+                        letterSpacing:1,textTransform:"uppercase",borderRadius:4,padding:"2px 7px",
+                        color:item.severity==="major"?"var(--qn-coral)":"var(--qn-gold)",
+                        background:item.severity==="major"?"rgba(255,107,107,.15)":"rgba(245,200,66,.12)",
+                        border:`1px solid ${item.severity==="major"?"rgba(255,107,107,.4)":"rgba(245,200,66,.3)"}` }}>
+                        {item.severity?.toUpperCase()||"INTERACTION"}
+                      </span>
+                      <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt)",fontWeight:700 }}>
+                        {item.drugs_involved}
+                      </span>
+                    </div>
+                    <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",lineHeight:1.6,marginBottom:5 }}>
+                      {item.interaction}
+                    </div>
+                    <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-teal)",fontWeight:600 }}>
+                      → {item.recommendation}
+                    </div>
+                  </div>
+                ))}
+                {drugInteractions?.contraindications?.map((item,i)=>(
+                  <div key={`ci-${i}`} style={{ padding:"9px 12px",borderRadius:8,
+                    background:"rgba(155,109,255,.07)",border:"1px solid rgba(155,109,255,.3)" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:5 }}>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,
+                        color:"var(--qn-purple)",background:"rgba(155,109,255,.12)",
+                        border:"1px solid rgba(155,109,255,.3)",borderRadius:4,padding:"2px 7px",
+                        letterSpacing:1,textTransform:"uppercase" }}>CONTRAINDICATION</span>
+                      <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt)",fontWeight:700 }}>
+                        {item.drug}
+                      </span>
+                    </div>
+                    <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",lineHeight:1.6,marginBottom:5 }}>
+                      {item.reason}
+                    </div>
+                    <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-teal)",fontWeight:600 }}>
+                      → {item.recommendation}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {p2Open&&(labs||imaging||ekg)&&(
           <QuickNoteAbnormals labs={labs} imaging={imaging} ekg={ekg}
             onAddToMDM={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
@@ -1561,7 +1914,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           />
         )}
 
-        {phase1Ready&&<TimelineCard timestamps={timestamps} setTimestamps={setTimestamps} />}
+        {phase1Ready&&<TimelineCard timestamps={timestamps} setTimestamps={setTimestamps} onStamp={stampTimeline} />}
 
         {hasAnyResult&&(
           <ActionBar
@@ -1579,6 +1932,49 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           />
         )}
 
+        {/* Feature #6: Shift Queue */}
+        <ShiftQueuePanel />
+
+        {/* Feature #7: Note audit modal */}
+        {showNoteAudit&&auditNote&&(
+          <NoteAuditModal note={auditNote} onClose={()=>{ setShowNoteAudit(false); setAuditNote(null); }} />
+        )}
+
+        {/* Feature #7: Save toast with audit link */}
+        {savedNote&&(
+          <div className="qn-fade" style={{ display:"flex",alignItems:"center",gap:10,
+            padding:"8px 14px",marginBottom:8,borderRadius:9,
+            background:"rgba(61,255,160,.08)",border:"1px solid rgba(61,255,160,.35)" }}>
+            <span style={{ fontSize:14 }}>✓</span>
+            <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-green)",fontWeight:600,flex:1 }}>
+              Note saved to chart
+            </span>
+            {savedNoteId&&(
+              <button onClick={viewSavedNote} disabled={auditLoading} style={{
+                padding:"3px 11px",borderRadius:6,cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+                border:"1px solid rgba(61,255,160,.45)",background:"rgba(61,255,160,.1)",
+                color:auditLoading?"var(--qn-txt4)":"var(--qn-green)" }}>
+                {auditLoading?"● Loading…":"View saved note →"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Feature #10: Export PDF */}
+        {hasAnyResult&&(
+          <div style={{ textAlign:"right",marginBottom:8 }}>
+            <button onClick={exportToPDF} title="Export to PDF" style={{
+              display:"inline-flex",alignItems:"center",gap:6,padding:"7px 15px",
+              borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
+              fontWeight:600,fontSize:12,border:"1px solid rgba(155,109,255,.4)",
+              background:"rgba(155,109,255,.08)",color:"var(--qn-purple)",transition:"all .15s",
+            }}>
+              🖨 Export PDF
+            </button>
+          </div>
+        )}
+
         {showKbHelp&&<KbHelpModal onClose={()=>setShowKbHelp(false)} />}
         {showProcedureModal&&<ProcedureNoteModal onInsert={()=>{}} onClose={()=>setShowProcedureModal(false)} />}
 
@@ -1586,7 +1982,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           <div style={{textAlign:"center",padding:"24px 0 8px",
             fontFamily:"'JetBrains Mono',monospace",fontSize:8,
             color:"var(--qn-txt4)",letterSpacing:1.5}} className="no-print">
-            NOTRYA QUICKNOTE v11.4 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+            NOTRYA QUICKNOTE v11.5 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}

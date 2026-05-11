@@ -54,6 +54,9 @@ const MDM_SCHEMA = {
     data_reviewed:         { type: "string" },
     risk_rationale:        { type: "string" },
     acep_policy_ref:       { type: "string" },
+    // v11.5: MDM confidence indicator
+    mdm_confidence:        { type: "string" },
+    mdm_confidence_note:   { type: "string" },
   },
 };
 
@@ -96,6 +99,7 @@ const DISP_SCHEMA = {
         diet:                  { type: "string" },
         return_precautions:    { type: "array", items: { type: "string" }, minItems: 5, maxItems: 5 },
         followup:              { type: "string" },
+        home_care_instructions:{ type: "array", items: { type: "string" }, maxItems: 8 },
         acep_policy_ref:       { type: "string" },
       },
     },
@@ -149,10 +153,22 @@ data_complexity — pick the single best match:
 
 For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-5 alternative diagnoses as structured objects — each with: diagnosis (name), probability (exactly "high" | "moderate" | "low"), supporting_evidence (1 sentence from THIS case's specific findings), against (1 sentence — what argues against it in this case), must_not_miss (true if this diagnosis would be immediately life-threatening if missed — PE, dissection, STEMI, SAH, etc.). Rank high probability first. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For recommended_actions return an array of plain-text strings ONLY — each item must be a single complete sentence, NOT a JSON object or structured data. For lab/test recommendations use this exact format: "Test name in Xh — if [result], then [action]". Example: "Repeat troponin at 3h — if delta >0.04 ng/mL, initiate ACS protocol and cardiology consult." Example: "Urinalysis with reflex culture — if positive, initiate antibiotic therapy." Each string must stand alone as readable chart text. Return an empty array if none. Do NOT return objects, do NOT use keys like test_name or indication. For treatment_recommendations provide evidence-based in-ED treatment interventions for the working diagnosis. For each item: intervention = specific treatment with dose/route/frequency where applicable; indication = clinical indication or threshold; evidence_level = exactly one of "Class I" / "Class IIa" / "Class IIb" / "Class III" / "Expert consensus" per ACC/AHA classification — use "Expert consensus" if unsure; guideline_ref = cite ONLY if highly confident (ACEP Clinical Policy, ACC/AHA, SSC, etc.) — return empty string if uncertain, never fabricate; notes = cautions or contraindications (optional). Prioritize highest-evidence interventions. Do NOT duplicate items already in critical_actions. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies — otherwise return an empty string.
 
-Respond ONLY in valid JSON, no markdown fences.`;
+For mdm_confidence return EXACTLY ONE of: "Strong" (clearly meets criteria; no reasonable argument for a different level), "Borderline-up" (could reasonably be coded one level HIGHER given different clinical trajectory), or "Borderline-down" (could reasonably be coded one level LOWER).
+For mdm_confidence_note return ONE sentence: if Strong, state the strongest criteria anchoring this level. If Borderline-up, state what factor would push it higher. If Borderline-down, state what would lower it.
+
+Respond ONLY in valid JSON, no markdown fences.\`;
 }
 
-function buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, parsedMeds, parsedAllergies, ekg) {
+
+const SPECIALTY_DISP_CONTEXT = {
+  peds: `\nPEDIATRIC DISPOSITION: Weight-based dosing in all Rx. Instructions addressed to caregiver. Fever return precautions include age-specific thresholds (<3mo any fever = return immediately). Document caregiver verbalized understanding.`,
+  psych: `\nPSYCHIATRIC DISPOSITION: Document safety plan, means restriction counseling, crisis line (988), psychiatric follow-up within 72h. If admitting: document capacity assessment and involuntary hold status. Return precautions include psychiatric crisis symptoms.`,
+  trauma: `\nTRAUMA DISPOSITION: Reference completion of primary and secondary survey. Discharge instructions include trauma-specific return precautions: compartment syndrome, delayed intracranial hemorrhage, vascular injury. Document tetanus status. Specific follow-up timeframes required.`,
+  obs: `\nOBSERVATION DISPOSITION: Document specific obs protocol and endpoint criteria. Plan must include monitoring period, pending result triggers. Chest pain obs discharge: document HEART score, troponin deltas, stress test plan, cardiology follow-up within 72h.`,
+  adult: "",
+};
+
+function buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, ros, exam, parsedMeds, parsedAllergies, ekg, encounterType) {
   const mdmSummary = mdmResult
     ? `Working Dx: ${mdmResult.working_diagnosis || "?"}  |  MDM Level: ${mdmResult.mdm_level || "?"}  |  Risk: ${mdmResult.risk_tier || "?"}`
     : "Not available";
@@ -168,6 +184,7 @@ function buildDispPrompt(mdmResult, labs, imaging, newVitals, cc, hpi, vitals, r
   const allergiesContext = parsedAllergies?.length
     ? `\nAllergies: ${parsedAllergies.map(a => `${a.allergen} (${a.reaction})`).join(", ")}`
     : "";
+  const specDispContext = SPECIALTY_DISP_CONTEXT[encounterType || "adult"] || "";
   return `${SYS_BIAS}
 
 You are a board-certified emergency physician generating the ED reevaluation, disposition decision, and discharge instructions for a patient after workup is complete.
@@ -193,6 +210,7 @@ Labs: ${labs || "Not provided / not ordered"}
 Imaging: ${imaging || "Not provided / not ordered"}
 EKG/ECG: ${ekg || "Not performed / not provided"}
 Re-check Vitals: ${newVitals || "Not documented"}
+${specDispContext}
 
 INSTRUCTIONS:
 - reevaluation_note: 2-3 sentence clinical reevaluation note suitable for EMR charting. MUST explicitly incorporate imaging findings if imaging was provided — state the specific study, key finding, and how it affects the clinical picture. Describe interval change and response to treatment.
@@ -221,9 +239,18 @@ function buildMDMBlock(mdm) {
     `Data Complexity: ${mdm.data_complexity || "—"}`,
     `Risk: ${mdm.risk_tier || "—"}`,
   ];
+  if (mdm.mdm_confidence) lines.push(`MDM Confidence: ${mdm.mdm_confidence}${mdm.mdm_confidence_note ? ' — ' + mdm.mdm_confidence_note : ''}`);
   if (mdm.working_diagnosis) lines.push(`\nWorking Diagnosis: ${mdm.working_diagnosis}`);
-  if (mdm.differential?.length)
-    lines.push(`Differential: ${mdm.differential.map((d,i) => `(${i+1}) ${d.diagnosis||d}`).join(", ")}`);
+  if (mdm.differential?.length) {
+    lines.push("\nDIFFERENTIAL DIAGNOSIS:");
+    mdm.differential.forEach((d, i) => {
+      if (!d || typeof d !== "object") return;
+      const mnm = d.must_not_miss ? " ⚠ MUST NOT MISS" : "";
+      lines.push(`  ${i+1}. ${d.diagnosis} [${d.probability}]${mnm}`);
+      if (d.supporting_evidence) lines.push(`     For: ${d.supporting_evidence}`);
+      if (d.against)             lines.push(`     Against: ${d.against}`);
+    });
+  }
   if (mdm.red_flags?.length)
     lines.push(`\nRed Flags: ${mdm.red_flags.join("; ")}`);
   if (mdm.critical_actions?.length) {
@@ -256,11 +283,13 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
   const cc = p1.cc || "";
   const lines = [`ED QUICK NOTE — ${ts}`, `Chief Complaint: ${cc || "—"}`, ""];
 
+  // ── Raw clinical inputs ──
   if (p1.vitals) lines.push(`Vitals: ${p1.vitals}`);
   if (p1.hpi)    { lines.push(""); lines.push("HPI:"); lines.push(p1.hpi); }
   if (p1.ros)    { lines.push(""); lines.push("ROS:"); lines.push(p1.ros); }
   if (p1.exam)   { lines.push(""); lines.push("Physical Exam:"); lines.push(p1.exam); }
 
+  // Medications & allergies
   if (extras.parsedMeds?.length || extras.parsedAllergies?.length) {
     lines.push("");
     lines.push("=== MEDICATIONS & ALLERGIES ===");
@@ -289,7 +318,7 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
     lines.push(`Data Complexity: ${mdm.data_complexity || "—"}`);
     lines.push(`Risk: ${mdm.risk_tier || "—"}`);
     if (mdm.working_diagnosis) lines.push(`Working Dx: ${mdm.working_diagnosis}`);
-    if (mdm.differential?.length) lines.push(`Differential: ${mdm.differential.map(d => d.diagnosis||d).join(", ")}`);
+    if (mdm.differential?.length) lines.push(`Differential: ${mdm.differential.join(", ")}`);
     if (mdm.red_flags?.length) lines.push(`Red Flags: ${mdm.red_flags.join("; ")}`);
     if (mdm.critical_actions?.length) {
       lines.push(`Critical Actions:`);
@@ -320,6 +349,7 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
     lines.push("");
     lines.push(`=== PLAN & DISPOSITION ===`);
     if (disp.final_diagnosis) lines.push(`Final Impression: ${disp.final_diagnosis}`);
+    // ICD-10 codes
     if (extras.icdSelected?.length) {
       lines.push(`ICD-10 Codes:`);
       extras.icdSelected.forEach(c => lines.push(`  ${c.code} — ${c.description} (${c.type})`));
@@ -362,6 +392,7 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
     }
   }
 
+  // Interventions section
   const confirmedInts = (extras.interventions || []).filter(i => i.confirmed !== false);
   if (confirmedInts.length) {
     lines.push(`\n=== ED INTERVENTIONS ===`);
@@ -385,15 +416,16 @@ function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
     hour:"2-digit", minute:"2-digit"
   });
   const provider = extras.providerName ? ` — ${extras.providerName}` : "";
-  const sep = "\n";
-  const hdr = (label) => mode === "epic" ? `.${label.replace(/:/g, "")}` : label;
+  const sep  = mode === "epic" ? "\n" : "\n";
+  const hdr  = (label) => mode === "epic" ? label : label;
 
+  // Demographics header
   const demog = extras.demographics || {};
-  const nameStr = [demog.firstName, demog.lastName].filter(Boolean).join(" ") || "_______________";
-  const dobStr  = demog.dob       || "_______________";
-  const mrnStr  = demog.mrn       || "_______________";
-  const encStr  = demog.encounter || "_______________";
-  const locStr  = demog.location  || "ED";
+  const nameStr  = [demog.firstName, demog.lastName].filter(Boolean).join(" ") || "_______________";
+  const dobStr   = demog.dob        || "_______________";
+  const mrnStr   = demog.mrn        || "_______________";
+  const encStr   = demog.encounter  || "_______________";
+  const locStr   = demog.location   || "ED";
 
   const lines = [
     `${ts}${provider} — Emergency Department Note`,
@@ -412,10 +444,11 @@ function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
 
   if (p1.hpi) {
     lines.push(hdr("HISTORY OF PRESENT ILLNESS:"));
-    lines.push(p1.hpi);
+    lines.push(extras.hpiSummary?.trim() || p1.hpi);
     lines.push("");
   }
 
+  // Medications & allergies
   if (extras.parsedMeds?.length || extras.parsedAllergies?.length) {
     if (extras.parsedMeds?.length) {
       lines.push(hdr("CURRENT MEDICATIONS:"));
@@ -440,18 +473,21 @@ function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
     lines.push(hdr("PHYSICAL EXAMINATION:")); lines.push(p1.exam); lines.push("");
   }
 
+  // Assessment & Plan — EHR-ready format
   if (mdm) {
     lines.push(hdr("ASSESSMENT AND PLAN:"));
     if (mdm.working_diagnosis) lines.push(`Working Impression: ${mdm.working_diagnosis}`);
     if (mdm.mdm_level) lines.push(`MDM Complexity: ${mdm.mdm_level}`);
     lines.push("");
     if (mdm.mdm_narrative) { lines.push(mdm.mdm_narrative); lines.push(""); }
+    // Numbered plan from recommended actions
     const actions = (mdm.recommended_actions || []).filter(Boolean);
     if (actions.length) {
       lines.push("Plan:");
       actions.forEach((a, i) => lines.push(`  ${i+1}. ${typeof a === "string" ? a : a.action || a}`));
       lines.push("");
     }
+    // Critical actions
     if (mdm.critical_actions?.length) {
       lines.push("Immediate Actions:");
       mdm.critical_actions.forEach(a => lines.push(`  • ${a}`));
@@ -470,8 +506,9 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
     hour:"2-digit", minute:"2-digit"
   });
   const provider = extras.providerName ? ` — ${extras.providerName}` : "";
-  const sep = "\n";
+  const sep = mode === "epic" ? "\n" : "\n";
 
+  // Demographics header
   const demog2 = extras.demographics || {};
   const p2name = [demog2.firstName, demog2.lastName].filter(Boolean).join(" ") || "_______________";
 
@@ -484,12 +521,15 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
   if (p2.newVitals) {
     lines.push("UPDATED VITAL SIGNS:"); lines.push(p2.newVitals); lines.push("");
   }
+
   if (p2.labs) {
     lines.push("LAB RESULTS:"); lines.push(p2.labs); lines.push("");
   }
+
   if (p2.imaging) {
     lines.push("IMAGING RESULTS:"); lines.push(p2.imaging); lines.push("");
   }
+
   if (p2.ekg) {
     lines.push("EKG/ECG RESULTS:"); lines.push(p2.ekg); lines.push("");
   }
@@ -498,6 +538,7 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
     if (disp.reevaluation_note) {
       lines.push("REEVALUATION:"); lines.push(disp.reevaluation_note); lines.push("");
     }
+
     if (disp.result_flags?.length) {
       lines.push("CRITICAL/ABNORMAL VALUES:");
       disp.result_flags.forEach(f => {
@@ -506,9 +547,11 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
       });
       lines.push("");
     }
+
     if (disp.final_diagnosis) {
       lines.push("FINAL IMPRESSION:");
       lines.push(disp.final_diagnosis);
+      // ICD-10 codes
       if (extras.icdSelected?.length) {
         extras.icdSelected.forEach(c => lines.push(`  ${c.code} — ${c.description}`));
       }
@@ -516,9 +559,10 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
     }
 
     lines.push(`DISPOSITION: ${disp.disposition || "—"}`);
-    if (disp.plan_summary) { lines.push(disp.plan_summary); }
+    if (disp.disposition_plan) { lines.push(disp.disposition_plan); }
     lines.push("");
 
+    // Interventions
     const confirmedInts = (extras.interventions || []).filter(i => i.confirmed !== false);
     if (confirmedInts.length) {
       lines.push("ED INTERVENTIONS:");
@@ -532,6 +576,7 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
       lines.push("");
     }
 
+    // Discharge instructions — only when discharging
     const di = disp.discharge_instructions;
     if (di && disp.disposition && !disp.disposition.toLowerCase().includes("admit") &&
         !disp.disposition.toLowerCase().includes("icu")) {
@@ -556,12 +601,61 @@ function buildPhase2Copy(p2, disp, extras = {}, mode = "plain") {
   return lines.join(sep);
 }
 
+
+
+// ─── SOAP NOTE BUILDER (v11.5) ────────────────────────────────────────────────
+function buildSOAPNote(p1, mdm, p2, disp) {
+  const lines = [];
+  lines.push("SUBJECTIVE:");
+  if (p1.cc)  lines.push(`Chief Complaint: ${p1.cc}`);
+  if (p1.hpi) { lines.push("History of Present Illness:"); lines.push(p1.hpi); }
+  if (p1.ros) { lines.push("Review of Systems:"); lines.push(p1.ros); }
+  lines.push("");
+  lines.push("OBJECTIVE:");
+  if (p1.vitals)  lines.push(`Vital Signs: ${p1.vitals}`);
+  if (p1.exam)    { lines.push("Physical Examination:"); lines.push(p1.exam); }
+  if (p2?.labs)   { lines.push("Laboratory Results:"); lines.push(p2.labs); }
+  if (p2?.imaging){ lines.push("Imaging Results:"); lines.push(p2.imaging); }
+  if (p2?.ekg)    lines.push(`EKG: ${p2.ekg}`);
+  lines.push("");
+  lines.push("ASSESSMENT:");
+  if (mdm?.working_diagnosis) lines.push(`Working Diagnosis: ${mdm.working_diagnosis}`);
+  if (mdm?.mdm_level)         lines.push(`MDM Level: ${mdm.mdm_level}${mdm.mdm_confidence ? " [" + mdm.mdm_confidence + "]" : ""}`);
+  if (mdm?.differential?.length) {
+    lines.push("Differential Diagnosis:");
+    mdm.differential.forEach((d, i) => {
+      if (!d || typeof d !== "object") return;
+      lines.push(`  ${i+1}. ${d.diagnosis} (${d.probability})${d.must_not_miss ? " [MUST NOT MISS]" : ""}`);
+    });
+  }
+  if (mdm?.mdm_narrative) { lines.push(""); lines.push(mdm.mdm_narrative); }
+  if (mdm?.red_flags?.length) lines.push(`Red Flags: ${mdm.red_flags.join("; ")}`);
+  lines.push("");
+  lines.push("PLAN:");
+  if (disp?.plan_summary)      lines.push(disp.plan_summary);
+  if (disp?.disposition)       lines.push(`Disposition: ${disp.disposition}`);
+  if (disp?.admission_service) lines.push(`Admission Service: ${disp.admission_service}`);
+  if (disp?.disposition_rationale) lines.push(`Rationale: ${disp.disposition_rationale}`);
+  if (disp?.orders?.length) {
+    lines.push("Orders:");
+    disp.orders.forEach((o, i) => lines.push(`  ${i+1}. ${o}`));
+  }
+  const di = disp?.discharge_instructions;
+  if (di && disp?.disposition && !disp.disposition.toLowerCase().includes("admit")) {
+    if (di.return_precautions?.length) {
+      lines.push("Return Precautions:");
+      di.return_precautions.forEach(r => lines.push(`  • ${r}`));
+    }
+    if (di.followup) lines.push(`Follow-up: ${di.followup}`);
+  }
+  return lines.join("\n");
+}
+
 export {
-  MDM_SCHEMA,
-  DISP_SCHEMA,
   buildMDMPrompt,
   buildDispPrompt,
   buildMDMBlock,
+  buildSOAPNote,
   buildFullNote,
   buildPhase1Copy,
   buildPhase2Copy,

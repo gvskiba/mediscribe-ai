@@ -108,7 +108,7 @@ const DISP_SCHEMA = {
 
 function buildMDMPrompt(cc, vitals, hpi, ros, exam, vhAnalysis, parsedMeds, parsedAllergies, encounterType) {
   const SPECIALTY_CONTEXT = {
-    peds:`\nSPECIALTY CONTEXT — PEDIATRIC ED: Weight-based dosing required. Vital sign interpretation must use age-appropriate norms. Fever threshold <3 months is a critical action. Consider NAT (non-accidental trauma) for unexplained injuries. Parental concern is a legitimate factor in MDM complexity. Social determinants and caregiver reliability affect disposition.`,
+    peds:"\nSPECIALTY CONTEXT — PEDIATRIC ED: Weight-based dosing required. Vital sign interpretation must use age-appropriate norms. Fever in infants under 3 months is a critical action. Consider NAT (non-accidental trauma) for unexplained injuries. Parental concern is a legitimate factor in MDM complexity. Social determinants and caregiver reliability affect disposition.",
     psych:`\nSPECIALTY CONTEXT — PSYCHIATRIC EMERGENCY: Medical clearance is required before psychiatric disposition. Assess for organic causes of AMS (glucose, electrolytes, toxicology, head CT if indicated). Document SI/HI with plan, means, intent, and prior attempts. Collateral history is high-value data. Involuntary hold criteria vary by state — document capacity assessment. Safety to self and others drives disposition.`,
     trauma:`\nSPECIALTY CONTEXT — TRAUMA: ATLS primary survey (ABCDE) governs MDM sequence. Document mechanism of injury. GCS and neurologic exam are mandatory. Hemorrhage control and hemodynamic stability drive immediate critical actions. Consider FAST exam and CXR as first-line imaging. Trauma surgery and orthopedics consult thresholds are lower than general ED.`,
     obs:`\nSPECIALTY CONTEXT — OBSERVATION UNIT: Focus on protocol-driven workup and time-defined endpoints. Chest pain obs: serial troponins, stress testing pathway. Syncope obs: telemetry, orthostatics, echo if indicated. Document medical necessity for observation vs inpatient admission. Expected LOS 8-48 hours. Discharge planning begins at admission.`,
@@ -161,7 +161,7 @@ Respond ONLY in valid JSON, no markdown fences.`;
 
 
 const SPECIALTY_DISP_CONTEXT = {
-  peds: `\nPEDIATRIC DISPOSITION: Weight-based dosing in all Rx. Instructions addressed to caregiver. Fever return precautions include age-specific thresholds (<3mo any fever = return immediately). Document caregiver verbalized understanding.`,
+  peds: "\nPEDIATRIC DISPOSITION: Weight-based dosing in all Rx. Instructions addressed to caregiver. Fever return precautions include age-specific thresholds (under 3 months any fever = return immediately). Document caregiver verbalized understanding.",
   psych: `\nPSYCHIATRIC DISPOSITION: Document safety plan, means restriction counseling, crisis line (988), psychiatric follow-up within 72h. If admitting: document capacity assessment and involuntary hold status. Return precautions include psychiatric crisis symptoms.`,
   trauma: `\nTRAUMA DISPOSITION: Reference completion of primary and secondary survey. Discharge instructions include trauma-specific return precautions: compartment syndrome, delayed intracranial hemorrhage, vascular injury. Document tetanus status. Specific follow-up timeframes required.`,
   obs: `\nOBSERVATION DISPOSITION: Document specific obs protocol and endpoint criteria. Plan must include monitoring period, pending result triggers. Chest pain obs discharge: document HEART score, troponin deltas, stress test plan, cardiology follow-up within 72h.`,

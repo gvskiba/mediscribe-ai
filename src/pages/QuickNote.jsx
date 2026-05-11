@@ -38,6 +38,9 @@ import {
 } from "./QuickNotePrompts";
 import { MDMPhraseLibrary } from "@/components/quicknote/QuickNoteMDMPhrases";
 import { ShiftQueuePanel }  from "@/components/quicknote/QuickNoteShiftQueue";
+import QuickNoteVitalsBanner from "@/components/quicknote/QuickNoteVitalsBanner";
+import QuickNoteDrugBanner   from "@/components/quicknote/QuickNoteDrugBanner";
+import QuickNoteAuditModal   from "@/components/quicknote/QuickNoteAuditModal";
 
 injectQNStyles();
 
@@ -119,79 +122,7 @@ function getMdmConfidenceStyle(confidence) {
   return null;
 }
 
-// ── Feature #7: Note audit modal ─────────────────────────────────────────────
-function NoteAuditModal({ note, onClose }) {
-  const [copied, setCopied] = useState(false);
-  const savedAt = note.created_date
-    ? new Date(note.created_date).toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"})
-    : "Unknown";
-  const copyText = () => {
-    navigator.clipboard.writeText(note.full_note_text||note.raw_note||"").then(()=>{
-      setCopied(true); setTimeout(()=>setCopied(false),2500);
-    });
-  };
-  return (
-    <div style={{ position:"fixed",inset:0,zIndex:300,display:"flex",alignItems:"center",
-      justifyContent:"center",background:"rgba(3,8,20,.88)",backdropFilter:"blur(6px)",padding:"16px" }}>
-      <div style={{ width:"100%",maxWidth:720,maxHeight:"88vh",display:"flex",flexDirection:"column",
-        background:"rgba(8,22,40,.98)",border:"1px solid rgba(61,255,160,.3)",
-        borderRadius:16,overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,.65)" }}>
-        <div style={{ display:"flex",alignItems:"center",gap:12,padding:"13px 18px",
-          borderBottom:"1px solid rgba(42,79,122,.35)",background:"rgba(61,255,160,.04)",flexShrink:0 }}>
-          <div style={{ flex:1 }}>
-            <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:"var(--qn-green)" }}>
-              Saved Note — Audit View
-            </div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"rgba(107,158,200,.5)",marginTop:3 }}>
-              Saved {savedAt} · ID: {note.id}
-            </div>
-          </div>
-          <button onClick={copyText} style={{ padding:"5px 13px",borderRadius:7,cursor:"pointer",
-            fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-            border:`1px solid ${copied?"rgba(61,255,160,.5)":"rgba(42,79,122,.4)"}`,
-            background:copied?"rgba(61,255,160,.1)":"transparent",
-            color:copied?"var(--qn-green)":"var(--qn-txt3)" }}>
-            {copied?"✓ Copied":"Copy text"}
-          </button>
-          <button onClick={onClose} style={{ padding:"5px 11px",borderRadius:7,cursor:"pointer",
-            fontFamily:"'JetBrains Mono',monospace",fontSize:9,
-            border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)" }}>
-            ✕ Close
-          </button>
-        </div>
-        <div style={{ display:"flex",gap:7,flexWrap:"wrap",padding:"10px 18px",
-          borderBottom:"1px solid rgba(42,79,122,.2)",background:"rgba(14,37,68,.3)",flexShrink:0 }}>
-          {[{l:"CC",v:note.cc},{l:"Diagnosis",v:note.working_diagnosis},{l:"MDM",v:note.mdm_level},{l:"Disposition",v:note.disposition}]
-            .filter(f=>f.v).map(({l,v})=>(
-            <div key={l} style={{ display:"flex",alignItems:"center",gap:5,padding:"3px 9px",
-              borderRadius:5,background:"rgba(42,79,122,.2)",border:"1px solid rgba(42,79,122,.35)" }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"var(--qn-txt4)",letterSpacing:.8,textTransform:"uppercase" }}>{l}</span>
-              <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",fontWeight:600 }}>{v}</span>
-            </div>
-          ))}
-        </div>
-        <div style={{ flex:1,overflowY:"auto",padding:"14px 18px" }}>
-          <pre style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,lineHeight:1.8,
-            color:"var(--qn-txt2)",background:"rgba(14,37,68,.5)",border:"1px solid rgba(42,79,122,.25)",
-            borderRadius:8,padding:"12px 14px",whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0 }}>
-            {note.full_note_text||note.raw_note||"No note text found."}
-          </pre>
-        </div>
-        <div style={{ padding:"9px 18px",borderTop:"1px solid rgba(42,79,122,.2)",
-          background:"rgba(14,37,68,.35)",flexShrink:0,display:"flex",alignItems:"center",gap:8 }}>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.35)",flex:1 }}>
-            Exact content saved to ClinicalNote entity. Verify before closing encounter.
-          </span>
-          <button onClick={onClose} style={{ padding:"6px 16px",borderRadius:7,cursor:"pointer",
-            fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:12,
-            border:"1px solid rgba(0,229,192,.4)",background:"rgba(0,229,192,.08)",color:"var(--qn-teal)" }}>
-            Verified — Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 // ─── CRITICAL VALUE DETECTOR ──────────────────────────────────────────────────
 function detectCriticalValues(labsText) {
@@ -1637,7 +1568,7 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",
               letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.1)",
               border:"1px solid rgba(0,229,192,.25)",borderRadius:4,padding:"2px 7px"}}>
-              v11.4 · AI Plan · AI Labs · AI Imaging
+              v11.5 · AI Plan · AI Labs · Drug Check
             </span>
           </div>
         )}
@@ -1670,43 +1601,12 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
         <PriorVisitsPanel visits={priorVisits} loading={priorVisitsLoading} onLoad={loadPriorVisits} />
         {(vitals.trim().length>10||labs.trim().length>5)&&<SepsisBanner vitalsText={vitals} labsText={labs} />}
 
-        {/* Feature #1: Vitals interpretation banner */}
-        {vitalsFlags.length>0&&(
-          <div style={{ marginBottom:10,borderRadius:10,overflow:"hidden",background:"rgba(8,22,40,.6)",
-            border:"1px solid rgba(255,107,107,.3)" }}>
-            <div style={{ display:"flex",alignItems:"center",gap:8,padding:"7px 14px",
-              background:"rgba(255,107,107,.08)",borderBottom:"1px solid rgba(255,107,107,.2)" }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                color:"var(--qn-coral)",letterSpacing:1.5,textTransform:"uppercase" }}>⚡ Vitals Interpretation</span>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(255,107,107,.5)" }}>
-                sync · no AI · triage vitals
-              </span>
-            </div>
-            <div style={{ padding:"8px 14px",display:"flex",flexDirection:"column",gap:6 }}>
-              {vitalsFlags.map((flag,i)=>(
-                <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,padding:"7px 10px",borderRadius:7,
-                  background:flag.level==="critical"?"rgba(255,107,107,.08)":"rgba(245,200,66,.06)",
-                  border:`1px solid ${flag.level==="critical"?"rgba(255,107,107,.3)":"rgba(245,200,66,.25)"}` }}>
-                  <div style={{ width:8,height:8,borderRadius:"50%",flexShrink:0,marginTop:3,
-                    background:flag.level==="critical"?"var(--qn-coral)":"var(--qn-gold)",
-                    boxShadow:flag.level==="critical"?"0 0 6px rgba(255,107,107,.5)":"0 0 6px rgba(245,200,66,.4)" }} />
-                  <div style={{ flex:1 }}>
-                    <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,marginRight:8,
-                      color:flag.level==="critical"?"var(--qn-coral)":"var(--qn-gold)" }}>{flag.label}</span>
-                    <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt3)",lineHeight:1.5 }}>
-                      {flag.detail}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <QuickNoteVitalsBanner flags={vitalsFlags} />
 
         <Phase1Panel
           cc={cc} setCC={setCC} vitals={vitals} setVitals={setVitals}
           hpi={hpi} setHpi={setHpi} ros={ros} setRos={setRos} exam={exam} setExam={setExam}
-          encounterType={encounterType} setEncounterType={setEncounterType}
+          encounterType={encounterType} setEncounterType={handleEncounterTypeChange}
           hpiMode={hpiMode} setHpiMode={setHpiMode} hpiSummary={hpiSummary} setHpiSummary={setHpiSummary}
           hpiSumBusy={hpiSumBusy} hpiSumError={hpiSumError} copiedHpiSum={copiedHpiSum} setCopiedHpiSum={setCopiedHpiSum}
           summarizeHPI={summarizeHPI}
@@ -1776,79 +1676,11 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
           />
         )}
 
-        {/* Feature #9: Drug interaction banner */}
-        {(drugCheckBusy||(drugInteractions&&!drugCheckDismissed))&&(
-          <div style={{ marginBottom:10,borderRadius:10,overflow:"hidden",background:"rgba(8,22,40,.55)",
-            border:`1px solid ${drugCheckBusy?"rgba(42,79,122,.35)":drugInteractions?.clean?"rgba(61,255,160,.3)":"rgba(255,107,107,.35)"}` }}>
-            <div style={{ display:"flex",alignItems:"center",gap:9,padding:"8px 14px",
-              background:drugInteractions?.clean?"rgba(61,255,160,.05)":"rgba(255,107,107,.05)" }}>
-              <span style={{ fontSize:13 }}>{drugCheckBusy?"⏳":drugInteractions?.clean?"✓":"⚠"}</span>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,letterSpacing:1,
-                textTransform:"uppercase",flex:1,
-                color:drugCheckBusy?"var(--qn-txt4)":drugInteractions?.clean?"var(--qn-green)":"var(--qn-coral)" }}>
-                {drugCheckBusy?"Checking drug interactions…":drugInteractions?.clean?"No significant interactions found":"Drug Safety Alert"}
-              </span>
-              {!drugCheckBusy&&parsedMeds?.length>0&&(
-                <button onClick={runDrugInteractionCheck} style={{ padding:"3px 10px",borderRadius:5,cursor:"pointer",
-                  fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                  border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)" }}>↻ Re-run</button>
-              )}
-              {!drugCheckBusy&&(
-                <button onClick={()=>setDrugCheckDismissed(true)} style={{ padding:"3px 8px",borderRadius:5,cursor:"pointer",
-                  fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-                  border:"1px solid rgba(42,79,122,.3)",background:"transparent",color:"var(--qn-txt4)" }}>✕</button>
-              )}
-            </div>
-            {!drugCheckBusy&&!drugInteractions?.clean&&(
-              <div style={{ padding:"10px 14px",display:"flex",flexDirection:"column",gap:8 }}>
-                {drugInteractions?.interactions?.map((item,i)=>(
-                  <div key={`int-${i}`} style={{ padding:"9px 12px",borderRadius:8,
-                    background:item.severity==="major"?"rgba(255,107,107,.08)":"rgba(245,200,66,.06)",
-                    border:`1px solid ${item.severity==="major"?"rgba(255,107,107,.3)":"rgba(245,200,66,.25)"}` }}>
-                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:5 }}>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,
-                        letterSpacing:1,textTransform:"uppercase",borderRadius:4,padding:"2px 7px",
-                        color:item.severity==="major"?"var(--qn-coral)":"var(--qn-gold)",
-                        background:item.severity==="major"?"rgba(255,107,107,.15)":"rgba(245,200,66,.12)",
-                        border:`1px solid ${item.severity==="major"?"rgba(255,107,107,.4)":"rgba(245,200,66,.3)"}` }}>
-                        {item.severity?.toUpperCase()||"INTERACTION"}
-                      </span>
-                      <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt)",fontWeight:700 }}>
-                        {item.drugs_involved}
-                      </span>
-                    </div>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",lineHeight:1.6,marginBottom:5 }}>
-                      {item.interaction}
-                    </div>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-teal)",fontWeight:600 }}>
-                      → {item.recommendation}
-                    </div>
-                  </div>
-                ))}
-                {drugInteractions?.contraindications?.map((item,i)=>(
-                  <div key={`ci-${i}`} style={{ padding:"9px 12px",borderRadius:8,
-                    background:"rgba(155,109,255,.07)",border:"1px solid rgba(155,109,255,.3)" }}>
-                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:5 }}>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,
-                        color:"var(--qn-purple)",background:"rgba(155,109,255,.12)",
-                        border:"1px solid rgba(155,109,255,.3)",borderRadius:4,padding:"2px 7px",
-                        letterSpacing:1,textTransform:"uppercase" }}>CONTRAINDICATION</span>
-                      <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt)",fontWeight:700 }}>
-                        {item.drug}
-                      </span>
-                    </div>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",lineHeight:1.6,marginBottom:5 }}>
-                      {item.reason}
-                    </div>
-                    <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-teal)",fontWeight:600 }}>
-                      → {item.recommendation}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        <QuickNoteDrugBanner
+          drugCheckBusy={drugCheckBusy} drugInteractions={drugInteractions}
+          drugCheckDismissed={drugCheckDismissed} setDrugCheckDismissed={setDrugCheckDismissed}
+          parsedMeds={parsedMeds} runDrugInteractionCheck={runDrugInteractionCheck}
+        />
 
         {p2Open&&(labs||imaging||ekg)&&(
           <QuickNoteAbnormals labs={labs} imaging={imaging} ekg={ekg}
@@ -1935,9 +1767,8 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
         {/* Feature #6: Shift Queue */}
         <ShiftQueuePanel />
 
-        {/* Feature #7: Note audit modal */}
         {showNoteAudit&&auditNote&&(
-          <NoteAuditModal note={auditNote} onClose={()=>{ setShowNoteAudit(false); setAuditNote(null); }} />
+          <QuickNoteAuditModal note={auditNote} onClose={()=>{ setShowNoteAudit(false); setAuditNote(null); }} />
         )}
 
         {/* Feature #7: Save toast with audit link */}

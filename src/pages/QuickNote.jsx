@@ -8,7 +8,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { dispColor, StepProgress, MDMResult, DispositionResult,
+import { dispColor, StepProgress,
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
 import { injectQNStyles } from "./QuickNoteStyle.jsx";
@@ -21,13 +21,15 @@ import { ActionBar } from "./QuickNoteActionBar";
 import { TimelineCard } from "./QuickNoteTimeline";
 import { SepsisBanner } from "./QuickNoteSepsis";
 import { ProcedureNoteModal } from "./QuickNoteProcedure";
-import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
+import { PriorVisitsPanel } from "./QuickNoteExtras";
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
 import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
 import { QuickNoteExamHelper } from "@/components/quicknote/QuickNoteExamHelper";
 import { QuickNoteAbnormals } from "@/components/quicknote/QuickNoteAbnormals";
-import { GuidelineAssist } from "@/components/quicknote/QuickNoteGuidelines";
-import { DispositionCriteriaBuilder } from "@/components/quicknote/QuickNoteDispositionCriteria";
+import QuickNoteHPIScaffold from "./QuickNoteHPIScaffold";
+import QuickNotePatientQueue from "./QuickNotePatientQueue";
+import QuickNoteMDMCard from "./QuickNoteMDMCard";
+import QuickNoteDispositionCard from "./QuickNoteDispositionCard";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
@@ -1348,12 +1350,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   });
 
   const isFatigueRisk = useMemo(()=>{ const h=new Date().getHours(); return h>=17||h<=7; },[]);
-  const getSaveLabel = (ts) => {
-    if (!ts) return null;
-    const min=Math.floor((Date.now()-ts)/60000);
-    if (min<1) return "just now"; if (min===1) return "1m ago";
-    if (min<60) return `${min}m ago`; return `${Math.floor(min/60)}h ago`;
-  };
 
   // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
@@ -1404,126 +1400,13 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         <StepProgress phase1Done={Boolean(mdmResult)} phase2Done={Boolean(dispResult)} p2Open={p2Open} />
 
         {!embedded&&(
-          <div style={{marginBottom:10}} className="no-print">
-            {slotsRestored&&(
-              <div className="qn-fade" style={{display:"flex",alignItems:"center",gap:10,
-                padding:"8px 14px",marginBottom:8,borderRadius:10,
-                background:"rgba(0,229,192,.06)",border:"1px solid rgba(0,229,192,.3)"}}>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--qn-teal)"}}>↻</span>
-                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",flex:1}}>
-                  <strong style={{color:"var(--qn-teal)"}}>{slotsRestoredCount} patient slot{slotsRestoredCount>1?"s":""}</strong> restored from your last session
-                </span>
-                <button onClick={()=>setSlotsRestored(false)}
-                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",
-                    fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-                    border:"1px solid rgba(42,79,122,.4)",background:"transparent",
-                    color:"var(--qn-txt4)"}}>✕</button>
-              </div>
-            )}
-            {/* Patient Queue Bar */}
-            <div style={{display:"flex",gap:6,padding:"8px 10px",borderRadius:12,
-              background:"rgba(8,22,40,.7)",border:"1px solid rgba(42,79,122,.35)"}}>
-              {slots.map((slot,i)=>{
-                const isActive=i===activeSlot;
-                const isEmpty=!slot.cc&&!slot.hpi&&!slot.mdmResult;
-                const isSaved=!!slot.savedNoteId;
-                const hasDisp=!!slot.dispResult;
-                const hasMDM=!!slot.mdmResult;
-                const hasP2Data=!!(slot.labs||slot.imaging||slot.newVitals);
-                const hasP1Data=!!(slot.cc||slot.hpi);
-                const hasCacheId=!!slotCacheIds[i];
-                const status=isEmpty?null
-                  :isSaved?{label:"Saved",color:"var(--qn-green)",bg:"rgba(61,255,160,.12)",bd:"rgba(61,255,160,.4)"}
-                  :hasDisp?{label:"Dispo Done",color:"var(--qn-purple)",bg:"rgba(155,109,255,.12)",bd:"rgba(155,109,255,.4)"}
-                  :hasMDM&&hasP2Data?{label:"Phase 2",color:"var(--qn-blue)",bg:"rgba(59,158,255,.12)",bd:"rgba(59,158,255,.4)"}
-                  :hasMDM?{label:"MDM Done",color:"var(--qn-teal)",bg:"rgba(0,229,192,.12)",bd:"rgba(0,229,192,.4)"}
-                  :hasP1Data?{label:"Phase 1",color:"var(--qn-gold)",bg:"rgba(245,200,66,.1)",bd:"rgba(245,200,66,.35)"}
-                  :null;
-                const displayName=slot.patientName||(slot.cc?slot.cc.slice(0,22)+(slot.cc.length>22?"…":""):null);
-                const minutesAgo=slot.lastActivity?Math.floor((Date.now()-slot.lastActivity)/60000):null;
-                const timeLabel=minutesAgo!==null&&minutesAgo<120&&!isActive
-                  ?minutesAgo<1?"just now":minutesAgo===1?"1m ago":`${minutesAgo}m ago`:null;
-                const etMap={adult:"ED",peds:"Peds",psych:"Psych",trauma:"Trauma",obs:"Obs"};
-                const etLabel=slot.encounterType&&slot.encounterType!=="adult"?etMap[slot.encounterType]||slot.encounterType:null;
-                const saveLabel=getSaveLabel(slotSaveTimes[i]);
-                return (
-                  <button key={i} onClick={()=>switchToSlot(i)}
-                    style={{flex:1,padding:"8px 10px",borderRadius:9,cursor:"pointer",
-                      textAlign:"left",transition:"all .15s",position:"relative",
-                      border:`1px solid ${isActive?"rgba(0,229,192,.55)":isEmpty?"rgba(42,79,122,.2)":"rgba(42,79,122,.45)"}`,
-                      background:isActive?"rgba(0,229,192,.1)":isEmpty?"rgba(8,22,40,.3)":"rgba(14,37,68,.55)"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:isEmpty?0:4}}>
-                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,letterSpacing:.5,color:isActive?"var(--qn-teal)":"var(--qn-txt4)"}}>P{i+1}</span>
-                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(42,79,122,.5)"}}>Ctrl+{i+1}</span>
-                      <div style={{flex:1}} />
-                      {isSaved&&<div style={{width:7,height:7,borderRadius:"50%",background:"var(--qn-green)",boxShadow:"0 0 5px rgba(61,255,160,.6)",flexShrink:0}} />}
-                      {isActive&&!isSaved&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--qn-teal)",flexShrink:0,animation:"qnpulse 1.2s ease-in-out infinite"}} />}
-                      {hasCacheId&&!isSaved&&<div style={{width:5,height:5,borderRadius:"50%",background:"rgba(59,158,255,.6)",flexShrink:0}} />}
-                    </div>
-                    {isEmpty?(
-                      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"rgba(42,79,122,.5)",fontStyle:"italic"}}>Empty</div>
-                    ):(
-                      <>
-                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:isActive?700:600,
-                          color:isActive?"var(--qn-txt)":"var(--qn-txt2)",lineHeight:1.25,marginBottom:4,
-                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          {displayName||"No CC entered"}
-                        </div>
-                        <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
-                          {slot.patientAge&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)"}}>{slot.patientAge}yo</span>}
-                          {etLabel&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.6)",background:"rgba(42,79,122,.2)",borderRadius:4,padding:"1px 5px"}}>{etLabel}</span>}
-                          {timeLabel&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.4)",marginLeft:"auto"}}>{timeLabel}</span>}
-                        </div>
-                        {status&&(
-                          <div style={{marginTop:5,display:"inline-flex",alignItems:"center",gap:4,padding:"2px 7px",borderRadius:5,background:status.bg,border:`1px solid ${status.bd}`}}>
-                            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,color:status.color,letterSpacing:.5,textTransform:"uppercase"}}>{status.label}</span>
-                          </div>
-                        )}
-                        <div style={{display:"flex",alignItems:"center",gap:4,marginTop:5}}>
-                          {saveLabel&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(59,158,255,.5)",flex:1}}>☁ {saveLabel}</span>}
-                          <button onClick={e=>{e.stopPropagation();saveAllSlots(true);}} disabled={slotSaving}
-                            style={{padding:"1px 7px",borderRadius:4,cursor:"pointer",
-                              fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,
-                              border:`1px solid ${slotSaving?"rgba(42,79,122,.25)":"rgba(59,158,255,.4)"}`,
-                              background:slotSaving?"rgba(14,37,68,.3)":"rgba(59,158,255,.08)",
-                              color:slotSaving?"var(--qn-txt4)":"var(--qn-blue)"}}>
-                            {slotSaving?"●":"↑ Save"}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </button>
-                );
-              })}
-              <div style={{display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 2px"}}>
-                <div style={{width:1,height:40,background:"rgba(42,79,122,.35)"}} />
-              </div>
-              <button onClick={()=>setShowKbHelp(h=>!h)} title="Keyboard shortcuts (Shift+?)"
-                style={{alignSelf:"center",padding:"6px 10px",borderRadius:7,cursor:"pointer",
-                  fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,
-                  border:"1px solid rgba(42,79,122,.4)",background:"transparent",
-                  color:"var(--qn-txt4)",flexShrink:0}}>?</button>
-            </div>
-            {slots.some(s=>!!(s.cc||s.hpi||s.mdmResult))&&(
-              <div style={{display:"flex",gap:10,marginTop:5,paddingLeft:4,flexWrap:"wrap",alignItems:"center"}}>
-                {[
-                  {label:"Phase 1",color:"var(--qn-gold)"},{label:"MDM Done",color:"var(--qn-teal)"},
-                  {label:"Phase 2",color:"var(--qn-blue)"},{label:"Dispo Done",color:"var(--qn-purple)"},
-                  {label:"Saved",color:"var(--qn-green)"},
-                ].map(({label,color})=>(
-                  <div key={label} style={{display:"flex",alignItems:"center",gap:4}}>
-                    <div style={{width:6,height:6,borderRadius:"50%",background:color,flexShrink:0}} />
-                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.5)",letterSpacing:.4}}>{label}</span>
-                  </div>
-                ))}
-                <div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <div style={{width:5,height:5,borderRadius:"50%",background:"rgba(59,158,255,.6)",flexShrink:0}} />
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.5)"}}>Session saved</span>
-                </div>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(42,79,122,.5)",marginLeft:4}}>Ctrl+1–4 switch · Ctrl+S save all</span>
-              </div>
-            )}
-          </div>
+          <QuickNotePatientQueue
+            slots={slots} activeSlot={activeSlot}
+            slotCacheIds={slotCacheIds} slotSaveTimes={slotSaveTimes} slotSaving={slotSaving}
+            switchToSlot={switchToSlot} saveAllSlots={saveAllSlots}
+            setShowKbHelp={setShowKbHelp}
+            slotsRestored={slotsRestored} slotsRestoredCount={slotsRestoredCount} setSlotsRestored={setSlotsRestored}
+          />
         )}
 
         {showUndo&&<UndoToast onUndo={handleUndo} onDismiss={()=>{clearTimeout(undoTimer);setShowUndo(false);setUndoData(null);}} />}
@@ -1566,214 +1449,31 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         <QuickNoteExamHelper exam={exam} cc={cc} autoExamFromCC={autoExamFromCC} autoExamBusy={autoExamBusy} />
 
         {/* HPI Scaffold */}
-        {cc.trim()&&(()=>{
-          const scaffold=getScaffold(cc);
-          if (!scaffold||hpi.trim()===scaffold.text.trim()) return null;
-          return (
-            <div style={{marginBottom:10,background:"rgba(59,158,255,.04)",border:"1px solid rgba(59,158,255,.2)",borderRadius:12,overflow:"hidden"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-                padding:"7px 14px",borderBottom:scaffoldOpen?"1px solid rgba(59,158,255,.15)":"none",cursor:"pointer"}}
-                onClick={()=>setScaffoldOpen(p=>!p)}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"var(--qn-blue)",letterSpacing:1.5,textTransform:"uppercase"}}>
-                    💡 HPI Scaffold — {scaffold.cc}
-                  </span>
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-                    color:hpi.trim()?"var(--qn-gold)":"var(--qn-txt4)",
-                    background:hpi.trim()?"rgba(245,200,66,.1)":"rgba(59,158,255,.1)",
-                    border:`1px solid ${hpi.trim()?"rgba(245,200,66,.25)":"rgba(59,158,255,.2)"}`,
-                    borderRadius:4,padding:"1px 6px"}}>
-                    {hpi.trim()?"Compare / Reload":"Click to expand"}
-                  </span>
-                </div>
-                <span style={{color:"var(--qn-txt4)",fontSize:11}}>{scaffoldOpen?"▲":"▼"}</span>
-              </div>
-              {scaffoldOpen&&(
-                <div style={{padding:"10px 14px"}}>
-                  <pre style={{margin:"0 0 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,
-                    color:"var(--qn-txt2)",lineHeight:1.75,background:"rgba(59,158,255,.04)",
-                    borderRadius:8,padding:"10px 14px",border:"1px solid rgba(59,158,255,.12)",
-                    whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
-                    {scaffold.text}
-                  </pre>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    <button onClick={()=>{setHpi(scaffold.text);setScaffoldOpen(false);}}
-                      style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",
-                        border:"1px solid rgba(59,158,255,.45)",background:"rgba(59,158,255,.1)",
-                        color:"var(--qn-blue)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}}>
-                      {hpi.trim()?"↩ Replace HPI with scaffold":"↓ Insert into HPI"}
-                    </button>
-                    {hpi.trim()&&(
-                      <button onClick={()=>{setHpi(prev=>scaffold.text+"\n\n"+prev);setScaffoldOpen(false);}}
-                        style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",
-                          border:"1px solid rgba(245,200,66,.4)",background:"rgba(245,200,66,.07)",
-                          color:"var(--qn-gold)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}}>
-                        ↑ Prepend scaffold
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        {cc.trim()&&(
+          <QuickNoteHPIScaffold
+            scaffold={getScaffold(cc)} hpi={hpi} setHpi={setHpi}
+            open={scaffoldOpen} setOpen={setScaffoldOpen}
+          />
+        )}
 
         {/* MDM Result */}
         {mdmResult&&(
-          <div style={{marginBottom:14,padding:"16px",background:"rgba(8,22,40,.5)",
-            border:"1px solid rgba(0,229,192,.2)",borderRadius:14}} className="print-body">
-            <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14,flexWrap:"wrap"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:"var(--qn-teal)"}}>Initial Impression</span>
-              {mdmInitialTs&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-teal)",letterSpacing:.5,background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.25)",borderRadius:4,padding:"2px 7px"}}>⏱ {mdmInitialTs}</span>}
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.2)",borderRadius:4,padding:"2px 7px"}}>AMA/CMS 2023 · ACEP</span>
-              {isBounceback&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-coral)",background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.35)",borderRadius:4,padding:"2px 7px"}}>⚠ Bounceback</span>}
-              <div style={{flex:1}} />
-              <button onClick={runWorkupRationale} disabled={workupRationaleBusy}
-                style={{padding:"4px 11px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                  border:`1px solid ${workupRationaleBusy?"rgba(42,79,122,.3)":"rgba(245,200,66,.4)"}`,
-                  background:workupRationaleBusy?"rgba(14,37,68,.4)":"rgba(245,200,66,.07)",
-                  color:workupRationaleBusy?"var(--qn-txt4)":"var(--qn-gold)",letterSpacing:.4,transition:"all .15s"}}>
-                {workupRationaleBusy?"● …":"✦ Workup Rationale"}
-              </button>
-              <button onClick={()=>{navigator.clipboard.writeText(buildMDMBlock(mdmResult,{treatmentPlan,actionPlan})).then(()=>{setCopiedMDMFull(true);setTimeout(()=>setCopiedMDMFull(false),2000);});}}
-                style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
-                  border:`1px solid ${copiedMDMFull?"rgba(61,255,160,.5)":"rgba(0,229,192,.35)"}`,
-                  background:copiedMDMFull?"rgba(61,255,160,.1)":"rgba(0,229,192,.07)",
-                  color:copiedMDMFull?"var(--qn-green)":"var(--qn-teal)",transition:"all .15s"}}>
-                {copiedMDMFull?"✓ MDM Copied":"Copy MDM"}
-              </button>
-              <button onClick={()=>{setMdmResult(null);setDispResult(null);setP2Open(false);setWorkupRationale(null);setLabRecs(null);setImagingRecs(null);}}
-                style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
-                  border:"1px solid rgba(245,200,66,.35)",background:"rgba(245,200,66,.07)",color:"var(--qn-gold)"}}>↩ Re-run MDM</button>
-              <button onClick={runMDMAddendum} disabled={rerunAddendumBusy}
-                style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
-                  border:`1px solid ${rerunAddendumBusy?"rgba(42,79,122,.3)":"rgba(155,109,255,.4)"}`,
-                  background:rerunAddendumBusy?"rgba(14,37,68,.4)":"rgba(155,109,255,.07)",
-                  color:rerunAddendumBusy?"var(--qn-txt4)":"var(--qn-purple)",transition:"all .15s"}}>
-                {rerunAddendumBusy?"● …":"+ Addendum Re-run"}
-              </button>
-            </div>
-
-            <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
-              onNarrativeEdit={text=>setMdmResult(prev=>({...prev,mdm_narrative:text}))} />
-
-            {/* ── v11.4: My Clinical Plan — AI Generate button + MDMPlanEntry ── */}
-            <div style={{marginTop:12,padding:"12px 14px",borderRadius:10,
-              background:"rgba(14,37,68,.4)",border:"1px solid rgba(42,79,122,.3)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-                <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-txt2)",flex:1}}>
-                  My Clinical Plan
-                </span>
-                <button
-                  onClick={generateClinicalPlan}
-                  disabled={treatmentPlanBusy}
-                  title="AI generates evidence-based treatment plan and action items from working diagnosis"
-                  style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",
-                    fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:11,
-                    transition:"all .15s",
-                    border:`1px solid ${treatmentPlanBusy?"rgba(42,79,122,.3)":"rgba(0,229,192,.5)"}`,
-                    background:treatmentPlanBusy?"rgba(14,37,68,.4)":"rgba(0,229,192,.1)",
-                    color:treatmentPlanBusy?"var(--qn-txt4)":"var(--qn-teal)",
-                    boxShadow:treatmentPlanBusy?"none":"0 0 12px rgba(0,229,192,.08)"}}>
-                  {treatmentPlanBusy
-                    ? <><span style={{marginRight:5}}>●</span>Generating Plan…</>
-                    : (treatmentPlan||actionPlan)
-                    ? "↻ Re-generate Plan"
-                    : "✦ AI Generate Plan"}
-                </button>
-                {(treatmentPlan||actionPlan)&&(
-                  <button onClick={()=>{setTreatmentPlan("");setActionPlan("");}}
-                    style={{padding:"5px 10px",borderRadius:7,cursor:"pointer",
-                      fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                      border:"1px solid rgba(42,79,122,.35)",background:"transparent",
-                      color:"var(--qn-txt4)"}}>Clear</button>
-                )}
-              </div>
-              {!treatmentPlan&&!actionPlan&&!treatmentPlanBusy&&(
-                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-                  color:"rgba(107,158,200,.4)",letterSpacing:.4,marginBottom:8}}>
-                  Click ✦ AI Generate Plan to get an evidence-based treatment plan and action item checklist for this presentation
-                </div>
-              )}
-              <MDMPlanEntry
-                treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan}
-                actionPlan={actionPlan}       setActionPlan={setActionPlan}
-              />
-            </div>
-
-            <GuidelineAssist workingDx={mdmResult?.working_diagnosis||""} mdmNarrative={mdmResult?.mdm_narrative||""}
-              onInsertSentence={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
-
-            {mdmResult.mdm_level&&(
-              <details style={{marginTop:10}}>
-                <summary style={{cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",listStyle:"none"}}>
-                  ▶ Why {mdmResult.mdm_level} complexity?
-                </summary>
-                <div style={{marginTop:8,padding:"10px 12px",borderRadius:8,background:"rgba(14,37,68,.5)",border:"1px solid rgba(42,79,122,.3)"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-                    {[
-                      {label:"Problem Complexity",value:mdmResult.problem_complexity,color:"var(--qn-teal)"},
-                      {label:"Data Complexity",   value:mdmResult.data_complexity,   color:"var(--qn-blue)"},
-                      {label:"Risk Level",        value:mdmResult.risk_tier,         color:"var(--qn-gold)"},
-                    ].map(({label,value,color})=>(
-                      <div key={label}>
-                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"var(--qn-txt4)",letterSpacing:.8,textTransform:"uppercase",marginBottom:4}}>{label}</div>
-                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color,lineHeight:1.4}}>{value||"—"}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {mdmResult.risk_rationale&&<div style={{marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",lineHeight:1.6,paddingTop:8,borderTop:"1px solid rgba(42,79,122,.25)"}}>{mdmResult.risk_rationale}</div>}
-                  <div style={{marginTop:6,fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.45)"}}>MDM level driven by HIGHEST column — Problem, Data, or Risk</div>
-                </div>
-              </details>
-            )}
-
-            {workupRationale&&(
-              <div className="qn-fade" style={{marginTop:10,padding:"12px 14px",borderRadius:10,background:"rgba(245,200,66,.05)",border:"1px solid rgba(245,200,66,.3)"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"var(--qn-gold)",letterSpacing:1,textTransform:"uppercase",flex:1}}>Workup Rationale</span>
-                  <button onClick={()=>{navigator.clipboard.writeText(workupRationale).then(()=>{setCopiedWorkup(true);setTimeout(()=>setCopiedWorkup(false),2000);});}}
-                    style={{padding:"2px 9px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                      border:`1px solid ${copiedWorkup?"rgba(61,255,160,.5)":"rgba(245,200,66,.4)"}`,
-                      background:copiedWorkup?"rgba(61,255,160,.1)":"transparent",
-                      color:copiedWorkup?"var(--qn-green)":"var(--qn-gold)"}}>
-                    {copiedWorkup?"✓ Copied":"Copy"}
-                  </button>
-                </div>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",lineHeight:1.75}}>{workupRationale}</div>
-              </div>
-            )}
-
-            {mdmHistory.length>1&&(
-              <div style={{marginTop:10}}>
-                <button onClick={()=>setShowMdmHistory(p=>!p)}
-                  style={{padding:"3px 10px",borderRadius:6,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                    border:`1px solid ${showMdmHistory?"rgba(155,109,255,.5)":"rgba(42,79,122,.35)"}`,
-                    background:showMdmHistory?"rgba(155,109,255,.08)":"transparent",
-                    color:showMdmHistory?"var(--qn-purple)":"var(--qn-txt4)"}}>
-                  {showMdmHistory?"▲":"▼"} Clinical Progression ({mdmHistory.length} entries)
-                </button>
-                {showMdmHistory&&(
-                  <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
-                    {mdmHistory.map((h,i)=>(
-                      <div key={i} style={{padding:"9px 12px",borderRadius:8,
-                        background:i===mdmHistory.length-1?"rgba(155,109,255,.07)":"rgba(14,37,68,.4)",
-                        border:`1px solid ${i===mdmHistory.length-1?"rgba(155,109,255,.3)":"rgba(42,79,122,.25)"}`}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                            color:i===mdmHistory.length-1?"var(--qn-purple)":"var(--qn-txt4)",letterSpacing:.8,textTransform:"uppercase"}}>{h.trigger}</span>
-                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)"}}>{h.ts}</span>
-                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-gold)",background:"rgba(245,200,66,.1)",border:"1px solid rgba(245,200,66,.25)",borderRadius:3,padding:"1px 5px"}}>{h.mdm_level}</span>
-                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",flex:1}}>{h.working_diagnosis}</span>
-                        </div>
-                        {h.mdm_narrative&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt3)",lineHeight:1.5}}>{h.mdm_narrative.slice(0,200)}{h.mdm_narrative.length>200?"…":""}</div>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <QuickNoteMDMCard
+            mdmResult={mdmResult} setMdmResult={setMdmResult}
+            isBounceback={isBounceback} mdmInitialTs={mdmInitialTs}
+            copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
+            copiedMDMFull={copiedMDMFull} setCopiedMDMFull={setCopiedMDMFull}
+            workupRationale={workupRationale} setWorkupRationale={setWorkupRationale} workupRationaleBusy={workupRationaleBusy}
+            runWorkupRationale={runWorkupRationale}
+            copiedWorkup={copiedWorkup} setCopiedWorkup={setCopiedWorkup}
+            treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan}
+            actionPlan={actionPlan} setActionPlan={setActionPlan}
+            treatmentPlanBusy={treatmentPlanBusy} generateClinicalPlan={generateClinicalPlan}
+            mdmHistory={mdmHistory} showMdmHistory={showMdmHistory} setShowMdmHistory={setShowMdmHistory}
+            rerunAddendumBusy={rerunAddendumBusy} runMDMAddendum={runMDMAddendum}
+            setDispResult={setDispResult} setP2Open={setP2Open}
+            setLabRecs={setLabRecs} setImagingRecs={setImagingRecs}
+          />
         )}
 
         {p2Open&&(
@@ -1815,72 +1515,22 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         )}
 
         {dispResult&&(
-          <div style={{marginBottom:14,padding:"16px",background:"rgba(8,22,40,.5)",
-            border:`1px solid ${dispColor(dispResult.disposition)}30`,borderRadius:14}} className="print-body">
-            <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:dispColor(dispResult.disposition)}}>Final Impression</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:dispColor(dispResult.disposition),letterSpacing:.5,
-                background:`${dispColor(dispResult.disposition)}18`,border:`1px solid ${dispColor(dispResult.disposition)}40`,borderRadius:4,padding:"2px 7px"}}>Post-Results</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",background:"rgba(59,158,255,.1)",border:"1px solid rgba(59,158,255,.2)",borderRadius:4,padding:"2px 7px"}}>ACEP Guidelines</span>
-            </div>
-            <DispositionResult result={dispResult} copiedDisch={copiedDisch} setCopiedDisch={setCopiedDisch}
-              onDiagExplanationEdit={text=>setDispResult(prev=>({...prev,discharge_instructions:{...(prev.discharge_instructions||{}),diagnosis_explanation:text}}))} />
-            <DispositionCriteriaBuilder disposition={dispResult.disposition}
-              onAddToNote={text=>setDispResult(prev=>({...prev,disposition_rationale:(prev.disposition_rationale?prev.disposition_rationale+" ":"")+text}))} />
-            {dispResult?.discharge_instructions?.diagnosis_explanation&&
-             dispResult?.disposition&&
-             !dispResult.disposition.toLowerCase().includes("admit")&&
-             !dispResult.disposition.toLowerCase().includes("icu")&&(
-              <div style={{marginTop:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-                <button onClick={copyDischargeInstructions}
-                  style={{padding:"7px 16px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
-                    border:`1px solid ${copiedDischargeOnly?"rgba(61,255,160,.5)":"rgba(61,255,160,.35)"}`,
-                    background:copiedDischargeOnly?"rgba(61,255,160,.15)":"rgba(61,255,160,.07)",color:"var(--qn-green)"}}>
-                  {copiedDischargeOnly?"✓ Copied":"🖨 Copy Discharge Instructions"}
-                  {!copiedDischargeOnly&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,opacity:.5,marginLeft:6}}>[Shift+4]</span>}
-                </button>
-                <button onClick={()=>{const dx=encodeURIComponent(dispResult?.final_diagnosis||mdmResult?.working_diagnosis||"");navigator.clipboard?.writeText(dispResult?.final_diagnosis||mdmResult?.working_diagnosis||"").catch(()=>{});window.open(`/DischargeRxCard${dx?"?dx="+dx:""}`, "_blank");}}
-                  style={{padding:"7px 16px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
-                    border:"1px solid rgba(245,200,66,.4)",background:"rgba(245,200,66,.07)",color:"var(--qn-gold)"}}>
-                  💊 Open Rx Card
-                </button>
-              </div>
-            )}
-          </div>
+          <QuickNoteDispositionCard
+            dispResult={dispResult} setDispResult={setDispResult} mdmResult={mdmResult}
+            copiedDisch={copiedDisch} setCopiedDisch={setCopiedDisch}
+            copiedDischargeOnly={copiedDischargeOnly}
+            copyDischargeOnly={copyDischargeOnly} copyDischargeInstructions={copyDischargeInstructions}
+            showSDM={showSDM} setShowSDM={setShowSDM}
+            showAttestation={showAttestation} setShowAttestation={setShowAttestation}
+            showNursingHandoff={showNursingHandoff} setShowNursingHandoff={setShowNursingHandoff}
+            signOutBusy={signOutBusy} signOutDone={signOutDone} generateSignOut={generateSignOut}
+            providerInfo={providerInfo} demo={demo}
+          />
         )}
 
         {mdmResult&&(
           <ClinicalCalcsCard cc={cc} workingDx={mdmResult?.working_diagnosis||""} labs={labs} imaging={imaging}
             onAddToMDM={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
-        )}
-
-        {dispResult&&(
-          <div style={{marginBottom:14}}>
-            <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}} className="no-print">
-              {[
-                {key:"sdm",label:"Shared Decision Making",active:showSDM,setActive:setShowSDM,c:"rgba(59,158,255"},
-                {key:"att",label:"Physician Attestation",active:showAttestation,setActive:setShowAttestation,c:"rgba(155,109,255"},
-                {key:"nur",label:"Nursing Handoff",active:showNursingHandoff,setActive:setShowNursingHandoff,c:"rgba(61,255,160"},
-              ].map(({key,label,active,setActive,c})=>(
-                <button key={key} onClick={()=>setActive(s=>!s)}
-                  style={{padding:"5px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                    border:`1px solid ${active?c+",.5)":"rgba(42,79,122,.4)"}`,
-                    background:active?c+",.1)":"transparent",color:active?c+",1)":"var(--qn-txt4)",letterSpacing:.5}}>
-                  {active?"▲":"▼"} {label}
-                </button>
-              ))}
-              <button onClick={generateSignOut} disabled={signOutBusy}
-                style={{padding:"5px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                  border:`1px solid ${signOutDone?"rgba(61,255,160,.5)":signOutBusy?"rgba(42,79,122,.3)":"rgba(245,200,66,.4)"}`,
-                  background:signOutDone?"rgba(61,255,160,.1)":signOutBusy?"rgba(14,37,68,.4)":"rgba(245,200,66,.07)",
-                  color:signOutDone?"var(--qn-green)":signOutBusy?"var(--qn-txt4)":"var(--qn-gold)"}}>
-                {signOutDone?"✓ Sent":signOutBusy?"● Generating…":"→ Generate Sign-Out"}
-              </button>
-            </div>
-            {showSDM&&<SDMBlock disposition={dispResult.disposition} patientName={[demo?.firstName,demo?.lastName].filter(Boolean).join(" ")} />}
-            {showAttestation&&<AttestationBlock providerName={providerInfo.name} credentials={providerInfo.credentials} facility={providerInfo.facility} mdmLevel={mdmResult?.mdm_level} />}
-            {showNursingHandoff&&<NursingHandoff patientName={[demo?.firstName,demo?.lastName].filter(Boolean).join(" ")} diagnosis={dispResult.final_diagnosis||mdmResult?.working_diagnosis||""} disposition={dispResult.disposition} />}
-          </div>
         )}
 
         {dispResult&&(

@@ -2,7 +2,8 @@
 // Left-rail nav · keyboard-first · no router · no localStorage · no form/alert · straight quotes
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { StrokeQualityLog } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
+const StrokeQualityLog = base44.entities.StrokeQualityLog;
 
 const PRINT_CSS = `@media print { body { background: #fff !important; } .sh-no-print { display: none !important; } }`;
 
@@ -619,7 +620,12 @@ function PrintCardsTab(){
           </div>
           {pL("SCORING RUBRIC")}
           <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:14}}>
-            {[{score:"0",label:"Normal articulation",color:"#4ade80"},{score:"1",label:"Mild-moderate slurring — can be understood with effort",color:"#fbbf24"},{score:"2",label:"Severe — unintelligible or mute (not aphasia)",color:"#f87171"},{score:"UN",label:"Untestable — intubated or physical barrier",color:"#94a3b8"}].map(({score,label,color})=>(
+            {[
+              {score:"0",label:"Normal articulation",color:"#4ade80"},
+              {score:"1",label:"Mild-moderate slurring — can be understood with effort",color:"#fbbf24"},
+              {score:"2",label:"Severe — unintelligible or mute (not aphasia)",color:"#f87171"},
+              {score:"UN",label:"Untestable — intubated or physical barrier",color:"#94a3b8"},
+            ].map(({score,label,color})=>(
               <div key={score} style={{display:"flex",alignItems:"center",gap:12,background:color+"10",border:"1px solid "+color+"38",borderRadius:7,padding:"9px 13px"}}>
                 <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:17,fontWeight:700,color,minWidth:30,textAlign:"center"}}>{score}</div>
                 <div style={{fontSize:13,color:"#0f172a"}}>{label}</div>

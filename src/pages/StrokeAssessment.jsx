@@ -3,7 +3,16 @@
 // No router · no localStorage · no form/alert · straight quotes · <1600 lines
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { StrokeQualityLog } from "@/api/entities";
+
+// ─── PRINT CSS ────────────────────────────────────────────────────────────────
+const PRINT_CSS = `
+  @media print {
+    body { background: #fff !important; margin: 0; padding: 0; }
+    .sh-no-print { display: none !important; }
+  }
+  @media screen { }
+`;
 
 // ─── KEYBOARD HINT BAR ────────────────────────────────────────────────────────
 function KbHints({ hints }) {
@@ -29,47 +38,53 @@ function KbHints({ hints }) {
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const S = {
   wrap: {
-    background: "linear-gradient(135deg,rgba(10,18,42,0.97) 0%,rgba(14,26,52,0.97) 100%)",
+    background: "linear-gradient(160deg,rgba(8,14,36,0.99) 0%,rgba(12,22,52,0.99) 60%,rgba(10,20,44,0.99) 100%)",
     minHeight: "100vh", fontFamily: "'DM Sans',sans-serif", color: "#e8edf5",
-    padding: "0 0 48px 0",
+    padding: "0 0 64px 0",
   },
   header: {
-    background: "rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.08)",
-    padding: "14px 24px", display: "flex", alignItems: "center", gap: 14,
+    background: "rgba(255,255,255,0.03)",
+    borderBottom: "1px solid rgba(255,255,255,0.07)",
+    padding: "0 28px",
+    display: "flex", alignItems: "stretch", gap: 0, minHeight: 56,
   },
   backBtn: {
-    background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: 8, color: "#94a3b8", cursor: "pointer", fontSize: 13,
-    padding: "6px 12px", transition: "all .15s",
+    background: "transparent", border: "none",
+    color: "#475569", cursor: "pointer", fontSize: 13,
+    padding: "0 16px 0 0", transition: "color .15s", display: "flex", alignItems: "center", gap: 6,
   },
   title: {
-    fontFamily: "'Playfair Display',serif", fontSize: 20, fontWeight: 700,
-    color: "#f1f5f9", letterSpacing: "-0.3px",
+    fontFamily: "'Playfair Display',serif", fontSize: 19, fontWeight: 700,
+    color: "#f1f5f9", letterSpacing: "-0.3px", display: "flex", alignItems: "center",
   },
   badge: {
-    background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)",
-    borderRadius: 20, color: "#fca5a5", fontSize: 11, fontWeight: 700,
-    padding: "3px 10px", letterSpacing: "0.5px", textTransform: "uppercase",
+    background: "rgba(239,68,68,0.16)", border: "1px solid rgba(239,68,68,0.32)",
+    borderRadius: 20, color: "#fca5a5", fontSize: 10, fontWeight: 700,
+    padding: "3px 10px", letterSpacing: "0.6px", textTransform: "uppercase",
+    display: "flex", alignItems: "center", margin: "auto 0 auto 8px",
   },
-  tabs: {
-    display: "flex", gap: 4, padding: "16px 24px 0",
+  tabBar: {
+    display: "flex", gap: 2, padding: "12px 28px 0",
     borderBottom: "1px solid rgba(255,255,255,0.07)",
+    background: "rgba(0,0,0,0.15)", overflowX: "auto",
   },
-  tab: (active) => ({
-    background: active ? "rgba(20,184,166,0.15)" : "transparent",
-    border: active ? "1px solid rgba(20,184,166,0.35)" : "1px solid transparent",
-    borderBottom: active ? "1px solid rgba(10,18,42,0.97)" : "1px solid transparent",
-    borderRadius: "8px 8px 0 0", color: active ? "#2dd4bf" : "#64748b",
-    cursor: "pointer", fontSize: 13, fontWeight: active ? 700 : 500,
-    padding: "9px 18px", transition: "all .15s", marginBottom: -1,
+  tab: (active, accentBg, accentBorder, accentText) => ({
+    background: active ? (accentBg || "rgba(20,184,166,0.14)") : "transparent",
+    border: active ? ("1px solid " + (accentBorder || "rgba(20,184,166,0.35)")) : "1px solid transparent",
+    borderBottom: active ? "1px solid rgba(8,14,36,0.99)" : "1px solid transparent",
+    borderRadius: "8px 8px 0 0",
+    color: active ? (accentText || "#2dd4bf") : "#475569",
+    cursor: "pointer", fontSize: 12, fontWeight: active ? 700 : 500,
+    padding: "8px 16px", transition: "all .15s", marginBottom: -1,
+    whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6,
   }),
-  body: { padding: "24px" },
+  body: { padding: "22px 28px", maxWidth: 900, margin: "0 auto" },
   card: {
-    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
     borderRadius: 12, padding: "18px 20px", marginBottom: 14,
   },
   cardTitle: {
-    color: "#94a3b8", fontSize: 11, fontWeight: 700, letterSpacing: "0.8px",
+    color: "#64748b", fontSize: 10, fontWeight: 700, letterSpacing: "1px",
     textTransform: "uppercase", marginBottom: 12,
   },
   focusRow: (focused) => ({
@@ -103,9 +118,9 @@ const NIHSS_ITEMS = [
   { id: "2",  label: "2. Best Gaze", max: 2, opts: ["Normal","Partial gaze palsy","Forced deviation"] },
   { id: "3",  label: "3. Visual Fields", max: 3, opts: ["No visual loss","Partial hemianopia","Complete hemianopia","Bilateral / cortical blindness"] },
   { id: "4",  label: "4. Facial Palsy", max: 3, opts: ["Normal","Minor paralysis","Partial paralysis","Complete paralysis"] },
-  { id: "5a", label: "5a. Motor Arm — Left", max: 4, opts: ["No drift","Drift down","Some effort vs gravity","No effort vs gravity","No movement"], un: true },
+  { id: "5a", label: "5a. Motor Arm — Left",  max: 4, opts: ["No drift","Drift down","Some effort vs gravity","No effort vs gravity","No movement"], un: true },
   { id: "5b", label: "5b. Motor Arm — Right", max: 4, opts: ["No drift","Drift down","Some effort vs gravity","No effort vs gravity","No movement"], un: true },
-  { id: "6a", label: "6a. Motor Leg — Left", max: 4, opts: ["No drift","Drift down","Some effort vs gravity","No effort vs gravity","No movement"], un: true },
+  { id: "6a", label: "6a. Motor Leg — Left",  max: 4, opts: ["No drift","Drift down","Some effort vs gravity","No effort vs gravity","No movement"], un: true },
   { id: "6b", label: "6b. Motor Leg — Right", max: 4, opts: ["No drift","Drift down","Some effort vs gravity","No effort vs gravity","No movement"], un: true },
   { id: "7",  label: "7. Limb Ataxia", max: 2, opts: ["Absent","Present in 1 limb","Present in 2 limbs"], un: true },
   { id: "8",  label: "8. Sensory", max: 2, opts: ["Normal","Mild-moderate loss","Severe / total loss"] },
@@ -116,17 +131,16 @@ const NIHSS_ITEMS = [
 
 const nihssSeverity = (n) => {
   if (n === 0)  return { label: "No Stroke",       color: "#4ade80" };
-  if (n <= 4)   return { label: "Minor",           color: "#86efac" };
-  if (n <= 15)  return { label: "Moderate",        color: "#fbbf24" };
-  if (n <= 20)  return { label: "Moderate-Severe", color: "#fb923c" };
-  return               { label: "Severe",          color: "#f87171" };
+  if (n <= 4)   return { label: "Minor",            color: "#86efac" };
+  if (n <= 15)  return { label: "Moderate",         color: "#fbbf24" };
+  if (n <= 20)  return { label: "Moderate-Severe",  color: "#fb923c" };
+  return               { label: "Severe",           color: "#f87171" };
 };
 
 // ─── NIHSS TAB ────────────────────────────────────────────────────────────────
 function NIHSSTab({ nihss, setNihss }) {
   const [focusIdx, setFocusIdx] = useState(0);
   const panelRef = useRef(null);
-
   useEffect(() => { panelRef.current?.focus(); }, []);
 
   const score = NIHSS_ITEMS.reduce((s, item) => {
@@ -213,8 +227,7 @@ function NIHSSTab({ nihss, setNihss }) {
                           borderRadius: 6, color: val === "UN" ? "#fbbf24" : "#64748b",
                           cursor: "pointer", fontSize: 12, padding: "4px 10px",
                         }}>
-                        <span style={{ fontFamily: "'JetBrains Mono',monospace", marginRight: 5 }}>U</span>
-                        Untestable
+                        <span style={{ fontFamily: "'JetBrains Mono',monospace", marginRight: 5 }}>U</span>Untestable
                       </button>
                     )}
                   </div>
@@ -224,25 +237,6 @@ function NIHSSTab({ nihss, setNihss }) {
           );
         })}
       </div>
-
-      <div style={{ ...S.card, marginTop: 16 }}>
-        <div style={S.cardTitle}>Patient-Facing Materials</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, fontSize: 13 }}>
-          <div>
-            <div style={{ color: "#64748b", fontSize: 11, marginBottom: 6 }}>READING — item 9</div>
-            <div style={{ color: "#e2e8f0", fontStyle: "italic", lineHeight: 1.8 }}>
-              "You know how."<br />"Down to earth."<br />"I got home from work."<br />"Near the table in the dining room."<br />"They heard him speak on the radio last night."
-            </div>
-          </div>
-          <div>
-            <div style={{ color: "#64748b", fontSize: 11, marginBottom: 6 }}>DYSARTHRIA — item 10</div>
-            <div style={{ fontFamily: "'JetBrains Mono',monospace", color: "#e2e8f0", lineHeight: 2.2, fontSize: 14 }}>
-              MAMA &nbsp;&nbsp; TIP-TOP<br />FIFTY-FIFTY<br />THANKS &nbsp; HUCKLEBERRY<br />BASEBALL PLAYER
-            </div>
-          </div>
-        </div>
-      </div>
-
       <KbHints hints={[
         { key: "↑ ↓", label: "navigate items" },
         { key: "0 – 4", label: "score" },
@@ -298,7 +292,6 @@ function WorkupTab({ checked, setChecked }) {
   const [focusIdx, setFocusIdx] = useState(0);
   const [times, setTimes] = useState({});
   const panelRef = useRef(null);
-
   useEffect(() => { panelRef.current?.focus(); }, []);
 
   const toggle = useCallback((key) => {
@@ -379,7 +372,6 @@ function WorkupTab({ checked, setChecked }) {
           );
         })}
       </div>
-
       <KbHints hints={[
         { key: "↑ ↓", label: "navigate" },
         { key: "Space / Enter", label: "check + advance" },
@@ -433,14 +425,14 @@ const BP_TABLE = [
   { condition: "Pre-tPA — BP > 185/110", target: "Labetalol 10-20 mg IV x1-2 or Nicardipine 5 mg/hr", goal: "< 185/110" },
   { condition: "Post-tPA (first 24h)",   target: "Labetalol or Nicardipine per protocol",              goal: "< 180/105" },
   { condition: "Ischemic — no tPA",      target: "Permissive — treat only if > 220/120",               goal: "< 220/120" },
-  { condition: "Hemorrhagic transform",  target: "Aggressive reduction",                               goal: "SBP < 140" },
-  { condition: "Pre-thrombectomy",       target: "Maintain, avoid hypotension",                        goal: "SBP >= 140" },
+  { condition: "Hemorrhagic transform",  target: "Aggressive reduction",                                goal: "SBP < 140" },
+  { condition: "Pre-thrombectomy",       target: "Maintain, avoid hypotension",                         goal: "SBP >= 140" },
 ];
 
 const SEC_META = {
-  incl: { label: "Inclusion — all must be met",           color: "#4ade80" },
-  abs:  { label: "Absolute Exclusions — none present",    color: "#f87171" },
-  rel:  { label: "Relative Exclusions — 3-4.5h window",  color: "#fbbf24" },
+  incl: { label: "Inclusion — all must be met",          color: "#4ade80" },
+  abs:  { label: "Absolute Exclusions — none present",   color: "#f87171" },
+  rel:  { label: "Relative Exclusions — 3-4.5h window", color: "#fbbf24" },
 };
 
 function TreatmentTab({ demo, vitals, nihss, txChecked, setTxChecked, weight, setWeight }) {
@@ -450,7 +442,6 @@ function TreatmentTab({ demo, vitals, nihss, txChecked, setTxChecked, weight, se
   const setChecked = setTxChecked;
   const panelRef = useRef(null);
   const weightRef = useRef(null);
-
   useEffect(() => { panelRef.current?.focus(); }, []);
 
   const toggle = useCallback((section, idx) => {
@@ -522,7 +513,7 @@ function TreatmentTab({ demo, vitals, nihss, txChecked, setTxChecked, weight, se
             <div key={key}>
               {isNew && (
                 <div style={{
-                  color: sec.color, fontSize: 11, fontWeight: 700, letterSpacing: "0.7px",
+                  color: sec.color, fontSize: 10, fontWeight: 700, letterSpacing: "0.7px",
                   textTransform: "uppercase", padding: "14px 0 6px",
                   borderTop: row.section === "incl" ? "none" : "1px solid rgba(255,255,255,0.05)",
                 }}>{sec.label}</div>
@@ -622,13 +613,12 @@ const CONSULT_ITEMS = [
 function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecked, times, setTimes, notes, setNotes, workupChecked, txChecked }) {
   const [focusIdx, setFocusIdx] = useState(0);
   const [inputActive, setInputActive] = useState(false);
-  const [saveState, setSaveState] = useState("idle"); // idle | saving | saved | error
+  const [saveState, setSaveState] = useState("idle");
   const checked = consultChecked;
   const setChecked = setConsultChecked;
   const panelRef = useRef(null);
   const timeArrivalRef = useRef(null);
   const notesRef = useRef(null);
-
   useEffect(() => { panelRef.current?.focus(); }, []);
 
   const handleKey = useCallback((e) => {
@@ -650,7 +640,6 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
     return (!v || v === "UN") ? s : s + parseInt(v, 10);
   }, 0);
   const sev = nihssSeverity(nihssScore);
-
   const nihssItemsScored = NIHSS_ITEMS.filter(item => nihss?.[item.id] !== undefined).length;
 
   const dtn = (() => {
@@ -662,22 +651,19 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
 
   const done = Object.values(checked).filter(Boolean).length;
 
-  // Derive tPA eligibility from txChecked state
   const tpaEligibility = (() => {
     if (!txChecked) return "incomplete";
-    const INCL_COUNT = 5;
-    const ABS_COUNT  = 12;
-    const inclMet    = Array.from({ length: INCL_COUNT }, (_, i) => txChecked["incl-" + i]).every(Boolean);
-    const exclAbsMet = Array.from({ length: ABS_COUNT  }, (_, i) => txChecked["abs-"  + i]).some(Boolean);
-    const exclRelMet = Array.from({ length: 9 },           (_, i) => txChecked["rel-"  + i]).some(Boolean);
+    const inclMet    = Array.from({ length: 5  }, (_, i) => txChecked["incl-" + i]).every(Boolean);
+    const exclAbsMet = Array.from({ length: 12 }, (_, i) => txChecked["abs-"  + i]).some(Boolean);
+    const exclRelMet = Array.from({ length: 9  }, (_, i) => txChecked["rel-"  + i]).some(Boolean);
     if (!inclMet)    return "incomplete";
-    if (exclAbsMet) return "contraindicated";
-    if (exclRelMet) return "relative";
+    if (exclAbsMet)  return "contraindicated";
+    if (exclRelMet)  return "relative";
     return "eligible";
   })();
 
   const workupDone  = workupChecked ? Object.keys(workupChecked).length : 0;
-  const workupTotal = 25; // total tasks across all 4 time windows
+  const workupTotal = 25;
 
   const saveRecord = useCallback(async () => {
     setSaveState("saving");
@@ -700,9 +686,8 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
         consult_items_completed: done,
         provider_notes:          notes || undefined,
       };
-      // Strip undefined fields
       const clean = Object.fromEntries(Object.entries(record).filter(([, v]) => v !== undefined));
-      await base44.entities.StrokeQualityLog.create(clean);
+      await StrokeQualityLog.create(clean);
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 4000);
     } catch {
@@ -726,9 +711,9 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
         <div style={S.cardTitle}>Stroke Times · press T</div>
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
           {[
-            { key: "arrival", label: "Door / Arrival",  inputRef: timeArrivalRef },
-            { key: "consult", label: "Neurology Called", inputRef: null },
-            { key: "tpa",     label: "tPA Given",        inputRef: null },
+            { key: "arrival", label: "Door / Arrival",   inputRef: timeArrivalRef },
+            { key: "consult", label: "Neurology Called",  inputRef: null },
+            { key: "tpa",     label: "tPA Given",         inputRef: null },
           ].map(({ key, label, inputRef }) => (
             <div key={key}>
               <div style={{ color: "#64748b", fontSize: 11, marginBottom: 4 }}>{label.toUpperCase()}</div>
@@ -810,11 +795,8 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
         { key: "Esc", label: "back to checklist" },
       ]} />
 
-      {/* ── Save to Quality Log ────────────────────────────────────────────── */}
-      <div style={{
-        marginTop: 16, padding: "14px 18px", borderRadius: 12,
-        background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)",
-      }}>
+      <div style={{ marginTop: 16, padding: "14px 18px", borderRadius: 12,
+        background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <div>
             <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 14, color: "#f1f5f9" }}>
@@ -824,12 +806,11 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
               De-identified record — NIHSS, DTN, tPA status, checklist completion. No patient identifiers stored.
             </div>
           </div>
-          <button
-            onClick={saveRecord}
-            disabled={saveState === "saving" || saveState === "saved"}
+          <button onClick={saveRecord} disabled={saveState === "saving" || saveState === "saved"}
             style={{
               fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13,
-              padding: "10px 22px", borderRadius: 9, cursor: saveState === "saving" ? "wait" : saveState === "saved" ? "default" : "pointer",
+              padding: "10px 22px", borderRadius: 9,
+              cursor: saveState === "saving" ? "wait" : saveState === "saved" ? "default" : "pointer",
               transition: "all .2s",
               background: saveState === "saved"  ? "linear-gradient(135deg,rgba(74,222,128,0.25),rgba(74,222,128,0.12))"
                         : saveState === "error"  ? "linear-gradient(135deg,rgba(248,113,113,0.25),rgba(248,113,113,0.12))"
@@ -846,17 +827,15 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
             {saveState === "saving" ? "Saving..." : saveState === "saved" ? "✓ Saved" : saveState === "error" ? "✗ Error — retry" : "Save to Quality Log"}
           </button>
         </div>
-
-        {/* What will be saved preview */}
         <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
           {[
-            nihssScore > 0         && { label: "NIHSS",     val: nihssScore + " — " + sev.label,       color: "#2dd4bf" },
-            times.tpa              && { label: "tPA",        val: "Given " + times.tpa,                 color: "#4ade80" },
-            !times.tpa             && { label: "tPA",        val: "Not given",                          color: "#64748b" },
-            dtn !== null           && { label: "DTN",        val: dtn + " min " + (dtn <= 60 ? "✓" : "✗ >60"), color: dtn <= 60 ? "#4ade80" : "#f87171" },
-            tpaEligibility !== "incomplete" && { label: "Eligibility", val: tpaEligibility,              color: tpaEligibility === "eligible" ? "#4ade80" : tpaEligibility === "contraindicated" ? "#f87171" : "#fbbf24" },
-            workupDone > 0         && { label: "Workup",    val: workupDone + " / " + workupTotal + " tasks", color: "#94a3b8" },
-            done > 0               && { label: "Consult",   val: done + " / " + CONSULT_ITEMS.length + " items", color: "#94a3b8" },
+            nihssScore > 0                  && { label: "NIHSS",       val: nihssScore + " — " + sev.label,                   color: "#2dd4bf" },
+            times.tpa                       && { label: "tPA",          val: "Given " + times.tpa,                             color: "#4ade80" },
+            !times.tpa                      && { label: "tPA",          val: "Not given",                                       color: "#64748b" },
+            dtn !== null                    && { label: "DTN",          val: dtn + " min " + (dtn <= 60 ? "✓" : "✗ >60"),    color: dtn <= 60 ? "#4ade80" : "#f87171" },
+            tpaEligibility !== "incomplete" && { label: "Eligibility",  val: tpaEligibility,                                   color: tpaEligibility === "eligible" ? "#4ade80" : tpaEligibility === "contraindicated" ? "#f87171" : "#fbbf24" },
+            workupDone > 0                  && { label: "Workup",       val: workupDone + " / " + workupTotal + " tasks",      color: "#94a3b8" },
+            done > 0                        && { label: "Consult",      val: done + " / " + CONSULT_ITEMS.length + " items",  color: "#94a3b8" },
           ].filter(Boolean).map((item, i) => (
             <div key={i} style={{
               background: item.color + "12", border: "1px solid " + item.color + "35",
@@ -877,8 +856,166 @@ function NeuroConsultTab({ demo, vitals, nihss, consultChecked, setConsultChecke
   );
 }
 
-// ─── STROKEHUB ────────────────────────────────────────────────────────────────
-const TABS = ["NIHSS", "Workup", "Treatment", "Neuro Consult"];
+// ─── PRINT CARDS TAB ──────────────────────────────────────────────────────────
+const SENTENCES = [
+  "You know how.",
+  "Down to earth.",
+  "I got home from work.",
+  "Near the table in the dining room.",
+  "They heard him speak on the radio last night.",
+];
+const NAMING_ITEMS = ["Pen / pencil", "Hand", "Chair", "Glasses", "Cane"];
+const DYSARTHRIA_WORDS = ["MAMA", "TIP-TOP", "FIFTY-FIFTY", "THANKS", "HUCKLEBERRY", "BASEBALL PLAYER"];
+const COOKIE_CUES = [
+  "Boy stealing cookies from the jar",
+  "Boy standing on a tipping stool",
+  "Woman washing dishes — sink overflowing",
+  "Woman handing cookie to girl",
+  "Window, curtains, outdoor scene",
+];
+
+function PrintCardsTab() {
+  const pCard = {
+    background: "#fff", border: "2px solid #1e293b", borderRadius: 10,
+    padding: "24px 28px", color: "#0f172a", fontFamily: "'DM Sans',Arial,sans-serif",
+  };
+  const pSectionTitle = (title) => (
+    <div style={{
+      fontFamily: "'Playfair Display',Georgia,serif",
+      fontSize: 18, fontWeight: 700, color: "#0f172a",
+      borderBottom: "2px solid #0f172a", paddingBottom: 8, marginBottom: 16,
+    }}>{title}</div>
+  );
+  const pLabel = (text) => (
+    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#64748b", marginBottom: 6 }}>
+      {text}
+    </div>
+  );
+  const pInstruction = (text) => (
+    <div style={{ background: "#f1f5f9", borderRadius: 6, padding: "8px 12px", fontSize: 11, color: "#475569", fontStyle: "italic", marginBottom: 14 }}>
+      {text}
+    </div>
+  );
+
+  return (
+    <div>
+      <style>{PRINT_CSS}</style>
+      <div className="sh-no-print" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <div style={{ fontSize: 12, color: "#64748b" }}>Patient-facing stimulus cards · items 9 and 10</div>
+        <button onClick={() => window.print()} style={{
+          background: "linear-gradient(135deg,rgba(20,184,166,0.22),rgba(20,184,166,0.1))",
+          border: "1px solid rgba(20,184,166,0.38)", borderRadius: 8,
+          color: "#2dd4bf", cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "8px 20px",
+        }}>⎙ Print Page</button>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+        {/* Item 9 */}
+        <div style={pCard}>
+          {pSectionTitle("Item 9 — Best Language")}
+
+          {pLabel("READING SENTENCES · Ask patient to read aloud")}
+          {pInstruction("Please read each sentence aloud. Score on fluency, word substitutions, and paraphrasic errors. Do not help or prompt.")}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+            {SENTENCES.map((s, i) => (
+              <div key={i} style={{
+                background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8,
+                padding: "12px 16px", fontFamily: "'Playfair Display',Georgia,serif",
+                fontSize: 22, fontWeight: 700, color: "#0f172a", lineHeight: 1.3,
+              }}>{s}</div>
+            ))}
+          </div>
+
+          {pLabel("NAMING · Ask patient to name each object")}
+          {pInstruction("Show each item or point to object in the room. Record errors and perseverations.")}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 20 }}>
+            {NAMING_ITEMS.map(item => (
+              <div key={item} style={{
+                border: "2px solid #1e293b", borderRadius: 8, padding: "12px 6px", textAlign: "center",
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{item}</div>
+              </div>
+            ))}
+          </div>
+
+          {pLabel("COOKIE THEFT PICTURE · Show NIH card — Tell me everything you see happening")}
+          <div style={{ border: "2px dashed #94a3b8", borderRadius: 8, padding: "14px 18px", background: "#f8fafc" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", marginBottom: 8, letterSpacing: "0.8px" }}>
+              SCENE ELEMENTS TO LISTEN FOR
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
+              {COOKIE_CUES.map((cue, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, fontSize: 12, color: "#334155" }}>
+                  <span style={{ color: "#94a3b8", flexShrink: 0 }}>□</span>{cue}
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 10, fontSize: 10, color: "#94a3b8", fontStyle: "italic" }}>
+              Attach official NIH/AHA Cookie Theft stimulus card for full administration.
+            </div>
+          </div>
+        </div>
+
+        {/* Item 10 */}
+        <div style={pCard}>
+          {pSectionTitle("Item 10 — Dysarthria")}
+
+          {pLabel("WORD LIST · Show to patient or read aloud for repeat")}
+          {pInstruction("Please read each word aloud. If unable to read, say the word and ask the patient to repeat it. If intubated or physical barrier: score UN (Untestable).")}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 22 }}>
+            {DYSARTHRIA_WORDS.map(word => (
+              <div key={word} style={{
+                background: "#0f172a", borderRadius: 10, padding: "16px 22px",
+                fontFamily: "'JetBrains Mono','Courier New',monospace",
+                fontSize: 32, fontWeight: 700, color: "#f1f5f9",
+                letterSpacing: "4px", textAlign: "center",
+              }}>{word}</div>
+            ))}
+          </div>
+
+          {pLabel("SCORING RUBRIC")}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+            {[
+              { score: "0",  label: "Normal articulation",                                     color: "#4ade80" },
+              { score: "1",  label: "Mild-moderate slurring — can be understood with effort",  color: "#fbbf24" },
+              { score: "2",  label: "Severe — unintelligible or mute (not aphasia)",            color: "#f87171" },
+              { score: "UN", label: "Untestable — intubated or physical barrier",               color: "#94a3b8" },
+            ].map(({ score, label, color }) => (
+              <div key={score} style={{
+                display: "flex", alignItems: "center", gap: 14,
+                background: color + "12", border: "1px solid " + color + "40",
+                borderRadius: 8, padding: "10px 14px",
+              }}>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 18, fontWeight: 700, color, minWidth: 32, textAlign: "center" }}>{score}</div>
+                <div style={{ fontSize: 13, color: "#0f172a" }}>{label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "10px 14px", fontSize: 11, color: "#92400e" }}>
+            <strong>Clinical note:</strong> Distinguish dysarthria from aphasia. A globally aphasic patient scoring 3 on Item 9
+            should not automatically receive a high Item 10 score unless motor speech impairment is separately identifiable.
+          </div>
+        </div>
+
+        <div style={{ textAlign: "center", fontSize: 10, color: "#94a3b8", fontFamily: "'JetBrains Mono',monospace", paddingTop: 4 }}>
+          Notrya · StrokeHub · NIHSS Stimulus Reference · Not a substitute for certified NIHSS training
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── STROKREHUB ───────────────────────────────────────────────────────────────
+const TABS = [
+  { label: "NIHSS",         accent: null },
+  { label: "Workup",        accent: null },
+  { label: "Treatment",     accent: null },
+  { label: "Neuro Consult", accent: null },
+  { label: "Print Cards",   bg: "rgba(71,85,105,0.14)", border: "rgba(71,85,105,0.35)", text: "#94a3b8" },
+];
 
 export default function StrokeHub({
   embedded = false,
@@ -888,27 +1025,26 @@ export default function StrokeHub({
   cc = {},
   nihssInit = {},
 }) {
-  const [tab, setTab]                   = useState(0);
-  const [nihss, setNihss]               = useState(nihssInit);
-  const [workupChecked, setWorkupChecked] = useState({});
-  const [txChecked, setTxChecked]       = useState({});
-  const [weight, setWeight]             = useState("");
-  const [consultChecked, setConsultChecked] = useState({});
-  const [times, setTimes]               = useState({ arrival: "", consult: "", tpa: "" });
-  const [notes, setNotes]               = useState("");
+  const [tab, setTab]                                 = useState(0);
+  const [nihss, setNihss]                             = useState(nihssInit);
+  const [workupChecked, setWorkupChecked]             = useState({});
+  const [txChecked, setTxChecked]                     = useState({});
+  const [weight, setWeight]                           = useState("");
+  const [consultChecked, setConsultChecked]           = useState({});
+  const [times, setTimes]                             = useState({ arrival: "", consult: "", tpa: "" });
+  const [notes, setNotes]                             = useState("");
   const wrapRef = useRef(null);
 
   const handleBack = useCallback(() => {
     if (onBack) { onBack(); } else { window.history.back(); }
   }, [onBack]);
 
-  // ⌘1-4 tab switch — scoped to this component only via contains check
   useEffect(() => {
     const handler = (e) => {
       if (!(e.metaKey || e.ctrlKey)) return;
       if (!wrapRef.current?.contains(e.target)) return;
       const n = parseInt(e.key, 10);
-      if (n >= 1 && n <= 4) { e.preventDefault(); setTab(n - 1); }
+      if (n >= 1 && n <= 5) { e.preventDefault(); setTab(n - 1); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -919,46 +1055,70 @@ export default function StrokeHub({
     return (!v || v === "UN") ? s : s + parseInt(v, 10);
   }, 0);
   const sev = nihssSeverity(nihssScore);
+  const workupDone = Object.keys(workupChecked).length;
 
   return (
     <div ref={wrapRef} style={embedded ? { fontFamily: "'DM Sans',sans-serif", color: "#e8edf5" } : S.wrap}>
-      {!embedded && (
-        <div style={S.header}>
-          <button style={S.backBtn} onClick={handleBack}>← Back</button>
-          <div style={S.title}>StrokeHub</div>
-          <div style={S.badge}>STROKE</div>
-          {nihssScore > 0 && (
-            <div style={{ marginLeft: "auto", fontFamily: "'JetBrains Mono',monospace", color: sev.color, fontSize: 14, fontWeight: 700 }}>
-              NIHSS {nihssScore} — {sev.label}
-            </div>
-          )}
-        </div>
-      )}
-      {embedded && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0 14px" }}>
-          <button style={S.backBtn} onClick={handleBack}>← Back</button>
-          <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 16, fontWeight: 700, color: "#f1f5f9" }}>StrokeHub</div>
-          <div style={S.badge}>STROKE</div>
-          {nihssScore > 0 && (
-            <div style={{ marginLeft: "auto", fontFamily: "'JetBrains Mono',monospace", color: sev.color, fontSize: 13, fontWeight: 700 }}>
-              NIHSS {nihssScore} — {sev.label}
-            </div>
-          )}
-        </div>
-      )}
 
-      <div style={S.tabs}>
+      {/* ── Header ── */}
+      <div style={S.header} className="sh-no-print">
+        <button style={S.backBtn} onClick={handleBack}>← Back</button>
+        <div style={{ width: 1, background: "rgba(255,255,255,0.07)", margin: "12px 6px" }} />
+        <div style={{ ...S.title, padding: "0 14px" }}>StrokeHub</div>
+        <div style={S.badge}>STROKE</div>
+
+        {nihssScore > 0 && (
+          <div style={{
+            marginLeft: 14, display: "flex", alignItems: "center", gap: 8,
+            background: sev.color + "12", border: "1px solid " + sev.color + "30",
+            borderRadius: 20, padding: "4px 14px",
+          }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", color: sev.color, fontSize: 13, fontWeight: 700 }}>
+              NIHSS {nihssScore}
+            </span>
+            <span style={{ color: sev.color, fontSize: 11, opacity: 0.8 }}>{sev.label}</span>
+          </div>
+        )}
+
+        {workupDone > 0 && (
+          <div style={{
+            marginLeft: 8, display: "flex", alignItems: "center", gap: 6,
+            background: "rgba(20,184,166,0.08)", border: "1px solid rgba(20,184,166,0.2)",
+            borderRadius: 20, padding: "4px 12px",
+          }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", color: "#2dd4bf", fontSize: 11 }}>
+              {workupDone}/{WORKUP_FLAT.length}
+            </span>
+            <span style={{ color: "#64748b", fontSize: 10 }}>workup</span>
+          </div>
+        )}
+
+        {tab === 4 && (
+          <button onClick={() => window.print()} style={{
+            marginLeft: "auto", background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7,
+            color: "#94a3b8", cursor: "pointer", fontSize: 12, fontWeight: 700,
+            padding: "0 16px", display: "flex", alignItems: "center", gap: 6,
+          }}>⎙ Print</button>
+        )}
+      </div>
+
+      {/* ── Tab bar ── */}
+      <div style={S.tabBar} className="sh-no-print">
         {TABS.map((t, i) => (
-          <button key={t} style={S.tab(i === tab)} onClick={() => setTab(i)}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10,
-              color: i === tab ? "#14b8a6" : "#374151", marginRight: 5 }}>
+          <button key={t.label} style={S.tab(i === tab, t.bg, t.border, t.text)} onClick={() => setTab(i)}>
+            <span style={{
+              fontFamily: "'JetBrains Mono',monospace", fontSize: 9,
+              color: i === tab ? (t.text || "#14b8a6") : "#374151",
+            }}>
               {String.fromCharCode(8984)}{i + 1}
             </span>
-            {t}
+            {t.label}
           </button>
         ))}
       </div>
 
+      {/* ── Body ── */}
       <div style={S.body}>
         {tab === 0 && <NIHSSTab nihss={nihss} setNihss={setNihss} />}
         {tab === 1 && <WorkupTab checked={workupChecked} setChecked={setWorkupChecked} />}
@@ -971,6 +1131,7 @@ export default function StrokeHub({
           notes={notes} setNotes={setNotes}
           workupChecked={workupChecked}
           txChecked={txChecked} />}
+        {tab === 4 && <PrintCardsTab />}
       </div>
     </div>
   );

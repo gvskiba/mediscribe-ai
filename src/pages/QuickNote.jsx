@@ -512,6 +512,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [hpiStructureBusy,  setHpiStructureBusy]  = useState(false);
   const [hpiStructureError, setHpiStructureError] = useState(null);
   const [hpiGaps, setHpiGaps] = useState([]);
+  // v11.4: auto-extracted from HPI Structure for MedsAllergyZone import
+  const [medsFromHpi,      setMedsFromHpi]      = useState([]);
+  const [allergiesFromHpi, setAllergiesFromHpi]  = useState([]);
   const [icdSuggestions, setIcdSuggestions] = useState([]);
   const [icdSelected,    setIcdSelected]    = useState([]);
   const [icdSearching,   setIcdSearching]   = useState(false);
@@ -572,7 +575,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       const consultCtx = consults.length
         ? "\nCONSULTS:\n"+consults.map(c=>`  ${c.service}${c.provider?" — Dr."+c.provider:""}${c.time?" at "+c.time:""}: ${c.recommendation}`).join("\n"):"";
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildDispPrompt(mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,parsedMeds,parsedAllergies,ekg)
+        prompt: buildDispPrompt(mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,parsedMeds,parsedAllergies,ekg,encounterType)
           + consultCtx
           + (patientResponse.trim()?`\n\nPATIENT RESPONSE TO TREATMENT:\n${patientResponse}`:""),
         response_json_schema: DISP_SCHEMA,
@@ -776,8 +779,12 @@ Return JSON only.`,
       const res = await base44.integrations.Core.InvokeLLM({
         prompt:`Extract OPQRST from nursing triage note. CC: ${cc||"not specified"}. NOTE: ${hpi}.
 Format as labeled fields, one per line. Omit lines not present. No inference. Use exact phrasing.
-Also return: chief_complaint_extracted (short phrase), fields_found (array of field names populated).
-Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fields_found": ["..."] }`,
+Also return:
+- chief_complaint_extracted: chief complaint as short phrase
+- fields_found: array of OPQRST field names populated
+- meds_extracted: array of medications mentioned in the note — each { name, dose, route, frequency } — use exact values, omit fields not stated. Return empty array if none mentioned.
+- allergies_extracted: array of allergies mentioned — each { allergen, reaction } — return empty array if none mentioned.
+Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fields_found": ["..."], "meds_extracted": [], "allergies_extracted": [] }`,
         response_json_schema:{
           type:"object",
           required:["structured_hpi","chief_complaint_extracted","fields_found"],
@@ -785,6 +792,14 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             structured_hpi:{type:"string"},
             chief_complaint_extracted:{type:"string"},
             fields_found:{type:"array",items:{type:"string"}},
+            meds_extracted:{type:"array",items:{
+              type:"object",
+              properties:{name:{type:"string"},dose:{type:"string"},route:{type:"string"},frequency:{type:"string"}},
+            }},
+            allergies_extracted:{type:"array",items:{
+              type:"object",
+              properties:{allergen:{type:"string"},reaction:{type:"string"}},
+            }},
           },
         },
       });
@@ -795,6 +810,9 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       const fieldsFound = (res.fields_found||[]).map(f=>f.toLowerCase());
       const expected    = getExpectedOPQRST(cc.trim()||res.chief_complaint_extracted||"");
       setHpiGaps(expected.filter(f=>!fieldsFound.includes(f.toLowerCase())));
+      // v11.4: populate meds/allergies found in nursing note for MedsAllergyZone import nudge
+      if (res.meds_extracted?.length)      setMedsFromHpi(res.meds_extracted);
+      if (res.allergies_extracted?.length) setAllergiesFromHpi(res.allergies_extracted);
     } catch(e) { setHpiStructureError("HPI structure failed: "+(e.message||"Check API")); }
     finally { setHpiStructureBusy(false); }
   }, [hpi,cc,hpiStructureBusy]);
@@ -1131,6 +1149,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setTreatmentPlan(""); setActionPlan("");
     setPatientResponse(""); setMdmHistory([]); setMdmInitialTs(null);
     setHpiGaps([]); setLabRecs(null); setImagingRecs(null);
+    setMedsFromHpi([]); setAllergiesFromHpi([]);
     clearSlotCache(activeSlot);
     setShowUndo(true);
     const t=setTimeout(()=>{setShowUndo(false);setUndoData(null);},6000);
@@ -1520,6 +1539,8 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           patientPregnant={patientPregnant} setPatientPregnant={setPatientPregnant}
           patientWeight={patientWeight} setPatientWeight={setPatientWeight}
           smartExpansions={smartExpansions}
+          medsFromHpi={medsFromHpi}
+          allergiesFromHpi={allergiesFromHpi}
         />
 
         <QuickNoteROSHelper ros={ros} />

@@ -49,6 +49,8 @@ export function Phase1Panel({
   patientPregnant, setPatientPregnant,
   patientWeight, setPatientWeight,
   smartExpansions,
+  // v11.4: HPI auto-extract for MedsAllergyZone import nudge
+  medsFromHpi, allergiesFromHpi,
 }) {
 
   // ── v11.2: local state ──────────────────────────────────────────────────────
@@ -467,6 +469,8 @@ export function Phase1Panel({
           setParsedAllergies(prev => prev.map((a,i) => i===idx ? {...a,[field]:val} : a))
         }
         onRemoveAllergy={idx => setParsedAllergies(prev => prev.filter((_,i) => i !== idx))}
+        medsFromHpi={medsFromHpi}
+        allergiesFromHpi={allergiesFromHpi}
       />
 
       {/* ── Copy clinical inputs ──────────────────────────────────────────── */}

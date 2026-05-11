@@ -294,8 +294,8 @@ const AuthenticatedApp = () => {
         <Route path="/dvt-hub"         element={<DVTHub />} />
         <Route path="/derm-hub"        element={<DermatologyHub />} />
         <Route path="/derm-morphology" element={<DermMorphologyRef />} />
-        <Route path="/stroke-hub"      element={<StrokeHub />} />
-        <Route path="/StrokeHub"       element={<StrokeHub />} />
+        <Route path="/stroke-hub"       element={<StrokeHub />} />
+        <Route path="/StrokeHub"        element={<StrokeHub />} />
         <Route path="/StrokeAssessment" element={<StrokeHub />} />
 
         {/* Presentation-based hubs */}

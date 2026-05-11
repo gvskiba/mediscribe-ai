@@ -10,7 +10,8 @@
 //   6. HPI word + character counter
 
 import React, { useState, useCallback, useRef } from "react";
-import { InputZone, MedsAllergyZone, QuickDDxCard } from "./QuickNoteComponents";
+import { InputZone, QuickDDxCard } from "./QuickNoteComponents";
+import { MedsAllergyZone } from "./QuickNoteMedsAllergy";
 import MedTermHighlighter from "@/components/MedTermHighlighter";
 
 export function Phase1Panel({

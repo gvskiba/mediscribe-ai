@@ -1110,6 +1110,8 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         result_flags_json:dispResult?.result_flags?.length?JSON.stringify(dispResult.result_flags):"",
         icd_codes_json:icdSelected.length?JSON.stringify(icdSelected):"",
         meds_raw:medsRaw||"",allergies_raw:allergiesRaw||"",
+        meds_json:parsedMeds.length?JSON.stringify(parsedMeds):"",
+        allergies_json:parsedAllergies.length?JSON.stringify(parsedAllergies):"",
       });
       setSavedNote(true); setTimeout(()=>setSavedNote(false),3000);
       setSlots(prev=>{const next=[...prev];next[activeSlot]={...next[activeSlot],savedNoteId:"saved"};return next;});
@@ -1217,7 +1219,10 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       const payload={source:"QuickNote",status:"draft",encounter_date:new Date().toISOString().split("T")[0],
         cc:cc||"",hpi_raw:hpi||"",ros_raw:ros||"",exam_raw:exam||"",labs_raw:labs||"",imaging_raw:imaging||"",
         full_note_text:vitals||"",working_diagnosis:mdmResult?.working_diagnosis||"",
-        mdm_level:mdmResult?.mdm_level||"",mdm_narrative:mdmResult?.mdm_narrative||""};
+        mdm_level:mdmResult?.mdm_level||"",mdm_narrative:mdmResult?.mdm_narrative||"",
+        meds_raw:medsRaw||"",allergies_raw:allergiesRaw||"",
+        meds_json:parsedMeds.length?JSON.stringify(parsedMeds):"",
+        allergies_json:parsedAllergies.length?JSON.stringify(parsedAllergies):""};
       try {
         if (draftId) await base44.entities.ClinicalNote.update(draftId,payload).catch(()=>null);
         else { const rec=await base44.entities.ClinicalNote.create(payload).catch(()=>null); if (rec?.id) setDraftId(rec.id); }
@@ -1225,7 +1230,21 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     };
     const interval=setInterval(saveDraft,90000);
     return ()=>clearInterval(interval);
-  },[cc,hpi,ros,exam,labs,imaging,vitals,mdmResult,draftId]);
+  },[cc,hpi,ros,exam,labs,imaging,vitals,mdmResult,draftId,medsRaw,allergiesRaw,parsedMeds,parsedAllergies]);
+
+  // ── Meds/Allergies → draft sync (debounced, fires on parse completion) ─────
+  useEffect(()=>{
+    if (!draftId) return;
+    if (!parsedMeds.length&&!parsedAllergies.length) return;
+    const t=setTimeout(()=>{
+      base44.entities.ClinicalNote.update(draftId,{
+        meds_raw:medsRaw||"",allergies_raw:allergiesRaw||"",
+        meds_json:parsedMeds.length?JSON.stringify(parsedMeds):"",
+        allergies_json:parsedAllergies.length?JSON.stringify(parsedAllergies):"",
+      }).catch(()=>null);
+    },1500);
+    return ()=>clearTimeout(t);
+  },[parsedMeds,parsedAllergies,draftId,medsRaw,allergiesRaw]);
 
   useEffect(()=>{
     const interval=setInterval(()=>saveAllSlots(),60000);

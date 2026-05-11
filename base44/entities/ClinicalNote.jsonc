@@ -324,7 +324,11 @@
       "enum": [
         "draft",
         "finalized",
-        "amended"
+        "amended",
+        "superseded",
+        "active",
+        "imported",
+        "pending"
       ],
       "default": "draft"
     },
@@ -388,6 +392,54 @@
       "type": "string",
       "format": "date",
       "description": "Date of the encounter"
+    },
+    "hpi_raw": {
+      "type": "string",
+      "description": "Raw HPI text"
+    },
+    "ros_raw": {
+      "type": "string",
+      "description": "Raw ROS text"
+    },
+    "exam_raw": {
+      "type": "string",
+      "description": "Raw physical exam text"
+    },
+    "labs_raw": {
+      "type": "string",
+      "description": "Raw labs text"
+    },
+    "imaging_raw": {
+      "type": "string",
+      "description": "Raw imaging text"
+    },
+    "meds_raw": {
+      "type": "string",
+      "description": "Raw medication list text"
+    },
+    "allergies_raw": {
+      "type": "string",
+      "description": "Raw allergy list text"
+    },
+    "meds_json": {
+      "type": "string",
+      "description": "JSON array of structured parsed medications [{name, dose, route, frequency}]"
+    },
+    "allergies_json": {
+      "type": "string",
+      "description": "JSON array of structured parsed allergies [{allergen, reaction}]"
+    },
+    "result_flags_json": {
+      "type": "string",
+      "description": "JSON array of critical result flags"
+    },
+    "icd_codes_json": {
+      "type": "string",
+      "description": "JSON array of selected ICD-10 codes"
+    },
+    "flag_reviewed": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

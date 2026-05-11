@@ -30,6 +30,7 @@ import QuickNoteHPIScaffold from "./QuickNoteHPIScaffold";
 import QuickNotePatientQueue from "./QuickNotePatientQueue";
 import QuickNoteMDMCard from "./QuickNoteMDMCard";
 import QuickNoteDispositionCard from "./QuickNoteDispositionCard";
+import QuickNoteProgressDashboard from "./QuickNoteProgressDashboard";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
@@ -1398,6 +1399,12 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         <PatientBanner demo={demo} />
         {isFatigueRisk&&!fatigueDismissed&&<FatigueBanner onDismiss={()=>setFatigueDismissed(true)} />}
         <StepProgress phase1Done={Boolean(mdmResult)} phase2Done={Boolean(dispResult)} p2Open={p2Open} />
+
+        <QuickNoteProgressDashboard
+          cc={cc} vitals={vitals} hpi={hpi} ros={ros} exam={exam}
+          medsRaw={medsRaw} parsedMeds={parsedMeds} parsedAllergies={parsedAllergies} allergiesRaw={allergiesRaw}
+          labs={labs} imaging={imaging} mdmResult={mdmResult} dispResult={dispResult}
+        />
 
         {!embedded&&(
           <QuickNotePatientQueue

@@ -1,8 +1,15 @@
 // QuickNotePhase1Panel.jsx
 // Phase 1 input card: CC, Vitals, HPI, ROS, Exam, QuickDDx, Meds, Generate MDM
 // Exported: Phase1Panel
+// v11.2 additions:
+//   1. Editable Structure output (textarea in preview card)
+//   2. Structure → Prose chain button
+//   3. Paste detection toast with quick-action buttons
+//   4. OPQRST completeness gap indicators
+//   5. CC auto-extract feedback badge
+//   6. HPI word + character counter
 
-import React from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { InputZone, MedsAllergyZone, QuickDDxCard } from "./QuickNoteComponents";
 import MedTermHighlighter from "@/components/MedTermHighlighter";
 
@@ -14,6 +21,10 @@ export function Phase1Panel({
   hpiMode, setHpiMode, hpiSummary, setHpiSummary,
   hpiSumBusy, hpiSumError, copiedHpiSum, setCopiedHpiSum,
   summarizeHPI,
+  // v11.1 — Smart Structure HPI
+  structureHPI, hpiStructureBusy, hpiStructureError,
+  // v11.2 — Structure → Prose chain + gap indicators
+  summarizeFromStructure, hpiGaps,
   // QuickDDx
   quickDDx, quickDDxBusy, quickDDxErr, quickDDxDismissed, setQuickDDxDismissed,
   runQuickDDx,
@@ -33,17 +44,41 @@ export function Phase1Panel({
   isBounceback, setIsBounceback, bouncebackDate, setBouncebackDate,
   // Auto-ROS
   autoRosFromHpi, autoRosBusy,
-  // Extra props (pregnancy, weight, smartExpansions)
+  // Extra props
   patientPregnant, setPatientPregnant,
   patientWeight, setPatientWeight,
   smartExpansions,
 }) {
+
+  // ── v11.2: local state ──────────────────────────────────────────────────────
+  // Paste detection toast
+  const [hpiPastePrompt, setHpiPastePrompt] = useState(false);
+  const pasteToastTimer = useRef(null);
+
+  const handleHpiPaste = useCallback((e) => {
+    const text = e.clipboardData?.getData("text") || "";
+    if (text.length > 80 && !hpiSummary) {
+      setHpiPastePrompt(true);
+      clearTimeout(pasteToastTimer.current);
+      pasteToastTimer.current = setTimeout(() => setHpiPastePrompt(false), 10000);
+    }
+  }, [hpiSummary]);
+
+  const dismissPastePrompt = useCallback(() => {
+    clearTimeout(pasteToastTimer.current);
+    setHpiPastePrompt(false);
+  }, []);
+
+  // HPI word + char count
+  const hpiWordCount = hpi.trim() ? hpi.trim().split(/\s+/).length : 0;
+  const hpiCharCount = hpi.length;
+
   return (
     <div style={{ marginBottom:14,
       background:"rgba(8,22,40,.5)", border:"1px solid rgba(42,79,122,.4)",
       borderRadius:14, padding:"16px" }}>
 
-      {/* Phase header */}
+      {/* ── Phase header ─────────────────────────────────────────────────── */}
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, flexWrap:"wrap" }}>
         <div style={{ width:24, height:24, borderRadius:"50%",
           background:"rgba(0,229,192,.15)", border:"1px solid rgba(0,229,192,.4)",
@@ -92,7 +127,7 @@ export function Phase1Panel({
         )}
       </div>
 
-      {/* CC + Vitals row */}
+      {/* ── CC + Vitals row ───────────────────────────────────────────────── */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
         <InputZone label="Chief Complaint" value={cc} onChange={setCC} phase={1}
           rows={2} templateType="cc" smartfill kbdHint="Alt+H"
@@ -110,20 +145,92 @@ export function Phase1Panel({
           onKeyDown={makeKeyDown(1, false, runMDM)} />
       </div>
 
-      {/* HPI */}
+      {/* ── HPI ──────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom:12 }}>
-        <InputZone label="HPI" value={hpi} onChange={setHpi} phase={1}
-          rows={5} copyable kbdHint="Alt+H"
-          placeholder="Paste HPI from nurse note or EHR — onset, location, quality, severity, duration, modifying factors, associated symptoms..."
-          onRef={setRef(2)}
-          onKeyDown={makeKeyDown(2, false, runMDM)} />
 
-        {/* HPI mode toggle */}
+        {/* ── v11.2: HPI label row with word/char counter ── */}
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+            fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
+            textTransform:"uppercase" }}>HPI</span>
+          {hpiCharCount > 0 && (
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              color: hpiWordCount >= 10 ? "rgba(0,229,192,.55)" : "rgba(107,158,200,.45)",
+              letterSpacing:.3, transition:"color .3s" }}>
+              {hpiWordCount}w · {hpiCharCount}c
+            </span>
+          )}
+        </div>
+
+        {/* ── v11.2: Paste-detecting wrapper — fires toast on large paste ── */}
+        <div onPaste={handleHpiPaste}>
+          <InputZone label="" value={hpi} onChange={setHpi} phase={1}
+            rows={5} copyable kbdHint="Alt+H"
+            placeholder="Paste HPI from nurse note or EHR — onset, location, quality, severity, duration, modifying factors, associated symptoms..."
+            onRef={setRef(2)}
+            onKeyDown={makeKeyDown(2, false, runMDM)} />
+        </div>
+
+        {/* ── v11.2: Paste detection toast ── */}
+        {hpiPastePrompt && !hpiSummary && (
+          <div className="qn-fade" style={{ marginTop:6, padding:"8px 12px",
+            borderRadius:8, background:"rgba(59,158,255,.08)",
+            border:"1px solid rgba(59,158,255,.3)",
+            display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              color:"var(--qn-blue)", letterSpacing:.4, flex:1 }}>
+              Nursing note detected —
+            </span>
+            <button
+              onClick={() => { structureHPI(); dismissPastePrompt(); }}
+              disabled={hpiStructureBusy}
+              style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                border:"1px solid rgba(59,158,255,.5)",
+                background:"rgba(59,158,255,.1)", color:"var(--qn-blue)",
+                transition:"all .15s" }}>
+              ⊞ Structure
+            </button>
+            <button
+              onClick={() => { summarizeHPI(); dismissPastePrompt(); }}
+              disabled={hpiSumBusy}
+              style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                border:"1px solid rgba(0,229,192,.4)",
+                background:"rgba(0,229,192,.07)", color:"var(--qn-teal)",
+                transition:"all .15s" }}>
+              Σ Summarize
+            </button>
+            <button onClick={dismissPastePrompt}
+              style={{ padding:"3px 7px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                border:"1px solid rgba(42,79,122,.35)", background:"transparent",
+                color:"var(--qn-txt4)", transition:"all .15s" }}>✕</button>
+          </div>
+        )}
+
+        {/* ── HPI action row: Structure + mode toggle ── */}
         {hpi.trim().length > 40 && (
           <div style={{ marginTop:6, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+
+            {/* ⊞ Structure button */}
+            <button
+              onClick={structureHPI}
+              disabled={hpiStructureBusy}
+              title="Extract OPQRST fields from nursing note — only what is explicitly documented"
+              style={{ padding:"3px 11px", borderRadius:6, cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
+                transition:"all .15s",
+                border:`1px solid ${hpiStructureBusy ? "rgba(42,79,122,.3)" : "rgba(59,158,255,.5)"}`,
+                background:hpiStructureBusy ? "rgba(14,37,68,.4)" : "rgba(59,158,255,.1)",
+                color:hpiStructureBusy ? "var(--qn-txt4)" : "var(--qn-blue)" }}>
+              {hpiStructureBusy ? "● Structuring…" : "⊞ Structure"}
+            </button>
+
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
               color:"var(--qn-txt4)", letterSpacing:.5, textTransform:"uppercase",
               flexShrink:0 }}>HPI in note:</span>
+
             {[
               { id:"original", label:"My HPI as entered" },
               { id:"summary",  label:"AI-generated summary" },
@@ -168,6 +275,41 @@ export function Phase1Panel({
           </div>
         )}
 
+        {/* ── v11.2: OPQRST gap indicators ── */}
+        {hpiGaps?.length > 0 && (
+          <div style={{ marginTop:6, padding:"6px 10px", borderRadius:7,
+            background:"rgba(245,200,66,.06)", border:"1px solid rgba(245,200,66,.25)",
+            display:"flex", alignItems:"flex-start", gap:8, flexWrap:"wrap" }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              fontWeight:700, color:"var(--qn-gold)", letterSpacing:.5,
+              textTransform:"uppercase", flexShrink:0, paddingTop:1 }}>
+              Not documented:
+            </span>
+            <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+              {hpiGaps.map(gap => (
+                <span key={gap} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                  color:"var(--qn-gold)", background:"rgba(245,200,66,.1)",
+                  border:"1px solid rgba(245,200,66,.25)", borderRadius:4,
+                  padding:"1px 7px", letterSpacing:.3 }}>
+                  {gap}
+                </span>
+              ))}
+            </div>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+              color:"rgba(245,200,66,.5)", alignSelf:"center", marginLeft:"auto" }}>
+              Consider asking patient
+            </span>
+          </div>
+        )}
+
+        {/* Errors */}
+        {hpiStructureError && (
+          <div style={{ marginTop:6, padding:"6px 10px", borderRadius:7,
+            background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)",
+            fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-coral)" }}>
+            {hpiStructureError}
+          </div>
+        )}
         {hpiSumError && (
           <div style={{ marginTop:6, padding:"6px 10px", borderRadius:7,
             background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)",
@@ -181,14 +323,16 @@ export function Phase1Panel({
           <MedTermHighlighter text={hpi} />
         )}
 
-        {/* HPI Summary preview card */}
+        {/* ── HPI Summary / Structure preview card ── */}
         {hpiSummary && (
           <div className="qn-fade" style={{ marginTop:8, padding:"12px 14px",
             borderRadius:10,
             background: hpiMode === "summary" ? "rgba(0,229,192,.05)" : "rgba(59,158,255,.04)",
             border:`1px solid ${hpiMode === "summary" ? "rgba(0,229,192,.35)" : "rgba(59,158,255,.25)"}`,
             transition:"all .2s" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+
+            {/* Card header */}
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
               <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 fontWeight:700,
                 color: hpiMode === "summary" ? "var(--qn-teal)" : "var(--qn-txt4)",
@@ -205,6 +349,23 @@ export function Phase1Panel({
                   color:"var(--qn-txt4)", letterSpacing:.3 }}>Preview — not active</span>
               )}
               <div style={{ flex:1 }} />
+
+              {/* ── v11.2: Structure → Prose chain button ── */}
+              {summarizeFromStructure && (
+                <button
+                  onClick={summarizeFromStructure}
+                  disabled={hpiSumBusy}
+                  title="Convert this structured OPQRST into a physician narrative paragraph"
+                  style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                    border:`1px solid ${hpiSumBusy ? "rgba(42,79,122,.3)" : "rgba(0,229,192,.4)"}`,
+                    background:hpiSumBusy ? "rgba(14,37,68,.4)" : "rgba(0,229,192,.08)",
+                    color:hpiSumBusy ? "var(--qn-txt4)" : "var(--qn-teal)",
+                    letterSpacing:.5, transition:"all .15s" }}>
+                  {hpiSumBusy ? "● Converting…" : "→ Convert to narrative"}
+                </button>
+              )}
+
               <button onClick={() => {
                   navigator.clipboard.writeText(hpiSummary);
                   setCopiedHpiSum(true);
@@ -219,10 +380,23 @@ export function Phase1Panel({
                 {copiedHpiSum ? "✓ Copied" : "Copy"}
               </button>
             </div>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-              color:"var(--qn-txt2)", lineHeight:1.75 }}>
-              {hpiSummary}
-            </div>
+
+            {/* ── v11.2: Editable textarea (replaces static div) ── */}
+            <textarea
+              value={hpiSummary}
+              onChange={e => setHpiSummary(e.target.value)}
+              rows={Math.max(4, (hpiSummary || "").split("\n").length + 1)}
+              style={{ width:"100%", boxSizing:"border-box", resize:"vertical",
+                background:"transparent",
+                border:"1px solid rgba(0,229,192,.15)", borderRadius:6,
+                padding:"6px 8px",
+                fontFamily:"'DM Sans',sans-serif", fontSize:12,
+                color:"var(--qn-txt2)", lineHeight:1.75,
+                outline:"none", transition:"border-color .15s" }}
+              onFocus={e => e.target.style.borderColor = "rgba(0,229,192,.45)"}
+              onBlur={e => e.target.style.borderColor = "rgba(0,229,192,.15)"}
+            />
+
             <div style={{ marginTop:8, padding:"5px 9px", borderRadius:6,
               background:"rgba(245,200,66,.06)", border:"1px solid rgba(245,200,66,.2)",
               fontFamily:"'DM Sans',sans-serif", fontSize:10,
@@ -234,7 +408,7 @@ export function Phase1Panel({
         )}
       </div>
 
-      {/* ROS + Exam row */}
+      {/* ── ROS + Exam row ────────────────────────────────────────────────── */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
         <InputZone label="Review of Systems" value={ros} onChange={setRos} phase={1}
           rows={4} copyable templateType="ros" smartfill kbdHint="Alt+R"
@@ -248,7 +422,7 @@ export function Phase1Panel({
           onKeyDown={makeKeyDown(4, true, runMDM)} />
       </div>
 
-      {/* Quick DDx */}
+      {/* ── Quick DDx ─────────────────────────────────────────────────────── */}
       {(cc.trim().length > 5 || hpi.trim().length > 20) && !mdmResult && (
         <div style={{ marginBottom:8 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -277,7 +451,7 @@ export function Phase1Panel({
         </div>
       )}
 
-      {/* Medications & Allergies */}
+      {/* ── Medications & Allergies ───────────────────────────────────────── */}
       <MedsAllergyZone
         medsRaw={medsRaw}           setMedsRaw={setMedsRaw}
         allergiesRaw={allergiesRaw} setAllergiesRaw={setAllergiesRaw}
@@ -294,11 +468,10 @@ export function Phase1Panel({
         onRemoveAllergy={idx => setParsedAllergies(prev => prev.filter((_,i) => i !== idx))}
       />
 
-      {/* Copy clinical inputs button */}
+      {/* ── Copy clinical inputs ──────────────────────────────────────────── */}
       {(hpi.trim() || ros.trim() || exam.trim()) && (
         <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8, gap:6, flexWrap:"wrap" }}
           className="no-print">
-          {/* Auto-populate ROS from HPI */}
           {hpi.trim().length > 30 && (
             <button onClick={autoRosFromHpi} disabled={autoRosBusy}
               style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
@@ -323,7 +496,7 @@ export function Phase1Panel({
         </div>
       )}
 
-      {/* Bounceback flag */}
+      {/* ── Bounceback flag ───────────────────────────────────────────────── */}
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10,
         padding:"8px 12px", borderRadius:8,
         background: isBounceback ? "rgba(255,107,107,.08)" : "rgba(14,37,68,.4)",
@@ -363,7 +536,7 @@ export function Phase1Panel({
         )}
       </div>
 
-      {/* Generate MDM button */}
+      {/* ── Generate MDM button ───────────────────────────────────────────── */}
       <button className="qn-btn" onClick={runMDM}
         disabled={p1Busy || !phase1Ready}
         style={{ width:"100%",

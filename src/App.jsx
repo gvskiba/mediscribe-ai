@@ -146,6 +146,7 @@ import AnticoagulantReversalHub from '@/pages/AnticoagulantReversalHub';
 import SickleCellHub from '@/pages/SickleCellHub';
 import HELLPHub from '@/pages/HELLPHub';
 import PostPartumHemorrhageHub from '@/pages/PostPartumHemorrhageHub';
+import EMTALAHub from '@/pages/EMTALAHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -293,6 +294,7 @@ const AuthenticatedApp = () => {
         <Route path="/SickleCellHub"         element={<SickleCellHub />} />
         <Route path="/HELLPHub"              element={<HELLPHub />} />
         <Route path="/PostPartumHemorrhageHub" element={<PostPartumHemorrhageHub />} />
+        <Route path="/EMTALAHub"             element={<EMTALAHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />

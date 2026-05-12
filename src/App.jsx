@@ -112,8 +112,6 @@ import VentPage from '@/pages/VentPage';
 import CriticalProtocolsPage from '@/pages/CriticalProtocolsPage';
 import Sepsis1HourBundleHub from '@/pages/Sepsis1HourBundleHub';
 import AnaphylaxisHub from '@/pages/AnaphylaxisHub';
-import SepsisHub from '@/pages/SepsisHub';
-import AnaphylaxisHub from '@/pages/AnaphylaxisHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);

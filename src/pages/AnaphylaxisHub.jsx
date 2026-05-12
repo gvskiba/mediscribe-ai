@@ -64,13 +64,57 @@ const RISK_FACTORS = [
 ];
 
 // ── Main Component ───────────────────────────────────────────────────────────
+const AGE_GROUPS = [
+  { label: "Infant", range: "< 1 yr",  ageMin: 0,  ageMax: 0,  weightEst: null, autoInj: null },
+  { label: "Child",  range: "1–7 yr",  ageMin: 1,  ageMax: 7,  weightEst: null, autoInj: "0.15 mg (EpiPen Jr / Auvi-Q 0.15)" },
+  { label: "Child",  range: "8–25 kg", ageMin: null, ageMax: null, weightEst: null, autoInj: "0.15 mg (EpiPen Jr)" },
+  { label: "Adult / Older Child", range: "> 25 kg / ≥ 8 yr", ageMin: 8, ageMax: null, weightEst: null, autoInj: "0.3 mg (EpiPen / Auvi-Q 0.3)" },
+];
+
 export default function AnaphylaxisHub({ onBack }) {
-  const [tab, setTab] = useState(0);
+  const [tab, setTab]           = useState(0);
   const [severity, setSeverity] = useState(null);
-  const [weight, setWeight] = useState("");
+  const [weight, setWeight]     = useState("");
+  const [age, setAge]           = useState("");
+  const [ageUnit, setAgeUnit]   = useState("yr");
+  const [wtUnit, setWtUnit]     = useState("kg");
+  const [infRate, setInfRate]   = useState("");
   const TABS = ["Recognition", "Treatment", "Monitoring", "Disposition"];
 
-  const epiDose = weight && !isNaN(weight) ? Math.min(parseFloat(weight) * 0.01, 0.5).toFixed(2) : null;
+  const wtKg = (() => {
+    const n = parseFloat(weight);
+    if (isNaN(n) || weight === "") return null;
+    return wtUnit === "lbs" ? +(n * 0.4536).toFixed(1) : n;
+  })();
+
+  const ageYr = (() => {
+    const n = parseFloat(age);
+    if (isNaN(n) || age === "") return null;
+    return ageUnit === "mo" ? +(n / 12).toFixed(2) : n;
+  })();
+
+  // IM dose: 0.01 mg/kg, max 0.5 mg
+  const epiImDose = wtKg !== null ? Math.min(wtKg * 0.01, 0.5).toFixed(3) : null;
+  const epiImMl   = epiImDose ? (+epiImDose).toFixed(2) + " mL" : null;
+
+  // Auto-injector recommendation
+  const autoInjRec = (() => {
+    if (wtKg === null && ageYr === null) return null;
+    if (wtKg !== null && wtKg < 10)  return { device: "Auvi-Q 0.1 mg", note: "Only auto-injector approved < 10 kg" };
+    if (wtKg !== null && wtKg < 25)  return { device: "EpiPen Jr 0.15 mg", note: "For 10–25 kg · 0.15 mg IM" };
+    if (wtKg !== null && wtKg >= 25) return { device: "EpiPen 0.3 mg", note: "For ≥ 25 kg · 0.3 mg IM" };
+    if (ageYr !== null && ageYr < 2) return { device: "Auvi-Q 0.1 mg", note: "< 2 yr / estimated < 10 kg" };
+    if (ageYr !== null && ageYr < 8) return { device: "EpiPen Jr 0.15 mg", note: "2–7 yr / estimated < 25 kg — confirm weight" };
+    return { device: "EpiPen 0.3 mg", note: "≥ 8 yr or ≥ 25 kg" };
+  })();
+
+  // IV infusion dose: 0.1–1 mcg/kg/min — show rate at 0.1 mcg/kg/min start
+  const infuseStart = wtKg !== null ? (wtKg * 0.1).toFixed(1) : null;
+  const infuseMax   = wtKg !== null ? (wtKg * 1.0).toFixed(1)  : null;
+
+  // Pediatric weight estimate from age (Broselow-based): (age + 4) × 2
+  const estWeight = ageYr !== null && ageYr >= 1 && ageYr <= 12
+    ? +((ageYr + 4) * 2).toFixed(0) : null;
 
   // ── TAB 0: RECOGNITION ────────────────────────────────────────────────────
   const Tab0 = (
@@ -148,29 +192,99 @@ export default function AnaphylaxisHub({ onBack }) {
 
       <div style={sL(T.coral)}>Step 1 — Epinephrine (First Line)</div>
 
-      <div style={{ ...card({ marginBottom: 12, border: `1.5px solid ${T.coral}40` }) }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: T.coral, marginBottom: 10 }}>Weight-Based IM Dose Calculator</div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
-          <input
-            value={weight}
-            onChange={e => setWeight(e.target.value)}
-            placeholder="Weight (kg)"
-            type="number"
-            style={{ flex: 1, padding: "9px 12px", background: T.glassMid, border: `1px solid ${T.border}`, borderRadius: 8, color: T.white, fontSize: 13, fontFamily: T.mono, outline: "none" }}
-          />
-          <span style={{ fontSize: 12, color: T.muted }}>kg</span>
-        </div>
-        {epiDose ? (
-          <div style={aBox(T.coral, 0)}>
-            <div style={{ fontSize: 11, color: T.muted, marginBottom: 3 }}>Epinephrine 1:1,000 (1 mg/mL) IM</div>
-            <div style={{ fontFamily: T.mono, fontSize: 20, color: T.coral, fontWeight: 700 }}>{epiDose} mg</div>
-            <div style={{ fontFamily: T.mono, fontSize: 13, color: T.muted, marginTop: 2 }}>{epiDose} mL · anterolateral thigh · repeat q 5–15 min</div>
+      {/* ── Epinephrine Calculator ── */}
+      <div style={{ ...card({ marginBottom: 12, border: `1.5px solid ${T.coral}50` }) }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.coral, marginBottom: 12 }}>💉 Epinephrine Dose Calculator</div>
+
+        {/* Inputs row */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+          {/* Weight input */}
+          <div style={{ flex: 1, minWidth: 130 }}>
+            <div style={{ fontSize: 10, color: T.muted, marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.07em" }}>Weight</div>
+            <div style={{ display: "flex", gap: 4 }}>
+              <input value={weight} onChange={e => setWeight(e.target.value)} placeholder="e.g. 70" type="number"
+                style={{ flex: 1, padding: "8px 10px", background: T.glassMid, border: `1px solid ${T.border}`, borderRadius: 7, color: T.white, fontSize: 13, fontFamily: T.mono, outline: "none" }} />
+              {["kg", "lbs"].map(u => (
+                <button key={u} onClick={() => setWtUnit(u)}
+                  style={{ padding: "6px 9px", borderRadius: 7, border: `1px solid ${wtUnit === u ? T.coral + "80" : T.border}`, background: wtUnit === u ? T.coral + "20" : "transparent", color: wtUnit === u ? T.coral : T.dim, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: T.sans }}>
+                  {u}
+                </button>
+              ))}
+            </div>
           </div>
-        ) : (
-          <div style={{ fontSize: 11.5, color: T.dim }}>
-            Standard adult dose: <span style={{ fontFamily: T.mono, color: T.coral }}>0.3–0.5 mg IM</span> (0.3–0.5 mL of 1:1,000) anterolateral thigh
+          {/* Age input */}
+          <div style={{ flex: 1, minWidth: 130 }}>
+            <div style={{ fontSize: 10, color: T.muted, marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.07em" }}>Age <span style={{ color: T.dim }}>(optional)</span></div>
+            <div style={{ display: "flex", gap: 4 }}>
+              <input value={age} onChange={e => setAge(e.target.value)} placeholder="e.g. 5" type="number"
+                style={{ flex: 1, padding: "8px 10px", background: T.glassMid, border: `1px solid ${T.border}`, borderRadius: 7, color: T.white, fontSize: 13, fontFamily: T.mono, outline: "none" }} />
+              {["yr", "mo"].map(u => (
+                <button key={u} onClick={() => setAgeUnit(u)}
+                  style={{ padding: "6px 9px", borderRadius: 7, border: `1px solid ${ageUnit === u ? T.blue + "80" : T.border}`, background: ageUnit === u ? T.blue + "20" : "transparent", color: ageUnit === u ? T.blue : T.dim, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: T.sans }}>
+                  {u}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Estimated weight from age */}
+        {estWeight && !wtKg && (
+          <div style={{ ...aBox(T.blue, 8), display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 11.5, color: T.muted }}>Estimated weight (Broselow formula)</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 700, color: T.blue }}>~{estWeight} kg</span>
+              <button onClick={() => { setWeight(String(estWeight)); setWtUnit("kg"); }}
+                style={{ padding: "3px 9px", borderRadius: 6, border: `1px solid ${T.blue}50`, background: T.blue + "20", color: T.blue, fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: T.sans }}>
+                Use →
+              </button>
+            </div>
           </div>
         )}
+
+        {/* IM Dose Result */}
+        {epiImDose ? (
+          <div style={{ ...aBox(T.coral, 8) }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.coral, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>IM Dose — Epinephrine 1:1,000 (1 mg/mL)</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+              <span style={{ fontFamily: T.mono, fontSize: 24, fontWeight: 800, color: T.coral }}>{(+epiImDose).toFixed(2)} mg</span>
+              <span style={{ fontFamily: T.mono, fontSize: 15, color: T.coral + "cc" }}>{(+epiImDose).toFixed(2)} mL</span>
+            </div>
+            <div style={{ fontSize: 11, color: T.muted }}>
+              0.01 mg/kg · max 0.5 mg · {wtKg && <><span style={{ color: T.white }}>Based on {wtKg} kg</span> · </>}anterolateral thigh · repeat q 5–15 min PRN
+            </div>
+          </div>
+        ) : (
+          <div style={{ ...aBox(T.dim.replace("0.28", "0.5"), 8) }}>
+            <div style={{ fontSize: 11.5, color: T.muted }}>Enter weight or age to calculate dose</div>
+            <div style={{ fontSize: 11, color: T.dim, marginTop: 4 }}>Default adult: <span style={{ fontFamily: T.mono, color: T.coral }}>0.3–0.5 mg IM</span> (0.3–0.5 mL of 1:1,000)</div>
+          </div>
+        )}
+
+        {/* Auto-injector recommendation */}
+        {autoInjRec && (
+          <div style={{ ...aBox(T.purple, 8) }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.purple, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Auto-Injector Recommendation</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.white, marginBottom: 2 }}>{autoInjRec.device}</div>
+            <div style={{ fontSize: 11, color: T.muted }}>{autoInjRec.note}</div>
+          </div>
+        )}
+
+        {/* Infusion */}
+        {infuseStart && (
+          <div style={{ ...aBox(T.gold, 0) }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.gold, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>IV Infusion Range (if IM fails)</div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <div><div style={{ fontSize: 10, color: T.dim }}>Start (0.1 mcg/kg/min)</div><div style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 700, color: T.gold }}>{infuseStart} mcg/min</div></div>
+              <div style={{ textAlign: "right" }}><div style={{ fontSize: 10, color: T.dim }}>Max (1 mcg/kg/min)</div><div style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 700, color: T.coral }}>{infuseMax} mcg/min</div></div>
+            </div>
+          </div>
+        )}
+
+        <button onClick={() => { setWeight(""); setAge(""); setWtUnit("kg"); setAgeUnit("yr"); }}
+          style={{ marginTop: 10, padding: "4px 12px", borderRadius: 6, border: `1px solid ${T.border}`, background: "transparent", color: T.dim, fontSize: 11, cursor: "pointer", fontFamily: T.sans }}>
+          Reset
+        </button>
       </div>
 
       <div style={{ ...card({ marginBottom: 14, background: "rgba(244,63,94,0.07)", borderColor: "rgba(244,63,94,0.3)" }) }}>

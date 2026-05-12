@@ -82,7 +82,6 @@ import HeadacheHub from '@/pages/HeadacheHub';
 import AbdominalPainHub from '@/pages/AbdominalPainHub';
 import AMSHub from '@/pages/AMSHub';
 import DVTHub from '@/pages/DVTHub';
-import SepsisHub from '@/pages/SepsisHub';
 import HuddleBoard from '@/pages/HuddleBoard';
 import OrderGeneratorHub from '@/pages/OrderGeneratorHub';
 import DermatologyHub from '@/pages/DermatologyHub';
@@ -111,6 +110,8 @@ import NIVPage from '@/pages/NIVPage';
 import VentPage from '@/pages/VentPage';
 import CriticalProtocolsPage from '@/pages/CriticalProtocolsPage';
 import Sepsis1HourBundleHub from '@/pages/Sepsis1HourBundleHub';
+import SepsisHub from '@/pages/SepsisHub';
+import AnaphylaxisHub from '@/pages/AnaphylaxisHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -225,6 +226,8 @@ const AuthenticatedApp = () => {
         <Route path="/critical-protocols"     element={<CriticalProtocolsPage />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/sepsis-1hr-bundle"      element={<Sepsis1HourBundleHub />} />
+        <Route path="/AnaphylaxisHub"         element={<AnaphylaxisHub />} />
+        <Route path="/anaphylaxis"            element={<AnaphylaxisHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />
 
         {/* Pharmacology */}

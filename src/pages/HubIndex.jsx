@@ -10,6 +10,7 @@ const ALL_HUBS = [
   { id:"sepsis-abx",    route:"/sepsis-hub",               icon:"🦠", title:"Sepsis Hub",                 category:"Critical Care",   badge:"SSC 2021",       color:"#f5c842" },
   { id:"sepsisabx",     route:"/SepsisHub",                icon:"💉", title:"Sepsis ABX Hub",             category:"Critical Care",   badge:"SOURCE-BASED",   color:"#3dffa0" },
   { id:"sepsis-bundle", route:"/SepsisBundleTracker",      icon:"📊", title:"Sepsis Bundle Tracker",      category:"Critical Care",   badge:"CMS SEP-1",      color:"#f5c842" },
+  { id:"critical-protocols", route:"/CriticalProtocolsPage", icon:"⚡", title:"Critical Protocols",         category:"Critical Care",   badge:"ACEP/SSC",       color:"#f43f5e" },
   { id:"trauma",        route:"/trauma-hub",               icon:"🩹", title:"Trauma Hub",                 category:"Critical Care",   badge:"ATLS 11th Ed",   color:"#ff9f43" },
   { id:"critical-drip", route:"/CriticalCareDripHub",      icon:"💧", title:"Critical Care Drip Hub",     category:"Critical Care",   badge:"ICU Tools",      color:"#ff6060" },
   { id:"stroke",        route:"/stroke-hub",               icon:"🧠", title:"Stroke Hub",                 category:"Critical Care",   badge:"AHA 2023",       color:"#9b6dff" },

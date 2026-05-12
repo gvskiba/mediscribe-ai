@@ -1154,6 +1154,24 @@ const HUBS = [
     essential: false,
   },
   {
+    id: "critical-protocols",
+    route: "/CriticalProtocolsPage",
+    icon: "⚡",
+    abbr: "CRIT PROTO",
+    title: "Critical Protocols",
+    subtitle: "Sepsis · Anaphylaxis · DKA · Hyperkalemia · Thyroid Storm · Liver Failure · PE · ADHF · Meningitis",
+    color: "#f43f5e",
+    glow: "rgba(244,63,94,0.4)",
+    glass: "rgba(244,63,94,0.07)",
+    border: "rgba(244,63,94,0.28)",
+    accent: "#f87171",
+    category: "Critical Care",
+    stats: ["14 Protocols", "ACEP/SSC Aligned", "Evidence-Based"],
+    badge: "ACEP/SSC",
+    priority: 0.8,
+    essential: true,
+  },
+  {
     id: "sepsis-bundle",
     route: "/SepsisBundleTracker",
     icon: "🦠",
@@ -1195,7 +1213,7 @@ const LIVE_ROUTES = new Set([
   "/stroke-hub", "/ddx-engine", "/EDTrackingBoard", "/narrative-engine", "/ed-procedure-notes",
   "/order-generator", "/QuickNote", "/unified-pharma", "/CriticalCareDripHub", "/FluidElectrolyteCalculator",
   "/AntibioticStewardshipHub", "/DrugComparisonHub", "/MedRecHub", "/SepsisBundleTracker",
-  "/ElectrolyteAcidBaseHub",
+  "/ElectrolyteAcidBaseHub", "/CriticalProtocolsPage",
 ]);
 
 function Background() {

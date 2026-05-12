@@ -131,6 +131,7 @@ import CardiogenicShockHub from '@/pages/CardiogenicShockHub';
 import MassiveGIBleedHub from '@/pages/MassiveGIBleedHub';
 import MTPHub from '@/pages/MTPHub';
 import HeatStrokeHub from '@/pages/HeatStrokeHub';
+import HyponatremiaHub from '@/pages/HyponatremiaHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -263,6 +264,7 @@ const AuthenticatedApp = () => {
         <Route path="/MassiveGIBleedHub"        element={<MassiveGIBleedHub />} />
         <Route path="/MTPHub"                   element={<MTPHub />} />
         <Route path="/HeatStrokeHub"            element={<HeatStrokeHub />} />
+        <Route path="/HyponatremiaHub"          element={<HyponatremiaHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />

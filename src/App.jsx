@@ -142,6 +142,7 @@ import AlcoholWithdrawalHub from '@/pages/AlcoholWithdrawalHub';
 import ToxicAlcoholHub from '@/pages/ToxicAlcoholHub';
 import SympathomimeticHub from '@/pages/SympathomimeticHub';
 import TTPHub from '@/pages/TTPHub';
+import AnticoagulantReversalHub from '@/pages/AnticoagulantReversalHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -285,6 +286,7 @@ const AuthenticatedApp = () => {
         <Route path="/ToxicAlcoholHub"      element={<ToxicAlcoholHub />} />
         <Route path="/SympathomimeticHub"    element={<SympathomimeticHub />} />
         <Route path="/TTPHub"                 element={<TTPHub />} />
+        <Route path="/AnticoagulantReversalHub" element={<AnticoagulantReversalHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />

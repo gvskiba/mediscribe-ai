@@ -21,7 +21,6 @@ const tag  = (c)      => ({ display: "inline-block", background: c + "22", borde
 const card = (x = {}) => ({ ...G(), padding: "14px 16px", ...x });
 const aBox = (c, mb = 10) => ({ background: c + "14", border: `1px solid ${c}40`, borderRadius: 10, padding: "10px 14px", marginBottom: mb });
 const sL   = (c = T.amber) => ({ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c, margin: "18px 0 10px", display: "flex", alignItems: "center", gap: 8 });
-const dv   = { height: 1, background: T.border, margin: "10px 0" };
 
 const AGENTS = [
   {
@@ -227,7 +226,7 @@ export default function SympathomimeticHub() {
       <div style={sL(T.teal)}>Cocaine Chest Pain — Specific Protocol</div>
       <div style={{ ...card({ marginBottom: 14, background: "rgba(20,184,166,0.07)", borderColor: "rgba(20,184,166,0.3)" }) }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: T.teal, marginBottom: 8 }}>Cocaine-Induced Chest Pain — Dual Mechanism</div>
-        <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 10 }}>Cocaine causes chest pain via: (1) Coronary vasospasm (alpha-1 mediated) + (2) Increased myocardial O₂ demand (tachycardia + hypertension) + (3) Accelerated atherosclerosis (chronic use) + (4) Platelet activation.</div>
+        <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 10 }}>Cocaine causes chest pain via: (1) Coronary vasospasm (alpha-1 mediated) + (2) Increased myocardial O2 demand (tachycardia + hypertension) + (3) Accelerated atherosclerosis (chronic use) + (4) Platelet activation.</div>
         {[
           { drug: "Benzodiazepines",       dose: "Lorazepam 2–4 mg IV · first-line for all cocaine chest pain · reduces catecholamine excess", color: T.teal },
           { drug: "Nitroglycerin",          dose: "0.4 mg SL q 5 min · then IV if needed · treats vasospasm + ischemia", color: T.gold },
@@ -267,7 +266,7 @@ export default function SympathomimeticHub() {
         },
         {
           comp: "Cocaine-Induced MI / ACS", icon: "❤️", color: T.coral, urgent: true,
-          mech: "Coronary vasospasm + accelerated thrombus + increased O₂ demand from tachycardia/hypertension + sodium channel blockade causing dysrhythmia",
+          mech: "Coronary vasospasm + accelerated thrombus + increased O2 demand from tachycardia/hypertension + sodium channel blockade causing dysrhythmia",
           mgmt: "Benzos + NTG + aspirin + CCB for vasospasm · primary PCI for true STEMI · avoid beta-blockers · TIMI scoring applies · troponin elevation common without true ACS (myocarditis / demand ischemia) · cocaine-positive urine does not preclude PCI",
         },
         {
@@ -319,10 +318,10 @@ export default function SympathomimeticHub() {
     <div>
       <div style={sL()}>Monitoring Schedule</div>
       {[
-        { freq: "Every 15–30 min", items: "Temperature (rectal for accuracy) · HR · BP · RR · SpO₂ · agitation level · seizure activity", color: T.coral },
+        { freq: "Every 15–30 min", items: "Temperature (rectal for accuracy) · HR · BP · RR · SpO2 · agitation level · seizure activity", color: T.coral },
         { freq: "Every 1–2h",      items: "CK (initial + trending) · BMP (electrolytes · creatinine · glucose) · mental status assessment · response to sedation", color: T.gold },
         { freq: "Every 4–6h",      items: "LFTs · CBC · coagulation · urine myoglobin (if rhabdo suspected) · serial ECG (cocaine: QRS width · QTc) · ABG if respiratory compromise", color: T.teal },
-        { freq: "Continuous",      items: "Cardiac monitor · SpO₂ · EtCO₂ if intubated · temperature probe if hyperthermia active treatment", color: T.purple },
+        { freq: "Continuous",      items: "Cardiac monitor · SpO2 · EtCO2 if intubated · temperature probe if hyperthermia active treatment", color: T.purple },
       ].map(({ freq, items, color }) => (
         <div key={freq} style={{ ...G(), padding: "9px 12px", marginBottom: 6, display: "flex", gap: 10, alignItems: "flex-start" }}>
           <div style={{ fontFamily: T.mono, fontSize: 11.5, fontWeight: 700, color, minWidth: 130, flexShrink: 0 }}>{freq}</div>

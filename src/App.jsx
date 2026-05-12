@@ -115,6 +115,7 @@ import HyperkalemiaHub from '@/pages/HyperkalemiaHub';
 import SepsisHub from '@/pages/SepsisHub';
 import StatusEpilepticusHub from '@/pages/StatusEpilepticusHub';
 import AirwayRSIHub from '@/pages/AirwayRSIHub';
+import DKAHub from '@/pages/DKAHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -231,6 +232,7 @@ const AuthenticatedApp = () => {
         <Route path="/HyperkalemiaHub"        element={<HyperkalemiaHub />} />
         <Route path="/StatusEpilepticusHub"   element={<StatusEpilepticusHub />} />
         <Route path="/AirwayRSIHub"           element={<AirwayRSIHub />} />
+        <Route path="/DKAHub"                 element={<DKAHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />

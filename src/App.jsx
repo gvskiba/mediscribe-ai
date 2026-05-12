@@ -109,6 +109,7 @@ import RSIPage from '@/pages/RsiPage';
 import ElectrolyteAcidBaseHub from '@/pages/ElectrolyteAcidBaseHub';
 import NIVPage from '@/pages/NIVPage';
 import VentPage from '@/pages/VentPage';
+import CriticalProtocolsPage from '@/pages/CriticalProtocolsPage';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -219,6 +220,8 @@ const AuthenticatedApp = () => {
         <Route path="/rsi-page"               element={<RSIPage />} />
         <Route path="/NIVPage"                element={<NIVPage />} />
         <Route path="/VentPage"               element={<VentPage />} />
+        <Route path="/CriticalProtocolsPage"  element={<CriticalProtocolsPage />} />
+        <Route path="/critical-protocols"     element={<CriticalProtocolsPage />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />
 
         {/* Pharmacology */}

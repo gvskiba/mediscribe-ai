@@ -82,6 +82,7 @@ import HeadacheHub from '@/pages/HeadacheHub';
 import AbdominalPainHub from '@/pages/AbdominalPainHub';
 import AMSHub from '@/pages/AMSHub';
 import DVTHub from '@/pages/DVTHub';
+import SepsisHub from '@/pages/SepsisHub';
 import HuddleBoard from '@/pages/HuddleBoard';
 import OrderGeneratorHub from '@/pages/OrderGeneratorHub';
 import DermatologyHub from '@/pages/DermatologyHub';
@@ -110,6 +111,7 @@ import NIVPage from '@/pages/NIVPage';
 import VentPage from '@/pages/VentPage';
 import CriticalProtocolsPage from '@/pages/CriticalProtocolsPage';
 import Sepsis1HourBundleHub from '@/pages/Sepsis1HourBundleHub';
+import AnaphylaxisHub from '@/pages/AnaphylaxisHub';
 import SepsisHub from '@/pages/SepsisHub';
 import AnaphylaxisHub from '@/pages/AnaphylaxisHub';
 
@@ -224,10 +226,9 @@ const AuthenticatedApp = () => {
         <Route path="/VentPage"               element={<VentPage />} />
         <Route path="/CriticalProtocolsPage"  element={<CriticalProtocolsPage />} />
         <Route path="/critical-protocols"     element={<CriticalProtocolsPage />} />
-        <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
-        <Route path="/sepsis-1hr-bundle"      element={<Sepsis1HourBundleHub />} />
         <Route path="/AnaphylaxisHub"         element={<AnaphylaxisHub />} />
-        <Route path="/anaphylaxis"            element={<AnaphylaxisHub />} />
+        <Route path="/SepsisHub"              element={<SepsisHub />} />
+        <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />
 
         {/* Pharmacology */}
@@ -253,8 +254,6 @@ const AuthenticatedApp = () => {
         <Route path="/ob-hub"          element={<OBGYNHub />} />
         <Route path="/OBGYNHub"        element={<OBGYNHub />} />
         <Route path="/sepsis-hub"      element={<SepsisAbxHub />} />
-        <Route path="/SepsisHub"       element={<SepsisHub />} />
-        <Route path="/sepsis-hour1"    element={<SepsisHub />} />
         <Route path="/SepsisBundleTracker" element={<SepsisBundleTracker />} />
         <Route path="/airway-hub"      element={<AirwayHub />} />
         <Route path="/AirwayHub"       element={<AirwayHub />} />

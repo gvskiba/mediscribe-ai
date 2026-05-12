@@ -30,18 +30,64 @@ const SPECIALTIES = [
 ]
 const TRANSPORT_MODES = ["Ground BLS","Ground ALS","Air – Helicopter","Air – Fixed Wing","Critical Care Transport"]
 const RECORDS_LIST   = ["Triage Note","Nursing Notes","Physician Note","Labs","Imaging CD","EKG","Medication List","Consent Forms","ID / Insurance"]
+const TRANSFER_REASONS = [
+  "Specialist unavailable at this facility",
+  "ICU / higher-level monitoring required",
+  "Surgical capability unavailable",
+  "Interventional radiology unavailable",
+  "Cardiac catheterization lab unavailable",
+  "Neurosurgery unavailable",
+  "Trauma center level of care required",
+  "Burn center required",
+  "NICU / maternal-fetal medicine required",
+  "Pediatric emergency care required",
+  "Psychiatric inpatient facility required",
+  "Hyperbaric oxygen therapy required",
+  "Facility capacity — no inpatient beds available",
+  "Patient / family request — appropriate transfer",
+]
+const TRANSFER_BENEFITS = [
+  "Access to required subspecialty care",
+  "Higher-level ICU monitoring available",
+  "Surgical intervention available at receiving facility",
+  "Interventional / endovascular capability available",
+  "Cardiac surgery capability available",
+  "Neurosurgical capability available",
+  "Definitive treatment available at receiving facility",
+  "Improved clinical outcomes expected",
+  "NICU / neonatal care available",
+  "Burn unit specialized care available",
+  "Trauma surgery team available",
+  "Pediatric subspecialty expertise available",
+  "Inpatient psychiatric treatment available",
+  "Comprehensive stroke center capability",
+]
+const TRANSFER_RISKS = [
+  "Hemodynamic instability during transport",
+  "Potential for clinical deterioration in transit",
+  "Airway compromise risk during transport",
+  "Cardiac arrhythmia risk during transport",
+  "Neurological deterioration risk",
+  "Respiratory compromise during transport",
+  "Obstetric complication risk in transit",
+  "Increased pain / discomfort during transport",
+  "Delay in definitive treatment",
+  "Adverse weather / environmental conditions",
+  "Equipment / monitoring limitations during transport",
+  "Risk of thromboembolic event during prolonged transport",
+]
 const HARD_RULES = {
   "Chest Pain":          ["12-lead EKG within 10 min of arrival — no exceptions","Serial troponin (minimum ×2)","Vital signs with SpO2"],
   "Stroke Symptoms":     ["CT head without contrast required","Last known well time documented","Point-of-care glucose mandatory","NIHSS documented"],
   "Syncope":             ["12-lead EKG","Orthostatic vital signs","Point-of-care glucose"],
   "GI Bleed":            ["Orthostatic vital signs","IV access documented","Type and screen"],
   "Pregnancy-Related":   ["Fetal heart tones documented in MSE","Gestational age documented","Obstetric history"],
-  "Fever – Pediatric":   ["Age &lt;28 days → full sepsis workup is EMTALA floor","Blood cultures before antibiotics if sepsis concern"],
+  "Fever – Pediatric":   ["Age <28 days → full sepsis workup is EMTALA floor","Blood cultures before antibiotics if sepsis concern"],
   "Altered Mental Status":["Point-of-care glucose is absolute floor","Vital signs with temperature","Medication reconciliation"],
   "Overdose / Ingestion":["Substance identified or attempted","Acetaminophen level if unknown ingestion","12-lead EKG for cardiac toxicity"],
   "Suicidal Ideation":   ["Medical clearance labs before psychiatric disposition","Capacity assessment documented","Safety assessment completed"],
   "Allergic Reaction":   ["Serial vital signs documented","Epinephrine availability confirmed"],
-  "Back Pain":           ["Age &gt;50 or vascular risk factors: AAA must be addressed in MSE","Vital signs including bilateral BP if dissection concern"],
+  "Back Pain":           ["Age >50 or vascular risk factors: AAA must be addressed in MSE","Vital signs including bilateral BP if dissection concern"],
 }
 
 // ─── Style Helpers ────────────────────────────────────────────────────────────
@@ -116,7 +162,7 @@ function Meter({ score, t }) {
 async function callClaude(system, userMsg) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": "sk-ant-..." },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system, messages: [{ role: "user", content: userMsg }] }),
   })
   const d = await r.json()
@@ -156,7 +202,7 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
       <div style={grid2(2)}>
         <div style={col({ gap: 12 })}>
           <div style={glass(t, { padding: 16 })}>
-            <SectionH title="Arrival &amp; MSE" t={t} />
+            <SectionH title="Arrival & MSE" t={t} />
             <div style={col({ gap: 10 })}>
               <Checkbox checked={v.arrived} onChange={() => tog("arrived")} label="Patient arrived via dedicated Emergency Department" t={t} />
               <Checkbox checked={v.mse} onChange={() => tog("mse")} label="Medical Screening Examination (MSE) performed" t={t} />
@@ -225,7 +271,7 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
 
           <div style={row({ gap: 8 })}>
             <button onClick={handleDisposit} style={btn(t, s >= 90 ? t.green : t.yellow, { flex: 1 })}>
-              {s >= 90 ? "✓ Clear for Disposition" : "⚠ Flag &amp; Proceed"}
+              {s >= 90 ? "✓ Clear for Disposition" : "⚠ Flag & Proceed"}
             </button>
             <button onClick={handleSave} style={btn(t, t.teal, { flex: 1 })}>
               {saved ? "✓ Saved" : "Save to Audit Log"}
@@ -367,7 +413,8 @@ function TransferForm({ ctx, t }) {
   const [f, setF] = useState({
     ptName: ctx.name||"", ptDob: "", ptMrn: "", ptArrival: ctx.arrivalTime||"",
     emcDesc: "", vitals: "", treatments: "",
-    reason: "", benefits: "", risks: "", unstabilized: false, unstabReason: "",
+    reason: [], reasonNote: "", benefits: [], benefitsNote: "", risks: [], risksNote: "",
+    unstabilized: false, unstabReason: "",
     acceptFacility: "", acceptMd: "", acceptPhone: "", acceptDatetime: "",
     consent: "", consentReason: "",
     transport: "", personnel: "",
@@ -377,9 +424,10 @@ function TransferForm({ ctx, t }) {
   const [printing, setPrinting] = useState(false)
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
   const togRec = r => setF(p => ({ ...p, records: p.records.includes(r) ? p.records.filter(x => x !== r) : [...p.records, r] }))
+  const togArr = (k, v) => setF(p => ({ ...p, [k]: p[k].includes(v) ? p[k].filter(x => x !== v) : [...p[k], v] }))
 
   const handlePrint = () => { setPrinting(true); setTimeout(() => { window.print(); setPrinting(false) }, 150) }
-  const summary = `EMTALA Transfer — Patient: ${f.ptName||"(unnamed)"} → ${f.acceptFacility||"(facility)"} — Accepting MD: ${f.acceptMd||"(unknown)"} — ${new Date().toLocaleDateString()}`
+  const summary = `EMTALA Transfer — Patient: ${f.ptName||"(unnamed)"} → ${f.acceptFacility||"(facility)"} — Accepting MD: ${f.acceptMd||"(unknown)"} — Reason: ${f.reason.join(", ")||"not selected"} — ${new Date().toLocaleDateString()}`
 
   const Inp = ({ lbl2, k, type="text", ph="" }) => <div><span style={lbl(t)}>{lbl2}</span><input style={{ ...inp(t), marginTop: 4 }} type={type} placeholder={ph} value={f[k]} onChange={e => set(k, e.target.value)} /></div>
   const Area = ({ lbl2, k, ph="", rows=3 }) => <div><span style={lbl(t)}>{lbl2}</span><textarea style={{ ...inp(t), minHeight: rows*24, resize: "vertical", marginTop: 4 }} placeholder={ph} value={f[k]} onChange={e => set(k, e.target.value)} /></div>
@@ -391,8 +439,8 @@ function TransferForm({ ctx, t }) {
       {[
         ["A — Patient Information", [["Patient Name", f.ptName],["Date of Birth", f.ptDob],["MRN", f.ptMrn],["Arrival Time", f.ptArrival]]],
         ["B — Medical Condition", [["Emergency Medical Condition", f.emcDesc],["Current Vital Signs", f.vitals],["Treatment Rendered", f.treatments]]],
-        ["C — Transfer Justification", [["Reason for Transfer", f.reason],["Benefits", f.benefits],["Risks", f.risks],f.unstabilized && ["Unstabilized Transfer Justification", f.unstabReason]]],
-        ["D — Accepting Facility &amp; Physician", [["Accepting Facility", f.acceptFacility],["Accepting Physician", f.acceptMd],["Direct Phone", f.acceptPhone],["Date/Time of Acceptance", f.acceptDatetime]]],
+        ["C — Transfer Justification", [["Reason for Transfer", [...f.reason, f.reasonNote].filter(Boolean).join("; ")||"—"],["Medical Benefits", [...f.benefits, f.benefitsNote].filter(Boolean).join("; ")||"—"],["Risks of Transfer", [...f.risks, f.risksNote].filter(Boolean).join("; ")||"—"],f.unstabilized && ["Unstabilized Transfer Justification", f.unstabReason]]],
+        ["D — Accepting Facility & Physician", [["Accepting Facility", f.acceptFacility],["Accepting Physician", f.acceptMd],["Direct Phone", f.acceptPhone],["Date/Time of Acceptance", f.acceptDatetime]]],
         ["E — Patient Consent", [["Consent Status", f.consent],["If Not Obtained", f.consentReason]]],
         ["F — Transport", [["Mode", f.transport],["Personnel", f.personnel]]],
         ["G — Records Sent", [["Documents Included", f.records.join(", ")||"None checked"]]],
@@ -443,10 +491,59 @@ function TransferForm({ ctx, t }) {
           </div>
           <div style={glass(t, { padding: 16 })}>
             <SectionH title="C — Transfer Justification" t={t} />
-            <div style={col({ gap: 10 })}>
-              <Area lbl2="Reason for Transfer" k="reason" ph="Level of care unavailable at this facility..." rows={2} />
-              <Area lbl2="Medical Benefits of Transfer" k="benefits" ph="Specialist availability, higher level care..." rows={2} />
-              <Area lbl2="Risks of Transfer" k="risks" ph="Hemodynamic instability, deterioration in transit..." rows={2} />
+            <div style={col({ gap: 14 })}>
+
+              {/* Reason for Transfer */}
+              <div>
+                <span style={lbl(t)}>Reason for Transfer <span style={{ color: t.teal, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(select all that apply)</span></span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "6px 0 8px" }}>
+                  {TRANSFER_REASONS.map(opt => (
+                    <button key={opt} onClick={() => togArr("reason", opt)} style={pill(t, t.teal, f.reason.includes(opt))}>{opt}</button>
+                  ))}
+                </div>
+                {f.reason.length > 0 && (
+                  <div style={{ ...glass2(t, { padding: "8px 12px" }), marginBottom: 8 }}>
+                    <span style={{ color: t.muted, fontSize: 11 }}>Selected: </span>
+                    <span style={{ color: t.teal, fontSize: 12 }}>{f.reason.join(" · ")}</span>
+                  </div>
+                )}
+                <input style={inp(t)} placeholder="Additional reason (optional free text)..." value={f.reasonNote} onChange={e => set("reasonNote", e.target.value)} />
+              </div>
+
+              {/* Benefits */}
+              <div>
+                <span style={lbl(t)}>Medical Benefits of Transfer <span style={{ color: t.green, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(select all that apply)</span></span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "6px 0 8px" }}>
+                  {TRANSFER_BENEFITS.map(opt => (
+                    <button key={opt} onClick={() => togArr("benefits", opt)} style={pill(t, t.green, f.benefits.includes(opt))}>{opt}</button>
+                  ))}
+                </div>
+                {f.benefits.length > 0 && (
+                  <div style={{ ...glass2(t, { padding: "8px 12px" }), marginBottom: 8, borderColor: `${t.green}33` }}>
+                    <span style={{ color: t.muted, fontSize: 11 }}>Selected: </span>
+                    <span style={{ color: t.green, fontSize: 12 }}>{f.benefits.join(" · ")}</span>
+                  </div>
+                )}
+                <input style={inp(t)} placeholder="Additional benefit (optional free text)..." value={f.benefitsNote} onChange={e => set("benefitsNote", e.target.value)} />
+              </div>
+
+              {/* Risks */}
+              <div>
+                <span style={lbl(t)}>Risks of Transfer <span style={{ color: t.yellow, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(select all that apply)</span></span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "6px 0 8px" }}>
+                  {TRANSFER_RISKS.map(opt => (
+                    <button key={opt} onClick={() => togArr("risks", opt)} style={pill(t, t.yellow, f.risks.includes(opt))}>{opt}</button>
+                  ))}
+                </div>
+                {f.risks.length > 0 && (
+                  <div style={{ ...glass2(t, { padding: "8px 12px" }), marginBottom: 8, borderColor: `${t.yellow}33` }}>
+                    <span style={{ color: t.muted, fontSize: 11 }}>Selected: </span>
+                    <span style={{ color: t.yellow, fontSize: 12 }}>{f.risks.join(" · ")}</span>
+                  </div>
+                )}
+                <input style={inp(t)} placeholder="Additional risk (optional free text)..." value={f.risksNote} onChange={e => set("risksNote", e.target.value)} />
+              </div>
+
               <Checkbox checked={f.unstabilized} onChange={() => set("unstabilized", !f.unstabilized)} label="Patient is being transferred in UNSTABILIZED condition" t={t} danger />
               {f.unstabilized && <Area lbl2="Justification for Unstabilized Transfer (required by 42 CFR §489.24(e)(1))" k="unstabReason" ph="Medical necessity requires transfer prior to stabilization because..." rows={2} />}
             </div>
@@ -455,12 +552,12 @@ function TransferForm({ ctx, t }) {
 
         <div style={col({ gap: 12 })}>
           <div style={glass(t, { padding: 16 })}>
-            <SectionH title="D — Accepting Facility &amp; Physician" t={t} />
+            <SectionH title="D — Accepting Facility & Physician" t={t} />
             <div style={col({ gap: 10 })}>
               <Inp lbl2="Accepting Facility" k="acceptFacility" ph="Receiving hospital name" />
               <Inp lbl2="Accepting Physician" k="acceptMd" ph="Name and specialty" />
               <Inp lbl2="Direct Phone Number" k="acceptPhone" />
-              <Inp lbl2="Date &amp; Time of Acceptance" k="acceptDatetime" type="datetime-local" />
+              <Inp lbl2="Date & Time of Acceptance" k="acceptDatetime" type="datetime-local" />
             </div>
           </div>
 

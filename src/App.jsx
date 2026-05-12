@@ -111,6 +111,7 @@ import VentPage from '@/pages/VentPage';
 import CriticalProtocolsPage from '@/pages/CriticalProtocolsPage';
 import Sepsis1HourBundleHub from '@/pages/Sepsis1HourBundleHub';
 import AnaphylaxisHub from '@/pages/AnaphylaxisHub';
+import HyperkalemiaHub from '@/pages/HyperkalemiaHub';
 import SepsisHub from '@/pages/SepsisHub';
 
 // Pages that have their own built-in AI floating button
@@ -225,6 +226,7 @@ const AuthenticatedApp = () => {
         <Route path="/CriticalProtocolsPage"  element={<CriticalProtocolsPage />} />
         <Route path="/critical-protocols"     element={<CriticalProtocolsPage />} />
         <Route path="/AnaphylaxisHub"         element={<AnaphylaxisHub />} />
+        <Route path="/HyperkalemiaHub"        element={<HyperkalemiaHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />

@@ -249,7 +249,7 @@ export default function ToxicAlcoholHub({ onBack }) {
       {[
         { time: "Early (0–6h)", og: "HIGH", ag: "Low or Normal", interp: "Toxic alcohol still present, not yet metabolized · most urgent window for fomepizole", color: T.coral },
         { time: "Intermediate (6–24h)", og: "Both elevated", ag: "Rising", interp: "Active metabolism → accumulating toxic acids · osmol gap falling as toxic alcohol metabolized", color: T.amber },
-        { time: "Late (&gt; 24h)", og: "Low or Normal", ag: "HIGH", interp: "Toxic alcohol fully metabolized → high AGMA predominates · osmol gap may have normalized · severe acidosis · dialysis often needed", color: T.gold },
+        { time: "Late (> 24h)", og: "Low or Normal", ag: "HIGH", interp: "Toxic alcohol fully metabolized → high AGMA predominates · osmol gap may have normalized · severe acidosis · dialysis often needed", color: T.gold },
       ].map(({ time, og, ag: agVal, interp, color }) => (
         <div key={time} style={{ ...card({ marginBottom: 8, borderLeft: `3px solid ${color}` }) }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -279,7 +279,7 @@ export default function ToxicAlcoholHub({ onBack }) {
           { step: "Loading dose",       dose: "15 mg/kg IV over 30 min",                        note: "Immediately on clinical suspicion of methanol or ethylene glycol · before lab results if high suspicion" },
           { step: "Maintenance",        dose: "10 mg/kg IV q 12h × 4 doses",                   note: "Then 15 mg/kg q 12h thereafter (enzyme induction increases own metabolism after 48h)" },
           { step: "During dialysis",    dose: "15 mg/kg q 4h during hemodialysis",              note: "Fomepizole is dialyzed — give more frequently during HD · redose after dialysis ends" },
-          { step: "Stop criteria",      dose: "pH ≥ 7.30 · osmol gap &lt; 10 · asymptomatic · serum levels undetectable · no dialysis required", note: "Confirm with toxicology / poison control before stopping" },
+          { step: "Stop criteria",      dose: "pH ≥ 7.30 · osmol gap < 10 · asymptomatic · serum levels undetectable · no dialysis required", note: "Confirm with toxicology / poison control before stopping" },
         ].map(({ step, dose, note }) => (
           <div key={step} style={{ display: "flex", gap: 10, paddingBottom: 7, marginBottom: 7, borderBottom: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: T.teal, minWidth: 100, flexShrink: 0 }}>{step}</div>
@@ -299,8 +299,8 @@ export default function ToxicAlcoholHub({ onBack }) {
       <div style={sL(T.purple)}>Hemodialysis — Indications</div>
       <div style={{ ...card({ marginBottom: 14 }) }}>
         {[
-          { ind: "Methanol", criteria: ["pH &lt; 7.25 despite bicarbonate", "Visual symptoms (any degree)", "Formate level &gt; 20 mg/dL", "Methanol level &gt; 50 mg/dL (&gt; 20 mg/dL per some guidelines)", "Renal failure", "Coma / seizures"] },
-          { ind: "Ethylene Glycol", criteria: ["pH &lt; 7.25", "Renal failure (AKI)", "EG level &gt; 50 mg/dL", "Calcium oxalate crystals + hemodynamic instability", "Severe electrolyte disturbances", "Coma / seizures"] },
+          { ind: "Methanol", criteria: ["pH < 7.25 despite bicarbonate", "Visual symptoms (any degree)", "Formate level > 20 mg/dL", "Methanol level > 50 mg/dL (> 20 mg/dL per some guidelines)", "Renal failure", "Coma / seizures"] },
+          { ind: "Ethylene Glycol", criteria: ["pH < 7.25", "Renal failure (AKI)", "EG level > 50 mg/dL", "Calcium oxalate crystals + hemodynamic instability", "Severe electrolyte disturbances", "Coma / seizures"] },
         ].map(({ ind, criteria }) => (
           <div key={ind} style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: ind === "Methanol" ? T.coral : T.blue, marginBottom: 7 }}>{ind} — Dialysis When:</div>
@@ -322,7 +322,7 @@ export default function ToxicAlcoholHub({ onBack }) {
         { drug: "Pyridoxine (Vit B6) — ETHYLENE GLYCOL", dose: "100 mg IV q 6h", note: "Enhances glyoxylate → glycine (non-toxic) · reduced oxalate production", color: T.blue },
         { drug: "Thiamine (Vit B1) — ETHYLENE GLYCOL", dose: "100 mg IV q 6h", note: "Cofactor for glyoxylate → alpha-hydroxy-beta-ketoadipate pathway · reduces oxalate formation", color: T.blue },
         { drug: "Calcium — ETHYLENE GLYCOL", dose: "1–2 g calcium gluconate IV if symptomatic hypocalcemia", note: "Oxalate chelates Ca²⁺ → hypocalcemia · replace for symptomatic hypocalcemia (tetany · seizures · QTc prolongation) · avoid excessive Ca²⁺ replacement (may worsen crystal deposition in some models) · monitor ECG", color: T.teal },
-        { drug: "Sodium Bicarbonate", dose: "1–2 mEq/kg IV for pH &lt; 7.10", note: "Adjunct for severe acidosis · does NOT treat underlying toxicity · buys time for fomepizole/dialysis · titrate to pH ≥ 7.20–7.25", color: T.gold },
+        { drug: "Sodium Bicarbonate", dose: "1–2 mEq/kg IV for pH < 7.10", note: "Adjunct for severe acidosis · does NOT treat underlying toxicity · buys time for fomepizole/dialysis · titrate to pH ≥ 7.20–7.25", color: T.gold },
       ].map(({ drug, dose, note, color }) => (
         <div key={drug} style={{ ...G(), padding: "10px 13px", marginBottom: 7, borderLeft: `3px solid ${color}` }}>
           <div style={{ fontSize: 12, fontWeight: 700, color, marginBottom: 3 }}>{drug}</div>
@@ -352,10 +352,10 @@ export default function ToxicAlcoholHub({ onBack }) {
       <div style={sL(T.green)}>Treatment Response Targets</div>
       {[
         { target: "pH",           goal: "≥ 7.30 · rising with treatment",          color: T.green },
-        { target: "Osmol Gap",    goal: "Decreasing toward &lt; 10 (toxic alcohol being cleared or metabolized)", color: T.teal },
-        { target: "Anion Gap",    goal: "Normalizing (&lt; 12) as acids cleared by dialysis / metabolism", color: T.coral },
+        { target: "Osmol Gap",    goal: "Decreasing toward < 10 (toxic alcohol being cleared or metabolized)", color: T.teal },
+        { target: "Anion Gap",    goal: "Normalizing (< 12) as acids cleared by dialysis / metabolism", color: T.coral },
         { target: "Urine Output", goal: "≥ 1 mL/kg/h (AKI prevention in EG) · crystal clearance", color: T.blue },
-        { target: "Calcium (EG)", goal: "Ionized Ca²⁺ &gt; 1.1 mmol/L · total Ca &gt; 8.5 mg/dL", color: T.amber },
+        { target: "Calcium (EG)", goal: "Ionized Ca²⁺ > 1.1 mmol/L · total Ca > 8.5 mg/dL", color: T.amber },
         { target: "Visual Acuity (Methanol)", goal: "Any improvement from baseline · persistent visual loss may be permanent", color: T.gold },
       ].map(({ target, goal, color }) => (
         <div key={target} style={{ ...G({ borderRadius: 9 }), padding: "9px 12px", marginBottom: 6, display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -365,7 +365,7 @@ export default function ToxicAlcoholHub({ onBack }) {
       ))}
 
       <div style={sL(T.coral)}>Escalation / Dialysis Triggers</div>
-      {["pH &lt; 7.25 despite bicarbonate supplementation → dialysis immediately",
+      {["pH < 7.25 despite bicarbonate supplementation → dialysis immediately",
         "Rising creatinine (EG) → AKI developing → nephrology + dialysis urgently",
         "Visual symptoms (methanol) of ANY degree → dialysis + intensive ophthalmology consult",
         "No improvement in pH after 4h of fomepizole + bicarb → reassess diagnosis · escalate to dialysis",
@@ -378,7 +378,7 @@ export default function ToxicAlcoholHub({ onBack }) {
       <div style={sL(T.purple)}>Disposition</div>
       <div style={{ ...card() }}>
         {[
-          { level: "ICU",           detail: "All confirmed methanol or ethylene glycol poisoning · pH &lt; 7.30 · altered mentation · visual symptoms · requiring dialysis · fomepizole infusion ongoing · hemodynamic instability" },
+          { level: "ICU",           detail: "All confirmed methanol or ethylene glycol poisoning · pH < 7.30 · altered mentation · visual symptoms · requiring dialysis · fomepizole infusion ongoing · hemodynamic instability" },
           { level: "Nephrology",    detail: "All methanol and EG cases — dialysis availability · ongoing fomepizole management · AKI management (EG) · guideline for stopping dialysis" },
           { level: "Toxicology / Poison Control", detail: "All cases — management guidance · source identification · fomepizole stopping criteria · ethanol protocol if fomepizole unavailable", phone: "1-800-222-1222" },
           { level: "Ophthalmology", detail: "All methanol poisoning · even if visual symptoms not yet present · baseline visual acuity · fundoscopy · optic disc assessment · visual loss may be permanent even with treatment" },

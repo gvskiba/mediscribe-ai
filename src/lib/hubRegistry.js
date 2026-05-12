@@ -1,5 +1,6 @@
 // Hub registry with routes and keywords for global search
 export const HUBS = [
+  { name: "🚨 Critical Protocols", route: "/CriticalProtocolsPage", keywords: ["critical", "protocols", "emergency", "urgent", "life-threatening"] },
   { name: "Anaphylaxis", route: "/AnaphylaxisHub", keywords: ["anaphylaxis", "allergic reaction", "epinephrine", "allergy"] },
   { name: "Hyperkalemia", route: "/HyperkalemiaHub", keywords: ["hyperkalemia", "potassium", "k+", "ecg changes"] },
   { name: "Status Epilepticus", route: "/StatusEpilepticusHub", keywords: ["status epilepticus", "seizure", "se", "refractory seizure"] },

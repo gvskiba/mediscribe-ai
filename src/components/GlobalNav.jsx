@@ -521,6 +521,23 @@ export default function GlobalNav({ alerts = 0 }) {
           <span className={`${PREFIX}-kbd-key`}>⌘K</span>
         </button>
 
+        {/* Critical Protocols Button */}
+        <button
+          onClick={() => navigate("/CriticalProtocolsPage")}
+          style={{
+            display:"flex", alignItems:"center", gap:5,
+            fontFamily:"DM Sans", fontWeight:700, fontSize:11,
+            padding:"5px 11px", borderRadius:8, cursor:"pointer",
+            border:"1px solid rgba(239,68,68,.5)",
+            background:"rgba(239,68,68,.1)",
+            color:"#ef4444",
+            transition:"all .15s", flexShrink:0,
+          }}
+          title="Access critical emergency protocols">
+          <span style={{ fontSize:13 }}>🚨</span>
+          <span>Critical</span>
+        </button>
+
         {/* Hub picker toggle */}
         <button
           className={`${PREFIX}-hub-trigger`}

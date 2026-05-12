@@ -55,8 +55,12 @@ const ELIMINATE = [
   { drug: "Hemodialysis", dose: "Urgent nephrology", onset: "Immediate", note: "Most definitive · removes 25–50 mEq/h · for severe/refractory hyperkalemia", color: T.coral },
 ];
 
+import { useNavigate } from "react-router-dom";
+
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function HyperkalemiaHub({ onBack }) {
+  const navigate = useNavigate();
+  const handleBack = () => onBack ? onBack() : navigate("/CriticalProtocolsPage");
   const [tab, setTab]       = useState(0);
   const [kLevel, setKLevel] = useState("");
   const [step, setStep]     = useState(1);
@@ -358,11 +362,9 @@ export default function HyperkalemiaHub({ onBack }) {
     <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 20% 0%, rgba(20,184,166,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(245,158,11,0.07) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
 
       <div style={{ padding: "20px 20px 0" }}>
-        {onBack && (
-          <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
-            ← Critical Protocols
-          </button>
-        )}
+        <button onClick={handleBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
+          ← Critical Protocols
+        </button>
         <div>
           <span style={pill("linear-gradient(135deg,#14b8a6,#065f46)")}>⚗️ Metabolic</span>
           <span style={pill("linear-gradient(135deg,#f59e0b,#b45309)")}>Cardiac Risk</span>

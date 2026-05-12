@@ -47,7 +47,7 @@ export default function SepsisHub({ onBack }) {
   const TABS = ["Hour-1 Bundle","Antibiotics","POCUS","Vasopressors"];
   const selAbx = ABX_DATA.find(a => a.id === src);
 
-  const handleBack = () => { if (onBack) { onBack(); return; } navigate(-1); };
+  const handleBack = () => onBack ? onBack() : navigate("/CriticalProtocolsPage");
 
   const copyAbx = () => {
     if (!selAbx) return;
@@ -182,7 +182,7 @@ export default function SepsisHub({ onBack }) {
   return (
     <div style={{minHeight:"100vh",background:`radial-gradient(ellipse 70% 45% at 15% 0%, rgba(20,184,166,0.10) 0%, transparent 65%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.08) 0%, transparent 55%), ${T.bg}`,fontFamily:T.sans,color:T.white,paddingBottom:80}}>
       <div style={{padding:"20px 20px 0"}}>
-        <button onClick={handleBack} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",color:T.teal,fontSize:13,fontFamily:T.sans,cursor:"pointer",padding:"4px 0",marginBottom:16}}>← Back</button>
+        <button onClick={handleBack} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",color:T.teal,fontSize:13,fontFamily:T.sans,cursor:"pointer",padding:"4px 0",marginBottom:16}}>← Critical Protocols</button>
         <div>
           <span style={pill("linear-gradient(135deg,#f43f5e,#be185d)")}>🔴 Critical</span>
           <span style={pill("linear-gradient(135deg,#0d9488,#065f46)")}>SSC 2021</span>

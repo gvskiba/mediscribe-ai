@@ -154,8 +154,12 @@ const MEDS = [
     avoid: "Use of pure beta-blocker before alpha-blocker (unopposed alpha → crisis)" },
 ];
 
+import { useNavigate } from "react-router-dom";
+
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function HypertensiveEmergencyHub({ onBack }) {
+  const navigate = useNavigate();
+  const handleBack = () => onBack ? onBack() : navigate("/CriticalProtocolsPage");
   const [tab, setTab]     = useState(0);
   const [organ, setOrgan] = useState(null);
   const [drug, setDrug]   = useState(null);
@@ -431,11 +435,9 @@ export default function HypertensiveEmergencyHub({ onBack }) {
     <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(167,139,250,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.07) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
 
       <div style={{ padding: "20px 20px 0" }}>
-        {onBack && (
-          <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
-            ← Critical Protocols
-          </button>
-        )}
+        <button onClick={handleBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
+          ← Critical Protocols
+        </button>
         <div>
           <span style={pill("linear-gradient(135deg,#a78bfa,#6d28d9)")}>🧠 Neurologic</span>
           <span style={pill("linear-gradient(135deg,#0d9488,#065f46)")}>AHA / JNC</span>

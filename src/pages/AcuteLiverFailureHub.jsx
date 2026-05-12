@@ -54,8 +54,12 @@ const NAC_BAGS = [
   { bag: "Bag 3 — Maintenance", dose: "100 mg/kg", multiplier: 100, vol: "1000 mL D5W", time: "16 hours" },
 ];
 
+import { useNavigate } from "react-router-dom";
+
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function AcuteLiverFailureHub({ onBack }) {
+  const navigate = useNavigate();
+  const handleBack = () => onBack ? onBack() : navigate("/CriticalProtocolsPage");
   const [tab, setTab]             = useState(0);
   const [heGrade, setHeGrade]     = useState(null);
   const [etiology, setEtiology]   = useState(null);
@@ -492,11 +496,9 @@ export default function AcuteLiverFailureHub({ onBack }) {
     <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(245,158,11,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.08) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
 
       <div style={{ padding: "20px 20px 0" }}>
-        {onBack && (
-          <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
-            ← Critical Protocols
-          </button>
-        )}
+        <button onClick={handleBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
+          ← Critical Protocols
+        </button>
         <div>
           <span style={pill("linear-gradient(135deg,#f59e0b,#b45309)")}>🔬 Hepatology</span>
           <span style={pill("linear-gradient(135deg,#0d9488,#065f46)")}>AASLD / King's College</span>

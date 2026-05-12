@@ -45,8 +45,12 @@ const MUSCLE = [
   { l: "E", w: "Elevated Temperature",           d: "Heat stroke · NMS · serotonin syndrome · malignant hyperthermia · hyperthyroidism · infections (influenza, COVID-19, EBV)" },
 ];
 
+import { useNavigate } from "react-router-dom";
+
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function RhabdomyolysisHub({ onBack }) {
+  const navigate = useNavigate();
+  const handleBack = () => onBack ? onBack() : navigate("/CriticalProtocolsPage");
   const [tab, setTab]           = useState(0);
   const [ck, setCk]             = useState("");
   const [wt, setWt]             = useState("");
@@ -477,11 +481,9 @@ export default function RhabdomyolysisHub({ onBack }) {
     <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(20,184,166,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(251,146,60,0.08) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
 
       <div style={{ padding: "20px 20px 0" }}>
-        {onBack && (
-          <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
-            ← Critical Protocols
-          </button>
-        )}
+        <button onClick={handleBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
+          ← Critical Protocols
+        </button>
         <div>
           <span style={pill("linear-gradient(135deg,#14b8a6,#065f46)")}>⚗️ Metabolic</span>
           <span style={pill("linear-gradient(135deg,#f97316,#b45309)")}>Nephrology</span>

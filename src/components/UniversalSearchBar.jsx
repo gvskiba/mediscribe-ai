@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import { searchHubs } from "@/lib/hubRegistry";
 import { base44 } from "@/api/base44Client";
+import FavoriteButton from "./FavoriteButton";
 
 export default function UniversalSearchBar() {
   const [query, setQuery] = useState("");
@@ -177,23 +178,34 @@ export default function UniversalSearchBar() {
                 cursor: "pointer",
                 fontSize: 13,
                 transition: "all 0.15s",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontWeight: 500 }}>
-                  {result.type === "hub" ? "🏥 " : "👤 "}
-                  {result.name}
-                </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontWeight: 500 }}>
+                    {result.type === "hub" ? "🏥 " : "👤 "}
+                    {result.name}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.4)",
+                    marginTop: 2,
+                  }}
+                >
+                  {result.description}
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.4)",
-                  marginTop: 2,
-                }}
-              >
-                {result.description}
-              </div>
+              {result.type === "hub" && (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <FavoriteButton route={result.route} size={14} />
+                </div>
+              )}
             </button>
           ))}
         </div>

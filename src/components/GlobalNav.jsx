@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import UniversalSearchBar from "./UniversalSearchBar";
+import FavoritesBar from "./FavoritesBar";
 
 const PREFIX = "gnv";
 
@@ -499,6 +500,8 @@ export default function GlobalNav({ alerts = 0 }) {
         {/* Spacer */}
         <div style={{ flex:1 }}/>
 
+        {/* Favorites Bar - shown in sidebar below search */}
+
         {/* Alert dot */}
         {alerts > 0 && (
           <button onClick={() => navigate("critical")} style={{
@@ -534,6 +537,11 @@ export default function GlobalNav({ alerts = 0 }) {
           <span style={{ fontSize:13 }}>⊞</span>
           <span>All Hubs</span>
         </button>
+      </div>
+
+      {/* Favorites Bar */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <FavoritesBar />
       </div>
 
       {/* ══════════════ HUB PICKER OVERLAY ══════════════ */}

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const mk = (C = {}) => ({
@@ -169,9 +169,110 @@ async function callClaude(system, userMsg) {
   return d.content?.map(c => c.text || "").join("") || ""
 }
 
+// ─── Triage-to-MSE Timer ─────────────────────────────────────────────────────
+function MseTimer({ arrivalTime, mseComplete, mseTime, addBanner, t }) {
+  const [elapsed, setElapsed]   = useState(null)
+  const [frozen,  setFrozen]    = useState(null)
+  const banneredRef             = useRef(false)
+
+  const parseMinutes = (timeStr) => {
+    if (!timeStr) return null
+    const [h, m] = timeStr.split(":").map(Number)
+    if (isNaN(h) || isNaN(m)) return null
+    const now = new Date()
+    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0)
+    return Math.floor((now - base) / 60000)
+  }
+
+  // Freeze elapsed time the moment MSE is marked complete
+  useEffect(() => {
+    if (mseComplete && frozen === null) {
+      const mins = mseTime ? parseMinutes(arrivalTime) : elapsed
+      setFrozen(mins ?? elapsed ?? 0)
+      banneredRef.current = false
+    }
+    if (!mseComplete) { setFrozen(null); banneredRef.current = false }
+  }, [mseComplete])
+
+  useEffect(() => {
+    if (mseComplete) return
+    const tick = () => {
+      const mins = parseMinutes(arrivalTime)
+      setElapsed(mins)
+      if (mins !== null && mins >= 30 && !banneredRef.current) {
+        banneredRef.current = true
+        addBanner({ title: "MSE Delay — 30+ Minutes", msg: `Patient arrived ${mins} min ago. MSE not yet documented. CMS scrutinizes triage-to-MSE delays.` })
+      }
+    }
+    tick()
+    const id = setInterval(tick, 10000)
+    return () => clearInterval(id)
+  }, [arrivalTime, mseComplete])
+
+  const display = mseComplete ? frozen : elapsed
+  if (!arrivalTime) return (
+    <div style={{ ...glass(t, { padding: 14 }), background: `${t.muted}0a`, borderColor: `${t.muted}33` }}>
+      <div style={row({ gap: 10 })}>
+        <span style={{ fontSize: 22 }}>⏱</span>
+        <div>
+          <div style={{ color: t.muted, fontSize: 13, fontWeight: 700 }}>Triage-to-MSE Timer</div>
+          <div style={{ color: t.muted, fontSize: 11 }}>Enter arrival time in the Patient bar to start the timer</div>
+        </div>
+      </div>
+    </div>
+  )
+  if (display === null) return null
+
+  const color  = mseComplete ? t.green : display < 15 ? t.green : display < 30 ? t.yellow : t.red
+  const status = mseComplete
+    ? `MSE Documented — ${display} min from arrival`
+    : display < 15 ? "On Track"
+    : display < 30 ? "Approaching Threshold — document MSE soon"
+    : "⚠ 30-Minute Threshold Exceeded — CMS scrutiny zone"
+
+  const pct = Math.min((display / 45) * 100, 100)
+
+  return (
+    <div style={{ ...glass(t, { padding: 14 }), background: `${color}0e`, borderColor: `${color}44` }}>
+      <div style={row({ justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 6 })}>
+        <div style={row({ gap: 10 })}>
+          <span style={{ fontSize: 22 }}>⏱</span>
+          <div>
+            <div style={{ color: t.muted, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Triage-to-MSE</div>
+            <div style={{ color, fontSize: 11, fontWeight: 600 }}>{status}</div>
+          </div>
+        </div>
+        <div style={{ color, fontSize: 38, fontWeight: 900, fontFamily: "Playfair Display, serif", lineHeight: 1 }}>
+          {display}<span style={{ fontSize: 16, fontWeight: 600 }}> min</span>
+        </div>
+      </div>
+      <div style={{ background: `${t.border}`, borderRadius: 999, height: 6, overflow: "hidden" }}>
+        <div style={{ background: color, width: `${pct}%`, height: "100%", borderRadius: 999, transition: "width 0.6s ease" }} />
+      </div>
+      <div style={row({ gap: 16, marginTop: 6 })}>
+        {[{ label: "Green Zone", range: "< 15 min", c: t.green }, { label: "Yellow Zone", range: "15–30 min", c: t.yellow }, { label: "CMS Zone", range: "> 30 min", c: t.red }].map(z => (
+          <div key={z.label} style={row({ gap: 4 })}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: z.c, flexShrink: 0 }} />
+            <span style={{ color: t.muted, fontSize: 10 }}>{z.label} {z.range}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Tab 1: Visit Checklist ───────────────────────────────────────────────────
 function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
-  const [v, setV] = useState({ arrived: false, mse: false, qmp: "", mseTime: "", emc: "", emcDesc: "", stabilized: false, disposition: "", pregnant: false, psych: false, peds: false, lwbsOffer: false, amaRisks: false, amaConsent: false })
+  const [v, setV] = useState({
+    arrived: false, mse: false, qmp: "", mseTime: "", emc: "", emcDesc: "", stabilized: false, disposition: "",
+    pregnant: false, psych: false, peds: false, lwbsOffer: false, amaRisks: false, amaConsent: false,
+    // OB fields
+    obFht: false, obFhtTime: "", obGa: "", obEdd: "", obRom: false, obContracting: "", obContractionFreq: "",
+    obCervical: "", obCrowning: false, obObMd: "", obObMdTime: "", obDeliveryImm: "",
+    // Psych fields
+    psychClearanceLabs: false, psychCapacity: "", psychVoluntary: "", psychSafetyAssess: false,
+    psychHold: "", psychMedClearMd: "",
+  })
   const [override, setOverride] = useState("")
   const [saved, setSaved] = useState(false)
   const set = (k, val) => setV(p => ({ ...p, [k]: val }))
@@ -198,6 +299,8 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
         <div style={{ fontFamily: "Playfair Display, serif", fontSize: 19, fontWeight: 700, color: t.text }}>EMTALA Visit Checklist</div>
         <ConfFlag level={level} t={t} />
       </div>
+
+      <MseTimer arrivalTime={ctx.arrivalTime} mseComplete={v.mse} mseTime={v.mseTime} addBanner={addBanner} t={t} />
 
       <div style={grid2(2)}>
         <div style={col({ gap: 12 })}>
@@ -228,11 +331,100 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
           <div style={glass(t, { padding: 16 })}>
             <SectionH title="Special Populations" t={t} />
             <div style={col({ gap: 8 })}>
-              <Checkbox checked={v.pregnant || !!ctx.Pregnant} onChange={() => tog("pregnant")} label="Pregnant — fetal heart tones documented in MSE" t={t} />
-              <Checkbox checked={v.psych} onChange={() => tog("psych")} label="Psychiatric — capacity and safety assessment documented" t={t} />
-              <Checkbox checked={v.peds} onChange={() => tog("peds")} label="Pediatric — age-appropriate MSE performed" t={t} />
+              <Checkbox checked={v.pregnant || !!ctx.Pregnant} onChange={() => tog("pregnant")} label="Pregnant patient" t={t} />
+              <Checkbox checked={v.psych} onChange={() => tog("psych")} label="Psychiatric patient" t={t} />
+              <Checkbox checked={v.peds} onChange={() => tog("peds")} label="Pediatric patient — age-appropriate MSE performed" t={t} />
             </div>
           </div>
+
+          {/* OB / Labor Sub-Module */}
+          {(v.pregnant || ctx.Pregnant) && (
+            <div style={{ ...glass(t, { padding: 16 }), borderColor: `${t.gold}44`, background: `${t.gold}08` }}>
+              <SectionH title="⚕ OB / Labor EMTALA Module" t={t} />
+              <div style={col({ gap: 10 })}>
+                <div style={grid2(2)}>
+                  <div><span style={lbl(t)}>Gestational Age (weeks)</span><input style={inp(t)} placeholder="e.g. 32" value={v.obGa} onChange={e => set("obGa", e.target.value)} /></div>
+                  <div><span style={lbl(t)}>Estimated Due Date</span><input style={inp(t)} type="date" value={v.obEdd} onChange={e => set("obEdd", e.target.value)} /></div>
+                </div>
+                <div style={grid2(2)}>
+                  <Checkbox checked={v.obFht} onChange={() => tog("obFht")} label="Fetal heart tones documented in MSE" t={t} />
+                  <div><span style={lbl(t)}>FHT Timestamp</span><input style={inp(t)} type="time" value={v.obFhtTime} onChange={e => set("obFhtTime", e.target.value)} /></div>
+                </div>
+                <Checkbox checked={v.obRom} onChange={() => tog("obRom")} label="Rupture of membranes documented" t={t} />
+                <div>
+                  <span style={lbl(t)}>Contracting?</span>
+                  <div style={row({ gap: 6, marginTop: 4 })}>
+                    {["Yes","No","Irregular"].map(opt => (
+                      <button key={opt} onClick={() => set("obContracting", opt)} style={pill(t, t.gold, v.obContracting === opt)}>{opt}</button>
+                    ))}
+                  </div>
+                </div>
+                {v.obContracting === "Yes" && (
+                  <div><span style={lbl(t)}>Contraction Frequency</span><input style={inp(t)} placeholder="e.g. every 3 min" value={v.obContractionFreq} onChange={e => set("obContractionFreq", e.target.value)} /></div>
+                )}
+                <div><span style={lbl(t)}>Cervical Exam (if performed)</span><input style={inp(t)} placeholder="Dilation / effacement / station" value={v.obCervical} onChange={e => set("obCervical", e.target.value)} /></div>
+                <Checkbox checked={v.obCrowning} onChange={() => tog("obCrowning")} label="Crowning / delivery imminent — transfer contraindicated" t={t} danger />
+                {v.obCrowning && (
+                  <div style={{ ...glass2(t, { padding: 10 }), background: `${t.red}14`, borderColor: `${t.red}55` }}>
+                    <span style={{ color: t.red, fontSize: 12, fontWeight: 700 }}>⚠ EMTALA prohibits transfer of a patient with imminent delivery. Deliver on site and stabilize before any transfer consideration.</span>
+                  </div>
+                )}
+                <div>
+                  <span style={lbl(t)}>Delivery Imminent Assessment</span>
+                  <div style={row({ gap: 6, marginTop: 4 })}>
+                    {["Not imminent","Possibly imminent","Imminent — delivering on site"].map(opt => (
+                      <button key={opt} onClick={() => set("obDeliveryImm", opt)} style={pill(t, t.gold, v.obDeliveryImm === opt)}>{opt}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={grid2(2)}>
+                  <div><span style={lbl(t)}>OB Physician Notified</span><input style={inp(t)} placeholder="Physician name" value={v.obObMd} onChange={e => set("obObMd", e.target.value)} /></div>
+                  <div><span style={lbl(t)}>Notification Time</span><input style={inp(t)} type="time" value={v.obObMdTime} onChange={e => set("obObMdTime", e.target.value)} /></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Psychiatric EMTALA Sub-Module */}
+          {v.psych && (
+            <div style={{ ...glass(t, { padding: 16 }), borderColor: `${t.teal}44`, background: `${t.teal}08` }}>
+              <SectionH title="⚕ Psychiatric EMTALA Module" t={t} />
+              <div style={col({ gap: 10 })}>
+                <Checkbox checked={v.psychClearanceLabs} onChange={() => tog("psychClearanceLabs")} label="Medical clearance labs completed before psychiatric disposition" t={t} />
+                <Checkbox checked={v.psychSafetyAssess} onChange={() => tog("psychSafetyAssess")} label="Safety assessment documented (SI/HI/self-harm risk)" t={t} />
+                <div>
+                  <span style={lbl(t)}>Decision-Making Capacity</span>
+                  <div style={row({ gap: 6, marginTop: 4 })}>
+                    {["Intact","Impaired","Unable to assess"].map(opt => (
+                      <button key={opt} onClick={() => set("psychCapacity", opt)} style={pill(t, t.teal, v.psychCapacity === opt)}>{opt}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span style={lbl(t)}>Voluntary vs. Involuntary Status</span>
+                  <div style={row({ gap: 6, marginTop: 4 })}>
+                    {["Voluntary","Involuntary — hold placed","Pending evaluation"].map(opt => (
+                      <button key={opt} onClick={() => set("psychVoluntary", opt)} style={pill(t, t.teal, v.psychVoluntary === opt)}>{opt}</button>
+                    ))}
+                  </div>
+                </div>
+                {v.psychVoluntary?.includes("Involuntary") && (
+                  <div>
+                    <span style={lbl(t)}>Involuntary Hold Type</span>
+                    <div style={row({ gap: 6, marginTop: 4, flexWrap: "wrap" })}>
+                      {["Baker Act","5150 WIC","302","M-1","Emergency Detention","State Equivalent"].map(opt => (
+                        <button key={opt} onClick={() => set("psychHold", opt)} style={pill(t, t.yellow, v.psychHold === opt)}>{opt}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div><span style={lbl(t)}>Medical Clearance Attestation By</span><input style={inp(t)} placeholder="Physician name" value={v.psychMedClearMd} onChange={e => set("psychMedClearMd", e.target.value)} /></div>
+                <div style={{ ...glass2(t, { padding: 10 }), borderColor: `${t.teal}33` }}>
+                  <span style={{ color: t.teal, fontSize: 11 }}>Note: EMTALA applies to psychiatric emergency departments. Medical clearance labs are mandatory before psychiatric facility transfer under most CMS interpretive guidelines.</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={col({ gap: 12 })}>
@@ -284,7 +476,7 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
 }
 
 // ─── Tab 2: SmartMSE ──────────────────────────────────────────────────────────
-function SmartMSE({ ctx, t }) {
+function SmartMSE({ ctx, t, markTab, setMseCtx }) {
   const [complaint, setComplaint] = useState(ctx.complaint || "")
   const [mods, setMods] = useState([])
   const [result, setResult] = useState(null)
@@ -308,7 +500,10 @@ Ground all recommendations in: ACEP Clinical Policies, CMS EMTALA Interpretive G
 Schema:
 {"floor":{"history":[],"exam":[],"labs":[],"imaging":[],"ancillary":[]},"standard":{"labs":[],"imaging":[],"ancillary":[]},"cantMiss":[],"emcTriggers":[],"docLanguage":""}`
       const raw = await callClaude(sys, `Chief complaint: ${complaint}\nModifiers: ${mods.join(", ")||"None"}\nAge: ${ctx.age||"unknown"}, Sex: ${ctx.sex||"unknown"}, ESI: ${ctx.esi||"unknown"}`)
-      setResult(JSON.parse(raw.replace(/```json|```/g, "").trim()))
+      const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim())
+      setResult(parsed)
+      markTab(1, "green")
+      setMseCtx({ complaint, docLanguage: parsed.docLanguage || "", cantMiss: parsed.cantMiss || [] })
     } catch(e) { console.error(e) }
     setLoading(false)
   }
@@ -409,7 +604,7 @@ Schema:
 }
 
 // ─── Tab 3: Transfer Form ─────────────────────────────────────────────────────
-function TransferForm({ ctx, t }) {
+function TransferForm({ ctx, t, markTab, mseCtx }) {
   const [f, setF] = useState({
     ptName: ctx.name||"", ptDob: "", ptMrn: "", ptArrival: ctx.arrivalTime||"",
     emcDesc: "", vitals: "", treatments: "",
@@ -422,7 +617,13 @@ function TransferForm({ ctx, t }) {
     certName: "", certTime: new Date().toLocaleTimeString(),
   })
   const [printing, setPrinting] = useState(false)
-  const set = (k, v) => setF(p => ({ ...p, [k]: v }))
+  const set = (k, v) => setF(p => {
+    const next = { ...p, [k]: v }
+    const complete = !!next.acceptMd && !!next.certName && !!next.acceptFacility
+    const started  = !!next.acceptMd || !!next.acceptFacility
+    markTab(2, complete ? "green" : started ? "yellow" : null)
+    return next
+  })
   const togRec = r => setF(p => ({ ...p, records: p.records.includes(r) ? p.records.filter(x => x !== r) : [...p.records, r] }))
   const togArr = (k, v) => setF(p => ({ ...p, [k]: p[k].includes(v) ? p[k].filter(x => x !== v) : [...p[k], v] }))
 
@@ -483,6 +684,11 @@ function TransferForm({ ctx, t }) {
           </div>
           <div style={glass(t, { padding: 16 })}>
             <SectionH title="B — Medical Condition" t={t} />
+            {mseCtx && (
+              <button onClick={() => set("emcDesc", mseCtx.docLanguage)} style={{ ...btn(t, t.teal, { fontSize: 11, padding: "4px 12px", marginBottom: 10 }) }}>
+                ⚕ Pre-fill from SmartMSE — {mseCtx.complaint}
+              </button>
+            )}
             <div style={col({ gap: 10 })}>
               <Area lbl2="Emergency Medical Condition Description" k="emcDesc" ph="Describe the EMC..." />
               <Area lbl2="Current Vital Signs" k="vitals" ph="HR, BP, RR, SpO2, Temp..." rows={2} />
@@ -604,7 +810,7 @@ function TransferForm({ ctx, t }) {
 }
 
 // ─── Tab 4: On-Call Log ───────────────────────────────────────────────────────
-function OnCallLog({ t, addBanner }) {
+function OnCallLog({ t, addBanner, markTab }) {
   const [entries, setEntries] = useState([])
   const [f, setF] = useState({ specialty: "", provider: "", phone: "", called: "", responded: "", outcome: "", refused: false })
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
@@ -613,7 +819,9 @@ function OnCallLog({ t, addBanner }) {
   const add = () => {
     if (!f.specialty || !f.provider) return
     if (f.refused) addBanner({ title: "On-Call Refusal — EMTALA Reportable Event", msg: `${f.provider} (${f.specialty}) refused response. Notify administration and document per 42 CFR §489.24(j).` })
-    setEntries(p => [...p, { ...f, id: Date.now() }])
+    const newEntries = [...entries, { ...f, id: Date.now() }]
+    setEntries(newEntries)
+    markTab(3, newEntries.some(e => e.refused) ? "red" : "green")
     setF({ specialty: "", provider: "", phone: "", called: "", responded: "", outcome: "", refused: false })
   }
 
@@ -690,7 +898,7 @@ function OnCallLog({ t, addBanner }) {
 }
 
 // ─── Tab 5: Violation Risk Scanner ───────────────────────────────────────────
-function RiskScanner({ ctx, t }) {
+function RiskScanner({ ctx, t, markTab }) {
   const [scenario, setScenario] = useState("")
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -716,7 +924,9 @@ function RiskScanner({ ctx, t }) {
 {"overallRisk":"low|moderate|high|critical","violations":[{"type":string,"severity":"yellow|red","description":string,"citation":string}],"defensibilityScore":0-100,"recommendations":[],"chartingLanguage":string}
 Ground in: 42 CFR §489.24, CMS EMTALA Interpretive Guidelines, OIG enforcement history. Be specific on citations.`
       const raw = await callClaude(sys, `Scenario: ${scenario}\nPatient context: ${JSON.stringify(ctx)}\nPre-screen flags: ${JSON.stringify(flags)}`)
-      setResult({ ...JSON.parse(raw.replace(/```json|```/g, "").trim()), preFlags: flags })
+      const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim())
+      setResult({ ...parsed, preFlags: flags })
+      markTab(4, parsed.overallRisk === "low" ? "green" : parsed.overallRisk === "moderate" ? "yellow" : "red")
     } catch(e) { setResult({ overallRisk: "unknown", violations: [], preFlags: flags, recommendations: ["AI analysis unavailable — review pre-screen flags above manually."], defensibilityScore: 50, chartingLanguage: "" }) }
     setLoading(false)
   }
@@ -792,6 +1002,30 @@ Ground in: 42 CFR §489.24, CMS EMTALA Interpretive Guidelines, OIG enforcement 
               )}
             </div>
           </div>
+
+          {(result.overallRisk === "high" || result.overallRisk === "critical") && (
+            <div style={{ ...glass(t, { padding: 16 }), background: `${t.red}10`, borderColor: `${t.red}55` }}>
+              <SectionH title="🚨 Violation Response Protocol — Immediate Action Required" t={t} />
+              <div style={col({ gap: 8 })}>
+                {[
+                  ["1", "Notify attending physician and department chair immediately — do not delay"],
+                  ["2", "Notify risk management and compliance officer — document time of notification"],
+                  ["3", "Preserve all documentation in its current state — no amendments, no addenda without legal guidance"],
+                  ["4", "Do not discuss the case with non-essential personnel or family without risk management guidance"],
+                  ["5", "Evaluate CMS self-disclosure — voluntary reports within 72 hours are viewed more favorably by CMS"],
+                  ["6", "Document all response actions taken with timestamps — this log becomes part of the compliance record"],
+                ].map(([num, step]) => (
+                  <div key={num} style={row({ gap: 12, alignItems: "flex-start", padding: "8px 10px", background: `${t.red}08`, borderRadius: 8 })}>
+                    <span style={{ color: t.red, fontWeight: 900, fontSize: 15, fontFamily: "Playfair Display, serif", flexShrink: 0, minWidth: 18 }}>{num}</span>
+                    <span style={{ color: t.text, fontSize: 12, lineHeight: 1.5 }}>{step}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <button onClick={() => navigator.clipboard.writeText("EMTALA Violation Response Protocol\n\n1. Notify attending and department chair immediately\n2. Notify risk management and compliance officer — document time\n3. Preserve all documentation — no amendments without legal guidance\n4. Restrict case discussion to essential personnel only\n5. Evaluate CMS self-disclosure within 72 hours\n6. Document all response actions with timestamps")} style={btn(t, t.red, { fontSize: 12 })}>Copy Protocol</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -868,6 +1102,323 @@ function ComplianceAudit({ log, t }) {
           </div>
         </div>
       )}
+
+      {total > 0 && (() => {
+        const flagged = log.filter(e => e.level !== "green")
+        const handoff = [
+          `EMTALA SHIFT HANDOFF — Generated ${new Date().toLocaleString()}`,
+          ``,
+          `SHIFT SUMMARY`,
+          `Total Visits: ${total} | Compliant: ${compliant} | Gaps: ${gaps} | Risk Flags: ${risks} | Avg MSE: ${avg}%`,
+          ``,
+          flagged.length ? `FLAGGED VISITS REQUIRING FOLLOW-UP (${flagged.length}):` : `NO FLAGGED VISITS — shift compliant`,
+          ...flagged.map(e => `  • ${e.time} | ${e.patient} | ${e.complaint} | ${e.disposition} | MSE ${e.score}% — ${e.level.toUpperCase()}`),
+          ``,
+          `ACTION ITEMS FOR ONCOMING TEAM:`,
+          risks > 0 ? `  ⚠ ${risks} visit(s) flagged as violation risk — review with risk management` : `  ✓ No violation risk flags`,
+          gaps > 0 ? `  ⚠ ${gaps} visit(s) with documentation gaps — confirm completion` : `  ✓ All documented visits compliant`,
+          ``,
+          `Outgoing physician attestation: All EMTALA obligations reviewed for visits logged above.`,
+        ].join("\n")
+        return (
+          <div style={{ ...glass(t, { padding: 16 }), background: `${t.teal}08`, borderColor: `${t.teal}44` }}>
+            <div style={row({ justifyContent: "space-between", marginBottom: 12 })}>
+              <SectionH title="Shift Handoff Report" t={t} />
+              <button onClick={() => navigator.clipboard.writeText(handoff)} style={btn(t, t.teal, { fontSize: 12 })}>Copy Handoff</button>
+            </div>
+            {flagged.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <span style={{ color: t.yellow, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Flagged Visits — Needs Oncoming Review</span>
+                <div style={col({ gap: 6, marginTop: 6 })}>
+                  {flagged.map((e, i) => (
+                    <div key={i} style={row({ gap: 10, padding: "8px 12px", background: `${e.level === "red" ? t.red : t.yellow}10`, borderRadius: 8, border: `1px solid ${e.level === "red" ? t.red : t.yellow}33` })}>
+                      <span style={{ color: t.muted, fontSize: 11, flexShrink: 0 }}>{e.time}</span>
+                      <span style={{ color: t.text, fontSize: 12 }}>{e.patient}</span>
+                      <span style={{ color: t.muted, fontSize: 11 }}>{e.complaint}</span>
+                      <span style={{ color: t.teal, fontSize: 11 }}>{e.disposition}</span>
+                      <span style={{ color: e.level === "red" ? t.red : t.yellow, fontSize: 11, fontWeight: 700, marginLeft: "auto" }}>{e.score}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {flagged.length === 0 && <p style={{ color: t.green, fontSize: 13, fontWeight: 700 }}>✓ All logged visits compliant — clean handoff</p>}
+            <p style={{ color: t.muted, fontSize: 11, margin: 0, marginTop: 8 }}>Outgoing physician attestation: All EMTALA obligations reviewed for visits logged this session.</p>
+          </div>
+        )
+      })()}
+    </div>
+  )
+}
+
+// ─── Tab 6: Coverage Gap Log ──────────────────────────────────────────────────
+const GAP_REASONS = ["Specialist on vacation / leave","No specialist in geographic area","Specialty not currently credentialed","Weather or natural emergency","Contract / coverage dispute","Locum not available","Administrative scheduling gap","Other — see notes"]
+
+function CoverageGapLog({ t, addBanner, markTab }) {
+  const [gaps, setGaps] = useState([])
+  const [f, setF] = useState({ specialty:"", start:"", end:"", reason:"", altCoverage:"", adminName:"", adminTime:"", cmsNotified:"", notes:"" })
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }))
+
+  const gapMinutes = (g) => {
+    try { const [sh,sm]=g.start.split(":").map(Number); const [eh,em]=g.end.split(":").map(Number); return (eh*60+em)-(sh*60+sm) } catch { return 0 }
+  }
+
+  const add = () => {
+    if (!f.specialty || !f.start) return
+    const mins = gapMinutes(f)
+    if (mins >= 240 && !f.adminName) addBanner({ title: "On-Call Gap > 4 Hours — Admin Notification Required", msg: `${f.specialty} gap of ${Math.round(mins/60*10)/10}h has no documented administrative notification.` })
+    const entry = { ...f, id: Date.now() }
+    const newGaps = [...gaps, entry]
+    setGaps(newGaps)
+    markTab(5, newGaps.some(g => gapMinutes(g) >= 240 && !g.adminName) ? "red" : "green")
+    setF({ specialty:"", start:"", end:"", reason:"", altCoverage:"", adminName:"", adminTime:"", cmsNotified:"", notes:"" })
+  }
+
+  return (
+    <div style={col({ gap: 14 })}>
+      <div style={{ fontFamily:"Playfair Display, serif", fontSize:19, fontWeight:700, color:t.text }}>On-Call Coverage Gap Log</div>
+      <p style={{ color:t.muted, fontSize:12, margin:0 }}>Separate from per-consult refusals — tracks scheduled periods with NO specialty coverage. Gaps may require CMS notification under 42 CFR §489.20(r)(2).</p>
+
+      <div style={glass(t, { padding:16 })}>
+        <SectionH title="Log a Coverage Gap" t={t} />
+        <div style={grid2(3, { marginBottom:12 })}>
+          <div><span style={lbl(t)}>Specialty</span>
+            <select style={{ ...inp(t), marginTop:4 }} value={f.specialty} onChange={e => set("specialty", e.target.value)}>
+              <option value="">Select...</option>{SPECIALTIES.map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div><span style={lbl(t)}>Gap Start</span><input style={{ ...inp(t), marginTop:4 }} type="time" value={f.start} onChange={e => set("start", e.target.value)} /></div>
+          <div><span style={lbl(t)}>Gap End</span><input style={{ ...inp(t), marginTop:4 }} type="time" value={f.end} onChange={e => set("end", e.target.value)} /></div>
+        </div>
+        <div style={{ marginBottom:10 }}>
+          <span style={lbl(t)}>Reason for Gap</span>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:4 }}>
+            {GAP_REASONS.map(r => <button key={r} onClick={() => set("reason", r)} style={pill(t, t.yellow, f.reason===r)}>{r}</button>)}
+          </div>
+        </div>
+        <div style={grid2(2, { marginBottom:10 })}>
+          <div><span style={lbl(t)}>Alternative Coverage Arranged?</span>
+            <div style={row({ gap:6, marginTop:4 })}>
+              {["Yes — covered","No — gap unfilled","Partial coverage"].map(o => <button key={o} onClick={() => set("altCoverage", o)} style={pill(t, t.teal, f.altCoverage===o)}>{o}</button>)}
+            </div>
+          </div>
+          <div><span style={lbl(t)}>CMS Notification Status</span>
+            <div style={row({ gap:6, marginTop:4 })}>
+              {["Not required","Notified","Pending"].map(o => <button key={o} onClick={() => set("cmsNotified", o)} style={pill(t, t.gold, f.cmsNotified===o)}>{o}</button>)}
+            </div>
+          </div>
+        </div>
+        <div style={grid2(2, { marginBottom:12 })}>
+          <div><span style={lbl(t)}>Admin Notified (Name)</span><input style={{ ...inp(t), marginTop:4 }} placeholder="Administrator name" value={f.adminName} onChange={e => set("adminName", e.target.value)} /></div>
+          <div><span style={lbl(t)}>Notification Time</span><input style={{ ...inp(t), marginTop:4 }} type="time" value={f.adminTime} onChange={e => set("adminTime", e.target.value)} /></div>
+        </div>
+        <div style={{ marginBottom:12 }}><span style={lbl(t)}>Notes</span><input style={{ ...inp(t), marginTop:4 }} placeholder="Additional context..." value={f.notes} onChange={e => set("notes", e.target.value)} /></div>
+        <button onClick={add} style={btn(t, t.teal)}>Add Gap Entry</button>
+      </div>
+
+      {gaps.length > 0 && <div style={glass(t, { padding:16 })}>
+        <SectionH title={`Gap Log — ${gaps.length} gap${gaps.length!==1?"s":""} this shift`} t={t} />
+        <div style={col({ gap:8 })}>
+          {gaps.map(g => {
+            const mins = gapMinutes(g)
+            const alert = mins >= 240 && !g.adminName
+            return (
+              <div key={g.id} style={{ ...glass2(t, { padding:12 }), borderColor: alert ? `${t.red}55` : t.border, background: alert ? `${t.red}0a` : t.surf2 }}>
+                <div style={row({ justifyContent:"space-between", flexWrap:"wrap", gap:6 })}>
+                  <div style={row({ gap:10 })}>
+                    <span style={{ color:t.teal, fontWeight:700, fontSize:13 }}>{g.specialty}</span>
+                    <span style={{ color:t.muted, fontSize:12 }}>{g.start} – {g.end||"ongoing"}</span>
+                    {mins > 0 && <span style={{ color: mins>=240?t.red:mins>=120?t.yellow:t.green, fontWeight:700, fontSize:12 }}>{Math.round(mins/60*10)/10}h gap</span>}
+                  </div>
+                  {alert && <span style={{ color:t.red, fontSize:11, fontWeight:700, background:`${t.red}22`, padding:"2px 10px", borderRadius:20 }}>⚠ ADMIN NOTIFICATION MISSING</span>}
+                </div>
+                <div style={row({ gap:12, marginTop:4, flexWrap:"wrap" })}>
+                  <span style={{ color:t.muted, fontSize:11 }}>Reason: {g.reason||"—"}</span>
+                  <span style={{ color:t.muted, fontSize:11 }}>Alt coverage: {g.altCoverage||"—"}</span>
+                  <span style={{ color:t.muted, fontSize:11 }}>Admin: {g.adminName||"—"} {g.adminTime}</span>
+                  <span style={{ color:t.muted, fontSize:11 }}>CMS: {g.cmsNotified||"—"}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>}
+    </div>
+  )
+}
+
+// ─── Tab 7: Receiving Transfer ────────────────────────────────────────────────
+function ReceivingTransfer({ t, markTab }) {
+  const [f, setF] = useState({ sendFacility:"", sendMd:"", sendPhone:"", emcDesc:"", capability:"", capabilityNote:"", capacity:"", bedType:"", patientArrivalCondition:"", transferCondition:"", deterioration:"", recordsReceived:[], acceptingMd:"", acceptingSpec:"", acceptTime:"", rejecting:false, rejectReason:"" })
+  const set = (k, v) => setF(p => {
+    const next = { ...p, [k]:v }
+    const done = !!next.acceptingMd && !!next.capability && !!next.capacity
+    if (done) markTab(6, "green")
+    else if (next.acceptingMd || next.sendFacility) markTab(6, "yellow")
+    return next
+  })
+  const togRec = r => setF(p => ({ ...p, recordsReceived: p.recordsReceived.includes(r) ? p.recordsReceived.filter(x=>x!==r) : [...p.recordsReceived, r] }))
+
+  return (
+    <div style={col({ gap:14 })}>
+      <div style={{ fontFamily:"Playfair Display, serif", fontSize:19, fontWeight:700, color:t.text }}>Receiving Transfer Checklist</div>
+      <p style={{ color:t.muted, fontSize:12, margin:0 }}>Accepting an EMTALA transfer creates obligations. Hospitals cannot refuse transfers if they have the capability and capacity. Document inability to refuse under 42 CFR §489.24(f).</p>
+
+      <div style={grid2(2, { gap:12 })}>
+        <div style={col({ gap:12 })}>
+          <div style={glass(t, { padding:16 })}>
+            <SectionH title="Sending Facility" t={t} />
+            <div style={col({ gap:10 })}>
+              <div><span style={lbl(t)}>Sending Facility</span><input style={{ ...inp(t), marginTop:4 }} placeholder="Hospital name" value={f.sendFacility} onChange={e => set("sendFacility", e.target.value)} /></div>
+              <div style={grid2(2)}>
+                <div><span style={lbl(t)}>Sending Physician</span><input style={{ ...inp(t), marginTop:4 }} placeholder="MD name" value={f.sendMd} onChange={e => set("sendMd", e.target.value)} /></div>
+                <div><span style={lbl(t)}>Phone</span><input style={{ ...inp(t), marginTop:4 }} placeholder="Contact" value={f.sendPhone} onChange={e => set("sendPhone", e.target.value)} /></div>
+              </div>
+              <div><span style={lbl(t)}>EMC Description (as reported)</span><textarea style={{ ...inp(t), minHeight:56, resize:"vertical", marginTop:4 }} placeholder="Patient's emergency medical condition as communicated by sending facility..." value={f.emcDesc} onChange={e => set("emcDesc", e.target.value)} /></div>
+            </div>
+          </div>
+
+          <div style={glass(t, { padding:16 })}>
+            <SectionH title="Capability & Capacity" t={t} />
+            <div style={col({ gap:10 })}>
+              <div><span style={lbl(t)}>Capability for this EMC?</span>
+                <div style={row({ gap:6, marginTop:4 })}>
+                  {["Yes — confirmed","No — cannot provide needed care","Partial capability"].map(o => <button key={o} onClick={() => set("capability", o)} style={pill(t, o.startsWith("No") ? t.red : t.green, f.capability===o)}>{o}</button>)}
+                </div>
+              </div>
+              {f.capability && !f.capability.startsWith("Yes") && <div><span style={lbl(t)}>Explain Limitation</span><input style={{ ...inp(t), marginTop:4 }} placeholder="Specific capability gap..." value={f.capabilityNote} onChange={e => set("capabilityNote", e.target.value)} /></div>}
+              <div><span style={lbl(t)}>Bed Capacity Available?</span>
+                <div style={row({ gap:6, marginTop:4 })}>
+                  {["Yes","No — diversion","ICU only","Step-down only"].map(o => <button key={o} onClick={() => set("capacity", o)} style={pill(t, o==="No — diversion" ? t.red : t.teal, f.capacity===o)}>{o}</button>)}
+                </div>
+              </div>
+              <div><span style={lbl(t)}>Bed / Unit Type</span><input style={{ ...inp(t), marginTop:4 }} placeholder="e.g. ICU Bed 4, Trauma Bay 2" value={f.bedType} onChange={e => set("bedType", e.target.value)} /></div>
+            </div>
+          </div>
+
+          <div style={{ ...glass(t, { padding:12 }), background:`${t.red}0a`, borderColor:`${t.red}44` }}>
+            <Checkbox checked={f.rejecting} onChange={() => set("rejecting", !f.rejecting)} label="Hospital is DECLINING this transfer request" t={t} danger />
+            {f.rejecting && <div style={{ marginTop:10 }}><span style={lbl(t)}>Documented Reason for Declination</span><textarea style={{ ...inp(t), minHeight:56, resize:"vertical", marginTop:4 }} placeholder="Hospitals may only decline if they lack capability or capacity. Document specific reason..." value={f.rejectReason} onChange={e => set("rejectReason", e.target.value)} /></div>}
+          </div>
+        </div>
+
+        <div style={col({ gap:12 })}>
+          <div style={glass(t, { padding:16 })}>
+            <SectionH title="Accepting Physician" t={t} />
+            <div style={col({ gap:10 })}>
+              <div><span style={lbl(t)}>Accepting Physician</span><input style={{ ...inp(t), marginTop:4 }} placeholder="Physician name" value={f.acceptingMd} onChange={e => set("acceptingMd", e.target.value)} /></div>
+              <div style={grid2(2)}>
+                <div><span style={lbl(t)}>Specialty</span><input style={{ ...inp(t), marginTop:4 }} placeholder="Specialty" value={f.acceptingSpec} onChange={e => set("acceptingSpec", e.target.value)} /></div>
+                <div><span style={lbl(t)}>Acceptance Time</span><input style={{ ...inp(t), marginTop:4 }} type="time" value={f.acceptTime} onChange={e => set("acceptTime", e.target.value)} /></div>
+              </div>
+            </div>
+          </div>
+
+          <div style={glass(t, { padding:16 })}>
+            <SectionH title="Patient Condition Comparison" t={t} />
+            <div style={col({ gap:10 })}>
+              <div><span style={lbl(t)}>Reported Condition at Time of Transfer</span><textarea style={{ ...inp(t), minHeight:56, resize:"vertical", marginTop:4 }} placeholder="Vitals and status as reported by sending facility..." value={f.transferCondition} onChange={e => set("transferCondition", e.target.value)} /></div>
+              <div><span style={lbl(t)}>Condition on Arrival at This Facility</span><textarea style={{ ...inp(t), minHeight:56, resize:"vertical", marginTop:4 }} placeholder="Vitals and clinical status on arrival..." value={f.patientArrivalCondition} onChange={e => set("patientArrivalCondition", e.target.value)} /></div>
+              <div><span style={lbl(t)}>Deterioration During Transfer?</span>
+                <div style={row({ gap:6, marginTop:4 })}>
+                  {["No change","Minor change","Significant deterioration","Critical deterioration"].map(o => <button key={o} onClick={() => set("deterioration", o)} style={pill(t, o.includes("deterioration") ? t.red : t.green, f.deterioration===o)}>{o}</button>)}
+                </div>
+              </div>
+              {f.deterioration?.includes("deterioration") && <div style={{ ...glass2(t, { padding:10 }), background:`${t.red}0a`, borderColor:`${t.red}44` }}><span style={{ color:t.red, fontSize:12 }}>Document deterioration in chart and notify risk management. Significant deterioration during transfer may indicate the original transfer was not appropriate under EMTALA.</span></div>}
+            </div>
+          </div>
+
+          <div style={glass(t, { padding:16 })}>
+            <SectionH title="Records Received" t={t} />
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {RECORDS_LIST.map(r => <button key={r} onClick={() => togRec(r)} style={pill(t, t.teal, f.recordsReceived.includes(r))}>{r}</button>)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tab 8: Attestation Builder ───────────────────────────────────────────────
+const ATTEST_SCENARIOS = [
+  { id:"mse_std",   label:"MSE — Standard",         icon:"⚕", fields:["presenting_complaint","qmp_name","emc_result"] },
+  { id:"mse_psych", label:"MSE — Psychiatric",       icon:"🧠", fields:["presenting_complaint","qmp_name","clearance_labs","capacity"] },
+  { id:"mse_ob",    label:"MSE — Labor / OB",        icon:"♀", fields:["gestational_age","fht_result","delivery_status"] },
+  { id:"ama",       label:"AMA Attestation",         icon:"✗",  fields:["presenting_complaint","risks_discussed","patient_response"] },
+  { id:"transfer",  label:"Transfer Certification",  icon:"⇄",  fields:["emc_desc","receiving_facility","accepting_md","reason"] },
+  { id:"lwbs",      label:"LWBS Documentation",      icon:"→",  fields:["presenting_complaint","mse_offered","time_left"] },
+]
+const ATTEST_FIELD_LABELS = { presenting_complaint:"Chief Complaint / Presentation", qmp_name:"Performing QMP (Physician Name)", emc_result:"EMC Determination", clearance_labs:"Medical Clearance Labs Performed", capacity:"Decision-Making Capacity", gestational_age:"Gestational Age", fht_result:"Fetal Heart Tone Result", delivery_status:"Delivery Imminence Assessment", risks_discussed:"Risks Discussed with Patient", patient_response:"Patient's Response / Stated Reason", emc_desc:"Emergency Medical Condition", receiving_facility:"Receiving Facility", accepting_md:"Accepting Physician", reason:"Reason for Transfer", mse_offered:"MSE Offered? (Yes/No + How)", time_left:"Time Patient Left" }
+
+function AttestationBuilder({ ctx, t, markTab }) {
+  const [scenario, setScenario] = useState(null)
+  const [fields, setFields]     = useState({})
+  const [output, setOutput]     = useState("")
+  const [loading, setLoading]   = useState(false)
+  const setF = (k, v) => setFields(p => ({ ...p, [k]:v }))
+
+  const generate = async () => {
+    if (!scenario) return
+    setLoading(true)
+    try {
+      const sys = `You are an EMTALA compliance attorney and emergency physician. Generate a concise, legally defensible attestation statement for the given scenario. Return ONLY the attestation text — no JSON, no markdown, no preamble. Write in first person, present tense. 2-4 sentences. Include the regulatory basis (42 CFR §489.24) where appropriate. Use the specific details provided.`
+      const userMsg = `Scenario: ${scenario.label}\nPatient context: Age ${ctx.age||"unknown"}, Sex ${ctx.sex||"unknown"}, Chief complaint: ${ctx.complaint||"unknown"}\nFields: ${JSON.stringify(fields)}`
+      const text = await callClaude(sys, userMsg)
+      setOutput(text)
+      markTab(7, "green")
+    } catch(e) { setOutput("Unable to generate — please try again.") }
+    setLoading(false)
+  }
+
+  return (
+    <div style={col({ gap:14 })}>
+      <div style={{ fontFamily:"Playfair Display, serif", fontSize:19, fontWeight:700, color:t.text }}>Attestation Language Builder</div>
+      <p style={{ color:t.muted, fontSize:12, margin:0 }}>Generates concise, EMTALA-grounded attestation language for the five most common documentation scenarios. Copy directly into the chart.</p>
+
+      <div style={glass(t, { padding:16 })}>
+        <SectionH title="Select Attestation Scenario" t={t} />
+        <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+          {ATTEST_SCENARIOS.map(s => (
+            <button key={s.id} onClick={() => { setScenario(s); setFields({}); setOutput("") }} style={{ ...pill(t, t.gold, scenario?.id===s.id), padding:"8px 16px", fontSize:13 }}>
+              {s.icon} {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {scenario && (
+        <div style={glass(t, { padding:16 })}>
+          <SectionH title={`${scenario.icon} ${scenario.label} — Details`} t={t} />
+          <div style={col({ gap:10 })}>
+            {scenario.fields.map(fk => (
+              <div key={fk}>
+                <span style={lbl(t)}>{ATTEST_FIELD_LABELS[fk]||fk}</span>
+                <input style={{ ...inp(t), marginTop:4 }} placeholder={`Enter ${ATTEST_FIELD_LABELS[fk]||fk}...`} value={fields[fk]||""} onChange={e => setF(fk, e.target.value)} />
+              </div>
+            ))}
+            <button onClick={generate} disabled={loading} style={btn(t, t.teal, { marginTop:4, opacity:loading?0.5:1 })}>
+              {loading ? "Generating attestation..." : "✎ Generate Attestation Language"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {output && (
+        <div style={{ ...glass(t, { padding:16 }), background:`${t.teal}08`, borderColor:`${t.teal}44` }}>
+          <div style={row({ justifyContent:"space-between", marginBottom:12 })}>
+            <span style={{ color:t.gold, fontFamily:"Playfair Display, serif", fontSize:14, fontWeight:700 }}>Generated Attestation</span>
+            <div style={row({ gap:8 })}>
+              <button onClick={() => navigator.clipboard.writeText(output)} style={btn(t, t.teal, { padding:"4px 12px", fontSize:12 })}>Copy to Chart</button>
+              <button onClick={() => { setOutput(""); setFields({}) }} style={btn(t, t.muted, { padding:"4px 12px", fontSize:12 })}>Clear</button>
+            </div>
+          </div>
+          <p style={{ color:t.text, fontSize:13, fontFamily:"JetBrains Mono, monospace", lineHeight:1.8, margin:0, whiteSpace:"pre-wrap" }}>{output}</p>
+          <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${t.border}` }}>
+            <span style={{ color:t.muted, fontSize:11 }}>⚠ Review before use. AI-generated language should be verified against the actual clinical encounter. Do not use verbatim without physician review.</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -890,54 +1441,159 @@ function PCBar({ ctx, setCtx, t }) {
 }
 
 // ─── Shell ────────────────────────────────────────────────────────────────────
-const TABS = ["✓ Visit Checklist","⚕ SmartMSE","⇄ Transfer Form","📋 On-Call Log","⚠ Risk Scanner","📊 Audit"]
+const TAB_NAMES = ["✓ Visit Checklist","⚕ SmartMSE","⇄ Transfer Form","📋 On-Call Log","⚠ Risk Scanner","📵 Gap Log","⬇ Receiving","✎ Attestation","📊 Audit"]
 
 export default function EMTALAHub({ C = {} }) {
   const t = mk(C)
-  const [tab, setTab] = useState(0)
-  const [ctx, setCtx] = useState({ name:"", age:"", sex:"", complaint:"", esi:"", arrivalTime:"" })
+  const [tab, setTab]         = useState(0)
+  const [ctx, setCtx]         = useState({ name:"", age:"", sex:"", complaint:"", esi:"", arrivalTime:"" })
   const [banners, setBanners] = useState([])
-  const [auditLog, setAuditLog] = useState([])
-  const addBanner  = useCallback(b => setBanners(p => [...p, b]), [])
-  const dismiss    = useCallback(i => setBanners(p => p.filter((_, idx) => idx !== i)), [])
-  const addToAudit = useCallback(e => setAuditLog(p => [...p, e]), [])
+  const [auditLog, setAuditLog]   = useState([])
+  const [tabDone, setTabDone]     = useState({})        // { 0: "green"|"yellow"|"red", ... }
+  const [shiftStart]              = useState(Date.now())
+  const [shiftElapsed, setShiftElapsed] = useState("00:00")
+  const [mseCtx, setMseCtx]           = useState(null)
+  const [showRef, setShowRef]         = useState(false)
+  const [clearConfirm, setClearConfirm] = useState(false)
+  const [patientCount, setPatientCount] = useState(0)
+
+  // Shift clock
+  useEffect(() => {
+    const id = setInterval(() => {
+      const mins  = Math.floor((Date.now() - shiftStart) / 60000)
+      const h     = Math.floor(mins / 60).toString().padStart(2, "0")
+      const m     = (mins % 60).toString().padStart(2, "0")
+      setShiftElapsed(`${h}:${m}`)
+    }, 30000)
+    return () => clearInterval(id)
+  }, [shiftStart])
+
+  const addBanner    = useCallback(b => setBanners(p => [...p, b]), [])
+  const dismiss      = useCallback(i => setBanners(p => p.filter((_, idx) => idx !== i)), [])
+  const addToAudit   = useCallback(e => {
+    setAuditLog(p => [...p, e])
+    setTabDone(p => ({ ...p, 0: e.level, 8: "green" }))
+  }, [])
+  const markTab      = useCallback((i, status) => setTabDone(p => ({ ...p, [i]: status })), [])
+
+  const handleClear = () => {
+    if (!clearConfirm) { setClearConfirm(true); setTimeout(() => setClearConfirm(false), 4000); return }
+    setCtx({ name:"", age:"", sex:"", complaint:"", esi:"", arrivalTime:"" })
+    setBanners([])
+    setTabDone({})
+    setMseCtx(null)
+    setPatientCount(p => p + 1)
+    setClearConfirm(false)
+    setTab(0)
+  }
+
+  const badgeColor = (i) => {
+    const s = tabDone[i]
+    if (!s) return null
+    return s === "green" ? t.green : s === "yellow" ? t.yellow : t.red
+  }
 
   return (
     <div style={{ background: t.bg, minHeight: "100vh", padding: 16, fontFamily: "DM Sans, sans-serif", boxSizing: "border-box" }}>
+
       {/* Header */}
-      <div style={{ marginBottom: 14, borderBottom: `1px solid ${t.border}`, paddingBottom: 12 }}>
-        <div style={row({ gap: 10, alignItems: "baseline" })}>
-          <span style={{ fontFamily: "Playfair Display, serif", fontSize: 22, fontWeight: 900, color: t.teal }}>Notrya</span>
-          <span style={{ fontFamily: "Playfair Display, serif", fontSize: 22, fontWeight: 700, color: t.text }}>EMTALA Hub</span>
-          <span style={{ color: t.gold, fontSize: 11, background: `${t.gold}18`, border: `1px solid ${t.gold}44`, borderRadius: 20, padding: "2px 10px" }}>42 CFR §489.24</span>
+      <div style={{ marginBottom: 14, borderBottom: `1px solid ${t.border}`, paddingBottom: 12, ...row({ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }) }}>
+        <div>
+          <div style={row({ gap: 10, alignItems: "baseline" })}>
+            <span style={{ fontFamily: "Playfair Display, serif", fontSize: 22, fontWeight: 900, color: t.teal }}>Notrya</span>
+            <span style={{ fontFamily: "Playfair Display, serif", fontSize: 22, fontWeight: 700, color: t.text }}>EMTALA Hub</span>
+            <span style={{ color: t.gold, fontSize: 11, background: `${t.gold}18`, border: `1px solid ${t.gold}44`, borderRadius: 20, padding: "2px 10px" }}>42 CFR §489.24</span>
+          </div>
+          <div style={{ color: t.muted, fontSize: 11, marginTop: 2 }}>Emergency Medical Treatment and Labor Act — Clinical Compliance Suite</div>
         </div>
-        <div style={{ color: t.muted, fontSize: 11, marginTop: 2 }}>Emergency Medical Treatment and Labor Act — Clinical Compliance Suite</div>
+
+        {/* Shift info + Quick-Clear */}
+        <div style={row({ gap: 10, flexWrap: "wrap" })}>
+          <div style={{ ...glass2(t, { padding: "6px 14px" }), textAlign: "center" }}>
+            <div style={{ color: t.muted, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Shift Time</div>
+            <div style={{ color: t.text, fontSize: 16, fontWeight: 900, fontFamily: "Playfair Display, serif" }}>{shiftElapsed}</div>
+          </div>
+          <div style={{ ...glass2(t, { padding: "6px 14px" }), textAlign: "center" }}>
+            <div style={{ color: t.muted, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Patients</div>
+            <div style={{ color: t.teal, fontSize: 16, fontWeight: 900, fontFamily: "Playfair Display, serif" }}>{auditLog.length}</div>
+          </div>
+          <button onClick={handleClear} style={btn(t, clearConfirm ? t.red : t.gold, { fontSize: 12 })}>
+            {clearConfirm ? "⚠ Confirm Clear Patient?" : "⟳ Next Patient"}
+          </button>
+          <button onClick={() => setShowRef(p => !p)} style={btn(t, showRef ? t.teal : t.muted, { fontSize: 12, padding: "7px 12px" })}>
+            {showRef ? "✕ Close Ref" : "? EMTALA Ref"}
+          </button>
+        </div>
       </div>
 
       <PCBar ctx={ctx} setCtx={setCtx} t={t} />
+
+      {showRef && (
+        <div style={{ ...glass(t, { padding: 16 }), marginBottom: 12, background: `${t.teal}08`, borderColor: `${t.teal}44` }}>
+          <div style={row({ justifyContent: "space-between", marginBottom: 12 })}>
+            <span style={{ color: t.gold, fontFamily: "Playfair Display, serif", fontSize: 15, fontWeight: 700 }}>EMTALA Quick Reference — 42 CFR §489.24</span>
+            <button onClick={() => setShowRef(false)} style={btn(t, t.muted, { padding: "3px 10px", fontSize: 11 })}>Close</button>
+          </div>
+          <div style={grid2(3, { gap: 12 })}>
+            {[
+              { title: "Dedicated ED", body: "Any department operated 24/7 that provides emergency services, OR any clinic that treated 1/3 of its patients for emergencies in the prior year." },
+              { title: "Emergency Medical Condition", body: "Acute symptoms of sufficient severity that absence of immediate medical attention could result in serious jeopardy to health, serious impairment of bodily functions, or serious dysfunction of any bodily organ." },
+              { title: "Stabilized", body: "No material deterioration of the condition is likely within reasonable medical probability from or during transfer, or the EMC has been resolved." },
+              { title: "Medical Screening Exam", body: "Must be performed by a Qualified Medical Person using ancillary services routinely available. Must be identical regardless of payer status. Cannot be delayed for registration or insurance inquiry." },
+              { title: "Appropriate Transfer", body: "Receiving facility has space and qualified personnel, has accepted the patient, sending physician certifies benefits outweigh risks, and all medical records are sent with the patient." },
+              { title: "EMTALA Penalties", body: "Civil monetary penalties up to $119,942 per violation. Hospitals may be terminated from Medicare. Physicians may be excluded from Medicare/Medicaid for gross negligence." },
+            ].map(({ title, body }) => (
+              <div key={title} style={glass2(t, { padding: 12 })}>
+                <div style={{ color: t.teal, fontWeight: 700, fontSize: 12, marginBottom: 4 }}>{title}</div>
+                <div style={{ color: t.muted, fontSize: 11, lineHeight: 1.6 }}>{body}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 10, padding: "6px 12px", background: `${t.gold}10`, borderRadius: 8, border: `1px solid ${t.gold}33` }}>
+            <span style={{ color: t.gold, fontSize: 11 }}>Key citations: 42 CFR §489.24 (EMTALA obligations) · 42 CFR §489.20 (signage & on-call) · 42 CFR §489.24(j) (on-call requirements) · 42 CFR §489.24(e) (transfer requirements)</span>
+          </div>
+        </div>
+      )}
       <PanicBanner banners={banners} dismiss={dismiss} t={t} />
 
-      {/* Tab Bar */}
+      {/* Tab Bar with completion badges */}
       <div style={{ display: "flex", gap: 4, marginBottom: 14, flexWrap: "wrap" }}>
-        {TABS.map((name, i) => (
-          <button key={i} onClick={() => setTab(i)} style={{
-            background: tab === i ? `${t.teal}22` : "rgba(255,255,255,0.02)",
-            border: `1px solid ${tab === i ? t.teal : t.border}`,
-            borderRadius: 8, color: tab === i ? t.teal : t.muted,
-            padding: "7px 14px", cursor: "pointer", fontSize: 12,
-            fontFamily: "DM Sans, sans-serif", fontWeight: tab === i ? 700 : 400,
-          }}>{name}</button>
-        ))}
+        {TAB_NAMES.map((name, i) => {
+          const bc = badgeColor(i)
+          return (
+            <button key={i} onClick={() => setTab(i)} style={{
+              background: tab === i ? `${t.teal}22` : "rgba(255,255,255,0.02)",
+              border: `1px solid ${tab === i ? t.teal : t.border}`,
+              borderRadius: 8, color: tab === i ? t.teal : t.muted,
+              padding: "7px 14px", cursor: "pointer", fontSize: 12,
+              fontFamily: "DM Sans, sans-serif", fontWeight: tab === i ? 700 : 400,
+              position: "relative",
+            }}>
+              {name}
+              {bc && (
+                <span style={{
+                  position: "absolute", top: -4, right: -4,
+                  width: 10, height: 10, borderRadius: "50%",
+                  background: bc, border: `2px solid ${t.bg}`,
+                  display: "block",
+                }} />
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* Content */}
       <div style={glass(t, { padding: 20, minHeight: 500 })}>
         {tab === 0 && <VisitChecklist ctx={ctx} t={t} addBanner={addBanner} addToAudit={addToAudit} />}
-        {tab === 1 && <SmartMSE ctx={ctx} t={t} />}
-        {tab === 2 && <TransferForm ctx={ctx} t={t} />}
-        {tab === 3 && <OnCallLog t={t} addBanner={addBanner} />}
-        {tab === 4 && <RiskScanner ctx={ctx} t={t} />}
-        {tab === 5 && <ComplianceAudit log={auditLog} t={t} />}
+        {tab === 1 && <SmartMSE ctx={ctx} t={t} markTab={markTab} setMseCtx={setMseCtx} />}
+        {tab === 2 && <TransferForm ctx={ctx} t={t} markTab={markTab} mseCtx={mseCtx} />}
+        {tab === 3 && <OnCallLog t={t} addBanner={addBanner} markTab={markTab} />}
+        {tab === 4 && <RiskScanner ctx={ctx} t={t} markTab={markTab} />}
+        {tab === 5 && <CoverageGapLog t={t} addBanner={addBanner} markTab={markTab} />}
+        {tab === 6 && <ReceivingTransfer t={t} markTab={markTab} />}
+        {tab === 7 && <AttestationBuilder ctx={ctx} t={t} markTab={markTab} />}
+        {tab === 8 && <ComplianceAudit log={auditLog} t={t} />}
       </div>
     </div>
   )

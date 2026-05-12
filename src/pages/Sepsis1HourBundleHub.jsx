@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 // ── Font Loader ──────────────────────────────────────────────────────────────
 (() => {
@@ -108,8 +107,7 @@ const PRESSOR_STEPS = [
 ];
 
 // ── Main Component ───────────────────────────────────────────────────────────
-export default function Sepsis1HourBundleHub({ onBack }) {
-  const navigate = useNavigate();
+export default function SepsisHub({ onBack }) {
   const [tab, setTab] = useState(0);
   const [src, setSrc] = useState(null);
   const [lactate, setLactate] = useState(null);
@@ -118,11 +116,6 @@ export default function Sepsis1HourBundleHub({ onBack }) {
 
   const TABS = ["Hour-1 Bundle", "Antibiotics", "POCUS", "Vasopressors"];
   const selAbx = ABX_DATA.find((a) => a.id === src);
-
-  const handleBack = () => {
-    if (onBack) { onBack(); return; }
-    navigate(-1);
-  };
 
   const copyAbx = () => {
     if (!selAbx) return;
@@ -145,6 +138,7 @@ export default function Sepsis1HourBundleHub({ onBack }) {
   const divider = { height: 1, background: T.border, margin: "10px 0" };
   const numBadge = (c = T.teal) => ({ width: 26, height: 26, borderRadius: "50%", background: c + "22", border: `1.5px solid ${c}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: c, flexShrink: 0 });
 
+  // ── LACATE LOGIC ──
   const lactateMeta = {
     low: { label: "< 2 mmol/L", color: T.green, action: "Monitor · No immediate resuscitation required" },
     mid: { label: "2 – 4 mmol/L", color: T.gold, action: "Resuscitate · Repeat lactate q 2h · Target ≥ 10% reduction at 2h" },
@@ -161,6 +155,7 @@ export default function Sepsis1HourBundleHub({ onBack }) {
 
       <div style={sectionLabel}><span style={tag(T.teal)}>TAKE 3</span> What you measure</div>
 
+      {/* Blood Cultures */}
       <div style={{ ...card(), display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 10 }}>
         <div style={numBadge()}>1</div>
         <div>
@@ -172,6 +167,7 @@ export default function Sepsis1HourBundleHub({ onBack }) {
         </div>
       </div>
 
+      {/* Lactate */}
       <div style={{ ...card(), marginBottom: 10 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 10 }}>
           <div style={numBadge()}>2</div>
@@ -193,6 +189,7 @@ export default function Sepsis1HourBundleHub({ onBack }) {
         )}
       </div>
 
+      {/* Urine Output */}
       <div style={{ ...card(), display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 18 }}>
         <div style={numBadge()}>3</div>
         <div>
@@ -206,6 +203,7 @@ export default function Sepsis1HourBundleHub({ onBack }) {
 
       <div style={sectionLabel}><span style={tag(T.gold)}>GIVE 3</span> What you administer</div>
 
+      {/* Oxygen */}
       <div style={{ ...card(), display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 10 }}>
         <div style={numBadge(T.blue)}>4</div>
         <div>
@@ -217,6 +215,7 @@ export default function Sepsis1HourBundleHub({ onBack }) {
         </div>
       </div>
 
+      {/* IV Fluids */}
       <div style={{ ...card(), display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 10 }}>
         <div style={numBadge(T.blue)}>5</div>
         <div>
@@ -229,6 +228,7 @@ export default function Sepsis1HourBundleHub({ onBack }) {
         </div>
       </div>
 
+      {/* IV Antibiotics */}
       <div style={{ ...card(), marginBottom: 18 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
           <div style={numBadge(T.blue)}>6</div>
@@ -479,15 +479,17 @@ export default function Sepsis1HourBundleHub({ onBack }) {
 
       {/* Header */}
       <div style={{ padding: "20px 20px 0" }}>
-        <button onClick={handleBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
-          ← Back
-        </button>
+        {onBack && (
+          <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
+            ← Critical Protocols
+          </button>
+        )}
         <div>
           <span style={pill("linear-gradient(135deg,#f43f5e,#be185d)")}>🔴 Critical</span>
           <span style={pill("linear-gradient(135deg,#0d9488,#065f46)")}>SSC 2021</span>
         </div>
         <h1 style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 700, margin: "0 0 4px", lineHeight: 1.15 }}>
-          Sepsis 1 Hour Bundle Hub
+          Sepsis Hour-1 Bundle
         </h1>
         <p style={{ color: T.muted, fontSize: 12, margin: "0 0 20px" }}>
           Surviving Sepsis Campaign · Initiate all elements in parallel on recognition

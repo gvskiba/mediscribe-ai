@@ -136,6 +136,7 @@ import HypercalcemiaHub from '@/pages/HypercalcemiaHub';
 import NMSHub from '@/pages/NMSHub';
 import STEMIHub from '@/pages/STEMIHub';
 import CardiacTamponadeHub from '@/pages/CardiacTamponadeHub';
+import StatusAsthmaticusHub from '@/pages/StatusAsthmaticusHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -273,6 +274,7 @@ const AuthenticatedApp = () => {
         <Route path="/NMSHub"                   element={<NMSHub />} />
         <Route path="/STEMIHub"                 element={<STEMIHub />} />
         <Route path="/CardiacTamponadeHub"     element={<CardiacTamponadeHub />} />
+        <Route path="/StatusAsthmaticusHub"   element={<StatusAsthmaticusHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />

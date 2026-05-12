@@ -82,7 +82,6 @@ import HeadacheHub from '@/pages/HeadacheHub';
 import AbdominalPainHub from '@/pages/AbdominalPainHub';
 import AMSHub from '@/pages/AMSHub';
 import DVTHub from '@/pages/DVTHub';
-import SepsisHub from '@/pages/SepsisHub';
 import HuddleBoard from '@/pages/HuddleBoard';
 import OrderGeneratorHub from '@/pages/OrderGeneratorHub';
 import DermatologyHub from '@/pages/DermatologyHub';
@@ -112,6 +111,7 @@ import VentPage from '@/pages/VentPage';
 import CriticalProtocolsPage from '@/pages/CriticalProtocolsPage';
 import Sepsis1HourBundleHub from '@/pages/Sepsis1HourBundleHub';
 import AnaphylaxisHub from '@/pages/AnaphylaxisHub';
+import SepsisHub from '@/pages/SepsisHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);

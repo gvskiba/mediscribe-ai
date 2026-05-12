@@ -118,6 +118,7 @@ import AirwayRSIHub from '@/pages/AirwayRSIHub';
 import DKAHub from '@/pages/DKAHub';
 import MassivePEHub from '@/pages/MassivePEHub';
 import HypertensiveEmergencyHub from '@/pages/HypertensiveEmergencyHub';
+import ADHFHub from '@/pages/ADHFHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -237,6 +238,7 @@ const AuthenticatedApp = () => {
         <Route path="/DKAHub"                 element={<DKAHub />} />
         <Route path="/MassivePEHub"           element={<MassivePEHub />} />
         <Route path="/HypertensiveEmergencyHub" element={<HypertensiveEmergencyHub />} />
+        <Route path="/ADHFHub"                element={<ADHFHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />

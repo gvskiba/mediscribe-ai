@@ -291,6 +291,7 @@ const AuthenticatedApp = () => {
         <Route path="/TTPHub"                 element={<TTPHub />} />
         <Route path="/AnticoagulantReversalHub" element={<AnticoagulantReversalHub />} />
         <Route path="/SickleCellHub"         element={<SickleCellHub />} />
+        <Route path="/HELLPHub"              element={<HELLPHub />} />
         <Route path="/PostPartumHemorrhageHub" element={<PostPartumHemorrhageHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />

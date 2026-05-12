@@ -124,6 +124,7 @@ import RhabdomyolysisHub from '@/pages/RhabdomyolysisHub';
 import AdrenalCrisisHub from '@/pages/AdrenalCrisisHub';
 import ThyroidStormHub from '@/pages/ThyroidStormHub';
 import AcuteLiverFailureHub from '@/pages/AcuteLiverFailureHub';
+import AcuteIschemicStrokeHub from '@/pages/AcuteIschemicStrokeHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -248,7 +249,8 @@ const AuthenticatedApp = () => {
         <Route path="/RhabdomyolysisHub"      element={<RhabdomyolysisHub />} />
         <Route path="/AdrenalCrisisHub"       element={<AdrenalCrisisHub />} />
         <Route path="/ThyroidStormHub"        element={<ThyroidStormHub />} />
-        <Route path="/AcuteLiverFailureHub"   element={<AcuteLiverFailureHub />} />
+        <Route path="/AcuteLiverFailureHub"      element={<AcuteLiverFailureHub />} />
+        <Route path="/AcuteIschemicStrokeHub"    element={<AcuteIschemicStrokeHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />

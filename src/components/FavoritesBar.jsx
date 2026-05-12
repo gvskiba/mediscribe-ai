@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Star, X, ChevronDown, ChevronUp, Bell, BellOff } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { HUBS } from '@/lib/hubRegistry';
 
 export default function FavoritesBar() {
   const navigate = useNavigate();
-  const { favorites, removeFavorite } = useFavorites();
+  const { favorites, removeFavorite, toggleNotification, isNotificationEnabled } = useFavorites();
   const [expanded, setExpanded] = useState(true);
 
   if (favorites.length === 0) return null;
@@ -58,60 +58,89 @@ export default function FavoritesBar() {
           flexDirection: 'column',
           gap: 2,
         }}>
-          {favoriteHubs.map(hub => (
-            <div
-              key={hub.route}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '8px 10px',
-                gap: 8,
-                borderBottom: '1px solid rgba(0, 212, 184, 0.05)',
-              }}
-            >
-              <button
-                onClick={() => navigate(hub.route)}
+          {favoriteHubs.map(hub => {
+            const notifEnabled = isNotificationEnabled(hub.route);
+            return (
+              <div
+                key={hub.route}
                 style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  padding: '4px 6px',
-                  color: 'rgba(226, 232, 244, 0.8)',
-                  fontSize: 12,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  borderRadius: 4,
-                  transition: 'all 0.15s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(0, 212, 184, 0.1)';
-                  e.currentTarget.style.color = '#00d4b8';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'rgba(226, 232, 244, 0.8)';
-                }}
-              >
-                {hub.name}
-              </button>
-              <button
-                onClick={() => removeFavorite(hub.route)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'rgba(255, 255, 255, 0.4)',
-                  cursor: 'pointer',
-                  padding: '2px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  padding: '8px 10px',
+                  gap: 8,
+                  borderBottom: '1px solid rgba(0, 212, 184, 0.05)',
                 }}
-                title='Remove from favorites'
               >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
+                <button
+                  onClick={() => navigate(hub.route)}
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '4px 6px',
+                    color: 'rgba(226, 232, 244, 0.8)',
+                    fontSize: 12,
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    borderRadius: 4,
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(0, 212, 184, 0.1)';
+                    e.currentTarget.style.color = '#00d4b8';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'rgba(226, 232, 244, 0.8)';
+                  }}
+                >
+                  {hub.name}
+                </button>
+
+                {/* Notification toggle */}
+                <button
+                  onClick={() => toggleNotification(hub.route)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: notifEnabled ? '#00d4b8' : 'rgba(255, 255, 255, 0.3)',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#00d4b8';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = notifEnabled ? '#00d4b8' : 'rgba(255, 255, 255, 0.3)';
+                  }}
+                  title={notifEnabled ? 'Disable guideline alerts' : 'Enable guideline alerts'}
+                >
+                  {notifEnabled ? <Bell size={14} /> : <BellOff size={14} />}
+                </button>
+
+                <button
+                  onClick={() => removeFavorite(hub.route)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'rgba(255, 255, 255, 0.4)',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  title='Remove from favorites'
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

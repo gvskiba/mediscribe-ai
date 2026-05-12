@@ -140,6 +140,7 @@ import StatusAsthmaticusHub from '@/pages/StatusAsthmaticusHub';
 import TensionPneumothoraxHub from '@/pages/TensionPneumothoraxHub';
 import AlcoholWithdrawalHub from '@/pages/AlcoholWithdrawalHub';
 import ToxicAlcoholHub from '@/pages/ToxicAlcoholHub';
+import SympathomimeticHub from '@/pages/SympathomimeticHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -281,6 +282,7 @@ const AuthenticatedApp = () => {
         <Route path="/TensionPneumothoraxHub" element={<TensionPneumothoraxHub />} />
         <Route path="/AlcoholWithdrawalHub"  element={<AlcoholWithdrawalHub />} />
         <Route path="/ToxicAlcoholHub"      element={<ToxicAlcoholHub />} />
+        <Route path="/SympathomimeticHub"    element={<SympathomimeticHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
         <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />

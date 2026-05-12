@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import HubSearchBar from "./HubSearchBar";
+import UniversalSearchBar from "./UniversalSearchBar";
 
 const PREFIX = "gnv";
 
@@ -491,9 +491,9 @@ export default function GlobalNav({ alerts = 0 }) {
           </>
         )}
 
-        {/* Hub Search Bar */}
+        {/* Universal Search Bar */}
         <div style={{ maxWidth: 350, flex: "0 1 auto" }}>
-          <HubSearchBar />
+          <UniversalSearchBar />
         </div>
 
         {/* Spacer */}

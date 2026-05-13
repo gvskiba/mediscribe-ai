@@ -30,6 +30,7 @@ import {
 
 import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
+import { EncounterPicker } from "./QuickNoteEncounterPicker";
 
 injectQNStyles();
 
@@ -652,6 +653,16 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     finally { setRerunAddendumBusy(false); }
   }, [mdmResult,cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,vhAnalysis,parsedMeds,parsedAllergies,encounterType,rerunAddendumBusy]);
 
+  const handleEncounterImport = useCallback(({ cc: impCC, age, vitals: impVitals }) => {
+    if (impCC)     setCC(impCC);
+    if (impVitals) setVitals(impVitals);
+    if (age) setSlots(prev => {
+      const next = [...prev];
+      next[activeSlot] = { ...next[activeSlot], patientAge: age };
+      return next;
+    });
+  }, [activeSlot]);
+
   const smartExpansions = DEFAULT_EXPANSIONS;
   const stripLabels = (text) => pasteReady!=="prose" ? text : text.replace(/^[A-Z][A-Z /&]+:\s*/gm,"").trim();
 
@@ -1178,6 +1189,8 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         {addendumMode&&<AddendumBanner addendumRef={addendumRef} />}
         <PriorVisitsPanel visits={priorVisits} loading={priorVisitsLoading} onLoad={loadPriorVisits} />
         {(vitals.trim().length>10||labs.trim().length>5)&&<SepsisBanner vitalsText={vitals} labsText={labs} />}
+
+        <EncounterPicker onSelect={handleEncounterImport} />
 
         <Phase1Panel
           cc={cc} setCC={setCC} vitals={vitals} setVitals={setVitals}

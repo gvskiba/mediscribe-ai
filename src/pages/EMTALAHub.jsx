@@ -94,12 +94,28 @@ const HARD_RULES = {
 const glass  = (t, x={}) => ({ background: t.surf, border: `1px solid ${t.border}`, borderRadius: 12, backdropFilter: "blur(12px)", ...x })
 const glass2 = (t, x={}) => ({ background: t.surf2, border: `1px solid ${t.border}`, borderRadius: 10, ...x })
 const inp    = (t, x={}) => ({ background: "rgba(255,255,255,0.04)", border: `1px solid ${t.border}`, borderRadius: 8, color: t.text, padding: "8px 12px", fontSize: 13, fontFamily: "DM Sans, sans-serif", width: "100%", outline: "none", boxSizing: "border-box", ...x })
-const btn    = (t, c, x={}) => ({ background: `${c}22`, border: `1px solid ${c}55`, color: c, borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontFamily: "DM Sans, sans-serif", fontWeight: 600, transition: "opacity 0.15s", ...x })
+const btn    = (t, c, x={}) => ({ background: `${c}22`, border: `1px solid ${c}55`, color: c, borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontFamily: "DM Sans, sans-serif", fontWeight: 600, transition: "opacity 0.15s", outline: "none", ...x })
 const lbl    = (t) => ({ color: t.muted, fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: 4 })
 const row    = (x={}) => ({ display: "flex", gap: 10, alignItems: "center", ...x })
 const col    = (x={}) => ({ display: "flex", flexDirection: "column", gap: 8, ...x })
 const grid2  = (cols, x={}) => ({ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12, ...x })
-const pill   = (t, c, active) => ({ background: active ? `${c}28` : "rgba(255,255,255,0.03)", border: `1px solid ${active ? c : t.border}`, borderRadius: 20, color: active ? c : t.muted, padding: "5px 13px", fontSize: 12, cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontWeight: active ? 700 : 400 })
+const pill   = (t, c, active) => ({ background: active ? `${c}28` : "rgba(255,255,255,0.03)", border: `1px solid ${active ? c : t.border}`, borderRadius: 20, color: active ? c : t.muted, padding: "5px 13px", fontSize: 12, cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontWeight: active ? 700 : 400, outline: "none" })
+
+// ─── Global Focus Styles (injected once) ──────────────────────────────────────
+const FOCUS_CSS = `
+*:focus-visible { outline: 2px solid #00d4b8 !important; outline-offset: 2px !important; }
+input:focus, textarea:focus, select:focus { border-color: #00d4b8 !important; box-shadow: 0 0 0 3px rgba(0,212,184,0.15) !important; outline: none !important; }
+button:focus-visible { box-shadow: 0 0 0 3px rgba(0,212,184,0.3) !important; }
+`
+function GlobalStyles() {
+  useEffect(() => {
+    const el = document.createElement("style")
+    el.textContent = FOCUS_CSS
+    document.head.appendChild(el)
+    return () => document.head.removeChild(el)
+  }, [])
+  return null
+}
 
 // ─── Shared Components ────────────────────────────────────────────────────────
 function PanicBanner({ banners, dismiss, t }) {
@@ -128,18 +144,50 @@ function ConfFlag({ level, t }) {
 
 function Checkbox({ checked, onChange, label, t, danger }) {
   const c = danger ? t.red : t.teal
+  const id = useRef(`cb_${Math.random().toString(36).slice(2)}`)
   return (
-    <label style={row({ cursor: "pointer", gap: 8 })}>
-      <div onClick={onChange} style={{ width: 17, height: 17, borderRadius: 4, flexShrink: 0, background: checked ? c : "transparent", border: `2px solid ${checked ? c : t.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        {checked && <span style={{ color: "#09111f", fontSize: 10, fontWeight: 900 }}>✓</span>}
+    <div style={row({ gap: 8 })}>
+      <div style={{ position: "relative", width: 17, height: 17, flexShrink: 0 }}>
+        <input
+          id={id.current} type="checkbox" checked={checked} onChange={onChange}
+          style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", margin: 0, cursor: "pointer", zIndex: 1 }}
+        />
+        <div style={{ width: 17, height: 17, borderRadius: 4, background: checked ? c : "transparent", border: `2px solid ${checked ? c : t.border}`, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+          {checked && <span style={{ color: "#09111f", fontSize: 10, fontWeight: 900 }}>✓</span>}
+        </div>
       </div>
-      <span style={{ color: danger ? t.red : t.text, fontSize: 13, fontFamily: "DM Sans, sans-serif" }}>{label}</span>
-    </label>
+      <label htmlFor={id.current} style={{ color: danger ? t.red : t.text, fontSize: 13, fontFamily: "DM Sans, sans-serif", cursor: "pointer", lineHeight: 1.4 }}>{label}</label>
+    </div>
   )
 }
 
 function SectionH({ title, t }) {
   return <div style={{ borderBottom: `1px solid ${t.border}`, paddingBottom: 6, marginBottom: 12, color: t.gold, fontFamily: "Playfair Display, serif", fontSize: 14, fontWeight: 700 }}>{title}</div>
+}
+
+// Keyboard-navigable chip group — arrow keys cycle within group, Space/Enter selects
+function ChipGroup({ options, value, onChange, color, t, multi = false }) {
+  const refs = useRef([])
+  const isActive = (o) => multi ? (Array.isArray(value) && value.includes(o)) : value === o
+  const handleKey = (e, i) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); refs.current[(i + 1) % options.length]?.focus() }
+    if (e.key === "ArrowLeft"  || e.key === "ArrowUp")   { e.preventDefault(); refs.current[(i - 1 + options.length) % options.length]?.focus() }
+    if (e.key === " " || e.key === "Enter")               { e.preventDefault(); onChange(options[i]) }
+  }
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }} role="group">
+      {options.map((o, i) => (
+        <button
+          key={o} ref={el => refs.current[i] = el}
+          role={multi ? "checkbox" : "radio"}
+          aria-checked={isActive(o)}
+          onClick={() => onChange(o)}
+          onKeyDown={e => handleKey(e, i)}
+          style={pill(t, color, isActive(o))}
+        >{o}</button>
+      ))}
+    </div>
+  )
 }
 
 function Meter({ score, t }) {
@@ -159,7 +207,33 @@ function Meter({ score, t }) {
   )
 }
 
-async function callClaude(system, userMsg) {
+// "Now" button for time inputs
+function NowBtn({ onNow, t }) {
+  const now = () => { const d = new Date(); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}` }
+  return (
+    <button
+      type="button"
+      onClick={() => onNow(now())}
+      title="Insert current time (N)"
+      style={{ ...btn(t, t.teal, { padding: "4px 8px", fontSize: 11, flexShrink: 0 }) }}
+    >Now</button>
+  )
+}
+
+// Time field row = input + Now button
+function TimeField({ label: lbl2, value, onChange, t }) {
+  const now = () => { const d = new Date(); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}` }
+  return (
+    <div>
+      <span style={lbl(t)}>{lbl2}</span>
+      <div style={row({ gap: 6, marginTop: 4 })}>
+        <input style={{ ...inp(t, { flex: 1 }), width: "auto" }} type="time" value={value} onChange={e => onChange(e.target.value)}
+          onKeyDown={e => { if (e.key === "n" || e.key === "N") { e.preventDefault(); onChange(now()) } }} />
+        <NowBtn onNow={onChange} t={t} />
+      </div>
+    </div>
+  )
+}
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -311,14 +385,12 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
               <Checkbox checked={v.mse} onChange={() => tog("mse")} label="Medical Screening Examination (MSE) performed" t={t} />
               <div style={grid2(2)}>
                 <div><span style={lbl(t)}>QMP Performing MSE</span><input style={inp(t)} placeholder="Physician name" value={v.qmp} onChange={e => set("qmp", e.target.value)} /></div>
-                <div><span style={lbl(t)}>MSE Timestamp</span><input style={inp(t)} type="time" value={v.mseTime} onChange={e => set("mseTime", e.target.value)} /></div>
+                <TimeField label="MSE Timestamp" value={v.mseTime} onChange={val => set("mseTime", val)} t={t} />
               </div>
               <div>
                 <span style={lbl(t)}>Emergency Medical Condition (EMC)?</span>
-                <div style={row({ gap: 6, marginTop: 4 })}>
-                  {["Yes","No","Undetermined"].map(opt => (
-                    <button key={opt} onClick={() => set("emc", opt)} style={pill(t, opt === "Yes" ? t.red : opt === "No" ? t.green : t.yellow, v.emc === opt)}>{opt}</button>
-                  ))}
+                <div style={{ marginTop: 4 }}>
+                  <ChipGroup options={["Yes","No","Undetermined"]} value={v.emc} onChange={o => set("emc", o)} color={v.emc === "Yes" ? t.red : v.emc === "No" ? t.green : t.yellow} t={t} />
                 </div>
               </div>
               {v.emc === "Yes" && <>
@@ -348,16 +420,12 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
                 </div>
                 <div style={grid2(2)}>
                   <Checkbox checked={v.obFht} onChange={() => tog("obFht")} label="Fetal heart tones documented in MSE" t={t} />
-                  <div><span style={lbl(t)}>FHT Timestamp</span><input style={inp(t)} type="time" value={v.obFhtTime} onChange={e => set("obFhtTime", e.target.value)} /></div>
+                  <TimeField label="FHT Timestamp" value={v.obFhtTime} onChange={val => set("obFhtTime", val)} t={t} />
                 </div>
                 <Checkbox checked={v.obRom} onChange={() => tog("obRom")} label="Rupture of membranes documented" t={t} />
                 <div>
                   <span style={lbl(t)}>Contracting?</span>
-                  <div style={row({ gap: 6, marginTop: 4 })}>
-                    {["Yes","No","Irregular"].map(opt => (
-                      <button key={opt} onClick={() => set("obContracting", opt)} style={pill(t, t.gold, v.obContracting === opt)}>{opt}</button>
-                    ))}
-                  </div>
+                  <div style={{ marginTop: 4 }}><ChipGroup options={["Yes","No","Irregular"]} value={v.obContracting} onChange={o => set("obContracting", o)} color={t.gold} t={t} /></div>
                 </div>
                 {v.obContracting === "Yes" && (
                   <div><span style={lbl(t)}>Contraction Frequency</span><input style={inp(t)} placeholder="e.g. every 3 min" value={v.obContractionFreq} onChange={e => set("obContractionFreq", e.target.value)} /></div>
@@ -371,15 +439,11 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
                 )}
                 <div>
                   <span style={lbl(t)}>Delivery Imminent Assessment</span>
-                  <div style={row({ gap: 6, marginTop: 4 })}>
-                    {["Not imminent","Possibly imminent","Imminent — delivering on site"].map(opt => (
-                      <button key={opt} onClick={() => set("obDeliveryImm", opt)} style={pill(t, t.gold, v.obDeliveryImm === opt)}>{opt}</button>
-                    ))}
-                  </div>
+                  <div style={{ marginTop: 4 }}><ChipGroup options={["Not imminent","Possibly imminent","Imminent — delivering on site"]} value={v.obDeliveryImm} onChange={o => set("obDeliveryImm", o)} color={t.gold} t={t} /></div>
                 </div>
                 <div style={grid2(2)}>
                   <div><span style={lbl(t)}>OB Physician Notified</span><input style={inp(t)} placeholder="Physician name" value={v.obObMd} onChange={e => set("obObMd", e.target.value)} /></div>
-                  <div><span style={lbl(t)}>Notification Time</span><input style={inp(t)} type="time" value={v.obObMdTime} onChange={e => set("obObMdTime", e.target.value)} /></div>
+                  <TimeField label="Notification Time" value={v.obObMdTime} onChange={val => set("obObMdTime", val)} t={t} />
                 </div>
               </div>
             </div>
@@ -395,27 +459,18 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
                 <div>
                   <span style={lbl(t)}>Decision-Making Capacity</span>
                   <div style={row({ gap: 6, marginTop: 4 })}>
-                    {["Intact","Impaired","Unable to assess"].map(opt => (
-                      <button key={opt} onClick={() => set("psychCapacity", opt)} style={pill(t, t.teal, v.psychCapacity === opt)}>{opt}</button>
-                    ))}
-                  </div>
+                <div>
+                  <span style={lbl(t)}>Decision-Making Capacity</span>
+                  <div style={{ marginTop: 4 }}><ChipGroup options={["Intact","Impaired","Unable to assess"]} value={v.psychCapacity} onChange={o => set("psychCapacity", o)} color={t.teal} t={t} /></div>
                 </div>
                 <div>
                   <span style={lbl(t)}>Voluntary vs. Involuntary Status</span>
-                  <div style={row({ gap: 6, marginTop: 4 })}>
-                    {["Voluntary","Involuntary — hold placed","Pending evaluation"].map(opt => (
-                      <button key={opt} onClick={() => set("psychVoluntary", opt)} style={pill(t, t.teal, v.psychVoluntary === opt)}>{opt}</button>
-                    ))}
-                  </div>
+                  <div style={{ marginTop: 4 }}><ChipGroup options={["Voluntary","Involuntary — hold placed","Pending evaluation"]} value={v.psychVoluntary} onChange={o => set("psychVoluntary", o)} color={t.teal} t={t} /></div>
                 </div>
                 {v.psychVoluntary?.includes("Involuntary") && (
                   <div>
                     <span style={lbl(t)}>Involuntary Hold Type</span>
-                    <div style={row({ gap: 6, marginTop: 4, flexWrap: "wrap" })}>
-                      {["Baker Act","5150 WIC","302","M-1","Emergency Detention","State Equivalent"].map(opt => (
-                        <button key={opt} onClick={() => set("psychHold", opt)} style={pill(t, t.yellow, v.psychHold === opt)}>{opt}</button>
-                      ))}
-                    </div>
+                    <div style={{ marginTop: 4 }}><ChipGroup options={["Baker Act","5150 WIC","302","M-1","Emergency Detention","State Equivalent"]} value={v.psychHold} onChange={o => set("psychHold", o)} color={t.yellow} t={t} /></div>
                   </div>
                 )}
                 <div><span style={lbl(t)}>Medical Clearance Attestation By</span><input style={inp(t)} placeholder="Physician name" value={v.psychMedClearMd} onChange={e => set("psychMedClearMd", e.target.value)} /></div>
@@ -433,10 +488,8 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
             <div style={col({ gap: 10 })}>
               <div>
                 <span style={lbl(t)}>Select Disposition</span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-                  {["Discharge","Admit","Transfer","AMA","LWBS","Observation"].map(d => (
-                    <button key={d} onClick={() => set("disposition", d)} style={pill(t, t.teal, v.disposition === d)}>{d}</button>
-                  ))}
+                <div style={{ marginTop: 4 }}>
+                  <ChipGroup options={["Discharge","Admit","Transfer","AMA","LWBS","Observation"]} value={v.disposition} onChange={d => set("disposition", d)} color={t.teal} t={t} />
                 </div>
               </div>
               {v.disposition === "AMA" && <div style={{ ...glass2(t, { padding: 12 }), borderColor: `${t.yellow}44`, background: `${t.yellow}08` }}>
@@ -465,8 +518,8 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
             <button onClick={handleDisposit} style={btn(t, s >= 90 ? t.green : t.yellow, { flex: 1 })}>
               {s >= 90 ? "✓ Clear for Disposition" : "⚠ Flag & Proceed"}
             </button>
-            <button onClick={handleSave} style={btn(t, t.teal, { flex: 1 })}>
-              {saved ? "✓ Saved" : "Save to Audit Log"}
+            <button onClick={handleSave} style={btn(t, t.teal, { flex: 1 })} title="Save (Ctrl+Enter)">
+              {saved ? "✓ Saved" : "Save to Audit Log  ⌃↵"}
             </button>
           </div>
         </div>
@@ -553,8 +606,8 @@ Schema:
         </div>
       )}
 
-      <button onClick={generate} disabled={!complaint || loading} style={btn(t, t.teal, { opacity: (!complaint||loading) ? 0.5 : 1, padding: "10px 20px" })}>
-        {loading ? "Generating EMTALA-grounded workup..." : "⚕ Generate Workup Recommendations"}
+      <button onClick={generate} disabled={!complaint || loading} style={btn(t, t.teal, { opacity: (!complaint||loading) ? 0.5 : 1, padding: "10px 20px" })} title="Generate (Ctrl+Enter)">
+        {loading ? "Generating EMTALA-grounded workup..." : "⚕ Generate Workup Recommendations  ⌃↵"}
       </button>
 
       {result && (
@@ -844,8 +897,8 @@ function OnCallLog({ t, addBanner, markTab }) {
           </div>
           <div><span style={lbl(t)}>Provider Name</span><input style={{ ...inp(t), marginTop: 4 }} placeholder="Dr. Name" value={f.provider} onChange={e => set("provider", e.target.value)} /></div>
           <div><span style={lbl(t)}>Phone</span><input style={{ ...inp(t), marginTop: 4 }} placeholder="Contact number" value={f.phone} onChange={e => set("phone", e.target.value)} /></div>
-          <div><span style={lbl(t)}>Time Called</span><input style={{ ...inp(t), marginTop: 4 }} type="time" value={f.called} onChange={e => set("called", e.target.value)} /></div>
-          <div><span style={lbl(t)}>Time Responded</span><input style={{ ...inp(t), marginTop: 4 }} type="time" value={f.responded} onChange={e => set("responded", e.target.value)} /></div>
+          <TimeField label="Time Called" value={f.called} onChange={val => set("called", val)} t={t} />
+          <TimeField label="Time Responded" value={f.responded} onChange={val => set("responded", val)} t={t} />
           <div>
             <span style={lbl(t)}>Outcome</span>
             <select style={{ ...inp(t), marginTop: 4 }} value={f.outcome} onChange={e => set("outcome", e.target.value)}>
@@ -941,9 +994,10 @@ Ground in: 42 CFR §489.24, CMS EMTALA Interpretive Guidelines, OIG enforcement 
         <SectionH title="Describe the Clinical Scenario" t={t} />
         <textarea style={{ ...inp(t), minHeight: 110, resize: "vertical", marginBottom: 12 }}
           placeholder="Describe what occurred: presentation, MSE performed, disposition decision, transfers, on-call interactions, payer discussions..."
-          value={scenario} onChange={e => setScenario(e.target.value)} />
-        <button onClick={scan} disabled={!scenario||loading} style={btn(t, t.teal, { opacity: (!scenario||loading)?0.5:1 })}>
-          {loading ? "Scanning for EMTALA risk..." : "⚠ Scan for Violation Risk"}
+          value={scenario} onChange={e => setScenario(e.target.value)}
+          onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); if (!loading && scenario) scan() } }} />
+        <button onClick={scan} disabled={!scenario||loading} style={btn(t, t.teal, { opacity: (!scenario||loading)?0.5:1 })} title="Scan (Ctrl+Enter)">
+          {loading ? "Scanning for EMTALA risk..." : "⚠ Scan for Violation Risk  ⌃↵"}
         </button>
       </div>
 
@@ -1454,7 +1508,34 @@ export default function EMTALAHub({ C = {} }) {
   const [shiftElapsed, setShiftElapsed] = useState("00:00")
   const [mseCtx, setMseCtx]           = useState(null)
   const [showRef, setShowRef]         = useState(false)
+  const [showKeys, setShowKeys]       = useState(false)
   const [clearConfirm, setClearConfirm] = useState(false)
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handler = (e) => {
+      const tag = document.activeElement?.tagName
+      const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT"
+      // 1–9 → switch tabs (only when not typing)
+      if (!typing && e.key >= "1" && e.key <= "9") {
+        const i = parseInt(e.key) - 1
+        if (i < TAB_NAMES.length) { e.preventDefault(); setTab(i) }
+      }
+      // Escape → dismiss top banner, close ref/keys
+      if (e.key === "Escape") {
+        setBanners(p => p.length ? p.slice(0, -1) : p)
+        setShowRef(false)
+        setShowKeys(false)
+        setClearConfirm(false)
+      }
+      // ? → toggle shortcut legend (not typing)
+      if (!typing && e.key === "?") { e.preventDefault(); setShowKeys(p => !p) }
+      // Ctrl+/ → toggle EMTALA ref
+      if ((e.ctrlKey || e.metaKey) && e.key === "/") { e.preventDefault(); setShowRef(p => !p) }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [])
   const [patientCount, setPatientCount] = useState(0)
 
   // Shift clock
@@ -1495,6 +1576,7 @@ export default function EMTALAHub({ C = {} }) {
 
   return (
     <div style={{ background: t.bg, minHeight: "100vh", padding: 16, fontFamily: "DM Sans, sans-serif", boxSizing: "border-box" }}>
+      <GlobalStyles />
 
       {/* Header */}
       <div style={{ marginBottom: 14, borderBottom: `1px solid ${t.border}`, paddingBottom: 12, ...row({ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }) }}>
@@ -1520,9 +1602,10 @@ export default function EMTALAHub({ C = {} }) {
           <button onClick={handleClear} style={btn(t, clearConfirm ? t.red : t.gold, { fontSize: 12 })}>
             {clearConfirm ? "⚠ Confirm Clear Patient?" : "⟳ Next Patient"}
           </button>
-          <button onClick={() => setShowRef(p => !p)} style={btn(t, showRef ? t.teal : t.muted, { fontSize: 12, padding: "7px 12px" })}>
+          <button onClick={() => setShowRef(p => !p)} style={btn(t, showRef ? t.teal : t.muted, { fontSize: 12, padding: "7px 12px" })} title="Toggle EMTALA Reference (Ctrl+/)">
             {showRef ? "✕ Close Ref" : "? EMTALA Ref"}
           </button>
+          <button onClick={() => setShowKeys(p => !p)} style={btn(t, showKeys ? t.gold : t.muted, { fontSize: 12, padding: "7px 10px" })} title="Keyboard shortcuts (?)">⌨</button>
         </div>
       </div>
 
@@ -1554,6 +1637,33 @@ export default function EMTALAHub({ C = {} }) {
           </div>
         </div>
       )}
+      {showKeys && (
+        <div style={{ ...glass(t, { padding: 14 }), marginBottom: 12, background: `${t.gold}08`, borderColor: `${t.gold}44` }}>
+          <div style={row({ justifyContent: "space-between", marginBottom: 10 })}>
+            <span style={{ color: t.gold, fontFamily: "Playfair Display, serif", fontSize: 13, fontWeight: 700 }}>⌨ Keyboard Shortcuts</span>
+            <button onClick={() => setShowKeys(false)} style={btn(t, t.muted, { padding: "2px 8px", fontSize: 11 })}>✕</button>
+          </div>
+          <div style={grid2(3, { gap: 8 })}>
+            {[
+              ["1 – 9", "Switch to Tab 1–9"],
+              ["Ctrl + Enter", "Generate / Save (active button)"],
+              ["Ctrl + /", "Toggle EMTALA Reference"],
+              ["? ", "Toggle this shortcut panel"],
+              ["Esc", "Dismiss banner / close panels"],
+              ["N  (in time field)", "Insert current time"],
+              ["← → Arrow keys", "Navigate chip options"],
+              ["Space / Enter", "Select focused chip"],
+              ["Tab", "Move to next field"],
+            ].map(([key, desc]) => (
+              <div key={key} style={row({ gap: 8 })}>
+                <code style={{ background: `${t.gold}18`, border: `1px solid ${t.gold}33`, borderRadius: 5, padding: "2px 7px", color: t.gold, fontSize: 11, fontFamily: "JetBrains Mono, monospace", flexShrink: 0 }}>{key}</code>
+                <span style={{ color: t.muted, fontSize: 11 }}>{desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <PanicBanner banners={banners} dismiss={dismiss} t={t} />
 
       {/* Tab Bar with completion badges */}

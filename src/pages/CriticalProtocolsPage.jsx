@@ -105,14 +105,11 @@ const CATEGORIES = [
   },
 ];
 
-const TOTAL    = CATEGORIES.reduce((n, c) => n + c.protocols.length, 0);
-const LIVE     = CATEGORIES.reduce((n, c) => n + c.protocols.filter(p => p.status === "live").length, 0);
-const BUILDING = TOTAL - LIVE;
+const TOTAL = CATEGORIES.reduce((n, c) => n + c.protocols.length, 0);
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function CriticalProtocolsPage({ onBack, onNavigate }) {
   const [query, setQuery]           = useState("");
-  const [filter, setFilter]         = useState("all");
   const [hoveredCard, setHoveredCard] = useState(null);
   const routerNavigate = useNavigate();
   const handleNavigate = (page) => {
@@ -122,11 +119,9 @@ export default function CriticalProtocolsPage({ onBack, onNavigate }) {
   const q = query.toLowerCase().trim();
   const filtered = CATEGORIES.map(cat => ({
     ...cat,
-    protocols: cat.protocols.filter(p => {
-      const matchQ = !q || p.name.toLowerCase().includes(q) || cat.label.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q);
-      const matchF = filter === "all" || p.status === filter;
-      return matchQ && matchF;
-    }),
+    protocols: cat.protocols.filter(p =>
+      !q || p.name.toLowerCase().includes(q) || cat.label.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)
+    ),
   })).filter(cat => cat.protocols.length > 0);
 
   return (
@@ -161,19 +156,12 @@ export default function CriticalProtocolsPage({ onBack, onNavigate }) {
           Evidence-based ED resuscitation pathways · {TOTAL} protocols across {CATEGORIES.length} categories
         </p>
 
-        {/* Live / Building stats */}
+        {/* Live stats */}
         <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-          {[{ label: `${LIVE} Live`, color: T.green }, { label: `${BUILDING} Building`, color: T.gold }].map(({ label, color }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 7, height: 7, borderRadius: "50%", background: color, boxShadow: color === T.green ? `0 0 5px ${color}` : "none" }} />
-              <span style={{ fontSize: 12, color: T.muted }}>{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Progress bar */}
-        <div style={{ height: 4, background: T.border, borderRadius: 2, marginBottom: 18, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${(LIVE / TOTAL) * 100}%`, background: `linear-gradient(90deg, ${T.teal}, ${T.blue})`, borderRadius: 2, transition: "width 0.5s" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: T.green, boxShadow: `0 0 5px ${T.green}` }} />
+            <span style={{ fontSize: 12, color: T.muted }}>{TOTAL} Live Protocols</span>
+          </div>
         </div>
 
         {/* Search */}
@@ -187,15 +175,7 @@ export default function CriticalProtocolsPage({ onBack, onNavigate }) {
           )}
         </div>
 
-        {/* Filter chips */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 22 }}>
-          {[{ k: "all", label: `All  ${TOTAL}` }, { k: "live", label: `✓ Live  ${LIVE}` }, { k: "building", label: `⟳ Building  ${BUILDING}` }].map(({ k, label }) => (
-            <button key={k} onClick={() => setFilter(k)}
-              style={{ padding: "5px 13px", borderRadius: 8, border: `1.5px solid ${filter === k ? T.teal : T.border}`, background: filter === k ? "rgba(20,184,166,0.15)" : T.glass, color: filter === k ? T.teal : T.muted, fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: T.sans, transition: "all 0.15s" }}>
-              {label}
-            </button>
-          ))}
-        </div>
+
       </div>
 
       {/* ── Protocol Categories ── */}
@@ -216,17 +196,16 @@ export default function CriticalProtocolsPage({ onBack, onNavigate }) {
                 {cat.icon} {cat.label}
               </span>
               <div style={{ flex: 1, height: 1, background: cat.color + "25" }} />
-              <span style={{ fontSize: 11, color: T.dim }}>{cat.protocols.filter(p => p.status === "live").length}/{cat.protocols.length}</span>
+              <span style={{ fontSize: 11, color: T.dim }}>{cat.protocols.length}</span>
             </div>
 
             {/* Protocol Cards */}
             <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
               {cat.protocols.map(p => {
-                const isLive    = p.status === "live";
-                const isHovered = hoveredCard === p.page && isLive;
+                const isHovered = hoveredCard === p.page;
                 return (
                   <div key={p.page}
-                    onClick={() => isLive && handleNavigate(p.page)}
+                    onClick={() => handleNavigate(p.page)}
                     onMouseEnter={() => setHoveredCard(p.page)}
                     onMouseLeave={() => setHoveredCard(null)}
                     style={{
@@ -235,39 +214,28 @@ export default function CriticalProtocolsPage({ onBack, onNavigate }) {
                       background: isHovered ? T.glassHover : T.glass,
                       backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
                       border: `1px solid ${isHovered ? cat.color + "55" : T.border}`,
-                      borderLeft: `3px solid ${isLive ? cat.color : T.border}`,
+                      borderLeft: `3px solid ${cat.color}`,
                       borderRadius: 12,
-                      cursor: isLive ? "pointer" : "default",
+                      cursor: "pointer",
                       transition: "all 0.18s",
                       transform: isHovered ? "translateX(3px)" : "translateX(0)",
-                      opacity: isLive ? 1 : 0.6,
                     }}>
 
                     {/* Status dot */}
                     <div style={{ flexShrink: 0 }}>
-                      {isLive
-                        ? <div style={{ width: 7, height: 7, borderRadius: "50%", background: T.green, boxShadow: `0 0 6px ${T.green}` }} />
-                        : <div style={{ width: 7, height: 7, borderRadius: "50%", background: T.gold, opacity: 0.7 }} />
-                      }
+                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: T.green, boxShadow: `0 0 6px ${T.green}` }} />
                     </div>
 
                     {/* Text */}
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
+                      <div style={{ marginBottom: 2 }}>
                         <span style={{ fontSize: 13.5, fontWeight: 700, color: T.white }}>{p.name}</span>
-                        {!isLive && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: T.gold, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 4, padding: "1px 6px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                            Building
-                          </span>
-                        )}
                       </div>
                       <div style={{ fontSize: 11.5, color: T.muted, lineHeight: 1.4 }}>{p.desc}</div>
                     </div>
 
                     {/* Arrow */}
-                    <div style={{ fontSize: 15, color: isHovered ? cat.color : T.dim, transition: "color 0.18s", flexShrink: 0 }}>
-                      {isLive ? "→" : "⟳"}
-                    </div>
+                    <div style={{ fontSize: 15, color: isHovered ? cat.color : T.dim, transition: "color 0.18s", flexShrink: 0 }}>→</div>
                   </div>
                 );
               })}

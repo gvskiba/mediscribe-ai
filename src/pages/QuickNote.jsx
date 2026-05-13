@@ -8,7 +8,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { dispColor, StepProgress,
+import { dispColor, StepProgress, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
 import { injectQNStyles } from "./QuickNoteStyle.jsx";
@@ -21,108 +21,20 @@ import { ActionBar } from "./QuickNoteActionBar";
 import { TimelineCard } from "./QuickNoteTimeline";
 import { SepsisBanner } from "./QuickNoteSepsis";
 import { ProcedureNoteModal } from "./QuickNoteProcedure";
-import { PriorVisitsPanel } from "./QuickNoteExtras";
+import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
 import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
 import { QuickNoteExamHelper } from "@/components/quicknote/QuickNoteExamHelper";
 import { QuickNoteAbnormals } from "@/components/quicknote/QuickNoteAbnormals";
-import QuickNoteHPIScaffold from "./QuickNoteHPIScaffold";
-import QuickNotePatientQueue from "./QuickNotePatientQueue";
-import QuickNoteMDMCard from "./QuickNoteMDMCard";
-import QuickNoteDispositionCard from "./QuickNoteDispositionCard";
-import QuickNoteProgressDashboard from "./QuickNoteProgressDashboard";
+import { GuidelineAssist } from "@/components/quicknote/QuickNoteGuidelines";
+import { DispositionCriteriaBuilder } from "@/components/quicknote/QuickNoteDispositionCriteria";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
-  buildMDMPrompt, buildDispPrompt, buildMDMBlock, buildSOAPNote,
+  buildMDMPrompt, buildDispPrompt, buildMDMBlock,
   buildFullNote, buildPhase1Copy, buildPhase2Copy,
 } from "./QuickNotePrompts";
-import { MDMPhraseLibrary } from "@/components/quicknote/QuickNoteMDMPhrases";
-import { ShiftQueuePanel }  from "@/components/quicknote/QuickNoteShiftQueue";
-import QuickNoteVitalsBanner from "@/components/quicknote/QuickNoteVitalsBanner";
-import QuickNoteDrugBanner   from "@/components/quicknote/QuickNoteDrugBanner";
-import QuickNoteAuditModal   from "@/components/quicknote/QuickNoteAuditModal";
 
 injectQNStyles();
-
-// ── Feature #1: Vitals interpreter ──────────────────────────────────────────
-function parseVitalsText(text) {
-  if (!text) return {};
-  const v = {};
-  const patterns = [
-    { key:"hr",   re:/\bHR\s*[:\-]?\s*(\d+)/i           },
-    { key:"sbp",  re:/\bBP\s*[:\-]?\s*(\d+)\/(\d+)/i    },
-    { key:"rr",   re:/\bRR\s*[:\-]?\s*(\d+)/i            },
-    { key:"spo2", re:/\bSpO2\s*[:\-]?\s*(\d+)/i          },
-    { key:"temp", re:/\bT(?:emp)?\s*[:\-]?\s*([0-9.]+)/i },
-  ];
-  patterns.forEach(({ key, re }) => { const m=text.match(re); if(m) v[key]=parseFloat(m[1]); });
-  return v;
-}
-
-function interpretVitals(vitalsText, encounterType) {
-  const v = parseVitalsText(vitalsText);
-  if (!Object.keys(v).length) return [];
-  const flags=[], isPeds=encounterType==="peds";
-  const hypotensive=v.sbp!==undefined&&v.sbp<(isPeds?70:90);
-  const tachycardic=v.hr!==undefined&&v.hr>(isPeds?160:100);
-  const bradycardic=v.hr!==undefined&&v.hr<(isPeds?60:50);
-  if (hypotensive&&tachycardic) flags.push({ level:"critical", label:"Hemodynamic Instability", detail:`HR ${v.hr} · SBP ${v.sbp} — Consider: septic shock, hemorrhagic shock, tension PTX, PE, cardiogenic shock` });
-  else if (hypotensive)         flags.push({ level:"critical", label:"Hypotension",              detail:`SBP ${v.sbp} — Consider: distributive, cardiogenic, obstructive, or hemorrhagic etiology` });
-  else if (tachycardic)         flags.push({ level:"warning",  label:"Tachycardia",              detail:`HR ${v.hr} — Consider: pain, anxiety, hypovolemia, fever, PE, arrhythmia` });
-  if (bradycardic&&v.sbp!==undefined&&v.sbp<100) flags.push({ level:"critical", label:"Bradycardia + Hypotension", detail:`HR ${v.hr} · SBP ${v.sbp} — Consider: heart block, cardiogenic shock, beta-blocker toxicity` });
-  else if (bradycardic) flags.push({ level:"warning", label:"Bradycardia", detail:`HR ${v.hr} — Consider: heart block, medication effect, hypothyroidism` });
-  if (v.spo2!==undefined) {
-    if (v.spo2<90)      flags.push({ level:"critical", label:"Severe Hypoxia", detail:`SpO2 ${v.spo2}% — Immediate O2; consider intubation threshold` });
-    else if (v.spo2<94) flags.push({ level:"warning",  label:"Hypoxia",        detail:`SpO2 ${v.spo2}% — Supplemental O2 indicated; evaluate for PE, pneumonia, CHF` });
-  }
-  if (v.temp!==undefined) {
-    const F=v.temp>45?v.temp:v.temp*9/5+32;
-    if (F>=104)              flags.push({ level:"critical", label:"High Fever",         detail:`T ${v.temp}° — Consider: heat stroke, CNS infection, drug-induced hyperthermia` });
-    else if (F>=100.4&&tachycardic) flags.push({ level:"warning", label:"Fever + Tachycardia", detail:`T ${v.temp}° · HR ${v.hr} — 2 of 4 SIRS criteria; evaluate for sepsis` });
-    else if (F<96)           flags.push({ level:"warning",  label:"Hypothermia",        detail:`T ${v.temp}° — Consider: exposure, sepsis, hypothyroidism` });
-    if (isPeds&&F>=100.4)    flags.push({ level:"warning",  label:"Pediatric Fever",    detail:`T ${v.temp}° — If <3 months: critical action required; evaluate for SBI` });
-  }
-  if (v.rr!==undefined) {
-    if (v.rr>=30)      flags.push({ level:"critical", label:"Severe Tachypnea", detail:`RR ${v.rr} — Impending respiratory failure; evaluate for ARDS, severe asthma, PE` });
-    else if (v.rr>=22) flags.push({ level:"warning",  label:"Tachypnea",        detail:`RR ${v.rr} — SIRS criteria met; evaluate for infection, metabolic acidosis, pain` });
-    else if (v.rr<10)  flags.push({ level:"warning",  label:"Bradypnea",        detail:`RR ${v.rr} — Consider: opioid toxicity, CNS depression` });
-  }
-  if (v.sbp!==undefined&&v.sbp>=180) flags.push({ level:"warning",
-    label:v.sbp>=220?"Hypertensive Emergency":"Hypertensive Urgency",
-    detail:`SBP ${v.sbp} — Evaluate for end-organ damage: neuro, cardiac, renal` });
-  return flags;
-}
-
-// ── Feature #8: Encounter presets ───────────────────────────────────────────
-const ENCOUNTER_PRESETS = {
-  trauma: {
-    ccPlaceholder:"Trauma — [MVC/fall/GSW/stab/assault] — mechanism: ___",
-    examTemplate:"PRIMARY SURVEY (ATLS):\nAirway: [patent / compromised — intervention: ___]\nBreathing: [bilateral breath sounds / decreased L / R — SpO2: ___]\nCirculation: [hemorrhage control — active bleeding: yes / no] [IV access: ___]\nDisability: GCS [___] — E[_]V[_]M[_] · Pupils: [___]\nExposure: [injuries identified: ___] · Temperature control maintained\n\nSECONDARY SURVEY:\nHead/Face: [___]\nNeck: [trachea midline / C-collar in place / ___]\nChest: [___]\nAbdomen: [___]\nPelvis: [stable / unstable — pelvic binder applied: yes / no]\nExtremities: [___] · Neurovascular: [intact / ___]\nBack: [log-rolled — spine tenderness: yes / no]",
-  },
-  psych: {
-    ccPlaceholder:"Psychiatric — [SI / HI / AMS / agitation / altered behavior]",
-    examTemplate:"MENTAL STATUS EXAM:\nAppearance: [groomed / disheveled / ___] · Behavior: [cooperative / agitated / ___]\nSpeech: [normal rate and volume / pressured / slow / slurred / ___]\nMood: [patient reports: \"___\"] · Affect: [congruent / labile / flat / blunted / ___]\nThought Process: [linear / tangential / circumstantial / loose associations / ___]\nThought Content: [SI: present / absent — plan: ___ · means: ___ · intent: ___]\n                 [HI: present / absent — target: ___]\nPerceptions: [hallucinations: auditory / visual / none · delusions: yes / no]\nCognition: [A&Ox3 / ___] · Insight: [present / limited / absent] · Judgment: [intact / impaired]\nSafety: [safe for discharge / requires hold — criteria: ___]\n\nMEDICAL CLEARANCE:\nGlucose: [___] · Vitals: [stable / ___] · Toxicology: [ordered / negative / ___]",
-  },
-  peds: {
-    ccPlaceholder:"Pediatric — [CC] — Age: ___ · Weight: ___ kg",
-    examTemplate:"General: [well-appearing / ill-appearing / toxic-appearing] · [in / not in] acute distress\nAlertness: [alert / lethargic / irritable] · Consolable: [yes / no]\nHead: [normocephalic / atraumatic / fontanelle: flat / bulging]\nEyes: [PERRL / ___]\nENT: [TMs: clear / erythematous / ___] · Throat: [clear / erythematous / ___]\nNeck: [supple / meningismus / ___]\nLungs: [clear / wheeze / retractions: mild / moderate / severe] · WOB: [normal / increased]\nCV: [RRR / no murmur / ___] · Cap refill: [<2s / ___]\nAbdomen: [soft / non-tender / ___]\nSkin: [warm / dry / no rash / ___] · Turgor: [normal / decreased]\nNeuro: [age-appropriate behavior / ___]",
-  },
-  obs: {
-    ccPlaceholder:"Observation — [chest pain / syncope / ___] — protocol: ___",
-    examTemplate:"General: [Alert and oriented x3, no acute distress]\nCV: [RRR, no murmurs / rubs / gallops]\nRespiratory: [Clear to auscultation bilaterally, no wheeze or crackles]\nAbdomen: [Soft, non-tender, non-distended]\nExtremities: [No edema, no calf tenderness]\nNeuro: [CN II–XII intact, no focal deficits]\n\nREASSESSMENT:\nSymptoms: [improved / unchanged / worsened]\nTelemetry: [NSR / ___] · Serial troponin: [pending / ___]\nOrthostatics: [not done / negative / positive]",
-  },
-  adult: { ccPlaceholder:"Chief complaint…", examTemplate:null },
-};
-
-// ── Feature #12: MDM confidence style helper ─────────────────────────────────
-function getMdmConfidenceStyle(confidence) {
-  if (confidence==="Strong")          return { color:"var(--qn-green)",  bg:"rgba(61,255,160,.1)",  border:"rgba(61,255,160,.35)",  icon:"✓", label:"Strong"       };
-  if (confidence==="Borderline-up")   return { color:"var(--qn-gold)",   bg:"rgba(245,200,66,.1)",  border:"rgba(245,200,66,.35)",  icon:"↑", label:"Borderline ↑" };
-  if (confidence==="Borderline-down") return { color:"var(--qn-purple)", bg:"rgba(155,109,255,.1)", border:"rgba(155,109,255,.35)", icon:"↓", label:"Borderline ↓" };
-  return null;
-}
-
-
 
 // ─── CRITICAL VALUE DETECTOR ──────────────────────────────────────────────────
 function detectCriticalValues(labsText) {
@@ -207,6 +119,412 @@ function deserializeSlot(record) {
     encounterType:blob.encounterType||"adult",patientName:blob.patientName||"",
     patientAge:blob.patientAge||"",p2Open:!!(blob.mdmResult),
     savedNoteId:null,lastActivity:Date.now() };
+}
+
+
+// ─── PMH CONSTANTS ────────────────────────────────────────────────────────────
+const PMH_CATS = {
+  Cardiovascular:["HTN","CAD","CHF","Atrial fibrillation","Prior MI","PVD","Cardiomyopathy","Valvular disease","Pacemaker/ICD","Aortic aneurysm"],
+  Pulmonary:["Asthma","COPD","OSA","Pulmonary HTN","Prior PE","Bronchiectasis","Interstitial lung disease"],
+  "Metabolic/Endo":["DM Type 2","DM Type 1","Obesity","Hypothyroidism","Hyperthyroidism","Hyperlipidemia","Metabolic syndrome","Adrenal insufficiency"],
+  Neurological:["Stroke/TIA","Seizure disorder","Migraines","Parkinson's","Dementia","Neuropathy","Multiple sclerosis"],
+  "GI/Hepatic":["GERD","PUD","IBD","Cirrhosis","NAFLD","Pancreatitis","Diverticulosis","GI bleed history"],
+  Renal:["CKD","ESRD on HD","Renal transplant","Prior AKI","Nephrolithiasis","Proteinuria"],
+  Hematologic:["Anemia","Thrombocytopenia","On anticoagulation","Coagulopathy","Prior DVT/PE","Sickle cell disease"],
+  Psychiatric:["Depression","Anxiety","Bipolar disorder","Schizophrenia","PTSD","Substance use disorder"],
+  Oncologic:["Active malignancy","Prior malignancy","On chemotherapy","On immunotherapy","Immunocompromised"],
+  Other:["HIV/AIDS","Autoimmune disease","Transplant recipient","Chronic pain","Fibromyalgia","Thyroid disease"],
+};
+const PMH_CAT_ICONS = {Cardiovascular:"\u2665",Pulmonary:"\uD83E\uDEB1","Metabolic/Endo":"\u26A1",Neurological:"\uD83E\uDDE0","GI/Hepatic":"\uD83D\uDD35",Renal:"\uD83D\uDCA7",Hematologic:"\uD83E\uDE78",Psychiatric:"\uD83E\uDDE9",Oncologic:"\u26A0",Other:"\uFF0B"};
+const PMH_PRI_STYLE = {
+  Immediate:{dot:"#ef4444",bg:"rgba(239,68,68,0.12)",badge:"#ef4444"},
+  Urgent:   {dot:"#f59e0b",bg:"rgba(245,158,11,0.12)",badge:"#f59e0b"},
+  Routine:  {dot:"#64748b",bg:"rgba(100,116,139,0.12)",badge:"#64748b"},
+};
+const PMH_MDM_HIGH = new Set(["Active malignancy","ESRD on HD","On chemotherapy","On immunotherapy","Immunocompromised","Cirrhosis","On anticoagulation","Coagulopathy","Substance use disorder","Transplant recipient","Renal transplant","HIV/AIDS","Pulmonary HTN","Cardiomyopathy","CHF"]);
+const PMH_MDM_MOD  = new Set(["HTN","CAD","DM Type 2","DM Type 1","Atrial fibrillation","COPD","Asthma","CKD","Prior MI","Prior PE","Prior DVT/PE","Stroke/TIA","Seizure disorder","Hypothyroidism","Hyperthyroidism","Hyperlipidemia","IBD","Pancreatitis","Sickle cell disease","Anemia","Thrombocytopenia","Prior malignancy","Depression","Bipolar disorder","Schizophrenia","PTSD","Parkinson's","Dementia","Aortic aneurysm","Valvular disease","Pacemaker/ICD","Interstitial lung disease","OSA","GI bleed history","Autoimmune disease"]);
+function computePMHMDM(list) {
+  const high=list.filter(c=>PMH_MDM_HIGH.has(c)), mod=list.filter(c=>PMH_MDM_MOD.has(c)), other=list.filter(c=>!PMH_MDM_HIGH.has(c)&&!PMH_MDM_MOD.has(c));
+  let level="Low",rationale="Minimal comorbidity burden";
+  if(high.length>=1){level="High";rationale=`${high.length} high-complexity condition${high.length>1?"s":""}: ${high.slice(0,2).join(", ")}${high.length>2?"...":""}`;}
+  else if(mod.length>=3){level="High";rationale=`${mod.length} chronic conditions \u2014 \u22653 elevates to High (AMA 2021)`;}
+  else if(mod.length>=1){level="Moderate";rationale=`${mod.length} established chronic condition${mod.length>1?"s":""}`;}
+  else if(list.length>0){level="Low-Moderate";rationale="Minor or unclassified conditions present";}
+  return {level,rationale,high,mod,other};
+}
+
+// ─── PMH SECTION COMPONENT ────────────────────────────────────────────────────
+function PMHSection({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergies,setPatientAllergies,chiefComplaint,hpi,onOrderQueueChange,onMDMDataChange}) {
+  const teal="#0d9488",gold="#d4a017",bdr="rgba(42,79,122,.4)";
+  const [mode,setMode]=useState("select");
+  const [activeCat,setActiveCat]=useState("Cardiovascular");
+  const [searchQ,setSearchQ]=useState("");
+  const [pasteText,setPasteText]=useState("");
+  const [customInput,setCustomInput]=useState("");
+  const [pshInput,setPshInput]=useState("");
+  const [medInput,setMedInput]=useState("");
+  const [aInput,setAInput]=useState("");
+  const [workupRecs,setWorkupRecs]=useState([]);
+  const [analyzing,setAnalyzing]=useState(false);
+  const [recsOpen,setRecsOpen]=useState(false);
+  const [parseMsg,setParseMsg]=useState("");
+  const [analyzeErr,setAnalyzeErr]=useState("");
+  const [orderQueue,setOrderQueue]=useState([]);
+  const [showQueue,setShowQueue]=useState(false);
+  const [showMDM,setShowMDM]=useState(false);
+  const [orderSent,setOrderSent]=useState(false);
+  const [mdmSent,setMdmSent]=useState(false);
+  const [copiedAll,setCopiedAll]=useState(false);
+
+  const allConds=Object.values(PMH_CATS).flat();
+  const filtered=searchQ.length>1?allConds.filter(c=>c.toLowerCase().includes(searchQ.toLowerCase())):[];
+  const mdmData=computePMHMDM(pmh);
+  const MDM_COL={High:"#ef4444",Moderate:"#f59e0b","Low-Moderate":"#a78bfa",Low:"#64748b"};
+  const mdmColor=MDM_COL[mdmData.level]||"#64748b";
+
+  const toggle=c=>setPmh(p=>p.includes(c)?p.filter(x=>x!==c):[...p,c]);
+  const remPmh=c=>setPmh(p=>p.filter(x=>x!==c));
+  const remPsh=c=>setPsh(p=>p.filter(x=>x!==c));
+  const remMed=c=>setPatientMeds(p=>p.filter(x=>x!==c));
+  const remA=c=>setPatientAllergies(p=>p.filter(x=>x!==c));
+  const addCust=()=>{const v=customInput.trim();if(v&&!pmh.includes(v))setPmh(p=>[...p,v]);setCustomInput("");};
+  const addPsh=()=>{const v=pshInput.trim();if(v&&!psh.includes(v))setPsh(p=>[...p,v]);setPshInput("");};
+  const addMed=()=>{const v=medInput.trim();if(v&&!patientMeds.includes(v))setPatientMeds(p=>[...p,v]);setMedInput("");};
+  const addA=()=>{const v=aInput.trim();if(v&&!patientAllergies.includes(v))setPatientAllergies(p=>[...p,v]);setAInput("");};
+
+  const isQueued=rec=>orderQueue.some(o=>o.recommendation===rec.recommendation);
+  const addToQ=rec=>{if(!isQueued(rec))setOrderQueue(p=>[...p,rec]);};
+  const remFromQ=rec=>setOrderQueue(p=>p.filter(o=>o.recommendation!==rec.recommendation));
+  const addAllPri=pr=>{const add=workupRecs.filter(r=>r.priority===pr&&!isQueued(r));setOrderQueue(p=>[...p,...add]);setShowQueue(true);};
+
+  const parsePaste=async()=>{
+    if(!pasteText.trim())return; setParseMsg("Parsing\u2026");
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
+          system:'Extract structured medical history. Return ONLY valid JSON, no markdown. Format: {"pmh":[],"psh":[],"medications":[],"allergies":[]}',
+          messages:[{role:"user",content:"Extract PMH, PSH, medications, allergies:\n\n"+pasteText}]})});
+      const data=await res.json();
+      const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
+      if(parsed.pmh?.length)setPmh(p=>[...new Set([...p,...parsed.pmh])]);
+      if(parsed.psh?.length)setPsh(p=>[...new Set([...p,...parsed.psh])]);
+      if(parsed.medications?.length)setPatientMeds(p=>[...new Set([...p,...parsed.medications])]);
+      if(parsed.allergies?.length)setPatientAllergies(p=>[...new Set([...p,...parsed.allergies])]);
+      const tot=(parsed.pmh?.length||0)+(parsed.psh?.length||0)+(parsed.medications?.length||0)+(parsed.allergies?.length||0);
+      setParseMsg("\u2713 Extracted "+tot+" item"+(tot!==1?"s":"")); setPasteText("");
+    }catch{setParseMsg("Parse error \u2014 review manually");}
+  };
+
+  const analyzeWorkup=async()=>{
+    if(!chiefComplaint&&!hpi&&!pmh.length){setAnalyzeErr("Add CC, HPI, or PMH items first");return;}
+    setAnalyzeErr(""); setAnalyzing(true); setRecsOpen(true); setWorkupRecs([]); setOrderQueue([]);
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
+          system:'Emergency medicine CDS. Return ONLY a valid JSON array, no markdown. Each item: {"category":"Labs|Imaging|Consults|Monitoring|Medications","recommendation":"string","rationale":"string under 15 words","priority":"Immediate|Urgent|Routine","evidence":"guideline tag"}. Max 10. Only what context supports.',
+          messages:[{role:"user",content:`CC: ${chiefComplaint||"Not provided"}\nHPI: ${hpi||"Not provided"}\nPMH: ${pmh.join(", ")||"None"}\nPSH: ${psh.join(", ")||"None"}\nMeds: ${patientMeds.join(", ")||"None"}\nAllergies: ${patientAllergies.join(", ")||"NKDA"}\n\nGenerate workup recommendations.`}]})});
+      const data=await res.json();
+      const recs=JSON.parse((data.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
+      if(Array.isArray(recs)){
+        setWorkupRecs(recs);
+        const imm=recs.filter(r=>r.priority==="Immediate");
+        setOrderQueue(imm); if(imm.length)setShowQueue(true);
+      }
+    }catch{setAnalyzeErr("Analysis failed \u2014 check connection");}
+    setAnalyzing(false);
+  };
+
+  const sendToOrders=()=>{if(onOrderQueueChange)onOrderQueueChange(orderQueue);setOrderSent(true);setTimeout(()=>setOrderSent(false),3000);};
+  const sendToMDM=()=>{if(onMDMDataChange)onMDMDataChange(mdmData);setMdmSent(true);setTimeout(()=>setMdmSent(false),3000);};
+  const copyAll=()=>{const t=workupRecs.map(r=>`[${r.priority.toUpperCase()}] ${r.category}: ${r.recommendation} \u2014 ${r.rationale}`).join("\n");navigator.clipboard.writeText(t).then(()=>{setCopiedAll(true);setTimeout(()=>setCopiedAll(false),2000);});};
+
+  const card={background:"rgba(8,22,40,.55)",border:`1px solid ${bdr}`,borderRadius:12,padding:"13px 16px",marginBottom:9};
+  const inp={width:"100%",background:"rgba(14,37,68,.6)",border:"1px solid rgba(42,79,122,.45)",borderRadius:8,padding:"8px 11px",color:"var(--qn-txt)",fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:"'DM Sans',sans-serif"};
+  const modeBtn=a=>({padding:"5px 14px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:`1px solid ${a?teal:bdr}`,background:a?"rgba(13,148,136,0.18)":"transparent",color:a?teal:"var(--qn-txt4)",fontFamily:"'DM Sans',sans-serif"});
+  const addBtn=col=>({padding:"7px 13px",background:`${col||teal}20`,border:`1px solid ${col||teal}`,borderRadius:7,color:col||teal,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,fontFamily:"'DM Sans',sans-serif"});
+  const chip=(sel,col)=>({display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:16,fontSize:11,fontWeight:500,cursor:"pointer",border:`1px solid ${sel?col||teal:bdr}`,background:sel?`${col||teal}22`:"transparent",color:sel?col||teal:"var(--qn-txt4)",margin:"2px",fontFamily:"'DM Sans',sans-serif"});
+  const catTab=a=>({padding:"4px 10px",borderRadius:14,fontSize:9,fontWeight:700,cursor:"pointer",border:`1px solid ${a?gold:bdr}`,background:a?"rgba(212,160,23,0.13)":"transparent",color:a?gold:"var(--qn-txt4)",margin:"2px",fontFamily:"'JetBrains Mono',monospace"});
+  const ta={width:"100%",background:"rgba(14,37,68,.6)",border:"1px solid rgba(42,79,122,.45)",borderRadius:8,padding:"9px 11px",color:"var(--qn-txt)",fontSize:12,outline:"none",minHeight:90,resize:"vertical",boxSizing:"border-box",fontFamily:"'DM Sans',sans-serif"};
+  const primBtn={padding:"8px 20px",background:`linear-gradient(135deg,${teal},#0f766e)`,border:"none",borderRadius:9,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"};
+  const row={display:"flex",gap:8,alignItems:"center"};
+  const chipRow={display:"flex",flexWrap:"wrap",gap:5,marginTop:7,minHeight:26};
+  const recCard=p=>({background:PMH_PRI_STYLE[p]?.bg||"rgba(100,116,139,0.1)",border:"1px solid rgba(42,79,122,.35)",borderRadius:9,padding:"10px 13px",display:"flex",gap:9,alignItems:"flex-start",marginBottom:6});
+  const dotSt=p=>({width:7,height:7,borderRadius:"50%",background:PMH_PRI_STYLE[p]?.dot||"#64748b",flexShrink:0,marginTop:4});
+  const catBadge={fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(13,148,136,0.15)",color:teal,fontFamily:"'JetBrains Mono',monospace"};
+  const spinner={width:14,height:14,border:"2px solid rgba(42,79,122,.4)",borderTop:`2px solid ${teal}`,borderRadius:"50%",animation:"pmhspin 0.7s linear infinite"};
+  const qBtn=q=>({padding:"3px 9px",borderRadius:5,fontSize:10,fontWeight:700,cursor:"pointer",border:`1px solid ${q?"#ef4444":teal}`,background:q?"rgba(239,68,68,0.12)":`rgba(13,148,136,0.12)`,color:q?"#ef4444":teal,flexShrink:0,whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif"});
+  const lbl={fontSize:9,fontWeight:700,letterSpacing:"0.08em",color:"var(--qn-txt4)",textTransform:"uppercase",marginBottom:7,fontFamily:"'JetBrains Mono',monospace"};
+
+  const Chips=({items,onRemove,col})=>(
+    <div style={chipRow}>
+      {!items.length&&<span style={{fontSize:11,color:"var(--qn-txt4)",fontStyle:"italic"}}>None added</span>}
+      {items.map(i=><span key={i} style={chip(true,col)}>{i}<span style={{cursor:"pointer",color:"var(--qn-txt4)",marginLeft:3,fontSize:10,fontWeight:700}} onClick={()=>onRemove(i)}>&#x2715;</span></span>)}
+    </div>
+  );
+
+  return (
+    <div style={{marginBottom:14}}>
+      <style>{`@keyframes pmhspin{to{transform:rotate(360deg)}}`}</style>
+
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}} className="no-print">
+        <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-teal)"}}>Patient History</span>
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.08)",border:"1px solid rgba(0,229,192,.2)",borderRadius:4,padding:"2px 7px"}}>PMH \u00B7 PSH \u00B7 Meds \u00B7 Allergies \u00B7 AI Workup</span>
+        {pmh.length>0&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:mdmColor,background:`${mdmColor}20`,border:`1px solid ${mdmColor}44`,borderRadius:4,padding:"2px 8px",letterSpacing:"0.06em"}}>{mdmData.level.toUpperCase()} COMPLEXITY</span>}
+      </div>
+
+      {/* Input card */}
+      <div style={{...card}} className="no-print">
+        <div style={{display:"flex",gap:7,marginBottom:13,flexWrap:"wrap"}}>
+          {["search","select","paste"].map(m=>(
+            <button key={m} style={modeBtn(mode===m)} onClick={()=>setMode(m)}>
+              {m==="search"?"\uD83D\uDD0D Search":m==="select"?"\u2611 Select":"\uD83D\uDCCB Paste"}
+            </button>
+          ))}
+          <span style={{marginLeft:"auto",fontSize:11,color:"var(--qn-txt4)",alignSelf:"center",fontFamily:"'JetBrains Mono',monospace"}}>{pmh.length} dx</span>
+        </div>
+
+        {mode==="search"&&(
+          <div>
+            <input style={inp} placeholder="Search conditions (e.g. HTN, COPD, cirrhosis)..." value={searchQ} onChange={e=>setSearchQ(e.target.value)}/>
+            {filtered.length>0&&<div style={{marginTop:9}}>{filtered.map(c=><span key={c} style={chip(pmh.includes(c))} onClick={()=>toggle(c)}>{pmh.includes(c)?"\u2713 ":""}{c}</span>)}</div>}
+            {searchQ.length>1&&!filtered.length&&(
+              <div style={{...row,marginTop:9}}>
+                <span style={{fontSize:11,color:"var(--qn-txt4)"}}>No match &mdash;</span>
+                <button style={addBtn()} onClick={()=>{toggle(searchQ);setSearchQ("");}}>Add "{searchQ}"</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {mode==="select"&&(
+          <div>
+            <div style={{display:"flex",flexWrap:"wrap",marginBottom:11}}>
+              {Object.keys(PMH_CATS).map(cat=>(
+                <button key={cat} style={catTab(activeCat===cat)} onClick={()=>setActiveCat(cat)}>{PMH_CAT_ICONS[cat]} {cat}</button>
+              ))}
+            </div>
+            <div>{PMH_CATS[activeCat].map(c=><span key={c} style={chip(pmh.includes(c))} onClick={()=>toggle(c)}>{pmh.includes(c)?"\u2713 ":""}{c}</span>)}</div>
+            <div style={{...row,marginTop:12}}>
+              <input style={inp} placeholder="Add custom condition..." value={customInput} onChange={e=>setCustomInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addCust();}}/>
+              <button style={addBtn()} onClick={addCust}>Add</button>
+            </div>
+          </div>
+        )}
+
+        {mode==="paste"&&(
+          <div>
+            <div style={lbl}>Paste history, med list, or prior note \u2014 AI extracts automatically</div>
+            <textarea style={ta} placeholder={"Paste here...\nE.g. PMH: HTN, DM2, CAD s/p CABG\nMeds: metoprolol 25mg, lisinopril 10mg\nAllergies: penicillin (rash)"} value={pasteText} onChange={e=>setPasteText(e.target.value)}/>
+            <div style={{...row,marginTop:9}}>
+              <button style={primBtn} onClick={parsePaste}>\u2736 AI Parse &amp; Extract</button>
+              {parseMsg&&<span style={{fontSize:11,color:parseMsg.startsWith("\u2713")?"var(--qn-teal)":"var(--qn-coral)",fontFamily:"'DM Sans',sans-serif"}}>{parseMsg}</span>}
+            </div>
+          </div>
+        )}
+
+        <div style={{borderTop:"1px solid rgba(42,79,122,.3)",paddingTop:12,marginTop:13}}>
+          <div style={lbl}>Past Medical History</div>
+          <Chips items={pmh} onRemove={remPmh} col={teal}/>
+        </div>
+      </div>
+
+      {/* PSH + Allergies */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:9}} className="no-print">
+        <div style={card}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--qn-txt2)",marginBottom:9,fontFamily:"'DM Sans',sans-serif"}}>\uD83D\uDD2A Past Surgical History</div>
+          <div style={row}>
+            <input style={inp} placeholder="e.g. CABG 2018, appendectomy..." value={pshInput} onChange={e=>setPshInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addPsh();}}/>
+            <button style={addBtn("#a78bfa")} onClick={addPsh}>Add</button>
+          </div>
+          <Chips items={psh} onRemove={remPsh} col="#a78bfa"/>
+        </div>
+        <div style={card}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--qn-txt2)",marginBottom:9,fontFamily:"'DM Sans',sans-serif"}}>\u26A0 Allergies</div>
+          <div style={row}>
+            <input style={inp} placeholder="e.g. Penicillin (rash)..." value={aInput} onChange={e=>setAInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addA();}}/>
+            <button style={addBtn("var(--qn-coral)")} onClick={addA}>Add</button>
+          </div>
+          <Chips items={patientAllergies} onRemove={remA} col="var(--qn-coral)"/>
+        </div>
+      </div>
+
+      {/* Medications */}
+      <div style={card} className="no-print">
+        <div style={{fontSize:12,fontWeight:600,color:"var(--qn-txt2)",marginBottom:9,fontFamily:"'DM Sans',sans-serif"}}>\uD83D\uDC8A Current Medications</div>
+        <div style={row}>
+          <input style={inp} placeholder="e.g. Metoprolol 25mg daily..." value={medInput} onChange={e=>setMedInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addMed();}}/>
+          <button style={addBtn(gold)} onClick={addMed}>Add</button>
+        </div>
+        <Chips items={patientMeds} onRemove={remMed} col={gold}/>
+      </div>
+
+      {/* MDM Comorbidity Panel */}
+      {pmh.length>0&&(
+        <div style={{...card,border:`1px solid ${mdmColor}44`}} className="no-print">
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:showMDM?13:0}} onClick={()=>setShowMDM(o=>!o)}>
+            <div style={{display:"flex",alignItems:"center",gap:9}}>
+              <span style={{fontSize:12,fontWeight:700,color:"var(--qn-txt2)",fontFamily:"'DM Sans',sans-serif"}}>\uD83D\uDCCB MDM Comorbidity</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:800,padding:"2px 9px",borderRadius:6,background:`${mdmColor}20`,color:mdmColor,letterSpacing:"0.06em"}}>{mdmData.level.toUpperCase()}</span>
+            </div>
+            <div style={{display:"flex",gap:7,alignItems:"center"}}>
+              <button style={{...addBtn(mdmColor),padding:"5px 13px",fontSize:11,fontWeight:700}} onClick={e=>{e.stopPropagation();sendToMDM();}}>
+                {mdmSent?"\u2713 Sent":"\u2192 Send to MDM"}
+              </button>
+              <span style={{color:"var(--qn-txt4)",fontSize:13}}>{showMDM?"\u25B2":"\u25BC"}</span>
+            </div>
+          </div>
+          {showMDM&&(
+            <div>
+              <div style={{fontSize:12,color:"var(--qn-txt4)",marginBottom:11,fontFamily:"'DM Sans',sans-serif"}}>{mdmData.rationale}</div>
+              {mdmData.high.length>0&&(
+                <div style={{marginBottom:10}}>
+                  <div style={{...lbl,color:"#ef4444"}}>\uD83D\uDD34 High complexity (AMA 2021)</div>
+                  <div>{mdmData.high.map(c=><span key={c} style={{...chip(true,"#ef4444"),margin:"2px"}}>{c}</span>)}</div>
+                </div>
+              )}
+              {mdmData.mod.length>0&&(
+                <div style={{marginBottom:10}}>
+                  <div style={{...lbl,color:"#f59e0b"}}>\uD83D\uDFE1 Moderate complexity</div>
+                  <div>{mdmData.mod.map(c=><span key={c} style={{...chip(true,"#f59e0b"),margin:"2px"}}>{c}</span>)}</div>
+                </div>
+              )}
+              {mdmData.other.length>0&&(
+                <div style={{marginBottom:10}}>
+                  <div style={lbl}>\u26AA Unclassified / Minor</div>
+                  <div>{mdmData.other.map(c=><span key={c} style={{...chip(false),margin:"2px"}}>{c}</span>)}</div>
+                </div>
+              )}
+              <div style={{background:"rgba(14,37,68,.5)",borderRadius:8,padding:"9px 13px",fontSize:11,color:"var(--qn-txt4)",borderLeft:`3px solid ${mdmColor}`,fontFamily:"'DM Sans',sans-serif"}}>
+                <strong style={{color:"var(--qn-txt2)"}}>AMA 2021 \u2014 </strong>
+                {mdmData.level==="High"&&"High: severe comorbidity, exacerbation of chronic illness, or highly complex problems."}
+                {mdmData.level==="Moderate"&&"Moderate: 2+ stable chronic conditions, new condition requiring workup, or established condition worsening."}
+                {mdmData.level==="Low-Moderate"&&"Low-Moderate: minor or unclassified conditions \u2014 verify clinical context."}
+                {mdmData.level==="Low"&&"Low: minimal comorbidity burden."}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* AI Workup Recommendations */}
+      <div style={{...card,border:"1px solid rgba(0,229,192,.3)"}} className="no-print">
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:recsOpen?13:0}} onClick={()=>setRecsOpen(o=>!o)}>
+          <div style={{display:"flex",alignItems:"center",gap:9}}>
+            <span style={{fontSize:13,fontWeight:700,color:"var(--qn-teal)",fontFamily:"'Playfair Display',serif"}}>\u2736 AI Workup Recommendations</span>
+            {workupRecs.length>0&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,padding:"2px 8px",borderRadius:8,background:"rgba(0,229,192,.12)",color:"var(--qn-teal)"}}>{workupRecs.length} recs</span>}
+          </div>
+          <div style={{display:"flex",gap:7,alignItems:"center"}}>
+            {workupRecs.length>0&&<button style={{...addBtn(),padding:"5px 11px",fontSize:11}} onClick={e=>{e.stopPropagation();copyAll();}}>{copiedAll?"\u2713 Copied":"\u2398 Copy All"}</button>}
+            <button style={primBtn} onClick={e=>{e.stopPropagation();analyzeWorkup();}}>
+              {analyzing?"\u23F3 Analyzing\u2026":"\u2736 Analyze"}
+            </button>
+            <span style={{color:"var(--qn-txt4)",fontSize:13}}>{recsOpen?"\u25B2":"\u25BC"}</span>
+          </div>
+        </div>
+        {analyzeErr&&<div style={{color:"var(--qn-coral)",fontSize:11,marginTop:5,fontFamily:"'DM Sans',sans-serif"}}>{analyzeErr}</div>}
+        {recsOpen&&(
+          <div>
+            {analyzing&&(
+              <div style={{...row,padding:"12px 0"}}>
+                <div style={spinner}/>
+                <span style={{color:"var(--qn-txt4)",fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>Analyzing CC + HPI + PMH\u2026</span>
+              </div>
+            )}
+            {!analyzing&&!workupRecs.length&&(
+              <div style={{color:"var(--qn-txt4)",fontSize:12,fontStyle:"italic",fontFamily:"'DM Sans',sans-serif"}}>Click Analyze to generate evidence-based recommendations from CC, HPI, and PMH.</div>
+            )}
+            {!analyzing&&workupRecs.length>0&&(
+              <div style={{...row,flexWrap:"wrap",gap:7,marginBottom:12,paddingBottom:12,borderBottom:"1px solid rgba(42,79,122,.3)"}}>
+                <span style={{fontSize:11,color:"var(--qn-txt4)",fontFamily:"'DM Sans',sans-serif"}}>Stage to orders:</span>
+                {["Immediate","Urgent","Routine"].map(p=>{
+                  const cnt=workupRecs.filter(r=>r.priority===p).length;
+                  if(!cnt)return null;
+                  return <button key={p} style={{...addBtn(PMH_PRI_STYLE[p].badge),padding:"4px 11px",fontSize:10}} onClick={()=>addAllPri(p)}>+ All {p} ({cnt})</button>;
+                })}
+                {orderQueue.length>0&&<span style={{marginLeft:"auto",fontSize:11,color:"var(--qn-teal)",fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}>{orderQueue.length} staged \u2192</span>}
+              </div>
+            )}
+            {!analyzing&&workupRecs.length>0&&["Immediate","Urgent","Routine"].map(priority=>{
+              const grp=workupRecs.filter(r=>r.priority===priority);
+              if(!grp.length)return null;
+              return (
+                <div key={priority} style={{marginBottom:14}}>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",color:PMH_PRI_STYLE[priority]?.dot,marginBottom:7,textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>
+                    {priority==="Immediate"?"\uD83D\uDD34":priority==="Urgent"?"\uD83D\uDFE1":"\u26AA"} {priority}
+                  </div>
+                  {grp.map((rec,i)=>(
+                    <div key={i} style={recCard(priority)}>
+                      <div style={dotSt(priority)}/>
+                      <div style={{flex:1}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:3}}>
+                          <span style={{fontSize:12,fontWeight:600,color:"var(--qn-txt)",fontFamily:"'DM Sans',sans-serif"}}>{rec.recommendation}</span>
+                          <span style={catBadge}>{rec.category}</span>
+                          {rec.evidence&&<span style={{fontSize:9,color:"var(--qn-txt4)",fontStyle:"italic",fontFamily:"'DM Sans',sans-serif"}}>{rec.evidence}</span>}
+                          <button style={{...qBtn(isQueued(rec)),marginLeft:"auto"}} onClick={()=>{isQueued(rec)?remFromQ(rec):addToQ(rec);setShowQueue(true);}}>
+                            {isQueued(rec)?"\u2713 Staged":"+ Orders"}
+                          </button>
+                        </div>
+                        <div style={{fontSize:11,color:"var(--qn-txt4)",fontFamily:"'DM Sans',sans-serif"}}>{rec.rationale}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            {!analyzing&&workupRecs.length>0&&(
+              <div style={{fontSize:10,color:"var(--qn-txt4)",borderTop:"1px solid rgba(42,79,122,.3)",paddingTop:9,fontFamily:"'DM Sans',sans-serif"}}>
+                \u26A0 AI recommendations are clinical decision support only. Always apply clinical judgment.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Order Queue */}
+      {orderQueue.length>0&&(
+        <div style={{...card,border:"1px solid rgba(245,200,66,.35)"}} className="no-print">
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:showQueue?12:0}} onClick={()=>setShowQueue(o=>!o)}>
+            <div style={{display:"flex",alignItems:"center",gap:9}}>
+              <span style={{fontSize:12,fontWeight:700,color:"var(--qn-gold)",fontFamily:"'DM Sans',sans-serif"}}>\uD83D\uDCE4 Order Queue</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:800,padding:"2px 9px",borderRadius:6,background:"rgba(245,200,66,.15)",color:"var(--qn-gold)"}}>{orderQueue.length} staged</span>
+            </div>
+            <div style={{display:"flex",gap:7,alignItems:"center"}}>
+              <button style={{padding:"7px 17px",background:"linear-gradient(135deg,#d4a017,#b8860b)",border:"none",borderRadius:9,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}} onClick={e=>{e.stopPropagation();sendToOrders();}}>
+                {orderSent?"\u2713 Sent":"\u2192 Pre-fill Labs \u0026 Imaging"}
+              </button>
+              <span style={{color:"var(--qn-txt4)",fontSize:13}}>{showQueue?"\u25B2":"\u25BC"}</span>
+            </div>
+          </div>
+          {showQueue&&(
+            <div>
+              {["Immediate","Urgent","Routine"].map(priority=>{
+                const grp=orderQueue.filter(o=>o.priority===priority);
+                if(!grp.length)return null;
+                return (
+                  <div key={priority} style={{marginBottom:10}}>
+                    <div style={{fontSize:9,fontWeight:700,color:PMH_PRI_STYLE[priority]?.dot,letterSpacing:"0.08em",marginBottom:6,textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>
+                      {priority==="Immediate"?"\uD83D\uDD34":priority==="Urgent"?"\uD83D\uDFE1":"\u26AA"} {priority}
+                    </div>
+                    {grp.map((o,i)=>(
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 11px",background:"rgba(14,37,68,.5)",borderRadius:7,marginBottom:5}}>
+                        <span style={catBadge}>{o.category}</span>
+                        <span style={{fontSize:12,color:"var(--qn-txt)",flex:1,fontFamily:"'DM Sans',sans-serif"}}>{o.recommendation}</span>
+                        <span style={{fontSize:10,color:"var(--qn-txt4)",fontFamily:"'DM Sans',sans-serif"}}>{o.rationale}</span>
+                        <button style={{...qBtn(true),padding:"2px 7px",fontSize:10}} onClick={()=>remFromQ(o)}>\u2715</button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+              <div style={{borderTop:"1px solid rgba(42,79,122,.3)",paddingTop:9,fontSize:10,color:"var(--qn-txt4)",fontFamily:"'DM Sans',sans-serif"}}>
+                "Pre-fill Labs &amp; Imaging" appends staged orders into the Labs and Imaging text fields for physician review before MDM generation.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── HPI SCAFFOLDS — full clinical templates ──────────────────────────────────
@@ -613,6 +931,14 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [copiedP1,     setCopiedP1]     = useState(false);
   const [copiedP2,     setCopiedP2]     = useState(false);
   const [copiedInputs, setCopiedInputs] = useState(false);
+  // ── PMH state (v12.0 Patient History) ─────────────────────────────────────
+  const [pmh,              setPmh]              = useState([]);
+  const [psh,              setPsh]              = useState([]);
+  const [patientMeds,      setPatientMeds]      = useState([]);
+  const [patientAllergies, setPatientAllergies] = useState([]);
+  const [pmhMDMData,       setPmhMDMData]       = useState(null);
+
+
 
   const effectiveHpi = hpiMode === "summary" && hpiSummary ? hpiSummary : hpi;
   const phase1Ready  = Boolean(cc.trim() || hpi.trim() || exam.trim());
@@ -637,14 +963,19 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         patientPregnant==="Unknown"?"PREGNANCY STATUS: Unknown — consider ordering pregnancy test.":"",
         patientWeight?`PATIENT WEIGHT: ${patientWeight}kg — use for weight-based dosing.`:"",
       ].filter(Boolean).join("\n");
+      const pmhCtx = [
+        pmh.length?`PAST MEDICAL HISTORY: ${pmh.join(", ")}. MDM Complexity: ${computePMHMDM(pmh).level} (AMA 2021).`:"",
+        psh.length?`PAST SURGICAL HISTORY: ${psh.join(", ")}.`:"",
+        patientMeds.length?`CURRENT MEDICATIONS (from Hx tab): ${patientMeds.join(", ")}.`:"",
+        patientAllergies.length?`ALLERGIES (from Hx tab): ${patientAllergies.join(", ")}.`:"",
+      ].filter(Boolean).join("\n");
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: buildMDMPrompt(cc,vitals,hpi,ros,exam,vhAnalysis,parsedMeds,parsedAllergies,encounterType)
-          + (bouncebackCtx ? "\n"+bouncebackCtx : "") + (patientCtx ? "\n"+patientCtx : ""),
+          + (bouncebackCtx ? "\n"+bouncebackCtx : "") + (patientCtx ? "\n"+patientCtx : "")
+          + (pmhCtx ? "\n"+pmhCtx : ""),
         response_json_schema: MDM_SCHEMA,
       });
       setMdmResult(res); setP2Open(true);
-      stampTimeline("physician");
-      setDrugInteractions(null);
       const ts = new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
       setMdmInitialTs(ts);
       setMdmHistory([{ts,trigger:"Initial Impression",
@@ -655,7 +986,18 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     } catch(e) { setP1Error("MDM generation failed: "+(e.message||"Check API")); }
     finally { setP1Busy(false); }
   }, [cc,vitals,hpi,ros,exam,phase1Ready,p1Busy,vhAnalysis,parsedMeds,parsedAllergies,
-      encounterType,isBounceback,bouncebackDate,patientPregnant,patientWeight]);
+      encounterType,isBounceback,bouncebackDate,patientPregnant,patientWeight,pmh,psh,patientMeds,patientAllergies]);
+
+  // ── PMH order queue callback — pre-fills Labs & Imaging fields ─────────────
+  const handlePMHOrders = useCallback((orders) => {
+    if (!orders?.length) return;
+    const labOrders  = orders.filter(o=>o.category==="Labs").map(o=>o.recommendation);
+    const imgOrders  = orders.filter(o=>o.category==="Imaging").map(o=>o.recommendation);
+    const consultOrders = orders.filter(o=>o.category==="Consults").map(o=>o.recommendation);
+    if (labOrders.length)  setLabs(prev=>(prev.trim()?prev+"\n":"")+labOrders.join("\n"));
+    if (imgOrders.length)  setImaging(prev=>(prev.trim()?prev+"\n":"")+imgOrders.join("\n"));
+    if (consultOrders.length) setConsults(prev=>[...prev,...consultOrders.map((c,i)=>({id:`pmh-${Date.now()}-${i}`,service:c,provider:"",time:"",recommendation:"AI-staged from PMH workup"}))]);
+  }, []);
 
   // ── Disposition ────────────────────────────────────────────────────────────
   const runDisposition = useCallback(async () => {
@@ -671,7 +1013,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         response_json_schema: DISP_SCHEMA,
       });
       setDispResult(res); setIntGenerated(false); setIntLoading(false);
-      stampTimeline("disposition");
     } catch(e) { setP2Error("Disposition generation failed: "+(e.message||"Check API")); }
     finally { setP2Busy(false); }
   }, [mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,p2Busy,ekg,parsedMeds,parsedAllergies,consults,patientResponse]);
@@ -1080,15 +1421,9 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   const stripLabels = (text) => pasteReady!=="prose" ? text : text.replace(/^[A-Z][A-Z /&]+:\s*/gm,"").trim();
 
   const copyNote = useCallback(() => {
-    let text;
-    if (formatMode==="soap") {
-      text = buildSOAPNote({cc,vitals,hpi:effectiveHpi,ros,exam},mdmResult,{labs,imaging,ekg,newVitals},dispResult);
-    } else {
-      text = buildFullNote({cc,vitals,hpi:effectiveHpi,ros,exam},mdmResult,{labs,imaging,newVitals},dispResult,{icdSelected,interventions,parsedMeds,parsedAllergies});
-    }
-    if (formatMode==="dragon") text=text.replace(/^[A-Z][A-Z\s\/&]+:\s*/gm,"").replace(/^={3,}.*={3,}\s*/gm,"").replace(/\n{3,}/g,"\n\n").trim();
+    const text=buildFullNote({cc,vitals,hpi:effectiveHpi,ros,exam},mdmResult,{labs,imaging,newVitals},dispResult,{icdSelected,interventions,parsedMeds,parsedAllergies});
     navigator.clipboard.writeText(stripLabels(text)).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
-  }, [cc,vitals,effectiveHpi,ros,exam,mdmResult,labs,imaging,ekg,newVitals,dispResult,icdSelected,interventions,parsedMeds,parsedAllergies,pasteReady,formatMode]);
+  }, [cc,vitals,effectiveHpi,ros,exam,mdmResult,labs,imaging,newVitals,dispResult,icdSelected,interventions,parsedMeds,parsedAllergies,pasteReady]);
 
   const copyClinicalInputs = useCallback(() => {
     const sections=[
@@ -1196,7 +1531,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     try {
       const user=await base44.auth.me().catch(()=>null);
       const fullText=buildFullNote({cc,vitals,hpi,ros,exam},mdmResult,{labs,imaging,newVitals},dispResult,{icdSelected,interventions,parsedMeds,parsedAllergies});
-      const savedRecord = await base44.entities.ClinicalNote.create({
+      await base44.entities.ClinicalNote.create({
         source:"QuickNote",encounter_date:new Date().toISOString().split("T")[0],
         cc:cc||"",chief_complaint:cc||"",raw_note:fullText,full_note_text:fullText,
         working_diagnosis:mdmResult?.working_diagnosis||dispResult?.final_diagnosis||"",
@@ -1207,10 +1542,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         result_flags_json:dispResult?.result_flags?.length?JSON.stringify(dispResult.result_flags):"",
         icd_codes_json:icdSelected.length?JSON.stringify(icdSelected):"",
         meds_raw:medsRaw||"",allergies_raw:allergiesRaw||"",
-        meds_json:parsedMeds.length?JSON.stringify(parsedMeds):"",
-        allergies_json:parsedAllergies.length?JSON.stringify(parsedAllergies):"",
       });
-      if (savedRecord?.id) setSavedNoteId(savedRecord.id);
       setSavedNote(true); setTimeout(()=>setSavedNote(false),3000);
       setSlots(prev=>{const next=[...prev];next[activeSlot]={...next[activeSlot],savedNoteId:"saved"};return next;});
       clearSlotCache(activeSlot);
@@ -1247,7 +1579,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setWorkupRationale(null); setConsults([]);
     setQuickDDxDismissed(false); setIsBounceback(false);
     setTreatmentPlan(""); setActionPlan("");
-    setDrugInteractions(null); setDrugCheckDismissed(false);
     setPatientResponse(""); setMdmHistory([]); setMdmInitialTs(null);
     setHpiGaps([]); setLabRecs(null); setImagingRecs(null);
     setMedsFromHpi([]); setAllergiesFromHpi([]);
@@ -1318,10 +1649,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       const payload={source:"QuickNote",status:"draft",encounter_date:new Date().toISOString().split("T")[0],
         cc:cc||"",hpi_raw:hpi||"",ros_raw:ros||"",exam_raw:exam||"",labs_raw:labs||"",imaging_raw:imaging||"",
         full_note_text:vitals||"",working_diagnosis:mdmResult?.working_diagnosis||"",
-        mdm_level:mdmResult?.mdm_level||"",mdm_narrative:mdmResult?.mdm_narrative||"",
-        meds_raw:medsRaw||"",allergies_raw:allergiesRaw||"",
-        meds_json:parsedMeds.length?JSON.stringify(parsedMeds):"",
-        allergies_json:parsedAllergies.length?JSON.stringify(parsedAllergies):""};
+        mdm_level:mdmResult?.mdm_level||"",mdm_narrative:mdmResult?.mdm_narrative||""};
       try {
         if (draftId) await base44.entities.ClinicalNote.update(draftId,payload).catch(()=>null);
         else { const rec=await base44.entities.ClinicalNote.create(payload).catch(()=>null); if (rec?.id) setDraftId(rec.id); }
@@ -1329,32 +1657,12 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     };
     const interval=setInterval(saveDraft,90000);
     return ()=>clearInterval(interval);
-  },[cc,hpi,ros,exam,labs,imaging,vitals,mdmResult,draftId,medsRaw,allergiesRaw,parsedMeds,parsedAllergies]);
-
-  // ── Meds/Allergies → draft sync (debounced, fires on parse completion) ─────
-  useEffect(()=>{
-    if (!draftId) return;
-    if (!parsedMeds.length&&!parsedAllergies.length) return;
-    const t=setTimeout(()=>{
-      base44.entities.ClinicalNote.update(draftId,{
-        meds_raw:medsRaw||"",allergies_raw:allergiesRaw||"",
-        meds_json:parsedMeds.length?JSON.stringify(parsedMeds):"",
-        allergies_json:parsedAllergies.length?JSON.stringify(parsedAllergies):"",
-      }).catch(()=>null);
-    },1500);
-    return ()=>clearTimeout(t);
-  },[parsedMeds,parsedAllergies,draftId,medsRaw,allergiesRaw]);
+  },[cc,hpi,ros,exam,labs,imaging,vitals,mdmResult,draftId]);
 
   useEffect(()=>{
     const interval=setInterval(()=>saveAllSlots(),60000);
     return ()=>clearInterval(interval);
   },[saveAllSlots]);
-
-  // Feature #9: auto-trigger drug check when meds + MDM are available
-  useEffect(() => {
-    if (parsedMeds?.length>0&&mdmResult&&!drugInteractions&&!drugCheckBusy) runDrugInteractionCheck();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parsedMeds, mdmResult]);
 
   useEffect(()=>{
     try {
@@ -1452,82 +1760,13 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       patientAge:demo?.age||"",lastActivity:Date.now()};
   });
 
-  // Feature #1: vitals flags
-  const vitalsFlags = useMemo(() => interpretVitals(vitals, encounterType), [vitals, encounterType]);
-
-  // Feature #7: note audit
-  const [savedNoteId,   setSavedNoteId]   = useState(null);
-  const [showNoteAudit, setShowNoteAudit] = useState(false);
-  const [auditNote,     setAuditNote]     = useState(null);
-  const [auditLoading,  setAuditLoading]  = useState(false);
-
-  // Feature #9: drug interactions
-  const [drugInteractions,   setDrugInteractions]   = useState(null);
-  const [drugCheckBusy,      setDrugCheckBusy]      = useState(false);
-  const [drugCheckDismissed, setDrugCheckDismissed] = useState(false);
-
-  // Feature #7: view saved note
-  const viewSavedNote = useCallback(async () => {
-    if (!savedNoteId) return;
-    setAuditLoading(true);
-    try {
-      const note = await base44.entities.ClinicalNote.get(savedNoteId);
-      setAuditNote(note); setShowNoteAudit(true);
-    } catch(e) { console.error("Audit fetch failed:",e); }
-    finally { setAuditLoading(false); }
-  }, [savedNoteId]);
-
-  // Feature #8: encounter type change with exam template
-  const handleEncounterTypeChange = useCallback((type) => {
-    setEncounterType(type);
-    const preset = ENCOUNTER_PRESETS[type];
-    if (preset?.examTemplate && !exam.trim()) setExam(preset.examTemplate);
-  }, [exam]);
-
-  // Feature #9: drug interaction check
-  const runDrugInteractionCheck = useCallback(async () => {
-    if (!parsedMeds?.length||drugCheckBusy) return;
-    setDrugCheckBusy(true); setDrugInteractions(null); setDrugCheckDismissed(false);
-    try {
-      const schema={type:"object",required:["interactions","contraindications"],properties:{
-        interactions:{type:"array",items:{type:"object",required:["severity","drugs_involved","interaction","recommendation"],
-          properties:{severity:{type:"string"},drugs_involved:{type:"string"},interaction:{type:"string"},recommendation:{type:"string"}}}},
-        contraindications:{type:"array",items:{type:"object",required:["drug","reason","recommendation"],
-          properties:{drug:{type:"string"},reason:{type:"string"},recommendation:{type:"string"}}}},
-      }};
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`Clinical pharmacist drug review.
-WORKING DIAGNOSIS: ${mdmResult?.working_diagnosis||cc||"unknown"}
-CURRENT MEDICATIONS: ${parsedMeds.map(m=>`${m.name} ${m.dose} ${m.route}`.trim()).join(", ")}
-PLANNED TREATMENTS: ${(mdmResult?.treatment_recommendations||[]).map(t=>t.intervention).join(", ")||"none"}
-ALLERGIES: ${parsedAllergies?.map(a=>`${a.allergen} (${a.reaction})`).join(", ")||"NKDA"}
-Check for: major/moderate drug-drug interactions, diagnosis contraindications (metformin+contrast, NSAIDs+AKI, BB+cocaine), allergy cross-reactions. Return ONLY clinically significant findings. Empty arrays if none. JSON only.`,
-        response_json_schema:schema,
-      });
-      const total=(res?.interactions?.length||0)+(res?.contraindications?.length||0);
-      setDrugInteractions(total>0?res:{interactions:[],contraindications:[],clean:true});
-    } catch(e){ console.error("Drug check failed:",e); }
-    finally{ setDrugCheckBusy(false); }
-  }, [parsedMeds,parsedAllergies,mdmResult,cc,drugCheckBusy]);
-
-  // Feature #10: export PDF
-  const exportToPDF = useCallback(() => {
-    const orig = document.title;
-    const pat  = [demo?.firstName,demo?.lastName].filter(Boolean).join(" ")||"Patient";
-    const dx   = mdmResult?.working_diagnosis||dispResult?.final_diagnosis||cc||"ED Note";
-    const date = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-    document.title = `QuickNote — ${pat} — ${dx} — ${date}`;
-    window.print();
-    setTimeout(()=>{ document.title=orig; },1500);
-  }, [demo,mdmResult,dispResult,cc]);
-
-  // Feature #3: stamp timeline
-  const stampTimeline = useCallback((eventId) => {
-    const ts = new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
-    setTimestamps(prev => prev.map(e => e.id===eventId&&!e.time ? {...e,time:ts} : e));
-  }, []);
-
   const isFatigueRisk = useMemo(()=>{ const h=new Date().getHours(); return h>=17||h<=7; },[]);
+  const getSaveLabel = (ts) => {
+    if (!ts) return null;
+    const min=Math.floor((Date.now()-ts)/60000);
+    if (min<1) return "just now"; if (min===1) return "1m ago";
+    if (min<60) return `${min}m ago`; return `${Math.floor(min/60)}h ago`;
+  };
 
   // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
@@ -1568,7 +1807,7 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",
               letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.1)",
               border:"1px solid rgba(0,229,192,.25)",borderRadius:4,padding:"2px 7px"}}>
-              v11.5 · AI Plan · AI Labs · Drug Check
+              v11.4 · AI Plan · AI Labs · AI Imaging
             </span>
           </div>
         )}
@@ -1577,20 +1816,127 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
         {isFatigueRisk&&!fatigueDismissed&&<FatigueBanner onDismiss={()=>setFatigueDismissed(true)} />}
         <StepProgress phase1Done={Boolean(mdmResult)} phase2Done={Boolean(dispResult)} p2Open={p2Open} />
 
-        <QuickNoteProgressDashboard
-          cc={cc} vitals={vitals} hpi={hpi} ros={ros} exam={exam}
-          medsRaw={medsRaw} parsedMeds={parsedMeds} parsedAllergies={parsedAllergies} allergiesRaw={allergiesRaw}
-          labs={labs} imaging={imaging} mdmResult={mdmResult} dispResult={dispResult}
-        />
-
         {!embedded&&(
-          <QuickNotePatientQueue
-            slots={slots} activeSlot={activeSlot}
-            slotCacheIds={slotCacheIds} slotSaveTimes={slotSaveTimes} slotSaving={slotSaving}
-            switchToSlot={switchToSlot} saveAllSlots={saveAllSlots}
-            setShowKbHelp={setShowKbHelp}
-            slotsRestored={slotsRestored} slotsRestoredCount={slotsRestoredCount} setSlotsRestored={setSlotsRestored}
-          />
+          <div style={{marginBottom:10}} className="no-print">
+            {slotsRestored&&(
+              <div className="qn-fade" style={{display:"flex",alignItems:"center",gap:10,
+                padding:"8px 14px",marginBottom:8,borderRadius:10,
+                background:"rgba(0,229,192,.06)",border:"1px solid rgba(0,229,192,.3)"}}>
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--qn-teal)"}}>↻</span>
+                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",flex:1}}>
+                  <strong style={{color:"var(--qn-teal)"}}>{slotsRestoredCount} patient slot{slotsRestoredCount>1?"s":""}</strong> restored from your last session
+                </span>
+                <button onClick={()=>setSlotsRestored(false)}
+                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace",fontSize:8,
+                    border:"1px solid rgba(42,79,122,.4)",background:"transparent",
+                    color:"var(--qn-txt4)"}}>✕</button>
+              </div>
+            )}
+            {/* Patient Queue Bar */}
+            <div style={{display:"flex",gap:6,padding:"8px 10px",borderRadius:12,
+              background:"rgba(8,22,40,.7)",border:"1px solid rgba(42,79,122,.35)"}}>
+              {slots.map((slot,i)=>{
+                const isActive=i===activeSlot;
+                const isEmpty=!slot.cc&&!slot.hpi&&!slot.mdmResult;
+                const isSaved=!!slot.savedNoteId;
+                const hasDisp=!!slot.dispResult;
+                const hasMDM=!!slot.mdmResult;
+                const hasP2Data=!!(slot.labs||slot.imaging||slot.newVitals);
+                const hasP1Data=!!(slot.cc||slot.hpi);
+                const hasCacheId=!!slotCacheIds[i];
+                const status=isEmpty?null
+                  :isSaved?{label:"Saved",color:"var(--qn-green)",bg:"rgba(61,255,160,.12)",bd:"rgba(61,255,160,.4)"}
+                  :hasDisp?{label:"Dispo Done",color:"var(--qn-purple)",bg:"rgba(155,109,255,.12)",bd:"rgba(155,109,255,.4)"}
+                  :hasMDM&&hasP2Data?{label:"Phase 2",color:"var(--qn-blue)",bg:"rgba(59,158,255,.12)",bd:"rgba(59,158,255,.4)"}
+                  :hasMDM?{label:"MDM Done",color:"var(--qn-teal)",bg:"rgba(0,229,192,.12)",bd:"rgba(0,229,192,.4)"}
+                  :hasP1Data?{label:"Phase 1",color:"var(--qn-gold)",bg:"rgba(245,200,66,.1)",bd:"rgba(245,200,66,.35)"}
+                  :null;
+                const displayName=slot.patientName||(slot.cc?slot.cc.slice(0,22)+(slot.cc.length>22?"…":""):null);
+                const minutesAgo=slot.lastActivity?Math.floor((Date.now()-slot.lastActivity)/60000):null;
+                const timeLabel=minutesAgo!==null&&minutesAgo<120&&!isActive
+                  ?minutesAgo<1?"just now":minutesAgo===1?"1m ago":`${minutesAgo}m ago`:null;
+                const etMap={adult:"ED",peds:"Peds",psych:"Psych",trauma:"Trauma",obs:"Obs"};
+                const etLabel=slot.encounterType&&slot.encounterType!=="adult"?etMap[slot.encounterType]||slot.encounterType:null;
+                const saveLabel=getSaveLabel(slotSaveTimes[i]);
+                return (
+                  <button key={i} onClick={()=>switchToSlot(i)}
+                    style={{flex:1,padding:"8px 10px",borderRadius:9,cursor:"pointer",
+                      textAlign:"left",transition:"all .15s",position:"relative",
+                      border:`1px solid ${isActive?"rgba(0,229,192,.55)":isEmpty?"rgba(42,79,122,.2)":"rgba(42,79,122,.45)"}`,
+                      background:isActive?"rgba(0,229,192,.1)":isEmpty?"rgba(8,22,40,.3)":"rgba(14,37,68,.55)"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:isEmpty?0:4}}>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,letterSpacing:.5,color:isActive?"var(--qn-teal)":"var(--qn-txt4)"}}>P{i+1}</span>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(42,79,122,.5)"}}>Ctrl+{i+1}</span>
+                      <div style={{flex:1}} />
+                      {isSaved&&<div style={{width:7,height:7,borderRadius:"50%",background:"var(--qn-green)",boxShadow:"0 0 5px rgba(61,255,160,.6)",flexShrink:0}} />}
+                      {isActive&&!isSaved&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--qn-teal)",flexShrink:0,animation:"qnpulse 1.2s ease-in-out infinite"}} />}
+                      {hasCacheId&&!isSaved&&<div style={{width:5,height:5,borderRadius:"50%",background:"rgba(59,158,255,.6)",flexShrink:0}} />}
+                    </div>
+                    {isEmpty?(
+                      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"rgba(42,79,122,.5)",fontStyle:"italic"}}>Empty</div>
+                    ):(
+                      <>
+                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:isActive?700:600,
+                          color:isActive?"var(--qn-txt)":"var(--qn-txt2)",lineHeight:1.25,marginBottom:4,
+                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {displayName||"No CC entered"}
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
+                          {slot.patientAge&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)"}}>{slot.patientAge}yo</span>}
+                          {etLabel&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.6)",background:"rgba(42,79,122,.2)",borderRadius:4,padding:"1px 5px"}}>{etLabel}</span>}
+                          {timeLabel&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.4)",marginLeft:"auto"}}>{timeLabel}</span>}
+                        </div>
+                        {status&&(
+                          <div style={{marginTop:5,display:"inline-flex",alignItems:"center",gap:4,padding:"2px 7px",borderRadius:5,background:status.bg,border:`1px solid ${status.bd}`}}>
+                            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,color:status.color,letterSpacing:.5,textTransform:"uppercase"}}>{status.label}</span>
+                          </div>
+                        )}
+                        <div style={{display:"flex",alignItems:"center",gap:4,marginTop:5}}>
+                          {saveLabel&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(59,158,255,.5)",flex:1}}>☁ {saveLabel}</span>}
+                          <button onClick={e=>{e.stopPropagation();saveAllSlots(true);}} disabled={slotSaving}
+                            style={{padding:"1px 7px",borderRadius:4,cursor:"pointer",
+                              fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,
+                              border:`1px solid ${slotSaving?"rgba(42,79,122,.25)":"rgba(59,158,255,.4)"}`,
+                              background:slotSaving?"rgba(14,37,68,.3)":"rgba(59,158,255,.08)",
+                              color:slotSaving?"var(--qn-txt4)":"var(--qn-blue)"}}>
+                            {slotSaving?"●":"↑ Save"}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </button>
+                );
+              })}
+              <div style={{display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 2px"}}>
+                <div style={{width:1,height:40,background:"rgba(42,79,122,.35)"}} />
+              </div>
+              <button onClick={()=>setShowKbHelp(h=>!h)} title="Keyboard shortcuts (Shift+?)"
+                style={{alignSelf:"center",padding:"6px 10px",borderRadius:7,cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,
+                  border:"1px solid rgba(42,79,122,.4)",background:"transparent",
+                  color:"var(--qn-txt4)",flexShrink:0}}>?</button>
+            </div>
+            {slots.some(s=>!!(s.cc||s.hpi||s.mdmResult))&&(
+              <div style={{display:"flex",gap:10,marginTop:5,paddingLeft:4,flexWrap:"wrap",alignItems:"center"}}>
+                {[
+                  {label:"Phase 1",color:"var(--qn-gold)"},{label:"MDM Done",color:"var(--qn-teal)"},
+                  {label:"Phase 2",color:"var(--qn-blue)"},{label:"Dispo Done",color:"var(--qn-purple)"},
+                  {label:"Saved",color:"var(--qn-green)"},
+                ].map(({label,color})=>(
+                  <div key={label} style={{display:"flex",alignItems:"center",gap:4}}>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:color,flexShrink:0}} />
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.5)",letterSpacing:.4}}>{label}</span>
+                  </div>
+                ))}
+                <div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",background:"rgba(59,158,255,.6)",flexShrink:0}} />
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.5)"}}>Session saved</span>
+                </div>
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(42,79,122,.5)",marginLeft:4}}>Ctrl+1–4 switch · Ctrl+S save all</span>
+              </div>
+            )}
+          </div>
         )}
 
         {showUndo&&<UndoToast onUndo={handleUndo} onDismiss={()=>{clearTimeout(undoTimer);setShowUndo(false);setUndoData(null);}} />}
@@ -1601,12 +1947,10 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
         <PriorVisitsPanel visits={priorVisits} loading={priorVisitsLoading} onLoad={loadPriorVisits} />
         {(vitals.trim().length>10||labs.trim().length>5)&&<SepsisBanner vitalsText={vitals} labsText={labs} />}
 
-        <QuickNoteVitalsBanner flags={vitalsFlags} />
-
         <Phase1Panel
           cc={cc} setCC={setCC} vitals={vitals} setVitals={setVitals}
           hpi={hpi} setHpi={setHpi} ros={ros} setRos={setRos} exam={exam} setExam={setExam}
-          encounterType={encounterType} setEncounterType={handleEncounterTypeChange}
+          encounterType={encounterType} setEncounterType={setEncounterType}
           hpiMode={hpiMode} setHpiMode={setHpiMode} hpiSummary={hpiSummary} setHpiSummary={setHpiSummary}
           hpiSumBusy={hpiSumBusy} hpiSumError={hpiSumError} copiedHpiSum={copiedHpiSum} setCopiedHpiSum={setCopiedHpiSum}
           summarizeHPI={summarizeHPI}
@@ -1634,32 +1978,226 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
         <QuickNoteROSHelper ros={ros} />
         <QuickNoteExamHelper exam={exam} cc={cc} autoExamFromCC={autoExamFromCC} autoExamBusy={autoExamBusy} />
 
+        {/* Patient History (PMH) */}
+        <PMHSection
+          pmh={pmh} setPmh={setPmh}
+          psh={psh} setPsh={setPsh}
+          patientMeds={patientMeds} setPatientMeds={setPatientMeds}
+          patientAllergies={patientAllergies} setPatientAllergies={setPatientAllergies}
+          chiefComplaint={cc} hpi={hpi}
+          onOrderQueueChange={handlePMHOrders}
+          onMDMDataChange={setPmhMDMData}
+        />
+
         {/* HPI Scaffold */}
-        {cc.trim()&&(
-          <QuickNoteHPIScaffold
-            scaffold={getScaffold(cc)} hpi={hpi} setHpi={setHpi}
-            open={scaffoldOpen} setOpen={setScaffoldOpen}
-          />
-        )}
+        {cc.trim()&&(()=>{
+          const scaffold=getScaffold(cc);
+          if (!scaffold||hpi.trim()===scaffold.text.trim()) return null;
+          return (
+            <div style={{marginBottom:10,background:"rgba(59,158,255,.04)",border:"1px solid rgba(59,158,255,.2)",borderRadius:12,overflow:"hidden"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                padding:"7px 14px",borderBottom:scaffoldOpen?"1px solid rgba(59,158,255,.15)":"none",cursor:"pointer"}}
+                onClick={()=>setScaffoldOpen(p=>!p)}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"var(--qn-blue)",letterSpacing:1.5,textTransform:"uppercase"}}>
+                    💡 HPI Scaffold — {scaffold.cc}
+                  </span>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,
+                    color:hpi.trim()?"var(--qn-gold)":"var(--qn-txt4)",
+                    background:hpi.trim()?"rgba(245,200,66,.1)":"rgba(59,158,255,.1)",
+                    border:`1px solid ${hpi.trim()?"rgba(245,200,66,.25)":"rgba(59,158,255,.2)"}`,
+                    borderRadius:4,padding:"1px 6px"}}>
+                    {hpi.trim()?"Compare / Reload":"Click to expand"}
+                  </span>
+                </div>
+                <span style={{color:"var(--qn-txt4)",fontSize:11}}>{scaffoldOpen?"▲":"▼"}</span>
+              </div>
+              {scaffoldOpen&&(
+                <div style={{padding:"10px 14px"}}>
+                  <pre style={{margin:"0 0 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,
+                    color:"var(--qn-txt2)",lineHeight:1.75,background:"rgba(59,158,255,.04)",
+                    borderRadius:8,padding:"10px 14px",border:"1px solid rgba(59,158,255,.12)",
+                    whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+                    {scaffold.text}
+                  </pre>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button onClick={()=>{setHpi(scaffold.text);setScaffoldOpen(false);}}
+                      style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",
+                        border:"1px solid rgba(59,158,255,.45)",background:"rgba(59,158,255,.1)",
+                        color:"var(--qn-blue)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}}>
+                      {hpi.trim()?"↩ Replace HPI with scaffold":"↓ Insert into HPI"}
+                    </button>
+                    {hpi.trim()&&(
+                      <button onClick={()=>{setHpi(prev=>scaffold.text+"\n\n"+prev);setScaffoldOpen(false);}}
+                        style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",
+                          border:"1px solid rgba(245,200,66,.4)",background:"rgba(245,200,66,.07)",
+                          color:"var(--qn-gold)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}}>
+                        ↑ Prepend scaffold
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* MDM Result */}
         {mdmResult&&(
-          <QuickNoteMDMCard
-            mdmResult={mdmResult} setMdmResult={setMdmResult}
-            isBounceback={isBounceback} mdmInitialTs={mdmInitialTs}
-            copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
-            copiedMDMFull={copiedMDMFull} setCopiedMDMFull={setCopiedMDMFull}
-            workupRationale={workupRationale} setWorkupRationale={setWorkupRationale} workupRationaleBusy={workupRationaleBusy}
-            runWorkupRationale={runWorkupRationale}
-            copiedWorkup={copiedWorkup} setCopiedWorkup={setCopiedWorkup}
-            treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan}
-            actionPlan={actionPlan} setActionPlan={setActionPlan}
-            treatmentPlanBusy={treatmentPlanBusy} generateClinicalPlan={generateClinicalPlan}
-            mdmHistory={mdmHistory} showMdmHistory={showMdmHistory} setShowMdmHistory={setShowMdmHistory}
-            rerunAddendumBusy={rerunAddendumBusy} runMDMAddendum={runMDMAddendum}
-            setDispResult={setDispResult} setP2Open={setP2Open}
-            setLabRecs={setLabRecs} setImagingRecs={setImagingRecs}
-          />
+          <div style={{marginBottom:14,padding:"16px",background:"rgba(8,22,40,.5)",
+            border:"1px solid rgba(0,229,192,.2)",borderRadius:14}} className="print-body">
+            <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14,flexWrap:"wrap"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:"var(--qn-teal)"}}>Initial Impression</span>
+              {mdmInitialTs&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-teal)",letterSpacing:.5,background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.25)",borderRadius:4,padding:"2px 7px"}}>⏱ {mdmInitialTs}</span>}
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.2)",borderRadius:4,padding:"2px 7px"}}>AMA/CMS 2023 · ACEP</span>
+              {isBounceback&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-coral)",background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.35)",borderRadius:4,padding:"2px 7px"}}>⚠ Bounceback</span>}
+              <div style={{flex:1}} />
+              <button onClick={runWorkupRationale} disabled={workupRationaleBusy}
+                style={{padding:"4px 11px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+                  border:`1px solid ${workupRationaleBusy?"rgba(42,79,122,.3)":"rgba(245,200,66,.4)"}`,
+                  background:workupRationaleBusy?"rgba(14,37,68,.4)":"rgba(245,200,66,.07)",
+                  color:workupRationaleBusy?"var(--qn-txt4)":"var(--qn-gold)",letterSpacing:.4,transition:"all .15s"}}>
+                {workupRationaleBusy?"● …":"✦ Workup Rationale"}
+              </button>
+              <button onClick={()=>{navigator.clipboard.writeText(buildMDMBlock(mdmResult,{treatmentPlan,actionPlan})).then(()=>{setCopiedMDMFull(true);setTimeout(()=>setCopiedMDMFull(false),2000);});}}
+                style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
+                  border:`1px solid ${copiedMDMFull?"rgba(61,255,160,.5)":"rgba(0,229,192,.35)"}`,
+                  background:copiedMDMFull?"rgba(61,255,160,.1)":"rgba(0,229,192,.07)",
+                  color:copiedMDMFull?"var(--qn-green)":"var(--qn-teal)",transition:"all .15s"}}>
+                {copiedMDMFull?"✓ MDM Copied":"Copy MDM"}
+              </button>
+              <button onClick={()=>{setMdmResult(null);setDispResult(null);setP2Open(false);setWorkupRationale(null);setLabRecs(null);setImagingRecs(null);}}
+                style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
+                  border:"1px solid rgba(245,200,66,.35)",background:"rgba(245,200,66,.07)",color:"var(--qn-gold)"}}>↩ Re-run MDM</button>
+              <button onClick={runMDMAddendum} disabled={rerunAddendumBusy}
+                style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
+                  border:`1px solid ${rerunAddendumBusy?"rgba(42,79,122,.3)":"rgba(155,109,255,.4)"}`,
+                  background:rerunAddendumBusy?"rgba(14,37,68,.4)":"rgba(155,109,255,.07)",
+                  color:rerunAddendumBusy?"var(--qn-txt4)":"var(--qn-purple)",transition:"all .15s"}}>
+                {rerunAddendumBusy?"● …":"+ Addendum Re-run"}
+              </button>
+            </div>
+
+            <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
+              onNarrativeEdit={text=>setMdmResult(prev=>({...prev,mdm_narrative:text}))} />
+
+            {/* ── v11.4: My Clinical Plan — AI Generate button + MDMPlanEntry ── */}
+            <div style={{marginTop:12,padding:"12px 14px",borderRadius:10,
+              background:"rgba(14,37,68,.4)",border:"1px solid rgba(42,79,122,.3)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-txt2)",flex:1}}>
+                  My Clinical Plan
+                </span>
+                <button
+                  onClick={generateClinicalPlan}
+                  disabled={treatmentPlanBusy}
+                  title="AI generates evidence-based treatment plan and action items from working diagnosis"
+                  style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:11,
+                    transition:"all .15s",
+                    border:`1px solid ${treatmentPlanBusy?"rgba(42,79,122,.3)":"rgba(0,229,192,.5)"}`,
+                    background:treatmentPlanBusy?"rgba(14,37,68,.4)":"rgba(0,229,192,.1)",
+                    color:treatmentPlanBusy?"var(--qn-txt4)":"var(--qn-teal)",
+                    boxShadow:treatmentPlanBusy?"none":"0 0 12px rgba(0,229,192,.08)"}}>
+                  {treatmentPlanBusy
+                    ? <><span style={{marginRight:5}}>●</span>Generating Plan…</>
+                    : (treatmentPlan||actionPlan)
+                    ? "↻ Re-generate Plan"
+                    : "✦ AI Generate Plan"}
+                </button>
+                {(treatmentPlan||actionPlan)&&(
+                  <button onClick={()=>{setTreatmentPlan("");setActionPlan("");}}
+                    style={{padding:"5px 10px",borderRadius:7,cursor:"pointer",
+                      fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+                      border:"1px solid rgba(42,79,122,.35)",background:"transparent",
+                      color:"var(--qn-txt4)"}}>Clear</button>
+                )}
+              </div>
+              {!treatmentPlan&&!actionPlan&&!treatmentPlanBusy&&(
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,
+                  color:"rgba(107,158,200,.4)",letterSpacing:.4,marginBottom:8}}>
+                  Click ✦ AI Generate Plan to get an evidence-based treatment plan and action item checklist for this presentation
+                </div>
+              )}
+              <MDMPlanEntry
+                treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan}
+                actionPlan={actionPlan}       setActionPlan={setActionPlan}
+              />
+            </div>
+
+            <GuidelineAssist workingDx={mdmResult?.working_diagnosis||""} mdmNarrative={mdmResult?.mdm_narrative||""}
+              onInsertSentence={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
+
+            {mdmResult.mdm_level&&(
+              <details style={{marginTop:10}}>
+                <summary style={{cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",listStyle:"none"}}>
+                  ▶ Why {mdmResult.mdm_level} complexity?
+                </summary>
+                <div style={{marginTop:8,padding:"10px 12px",borderRadius:8,background:"rgba(14,37,68,.5)",border:"1px solid rgba(42,79,122,.3)"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+                    {[
+                      {label:"Problem Complexity",value:mdmResult.problem_complexity,color:"var(--qn-teal)"},
+                      {label:"Data Complexity",   value:mdmResult.data_complexity,   color:"var(--qn-blue)"},
+                      {label:"Risk Level",        value:mdmResult.risk_tier,         color:"var(--qn-gold)"},
+                    ].map(({label,value,color})=>(
+                      <div key={label}>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"var(--qn-txt4)",letterSpacing:.8,textTransform:"uppercase",marginBottom:4}}>{label}</div>
+                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color,lineHeight:1.4}}>{value||"—"}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {mdmResult.risk_rationale&&<div style={{marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",lineHeight:1.6,paddingTop:8,borderTop:"1px solid rgba(42,79,122,.25)"}}>{mdmResult.risk_rationale}</div>}
+                  <div style={{marginTop:6,fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.45)"}}>MDM level driven by HIGHEST column — Problem, Data, or Risk</div>
+                </div>
+              </details>
+            )}
+
+            {workupRationale&&(
+              <div className="qn-fade" style={{marginTop:10,padding:"12px 14px",borderRadius:10,background:"rgba(245,200,66,.05)",border:"1px solid rgba(245,200,66,.3)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"var(--qn-gold)",letterSpacing:1,textTransform:"uppercase",flex:1}}>Workup Rationale</span>
+                  <button onClick={()=>{navigator.clipboard.writeText(workupRationale).then(()=>{setCopiedWorkup(true);setTimeout(()=>setCopiedWorkup(false),2000);});}}
+                    style={{padding:"2px 9px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+                      border:`1px solid ${copiedWorkup?"rgba(61,255,160,.5)":"rgba(245,200,66,.4)"}`,
+                      background:copiedWorkup?"rgba(61,255,160,.1)":"transparent",
+                      color:copiedWorkup?"var(--qn-green)":"var(--qn-gold)"}}>
+                    {copiedWorkup?"✓ Copied":"Copy"}
+                  </button>
+                </div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",lineHeight:1.75}}>{workupRationale}</div>
+              </div>
+            )}
+
+            {mdmHistory.length>1&&(
+              <div style={{marginTop:10}}>
+                <button onClick={()=>setShowMdmHistory(p=>!p)}
+                  style={{padding:"3px 10px",borderRadius:6,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+                    border:`1px solid ${showMdmHistory?"rgba(155,109,255,.5)":"rgba(42,79,122,.35)"}`,
+                    background:showMdmHistory?"rgba(155,109,255,.08)":"transparent",
+                    color:showMdmHistory?"var(--qn-purple)":"var(--qn-txt4)"}}>
+                  {showMdmHistory?"▲":"▼"} Clinical Progression ({mdmHistory.length} entries)
+                </button>
+                {showMdmHistory&&(
+                  <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
+                    {mdmHistory.map((h,i)=>(
+                      <div key={i} style={{padding:"9px 12px",borderRadius:8,
+                        background:i===mdmHistory.length-1?"rgba(155,109,255,.07)":"rgba(14,37,68,.4)",
+                        border:`1px solid ${i===mdmHistory.length-1?"rgba(155,109,255,.3)":"rgba(42,79,122,.25)"}`}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+                            color:i===mdmHistory.length-1?"var(--qn-purple)":"var(--qn-txt4)",letterSpacing:.8,textTransform:"uppercase"}}>{h.trigger}</span>
+                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)"}}>{h.ts}</span>
+                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-gold)",background:"rgba(245,200,66,.1)",border:"1px solid rgba(245,200,66,.25)",borderRadius:3,padding:"1px 5px"}}>{h.mdm_level}</span>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",flex:1}}>{h.working_diagnosis}</span>
+                        </div>
+                        {h.mdm_narrative&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt3)",lineHeight:1.5}}>{h.mdm_narrative.slice(0,200)}{h.mdm_narrative.length>200?"…":""}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {p2Open&&(
@@ -1675,12 +2213,6 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
             imagingRecs={imagingRecs} imagingRecsBusy={imagingRecsBusy} generateImagingRecs={generateImagingRecs}
           />
         )}
-
-        <QuickNoteDrugBanner
-          drugCheckBusy={drugCheckBusy} drugInteractions={drugInteractions}
-          drugCheckDismissed={drugCheckDismissed} setDrugCheckDismissed={setDrugCheckDismissed}
-          parsedMeds={parsedMeds} runDrugInteractionCheck={runDrugInteractionCheck}
-        />
 
         {p2Open&&(labs||imaging||ekg)&&(
           <QuickNoteAbnormals labs={labs} imaging={imaging} ekg={ekg}
@@ -1707,22 +2239,72 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
         )}
 
         {dispResult&&(
-          <QuickNoteDispositionCard
-            dispResult={dispResult} setDispResult={setDispResult} mdmResult={mdmResult}
-            copiedDisch={copiedDisch} setCopiedDisch={setCopiedDisch}
-            copiedDischargeOnly={copiedDischargeOnly}
-            copyDischargeOnly={copyDischargeOnly} copyDischargeInstructions={copyDischargeInstructions}
-            showSDM={showSDM} setShowSDM={setShowSDM}
-            showAttestation={showAttestation} setShowAttestation={setShowAttestation}
-            showNursingHandoff={showNursingHandoff} setShowNursingHandoff={setShowNursingHandoff}
-            signOutBusy={signOutBusy} signOutDone={signOutDone} generateSignOut={generateSignOut}
-            providerInfo={providerInfo} demo={demo}
-          />
+          <div style={{marginBottom:14,padding:"16px",background:"rgba(8,22,40,.5)",
+            border:`1px solid ${dispColor(dispResult.disposition)}30`,borderRadius:14}} className="print-body">
+            <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:dispColor(dispResult.disposition)}}>Final Impression</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:dispColor(dispResult.disposition),letterSpacing:.5,
+                background:`${dispColor(dispResult.disposition)}18`,border:`1px solid ${dispColor(dispResult.disposition)}40`,borderRadius:4,padding:"2px 7px"}}>Post-Results</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",background:"rgba(59,158,255,.1)",border:"1px solid rgba(59,158,255,.2)",borderRadius:4,padding:"2px 7px"}}>ACEP Guidelines</span>
+            </div>
+            <DispositionResult result={dispResult} copiedDisch={copiedDisch} setCopiedDisch={setCopiedDisch}
+              onDiagExplanationEdit={text=>setDispResult(prev=>({...prev,discharge_instructions:{...(prev.discharge_instructions||{}),diagnosis_explanation:text}}))} />
+            <DispositionCriteriaBuilder disposition={dispResult.disposition}
+              onAddToNote={text=>setDispResult(prev=>({...prev,disposition_rationale:(prev.disposition_rationale?prev.disposition_rationale+" ":"")+text}))} />
+            {dispResult?.discharge_instructions?.diagnosis_explanation&&
+             dispResult?.disposition&&
+             !dispResult.disposition.toLowerCase().includes("admit")&&
+             !dispResult.disposition.toLowerCase().includes("icu")&&(
+              <div style={{marginTop:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <button onClick={copyDischargeInstructions}
+                  style={{padding:"7px 16px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
+                    border:`1px solid ${copiedDischargeOnly?"rgba(61,255,160,.5)":"rgba(61,255,160,.35)"}`,
+                    background:copiedDischargeOnly?"rgba(61,255,160,.15)":"rgba(61,255,160,.07)",color:"var(--qn-green)"}}>
+                  {copiedDischargeOnly?"✓ Copied":"🖨 Copy Discharge Instructions"}
+                  {!copiedDischargeOnly&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,opacity:.5,marginLeft:6}}>[Shift+4]</span>}
+                </button>
+                <button onClick={()=>{const dx=encodeURIComponent(dispResult?.final_diagnosis||mdmResult?.working_diagnosis||"");navigator.clipboard?.writeText(dispResult?.final_diagnosis||mdmResult?.working_diagnosis||"").catch(()=>{});window.open(`/DischargeRxCard${dx?"?dx="+dx:""}`, "_blank");}}
+                  style={{padding:"7px 16px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
+                    border:"1px solid rgba(245,200,66,.4)",background:"rgba(245,200,66,.07)",color:"var(--qn-gold)"}}>
+                  💊 Open Rx Card
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {mdmResult&&(
           <ClinicalCalcsCard cc={cc} workingDx={mdmResult?.working_diagnosis||""} labs={labs} imaging={imaging}
             onAddToMDM={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
+        )}
+
+        {dispResult&&(
+          <div style={{marginBottom:14}}>
+            <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}} className="no-print">
+              {[
+                {key:"sdm",label:"Shared Decision Making",active:showSDM,setActive:setShowSDM,c:"rgba(59,158,255"},
+                {key:"att",label:"Physician Attestation",active:showAttestation,setActive:setShowAttestation,c:"rgba(155,109,255"},
+                {key:"nur",label:"Nursing Handoff",active:showNursingHandoff,setActive:setShowNursingHandoff,c:"rgba(61,255,160"},
+              ].map(({key,label,active,setActive,c})=>(
+                <button key={key} onClick={()=>setActive(s=>!s)}
+                  style={{padding:"5px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+                    border:`1px solid ${active?c+",.5)":"rgba(42,79,122,.4)"}`,
+                    background:active?c+",.1)":"transparent",color:active?c+",1)":"var(--qn-txt4)",letterSpacing:.5}}>
+                  {active?"▲":"▼"} {label}
+                </button>
+              ))}
+              <button onClick={generateSignOut} disabled={signOutBusy}
+                style={{padding:"5px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
+                  border:`1px solid ${signOutDone?"rgba(61,255,160,.5)":signOutBusy?"rgba(42,79,122,.3)":"rgba(245,200,66,.4)"}`,
+                  background:signOutDone?"rgba(61,255,160,.1)":signOutBusy?"rgba(14,37,68,.4)":"rgba(245,200,66,.07)",
+                  color:signOutDone?"var(--qn-green)":signOutBusy?"var(--qn-txt4)":"var(--qn-gold)"}}>
+                {signOutDone?"✓ Sent":signOutBusy?"● Generating…":"→ Generate Sign-Out"}
+              </button>
+            </div>
+            {showSDM&&<SDMBlock disposition={dispResult.disposition} patientName={[demo?.firstName,demo?.lastName].filter(Boolean).join(" ")} />}
+            {showAttestation&&<AttestationBlock providerName={providerInfo.name} credentials={providerInfo.credentials} facility={providerInfo.facility} mdmLevel={mdmResult?.mdm_level} />}
+            {showNursingHandoff&&<NursingHandoff patientName={[demo?.firstName,demo?.lastName].filter(Boolean).join(" ")} diagnosis={dispResult.final_diagnosis||mdmResult?.working_diagnosis||""} disposition={dispResult.disposition} />}
+          </div>
         )}
 
         {dispResult&&(
@@ -1746,7 +2328,7 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
           />
         )}
 
-        {phase1Ready&&<TimelineCard timestamps={timestamps} setTimestamps={setTimestamps} onStamp={stampTimeline} />}
+        {phase1Ready&&<TimelineCard timestamps={timestamps} setTimestamps={setTimestamps} />}
 
         {hasAnyResult&&(
           <ActionBar
@@ -1764,48 +2346,6 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
           />
         )}
 
-        {/* Feature #6: Shift Queue */}
-        <ShiftQueuePanel />
-
-        {showNoteAudit&&auditNote&&(
-          <QuickNoteAuditModal note={auditNote} onClose={()=>{ setShowNoteAudit(false); setAuditNote(null); }} />
-        )}
-
-        {/* Feature #7: Save toast with audit link */}
-        {savedNote&&(
-          <div className="qn-fade" style={{ display:"flex",alignItems:"center",gap:10,
-            padding:"8px 14px",marginBottom:8,borderRadius:9,
-            background:"rgba(61,255,160,.08)",border:"1px solid rgba(61,255,160,.35)" }}>
-            <span style={{ fontSize:14 }}>✓</span>
-            <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-green)",fontWeight:600,flex:1 }}>
-              Note saved to chart
-            </span>
-            {savedNoteId&&(
-              <button onClick={viewSavedNote} disabled={auditLoading} style={{
-                padding:"3px 11px",borderRadius:6,cursor:"pointer",
-                fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                border:"1px solid rgba(61,255,160,.45)",background:"rgba(61,255,160,.1)",
-                color:auditLoading?"var(--qn-txt4)":"var(--qn-green)" }}>
-                {auditLoading?"● Loading…":"View saved note →"}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Feature #10: Export PDF */}
-        {hasAnyResult&&(
-          <div style={{ textAlign:"right",marginBottom:8 }}>
-            <button onClick={exportToPDF} title="Export to PDF" style={{
-              display:"inline-flex",alignItems:"center",gap:6,padding:"7px 15px",
-              borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
-              fontWeight:600,fontSize:12,border:"1px solid rgba(155,109,255,.4)",
-              background:"rgba(155,109,255,.08)",color:"var(--qn-purple)",transition:"all .15s",
-            }}>
-              🖨 Export PDF
-            </button>
-          </div>
-        )}
-
         {showKbHelp&&<KbHelpModal onClose={()=>setShowKbHelp(false)} />}
         {showProcedureModal&&<ProcedureNoteModal onInsert={()=>{}} onClose={()=>setShowProcedureModal(false)} />}
 
@@ -1813,7 +2353,7 @@ Check for: major/moderate drug-drug interactions, diagnosis contraindications (m
           <div style={{textAlign:"center",padding:"24px 0 8px",
             fontFamily:"'JetBrains Mono',monospace",fontSize:8,
             color:"var(--qn-txt4)",letterSpacing:1.5}} className="no-print">
-            NOTRYA QUICKNOTE v11.5 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+            NOTRYA QUICKNOTE v11.4 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}

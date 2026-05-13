@@ -482,6 +482,7 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
           )}
         </div>
 
+        <>
         <div style={col({ gap: 12 })}>
           <div style={glass(t, { padding: 16 })}>
             <SectionH title="Disposition" t={t} />
@@ -523,6 +524,7 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
             </button>
           </div>
         </div>
+        </>
       </div>
     </div>
   )

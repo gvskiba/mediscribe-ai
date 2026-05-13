@@ -3,6 +3,7 @@
 // Imported by QuickNote.jsx
 import { useState } from "react";
 import { AIAutocompleteInput } from "@/components/quicknote/AIAutocomplete";
+import { base44 } from "@/api/base44Client";
 
 // ─── PMH CONSTANTS ──────────────────────────────────────────────
 const PMH_CATS = {
@@ -82,12 +83,18 @@ function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergi
   const parsePaste=async()=>{
     if(!pasteText.trim())return;setParseMsg("Parsing\u2026");
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
-          system:'Extract structured medical history. Return ONLY valid JSON, no markdown. Format: {"pmh":[],"psh":[],"medications":[],"allergies":[]}',
-          messages:[{role:"user",content:"Extract PMH, PSH, medications, allergies:\n\n"+pasteText}]})}); 
-      const data=await res.json();
-      const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
+      const parsed=await base44.integrations.Core.InvokeLLM({
+        prompt:`Extract PMH, PSH, medications, allergies from the following text:\n\n${pasteText}`,
+        response_json_schema:{
+          type:"object",
+          properties:{
+            pmh:{type:"array",items:{type:"string"}},
+            psh:{type:"array",items:{type:"string"}},
+            medications:{type:"array",items:{type:"string"}},
+            allergies:{type:"array",items:{type:"string"}},
+          }
+        }
+      });
       if(parsed.pmh?.length)setPmh(p=>[...new Set([...p,...parsed.pmh])]);
       if(parsed.psh?.length)setPsh(p=>[...new Set([...p,...parsed.psh])]);
       if(parsed.medications?.length)setPatientMeds(p=>[...new Set([...p,...parsed.medications])]);
@@ -101,12 +108,28 @@ function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergi
     if(!chiefComplaint&&!hpi&&!pmh.length){setAnalyzeErr("Add CC, HPI, or PMH items first");return;}
     setAnalyzeErr("");setAnalyzing(true);setRecsOpen(true);setWorkupRecs([]);setOrderQueue([]);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
-          system:'Emergency medicine CDS. Return ONLY a valid JSON array, no markdown. Each item: {"category":"Labs|Imaging|Consults|Monitoring|Medications","recommendation":"string","rationale":"string under 15 words","priority":"Immediate|Urgent|Routine","evidence":"guideline tag"}. Max 10. Only what context supports.',
-          messages:[{role:"user",content:`CC: ${chiefComplaint||"Not provided"}\nHPI: ${hpi||"Not provided"}\nPMH: ${pmh.join(", ")||"None"}\nPSH: ${psh.join(", ")||"None"}\nMeds: ${patientMeds.join(", ")||"None"}\nAllergies: ${patientAllergies.join(", ")||"NKDA"}\n\nGenerate workup recommendations.`}]})}); 
-      const data=await res.json();
-      const recs=JSON.parse((data.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
+      const result=await base44.integrations.Core.InvokeLLM({
+        prompt:`You are an emergency medicine clinical decision support tool. Generate evidence-based workup recommendations based on the following patient context. Return up to 10 items only for what the context supports.\n\nCC: ${chiefComplaint||"Not provided"}\nHPI: ${hpi||"Not provided"}\nPMH: ${pmh.join(", ")||"None"}\nPSH: ${psh.join(", ")||"None"}\nMeds: ${patientMeds.join(", ")||"None"}\nAllergies: ${patientAllergies.join(", ")||"NKDA"}`,
+        response_json_schema:{
+          type:"object",
+          properties:{
+            recommendations:{
+              type:"array",
+              items:{
+                type:"object",
+                properties:{
+                  category:{type:"string"},
+                  recommendation:{type:"string"},
+                  rationale:{type:"string"},
+                  priority:{type:"string"},
+                  evidence:{type:"string"},
+                }
+              }
+            }
+          }
+        }
+      });
+      const recs=result?.recommendations||[];
       if(Array.isArray(recs)){
         setWorkupRecs(recs);
         const imm=recs.filter(r=>r.priority==="Immediate");

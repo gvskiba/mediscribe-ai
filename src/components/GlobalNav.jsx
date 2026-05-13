@@ -524,7 +524,7 @@ export default function GlobalNav({ alerts = 0 }) {
 
         {/* Critical Protocols Button */}
         <button
-          onClick={() => navigate("/CriticalProtocolsPage")}
+          onClick={() => routerNavigate("/CriticalProtocolsPage")}
           style={{
             display:"flex", alignItems:"center", gap:5,
             fontFamily:"DM Sans", fontWeight:700, fontSize:11,

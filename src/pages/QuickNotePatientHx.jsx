@@ -2,6 +2,7 @@
 // PMH constants + computePMHMDM + PMHTab component
 // Imported by QuickNote.jsx
 import { useState } from "react";
+import { AIAutocompleteInput } from "@/components/quicknote/AIAutocomplete";
 
 // ─── PMH CONSTANTS ──────────────────────────────────────────────
 const PMH_CATS = {
@@ -69,9 +70,9 @@ function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergi
   const remMed=c=>setPatientMeds(p=>p.filter(x=>x!==c));
   const remA=c=>setPatientAllergies(p=>p.filter(x=>x!==c));
   const addCust=()=>{const v=customInput.trim();if(v&&!pmh.includes(v))setPmh(p=>[...p,v]);setCustomInput("");};
-  const addPsh=()=>{const v=pshInput.trim();if(v&&!psh.includes(v))setPsh(p=>[...p,v]);setPshInput("");};
-  const addMed=()=>{const v=medInput.trim();if(v&&!patientMeds.includes(v))setPatientMeds(p=>[...p,v]);setMedInput("");};
-  const addA=()=>{const v=aInput.trim();if(v&&!patientAllergies.includes(v))setPatientAllergies(p=>[...p,v]);setAInput("");};
+  const addPsh=(override)=>{const v=(override??pshInput).trim();if(v&&!psh.includes(v))setPsh(p=>[...p,v]);if(!override)setPshInput("");};
+  const addMed=(override)=>{const v=(override??medInput).trim();if(v&&!patientMeds.includes(v))setPatientMeds(p=>[...p,v]);if(!override)setMedInput("");};
+  const addA=(override)=>{const v=(override??aInput).trim();if(v&&!patientAllergies.includes(v))setPatientAllergies(p=>[...p,v]);if(!override)setAInput("");};
 
   const isQueued=rec=>orderQueue.some(o=>o.recommendation===rec.recommendation);
   const addToQ=rec=>{if(!isQueued(rec))setOrderQueue(p=>[...p,rec]);};
@@ -205,16 +206,28 @@ function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergi
         <div style={card}>
           <div style={{fontSize:12,fontWeight:600,color:"var(--qn-txt2)",marginBottom:9}}>Past Surgical History</div>
           <div style={row}>
-            <input style={inp} placeholder="e.g. CABG 2018, appendectomy..." value={pshInput} onChange={e=>setPshInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addPsh();}}/>
-            <button style={addBtn("#a78bfa")} onClick={addPsh}>Add</button>
+            <AIAutocompleteInput
+              mode="surgical"
+              value={pshInput}
+              onChange={setPshInput}
+              onAdd={(v)=>{const val=v||pshInput;addPsh(val);if(v)setPshInput("");}}
+              style={inp}
+            />
+            <button style={addBtn("#a78bfa")} onClick={()=>addPsh()}>Add</button>
           </div>
           <Chips items={psh} onRemove={remPsh} col="#a78bfa"/>
         </div>
         <div style={card}>
           <div style={{fontSize:12,fontWeight:600,color:"var(--qn-txt2)",marginBottom:9}}>Allergies</div>
           <div style={row}>
-            <input style={inp} placeholder="e.g. Penicillin (rash)..." value={aInput} onChange={e=>setAInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addA();}}/>
-            <button style={addBtn("var(--qn-coral)")} onClick={addA}>Add</button>
+            <AIAutocompleteInput
+              mode="allergy"
+              value={aInput}
+              onChange={setAInput}
+              onAdd={(v)=>{const val=v||aInput;addA(val);if(v)setAInput("");}}
+              style={inp}
+            />
+            <button style={addBtn("var(--qn-coral)")} onClick={()=>addA()}>Add</button>
           </div>
           <Chips items={patientAllergies} onRemove={remA} col="var(--qn-coral)"/>
         </div>
@@ -222,8 +235,14 @@ function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergi
       <div style={card} className="no-print">
         <div style={{fontSize:12,fontWeight:600,color:"var(--qn-txt2)",marginBottom:9}}>Current Medications</div>
         <div style={row}>
-          <input style={inp} placeholder="e.g. Metoprolol 25mg daily..." value={medInput} onChange={e=>setMedInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addMed();}}/>
-          <button style={addBtn(gold)} onClick={addMed}>Add</button>
+          <AIAutocompleteInput
+            mode="medication"
+            value={medInput}
+            onChange={setMedInput}
+            onAdd={(v)=>{const val=v||medInput;addMed(val);if(v)setMedInput("");}}
+            style={inp}
+          />
+          <button style={addBtn(gold)} onClick={()=>addMed()}>Add</button>
         </div>
         <Chips items={patientMeds} onRemove={remMed} col={gold}/>
       </div>

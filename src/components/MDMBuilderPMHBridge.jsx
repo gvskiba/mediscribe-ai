@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 // ── 1. Hook: listen for pmhMDMReady event ────────────────────────────────────
 //
@@ -88,7 +88,59 @@ export function PMHMDMBanner({ data, onDismiss, onApply, C = {} }) {
   );
 }
 
-// ── 5. Comorbidity summary block (render inside MDM section) ──────────────────
+// ── 5. Auto-inject relevant PMH conditions into MDM narrative ─────────────────
+//
+// Call inside QuickNote. When mdmResult first arrives with a working_diagnosis,
+// filters pmh[] for conditions relevant to that diagnosis and appends a
+// "Comorbidities considered" sentence to the MDM narrative.
+//
+// onInject(appendText) — call setMdmResult to append the text.
+//
+const CONDITION_DX_MAP = [
+  { patterns: /diabet/i,        conditions: /diabet/i },
+  { patterns: /cardiac|heart|acs|mi|stemi|nstemi|angina|chf|heart fail/i, conditions: /cardiac|heart|coronary|chf|heart fail|htn|hypertens/i },
+  { patterns: /hypertens|htn/i, conditions: /hypertens|htn/i },
+  { patterns: /renal|kidney|ckd|aki/i,     conditions: /renal|kidney|ckd/i },
+  { patterns: /copd|asthma|pulmon|respir/i, conditions: /copd|asthma|pulmon/i },
+  { patterns: /liver|hepat|cirrhosis/i,    conditions: /liver|hepat|cirrhosis/i },
+  { patterns: /sepsis|infect|pneumon/i,    conditions: /immuno|hiv|aids|diabet|transplant/i },
+  { patterns: /stroke|tia|neuro/i,         conditions: /stroke|tia|afib|coagul|clot/i },
+  { patterns: /bleed|gi|ulcer/i,           conditions: /anticoag|aspirin|nsaid|ulcer|gi bleed/i },
+  { patterns: /pe|dvt|embol/i,             conditions: /coagul|clot|hypercoag|afib|cancer/i },
+  { patterns: /thyroid/i,                  conditions: /thyroid/i },
+  { patterns: /cancer|oncol|malignan/i,    conditions: /cancer|oncol|malignan/i },
+  { patterns: /psych|depress|anxiety|suicid/i, conditions: /psych|depress|anxiety|bipolar/i },
+];
+
+function findRelevantConditions(workingDx, pmh) {
+  if (!workingDx || !pmh?.length) return [];
+  const dx = workingDx.toLowerCase();
+  const relevant = new Set();
+  for (const rule of CONDITION_DX_MAP) {
+    if (rule.patterns.test(dx)) {
+      pmh.forEach(c => { if (rule.conditions.test(c)) relevant.add(c); });
+    }
+  }
+  return [...relevant];
+}
+
+export function usePMHConditionInjector({ mdmResult, pmh, onInject }) {
+  const injectedForDx = useRef(null);
+
+  useEffect(() => {
+    if (!mdmResult?.working_diagnosis || !pmh?.length || !onInject) return;
+    const dx = mdmResult.working_diagnosis;
+    // Only fire once per unique working diagnosis
+    if (injectedForDx.current === dx) return;
+    const relevant = findRelevantConditions(dx, pmh);
+    if (!relevant.length) return;
+    injectedForDx.current = dx;
+    const sentence = `\n\nComorbidities considered in management: ${relevant.join(', ')}.`;
+    onInject(sentence);
+  }, [mdmResult?.working_diagnosis, pmh, onInject]);
+}
+
+// ── 6. Comorbidity summary block (render inside MDM section) ──────────────────
 export function PMHComorbiditySummary({ data, C = {} }) {
   if (!data?.conditions?.length) return null;
 

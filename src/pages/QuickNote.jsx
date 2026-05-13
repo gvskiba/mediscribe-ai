@@ -5,6 +5,7 @@ import { dispColor, StepProgress, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
 import { PMH_CATS, PMH_CAT_ICONS, PMH_PRI_STYLE, PMH_MDM_HIGH, PMH_MDM_MOD, computePMHMDM, PMHTab } from "./QuickNotePatientHx";
+import { usePMHConditionInjector } from "@/components/MDMBuilderPMHBridge";
 import { injectQNStyles } from "./QuickNoteStyle.jsx";
 import { PatientBanner, FatigueBanner, UndoToast, NhResumeBanner,
          VhImportBanner, VhAnalysisCard, AddendumBanner } from "./QuickNoteBanners";
@@ -652,6 +653,15 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     } catch(e) { console.error("Addendum failed:",e); }
     finally { setRerunAddendumBusy(false); }
   }, [mdmResult,cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,vhAnalysis,parsedMeds,parsedAllergies,encounterType,rerunAddendumBusy]);
+
+  // Auto-inject relevant PMH comorbidities into MDM narrative when diagnosis is flagged
+  usePMHConditionInjector({
+    mdmResult,
+    pmh,
+    onInject: useCallback((appendText) => {
+      setMdmResult(prev => prev ? { ...prev, mdm_narrative: (prev.mdm_narrative || "") + appendText } : prev);
+    }, []),
+  });
 
   const handleEncounterImport = useCallback(({ cc: impCC, age, vitals: impVitals }) => {
     if (impCC)     setCC(impCC);

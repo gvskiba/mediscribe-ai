@@ -101,7 +101,15 @@ function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergi
       if(parsed.allergies?.length)setPatientAllergies(p=>[...new Set([...p,...parsed.allergies])]);
       const tot=(parsed.pmh?.length||0)+(parsed.psh?.length||0)+(parsed.medications?.length||0)+(parsed.allergies?.length||0);
       setParseMsg("\u2713 Extracted "+tot+" item"+(tot!==1?"s":""));setPasteText("");
-    }catch{setParseMsg("Parse error \u2014 review manually");}
+    }catch(err){console.error("parsePaste error:",err);setParseMsg("Parse error \u2014 " + (err?.message||"review manually"));}
+  };
+
+  const normalizePriority=(p)=>{
+    if(!p)return "Routine";
+    const l=p.toLowerCase();
+    if(l==="immediate")return "Immediate";
+    if(l==="urgent")return "Urgent";
+    return "Routine";
   };
 
   const analyzeWorkup=async()=>{
@@ -109,7 +117,7 @@ function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergi
     setAnalyzeErr("");setAnalyzing(true);setRecsOpen(true);setWorkupRecs([]);setOrderQueue([]);
     try{
       const result=await base44.integrations.Core.InvokeLLM({
-        prompt:`You are an emergency medicine clinical decision support tool. Generate evidence-based workup recommendations based on the following patient context. Return up to 10 items only for what the context supports.\n\nCC: ${chiefComplaint||"Not provided"}\nHPI: ${hpi||"Not provided"}\nPMH: ${pmh.join(", ")||"None"}\nPSH: ${psh.join(", ")||"None"}\nMeds: ${patientMeds.join(", ")||"None"}\nAllergies: ${patientAllergies.join(", ")||"NKDA"}`,
+        prompt:`You are an emergency medicine clinical decision support tool. Generate evidence-based workup recommendations for this patient. Return ONLY a JSON object with a "recommendations" array. Each item must have: category (Labs/Imaging/ECG/Consult/Monitoring/Treatment), recommendation (concise order name), rationale (1 sentence why), priority (must be exactly one of: Immediate, Urgent, Routine), evidence (guideline or score name if applicable). Limit to 10 items, only for what the clinical context supports.\n\nCC: ${chiefComplaint||"Not provided"}\nHPI: ${hpi||"Not provided"}\nPMH: ${pmh.join(", ")||"None"}\nPSH: ${psh.join(", ")||"None"}\nMeds: ${patientMeds.join(", ")||"None"}\nAllergies: ${patientAllergies.join(", ")||"NKDA"}`,
         response_json_schema:{
           type:"object",
           properties:{
@@ -121,7 +129,7 @@ function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergi
                   category:{type:"string"},
                   recommendation:{type:"string"},
                   rationale:{type:"string"},
-                  priority:{type:"string"},
+                  priority:{type:"string",enum:["Immediate","Urgent","Routine"]},
                   evidence:{type:"string"},
                 }
               }
@@ -129,13 +137,16 @@ function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergi
           }
         }
       });
-      const recs=result?.recommendations||[];
-      if(Array.isArray(recs)){
-        setWorkupRecs(recs);
-        const imm=recs.filter(r=>r.priority==="Immediate");
-        setOrderQueue(imm);if(imm.length)setShowQueue(true);
-      }
-    }catch{setAnalyzeErr("Analysis failed \u2014 check connection");}
+      // InvokeLLM with response_json_schema returns the parsed object directly
+      const raw=result?.recommendations ?? result?.data?.recommendations ?? [];
+      const recs=Array.isArray(raw) ? raw.map(r=>({...r,priority:normalizePriority(r.priority)})) : [];
+      setWorkupRecs(recs);
+      const imm=recs.filter(r=>r.priority==="Immediate");
+      if(imm.length){setOrderQueue(imm);setShowQueue(true);}
+    }catch(err){
+      console.error("analyzeWorkup error:",err);
+      setAnalyzeErr("Analysis failed \u2014 " + (err?.message||"check connection"));
+    }
     setAnalyzing(false);
   };
 

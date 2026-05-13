@@ -461,8 +461,6 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
                 <Checkbox checked={v.psychSafetyAssess} onChange={() => tog("psychSafetyAssess")} label="Safety assessment documented (SI/HI/self-harm risk)" t={t} />
                 <div>
                   <span style={lbl(t)}>Decision-Making Capacity</span>
-                  <div>
-                  <span style={lbl(t)}>Decision-Making Capacity</span>
                   <div style={{ marginTop: 4 }}><ChipGroup options={["Intact","Impaired","Unable to assess"]} value={v.psychCapacity} onChange={o => set("psychCapacity", o)} color={t.teal} t={t} /></div>
                 </div>
                 <div>

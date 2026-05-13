@@ -234,6 +234,9 @@ function TimeField({ label: lbl2, value, onChange, t }) {
     </div>
   )
 }
+
+// ─── Claude API Helper ────────────────────────────────────────────────────────
+async function callClaude(system, userMsg) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -458,8 +461,7 @@ function VisitChecklist({ ctx, t, addBanner, addToAudit }) {
                 <Checkbox checked={v.psychSafetyAssess} onChange={() => tog("psychSafetyAssess")} label="Safety assessment documented (SI/HI/self-harm risk)" t={t} />
                 <div>
                   <span style={lbl(t)}>Decision-Making Capacity</span>
-                  <div style={row({ gap: 6, marginTop: 4 })}>
-                <div>
+                  <div>
                   <span style={lbl(t)}>Decision-Making Capacity</span>
                   <div style={{ marginTop: 4 }}><ChipGroup options={["Intact","Impaired","Unable to assess"]} value={v.psychCapacity} onChange={o => set("psychCapacity", o)} color={t.teal} t={t} /></div>
                 </div>

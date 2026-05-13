@@ -4,6 +4,7 @@
 // Exported: Phase2Panel
 
 import React, { useState } from "react";
+import { RecentLabsPanel } from "./QuickNoteRecentLabs";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const TEXTAREA = {
@@ -205,6 +206,8 @@ export function Phase2Panel({
   labRecs, labRecsBusy, generateLabRecs,
   // v11.4: AI imaging recommendations
   imagingRecs, imagingRecsBusy, generateImagingRecs,
+  // patient id for recent labs lookup
+  patientId,
 }) {
   // Track which chips have been added (for UI state)
   const [addedLabs,    setAddedLabs]    = useState([]);
@@ -307,6 +310,13 @@ export function Phase2Panel({
               {labRecsBusy ? "● Loading…" : labRecs ? "↻ Re-run Labs" : "💡 AI Lab Recs"}
             </button>
           )}
+
+          {/* Recent labs pull button */}
+          <RecentLabsPanel
+            patientId={patientId}
+            currentLabs={labs}
+            onImport={(text) => setLabs(text)}
+          />
 
           {/* Clear recs toggle */}
           {labRecs && (

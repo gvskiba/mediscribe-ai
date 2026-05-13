@@ -1466,6 +1466,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             criticalFlags={criticalFlags} ekgBusy={ekgBusy} onEkgInterpret={interpretEKG}
             labRecs={labRecs} labRecsBusy={labRecsBusy} generateLabRecs={generateLabRecs}
             imagingRecs={imagingRecs} imagingRecsBusy={imagingRecsBusy} generateImagingRecs={generateImagingRecs}
+            patientId={demo?.mrn || demo?.patient_identifier || ""}
           />
         )}
 

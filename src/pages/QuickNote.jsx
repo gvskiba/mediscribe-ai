@@ -600,15 +600,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     finally { setIntLoading(false); }
   }, [intLoading,intGenerated,cc,mdmResult,dispResult]);
 
-  const getScaffold = useCallback((ccText) => {
-    if (!ccText?.trim()) return null;
-    const lower = ccText.toLowerCase().trim();
-    if (HPI_SCAFFOLDS[lower]) return { text:HPI_SCAFFOLDS[lower], cc:lower };
-    if (HPI_ALIASES[lower]) return { text:HPI_SCAFFOLDS[HPI_ALIASES[lower]], cc:HPI_ALIASES[lower] };
-    for (const [key] of Object.entries(HPI_SCAFFOLDS)) { if (lower.includes(key)) return { text:HPI_SCAFFOLDS[key], cc:key }; }
-    for (const [alias,target] of Object.entries(HPI_ALIASES)) { if (lower.includes(alias)) return { text:HPI_SCAFFOLDS[target], cc:target }; }
-    return null;
-  }, []);
+
 
   const loadPriorVisits = useCallback(async () => {
     if (priorVisitsLoading) return;
@@ -1047,7 +1039,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",
               letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.1)",
               border:"1px solid rgba(0,229,192,.25)",borderRadius:4,padding:"2px 7px"}}>
-              v11.4 · AI Plan · AI Labs · AI Imaging
+              v12.0 · AI Plan · AI Labs · AI Imaging
             </span>
           </div>
         )}
@@ -1593,7 +1585,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           <div style={{textAlign:"center",padding:"24px 0 8px",
             fontFamily:"'JetBrains Mono',monospace",fontSize:8,
             color:"var(--qn-txt4)",letterSpacing:1.5}} className="no-print">
-            NOTRYA QUICKNOTE v11.4 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+            NOTRYA QUICKNOTE v12.0 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}

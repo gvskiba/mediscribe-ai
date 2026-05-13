@@ -212,4 +212,18 @@ const HPI_ALIASES = {
 };
 
 
+function getScaffold(ccText) {
+  if (!ccText?.trim()) return null;
+  const lower = ccText.toLowerCase().trim();
+  if (HPI_SCAFFOLDS[lower]) return { text: HPI_SCAFFOLDS[lower], cc: lower };
+  if (HPI_ALIASES[lower]) return { text: HPI_SCAFFOLDS[HPI_ALIASES[lower]], cc: HPI_ALIASES[lower] };
+  for (const [key] of Object.entries(HPI_SCAFFOLDS)) {
+    if (lower.includes(key)) return { text: HPI_SCAFFOLDS[key], cc: key };
+  }
+  for (const [alias, target] of Object.entries(HPI_ALIASES)) {
+    if (lower.includes(alias)) return { text: HPI_SCAFFOLDS[target], cc: target };
+  }
+  return null;
+}
+
 export { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold };

@@ -82,7 +82,7 @@ const CATEGORIES = [
   {
     label: "Toxicologic", color: T.amber, icon: "☠️",
     protocols: [
-      { name: "Opioid Overdose",                 desc: "Naloxone dosing · routes · observation criteria · buprenorphine initiation",    page: "OpioidOverdoseHub",       status: "building" },
+      { name: "Opioid Overdose",                 desc: "Naloxone dosing · routes · observation criteria · buprenorphine initiation",    page: "OpioidOverdoseHub",       status: "live" },
       { name: "Alcohol Withdrawal / DTs",        desc: "CIWA protocol · benzo ladder · phenobarbital · seizure prophylaxis",           page: "AlcoholWithdrawalHub",    status: "live" },
       { name: "Toxic Alcohol Poisoning",         desc: "Methanol · ethylene glycol · fomepizole · anion gap · dialysis indications",   page: "ToxicAlcoholHub",         status: "live" },
       { name: "Sympathomimetic Toxidrome",       desc: "Cocaine · meth · MDMA · benzo first · phentolamine · avoid beta-blockers",    page: "SympathomimeticHub",      status: "live" },

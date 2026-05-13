@@ -394,6 +394,10 @@ const AuthenticatedApp = () => {
         <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
         <Route path="/specialty-note-hub" element={<SpecialtyNoteHub />} />
         <Route path="/SpecialtyNoteHubT2" element={<SpecialtyNoteHubT2 />} />
+        <Route path="/lab-interpreter" element={<LabHub />} />
+        <Route path="/weight-dose" element={<UnifiedPharmacologyHub />} />
+        <Route path="/smart-dosing" element={<UnifiedPharmacologyHub />} />
+        <Route path="/Calendar" element={<HubIndex />} />
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>

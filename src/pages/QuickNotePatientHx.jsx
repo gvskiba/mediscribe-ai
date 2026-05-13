@@ -148,7 +148,7 @@ function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergi
       <style>{`@keyframes pmhspin{to{transform:rotate(360deg)}}`}</style>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}} className="no-print">
         <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-teal)"}}>Patient History</span>
-        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.08)",border:"1px solid rgba(0,229,192,.2)",borderRadius:4,padding:"2px 7px"}}>PMH \u00B7 PSH \u00B7 Meds \u00B7 Allergies \u00B7 AI Workup</span>
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.08)",border:"1px solid rgba(0,229,192,.2)",borderRadius:4,padding:"2px 7px"}}>PMH · PSH · Meds · Allergies · AI Workup</span>
         {pmh.length>0&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:mdmColor,background:`${mdmColor}20`,border:`1px solid ${mdmColor}44`,borderRadius:4,padding:"2px 8px"}}>{mdmData.level.toUpperCase()} COMPLEXITY</span>}
       </div>
       <div style={card} className="no-print">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ── Font Loader ──────────────────────────────────────────────────────────────
 (() => {
@@ -98,7 +99,7 @@ const CATEGORIES = [
   {
     label: "Obstetric", color: T.pink, icon: "🤰",
     protocols: [
-      { name: "Postpartum Hemorrhage",           desc: "Uterotonic ladder · massive transfusion · surgical escalation · Bakri balloon", page: "PostpartumHemorrhageHub", status: "building" },
+      { name: "Postpartum Hemorrhage",           desc: "Uterotonic ladder · massive transfusion · surgical escalation · Bakri balloon", page: "PostPartumHemorrhageHub", status: "building" },
       { name: "HELLP Syndrome",                  desc: "Diagnosis criteria · delivery timing · magnesium · steroids · platelet threshold",page: "HELLPHub",              status: "building" },
     ],
   },
@@ -113,6 +114,10 @@ export default function CriticalProtocolsPage({ onBack, onNavigate }) {
   const [query, setQuery]           = useState("");
   const [filter, setFilter]         = useState("all");
   const [hoveredCard, setHoveredCard] = useState(null);
+  const routerNavigate = useNavigate();
+  const handleNavigate = (page) => {
+    if (onNavigate) { onNavigate(page); } else { routerNavigate(`/${page}`); }
+  };
 
   const q = query.toLowerCase().trim();
   const filtered = CATEGORIES.map(cat => ({
@@ -221,7 +226,7 @@ export default function CriticalProtocolsPage({ onBack, onNavigate }) {
                 const isHovered = hoveredCard === p.page && isLive;
                 return (
                   <div key={p.page}
-                    onClick={() => isLive && onNavigate && onNavigate(p.page)}
+                    onClick={() => isLive && handleNavigate(p.page)}
                     onMouseEnter={() => setHoveredCard(p.page)}
                     onMouseLeave={() => setHoveredCard(null)}
                     style={{

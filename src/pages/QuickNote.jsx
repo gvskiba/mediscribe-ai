@@ -2,9 +2,9 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
-import { PMH_CATS, PMH_CAT_ICONS, PMH_PRI_STYLE, PMH_MDM_HIGH, PMH_MDM_MOD, computePMHMDM, PMHTab } from "./QuickNotePatientHx";
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
+import { PMH_CATS, PMH_CAT_ICONS, PMH_PRI_STYLE, PMH_MDM_HIGH, PMH_MDM_MOD, computePMHMDM, PMHTab } from "./QuickNotePatientHx";
 import { injectQNStyles } from "./QuickNoteStyle.jsx";
 import { PatientBanner, FatigueBanner, UndoToast, NhResumeBanner,
          VhImportBanner, VhAnalysisCard, AddendumBanner } from "./QuickNoteBanners";
@@ -28,10 +28,10 @@ import {
   buildFullNote, buildPhase1Copy, buildPhase2Copy,
 } from "./QuickNotePrompts";
 
-injectQNStyles();
-
 import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
+
+injectQNStyles();
 
 export default function QuickNote({ embedded = false, demo, vitals: initVitals, cc: initCC }) {
   const [cc,     setCC]     = useState(initCC?.text || "");

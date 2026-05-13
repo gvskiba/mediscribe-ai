@@ -92,25 +92,75 @@ Write: (1) Critical illness justification and acuity, (2) Organ systems involved
 
   resident_attest: {
     fields: [
-      { id:"res",  label:"Resident Name",               type:"txt", req:true, ph:"Dr. [Name], PGY-[X]" },
-      { id:"att",  label:"Attending Physician",          type:"txt", req:true, ph:"Dr. Gabriel Skiba, MD" },
-      { id:"dt",   label:"Date & Time of Attestation",  type:"dt",  req:true },
-      { id:"rev",  label:"Elements Personally Reviewed",type:"chk", opts:["History of present illness","Review of systems","Physical examination","Diagnostic data — labs, imaging, ECG","Assessment and differential diagnosis","Medical decision-making","Disposition and plan"] },
-      { id:"type", label:"Level of Attestation",         type:"sel", req:true, opts:[
-        "I reviewed the history, examination, data, assessment, and plan with the resident and agree with the documented findings",
-        "I reviewed the history, examination, data, and plan and have made modifications as noted",
-        "I personally performed the history and physical and confirm the key elements of the resident note",
-        "I was present and directly supervised the resident for this entire encounter",
+      // ── Trainee type selector ─────────────────────────────────────────────
+      { id:"ttype", label:"Trainee Type",                           type:"sel", req:true, opts:[
+        "Resident / Fellow — review and agree model applies",
+        "Medical Student — re-performance of exam and MDM required",
       ]},
-      { id:"mod",  label:"Modifications Made (if any)", type:"ta",  ph:"Describe any changes to assessment, plan, or documentation..." },
-      { id:"ctx",  label:"Clinical Context (optional)", type:"txt", ph:"e.g., 58M chest pain, ruled in for NSTEMI" },
+      { id:"res",   label:"Trainee Name",                           type:"txt", req:true, ph:"Dr. [Name], PGY-2  OR  [Name], MS-3" },
+      { id:"att",   label:"Attending Physician",                    type:"txt", req:true, ph:"Dr. Gabriel Skiba, MD" },
+      { id:"dt",    label:"Date & Time of Attestation",             type:"dt",  req:true },
+      { id:"ctx",   label:"Brief Clinical Context",                 type:"txt", req:true, ph:"e.g., 70F left forearm laceration after glass door injury" },
+
+      // ── CMS Element 1 — Evaluation participation ─────────────────────────
+      // Resident options
+      { id:"eval_res", label:"1. Resident — Evaluation Participation", type:"sel", opts:[
+        "I saw and evaluated the patient, reviewed the resident note, and agree with findings and plan",
+        "I saw and evaluated the patient, reviewed the resident note, and have made modifications as noted below",
+        "I personally performed the history and physical and confirm the key elements of the resident note",
+        "I was present and directly supervised the resident for the entire evaluation",
+      ]},
+      // Medical student — fixed CMS language (cannot be altered)
+      { id:"eval_ms",  label:"1. Medical Student — CMS Required Statement (pre-filled)", type:"sel", opts:[
+        "I was physically present during the student's evaluation of the patient. I personally performed or reperformed the physical exam and medical decision-making activities. I reviewed and agree with the student's documentation and/or findings including history, physical exam, and medical decision making except as documented below.",
+      ]},
+
+      // ── CMS Element 2 — Management (H&P + MDM — attending's own words) ──
+      { id:"hpi",   label:"2a. Brief History (Attending's own words)", type:"ta", req:true, ph:"e.g., 70-year-old female presented with left forearm laceration sustained 1 hour ago after running into glass sliding door..." },
+      { id:"exam",  label:"2b. Brief Physical Exam (Attending's own words — re-performed for students)", type:"ta", req:true, ph:"e.g., Well-developed, well-nourished. Left forearm laceration. Full ROM all digits and wrist/elbow bilaterally. Cap refill <3s left digital tips post-repair..." },
+      { id:"mdm",   label:"2c. Medical Decision-Making (Attending's own words — re-performed for students)", type:"ta", req:true, ph:"e.g., Simple laceration repair. No neurovascular compromise. Wound irrigated and closed with sutures. Tetanus updated. Wound care instructions provided. Low complexity MDM..." },
+      { id:"mod",   label:"Exceptions / Modifications (documented below)", type:"ta", ph:"For residents: modifications to note. For medical students: any findings that differ from student's documentation..." },
+
+      // ── CMS Element 3 — Procedure supervision ────────────────────────────
+      { id:"procyn",label:"3. Procedures Performed by Trainee",     type:"sel", opts:["No procedures performed by trainee this encounter","Yes — trainee performed procedure(s) under supervision"] },
+      { id:"proc",  label:"Procedure(s) Supervised",                type:"txt", ph:"e.g., Repair of 5 cm laceration, left forearm" },
+      { id:"procat",label:"Supervision Level",                      type:"sel", opts:["I personally supervised and was present for the key/critical portions of the procedure","I was present for the entire procedure"] },
+
+      // ── CMS Element 4 — Image review ──────────────────────────────────────
+      { id:"imgyn", label:"4. Imaging / ECG / POCUS Reviewed",      type:"sel", opts:["No imaging, ECG, or POCUS this encounter","Yes — images reviewed"] },
+      { id:"imgs",  label:"Images Reviewed",                        type:"chk", opts:["ECG","Chest X-ray (CXR)","FAST / POCUS","CT scan","X-ray / plain films","MRI","Other imaging"] },
+      { id:"imgint",label:"Image Interpretation",                   type:"sel", opts:[
+        "I reviewed the images and agree with the interpretation",
+        "I reviewed the images and my independent interpretation differs — documented below",
+      ]},
+      { id:"imgdet",label:"My Image Interpretation (if independent)",type:"txt", ph:"e.g., ECG: NSR, no acute ST changes. CXR: no acute cardiopulmonary process, no pneumothorax." },
     ],
-    ai: (f) => `You are Notrya AI. Generate a formal CMS Teaching Physician-compliant attending attestation for the medical record.
-Resident: ${f.res||"—"} | Attending: ${f.att||"—"} | Date/Time: ${f.dt||"—"}
-Elements Reviewed: ${arr(f.rev)}
-Attestation Level: ${f.type||"—"}
-Modifications: ${f.mod||"none"} | Clinical Context: ${f.ctx||""}
-Draft a formal attestation statement including: (1) attending name and credentials, (2) resident name and year, (3) elements personally reviewed, (4) attestation statement verbatim as selected, (5) any modifications documented, (6) date and time. Meets CMS Teaching Physician documentation requirements. Under 150 words. Professional tone.`,
+    ai: (f) => {
+      const isStudent = (f.ttype||"").includes("Medical Student");
+      const evalStmt = isStudent
+        ? "I was physically present during the student's evaluation of the patient. I personally performed or reperformed the physical exam and medical decision-making activities. I reviewed and agree with the student's documentation and/or findings including history, physical exam, and medical decision making except as documented below."
+        : (f.eval_res||"—");
+      const traineeLabel = isStudent ? "Medical Student" : "Resident";
+      return `You are Notrya AI. Generate a formal CMS Teaching Physician-compliant attending attestation.
+Trainee Type: ${traineeLabel} | Trainee: ${f.res||"—"} | Attending: ${f.att||"—"} | Date/Time: ${f.dt||"—"} | Context: ${f.ctx||"—"}
+
+ELEMENT 1 — EVALUATION STATEMENT (use verbatim, do not paraphrase): "${evalStmt}"
+ELEMENT 2 — HISTORY, EXAM, MDM:
+  History: ${f.hpi||"not provided"}
+  Exam: ${f.exam||"not provided"} ${isStudent?"[ATTENDING RE-PERFORMED]":""}
+  MDM: ${f.mdm||"not provided"} ${isStudent?"[ATTENDING RE-PERFORMED]":""}
+  Exceptions/Modifications: ${f.mod||"none"}
+ELEMENT 3 — PROCEDURES: ${f.procyn||"none"} | ${f.proc||""} | ${f.procat||""}
+ELEMENT 4 — IMAGING: ${f.imgyn||"none"} | Reviewed: ${arr(f.imgs)} | ${f.imgint||""} | ${f.imgdet||""}
+
+Generate a single cohesive attestation with these labeled sections:
+(1) EVALUATION ATTESTATION: Include the verbatim evaluation statement above — do not alter.
+(2) HISTORY, PHYSICAL EXAM, AND MDM: Document attending's H&P and MDM from content above.${isStudent?" Label clearly as attending's re-performance, not review.":""} Include exceptions/modifications if any.
+(3) PROCEDURE SUPERVISION (omit if none): "I personally supervised and was present for the key/critical portions of the following procedures completed by the ${traineeLabel.toLowerCase()}: [procedure]."
+(4) IMAGING REVIEW (omit if none): State images reviewed and attending's interpretation or agreement.
+Close with: "I have reviewed the documentation of ${f.res||"[trainee name]"} and take responsibility for the management of this patient." Date/time line.
+Under 300 words. CMS compliant. Do NOT fabricate clinical details.`;
+    },
   },
 
   split_shared: {

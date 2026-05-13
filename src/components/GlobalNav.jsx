@@ -238,6 +238,7 @@ export const PAGES = [
   { id:"trauma",        name:"Trauma Hub",           icon:"🚑",  color:T.red,    cat:"Hubs",            desc:"Primary survey, massive transfusion",    route:"/trauma-hub"           },
   { id:"peds",          name:"Pediatrics Hub",       icon:"👶",  color:T.teal,   cat:"Hubs",            desc:"Pediatric emergencies & dosing",         route:"/peds-hub"             },
   // Clinical Hubs — Chest, Pain, DVT
+  { id:"emtala",        name:"EMTALA Hub",           icon:"⚖️",  color:T.gold,   cat:"Hubs",            desc:"Regulatory compliance & transfer protocols",       route:"/EMTALAHub"            },
   { id:"chestpain",     name:"Chest Pain Hub",       icon:"💔",  color:T.red,    cat:"Hubs",            desc:"ACS, PE, aortic dissection workup",      route:"/ChestPainHub"         },
   { id:"pain",          name:"Pain Hub",             icon:"🔥",  color:T.orange, cat:"Hubs",            desc:"Multimodal analgesia protocols",         route:"/pain-hub"             },
   { id:"dvt",           name:"DVT Hub",              icon:"🩺",  color:T.blue,   cat:"Hubs",            desc:"DVT/PE workup & anticoagulation",        route:"/dvt-hub"              },

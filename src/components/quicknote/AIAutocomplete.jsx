@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 
-const DEBOUNCE_MS = 300;
+const DEBOUNCE_MS = 200;
 
 // Mode configs
 const MODE_CONFIG = {
@@ -46,7 +46,7 @@ export function AIAutocompleteInput({
   const config = MODE_CONFIG[mode] || MODE_CONFIG.medication;
 
   const fetchSuggestions = useCallback(async (q) => {
-    if (q.length < 2) { setSuggestions([]); setOpen(false); return; }
+    if (q.length < 1) { setSuggestions([]); setOpen(false); return; }
     setLoading(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
@@ -85,7 +85,7 @@ export function AIAutocompleteInput({
   // Debounce on value change
   useEffect(() => {
     clearTimeout(timerRef.current);
-    if (value.trim().length < 2) { setSuggestions([]); setOpen(false); setLoading(false); return; }
+    if (value.trim().length < 1) { setSuggestions([]); setOpen(false); setLoading(false); return; }
     setLoading(true);
     timerRef.current = setTimeout(() => fetchSuggestions(value.trim()), DEBOUNCE_MS);
     return () => clearTimeout(timerRef.current);

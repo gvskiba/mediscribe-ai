@@ -1,14 +1,8 @@
-// QuickNote.jsx  v11.4
-// v11.4 adds:
-//   - generateClinicalPlan: AI generates treatment plan + action items for MDM section
-//   - generateLabRecs: AI guideline-based lab recommendations (chip selector)
-//   - generateImagingRecs: AI guideline-based imaging recommendations (chip selector)
-//   - All 11 HPI scaffolds expanded with full OPQRST, risk factors, red flags
-//   - treatmentPlanBusy state + Generate Plan button in MDM result card
-
+// QuickNote.jsx  v12.0
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
+import { PMH_CATS, PMH_CAT_ICONS, PMH_PRI_STYLE, PMH_MDM_HIGH, PMH_MDM_MOD, computePMHMDM, PMHTab } from "./QuickNotePatientHx";
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
 import { injectQNStyles } from "./QuickNoteStyle.jsx";
@@ -36,500 +30,9 @@ import {
 
 injectQNStyles();
 
-// ─── CRITICAL VALUE DETECTOR ──────────────────────────────────────────────────
-function detectCriticalValues(labsText) {
-  if (!labsText) return [];
-  const flags = [];
-  const rules = [
-    { re:/K\+?\s*[:\-]?\s*([0-9.]+)/i,            label:"K+",          lo:3.0,  hi:6.0  },
-    { re:/Na\+?\s*[:\-]?\s*([0-9.]+)/i,           label:"Na+",         lo:125,  hi:155  },
-    { re:/glucose\s*[:\-]?\s*([0-9.]+)/i,         label:"Glucose",     lo:50,   hi:500  },
-    { re:/lactate\s*[:\-]?\s*([0-9.]+)/i,         label:"Lactate",     lo:null, hi:4.0  },
-    { re:/troponin[^0-9]*([0-9.]+)/i,             label:"Troponin",    lo:null, hi:0.04 },
-    { re:/creatinine\s*[:\-]?\s*([0-9.]+)/i,      label:"Creatinine",  lo:null, hi:4.0  },
-    { re:/ph\s*[:\-]?\s*([0-9.]+)/i,              label:"pH",          lo:7.2,  hi:7.6  },
-    { re:/hgb\s*[:\-]?\s*([0-9.]+)/i,             label:"Hgb",         lo:7.0,  hi:null },
-    { re:/inr\s*[:\-]?\s*([0-9.]+)/i,             label:"INR",         lo:null, hi:4.0  },
-    { re:/wbc\s*[:\-]?\s*([0-9.]+)/i,             label:"WBC",         lo:null, hi:30   },
-  ];
-  rules.forEach(({ re, label, lo, hi }) => {
-    const m = labsText.match(re);
-    if (!m) return;
-    const val = parseFloat(m[1]);
-    if (isNaN(val)) return;
-    if ((lo !== null && val < lo) || (hi !== null && val > hi))
-      flags.push({ label, value: m[1] });
-  });
-  return flags;
-}
-
-// ─── OPQRST gap detection ─────────────────────────────────────────────────────
-const OPQRST_REQUIRED = {
-  "chest pain":           ["Onset","Character","Location","Radiation","Severity","Aggravating","Relieving","Associated"],
-  "shortness of breath":  ["Onset","Severity","Timing","Aggravating","Relieving","Associated"],
-  "abdominal pain":       ["Onset","Character","Location","Severity","Timing","Aggravating","Relieving","Associated"],
-  "headache":             ["Onset","Character","Location","Severity","Timing","Aggravating","Relieving","Associated"],
-  "back pain":            ["Onset","Character","Location","Radiation","Severity","Timing","Aggravating","Relieving","Associated"],
-  "dizziness":            ["Onset","Character","Timing","Aggravating","Relieving","Associated"],
-  "syncope":              ["Onset","Timing","Associated"],
-  "palpitations":         ["Onset","Character","Timing","Aggravating","Relieving","Associated"],
-  "altered mental status":["Onset","Character","Associated"],
-  "fever":                ["Onset","Associated"],
-  "nausea":               ["Onset","Timing","Aggravating","Relieving","Associated"],
-};
-const OPQRST_DEFAULT = ["Onset","Severity","Associated"];
-function getExpectedOPQRST(ccText) {
-  const lower = (ccText || "").toLowerCase();
-  for (const [key, fields] of Object.entries(OPQRST_REQUIRED)) {
-    if (lower.includes(key)) return fields;
-  }
-  return OPQRST_DEFAULT;
-}
-
-// ─── Slot serialization ───────────────────────────────────────────────────────
-function serializeSlot(slotState, idx) {
-  const { cc="",vitals="",hpi="",ros="",exam="",labs="",imaging="",ekg="",newVitals="",
-    medsRaw="",allergiesRaw="",parsedMeds=[],parsedAllergies=[],
-    mdmResult=null,dispResult=null,icdSelected=[],interventions=[],
-    hpiSummary=null,hpiMode="original",encounterType="adult",
-    patientName="",patientAge="" } = slotState;
-  const blob = JSON.stringify({ vitals,ekg,newVitals,medsRaw,allergiesRaw,
-    parsedMeds,parsedAllergies,mdmResult,dispResult,icdSelected,interventions,
-    hpiSummary,hpiMode,encounterType,patientName,patientAge });
-  return { source:"QN-SlotCache", status:"active",
-    patient_identifier:`slot:${idx}`,
-    encounter_date:new Date().toISOString().split("T")[0],
-    cc,hpi_raw:hpi,ros_raw:ros,exam_raw:exam,labs_raw:labs,imaging_raw:imaging,
-    full_note_text:vitals, working_diagnosis:mdmResult?.working_diagnosis||"",
-    mdm_level:mdmResult?.mdm_level||"",mdm_narrative:mdmResult?.mdm_narrative||"",
-    meds_raw:medsRaw,allergies_raw:allergiesRaw,raw_note:blob };
-}
-
-function deserializeSlot(record) {
-  let blob = {};
-  try { blob = JSON.parse(record.raw_note||"{}"); } catch {}
-  return { cc:record.cc||"",hpi:record.hpi_raw||"",ros:record.ros_raw||"",
-    exam:record.exam_raw||"",labs:record.labs_raw||"",imaging:record.imaging_raw||"",
-    vitals:blob.vitals||record.full_note_text||"",ekg:blob.ekg||"",
-    newVitals:blob.newVitals||"",medsRaw:blob.medsRaw||"",allergiesRaw:blob.allergiesRaw||"",
-    parsedMeds:blob.parsedMeds||[],parsedAllergies:blob.parsedAllergies||[],
-    mdmResult:blob.mdmResult||null,dispResult:blob.dispResult||null,
-    icdSelected:blob.icdSelected||[],interventions:blob.interventions||[],
-    hpiSummary:blob.hpiSummary||null,hpiMode:blob.hpiMode||"original",
-    encounterType:blob.encounterType||"adult",patientName:blob.patientName||"",
-    patientAge:blob.patientAge||"",p2Open:!!(blob.mdmResult),
-    savedNoteId:null,lastActivity:Date.now() };
-}
-
-
-// ─── PMH CONSTANTS ────────────────────────────────────────────────────────────
-const PMH_CATS = {
-  Cardiovascular:["HTN","CAD","CHF","Atrial fibrillation","Prior MI","PVD","Cardiomyopathy","Valvular disease","Pacemaker/ICD","Aortic aneurysm"],
-  Pulmonary:["Asthma","COPD","OSA","Pulmonary HTN","Prior PE","Bronchiectasis","Interstitial lung disease"],
-  "Metabolic/Endo":["DM Type 2","DM Type 1","Obesity","Hypothyroidism","Hyperthyroidism","Hyperlipidemia","Metabolic syndrome","Adrenal insufficiency"],
-  Neurological:["Stroke/TIA","Seizure disorder","Migraines","Parkinson's","Dementia","Neuropathy","Multiple sclerosis"],
-  "GI/Hepatic":["GERD","PUD","IBD","Cirrhosis","NAFLD","Pancreatitis","Diverticulosis","GI bleed history"],
-  Renal:["CKD","ESRD on HD","Renal transplant","Prior AKI","Nephrolithiasis","Proteinuria"],
-  Hematologic:["Anemia","Thrombocytopenia","On anticoagulation","Coagulopathy","Prior DVT/PE","Sickle cell disease"],
-  Psychiatric:["Depression","Anxiety","Bipolar disorder","Schizophrenia","PTSD","Substance use disorder"],
-  Oncologic:["Active malignancy","Prior malignancy","On chemotherapy","On immunotherapy","Immunocompromised"],
-  Other:["HIV/AIDS","Autoimmune disease","Transplant recipient","Chronic pain","Fibromyalgia","Thyroid disease"],
-};
-const PMH_CAT_ICONS = {Cardiovascular:"\u2665",Pulmonary:"\uD83E\uDEB1","Metabolic/Endo":"\u26A1",Neurological:"\uD83E\uDDE0","GI/Hepatic":"\uD83D\uDD35",Renal:"\uD83D\uDCA7",Hematologic:"\uD83E\uDE78",Psychiatric:"\uD83E\uDDE9",Oncologic:"\u26A0",Other:"\uFF0B"};
-const PMH_PRI_STYLE = {
-  Immediate:{dot:"#ef4444",bg:"rgba(239,68,68,0.12)",badge:"#ef4444"},
-  Urgent:   {dot:"#f59e0b",bg:"rgba(245,158,11,0.12)",badge:"#f59e0b"},
-  Routine:  {dot:"#64748b",bg:"rgba(100,116,139,0.12)",badge:"#64748b"},
-};
-const PMH_MDM_HIGH = new Set(["Active malignancy","ESRD on HD","On chemotherapy","On immunotherapy","Immunocompromised","Cirrhosis","On anticoagulation","Coagulopathy","Substance use disorder","Transplant recipient","Renal transplant","HIV/AIDS","Pulmonary HTN","Cardiomyopathy","CHF"]);
-const PMH_MDM_MOD  = new Set(["HTN","CAD","DM Type 2","DM Type 1","Atrial fibrillation","COPD","Asthma","CKD","Prior MI","Prior PE","Prior DVT/PE","Stroke/TIA","Seizure disorder","Hypothyroidism","Hyperthyroidism","Hyperlipidemia","IBD","Pancreatitis","Sickle cell disease","Anemia","Thrombocytopenia","Prior malignancy","Depression","Bipolar disorder","Schizophrenia","PTSD","Parkinson's","Dementia","Aortic aneurysm","Valvular disease","Pacemaker/ICD","Interstitial lung disease","OSA","GI bleed history","Autoimmune disease"]);
-function computePMHMDM(list) {
-  const high=list.filter(c=>PMH_MDM_HIGH.has(c)), mod=list.filter(c=>PMH_MDM_MOD.has(c)), other=list.filter(c=>!PMH_MDM_HIGH.has(c)&&!PMH_MDM_MOD.has(c));
-  let level="Low",rationale="Minimal comorbidity burden";
-  if(high.length>=1){level="High";rationale=`${high.length} high-complexity condition${high.length>1?"s":""}: ${high.slice(0,2).join(", ")}${high.length>2?"...":""}`;}
-  else if(mod.length>=3){level="High";rationale=`${mod.length} chronic conditions \u2014 \u22653 elevates to High (AMA 2021)`;}
-  else if(mod.length>=1){level="Moderate";rationale=`${mod.length} established chronic condition${mod.length>1?"s":""}`;}
-  else if(list.length>0){level="Low-Moderate";rationale="Minor or unclassified conditions present";}
-  return {level,rationale,high,mod,other};
-}
-
-// ─── PMH TAB COMPONENT ──────────────────────────────────────────────────────────
-function PMHTab({pmh,setPmh,psh,setPsh,patientMeds,setPatientMeds,patientAllergies,setPatientAllergies,chiefComplaint,hpi,onOrderQueueChange,onMDMDataChange}) {
-  const teal="#0d9488",gold="#d4a017",bdr="rgba(42,79,122,.4)";
-  const [mode,setMode]=useState("select");
-  const [activeCat,setActiveCat]=useState("Cardiovascular");
-  const [searchQ,setSearchQ]=useState("");
-  const [pasteText,setPasteText]=useState("");
-  const [customInput,setCustomInput]=useState("");
-  const [pshInput,setPshInput]=useState("");
-  const [medInput,setMedInput]=useState("");
-  const [aInput,setAInput]=useState("");
-  const [workupRecs,setWorkupRecs]=useState([]);
-  const [analyzing,setAnalyzing]=useState(false);
-  const [recsOpen,setRecsOpen]=useState(false);
-  const [parseMsg,setParseMsg]=useState("");
-  const [analyzeErr,setAnalyzeErr]=useState("");
-  const [orderQueue,setOrderQueue]=useState([]);
-  const [showQueue,setShowQueue]=useState(false);
-  const [showMDM,setShowMDM]=useState(false);
-  const [orderSent,setOrderSent]=useState(false);
-  const [mdmSent,setMdmSent]=useState(false);
-  const [copiedAll,setCopiedAll]=useState(false);
-
-  const allConds=Object.values(PMH_CATS).flat();
-  const filtered=searchQ.length>1?allConds.filter(c=>c.toLowerCase().includes(searchQ.toLowerCase())):[];
-  const mdmData=computePMHMDM(pmh);
-  const MDM_COL={High:"#ef4444",Moderate:"#f59e0b","Low-Moderate":"#a78bfa",Low:"#64748b"};
-  const mdmColor=MDM_COL[mdmData.level]||"#64748b";
-
-  const toggle=c=>setPmh(p=>p.includes(c)?p.filter(x=>x!==c):[...p,c]);
-  const remPmh=c=>setPmh(p=>p.filter(x=>x!==c));
-  const remPsh=c=>setPsh(p=>p.filter(x=>x!==c));
-  const remMed=c=>setPatientMeds(p=>p.filter(x=>x!==c));
-  const remA=c=>setPatientAllergies(p=>p.filter(x=>x!==c));
-  const addCust=()=>{const v=customInput.trim();if(v&&!pmh.includes(v))setPmh(p=>[...p,v]);setCustomInput("");};
-  const addPsh=()=>{const v=pshInput.trim();if(v&&!psh.includes(v))setPsh(p=>[...p,v]);setPshInput("");};
-  const addMed=()=>{const v=medInput.trim();if(v&&!patientMeds.includes(v))setPatientMeds(p=>[...p,v]);setMedInput("");};
-  const addA=()=>{const v=aInput.trim();if(v&&!patientAllergies.includes(v))setPatientAllergies(p=>[...p,v]);setAInput("");};
-
-  const isQueued=rec=>orderQueue.some(o=>o.recommendation===rec.recommendation);
-  const addToQ=rec=>{if(!isQueued(rec))setOrderQueue(p=>[...p,rec]);};
-  const remFromQ=rec=>setOrderQueue(p=>p.filter(o=>o.recommendation!==rec.recommendation));
-  const addAllPri=pr=>{const add=workupRecs.filter(r=>r.priority===pr&&!isQueued(r));setOrderQueue(p=>[...p,...add]);setShowQueue(true);};
-
-  const parsePaste=async()=>{
-    if(!pasteText.trim())return; setParseMsg("Parsing\u2026");
-    try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
-          system:'Extract structured medical history. Return ONLY valid JSON, no markdown. Format: {"pmh":[],"psh":[],"medications":[],"allergies":[]}',
-          messages:[{role:"user",content:"Extract PMH, PSH, medications, allergies:\n\n"+pasteText}]})});
-      const data=await res.json();
-      const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
-      if(parsed.pmh?.length)setPmh(p=>[...new Set([...p,...parsed.pmh])]);
-      if(parsed.psh?.length)setPsh(p=>[...new Set([...p,...parsed.psh])]);
-      if(parsed.medications?.length)setPatientMeds(p=>[...new Set([...p,...parsed.medications])]);
-      if(parsed.allergies?.length)setPatientAllergies(p=>[...new Set([...p,...parsed.allergies])]);
-      const tot=(parsed.pmh?.length||0)+(parsed.psh?.length||0)+(parsed.medications?.length||0)+(parsed.allergies?.length||0);
-      setParseMsg("\u2713 Extracted "+tot+" item"+(tot!==1?"s":"")); setPasteText("");
-    }catch{setParseMsg("Parse error \u2014 review manually");}
-  };
-
-  const analyzeWorkup=async()=>{
-    if(!chiefComplaint&&!hpi&&!pmh.length){setAnalyzeErr("Add CC, HPI, or PMH items first");return;}
-    setAnalyzeErr(""); setAnalyzing(true); setRecsOpen(true); setWorkupRecs([]); setOrderQueue([]);
-    try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
-          system:'Emergency medicine CDS. Return ONLY a valid JSON array, no markdown. Each item: {"category":"Labs|Imaging|Consults|Monitoring|Medications","recommendation":"string","rationale":"string under 15 words","priority":"Immediate|Urgent|Routine","evidence":"guideline tag"}. Max 10. Only what context supports.',
-          messages:[{role:"user",content:`CC: ${chiefComplaint||"Not provided"}\nHPI: ${hpi||"Not provided"}\nPMH: ${pmh.join(", ")||"None"}\nPSH: ${psh.join(", ")||"None"}\nMeds: ${patientMeds.join(", ")||"None"}\nAllergies: ${patientAllergies.join(", ")||"NKDA"}\n\nGenerate workup recommendations.`}]})});
-      const data=await res.json();
-      const recs=JSON.parse((data.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
-      if(Array.isArray(recs)){
-        setWorkupRecs(recs);
-        const imm=recs.filter(r=>r.priority==="Immediate");
-        setOrderQueue(imm); if(imm.length)setShowQueue(true);
-      }
-    }catch{setAnalyzeErr("Analysis failed \u2014 check connection");}
-    setAnalyzing(false);
-  };
-
-  const sendToOrders=()=>{if(onOrderQueueChange)onOrderQueueChange(orderQueue);setOrderSent(true);setTimeout(()=>setOrderSent(false),3000);};
-  const sendToMDM=()=>{if(onMDMDataChange)onMDMDataChange(mdmData);setMdmSent(true);setTimeout(()=>setMdmSent(false),3000);};
-  const copyAll=()=>{const t=workupRecs.map(r=>`[${r.priority.toUpperCase()}] ${r.category}: ${r.recommendation} \u2014 ${r.rationale}`).join("\n");navigator.clipboard.writeText(t).then(()=>{setCopiedAll(true);setTimeout(()=>setCopiedAll(false),2000);});};
-
-  const card={background:"rgba(8,22,40,.55)",border:`1px solid ${bdr}`,borderRadius:12,padding:"13px 16px",marginBottom:9};
-  const inp={width:"100%",background:"rgba(14,37,68,.6)",border:"1px solid rgba(42,79,122,.45)",borderRadius:8,padding:"8px 11px",color:"var(--qn-txt)",fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:"'DM Sans',sans-serif"};
-  const modeBtn=a=>({padding:"5px 14px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:`1px solid ${a?teal:bdr}`,background:a?"rgba(13,148,136,0.18)":"transparent",color:a?teal:"var(--qn-txt4)",fontFamily:"'DM Sans',sans-serif"});
-  const addBtn=col=>({padding:"7px 13px",background:`${col||teal}20`,border:`1px solid ${col||teal}`,borderRadius:7,color:col||teal,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,fontFamily:"'DM Sans',sans-serif"});
-  const chip=(sel,col)=>({display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:16,fontSize:11,fontWeight:500,cursor:"pointer",border:`1px solid ${sel?col||teal:bdr}`,background:sel?`${col||teal}22`:"transparent",color:sel?col||teal:"var(--qn-txt4)",margin:"2px",fontFamily:"'DM Sans',sans-serif"});
-  const catTab=a=>({padding:"4px 10px",borderRadius:14,fontSize:9,fontWeight:700,cursor:"pointer",border:`1px solid ${a?gold:bdr}`,background:a?"rgba(212,160,23,0.13)":"transparent",color:a?gold:"var(--qn-txt4)",margin:"2px",fontFamily:"'JetBrains Mono',monospace"});
-  const ta={width:"100%",background:"rgba(14,37,68,.6)",border:"1px solid rgba(42,79,122,.45)",borderRadius:8,padding:"9px 11px",color:"var(--qn-txt)",fontSize:12,outline:"none",minHeight:90,resize:"vertical",boxSizing:"border-box",fontFamily:"'DM Sans',sans-serif"};
-  const primBtn={padding:"8px 20px",background:`linear-gradient(135deg,${teal},#0f766e)`,border:"none",borderRadius:9,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"};
-  const row={display:"flex",gap:8,alignItems:"center"};
-  const chipRow={display:"flex",flexWrap:"wrap",gap:5,marginTop:7,minHeight:26};
-  const recCard=p=>({background:PMH_PRI_STYLE[p]?.bg||"rgba(100,116,139,0.1)",border:"1px solid rgba(42,79,122,.35)",borderRadius:9,padding:"10px 13px",display:"flex",gap:9,alignItems:"flex-start",marginBottom:6});
-  const dotSt=p=>({width:7,height:7,borderRadius:"50%",background:PMH_PRI_STYLE[p]?.dot||"#64748b",flexShrink:0,marginTop:4});
-  const catBadge={fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(13,148,136,0.15)",color:teal,fontFamily:"'JetBrains Mono',monospace"};
-  const spinner={width:14,height:14,border:"2px solid rgba(42,79,122,.4)",borderTop:`2px solid ${teal}`,borderRadius:"50%",animation:"pmhspin 0.7s linear infinite"};
-  const qBtn=q=>({padding:"3px 9px",borderRadius:5,fontSize:10,fontWeight:700,cursor:"pointer",border:`1px solid ${q?"#ef4444":teal}`,background:q?"rgba(239,68,68,0.12)":`rgba(13,148,136,0.12)`,color:q?"#ef4444":teal,flexShrink:0,whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif"});
-  const lbl={fontSize:9,fontWeight:700,letterSpacing:"0.08em",color:"var(--qn-txt4)",textTransform:"uppercase",marginBottom:7,fontFamily:"'JetBrains Mono',monospace"};
-
-  const Chips=({items,onRemove,col})=>(
-    <div style={chipRow}>
-      {!items.length&&<span style={{fontSize:11,color:"var(--qn-txt4)",fontStyle:"italic"}}>None added</span>}
-      {items.map(i=><span key={i} style={chip(true,col)}>{i}<span style={{cursor:"pointer",color:"var(--qn-txt4)",marginLeft:3,fontSize:10,fontWeight:700}} onClick={()=>onRemove(i)}>&#x2715;</span></span>)}
-    </div>
-  );
-
-  return (
-    <div style={{marginBottom:14}}>
-      <style>{`@keyframes pmhspin{to{transform:rotate(360deg)}}`}</style>
-
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}} className="no-print">
-        <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-teal)"}}>Patient History</span>
-        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.08)",border:"1px solid rgba(0,229,192,.2)",borderRadius:4,padding:"2px 7px"}}>PMH \u00B7 PSH \u00B7 Meds \u00B7 Allergies \u00B7 AI Workup</span>
-        {pmh.length>0&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:mdmColor,background:`${mdmColor}20`,border:`1px solid ${mdmColor}44`,borderRadius:4,padding:"2px 8px",letterSpacing:"0.06em"}}>{mdmData.level.toUpperCase()} COMPLEXITY</span>}
-      </div>
-
-      {/* Input card */}
-      <div style={{...card}} className="no-print">
-        <div style={{display:"flex",gap:7,marginBottom:13,flexWrap:"wrap"}}>
-          {["search","select","paste"].map(m=>(
-            <button key={m} style={modeBtn(mode===m)} onClick={()=>setMode(m)}>
-              {m==="search"?"\uD83D\uDD0D Search":m==="select"?"\u2611 Select":"\uD83D\uDCCB Paste"}
-            </button>
-          ))}
-          <span style={{marginLeft:"auto",fontSize:11,color:"var(--qn-txt4)",alignSelf:"center",fontFamily:"'JetBrains Mono',monospace"}}>{pmh.length} dx</span>
-        </div>
-
-        {mode==="search"&&(
-          <div>
-            <input style={inp} placeholder="Search conditions (e.g. HTN, COPD, cirrhosis)..." value={searchQ} onChange={e=>setSearchQ(e.target.value)}/>
-            {filtered.length>0&&<div style={{marginTop:9}}>{filtered.map(c=><span key={c} style={chip(pmh.includes(c))} onClick={()=>toggle(c)}>{pmh.includes(c)?"\u2713 ":""}{c}</span>)}</div>}
-            {searchQ.length>1&&!filtered.length&&(
-              <div style={{...row,marginTop:9}}>
-                <span style={{fontSize:11,color:"var(--qn-txt4)"}}>No match &mdash;</span>
-                <button style={addBtn()} onClick={()=>{toggle(searchQ);setSearchQ("");}}>Add "{searchQ}"</button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {mode==="select"&&(
-          <div>
-            <div style={{display:"flex",flexWrap:"wrap",marginBottom:11}}>
-              {Object.keys(PMH_CATS).map(cat=>(
-                <button key={cat} style={catTab(activeCat===cat)} onClick={()=>setActiveCat(cat)}>{PMH_CAT_ICONS[cat]} {cat}</button>
-              ))}
-            </div>
-            <div>{PMH_CATS[activeCat].map(c=><span key={c} style={chip(pmh.includes(c))} onClick={()=>toggle(c)}>{pmh.includes(c)?"\u2713 ":""}{c}</span>)}</div>
-            <div style={{...row,marginTop:12}}>
-              <input style={inp} placeholder="Add custom condition..." value={customInput} onChange={e=>setCustomInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addCust();}}/>
-              <button style={addBtn()} onClick={addCust}>Add</button>
-            </div>
-          </div>
-        )}
-
-        {mode==="paste"&&(
-          <div>
-            <div style={lbl}>Paste history, med list, or prior note \u2014 AI extracts automatically</div>
-            <textarea style={ta} placeholder={"Paste here...\nE.g. PMH: HTN, DM2, CAD s/p CABG\nMeds: metoprolol 25mg, lisinopril 10mg\nAllergies: penicillin (rash)"} value={pasteText} onChange={e=>setPasteText(e.target.value)}/>
-            <div style={{...row,marginTop:9}}>
-              <button style={primBtn} onClick={parsePaste}>\u2736 AI Parse &amp; Extract</button>
-              {parseMsg&&<span style={{fontSize:11,color:parseMsg.startsWith("\u2713")?"var(--qn-teal)":"var(--qn-coral)",fontFamily:"'DM Sans',sans-serif"}}>{parseMsg}</span>}
-            </div>
-          </div>
-        )}
-
-        <div style={{borderTop:"1px solid rgba(42,79,122,.3)",paddingTop:12,marginTop:13}}>
-          <div style={lbl}>Past Medical History</div>
-          <Chips items={pmh} onRemove={remPmh} col={teal}/>
-        </div>
-      </div>
-
-      {/* PSH + Allergies */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:9}} className="no-print">
-        <div style={card}>
-          <div style={{fontSize:12,fontWeight:600,color:"var(--qn-txt2)",marginBottom:9,fontFamily:"'DM Sans',sans-serif"}}>\uD83D\uDD2A Past Surgical History</div>
-          <div style={row}>
-            <input style={inp} placeholder="e.g. CABG 2018, appendectomy..." value={pshInput} onChange={e=>setPshInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addPsh();}}/>
-            <button style={addBtn("#a78bfa")} onClick={addPsh}>Add</button>
-          </div>
-          <Chips items={psh} onRemove={remPsh} col="#a78bfa"/>
-        </div>
-        <div style={card}>
-          <div style={{fontSize:12,fontWeight:600,color:"var(--qn-txt2)",marginBottom:9,fontFamily:"'DM Sans',sans-serif"}}>\u26A0 Allergies</div>
-          <div style={row}>
-            <input style={inp} placeholder="e.g. Penicillin (rash)..." value={aInput} onChange={e=>setAInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addA();}}/>
-            <button style={addBtn("var(--qn-coral)")} onClick={addA}>Add</button>
-          </div>
-          <Chips items={patientAllergies} onRemove={remA} col="var(--qn-coral)"/>
-        </div>
-      </div>
-
-      {/* Medications */}
-      <div style={card} className="no-print">
-        <div style={{fontSize:12,fontWeight:600,color:"var(--qn-txt2)",marginBottom:9,fontFamily:"'DM Sans',sans-serif"}}>\uD83D\uDC8A Current Medications</div>
-        <div style={row}>
-          <input style={inp} placeholder="e.g. Metoprolol 25mg daily..." value={medInput} onChange={e=>setMedInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addMed();}}/>
-          <button style={addBtn(gold)} onClick={addMed}>Add</button>
-        </div>
-        <Chips items={patientMeds} onRemove={remMed} col={gold}/>
-      </div>
-
-      {/* MDM Comorbidity Panel */}
-      {pmh.length>0&&(
-        <div style={{...card,border:`1px solid ${mdmColor}44`}} className="no-print">
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:showMDM?13:0}} onClick={()=>setShowMDM(o=>!o)}>
-            <div style={{display:"flex",alignItems:"center",gap:9}}>
-              <span style={{fontSize:12,fontWeight:700,color:"var(--qn-txt2)",fontFamily:"'DM Sans',sans-serif"}}>\uD83D\uDCCB MDM Comorbidity</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:800,padding:"2px 9px",borderRadius:6,background:`${mdmColor}20`,color:mdmColor,letterSpacing:"0.06em"}}>{mdmData.level.toUpperCase()}</span>
-            </div>
-            <div style={{display:"flex",gap:7,alignItems:"center"}}>
-              <button style={{...addBtn(mdmColor),padding:"5px 13px",fontSize:11,fontWeight:700}} onClick={e=>{e.stopPropagation();sendToMDM();}}>
-                {mdmSent?"\u2713 Sent":"\u2192 Send to MDM"}
-              </button>
-              <span style={{color:"var(--qn-txt4)",fontSize:13}}>{showMDM?"\u25B2":"\u25BC"}</span>
-            </div>
-          </div>
-          {showMDM&&(
-            <div>
-              <div style={{fontSize:12,color:"var(--qn-txt4)",marginBottom:11,fontFamily:"'DM Sans',sans-serif"}}>{mdmData.rationale}</div>
-              {mdmData.high.length>0&&(
-                <div style={{marginBottom:10}}>
-                  <div style={{...lbl,color:"#ef4444"}}>\uD83D\uDD34 High complexity (AMA 2021)</div>
-                  <div>{mdmData.high.map(c=><span key={c} style={{...chip(true,"#ef4444"),margin:"2px"}}>{c}</span>)}</div>
-                </div>
-              )}
-              {mdmData.mod.length>0&&(
-                <div style={{marginBottom:10}}>
-                  <div style={{...lbl,color:"#f59e0b"}}>\uD83D\uDFE1 Moderate complexity</div>
-                  <div>{mdmData.mod.map(c=><span key={c} style={{...chip(true,"#f59e0b"),margin:"2px"}}>{c}</span>)}</div>
-                </div>
-              )}
-              {mdmData.other.length>0&&(
-                <div style={{marginBottom:10}}>
-                  <div style={lbl}>\u26AA Unclassified / Minor</div>
-                  <div>{mdmData.other.map(c=><span key={c} style={{...chip(false),margin:"2px"}}>{c}</span>)}</div>
-                </div>
-              )}
-              <div style={{background:"rgba(14,37,68,.5)",borderRadius:8,padding:"9px 13px",fontSize:11,color:"var(--qn-txt4)",borderLeft:`3px solid ${mdmColor}`,fontFamily:"'DM Sans',sans-serif"}}>
-                <strong style={{color:"var(--qn-txt2)"}}>AMA 2021 \u2014 </strong>
-                {mdmData.level==="High"&&"High: severe comorbidity, exacerbation of chronic illness, or highly complex problems."}
-                {mdmData.level==="Moderate"&&"Moderate: 2+ stable chronic conditions, new condition requiring workup, or established condition worsening."}
-                {mdmData.level==="Low-Moderate"&&"Low-Moderate: minor or unclassified conditions \u2014 verify clinical context."}
-                {mdmData.level==="Low"&&"Low: minimal comorbidity burden."}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* AI Workup Recommendations */}
-      <div style={{...card,border:"1px solid rgba(0,229,192,.3)"}} className="no-print">
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:recsOpen?13:0}} onClick={()=>setRecsOpen(o=>!o)}>
-          <div style={{display:"flex",alignItems:"center",gap:9}}>
-            <span style={{fontSize:13,fontWeight:700,color:"var(--qn-teal)",fontFamily:"'Playfair Display',serif"}}>\u2736 AI Workup Recommendations</span>
-            {workupRecs.length>0&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,padding:"2px 8px",borderRadius:8,background:"rgba(0,229,192,.12)",color:"var(--qn-teal)"}}>{workupRecs.length} recs</span>}
-          </div>
-          <div style={{display:"flex",gap:7,alignItems:"center"}}>
-            {workupRecs.length>0&&<button style={{...addBtn(),padding:"5px 11px",fontSize:11}} onClick={e=>{e.stopPropagation();copyAll();}}>{copiedAll?"\u2713 Copied":"\u2398 Copy All"}</button>}
-            <button style={primBtn} onClick={e=>{e.stopPropagation();analyzeWorkup();}}>
-              {analyzing?"\u23F3 Analyzing\u2026":"\u2736 Analyze"}
-            </button>
-            <span style={{color:"var(--qn-txt4)",fontSize:13}}>{recsOpen?"\u25B2":"\u25BC"}</span>
-          </div>
-        </div>
-        {analyzeErr&&<div style={{color:"var(--qn-coral)",fontSize:11,marginTop:5,fontFamily:"'DM Sans',sans-serif"}}>{analyzeErr}</div>}
-        {recsOpen&&(
-          <div>
-            {analyzing&&(
-              <div style={{...row,padding:"12px 0"}}>
-                <div style={spinner}/>
-                <span style={{color:"var(--qn-txt4)",fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>Analyzing CC + HPI + PMH\u2026</span>
-              </div>
-            )}
-            {!analyzing&&!workupRecs.length&&(
-              <div style={{color:"var(--qn-txt4)",fontSize:12,fontStyle:"italic",fontFamily:"'DM Sans',sans-serif"}}>Click Analyze to generate evidence-based recommendations from CC, HPI, and PMH.</div>
-            )}
-            {!analyzing&&workupRecs.length>0&&(
-              <div style={{...row,flexWrap:"wrap",gap:7,marginBottom:12,paddingBottom:12,borderBottom:"1px solid rgba(42,79,122,.3)"}}>
-                <span style={{fontSize:11,color:"var(--qn-txt4)",fontFamily:"'DM Sans',sans-serif"}}>Stage to orders:</span>
-                {["Immediate","Urgent","Routine"].map(p=>{
-                  const cnt=workupRecs.filter(r=>r.priority===p).length;
-                  if(!cnt)return null;
-                  return <button key={p} style={{...addBtn(PMH_PRI_STYLE[p].badge),padding:"4px 11px",fontSize:10}} onClick={()=>addAllPri(p)}>+ All {p} ({cnt})</button>;
-                })}
-                {orderQueue.length>0&&<span style={{marginLeft:"auto",fontSize:11,color:"var(--qn-teal)",fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}>{orderQueue.length} staged \u2192</span>}
-              </div>
-            )}
-            {!analyzing&&workupRecs.length>0&&["Immediate","Urgent","Routine"].map(priority=>{
-              const grp=workupRecs.filter(r=>r.priority===priority);
-              if(!grp.length)return null;
-              return (
-                <div key={priority} style={{marginBottom:14}}>
-                  <div style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",color:PMH_PRI_STYLE[priority]?.dot,marginBottom:7,textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>
-                    {priority==="Immediate"?"\uD83D\uDD34":priority==="Urgent"?"\uD83D\uDFE1":"\u26AA"} {priority}
-                  </div>
-                  {grp.map((rec,i)=>(
-                    <div key={i} style={recCard(priority)}>
-                      <div style={dotSt(priority)}/>
-                      <div style={{flex:1}}>
-                        <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:3}}>
-                          <span style={{fontSize:12,fontWeight:600,color:"var(--qn-txt)",fontFamily:"'DM Sans',sans-serif"}}>{rec.recommendation}</span>
-                          <span style={catBadge}>{rec.category}</span>
-                          {rec.evidence&&<span style={{fontSize:9,color:"var(--qn-txt4)",fontStyle:"italic",fontFamily:"'DM Sans',sans-serif"}}>{rec.evidence}</span>}
-                          <button style={{...qBtn(isQueued(rec)),marginLeft:"auto"}} onClick={()=>{isQueued(rec)?remFromQ(rec):addToQ(rec);setShowQueue(true);}}>
-                            {isQueued(rec)?"\u2713 Staged":"+ Orders"}
-                          </button>
-                        </div>
-                        <div style={{fontSize:11,color:"var(--qn-txt4)",fontFamily:"'DM Sans',sans-serif"}}>{rec.rationale}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-            {!analyzing&&workupRecs.length>0&&(
-              <div style={{fontSize:10,color:"var(--qn-txt4)",borderTop:"1px solid rgba(42,79,122,.3)",paddingTop:9,fontFamily:"'DM Sans',sans-serif"}}>
-                \u26A0 AI recommendations are clinical decision support only. Always apply clinical judgment.
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Order Queue */}
-      {orderQueue.length>0&&(
-        <div style={{...card,border:"1px solid rgba(245,200,66,.35)"}} className="no-print">
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:showQueue?12:0}} onClick={()=>setShowQueue(o=>!o)}>
-            <div style={{display:"flex",alignItems:"center",gap:9}}>
-              <span style={{fontSize:12,fontWeight:700,color:"var(--qn-gold)",fontFamily:"'DM Sans',sans-serif"}}>\uD83D\uDCE4 Order Queue</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:800,padding:"2px 9px",borderRadius:6,background:"rgba(245,200,66,.15)",color:"var(--qn-gold)"}}>{orderQueue.length} staged</span>
-            </div>
-            <div style={{display:"flex",gap:7,alignItems:"center"}}>
-              <button style={{padding:"7px 17px",background:"linear-gradient(135deg,#d4a017,#b8860b)",border:"none",borderRadius:9,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}} onClick={e=>{e.stopPropagation();sendToOrders();}}>
-                {orderSent?"\u2713 Sent":"\u2192 Pre-fill Labs \u0026 Imaging"}
-              </button>
-              <span style={{color:"var(--qn-txt4)",fontSize:13}}>{showQueue?"\u25B2":"\u25BC"}</span>
-            </div>
-          </div>
-          {showQueue&&(
-            <div>
-              {["Immediate","Urgent","Routine"].map(priority=>{
-                const grp=orderQueue.filter(o=>o.priority===priority);
-                if(!grp.length)return null;
-                return (
-                  <div key={priority} style={{marginBottom:10}}>
-                    <div style={{fontSize:9,fontWeight:700,color:PMH_PRI_STYLE[priority]?.dot,letterSpacing:"0.08em",marginBottom:6,textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>
-                      {priority==="Immediate"?"\uD83D\uDD34":priority==="Urgent"?"\uD83D\uDFE1":"\u26AA"} {priority}
-                    </div>
-                    {grp.map((o,i)=>(
-                      <div key={i} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 11px",background:"rgba(14,37,68,.5)",borderRadius:7,marginBottom:5}}>
-                        <span style={catBadge}>{o.category}</span>
-                        <span style={{fontSize:12,color:"var(--qn-txt)",flex:1,fontFamily:"'DM Sans',sans-serif"}}>{o.recommendation}</span>
-                        <span style={{fontSize:10,color:"var(--qn-txt4)",fontFamily:"'DM Sans',sans-serif"}}>{o.rationale}</span>
-                        <button style={{...qBtn(true),padding:"2px 7px",fontSize:10}} onClick={()=>remFromQ(o)}>\u2715</button>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-              <div style={{borderTop:"1px solid rgba(42,79,122,.3)",paddingTop:9,fontSize:10,color:"var(--qn-txt4)",fontFamily:"'DM Sans',sans-serif"}}>
-                "Pre-fill Labs &amp; Imaging" appends staged orders into the Labs and Imaging text fields for physician review before MDM generation.
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
+import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function QuickNote({ embedded = false, demo, vitals: initVitals, cc: initCC }) {
   const [cc,     setCC]     = useState(initCC?.text || "");
   const [vitals, setVitals] = useState(() => {
@@ -542,13 +45,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       initVitals.temp ? `T ${initVitals.temp}`      : null,
     ].filter(Boolean).join("  ");
   });
-  const [hpi,  setHpi]  = useState("");
-  const [ros,  setRos]  = useState("");
-  const [exam, setExam] = useState("");
-  const [labs,      setLabs]      = useState("");
-  const [imaging,   setImaging]   = useState("");
-  const [ekg,       setEkg]       = useState("");
-  const [newVitals, setNewVitals] = useState("");
+  const [hpi,  setHpi]  = useState("");  const [ros,  setRos]  = useState("");  const [exam, setExam] = useState("");  const [labs,      setLabs]      = useState("");  const [imaging,   setImaging]   = useState("");  const [ekg,       setEkg]       = useState("");  const [newVitals, setNewVitals] = useState("");
   const [formatMode,    setFormatMode]    = useState("plain");
   const [pasteReady,    setPasteReady]    = useState("labeled");
   const [encounterType, setEncounterType] = useState("adult");
@@ -567,16 +64,11 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
   ];
   const [timestamps, setTimestamps] = useState(DEFAULT_EVENTS);
-
-  const [ekgBusy,      setEkgBusy]      = useState(false);
-  const [autoExamBusy, setAutoExamBusy] = useState(false);
-  const [scaffoldOpen, setScaffoldOpen] = useState(false);
-
+  const [ekgBusy,      setEkgBusy]      = useState(false);  const [autoExamBusy, setAutoExamBusy] = useState(false);  const [scaffoldOpen, setScaffoldOpen] = useState(false);
   const [workupRationale,     setWorkupRationale]     = useState(null);
   const [workupRationaleBusy, setWorkupRationaleBusy] = useState(false);
   const [copiedWorkup,        setCopiedWorkup]        = useState(false);
   const [autoRosBusy, setAutoRosBusy] = useState(false);
-
   const [patientPregnant,    setPatientPregnant]    = useState("Unknown");
   const [patientWeight,      setPatientWeight]      = useState("");
   const [showProcedureModal, setShowProcedureModal] = useState(false);
@@ -588,7 +80,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [showAttestation,    setShowAttestation]    = useState(false);
   const [showNursingHandoff, setShowNursingHandoff] = useState(false);
   const [rerunAddendumBusy,  setRerunAddendumBusy]  = useState(false);
-
   const [patientResponse, setPatientResponse] = useState("");
   const [mdmHistory,      setMdmHistory]      = useState([]);
   const [mdmInitialTs,    setMdmInitialTs]    = useState(null);
@@ -596,8 +87,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [treatmentPlan,   setTreatmentPlan]   = useState("");
   const [actionPlan,      setActionPlan]      = useState("");
   const [providerInfo,    setProviderInfo]    = useState({ name:"", credentials:"", facility:"" });
-
-  // v11.4: Clinical plan + lab/imaging recs
   const [treatmentPlanBusy, setTreatmentPlanBusy] = useState(false);
   const [labRecs,            setLabRecs]           = useState(null);
   const [labRecsBusy,        setLabRecsBusy]       = useState(false);
@@ -617,10 +106,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [slots,      setSlots]      = useState(() => [EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT()]);
   const [activeSlot, setActiveSlot] = useState(0);
   const slotRef      = useRef(activeSlot);
-  const [undoData,   setUndoData]   = useState(null);
-  const [undoTimer,  setUndoTimer]  = useState(null);
-  const [showUndo,   setShowUndo]   = useState(false);
-  const [draftId,    setDraftId]    = useState(null);
+  const [undoData,   setUndoData]   = useState(null);  const [undoTimer,  setUndoTimer]  = useState(null);  const [showUndo,   setShowUndo]   = useState(false);  const [draftId,    setDraftId]    = useState(null);
   const slotStateRef = useRef({});
   const [slotCacheIds,      setSlotCacheIds]      = useState([null,null,null,null]);
   const [slotSaveTimes,     setSlotSaveTimes]     = useState([null,null,null,null]);
@@ -665,14 +151,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     setActiveSlot(idx); slotRef.current = idx;
   }, [activeSlot, saveCurrentToSlot]);
 
-  const [mdmResult,  setMdmResult]  = useState(null);
-  const [dispResult, setDispResult] = useState(null);
-  const [p1Busy,     setP1Busy]     = useState(false);
-  const [p2Busy,     setP2Busy]     = useState(false);
-  const [p1Error,    setP1Error]    = useState(null);
-  const [p2Error,    setP2Error]    = useState(null);
-  const [copied,     setCopied]     = useState(false);
-  const [p2Open,     setP2Open]     = useState(false);
+  const [mdmResult,  setMdmResult]  = useState(null);  const [dispResult, setDispResult] = useState(null);  const [p1Busy,     setP1Busy]     = useState(false);  const [p2Busy,     setP2Busy]     = useState(false);  const [p1Error,    setP1Error]    = useState(null);  const [p2Error,    setP2Error]    = useState(null);  const [copied,     setCopied]     = useState(false);  const [p2Open,     setP2Open]     = useState(false);
   const [copiedMDM,           setCopiedMDM]           = useState(false);
   const [copiedDisch,         setCopiedDisch]         = useState(false);
   const [copiedMDMFull,       setCopiedMDMFull]       = useState(false);
@@ -702,15 +181,11 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [quickDDxBusy,      setQuickDDxBusy]      = useState(false);
   const [quickDDxErr,       setQuickDDxErr]       = useState(null);
   const [quickDDxDismissed, setQuickDDxDismissed] = useState(false);
-  const [hpiSummary,   setHpiSummary]   = useState(null);
-  const [hpiSumBusy,   setHpiSumBusy]   = useState(false);
-  const [hpiSumError,  setHpiSumError]  = useState(null);
-  const [copiedHpiSum, setCopiedHpiSum] = useState(false);
+  const [hpiSummary,   setHpiSummary]   = useState(null);  const [hpiSumBusy,   setHpiSumBusy]   = useState(false);  const [hpiSumError,  setHpiSumError]  = useState(null);  const [copiedHpiSum, setCopiedHpiSum] = useState(false);
   const [hpiMode,      setHpiMode]      = useState("original");
   const [hpiStructureBusy,  setHpiStructureBusy]  = useState(false);
   const [hpiStructureError, setHpiStructureError] = useState(null);
   const [hpiGaps, setHpiGaps] = useState([]);
-  // v11.4: auto-extracted from HPI Structure for MedsAllergyZone import
   const [medsFromHpi,      setMedsFromHpi]      = useState([]);
   const [allergiesFromHpi, setAllergiesFromHpi]  = useState([]);
   const [icdSuggestions, setIcdSuggestions] = useState([]);
@@ -720,17 +195,12 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [interventions,  setInterventions]  = useState([]);
   const [intLoading,     setIntLoading]     = useState(false);
   const [intGenerated,   setIntGenerated]   = useState(false);
-  const [copiedP1,     setCopiedP1]     = useState(false);
-  const [copiedP2,     setCopiedP2]     = useState(false);
-  const [copiedInputs, setCopiedInputs] = useState(false);
-  // ── PMH state (v12.0 Patient History) ─────────────────────────────────────
+  const [copiedP1,     setCopiedP1]     = useState(false);  const [copiedP2,     setCopiedP2]     = useState(false);  const [copiedInputs, setCopiedInputs] = useState(false);
   const [pmh,              setPmh]              = useState([]);
   const [psh,              setPsh]              = useState([]);
   const [patientMeds,      setPatientMeds]      = useState([]);
   const [patientAllergies, setPatientAllergies] = useState([]);
   const [pmhMDMData,       setPmhMDMData]       = useState(null);
-
-
 
   const effectiveHpi = hpiMode === "summary" && hpiSummary ? hpiSummary : hpi;
   const phase1Ready  = Boolean(cc.trim() || hpi.trim() || exam.trim());
@@ -742,7 +212,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const setRef       = useCallback((idx) => (ref) => { fieldRefs.current[idx] = ref; }, []);
   const advanceFocus = useCallback((idx) => { fieldRefs.current[idx+1]?.current?.focus(); }, []);
 
-  // ── MDM ────────────────────────────────────────────────────────────────────
   const runMDM = useCallback(async () => {
     if (!phase1Ready || p1Busy) return;
     setP1Busy(true); setP1Error(null); setMdmResult(null); setDispResult(null);
@@ -758,8 +227,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       const pmhCtx = [
         pmh.length?`PAST MEDICAL HISTORY: ${pmh.join(", ")}. MDM Complexity: ${computePMHMDM(pmh).level} (AMA 2021).`:"",
         psh.length?`PAST SURGICAL HISTORY: ${psh.join(", ")}.`:"",
-        patientMeds.length?`CURRENT MEDICATIONS (from Hx tab): ${patientMeds.join(", ")}.`:"",
-        patientAllergies.length?`ALLERGIES (from Hx tab): ${patientAllergies.join(", ")}.`:"",
+        patientMeds.length?`CURRENT MEDICATIONS (Hx tab): ${patientMeds.join(", ")}.`:"",
+        patientAllergies.length?`ALLERGIES (Hx tab): ${patientAllergies.join(", ")}.`:"",
       ].filter(Boolean).join("\n");
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: buildMDMPrompt(cc,vitals,hpi,ros,exam,vhAnalysis,parsedMeds,parsedAllergies,encounterType)
@@ -780,18 +249,16 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   }, [cc,vitals,hpi,ros,exam,phase1Ready,p1Busy,vhAnalysis,parsedMeds,parsedAllergies,
       encounterType,isBounceback,bouncebackDate,patientPregnant,patientWeight,pmh,psh,patientMeds,patientAllergies]);
 
-  // ── PMH order queue callback — pre-fills Labs & Imaging fields ─────────────
   const handlePMHOrders = useCallback((orders) => {
     if (!orders?.length) return;
-    const labOrders  = orders.filter(o=>o.category==="Labs").map(o=>o.recommendation);
-    const imgOrders  = orders.filter(o=>o.category==="Imaging").map(o=>o.recommendation);
+    const labOrders     = orders.filter(o=>o.category==="Labs").map(o=>o.recommendation);
+    const imgOrders     = orders.filter(o=>o.category==="Imaging").map(o=>o.recommendation);
     const consultOrders = orders.filter(o=>o.category==="Consults").map(o=>o.recommendation);
-    if (labOrders.length)  setLabs(prev=>(prev.trim()?prev+"\n":"")+labOrders.join("\n"));
-    if (imgOrders.length)  setImaging(prev=>(prev.trim()?prev+"\n":"")+imgOrders.join("\n"));
+    if (labOrders.length)     setLabs(prev=>(prev.trim()?prev+"\n":"")+labOrders.join("\n"));
+    if (imgOrders.length)     setImaging(prev=>(prev.trim()?prev+"\n":"")+imgOrders.join("\n"));
     if (consultOrders.length) setConsults(prev=>[...prev,...consultOrders.map((c,i)=>({id:`pmh-${Date.now()}-${i}`,service:c,provider:"",time:"",recommendation:"AI-staged from PMH workup"}))]);
   }, []);
 
-  // ── Disposition ────────────────────────────────────────────────────────────
   const runDisposition = useCallback(async () => {
     if (!mdmResult || p2Busy) return;
     setP2Busy(true); setP2Error(null); setDispResult(null);
@@ -809,7 +276,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     finally { setP2Busy(false); }
   }, [mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,p2Busy,ekg,parsedMeds,parsedAllergies,consults,patientResponse]);
 
-  // ── Workup Rationale ───────────────────────────────────────────────────────
   const runWorkupRationale = useCallback(async () => {
     if (!mdmResult||workupRationaleBusy) return;
     setWorkupRationaleBusy(true);
@@ -823,7 +289,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     finally { setWorkupRationaleBusy(false); }
   }, [mdmResult,workupRationaleBusy]);
 
-  // ── v11.4: Generate Clinical Plan (Treatment Plan + Action Items) ──────────
   const generateClinicalPlan = useCallback(async () => {
     if (!mdmResult||treatmentPlanBusy) return;
     setTreatmentPlanBusy(true);
@@ -870,7 +335,6 @@ Return JSON only.`,
     finally { setTreatmentPlanBusy(false); }
   }, [mdmResult,cc,vitals,encounterType,parsedMeds,parsedAllergies,patientWeight,patientPregnant,treatmentPlanBusy]);
 
-  // ── v11.4: AI Lab Recommendations ─────────────────────────────────────────
   const generateLabRecs = useCallback(async () => {
     if (!mdmResult||labRecsBusy) return;
     setLabRecsBusy(true); setLabRecs(null);
@@ -911,7 +375,6 @@ Ground recommendations in ACEP clinical policies, ACC/AHA guidelines, UpToDate e
     finally { setLabRecsBusy(false); }
   }, [mdmResult,cc,vitals,encounterType,labRecsBusy]);
 
-  // ── v11.4: AI Imaging Recommendations ─────────────────────────────────────
   const generateImagingRecs = useCallback(async () => {
     if (!mdmResult||imagingRecsBusy) return;
     setImagingRecsBusy(true); setImagingRecs(null);
@@ -952,7 +415,6 @@ Return JSON only.`,
     finally { setImagingRecsBusy(false); }
   }, [mdmResult,cc,vitals,encounterType,patientPregnant,imagingRecsBusy]);
 
-  // ── EKG ────────────────────────────────────────────────────────────────────
   const interpretEKG = useCallback(async (ekgText) => {
     if (!ekgText||ekgBusy) return;
     setEkgBusy(true);
@@ -966,7 +428,6 @@ Return JSON only.`,
     finally { setEkgBusy(false); }
   }, [ekgBusy]);
 
-  // ── Auto-ROS ───────────────────────────────────────────────────────────────
   const autoRosFromHpi = useCallback(async () => {
     if (!hpi.trim()||autoRosBusy) return;
     setAutoRosBusy(true);
@@ -980,7 +441,6 @@ Return JSON only.`,
     finally { setAutoRosBusy(false); }
   }, [hpi,autoRosBusy]);
 
-  // ── Auto-PE ────────────────────────────────────────────────────────────────
   const autoExamFromCC = useCallback(async () => {
     if (!cc.trim()||autoExamBusy) return;
     setAutoExamBusy(true);
@@ -994,7 +454,6 @@ Return JSON only.`,
     finally { setAutoExamBusy(false); }
   }, [cc,autoExamBusy]);
 
-  // ── Smart Structure HPI ────────────────────────────────────────────────────
   const structureHPI = useCallback(async () => {
     if (!hpi.trim()||hpiStructureBusy) return;
     setHpiStructureBusy(true); setHpiStructureError(null);
@@ -1034,14 +493,12 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       const fieldsFound = (res.fields_found||[]).map(f=>f.toLowerCase());
       const expected    = getExpectedOPQRST(cc.trim()||res.chief_complaint_extracted||"");
       setHpiGaps(expected.filter(f=>!fieldsFound.includes(f.toLowerCase())));
-      // v11.4: populate meds/allergies found in nursing note for MedsAllergyZone import nudge
       if (res.meds_extracted?.length)      setMedsFromHpi(res.meds_extracted);
       if (res.allergies_extracted?.length) setAllergiesFromHpi(res.allergies_extracted);
     } catch(e) { setHpiStructureError("HPI structure failed: "+(e.message||"Check API")); }
     finally { setHpiStructureBusy(false); }
   }, [hpi,cc,hpiStructureBusy]);
 
-  // ── Structure → Prose chain ────────────────────────────────────────────────
   const summarizeFromStructure = useCallback(async () => {
     if (!hpiSummary?.trim()||hpiSumBusy) return;
     setHpiSumBusy(true); setHpiSumError(null);
@@ -1057,7 +514,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     finally { setHpiSumBusy(false); }
   }, [hpiSummary,hpiSumBusy]);
 
-  // ── Summarize HPI ──────────────────────────────────────────────────────────
   const summarizeHPI = useCallback(async () => {
     if (!hpi.trim()||hpiSumBusy) return;
     setHpiSumBusy(true); setHpiSumError(null); setHpiSummary(null);
@@ -1073,7 +529,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     finally { setHpiSumBusy(false); }
   }, [hpi,hpiSumBusy]);
 
-  // ── Meds/Allergies ─────────────────────────────────────────────────────────
   const parseMedsAllergies = useCallback(async () => {
     if ((!medsRaw.trim()&&!allergiesRaw.trim())||medsParsing) return;
     setMedsParsing(true); setMedsError(null);
@@ -1093,7 +548,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     finally { setMedsParsing(false); }
   }, [medsRaw,allergiesRaw,medsParsing]);
 
-  // ── Quick DDx ──────────────────────────────────────────────────────────────
   const runQuickDDx = useCallback(async () => {
     if (quickDDxBusy||(!cc.trim()&&!hpi.trim())) return;
     setQuickDDxBusy(true); setQuickDDxErr(null); setQuickDDxDismissed(false);
@@ -1112,7 +566,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     finally { setQuickDDxBusy(false); }
   }, [quickDDxBusy,cc,hpi,vitals,ros,exam]);
 
-  // ── ICD-10 ─────────────────────────────────────────────────────────────────
   const searchICD10 = useCallback(async (diagnosisText) => {
     if (!diagnosisText||icdSearching) return;
     setIcdSearching(true); setIcdError(null); setIcdSuggestions([]);
@@ -1129,7 +582,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     finally { setIcdSearching(false); }
   }, [icdSearching]);
 
-  // ── Interventions ──────────────────────────────────────────────────────────
   const generateInterventions = useCallback(async () => {
     if (intLoading||intGenerated) return;
     setIntLoading(true);
@@ -1147,6 +599,16 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     } catch(e) { console.error("Interventions failed:",e); }
     finally { setIntLoading(false); }
   }, [intLoading,intGenerated,cc,mdmResult,dispResult]);
+
+  const getScaffold = useCallback((ccText) => {
+    if (!ccText?.trim()) return null;
+    const lower = ccText.toLowerCase().trim();
+    if (HPI_SCAFFOLDS[lower]) return { text:HPI_SCAFFOLDS[lower], cc:lower };
+    if (HPI_ALIASES[lower]) return { text:HPI_SCAFFOLDS[HPI_ALIASES[lower]], cc:HPI_ALIASES[lower] };
+    for (const [key] of Object.entries(HPI_SCAFFOLDS)) { if (lower.includes(key)) return { text:HPI_SCAFFOLDS[key], cc:key }; }
+    for (const [alias,target] of Object.entries(HPI_ALIASES)) { if (lower.includes(alias)) return { text:HPI_SCAFFOLDS[target], cc:target }; }
+    return null;
+  }, []);
 
   const loadPriorVisits = useCallback(async () => {
     if (priorVisitsLoading) return;
@@ -1272,7 +734,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   }, [dispResult,demo]);
   const copyDischargeInstructions = copyDischargeOnly;
 
-  // ── Slot persistence ───────────────────────────────────────────────────────
   const saveAllSlots = useCallback(async (force=false) => {
     if (slotSavingRef.current&&!force) return;
     slotSavingRef.current=true; setSlotSaving(true);
@@ -1529,7 +990,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       const draft=(results||[]).find(r=>r.status==="draft"&&r.source==="QuickNote");
       if (draft) { const age=Date.now()-new Date(draft.created_date||0).getTime(); if (age<8*3600000) setDraftId(draft.id); }
     }).catch(()=>null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   useEffect(()=>{
@@ -1549,7 +1009,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     if (min<60) return `${min}m ago`; return `${Math.floor(min/60)}h ago`;
   };
 
-  // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
     <div style={{fontFamily:"'DM Sans',sans-serif",
       background:embedded?"transparent":"var(--qn-bg)",
@@ -1759,7 +1218,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         <QuickNoteROSHelper ros={ros} />
         <QuickNoteExamHelper exam={exam} cc={cc} autoExamFromCC={autoExamFromCC} autoExamBusy={autoExamBusy} />
 
-        {/* Patient History (PMH) */}
+        {/* Patient History Tab */}
         <PMHTab
           pmh={pmh} setPmh={setPmh}
           psh={psh} setPsh={setPsh}

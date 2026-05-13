@@ -13,6 +13,7 @@ import React, { useState, useCallback, useRef } from "react";
 import { InputZone, QuickDDxCard } from "./QuickNoteComponents";
 import { MedsAllergyZone } from "./QuickNoteMedsAllergy";
 import MedTermHighlighter from "@/components/MedTermHighlighter";
+import ExamShortcuts from "@/components/quicknote/ExamShortcuts";
 
 export function Phase1Panel({
   // Core inputs
@@ -418,11 +419,16 @@ export function Phase1Panel({
           placeholder="Paste ROS, or press T to insert a template..."
           onRef={setRef(3)}
           onKeyDown={makeKeyDown(3, false, runMDM)} />
-        <InputZone label="Physical Exam" value={exam} onChange={setExam} phase={1}
-          rows={4} copyable templateType="pe" smartfill kbdHint="Alt+E"
-          placeholder="Paste physical exam, or press T to insert a template..."
-          onRef={setRef(4)}
-          onKeyDown={makeKeyDown(4, true, runMDM)} />
+        <div>
+          <InputZone label="Physical Exam" value={exam} onChange={setExam} phase={1}
+            rows={4} copyable templateType="pe" smartfill kbdHint="Alt+E"
+            placeholder="Paste physical exam, or press T to insert a template..."
+            onRef={setRef(4)}
+            onKeyDown={makeKeyDown(4, true, runMDM)} />
+          <ExamShortcuts onInsert={(phrase) =>
+            setExam(prev => prev ? prev.trimEnd() + "\n" + phrase : phrase)
+          } />
+        </div>
       </div>
 
       {/* ── Quick DDx ─────────────────────────────────────────────────────── */}

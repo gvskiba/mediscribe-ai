@@ -2,7 +2,7 @@
 // Utility functions extracted from QuickNote.jsx
 
 // ─── CRITICAL VALUE DETECTOR ──────────────────────────────────────────────────
-export function detectCriticalValues(labsText) {
+function detectCriticalValues(labsText) {
   if (!labsText) return [];
   const flags = [];
   const rules = [
@@ -43,8 +43,7 @@ const OPQRST_REQUIRED = {
   "nausea":               ["Onset","Timing","Aggravating","Relieving","Associated"],
 };
 const OPQRST_DEFAULT = ["Onset","Severity","Associated"];
-
-export function getExpectedOPQRST(ccText) {
+function getExpectedOPQRST(ccText) {
   const lower = (ccText || "").toLowerCase();
   for (const [key, fields] of Object.entries(OPQRST_REQUIRED)) {
     if (lower.includes(key)) return fields;
@@ -53,7 +52,7 @@ export function getExpectedOPQRST(ccText) {
 }
 
 // ─── Slot serialization ───────────────────────────────────────────────────────
-export function serializeSlot(slotState, idx) {
+function serializeSlot(slotState, idx) {
   const { cc="",vitals="",hpi="",ros="",exam="",labs="",imaging="",ekg="",newVitals="",
     medsRaw="",allergiesRaw="",parsedMeds=[],parsedAllergies=[],
     mdmResult=null,dispResult=null,icdSelected=[],interventions=[],
@@ -71,7 +70,7 @@ export function serializeSlot(slotState, idx) {
     meds_raw:medsRaw,allergies_raw:allergiesRaw,raw_note:blob };
 }
 
-export function deserializeSlot(record) {
+function deserializeSlot(record) {
   let blob = {};
   try { blob = JSON.parse(record.raw_note||"{}"); } catch {}
   return { cc:record.cc||"",hpi:record.hpi_raw||"",ros:record.ros_raw||"",
@@ -86,3 +85,6 @@ export function deserializeSlot(record) {
     patientAge:blob.patientAge||"",p2Open:!!(blob.mdmResult),
     savedNoteId:null,lastActivity:Date.now() };
 }
+
+
+export { detectCriticalValues, getExpectedOPQRST, OPQRST_REQUIRED, OPQRST_DEFAULT, serializeSlot, deserializeSlot };

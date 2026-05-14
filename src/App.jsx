@@ -399,6 +399,15 @@ const AuthenticatedApp = () => {
         <Route path="/smart-dosing" element={<UnifiedPharmacologyHub />} />
         <Route path="/Calendar" element={<HubIndex />} />
 
+        {/* Missing routes audited from Home.jsx hub catalog */}
+        <Route path="/ToxHub"           element={<ToxicologyHub />} />
+        <Route path="/PsychHub"         element={<PsycheHub />} />
+        <Route path="/PediatricHub"     element={<PedsHub />} />
+        <Route path="/SepsisAbxHub"     element={<SepsisAbxHub />} />
+        <Route path="/unified-pharma"   element={<UnifiedPharmacologyHub />} />
+        <Route path="/DrugComparisonHub" element={<DrugComparisonHub />} />
+        <Route path="/EdNoteGenerator"  element={<QuickNote />} />
+
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </>

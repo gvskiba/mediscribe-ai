@@ -80,6 +80,7 @@ const CI_LYTICS_REL = [
 
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function MassivePEHub({ onBack }) {
@@ -413,10 +414,10 @@ export default function MassivePEHub({ onBack }) {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(59,130,246,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.08) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
-
-      <NotryaHubHeader hubName="Massive PE Hub" category="Cardiac" homeUrl="/" />
-      <div style={{ padding: "16px 20px 0" }}></div>
+    <div style={{ display: "flex", minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(59,130,246,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.08) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white }}>
+      <NotryaNav currentHub="MassivePEHub" />
+      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: 80 }}>
+        <NotryaHubHeader hubName="Massive PE Hub" category="Cardiac" homeUrl="/" />
 
       <div style={{ display: "flex", gap: 4, padding: "0 20px", marginBottom: 18, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map((t, i) => (
@@ -432,6 +433,7 @@ export default function MassivePEHub({ onBack }) {
         {tab === 1 && Tab1}
         {tab === 2 && Tab2}
         {tab === 3 && Tab3}
+      </div>
       </div>
     </div>
   );

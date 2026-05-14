@@ -104,6 +104,7 @@ const VITAMINS = [
 
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function StatusEpilepticusHub({ onBack }) {
@@ -354,10 +355,10 @@ export default function StatusEpilepticusHub({ onBack }) {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(167,139,250,0.10) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.07) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
-
-      <NotryaHubHeader hubName="Status Epilepticus" category="Neurology" homeUrl="/" />
-      <div style={{ padding: "16px 20px 0" }}></div>
+    <div style={{ display: "flex", minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(167,139,250,0.10) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.07) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white }}>
+      <NotryaNav currentHub="StatusEpilepticusHub" />
+      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: 80 }}>
+        <NotryaHubHeader hubName="Status Epilepticus" category="Neurology" homeUrl="/" />
 
       <div style={{ display: "flex", gap: 4, padding: "0 20px", marginBottom: 18, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map((t, i) => (
@@ -373,6 +374,7 @@ export default function StatusEpilepticusHub({ onBack }) {
         {tab === 1 && T1}
         {tab === 2 && T2}
         {tab === 3 && T3}
+      </div>
       </div>
     </div>
   );

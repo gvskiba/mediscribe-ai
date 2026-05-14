@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── Font + CSS Injection ─────────────────────────────────────────
 (() => {
@@ -363,11 +364,12 @@ export default function ShockHub() {
   const activeResus = RESUS_PROTOCOLS[resusType];
 
   return (
-    <div style={{fontFamily:"DM Sans, sans-serif",background:T.bg,minHeight:"100vh",position:"relative",overflow:"hidden",color:T.txt}}>
-      <AmbientBg/>
-      <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 16px"}}>
-
+    <div style={{display:"flex",minHeight:"100vh",background:T.bg,color:T.txt}}>
+      <NotryaNav currentHub="ShockHub" />
+      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,position:"relative"}}>
+        <AmbientBg/>
         <NotryaHubHeader hubName="Shock Hub" category="Critical Care" homeUrl="/" />
+      <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 16px",width:"100%"}}>
 
         {/* Stat Banner */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(148px,1fr))",gap:10,marginBottom:16}}>
@@ -945,6 +947,7 @@ export default function ShockHub() {
             NOTRYA SHOCK HUB · SSC 2021 · PROPPR 2015 · VANISH 2016 · DE BACKER NEJM 2010 · SMART TRIAL · VERIFY ALL DOSING IN CLINICAL CONTEXT
           </span>
         </div>
+      </div>
       </div>
     </div>
   );

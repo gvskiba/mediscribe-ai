@@ -5,6 +5,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 import { ClinicalNote } from "@/api/entities";
 import ECGNSTEMIHub from "@/components/ecg/ECGNSTEMIHub";
 import ECGAFPathway  from "@/components/ecg/ECGAFPathway";
@@ -1688,12 +1689,11 @@ export default function ECGHub({ embedded = false, onBack }) {
   },[]);
 
   return (
-    <div style={{fontFamily:"'DM Sans',sans-serif",background:embedded?"transparent":T.bg,minHeight:embedded?"auto":"100vh",color:T.txt}}>
-      <div style={{maxWidth:960,margin:"0 auto",padding:embedded?"0":"0 16px"}}>
-
-        {!embedded&&(
-          <NotryaHubHeader hubName="ECG Hub" category="Cardiac" homeUrl="/" />
-        )}
+    <div style={{display:"flex",minHeight:"100vh",background:embedded?"transparent":T.bg,color:T.txt}}>
+      {!embedded && <NotryaNav currentHub="ECGHub" />}
+      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
+        {!embedded && <NotryaHubHeader hubName="ECG Hub" category="Cardiac" homeUrl="/" />}
+      <div style={{maxWidth:960,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%"}}>
 
         {/* Grouped tab bar */}
         <div style={{display:"flex",flexDirection:"column",gap:4,padding:4,marginBottom:16,background:"rgba(8,22,40,0.72)",border:"1px solid rgba(26,53,85,.75)",borderRadius:12,backdropFilter:"blur(16px)"}}>
@@ -1750,6 +1750,7 @@ export default function ECGHub({ embedded = false, onBack }) {
             NOTRYA ECG HUB · CLINICAL DECISION SUPPORT ONLY · 2025 ACC/AHA/ACEP · AI-ASSISTED INTERPRETATION
           </div>
         )}
+      </div>
       </div>
     </div>
   );

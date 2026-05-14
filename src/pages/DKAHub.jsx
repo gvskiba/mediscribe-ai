@@ -102,6 +102,7 @@ const COMPLICATIONS = [
 
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function DKAHub({ onBack }) {
@@ -400,10 +401,10 @@ export default function DKAHub({ onBack }) {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(245,158,11,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.07) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
-
-      <NotryaHubHeader hubName="DKA Hub" category="Critical Care" homeUrl="/" />
-      <div style={{ padding: "16px 20px 0" }}></div>
+    <div style={{ display: "flex", minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(245,158,11,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.07) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white }}>
+      <NotryaNav currentHub="DKAHub" />
+      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: 80 }}>
+        <NotryaHubHeader hubName="DKA Hub" category="Critical Care" homeUrl="/" />
 
       <div style={{ display: "flex", gap: 4, padding: "0 20px", marginBottom: 18, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map((t, i) => (
@@ -419,6 +420,7 @@ export default function DKAHub({ onBack }) {
         {tab === 1 && Tab1}
         {tab === 2 && Tab2}
         {tab === 3 && Tab3}
+      </div>
       </div>
     </div>
   );

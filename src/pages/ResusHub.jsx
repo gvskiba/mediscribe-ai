@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── Font injection ─────────────────────────────────────────────────────────────
 (() => {
@@ -566,17 +567,15 @@ export default function ResusHub({ embedded = false, onBack, demo, vitals }) {
   const handleRhythm = useCallback((id) => { setRhythm(id); setCheckState({}); }, []);
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif",
+    <div style={{ display:"flex", minHeight:"100vh",
       background: embedded ? "transparent" : T.bg,
-      minHeight:  embedded ? "auto" : "100vh",
       color:T.txt }}>
 
+      {!embedded && <NotryaNav currentHub="ResusHub" />}
+      <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
+        {!embedded && <NotryaHubHeader hubName="Resus Hub" category="Critical Care" homeUrl="/" />}
       <div style={{ maxWidth:1200, margin:"0 auto",
-        padding: embedded ? "0" : "0 16px" }}>
-
-        {!embedded && (
-          <NotryaHubHeader hubName="Resus Hub" category="Critical Care" homeUrl="/" />
-        )}
+        padding: embedded ? "0" : "0 16px", width:"100%" }}>
 
         {embedded && (
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
@@ -735,6 +734,7 @@ export default function ResusHub({ embedded = false, onBack, demo, vitals }) {
             NOTRYA RESUS · ACLS 2020 · PALS 2020 · AHA GUIDELINES · VERIFY WITH LOCAL PROTOCOLS AND CURRENT STANDARDS
           </div>
         )}
+      </div>
       </div>
     </div>
   );

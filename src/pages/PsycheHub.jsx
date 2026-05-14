@@ -17,6 +17,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 (() => {
   if (document.getElementById("psych-fonts")) return;
@@ -644,14 +645,13 @@ export default function PsychHub({ embedded = false }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("agitation");
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif",
-      background:embedded ? "transparent" : T.bg,
-      minHeight:embedded ? "auto" : "100vh", color:T.txt }}>
+    <div style={{ display:"flex", minHeight:"100vh",
+      background:embedded ? "transparent" : T.bg, color:T.txt }}>
+      {!embedded && <NotryaNav currentHub="PsychHub" />}
+      <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
+        {!embedded && <NotryaHubHeader hubName="Psych Hub" category="Neurology" homeUrl="/" />}
       <div style={{ maxWidth:900, margin:"0 auto",
-        padding:embedded ? "0" : "0 16px" }}>
-        {!embedded && (
-          <NotryaHubHeader hubName="Psych Hub" category="Neurology" homeUrl="/" />
-        )}
+        padding:embedded ? "0" : "0 16px", width:"100%" }}>
         <div style={{ display:"flex", gap:5, flexWrap:"wrap", padding:"6px",
           marginBottom:14, background:"rgba(24,10,26,0.85)",
           border:"1px solid rgba(80,40,120,0.4)", borderRadius:12 }}>
@@ -681,6 +681,7 @@ export default function PsychHub({ embedded = false }) {
             · C-SSRS · CIWA-AR (SULLIVAN 1989) · CLINICAL DECISION SUPPORT ONLY
           </div>
         )}
+      </div>
       </div>
     </div>
   );

@@ -57,6 +57,7 @@ const ELIMINATE = [
 
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function HyperkalemiaHub({ onBack }) {
@@ -360,10 +361,10 @@ export default function HyperkalemiaHub({ onBack }) {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 20% 0%, rgba(20,184,166,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(245,158,11,0.07) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
-
-      <NotryaHubHeader hubName="Hyperkalemia Hub" category="Critical Care" homeUrl="/" />
-      <div style={{ padding: "16px 20px 0" }}></div>
+    <div style={{ display: "flex", minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 20% 0%, rgba(20,184,166,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(245,158,11,0.07) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white }}>
+      <NotryaNav currentHub="HyperkalemiaHub" />
+      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: 80 }}>
+        <NotryaHubHeader hubName="Hyperkalemia Hub" category="Critical Care" homeUrl="/" />
 
       <div style={{ display: "flex", gap: 4, padding: "0 20px", marginBottom: 18, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map((t, i) => (
@@ -379,6 +380,7 @@ export default function HyperkalemiaHub({ onBack }) {
         {tab === 1 && T1}
         {tab === 2 && T2}
         {tab === 3 && T3}
+      </div>
       </div>
     </div>
   );

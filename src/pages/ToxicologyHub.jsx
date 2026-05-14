@@ -5,6 +5,7 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 (() => {
   if (document.getElementById("tox-fonts")) return;
@@ -698,12 +699,11 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
   const w = parseFloat(globalWeight) || 0;
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif",background:embedded?"transparent":T.bg,minHeight:embedded?"auto":"100vh",color:T.txt }}>
-      <div style={{ maxWidth:1300,margin:"0 auto",padding:embedded?"0":"0 16px" }}>
-
-        {!embedded && (
-          <NotryaHubHeader hubName="Toxicology Hub" category="Tox" homeUrl="/" />
-        )}
+    <div style={{ display:"flex",minHeight:"100vh",background:embedded?"transparent":T.bg,color:T.txt }}>
+      {!embedded && <NotryaNav currentHub="ToxicologyHub" />}
+      <div style={{ flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0 }}>
+        {!embedded && <NotryaHubHeader hubName="Toxicology Hub" category="Tox" homeUrl="/" />}
+      <div style={{ maxWidth:1300,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%" }}>
 
         {/* Global weight badge — always visible when set */}
         {w > 0 && (
@@ -880,6 +880,7 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
             NOTRYA TOX HUB · FOR CLINICAL DECISION SUPPORT ONLY · VERIFY WITH POISON CONTROL AND TOXICOLOGY
           </div>
         )}
+      </div>
       </div>
     </div>
   );

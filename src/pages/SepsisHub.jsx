@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 (() => {
   if (typeof document === "undefined") return;
@@ -181,14 +182,16 @@ export default function SepsisHub({ onBack }) {
   );
 
   return (
-    <div style={{minHeight:"100vh",background:`radial-gradient(ellipse 70% 45% at 15% 0%, rgba(20,184,166,0.10) 0%, transparent 65%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.08) 0%, transparent 55%), ${T.bg}`,fontFamily:T.sans,color:T.white,paddingBottom:80}}>
-      <NotryaHubHeader hubName="Sepsis Hub" category="Critical Care" homeUrl="/" />
-      <div style={{padding:"0 20px 0", paddingTop:16}}></div>
+    <div style={{display:"flex",minHeight:"100vh",background:`radial-gradient(ellipse 70% 45% at 15% 0%, rgba(20,184,166,0.10) 0%, transparent 65%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.08) 0%, transparent 55%), ${T.bg}`,fontFamily:T.sans,color:T.white}}>
+      <NotryaNav currentHub="SepsisHub" />
+      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,paddingBottom:80}}>
+        <NotryaHubHeader hubName="Sepsis Hub" category="Critical Care" homeUrl="/" />
       <div style={{display:"flex",gap:4,padding:"0 20px",marginBottom:18,overflowX:"auto",scrollbarWidth:"none"}}>
         {TABS.map((t,i)=>(<button key={t} style={{padding:"7px 15px",borderRadius:9,border:`1.5px solid ${tab===i?T.teal:T.border}`,background:tab===i?"rgba(20,184,166,0.14)":T.glass,color:tab===i?T.teal:T.muted,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:T.sans,whiteSpace:"nowrap",transition:"all 0.18s",backdropFilter:"blur(8px)"}} onClick={()=>setTab(i)}>{t}</button>))}
       </div>
       <div style={{padding:"0 20px"}}>
         {tab===0&&B0}{tab===1&&B1}{tab===2&&B2}{tab===3&&B3}
+      </div>
       </div>
     </div>
   );

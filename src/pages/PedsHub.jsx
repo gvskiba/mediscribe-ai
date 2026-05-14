@@ -7,6 +7,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 const T = {
   bg:"#050d1a",txt:"#ddeeff",txt2:"#7aafd4",txt3:"#4d82a8",txt4:"#3a6a9a",
@@ -1747,38 +1748,7 @@ export default function PediatricHub({ embedded = false }) {
     <div style={{ fontFamily:S.sans,background:embedded?"transparent":T.bg,
       minHeight:embedded?"auto":"100vh",color:T.txt }}>
       <div style={{ maxWidth:900,margin:"0 auto",padding:embedded?"0":"0 16px" }}>
-        {!embedded&&<div style={{ padding:"10px 0 8px" }}>
-          <button onClick={()=>navigate("/hub")}
-            style={{ marginBottom:10,display:"inline-flex",alignItems:"center",gap:7,
-              fontFamily:S.sans,fontSize:12,fontWeight:600,padding:"5px 14px",borderRadius:8,
-              background:"rgba(3,10,24,0.85)",border:"1px solid rgba(30,70,130,0.5)",
-              color:T.txt3,cursor:"pointer" }}>
-            ← Back to Hub
-          </button>
-          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:8 }}>
-            <div style={{ background:"rgba(3,10,24,0.96)",border:"1px solid rgba(30,70,130,0.6)",
-              borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8 }}>
-              <span style={{ fontFamily:S.mono,fontSize:10,color:T.mint,letterSpacing:3 }}>NOTRYA</span>
-              <span style={{ color:T.txt4,fontFamily:S.mono,fontSize:10 }}>/</span>
-              <span style={{ fontFamily:S.mono,fontSize:9,color:T.txt3,letterSpacing:2 }}>PEDS</span>
-            </div>
-            <div style={{ height:1,flex:1,background:"linear-gradient(90deg,rgba(61,255,160,0.45),transparent)" }} />
-          </div>
-          <h1 className="shimmer-peds" style={{ fontFamily:S.serif,fontSize:"clamp(16px,3vw,26px)",fontWeight:900,letterSpacing:-0.5,lineHeight:1.1 }}>
-            Pediatric Emergency Hub
-          </h1>
-          {globalWt&&<div style={{ display:"inline-flex",alignItems:"center",gap:6,marginTop:6,
-            padding:"4px 12px",borderRadius:7,background:"rgba(61,255,160,0.08)",border:"1px solid rgba(61,255,160,0.3)" }}>
-            <span style={{ fontFamily:S.mono,fontSize:9,color:T.txt4,letterSpacing:1 }}>ACTIVE WEIGHT</span>
-            <span style={{ fontFamily:S.mono,fontSize:14,fontWeight:700,color:T.green }}>{globalWt} kg</span>
-          </div>}
-          <p style={{ fontFamily:S.sans,fontSize:11,color:T.txt4,marginTop:6 }}>
-            Broselow · Vitals · PECARN · Peds GCS · Fever / Rochester · PALS Resus · ETT Sizing ·
-            Holliday-Segar · Seizure Protocol · Antibiotics By Condition + mL · IV ABX + mL ·
-            Discharge PO + All Concentrations · Analgesia/Sed + mL · Steroids/Resp + mL ·
-            PRAM · FLACC · APGAR · Dehydration · DKA · Burns · Button Battery
-          </p>
-        </div>}
+        {!embedded&&<NotryaHubHeader hubName="Peds Hub" category="Critical Care" homeUrl="/" />}
         {globalWt&&embedded&&<div style={{ display:"inline-flex",alignItems:"center",gap:6,marginBottom:8,
           padding:"4px 12px",borderRadius:7,background:"rgba(61,255,160,0.08)",border:"1px solid rgba(61,255,160,0.3)" }}>
           <span style={{ fontFamily:S.mono,fontSize:9,color:T.txt4,letterSpacing:1 }}>ACTIVE WEIGHT</span>

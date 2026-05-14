@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 // ── Font + CSS Injection ─────────────────────────────────────────
 (() => {
@@ -366,21 +367,7 @@ export default function ShockHub() {
       <AmbientBg/>
       <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 16px"}}>
 
-        {/* Header */}
-        <div style={{padding:"18px 0 14px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-            <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",background:"rgba(5,15,30,0.9)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.teal,letterSpacing:3}}>NOTRYA</span>
-              <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>
-              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt3,letterSpacing:2}}>SHOCK HUB</span>
-            </div>
-            <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(42,79,122,0.6),transparent)"}}/>
-          </div>
-          <h1 className="shimmer-text" style={{fontFamily:"Playfair Display",fontSize:"clamp(24px,4vw,40px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1}}>Shock Hub</h1>
-          <p style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3,marginTop:4}}>
-            Hemodynamic profiles · Vasopressor ladder with dosing · MAP/CVP targets · RUSH exam framework · Resuscitation protocols
-          </p>
-        </div>
+        <NotryaHubHeader hubName="Shock Hub" category="Critical Care" homeUrl="/" />
 
         {/* Stat Banner */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(148px,1fr))",gap:10,marginBottom:16}}>

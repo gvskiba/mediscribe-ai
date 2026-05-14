@@ -16,6 +16,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 (() => {
   if (document.getElementById("psych-fonts")) return;
@@ -649,26 +650,7 @@ export default function PsychHub({ embedded = false }) {
       <div style={{ maxWidth:900, margin:"0 auto",
         padding:embedded ? "0" : "0 16px" }}>
         {!embedded && (
-          <div style={{ padding:"18px 0 14px" }}>
-            <button onClick={() => navigate("/hub")}
-              style={{ marginBottom:10, display:"inline-flex",
-                alignItems:"center", gap:7, fontFamily:"'DM Sans',sans-serif",
-                fontSize:12, fontWeight:600, padding:"5px 14px", borderRadius:8,
-                background:"rgba(13,5,15,0.8)",
-                border:"1px solid rgba(80,40,120,0.5)",
-                color:T.txt3, cursor:"pointer" }}>← Back to Hub</button>
-            <h1 className="shimmer-p"
-              style={{ fontFamily:"'Playfair Display',serif",
-                fontSize:"clamp(22px,4vw,38px)",
-                fontWeight:900, letterSpacing:-0.5, lineHeight:1.1 }}>
-              Psychiatric Emergency Hub
-            </h1>
-            <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-              color:T.txt4, marginTop:4 }}>
-              Agitation (ACEP 2023 Droperidol Level B) · SI/HI Risk · CIWA-Ar
-              · Serotonin Syndrome · NMS · Anticholinergic · Sympathomimetic
-            </p>
-          </div>
+          <NotryaHubHeader hubName="Psych Hub" category="Neurology" homeUrl="/" />
         )}
         <div style={{ display:"flex", gap:5, flexWrap:"wrap", padding:"6px",
           marginBottom:14, background:"rgba(24,10,26,0.85)",

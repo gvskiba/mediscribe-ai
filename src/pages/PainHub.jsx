@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────────
 (() => {
@@ -677,13 +678,8 @@ function PainHub({embedded, onBack}) {
   const [tab, setTab] = useState("ladder");
   const [wt, setWt] = useState("");
 
-  const handleBack = () => {
-    if (onBack) { onBack(); return; }
-    if (typeof window !== "undefined") window.history.back();
-  };
-
   return (
-    <div style={{minHeight:"100vh",background:T.bg,fontFamily:"'DM Sans',sans-serif",color:T.txt}}>
+    <div style={{display:"flex",minHeight:"100vh",background:T.bg,fontFamily:"'DM Sans',sans-serif",color:T.txt}}>
       <style>{`
         @keyframes phFadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
         * { box-sizing: border-box; }
@@ -694,48 +690,56 @@ function PainHub({embedded, onBack}) {
         input:focus{border-color:rgba(255,159,67,0.6) !important}
       `}</style>
 
-      {/* Header */}
-      <NotryaHubHeader
-        hubName="Pain"
-        category="Documentation"
-        homeUrl="/hub"
-        statusSlot={wt ? (
-          <div style={{background:"rgba(0,229,192,0.1)",border:"1px solid rgba(0,229,192,0.3)",borderRadius:6,padding:"4px 10px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"#00e5c0"}}>
-            ⚖ {wt} kg
-          </div>
-        ) : null}
-      />
+      {/* Left sidebar nav */}
+      <NotryaNav currentHub="Pain" />
 
-      {/* Tab Bar */}
-      <div style={{background:"rgba(8,16,32,0.9)",borderBottom:"1px solid rgba(26,53,85,0.5)",padding:"0 20px",display:"flex",overflowX:"auto"}}>
-        {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t.key?A:"transparent"),color:tab===t.key?A:T.txt3,padding:"10px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,whiteSpace:"nowrap",transition:"all 0.2s",display:"flex",alignItems:"center",gap:5,outline:"none"}}>
-            <span>{t.icon}</span>{t.label}
-          </button>
-        ))}
-      </div>
+      {/* Main content column */}
+      <div style={{display:"flex",flexDirection:"column",flex:1,minWidth:0}}>
+        {/* Header */}
+        <NotryaHubHeader
+          hubName="Pain"
+          category="Documentation"
+          homeUrl="/hub"
+          statusSlot={wt ? (
+            <div style={{background:"rgba(0,229,192,0.1)",border:"1px solid rgba(0,229,192,0.3)",borderRadius:6,padding:"4px 10px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"#00e5c0"}}>
+              ⚖ {wt} kg
+            </div>
+          ) : null}
+        />
 
-      {/* Weight prompt banner */}
-      {!wt && (tab==="opioids"||tab==="ketamine"||tab==="orders") && (
-        <div style={{background:"rgba(255,159,67,0.07)",borderBottom:"1px solid rgba(255,159,67,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-          <span style={{fontSize:11,color:T.orange}}>⚖ Enter patient weight for weight-based dosing:</span>
-          <input onChange={e => setWt(e.target.value)} placeholder="kg"
-            style={{width:72,background:"rgba(8,22,44,0.9)",border:"1px solid rgba(255,159,67,0.4)",borderRadius:5,padding:"4px 8px",color:T.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:12,outline:"none"}} />
+        {/* Tab Bar */}
+        <div style={{background:"rgba(8,16,32,0.9)",borderBottom:"1px solid rgba(26,53,85,0.5)",padding:"0 20px",display:"flex",overflowX:"auto"}}>
+          {TABS.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t.key?A:"transparent"),color:tab===t.key?A:T.txt3,padding:"10px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,whiteSpace:"nowrap",transition:"all 0.2s",display:"flex",alignItems:"center",gap:5,outline:"none"}}>
+              <span>{t.icon}</span>{t.label}
+            </button>
+          ))}
         </div>
-      )}
 
-      {/* Content */}
-      <div style={{padding:20,maxWidth:880,margin:"0 auto",animation:"phFadeIn 0.25s ease"}} key={tab}>
-        {tab==="ladder"   && <PainLadderTab wt={wt} />}
-        {tab==="opioids"  && <OpioidTab wt={wt} setWt={setWt} />}
-        {tab==="blocks"   && <NerveBlockTab />}
-        {tab==="ketamine" && <KetamineTab wt={wt} setWt={setWt} />}
-        {tab==="orders"   && <OrdersTab wt={wt} />}
-      </div>
+        {/* Weight prompt banner */}
+        {!wt && (tab==="opioids"||tab==="ketamine"||tab==="orders") && (
+          <div style={{background:"rgba(255,159,67,0.07)",borderBottom:"1px solid rgba(255,159,67,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <span style={{fontSize:11,color:T.orange}}>⚖ Enter patient weight for weight-based dosing:</span>
+            <input onChange={e => setWt(e.target.value)} placeholder="kg"
+              style={{width:72,background:"rgba(8,22,44,0.9)",border:"1px solid rgba(255,159,67,0.4)",borderRadius:5,padding:"4px 8px",color:T.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:12,outline:"none"}} />
+          </div>
+        )}
 
-      <div style={{padding:"20px",textAlign:"center",fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5}}>
-        NOTRYA PAIN HUB · CLINICAL DECISION SUPPORT ONLY · VERIFY WITH LOCAL FORMULARY AND CLINICAL JUDGMENT
+        {/* Content */}
+        <div style={{flex:1,overflowY:"auto",padding:20}}>
+          <div style={{maxWidth:880,margin:"0 auto",animation:"phFadeIn 0.25s ease"}} key={tab}>
+            {tab==="ladder"   && <PainLadderTab wt={wt} />}
+            {tab==="opioids"  && <OpioidTab wt={wt} setWt={setWt} />}
+            {tab==="blocks"   && <NerveBlockTab />}
+            {tab==="ketamine" && <KetamineTab wt={wt} setWt={setWt} />}
+            {tab==="orders"   && <OrdersTab wt={wt} />}
+          </div>
+        </div>
+
+        <div style={{padding:"20px",textAlign:"center",fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5}}>
+          NOTRYA PAIN HUB · CLINICAL DECISION SUPPORT ONLY · VERIFY WITH LOCAL FORMULARY AND CLINICAL JUDGMENT
+        </div>
       </div>
     </div>
   );

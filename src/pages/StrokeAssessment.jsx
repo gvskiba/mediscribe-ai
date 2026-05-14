@@ -691,18 +691,6 @@ export default function StrokeHub({embedded=false,onBack,demo={},vitals={},cc={}
         display:"flex",flexDirection:"column",padding:"0 0 24px 0",
         position:"sticky",top:0,height:"100vh",overflowY:"auto"}}>
 
-        {/* Branding */}
-        <div style={{padding:"18px 16px 14px",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#f1f5f9",marginBottom:6}}>StrokeHub</div>
-          <div style={{display:"inline-flex",background:"rgba(239,68,68,0.14)",border:"1px solid rgba(239,68,68,0.28)",
-            borderRadius:20,color:"#fca5a5",fontSize:9,fontWeight:700,padding:"2px 9px",letterSpacing:"0.7px",textTransform:"uppercase"}}>STROKE</div>
-        </div>
-
-        {/* Back */}
-        <div style={{padding:"10px 12px 6px"}}>
-          <button onClick={handleBack} style={{background:"transparent",border:"none",color:C.dimmer,
-            cursor:"pointer",fontSize:12,padding:"5px 4px",display:"flex",alignItems:"center",gap:6,width:"100%"}}>← Back</button>
-        </div>
         
 
         {/* Tabs */}

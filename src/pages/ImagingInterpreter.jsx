@@ -7,6 +7,8 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ─── STYLE INJECTION ──────────────────────────────────────────────────────────
 (() => {
@@ -910,44 +912,14 @@ export default function ImagingInterpreter({
   const hasError = Boolean(errors[activePanel]);
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif",
-      background:embedded ? "transparent" : "var(--img-bg)",
-      minHeight:embedded ? "auto" : "100vh", color:"var(--img-txt)" }}>
-      <div style={{ maxWidth:1200, margin:"0 auto", padding:embedded ? "0" : "0 16px" }}>
+    <div style={{ display:"flex", minHeight:"100vh",
+      background:embedded ? "transparent" : "var(--img-bg)", color:"var(--img-txt)" }}>
+      {!embedded && <NotryaNav currentHub="ImagingInterpreter" />}
+      <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
+        {!embedded && <NotryaHubHeader hubName="Imaging Interpreter" category="Imaging" homeUrl="/" />}
+      <div style={{ maxWidth:1200, margin:"0 auto", padding:embedded ? "0" : "0 16px", width:"100%" }}>
 
-        {/* Standalone header */}
-        {!embedded && (
-          <div style={{ padding:"18px 0 14px" }} className="no-print">
-            <button onClick={() => window.history.back()}
-              style={{ marginBottom:10, display:"inline-flex", alignItems:"center", gap:7,
-                fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
-                background:"rgba(14,37,68,.7)", border:"1px solid rgba(42,79,122,.5)",
-                borderRadius:8, padding:"5px 14px", color:"var(--img-txt3)", cursor:"pointer" }}>
-              Back to Hub
-            </button>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-              <div style={{ background:"rgba(5,15,30,.9)", border:"1px solid rgba(42,79,122,.6)",
-                borderRadius:10, padding:"5px 12px", display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
-                  color:"var(--img-purple)", letterSpacing:3 }}>NOTRYA</span>
-                <span style={{ color:"var(--img-txt4)", fontFamily:"'JetBrains Mono',monospace", fontSize:10 }}>/</span>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
-                  color:"var(--img-txt3)", letterSpacing:2 }}>IMAGING</span>
-              </div>
-              <div style={{ height:1, flex:1,
-                background:"linear-gradient(90deg,rgba(0,229,192,.5),transparent)" }} />
-            </div>
-            <h1 className="img3-shim" style={{ fontFamily:"'Playfair Display',serif",
-              fontSize:"clamp(22px,4vw,38px)", fontWeight:900,
-              letterSpacing:-.5, lineHeight:1.1, margin:0 }}>
-              Imaging Interpreter
-            </h1>
-            <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-              color:"var(--img-txt4)", marginTop:4, marginBottom:0 }}>
-              7 Panels · Paste · Structured · Image AI · Keys 1-7 · M cycle · Cmd+Enter submit · C copy
-            </p>
-          </div>
-        )}
+        
 
         {embedded && (
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }} className="no-print">
@@ -1212,6 +1184,7 @@ export default function ImagingInterpreter({
             ALWAYS CONFIRM WITH FORMAL RADIOLOGY READ · NOT A SUBSTITUTE FOR RADIOLOGIST INTERPRETATION
           </div>
         )}
+      </div>
       </div>
     </div>
   );

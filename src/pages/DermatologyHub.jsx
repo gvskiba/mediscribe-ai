@@ -13,6 +13,8 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ─── STYLE INJECTION ──────────────────────────────────────────────────────────
 (() => {
@@ -984,43 +986,14 @@ export default function DermatologyHub({
   }, []);
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif",
-      background:embedded ? "transparent" : "var(--derm-bg)",
-      minHeight:embedded ? "auto" : "100vh", color:"var(--derm-txt)" }}>
-      <div style={{ maxWidth:1300, margin:"0 auto", padding:embedded ? "0" : "0 16px" }}>
+    <div style={{ display:"flex", minHeight:"100vh",
+      background:embedded ? "transparent" : "var(--derm-bg)", color:"var(--derm-txt)" }}>
+      {!embedded && <NotryaNav currentHub="DermatologyHub" />}
+      <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
+        {!embedded && <NotryaHubHeader hubName="Dermatology Hub" category="Imaging" homeUrl="/" />}
+      <div style={{ maxWidth:1300, margin:"0 auto", padding:embedded ? "0" : "0 16px", width:"100%" }}>
 
-        {/* Standalone header */}
-        {!embedded && (
-          <div style={{ padding:"18px 0 14px" }} className="no-print">
-            <button onClick={() => navigate("/hub")}
-              style={{ marginBottom:10, display:"inline-flex", alignItems:"center", gap:7,
-                fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
-                background:"rgba(14,37,68,.7)", border:"1px solid rgba(42,79,122,.5)",
-                borderRadius:8, padding:"5px 14px", color:"var(--derm-txt3)", cursor:"pointer" }}>
-              Back to Hub
-            </button>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-              <div style={{ background:"rgba(5,15,30,.9)", border:"1px solid rgba(42,79,122,.6)",
-                borderRadius:10, padding:"5px 12px", display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
-                  color:"var(--derm-teal)", letterSpacing:3 }}>NOTRYA</span>
-                <span style={{ color:"var(--derm-txt4)", fontFamily:"'JetBrains Mono',monospace", fontSize:10 }}>/</span>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
-                  color:"var(--derm-txt3)", letterSpacing:2 }}>DERM</span>
-              </div>
-              <div style={{ height:1, flex:1, background:"linear-gradient(90deg,rgba(0,229,192,.5),transparent)" }} />
-            </div>
-            <h1 className="d2-shim" style={{ fontFamily:"'Playfair Display',serif",
-              fontSize:"clamp(24px,4vw,40px)", fontWeight:900,
-              letterSpacing:-.5, lineHeight:1.1, margin:0 }}>
-              Dermatology Hub
-            </h1>
-            <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12,
-              color:"var(--derm-txt4)", marginTop:4, marginBottom:0 }}>
-              AAD · ACEP · 2024 Canadian ED Guidelines · Skin of Color Equity · LRINEC · BSA · TCS Guide
-            </p>
-          </div>
-        )}
+        
 
         {embedded && (
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
@@ -1292,6 +1265,7 @@ export default function DermatologyHub({
             AI CLINICAL DECISION SUPPORT · NOT A SUBSTITUTE FOR DERMATOLOGIST EVALUATION
           </div>
         )}
+      </div>
       </div>
     </div>
   );

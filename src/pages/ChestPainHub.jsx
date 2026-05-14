@@ -2,6 +2,8 @@
 // Constraints: no form, no localStorage, straight quotes, single react import
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 import {
   T, FF, TABS, HEART_ITEMS, GUIDED_STEPS, dispositionRec, heartStrata,
   calcTrop, evalHST, calcEDACS, edacsRisk, calcGRACE, graceInterp,
@@ -397,38 +399,12 @@ export default function ChestPainHub({ embedded = false, onBack }) {
   }, []);
 
   return (
-    <div style={{ fontFamily:FF.sans, background:embedded ? "transparent" : T.bg,
-      minHeight:embedded ? "auto" : "100vh", color:T.txt }}>
-      <div style={{ maxWidth:900, margin:"0 auto", padding:embedded ? "0" : "0 16px" }}>
-
-        {!embedded && (
-          <div style={{ padding:"18px 0 14px" }}>
-            <button onClick={handleBack}
-              style={{ marginBottom:10, display:"inline-flex", alignItems:"center", gap:7,
-                fontFamily:FF.sans, fontSize:12, fontWeight:600,
-                padding:"5px 14px", borderRadius:8, background:"rgba(14,28,58,0.88)",
-                border:"1px solid rgba(35,70,115,0.75)", color:T.txt3, cursor:"pointer" }}>
-              ← Back to Hub
-            </button>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-              <div style={{ background:"rgba(14,28,58,0.94)", border:"1px solid rgba(35,70,115,0.75)",
-                borderRadius:10, padding:"5px 12px", display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontFamily:FF.mono, fontSize:10, color:T.purple, letterSpacing:3 }}>NOTRYA</span>
-                <span style={{ color:T.txt4, fontFamily:FF.mono, fontSize:10 }}>/</span>
-                <span style={{ fontFamily:FF.mono, fontSize:10, color:T.txt3, letterSpacing:2 }}>CHEST PAIN</span>
-              </div>
-              <div style={{ height:1, flex:1, background:"linear-gradient(90deg,rgba(255,107,107,0.5),transparent)" }} />
-            </div>
-            <h1 className="shimmer-cph"
-              style={{ fontFamily:FF.serif, fontSize:"clamp(22px,4vw,38px)",
-                fontWeight:900, letterSpacing:-0.5, lineHeight:1.1 }}>
-              Chest Pain Hub
-            </h1>
-            <p style={{ fontFamily:FF.sans, fontSize:12, color:T.txt4, marginTop:4 }}>
-              HEART Score · Serial Troponin · EDACS · PE / Dissection / Pericarditis · ACS Protocol · Disposition
-            </p>
-          </div>
-        )}
+    <div style={{ display:"flex", minHeight:"100vh",
+      background:embedded ? "transparent" : T.bg, color:T.txt }}>
+      {!embedded && <NotryaNav currentHub="ChestPainHub" />}
+      <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
+        {!embedded && <NotryaHubHeader hubName="Chest Pain Hub" category="Cardiac" homeUrl="/" />}
+      <div style={{ maxWidth:900, margin:"0 auto", padding:embedded ? "0" : "0 16px", width:"100%" }}>
 
         {/* Mode toggle */}
         <div style={{ display:"flex", gap:6, marginBottom:12 }}>
@@ -558,6 +534,7 @@ export default function ChestPainHub({ embedded = false, onBack }) {
             · WELLS PE · ADD-RS (ROGERS 2011) · ACC/AHA 2021 · ACEP 2024
           </div>
         )}
+      </div>
       </div>
     </div>
   );

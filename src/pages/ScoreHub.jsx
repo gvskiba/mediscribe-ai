@@ -779,7 +779,7 @@ export default function ScoreHub({
 
         {/* Standalone header */}
         {!embedded && (
-          <NotryaHubHeader hubName="Score Hub" category="Clinical Care" />
+          <NotryaHubHeader hubName="Score Hub" category="Imaging" homeUrl="/" />
         )}
 
         {/* Embedded subheader */}

@@ -1065,7 +1065,7 @@ export default function LabHub({
       <div style={{maxWidth:1100,margin:"0 auto",padding:embedded?"0":"0 16px"}}>
 
         {!embedded&&(
-          <NotryaHubHeader hubName="Lab Interpreter" category="Labs" />
+          <NotryaHubHeader hubName="Lab Interpreter" category="Labs" homeUrl="/" />
         )}
 
         {embedded&&(

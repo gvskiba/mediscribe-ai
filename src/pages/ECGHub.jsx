@@ -1692,7 +1692,7 @@ export default function ECGHub({ embedded = false, onBack }) {
       <div style={{maxWidth:960,margin:"0 auto",padding:embedded?"0":"0 16px"}}>
 
         {!embedded&&(
-          <NotryaHubHeader hubName="ECG Hub" category="Cardiac" />
+          <NotryaHubHeader hubName="ECG Hub" category="Cardiac" homeUrl="/" />
         )}
 
         {/* Grouped tab bar */}

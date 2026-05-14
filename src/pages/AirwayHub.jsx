@@ -50,7 +50,7 @@ export default function AirwayHub() {
     <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{`*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(26,53,85,0.9);border-radius:2px}button,input,textarea{font-family:inherit}`}</style>
 
-      <NotryaHubHeader hubName="Airway Hub" category="Critical Care" />
+      <NotryaHubHeader hubName="Airway Hub" category="Critical Care" homeUrl="/" />
       <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"10px 20px",flexShrink:0}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
           {STATS.map((s,i)=>(

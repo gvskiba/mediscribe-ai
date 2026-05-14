@@ -702,7 +702,7 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
       <div style={{ maxWidth:1300,margin:"0 auto",padding:embedded?"0":"0 16px" }}>
 
         {!embedded && (
-          <NotryaHubHeader hubName="Toxicology Hub" category="Tox" />
+          <NotryaHubHeader hubName="Toxicology Hub" category="Tox" homeUrl="/" />
         )}
 
         {/* Global weight badge — always visible when set */}

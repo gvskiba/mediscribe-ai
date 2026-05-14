@@ -790,7 +790,7 @@ export default function OrthoHub() {
       <AmbientBg/>
       <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 18px"}}>
 
-        <NotryaHubHeader hubName="Ortho Hub" category="Procedures" />
+        <NotryaHubHeader hubName="Ortho Hub" category="Procedures" homeUrl="/" />
 
         {/* Stat Banner */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:16}}>

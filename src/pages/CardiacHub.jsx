@@ -429,7 +429,7 @@ export default function CardiacHub(){
   const backToHub=useCallback(()=>selectSection("cardiac-home"),[selectSection]);
 
   return(<>
-    <NotryaHubHeader hubName="Cardiac Hub" category="Cardiac" />
+    <NotryaHubHeader hubName="Cardiac Risk" category="Cardiac" homeUrl="/" />
     <style>{CSS}</style>
     <aside className="icon-sidebar">
       <div className="isb-logo"><div className="isb-logo-box" onClick={()=>navigate('/hub')} style={{cursor:'pointer'}}>{pageAbbr}</div></div>

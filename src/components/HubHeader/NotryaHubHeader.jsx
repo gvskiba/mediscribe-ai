@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-// ─── Hub catalogue ────────────────────────────────────────────────────────────
-export const HUBS = [
+// Hub catalogue with names and categories
+const HUBS = [
   { hubName: "ECG Hub",              category: "Cardiac" },
   { hubName: "Cardiac Risk",         category: "Cardiac" },
   { hubName: "Stroke Hub",           category: "Neurology" },
@@ -18,8 +18,8 @@ export const HUBS = [
   { hubName: "Ortho Hub",            category: "Procedures" },
 ];
 
-// ─── Category color map ──────────────────────────────────────────────────────
-export const CAT_COLOR = {
+// Category color map
+const CAT_COLOR = {
   "Cardiac":       "#FF6B6B",
   "Neurology":     "#00BFA5",
   "Tox":           "#FF8C42",
@@ -30,33 +30,7 @@ export const CAT_COLOR = {
   "Procedures":    "#CE93D8",
 };
 
-// ─── NotryaHubHeader ─────────────────────────────────────────────────────────
-/**
- * Standardized header for every Notrya hub page.
- *
- * Usage (minimal):
- *   <NotryaHubHeader hubName="ECG Hub" category="Cardiac" />
- *
- * Usage (with right-side actions):
- *   <NotryaHubHeader
- *     hubName="ECG Hub"
- *     category="Cardiac"
- *     homeUrl="/"
- *     actions={<YourPrintButton />}
- *   />
- *
- * Props:
- *   hubName   string   Hub display name
- *   category  string   Cardiac | Neurology | Tox | Documentation | Critical Care | Imaging | Labs | Procedures
- *   homeUrl   string   Optional. Home navigation target. Default: "/"
- *   actions   node     Optional. Right-side JSX slot (print btn, timer, etc.)
- */
-export default function NotryaHubHeader({ 
-  hubName = "Hub", 
-  category = "Clinical", 
-  homeUrl = "/", 
-  actions = null 
-}) {
+export default function NotryaHubHeader({ hubName = "Hub", category = "Clinical", homeUrl = "/", actions = null }) {
   const [hov, setHov] = useState(false);
   const catColor = CAT_COLOR[category] || "#00BFA5";
 
@@ -81,50 +55,40 @@ export default function NotryaHubHeader({
       zIndex: 100,
     }}>
 
-      {/* Left — breadcrumb */}
+      {/* Left: Notrya / Category / Hub name */}
       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
 
-        {/* Notrya wordmark */}
         <span
           onClick={goHome}
           onMouseEnter={() => setHov(true)}
           onMouseLeave={() => setHov(false)}
           style={{
             fontFamily: '"Playfair Display", Georgia, serif',
-            fontSize: "17px",
-            fontWeight: "700",
+            fontSize: "17px", fontWeight: "700",
             color: hov ? "#00BFA5" : "#E8EDF5",
-            cursor: "pointer",
-            userSelect: "none",
-            transition: "color 0.15s",
-            letterSpacing: "-0.3px",
+            cursor: "pointer", userSelect: "none",
+            transition: "color 0.15s", letterSpacing: "-0.3px",
           }}
         >Notrya</span>
 
         <span style={{ color: "rgba(232,237,245,0.22)", fontSize: "16px", lineHeight: 1, margin: "0 1px" }}>/</span>
 
-        {/* Category */}
         <span style={{
           width: "6px", height: "6px", borderRadius: "50%",
           background: catColor, display: "inline-block", flexShrink: 0,
         }} />
-        <span style={{ fontSize: "13px", color: "rgba(232,237,245,0.50)", fontWeight: "400" }}>
-          {category}
-        </span>
+        <span style={{ fontSize: "13px", color: "rgba(232,237,245,0.50)" }}>{category}</span>
 
         <span style={{ color: "rgba(232,237,245,0.22)", fontSize: "16px", lineHeight: 1, margin: "0 1px" }}>/</span>
 
-        {/* Hub name */}
         <span style={{
           fontFamily: '"Playfair Display", Georgia, serif',
-          fontSize: "16px",
-          fontWeight: "600",
-          color: "#F4B942",
-          letterSpacing: "-0.2px",
+          fontSize: "16px", fontWeight: "600",
+          color: "#F4B942", letterSpacing: "-0.2px",
         }}>{hubName}</span>
       </div>
 
-      {/* Right — optional slot + home */}
+      {/* Right: optional actions slot + home button */}
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         {actions}
         <button

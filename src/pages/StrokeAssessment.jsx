@@ -682,7 +682,7 @@ export default function StrokeHub({embedded=false,onBack,demo={},vitals={},cc={}
     <div ref={wrapRef} style={{display:"flex",flexDirection:"column",minHeight:"100vh",
       background:"linear-gradient(160deg,rgba(7,12,32,1) 0%,rgba(11,19,46,1) 100%)",
       fontFamily:"'DM Sans',sans-serif",color:C.text}}>
-      {!embedded && <NotryaHubHeader hubName="Stroke Hub" category="Neurology" />}
+      {!embedded && <NotryaHubHeader hubName="Stroke Hub" category="Neurology" homeUrl="/" />}
       <div style={{display:"flex",flex:1}}>
 
       {/* Left rail */}

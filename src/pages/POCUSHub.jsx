@@ -4,6 +4,7 @@ import POCUSGallery from "../components/pocus/POCUSGallery";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── Font + CSS Injection ──────────────────────────────────────────────────────
 (() => {
@@ -822,11 +823,12 @@ export default function POCUSHub() {
   const activeFinding = ANNOTATED_FINDINGS.find(f=>f.id===findingId);
 
   return (
-    <div style={{fontFamily:"DM Sans, sans-serif",background:T.bg,minHeight:"100vh",position:"relative",overflow:"hidden",color:T.txt}}>
-      <AmbientBg/>
-      <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 16px"}}>
-
+    <div style={{display:"flex",minHeight:"100vh",background:T.bg,color:T.txt}}>
+      <NotryaNav currentHub="POCUSHub" />
+      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,position:"relative"}}>
+        <AmbientBg/>
         <NotryaHubHeader hubName="POCUS Hub" category="Procedures" homeUrl="/" />
+      <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 16px",width:"100%"}}>
 
         {/* Stat Banner */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:16}}>
@@ -1250,6 +1252,7 @@ export default function POCUSHub() {
             NOTRYA POCUS HUB · RUSH (WEINGART 2012) · BLUE PROTOCOL (LICHTENSTEIN 2008) · eFAST (ATLS 11TH ED) · VERIFY ALL FINDINGS WITH CLINICAL CONTEXT
           </span>
         </div>
+      </div>
       </div>
     </div>
   );

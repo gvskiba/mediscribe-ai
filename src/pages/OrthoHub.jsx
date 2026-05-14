@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import XRayViewer from "../components/ortho/XRayViewer";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── Font + CSS Injection ──────────────────────────────────────────────────────
 (() => {
@@ -786,11 +787,12 @@ export default function OrthoHub() {
   const activeGust = GUSTILO.find(g=>g.grade===gustGrade);
 
   return (
-    <div style={{fontFamily:"DM Sans, sans-serif",background:T.bg,minHeight:"100vh",position:"relative",overflow:"hidden",color:T.txt}}>
-      <AmbientBg/>
-      <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 18px"}}>
-
+    <div style={{display:"flex",minHeight:"100vh",background:T.bg,color:T.txt}}>
+      <NotryaNav currentHub="OrthoHub" />
+      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,position:"relative"}}>
+        <AmbientBg/>
         <NotryaHubHeader hubName="Ortho Hub" category="Procedures" homeUrl="/" />
+      <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 18px",width:"100%"}}>
 
         {/* Stat Banner */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:16}}>
@@ -1036,6 +1038,7 @@ export default function OrthoHub() {
           </span>
         </div>
 
+      </div>
       </div>
     </div>
   );

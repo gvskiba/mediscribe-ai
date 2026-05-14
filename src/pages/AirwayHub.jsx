@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 const T = {
   bg:"#050f1e",panel:"#081628",b:"rgba(26,53,85,0.8)",
@@ -47,9 +48,10 @@ const EV = ["DAS 2022","ARDSNet NEJM 2000","PROSEVA 2013","FLORALI 2015","BTS 20
 export default function AirwayHub() {
   const navigate = useNavigate();
   return (
-    <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    <div style={{display:"flex",minHeight:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif"}}>
+      <NotryaNav currentHub="AirwayHub" />
       <style>{`*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(26,53,85,0.9);border-radius:2px}button,input,textarea{font-family:inherit}`}</style>
-
+      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
       <NotryaHubHeader hubName="Airway Hub" category="Critical Care" homeUrl="/" />
       <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"10px 20px",flexShrink:0}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
@@ -102,6 +104,7 @@ export default function AirwayHub() {
           <span style={{fontSize:9,fontWeight:700,color:T.txt2,textTransform:"uppercase",letterSpacing:".07em",flexShrink:0}}>Evidence Base</span>
           {EV.map(e=><span key={e} style={{fontSize:9,color:T.txt2,fontFamily:"monospace"}}>{e}</span>)}
         </div>
+      </div>
       </div>
     </div>
   );

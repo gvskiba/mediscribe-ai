@@ -7,6 +7,8 @@
 //   finally { setBusy(false) } on async functions
 
 import { useState, useCallback, useMemo } from "react";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── Font injection ────────────────────────────────────────────────────────────
 (() => {
@@ -266,7 +268,10 @@ export default function PedsHub() {
   const minBP = totalAgeYrs !== null ? minSBP(totalAgeYrs) : null;
 
   return (
-    <div style={{ background:T.bg, minHeight:"calc(100vh - 88px)", color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
+    <div style={{ display:"flex", minHeight:"100vh", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
+      <NotryaNav currentHub="TraumaHub" />
+      <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
+      <NotryaHubHeader hubName="Trauma Hub" category="Trauma" homeUrl="/" />
 
       {/* ── Header ── */}
       <div style={{ padding:"20px 24px 0" }}>
@@ -499,6 +504,7 @@ export default function PedsHub() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

@@ -20,6 +20,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── Font injection ─────────────────────────────────────────────────────────────
 (() => {
@@ -870,10 +872,10 @@ export default function SepsisAbxHub({
   const toggleBundle = useCallback((id) =>
     setBundleCheck(p => ({ ...p, [id]:!p[id] })), []);
 
-  return (
+  const content = (
     <div style={{ fontFamily:"'DM Sans',sans-serif",
       background:embedded ? "transparent" : T.bg,
-      minHeight:embedded ? "auto" : "100vh",
+      minHeight:embedded ? "auto" : "100%",
       color:T.txt }}>
 
       <div style={{ maxWidth:1100, margin:"0 auto",
@@ -1251,6 +1253,17 @@ export default function SepsisAbxHub({
             NOTRYA SEPSIS ABX · IDSA / ATS / SHEA / ASHP GUIDELINES · SURVIVING SEPSIS CAMPAIGN 2021 · LOCAL RESISTANCE PATTERNS MAY VARY
           </div>
         )}
+      </div>
+    </div>
+  );
+
+  if (embedded) return content; // eslint-disable-line no-unreachable
+  return (
+    <div style={{ display:"flex", minHeight:"100vh", background:T.bg, color:T.txt }}>
+      <NotryaNav currentHub="SepsisAbxHub" />
+      <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
+        <NotryaHubHeader hubName="Sepsis ABX Hub" category="Sepsis" homeUrl="/" />
+        {content}
       </div>
     </div>
   );

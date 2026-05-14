@@ -117,6 +117,7 @@ const PARALYTICS = [
 ];
 
 import { useNavigate } from "react-router-dom";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function AirwayRSIHub({ onBack }) {
@@ -393,17 +394,8 @@ export default function AirwayRSIHub({ onBack }) {
   return (
     <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(59,130,246,0.10) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.08) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
 
-      <div style={{ padding: "20px 20px 0" }}>
-        <button onClick={handleBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
-          ← Critical Protocols
-        </button>
-        <div>
-          <span style={pill("linear-gradient(135deg,#f43f5e,#be185d)")}>🚨 Resuscitation</span>
-          <span style={pill("linear-gradient(135deg,#1d4ed8,#1e3a8a)")}>ACEP / FOAM</span>
-        </div>
-        <h1 style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 700, margin: "0 0 4px", lineHeight: 1.15 }}>Airway / RSI</h1>
-        <p style={{ color: T.muted, fontSize: 12, margin: "0 0 20px" }}>LEMON · MOANS · 7 Ps · Drug selector · Failed airway algorithm · Cricothyrotomy</p>
-      </div>
+      <NotryaHubHeader hubName="Airway / RSI" category="Critical Care" homeUrl="/" />
+      <div style={{ padding: "16px 20px 0" }}></div>
 
       <div style={{ display: "flex", gap: 4, padding: "0 20px", marginBottom: 18, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map((t, i) => (

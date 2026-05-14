@@ -56,6 +56,7 @@ const ELIMINATE = [
 ];
 
 import { useNavigate } from "react-router-dom";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function HyperkalemiaHub({ onBack }) {
@@ -361,17 +362,8 @@ export default function HyperkalemiaHub({ onBack }) {
   return (
     <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 20% 0%, rgba(20,184,166,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(245,158,11,0.07) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
 
-      <div style={{ padding: "20px 20px 0" }}>
-        <button onClick={handleBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
-          ← Critical Protocols
-        </button>
-        <div>
-          <span style={pill("linear-gradient(135deg,#14b8a6,#065f46)")}>⚗️ Metabolic</span>
-          <span style={pill("linear-gradient(135deg,#f59e0b,#b45309)")}>Cardiac Risk</span>
-        </div>
-        <h1 style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 700, margin: "0 0 4px", lineHeight: 1.15 }}>Hyperkalemia</h1>
-        <p style={{ color: T.muted, fontSize: 12, margin: "0 0 20px" }}>C-DIGFAST · Stabilize → Shift → Eliminate · ECG-guided management</p>
-      </div>
+      <NotryaHubHeader hubName="Hyperkalemia Hub" category="Critical Care" homeUrl="/" />
+      <div style={{ padding: "16px 20px 0" }}></div>
 
       <div style={{ display: "flex", gap: 4, padding: "0 20px", marginBottom: 18, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map((t, i) => (

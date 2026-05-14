@@ -103,6 +103,7 @@ const VITAMINS = [
 ];
 
 import { useNavigate } from "react-router-dom";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function StatusEpilepticusHub({ onBack }) {
@@ -355,17 +356,8 @@ export default function StatusEpilepticusHub({ onBack }) {
   return (
     <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse 70% 40% at 15% 0%, rgba(167,139,250,0.10) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 85% 95%, rgba(244,63,94,0.07) 0%, transparent 55%), ${T.bg}`, fontFamily: T.sans, color: T.white, paddingBottom: 80 }}>
 
-      <div style={{ padding: "20px 20px 0" }}>
-        <button onClick={handleBack} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 16 }}>
-          ← Critical Protocols
-        </button>
-        <div>
-          <span style={pill("linear-gradient(135deg,#a78bfa,#6d28d9)")}>🧠 Neurologic</span>
-          <span style={pill("linear-gradient(135deg,#0d9488,#065f46)")}>ESETT 2019</span>
-        </div>
-        <h1 style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 700, margin: "0 0 4px", lineHeight: 1.15 }}>Status Epilepticus</h1>
-        <p style={{ color: T.muted, fontSize: 12, margin: "0 0 20px" }}>5-phase sequential protocol · Benzo → AED → Anesthetic · VITAMINS causes</p>
-      </div>
+      <NotryaHubHeader hubName="Status Epilepticus" category="Neurology" homeUrl="/" />
+      <div style={{ padding: "16px 20px 0" }}></div>
 
       <div style={{ display: "flex", gap: 4, padding: "0 20px", marginBottom: 18, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map((t, i) => (

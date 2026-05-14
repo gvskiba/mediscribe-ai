@@ -4,6 +4,7 @@
 // No router · no localStorage · no form · no alert · straight quotes · <1600 lines
 
 import { useState, useCallback, useRef } from "react";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────────
 (() => {
@@ -694,22 +695,16 @@ function PainHub({embedded, onBack}) {
       `}</style>
 
       {/* Header */}
-      <div style={{background:"rgba(5,15,30,0.95)",borderBottom:"1px solid rgba(26,53,85,0.7)",padding:"12px 20px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:10,backdropFilter:"blur(10px)"}}>
-        {!embedded && (
-          <button onClick={handleBack} style={{background:"none",border:"none",color:T.txt3,cursor:"pointer",fontSize:18,padding:"0 4px",lineHeight:1}}>
-            ←
-          </button>
-        )}
-        <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:T.txt,lineHeight:1.1}}>Pain Hub</div>
-          <div style={{fontSize:10,color:T.txt3,marginTop:1}}>Multimodal · Opioid Dosing · Nerve Blocks · Ketamine — ACEP 2024 · ASRA</div>
-        </div>
-        {wt && (
-          <div style={{marginLeft:"auto",background:"rgba(0,229,192,0.1)",border:"1px solid rgba(0,229,192,0.3)",borderRadius:6,padding:"4px 10px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.teal}}>
+      <NotryaHubHeader
+        hubName="Pain"
+        category="Documentation"
+        homeUrl="/hub"
+        statusSlot={wt ? (
+          <div style={{background:"rgba(0,229,192,0.1)",border:"1px solid rgba(0,229,192,0.3)",borderRadius:6,padding:"4px 10px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"#00e5c0"}}>
             ⚖ {wt} kg
           </div>
-        )}
-      </div>
+        ) : null}
+      />
 
       {/* Tab Bar */}
       <div style={{background:"rgba(8,16,32,0.9)",borderBottom:"1px solid rgba(26,53,85,0.5)",padding:"0 20px",display:"flex",overflowX:"auto"}}>

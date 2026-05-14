@@ -137,12 +137,10 @@ export default function CriticalProtocolsPage({ onBack, onNavigate }) {
 
       {/* ── Header ── */}
       <div style={{ padding: "24px 20px 0" }}>
-        {onBack && (
-          <button onClick={onBack}
-            style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 18 }}>
-            ← Hub Selector
-          </button>
-        )}
+        <button onClick={onBack ? onBack : () => routerNavigate("/QuickNote")}
+          style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: T.teal, fontSize: 13, fontFamily: T.sans, cursor: "pointer", padding: "4px 0", marginBottom: 18 }}>
+          ← {onBack ? "Hub Selector" : "QuickNote"}
+        </button>
 
         <div style={{ marginBottom: 10 }}>
           {[{ label: "⚡ Critical Care", bg: "linear-gradient(135deg,#f43f5e,#be185d)" },

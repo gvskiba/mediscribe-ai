@@ -4,6 +4,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import { ClinicalNote } from "@/api/entities";
 import ECGNSTEMIHub from "@/components/ecg/ECGNSTEMIHub";
 import ECGAFPathway  from "@/components/ecg/ECGAFPathway";
@@ -1691,18 +1692,7 @@ export default function ECGHub({ embedded = false, onBack }) {
       <div style={{maxWidth:960,margin:"0 auto",padding:embedded?"0":"0 16px"}}>
 
         {!embedded&&(
-          <div style={{padding:"18px 0 14px"}}>
-            <button onClick={handleBack} style={{marginBottom:10,display:"inline-flex",alignItems:"center",gap:7,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,padding:"5px 14px",borderRadius:8,background:"rgba(14,28,58,0.88)",border:"1px solid rgba(42,79,122,0.75)",color:T.txt3,cursor:"pointer"}}>← Back</button>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-              <div style={{background:"rgba(14,28,58,0.94)",border:"1px solid rgba(42,79,122,0.75)",borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.purple,letterSpacing:3}}>NOTRYA</span>
-                <span style={{color:T.txt4,fontFamily:"'JetBrains Mono',monospace",fontSize:10}}>/</span>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,letterSpacing:2}}>ECG HUB</span>
-              </div>
-            </div>
-            <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:900,letterSpacing:-0.5,lineHeight:1.1,color:T.txt,marginBottom:4}}>ECG Hub</h1>
-            <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt3}}>AI ECG Interpretation · STEMI Localizer · AV Block · QTc · CHA₂DS₂-VASc · Hyperkalemia · Peds ECG · AF Pathway</p>
-          </div>
+          <NotryaHubHeader hubName="ECG Hub" category="Cardiac" />
         )}
 
         {/* Grouped tab bar */}

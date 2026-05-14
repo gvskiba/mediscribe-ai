@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 const StrokeQualityLog = base44.entities.StrokeQualityLog;
 
 const PRINT_CSS = `@media print { body { background: #fff !important; } .sh-no-print { display: none !important; } }`;
@@ -678,9 +679,11 @@ export default function StrokeHub({embedded=false,onBack,demo={},vitals={},cc={}
   const workupTotal=WORKUP_FLAT.length;
 
   return(
-    <div ref={wrapRef} style={{display:"flex",minHeight:"100vh",
+    <div ref={wrapRef} style={{display:"flex",flexDirection:"column",minHeight:"100vh",
       background:"linear-gradient(160deg,rgba(7,12,32,1) 0%,rgba(11,19,46,1) 100%)",
       fontFamily:"'DM Sans',sans-serif",color:C.text}}>
+      {!embedded && <NotryaHubHeader hubName="Stroke Hub" category="Neurology" />}
+      <div style={{display:"flex",flex:1}}>
 
       {/* Left rail */}
       <div className="sh-no-print" style={{width:172,flexShrink:0,
@@ -700,6 +703,7 @@ export default function StrokeHub({embedded=false,onBack,demo={},vitals={},cc={}
           <button onClick={handleBack} style={{background:"transparent",border:"none",color:C.dimmer,
             cursor:"pointer",fontSize:12,padding:"5px 4px",display:"flex",alignItems:"center",gap:6,width:"100%"}}>← Back</button>
         </div>
+        
 
         {/* Tabs */}
         <div style={{flex:1,padding:"4px 0"}}>
@@ -759,6 +763,7 @@ export default function StrokeHub({embedded=false,onBack,demo={},vitals={},cc={}
           workupChecked={workupChecked} txChecked={txChecked}/>}
         {tab===4&&<PrintCardsTab/>}
       </div>
+    </div>
     </div>
   );
 }

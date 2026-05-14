@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 const T = {
   bg:"#050f1e",panel:"#081628",b:"rgba(26,53,85,0.8)",
@@ -49,24 +50,8 @@ export default function AirwayHub() {
     <div style={{height:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{`*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(26,53,85,0.9);border-radius:2px}button,input,textarea{font-family:inherit}`}</style>
 
-      <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"14px 20px",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-          <button onClick={()=>navigate("/hub")} style={{padding:"5px 12px",borderRadius:7,border:"1px solid rgba(59,158,255,0.3)",background:"rgba(8,22,40,0.7)",color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer"}}>
-            ← Hub
-          </button>
-          <div style={{width:42,height:42,borderRadius:11,background:"rgba(59,158,255,0.1)",border:"1px solid rgba(59,158,255,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
-            🌬️
-          </div>
-          <div>
-            <div style={{fontSize:19,fontWeight:700,color:T.txt,fontFamily:"'Playfair Display',serif",lineHeight:1.2}}>Airway Hub</div>
-            <div style={{fontSize:10,color:T.txt3}}>Emergency airway management \xb7 3 sub-hubs \xb7 11 conditions \xb7 Evidence-based</div>
-          </div>
-          <div style={{marginLeft:"auto",display:"flex",gap:6}}>
-            {["DAS 2022","PADIS 2018","BTS 2017"].map(b=>(
-              <span key={b} style={{fontSize:9,fontFamily:"monospace",fontWeight:700,padding:"3px 9px",borderRadius:20,background:"rgba(59,158,255,0.1)",border:"1px solid rgba(59,158,255,0.3)",color:T.blue}}>{b}</span>
-            ))}
-          </div>
-        </div>
+      <NotryaHubHeader hubName="Airway Hub" category="Critical Care" />
+      <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"10px 20px",flexShrink:0}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
           {STATS.map((s,i)=>(
             <div key={i} style={{background:"rgba(14,37,68,0.5)",border:`1px solid ${s.color}28`,borderRadius:9,padding:"8px 10px",textAlign:"center"}}>

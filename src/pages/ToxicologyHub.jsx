@@ -4,6 +4,7 @@
 // No router · no localStorage · no form/alert · straight quotes · <1600 lines
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 (() => {
   if (document.getElementById("tox-fonts")) return;
@@ -701,11 +702,7 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
       <div style={{ maxWidth:1300,margin:"0 auto",padding:embedded?"0":"0 16px" }}>
 
         {!embedded && (
-          <div style={{ padding:"18px 0 12px" }}>
-            {onBack && <button onClick={onBack} style={{ marginBottom:10,display:"inline-flex",alignItems:"center",gap:7,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.5)",borderRadius:8,padding:"5px 14px",color:T.txt3,cursor:"pointer" }}>← Back to Hub</button>}
-            <h1 className="shimmer-text" style={{ fontFamily:"'Playfair Display',serif",fontSize:"clamp(22px,4vw,36px)",fontWeight:900,letterSpacing:-0.5,lineHeight:1.1,marginBottom:4 }}>Toxicology Hub</h1>
-            <p style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt4 }}>{ANTIDOTES.length} antidotes · {PROTOCOLS.length} protocols · Dose calculator · APAP nomogram</p>
-          </div>
+          <NotryaHubHeader hubName="Toxicology Hub" category="Tox" />
         )}
 
         {/* Global weight badge — always visible when set */}

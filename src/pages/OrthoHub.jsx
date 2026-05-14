@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import XRayViewer from "../components/ortho/XRayViewer";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 // ── Font + CSS Injection ──────────────────────────────────────────────────────
 (() => {
@@ -789,19 +790,7 @@ export default function OrthoHub() {
       <AmbientBg/>
       <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 18px"}}>
 
-        {/* Header */}
-        <div style={{padding:"18px 0 14px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-            <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",background:"rgba(5,15,30,0.92)",border:"1px solid rgba(42,79,122,0.5)",borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.orange,letterSpacing:3}}>NOTRYA</span>
-              <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>
-              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt3,letterSpacing:2}}>ORTHO HUB</span>
-            </div>
-            <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(42,79,122,0.5),transparent)"}}/>            <button onClick={()=>navigate("/hub")} style={{padding:"5px 14px",borderRadius:8,background:"rgba(14,37,68,0.6)",border:"1px solid rgba(42,79,122,0.4)",color:"#8aaccc",fontFamily:"DM Sans",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>← Hub</button>
-          </div>
-          <h1 className="shimmer-text" style={{fontFamily:"Playfair Display",fontSize:"clamp(28px,4.5vw,48px)",fontWeight:700,letterSpacing:-1,lineHeight:1.05}}>OrthoHub</h1>
-          <p style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3,marginTop:4}}>Splinting Guides · Fracture Classification · Dislocation Reductions · Procedural Nerve Blocks</p>
-        </div>
+        <NotryaHubHeader hubName="Ortho Hub" category="Procedures" />
 
         {/* Stat Banner */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:16}}>

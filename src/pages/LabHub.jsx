@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from "react";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceLine, ResponsiveContainer, Label,
@@ -1064,19 +1065,7 @@ export default function LabHub({
       <div style={{maxWidth:1100,margin:"0 auto",padding:embedded?"0":"0 16px"}}>
 
         {!embedded&&(
-          <div style={{padding:"18px 0 14px"}}>
-            {onBack&&(<button onClick={onBack} style={{marginBottom:10,display:"inline-flex",alignItems:"center",gap:7,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.5)",borderRadius:8,padding:"5px 14px",color:T.txt3,cursor:"pointer"}}>← Back to Hub</button>)}
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-              <div style={{background:"rgba(5,15,30,0.9)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.purple,letterSpacing:3}}>NOTRYA</span>
-                <span style={{color:T.txt4,fontFamily:"'JetBrains Mono',monospace",fontSize:10}}>/</span>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,letterSpacing:2}}>LABS</span>
-              </div>
-              <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(59,158,255,0.5),transparent)"}}/>
-            </div>
-            <h1 className="shimmer-text" style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(22px,4vw,38px)",fontWeight:900,letterSpacing:-0.5,lineHeight:1.1}}>Lab Hub</h1>
-            <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt4,marginTop:4}}>Critical Lab Interpreter · Serial Trend Visualizer · AI Analysis · Calculated Values</p>
-          </div>
+          <NotryaHubHeader hubName="Lab Interpreter" category="Labs" />
         )}
 
         {embedded&&(

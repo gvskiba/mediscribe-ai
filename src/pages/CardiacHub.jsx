@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import { ClinicalNote } from "@/api/entities";
 import ChestPainHub from "@/pages/ChestPainHub";
 import ECGHub       from "@/pages/ECGHub";
@@ -388,7 +389,7 @@ function PlaceholderPage({section}){
 // ════════════════════════════════════════════════════════════
 const PROTOCOL_SECTIONS=["cardiac-home","acs","cardiac-risk","chest-pain","ecg","tachy","brady","peds","pregnancy"];
 
-export default function NotryaApp(){
+export default function CardiacHub(){
   const navigate = useNavigate();
   const[activeGroup,setActiveGroup]=useState("tools");
   const[activeSection,setActiveSection]=useState("cardiac-home");
@@ -428,6 +429,7 @@ export default function NotryaApp(){
   const backToHub=useCallback(()=>selectSection("cardiac-home"),[selectSection]);
 
   return(<>
+    <NotryaHubHeader hubName="Cardiac Hub" category="Cardiac" />
     <style>{CSS}</style>
     <aside className="icon-sidebar">
       <div className="isb-logo"><div className="isb-logo-box" onClick={()=>navigate('/hub')} style={{cursor:'pointer'}}>{pageAbbr}</div></div>

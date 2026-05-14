@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { PAGES } from "./GlobalNav";
+import { PAGES } from "@/lib/navPages";
 
 // Build a route → page lookup
 const ROUTE_MAP = {};

@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { InvokeLLM } from "@/integrations/Core";
 import { DrugDosing } from "@/api/entities";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (() => {
@@ -1802,16 +1804,11 @@ export default function UnifiedPharmacologyHub() {
   ];
 
   return(
-    <div style={{background:T.bg,minHeight:"100vh",padding:"20px 18px 60px",fontFamily:"DM Sans,sans-serif",color:T.txt}}>
-
-      {/* Header */}
-      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:22}}>
-        <div style={{width:44,height:44,borderRadius:11,background:T.tD,border:`1px solid ${T.tB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>⚗</div>
-        <div>
-          <h1 style={{margin:0,fontFamily:"Playfair Display,serif",fontSize:22,color:T.teal,letterSpacing:"-0.5px",lineHeight:1}}>Unified PharmacologyHub</h1>
-          <p style={{margin:"3px 0 0",fontSize:12,color:T.mut}}>Rx Lookup · Weight Dosing · Interactions · Rx Builder · AI Pharmacist · {entityDB.length} drugs loaded</p>
-        </div>
-      </div>
+    <div style={{display:"flex",minHeight:"100vh",background:T.bg,color:T.txt}}>
+      <NotryaNav currentHub="UnifiedPharmacologyHub" />
+      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
+        <NotryaHubHeader hubName="Unified Pharmacology Hub" category="Pharmacology" homeUrl="/" />
+      <div style={{padding:"20px 18px 60px",fontFamily:"DM Sans,sans-serif"}}>
 
       {/* Patient Banner */}
       <PatientBanner pt={pt} setPt={setPt} crcl={crcl} ibw={ibw}/>
@@ -1842,6 +1839,8 @@ export default function UnifiedPharmacologyHub() {
         <span style={{fontFamily:"JetBrains Mono,monospace",fontSize:9,color:T.dim,letterSpacing:1.5}}>
           NOTRYA · UNIFIED PHARMACOLOGY HUB · CLINICAL DECISION SUPPORT ONLY · VERIFY WITH PHARMACIST
         </span>
+      </div>
+      </div>
       </div>
     </div>
   );

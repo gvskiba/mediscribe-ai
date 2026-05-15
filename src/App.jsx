@@ -30,7 +30,6 @@ import CardiacHub from '@/pages/CardiacHub';
 import TraumaHub from '@/pages/TraumaHub';
 import HubSelectorPage from '@/pages/HubSelectorPage';
 import OBGYNHub from '@/pages/OBGYNHub';
-import SepsisAbxHub from '@/pages/SepsisAbxHub';
 import AirwayHub from '@/pages/AirwayHub';
 import ToxicologyHub from '@/pages/ToxicologyHub';
 import LabHub from '@/pages/LabHub';
@@ -93,7 +92,6 @@ import AntibioticStewardshipHub from '@/pages/AntibioticStewardshipHub';
 import CriticalCareDripHub from '@/pages/CriticalCareDripHub';
 import DrugFormularyAdmin from '@/pages/DrugFormularyAdmin';
 import DrugComparisonHub from '@/pages/DrugComparisonHub';
-import SepsisBundleTracker from '@/pages/SepsisBundleTracker';
 import MedRecHub from '@/pages/MedRecHub';
 import ClinicalPresentationHub from '@/pages/ClinicalPresentationHub';
 import DischargeRxCard from '@/pages/DischargeRxCard';
@@ -109,7 +107,6 @@ import ElectrolyteAcidBaseHub from '@/pages/ElectrolyteAcidBaseHub';
 import NIVPage from '@/pages/NIVPage';
 import VentPage from '@/pages/VentPage';
 import CriticalProtocolsPage from '@/pages/CriticalProtocolsPage';
-import Sepsis1HourBundleHub from '@/pages/Sepsis1HourBundleHub';
 import AnaphylaxisHub from '@/pages/AnaphylaxisHub';
 import HyperkalemiaHub from '@/pages/HyperkalemiaHub';
 import SepsisHub from '@/pages/SepsisHub';
@@ -300,7 +297,6 @@ const AuthenticatedApp = () => {
         <Route path="/OpioidOverdoseHub"      element={<OpioidOverdoseHub />} />
         <Route path="/EMTALAHub"             element={<EMTALAHub />} />
         <Route path="/SepsisHub"              element={<SepsisHub />} />
-        <Route path="/Sepsis1HourBundleHub"   element={<Sepsis1HourBundleHub />} />
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />
 
         {/* Pharmacology */}
@@ -325,8 +321,6 @@ const AuthenticatedApp = () => {
         <Route path="/trauma-hub"      element={<TraumaHub />} />
         <Route path="/ob-hub"          element={<OBGYNHub />} />
         <Route path="/OBGYNHub"        element={<OBGYNHub />} />
-        <Route path="/sepsis-hub"      element={<SepsisAbxHub />} />
-        <Route path="/SepsisBundleTracker" element={<SepsisBundleTracker />} />
         <Route path="/airway-hub"      element={<AirwayHub />} />
         <Route path="/AirwayHub"       element={<AirwayHub />} />
         <Route path="/surgical-airway-hub" element={<SurgicalAirwayHub />} />

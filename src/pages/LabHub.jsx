@@ -906,7 +906,7 @@ function InterpretTab({demo,vitals,cc,medications,pmhSelected}){
     const lines=[];
     if(demo?.age||demo?.sex) lines.push(`${demo?.age||""}yo ${demo?.sex||""}`.trim());
     if(cc?.text) lines.push(`CC: ${cc.text}`);
-    const pmh=(pmhSelected||[]).slice(0,5); if(pmh.length) lines.push(`PMH: ${pmh.join(", ")}`);
+    const pmh=(Array.isArray(pmhSelected)?pmhSelected:[]).slice(0,5); if(pmh.length) lines.push(`PMH: ${pmh.join(", ")}`);
     const meds=(medications||[]).map(m=>typeof m==="string"?m:m.name||"").filter(Boolean).slice(0,5); if(meds.length) lines.push(`Meds: ${meds.join(", ")}`);
     const vs=[]; if(vitals?.hr) vs.push(`HR ${vitals.hr}`); if(vitals?.bp) vs.push(`BP ${vitals.bp}`); if(vitals?.spo2) vs.push(`SpO2 ${vitals.spo2}%`); if(vs.length) lines.push(`Vitals: ${vs.join("  ")}`);
     return lines.join("\n");

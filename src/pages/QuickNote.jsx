@@ -32,7 +32,7 @@ import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
 import { EncounterPicker } from "./QuickNoteEncounterPicker";
 // ── PATCH 1: EMLevel meter + longitudinal MDM thread ─────────────
-import { EMLevel, PatientResponsePanel } from "@/components/QuickNoteMDMEnhancer";
+import { EMLevel, PatientResponsePanel } from "@/components/QuickNote/QuickNoteMDMEnhancer";
 
 injectQNStyles();
 

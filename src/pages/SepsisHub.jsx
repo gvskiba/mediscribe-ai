@@ -4,7 +4,8 @@ import { base44 } from "@/api/base44Client";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 
-const SepsisEntity = base44.entities.SepsisBundle;
+const SepsisEntity    = base44.entities.SepsisBundle;
+const HandoffEntity   = base44.entities.HandoffEntry;
 
 // ── Fonts & CSS ───────────────────────────────────────────────────────────────
 (() => {
@@ -251,9 +252,11 @@ export default function SepsisHub({allergies=[],medications=[],pmhSelected=[],vi
   const [disposition,setDispo]   = useState("");
   const [provider,  setProvider] = useState("");
   const [tNotes,    setTNotes]   = useState("");
-  const [saving,    setSaving]   = useState(false);
-  const [saved,     setSaved]    = useState(false);
-  const [toast,     setToast]    = useState(null);
+  const [saving,        setSaving]       = useState(false);
+  const [saved,         setSaved]        = useState(false);
+  const [savingHandoff, setSavingHandoff]= useState(false);
+  const [savedHandoff,  setSavedHandoff] = useState(false);
+  const [toast,         setToast]        = useState(null);
   const [now,       setNow]      = useState(new Date());
   const timerRef = useRef(null);
 
@@ -346,6 +349,49 @@ export default function SepsisHub({allergies=[],medications=[],pmhSelected=[],vi
       showToast("✓ Bundle saved to quality log");
     } catch(e) { showToast("Save failed — "+e.message, T.coral); }
     setSaving(false);
+  };
+
+  const buildIPASS = () => {
+    const shock = shockCriteria ? "SEPTIC SHOCK" : "Sepsis";
+    const lacStr = lactateVal ? `Lactate ${lactateVal} mmol/L` : "Lactate pending";
+    const mapStr = mapVal ? `MAP ${mapVal} mmHg` : "MAP not recorded";
+    const abxStr = abxSel || "Antibiotics given (see chart)";
+    const bundleSummary = BUNDLE_ITEMS.map(el => {
+      const t = stamps[el.id];
+      const mins = t && recogDate_ ? diffMin(recogDate_, t) : null;
+      return `  • ${el.label}: ${t ? toHHMM(t) + (mins !== null ? ` (${fmtMin(mins)})` : "") : "Pending"}`;
+    }).join("\n");
+    const sep1Status = compliance ? (compliance.compliant ? "SEP-1 COMPLIANT" : "SEP-1 INCOMPLETE") : "SEP-1 tracking not started";
+    const vasoStr = vasoReq ? `Vasopressor: ${vasoSel || "required"} initiated ${vasoTime ? toHHMM(vasoTime) : "time pending"}` : "No vasopressor required";
+    const dispoStr = disposition ? `Disposition: ${disposition}` : "Disposition: Pending";
+
+    return [
+      `I — ILLNESS SEVERITY: ${shock} | ${lacStr} | ${mapStr}`,
+      `P — PATIENT SUMMARY: Sepsis patient managed per SSC Hour-1 Bundle. ${abxStr}.`,
+      `A — ACTION LIST (Bundle Elements):\n${bundleSummary}`,
+      `S — SITUATION AWARENESS: ${sep1Status}. ${vasoStr}. ${dispoStr}.`,
+      `S — SYNTHESIS BY RECEIVER: [To be completed by receiving provider]`,
+      tNotes ? `\nCompliance Notes: ${tNotes}` : "",
+      provider ? `\nProvider: ${provider}` : "",
+    ].filter(Boolean).join("\n\n");
+  };
+
+  const handleSaveHandoff = async () => {
+    setSavingHandoff(true);
+    try {
+      await HandoffEntity.create({
+        ipass:         buildIPASS(),
+        worry:         shockCriteria,
+        worry_reason:  shockCriteria ? "Septic shock — hemodynamically unstable" : "",
+        pending_items: BUNDLE_ITEMS
+          .filter(el => !stamps[el.id])
+          .map(el => el.label)
+          .join(", ") || "All bundle elements complete",
+      });
+      setSavedHandoff(true);
+      showToast("✓ Saved to Handoff", T.teal);
+    } catch(e) { showToast("Handoff save failed — " + e.message, T.coral); }
+    setSavingHandoff(false);
   };
 
   const lacMeta = {
@@ -704,6 +750,19 @@ export default function SepsisHub({allergies=[],medications=[],pmhSelected=[],vi
           {saving?<><Spin/> Saving...</>:saved?"✓ Saved to Log":"💾 Save Bundle to Quality Log"}
         </button>
         {saved&&<div style={{fontSize:11,color:T.green,marginTop:7}}>Encounter saved. Start a new encounter to reset.</div>}
+      </div>
+
+      {/* Quick action — Save to Handoff */}
+      <div style={{...gl({padding:"12px 14px",marginTop:10,border:`1px solid ${T.teal}25`})}}>
+        <div style={sL(T.teal)}>Quick Action — Handoff</div>
+        <div style={{fontSize:11,color:T.mut,marginBottom:10,lineHeight:1.5}}>
+          Generates an I-PASS summary from the current bundle state and saves it directly to the Handoff data store for sign-out.
+        </div>
+        <button onClick={handleSaveHandoff} disabled={savingHandoff||savedHandoff}
+          style={{...btn(T.teal,{display:"flex",alignItems:"center",gap:8,fontSize:12,padding:"8px 20px",opacity:(savingHandoff||savedHandoff)?.5:1})}}>
+          {savingHandoff ? <><Spin/> Saving Handoff...</> : savedHandoff ? "✓ Saved to Handoff" : "📋 Save to Handoff"}
+        </button>
+        {savedHandoff && <div style={{fontSize:11,color:T.teal,marginTop:7}}>I-PASS summary saved to Handoff entry.</div>}
       </div>
     </div>
   );

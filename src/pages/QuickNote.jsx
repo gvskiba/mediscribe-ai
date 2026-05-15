@@ -1067,15 +1067,14 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     <div style={{fontFamily:"'DM Sans',sans-serif",
       background:embedded?"transparent":"var(--qn-bg)",
       minHeight:embedded?"auto":"100vh",color:"var(--qn-txt)"}}>
+      {!embedded&&(
+        <NotryaHubHeader
+          hubName="QuickNote"
+          category="Documentation"
+          homeUrl="/"
+        />
+      )}
       <div style={{maxWidth:1100,margin:"0 auto",padding:embedded?"0":"0 16px 40px"}}>
-
-        {!embedded&&(
-          <NotryaHubHeader
-            hubName="QuickNote"
-            category="Documentation"
-            homeUrl="/"
-          />
-        )}
 
         {embedded&&(
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}} className="no-print">

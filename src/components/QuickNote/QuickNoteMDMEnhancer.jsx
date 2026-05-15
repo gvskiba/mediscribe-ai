@@ -6,6 +6,7 @@
 // No router · no localStorage · no form · no alert · straight quotes · <1600 lines
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { base44 } from "@/api/base44Client";
 
 // ── SHARED TOKENS ──────────────────────────────────────────────────────────────
 const QN = {
@@ -264,7 +265,6 @@ function elapsed(start, end) {
 }
 
 async function callClaude(system, user) {
-  const { base44 } = await import("@/api/base44Client");
   const result = await base44.integrations.Core.InvokeLLM({
     prompt: system + "\n\n" + user,
     model: "claude_sonnet_4_6",

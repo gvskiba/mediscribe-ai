@@ -33,6 +33,7 @@ import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
 import { EncounterPicker } from "./QuickNoteEncounterPicker";
 // ── PATCH 1: EMLevel meter + longitudinal MDM thread ─────────────
 import { EMLevel, PatientResponsePanel } from "@/components/QuickNote/QuickNoteMDMEnhancer";
+import { MDMHandoffBridge } from "@/components/quicknote/MDMHandoffBridge";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 
@@ -1349,6 +1350,12 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                   color:rerunAddendumBusy?"var(--qn-txt4)":"var(--qn-purple)",transition:"all .15s"}}>
                 {rerunAddendumBusy?"● …":"+ Addendum Re-run"}
               </button>
+              <MDMHandoffBridge
+                mdmResult={mdmResult}
+                treatmentPlan={treatmentPlan}
+                actionPlan={actionPlan}
+                cc={cc}
+              />
             </div>
 
             <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}

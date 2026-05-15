@@ -1057,6 +1057,67 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       patientAge:demo?.age||"",lastActivity:Date.now()};
   });
 
+  // ── localStorage auto-save: write on every meaningful change, debounced 1.5s ──
+  const LS_KEY = "qn_autosave_v1";
+  useEffect(()=>{
+    if (!cc&&!hpi&&!mdmResult) return; // nothing worth saving
+    const t = setTimeout(()=>{
+      try {
+        const payload = {
+          cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,
+          medsRaw,allergiesRaw,parsedMeds,parsedAllergies,
+          mdmResult,dispResult,icdSelected,
+          hpiSummary,hpiMode,encounterType,p2Open,
+          treatmentPlan,actionPlan,
+          savedAt: Date.now(),
+        };
+        localStorage.setItem(LS_KEY, JSON.stringify(payload));
+      } catch(e){ /* quota errors silently ignored */ }
+    }, 1500);
+    return ()=>clearTimeout(t);
+  },[cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,
+     medsRaw,allergiesRaw,parsedMeds,parsedAllergies,
+     mdmResult,dispResult,icdSelected,
+     hpiSummary,hpiMode,encounterType,p2Open,treatmentPlan,actionPlan]);
+
+  // ── localStorage restore on mount (runs before DB restore, instant) ──
+  const [lsRestored, setLsRestored] = useState(false);
+  const [lsRestoredAt, setLsRestoredAt] = useState(null);
+  useEffect(()=>{
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      // Only restore if saved within the last 8 hours and has meaningful content
+      if (!d||!d.savedAt||Date.now()-d.savedAt>8*3600000) return;
+      if (!d.cc&&!d.hpi&&!d.mdmResult) return;
+      if (d.cc)       setCC(d.cc);
+      if (d.vitals)   setVitals(d.vitals);
+      if (d.hpi)      setHpi(d.hpi);
+      if (d.ros)      setRos(d.ros);
+      if (d.exam)     setExam(d.exam);
+      if (d.labs)     setLabs(d.labs);
+      if (d.imaging)  setImaging(d.imaging);
+      if (d.ekg)      setEkg(d.ekg);
+      if (d.newVitals) setNewVitals(d.newVitals);
+      if (d.medsRaw)  setMedsRaw(d.medsRaw);
+      if (d.allergiesRaw) setAllergiesRaw(d.allergiesRaw);
+      if (d.parsedMeds?.length)      setParsedMeds(d.parsedMeds);
+      if (d.parsedAllergies?.length) setParsedAllergies(d.parsedAllergies);
+      if (d.mdmResult)  { setMdmResult(d.mdmResult); setP2Open(true); }
+      if (d.dispResult) setDispResult(d.dispResult);
+      if (d.icdSelected?.length) setIcdSelected(d.icdSelected);
+      if (d.hpiSummary) setHpiSummary(d.hpiSummary);
+      if (d.hpiMode)    setHpiMode(d.hpiMode);
+      if (d.encounterType) setEncounterType(d.encounterType);
+      if (d.treatmentPlan) setTreatmentPlan(d.treatmentPlan);
+      if (d.actionPlan)    setActionPlan(d.actionPlan);
+      setLsRestored(true);
+      setLsRestoredAt(d.savedAt);
+    } catch(e){ /* corrupt cache silently ignored */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   const isFatigueRisk = useMemo(()=>{ const h=new Date().getHours(); return h>=17||h<=7; },[]);
   const getSaveLabel = (ts) => {
     if (!ts) return null;
@@ -1090,6 +1151,29 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
 
         {!embedded&&(
           <div style={{marginBottom:10}} className="no-print">
+            {lsRestored&&(
+              <div className="qn-fade" style={{display:"flex",alignItems:"center",gap:10,
+                padding:"8px 14px",marginBottom:8,borderRadius:10,
+                background:"rgba(59,158,255,.05)",border:"1px solid rgba(59,158,255,.3)"}}>
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--qn-blue)"}}>⚡</span>
+                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",flex:1}}>
+                  <strong style={{color:"var(--qn-blue)"}}>Auto-saved session restored</strong>
+                  {lsRestoredAt&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",marginLeft:8}}>
+                    saved {Math.round((Date.now()-lsRestoredAt)/60000)}m ago
+                  </span>}
+                </span>
+                <button onClick={()=>{localStorage.removeItem(LS_KEY);setLsRestored(false);}}
+                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace",fontSize:8,
+                    border:"1px solid rgba(42,79,122,.4)",background:"transparent",
+                    color:"var(--qn-txt4)"}}>Clear cache</button>
+                <button onClick={()=>setLsRestored(false)}
+                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",
+                    fontFamily:"'JetBrains Mono',monospace",fontSize:8,
+                    border:"1px solid rgba(42,79,122,.4)",background:"transparent",
+                    color:"var(--qn-txt4)"}}>✕</button>
+              </div>
+            )}
             {slotsRestored&&(
               <div className="qn-fade" style={{display:"flex",alignItems:"center",gap:10,
                 padding:"8px 14px",marginBottom:8,borderRadius:10,
@@ -1206,6 +1290,10 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                   <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.5)"}}>Session saved</span>
                 </div>
                 <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(42,79,122,.5)",marginLeft:4}}>Ctrl+1–4 switch · Ctrl+S save all</span>
+                <div style={{display:"flex",alignItems:"center",gap:4,marginLeft:"auto"}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",background:"rgba(59,158,255,.7)",flexShrink:0}} />
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(59,158,255,.6)"}}>⚡ Auto-saved locally</span>
+                </div>
               </div>
             )}
           </div>

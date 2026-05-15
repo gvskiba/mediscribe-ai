@@ -34,6 +34,7 @@ import { EncounterPicker } from "./QuickNoteEncounterPicker";
 // ── PATCH 1: EMLevel meter + longitudinal MDM thread ─────────────
 import { EMLevel, PatientResponsePanel } from "@/components/QuickNote/QuickNoteMDMEnhancer";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 injectQNStyles();
 
@@ -1064,17 +1065,12 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   };
 
   return (
-    <div style={{fontFamily:"'DM Sans',sans-serif",
-      background:embedded?"transparent":"var(--qn-bg)",
-      minHeight:embedded?"auto":"100vh",color:"var(--qn-txt)"}}>
-      {!embedded&&(
-        <NotryaHubHeader
-          hubName="QuickNote"
-          category="Documentation"
-          homeUrl="/"
-        />
-      )}
-      <div style={{maxWidth:1100,margin:"0 auto",padding:embedded?"0":"0 16px 40px"}}>
+    <div style={embedded ? {fontFamily:"'DM Sans',sans-serif",background:"transparent",color:"var(--qn-txt)"} :
+      {display:"flex",minHeight:"100vh",background:"var(--qn-bg)",fontFamily:"'DM Sans',sans-serif",color:"var(--qn-txt)"}}>
+      {!embedded && <NotryaNav currentHub="QuickNote" />}
+      <div style={embedded ? {} : {flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,paddingBottom:80}}>
+        {!embedded && <NotryaHubHeader hubName="QuickNote" category="Documentation" homeUrl="/" />}
+        <div style={{maxWidth:1100,margin:"0 auto",width:"100%",padding:embedded?"0":"0 16px 40px"}}>
 
         {embedded&&(
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}} className="no-print">
@@ -1651,6 +1647,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}
+      </div>
       </div>
     </div>
   );

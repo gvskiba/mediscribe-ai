@@ -2,6 +2,7 @@
 import { MDMResult } from "./QuickNoteComponents";
 import { MDMPlanEntry } from "./QuickNoteExtras";
 import { GuidelineAssist } from "@/components/quicknote/QuickNoteGuidelines";
+import { MDMPhraseTemplates } from "@/components/quicknote/MDMPhraseTemplates";
 import { buildMDMBlock } from "./QuickNotePrompts";
 
 export default function QuickNoteMDMCard({
@@ -89,6 +90,11 @@ export default function QuickNoteMDMCard({
 
       <GuidelineAssist workingDx={mdmResult?.working_diagnosis||""} mdmNarrative={mdmResult?.mdm_narrative||""}
         onInsertSentence={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
+
+      <MDMPhraseTemplates
+        currentNarrative={mdmResult?.mdm_narrative||""}
+        onInsert={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))}
+      />
 
       {/* Why this complexity level */}
       {mdmResult.mdm_level&&(

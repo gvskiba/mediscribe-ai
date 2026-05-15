@@ -33,6 +33,7 @@ import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
 import { EncounterPicker } from "./QuickNoteEncounterPicker";
 // ── PATCH 1: EMLevel meter + longitudinal MDM thread ─────────────
 import { EMLevel, PatientResponsePanel } from "@/components/QuickNote/QuickNoteMDMEnhancer";
+import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 
 injectQNStyles();
 
@@ -1069,29 +1070,11 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       <div style={{maxWidth:1100,margin:"0 auto",padding:embedded?"0":"0 16px 40px"}}>
 
         {!embedded&&(
-          <div style={{padding:"18px 0 14px"}} className="no-print">
-            <button onClick={()=>window.history.back()}
-              style={{marginBottom:10,display:"inline-flex",alignItems:"center",gap:7,
-                fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,
-                background:"rgba(14,37,68,.7)",border:"1px solid rgba(42,79,122,.5)",
-                borderRadius:8,padding:"5px 14px",color:"var(--qn-txt3)",cursor:"pointer"}}>
-              ← Back
-            </button>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-              <div style={{background:"rgba(5,15,30,.9)",border:"1px solid rgba(42,79,122,.6)",
-                borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"var(--qn-purple)",letterSpacing:3}}>NOTRYA</span>
-                <span style={{color:"var(--qn-txt4)",fontFamily:"'JetBrains Mono',monospace",fontSize:10}}>/</span>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"var(--qn-txt3)",letterSpacing:2}}>QUICKNOTE</span>
-              </div>
-              <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(0,229,192,.5),transparent)"}} />
-            </div>
-            <h1 className="qn-shim" style={{fontFamily:"'Playfair Display',serif",
-              fontSize:"clamp(22px,4vw,38px)",fontWeight:900,letterSpacing:-.5,lineHeight:1.1,margin:"0 0 4px"}}>QuickNote</h1>
-            <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt4)",margin:0}}>
-              Paste · ⌘↵ MDM · ⌘↵ Disposition · Shift+1/2/3/4 copy · Ctrl+S save slots
-            </p>
-          </div>
+          <NotryaHubHeader
+            hubName="QuickNote"
+            category="Documentation"
+            homeUrl="/"
+          />
         )}
 
         {embedded&&(

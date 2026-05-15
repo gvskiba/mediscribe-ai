@@ -1,4 +1,4 @@
-// QuickNote.jsx  v12.0
+// QuickNote.jsx  v12.1  — EMLevel + MDMThread integrated
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
@@ -28,10 +28,11 @@ import {
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
   buildFullNote, buildPhase1Copy, buildPhase2Copy,
 } from "./QuickNotePrompts";
-
 import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
 import { EncounterPicker } from "./QuickNoteEncounterPicker";
+// ── PATCH 1: EMLevel meter + longitudinal MDM thread ─────────────
+import { EMLevel, PatientResponsePanel } from "@/components/QuickNoteMDMEnhancer";
 
 injectQNStyles();
 
@@ -47,7 +48,13 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       initVitals.temp ? `T ${initVitals.temp}`      : null,
     ].filter(Boolean).join("  ");
   });
-  const [hpi,  setHpi]  = useState("");  const [ros,  setRos]  = useState("");  const [exam, setExam] = useState("");  const [labs,      setLabs]      = useState("");  const [imaging,   setImaging]   = useState("");  const [ekg,       setEkg]       = useState("");  const [newVitals, setNewVitals] = useState("");
+  const [hpi,  setHpi]  = useState("");
+  const [ros,  setRos]  = useState("");
+  const [exam, setExam] = useState("");
+  const [labs,      setLabs]      = useState("");
+  const [imaging,   setImaging]   = useState("");
+  const [ekg,       setEkg]       = useState("");
+  const [newVitals, setNewVitals] = useState("");
   const [formatMode,    setFormatMode]    = useState("plain");
   const [pasteReady,    setPasteReady]    = useState("labeled");
   const [encounterType, setEncounterType] = useState("adult");
@@ -66,7 +73,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     { id:"disposition",  label:"Disposition Decision",      time:"", notes:"" },
   ];
   const [timestamps, setTimestamps] = useState(DEFAULT_EVENTS);
-  const [ekgBusy,      setEkgBusy]      = useState(false);  const [autoExamBusy, setAutoExamBusy] = useState(false);  const [scaffoldOpen, setScaffoldOpen] = useState(false);
+  const [ekgBusy,      setEkgBusy]      = useState(false);
+  const [autoExamBusy, setAutoExamBusy] = useState(false);
+  const [scaffoldOpen, setScaffoldOpen] = useState(false);
   const [workupRationale,     setWorkupRationale]     = useState(null);
   const [workupRationaleBusy, setWorkupRationaleBusy] = useState(false);
   const [copiedWorkup,        setCopiedWorkup]        = useState(false);
@@ -85,6 +94,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [patientResponse, setPatientResponse] = useState("");
   const [mdmHistory,      setMdmHistory]      = useState([]);
   const [mdmInitialTs,    setMdmInitialTs]    = useState(null);
+  // ── PATCH 2: ISO timestamp for elapsed-time math in MDMThread ──
+  const [mdmTimestamp,    setMdmTimestamp]    = useState("");
   const [showMdmHistory,  setShowMdmHistory]  = useState(false);
   const [treatmentPlan,   setTreatmentPlan]   = useState("");
   const [actionPlan,      setActionPlan]      = useState("");
@@ -108,7 +119,10 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [slots,      setSlots]      = useState(() => [EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT()]);
   const [activeSlot, setActiveSlot] = useState(0);
   const slotRef      = useRef(activeSlot);
-  const [undoData,   setUndoData]   = useState(null);  const [undoTimer,  setUndoTimer]  = useState(null);  const [showUndo,   setShowUndo]   = useState(false);  const [draftId,    setDraftId]    = useState(null);
+  const [undoData,   setUndoData]   = useState(null);
+  const [undoTimer,  setUndoTimer]  = useState(null);
+  const [showUndo,   setShowUndo]   = useState(false);
+  const [draftId,    setDraftId]    = useState(null);
   const slotStateRef = useRef({});
   const [slotCacheIds,      setSlotCacheIds]      = useState([null,null,null,null]);
   const [slotSaveTimes,     setSlotSaveTimes]     = useState([null,null,null,null]);
@@ -153,7 +167,14 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     setActiveSlot(idx); slotRef.current = idx;
   }, [activeSlot, saveCurrentToSlot]);
 
-  const [mdmResult,  setMdmResult]  = useState(null);  const [dispResult, setDispResult] = useState(null);  const [p1Busy,     setP1Busy]     = useState(false);  const [p2Busy,     setP2Busy]     = useState(false);  const [p1Error,    setP1Error]    = useState(null);  const [p2Error,    setP2Error]    = useState(null);  const [copied,     setCopied]     = useState(false);  const [p2Open,     setP2Open]     = useState(false);
+  const [mdmResult,  setMdmResult]  = useState(null);
+  const [dispResult, setDispResult] = useState(null);
+  const [p1Busy,     setP1Busy]     = useState(false);
+  const [p2Busy,     setP2Busy]     = useState(false);
+  const [p1Error,    setP1Error]    = useState(null);
+  const [p2Error,    setP2Error]    = useState(null);
+  const [copied,     setCopied]     = useState(false);
+  const [p2Open,     setP2Open]     = useState(false);
   const [copiedMDM,           setCopiedMDM]           = useState(false);
   const [copiedDisch,         setCopiedDisch]         = useState(false);
   const [copiedMDMFull,       setCopiedMDMFull]       = useState(false);
@@ -183,7 +204,10 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [quickDDxBusy,      setQuickDDxBusy]      = useState(false);
   const [quickDDxErr,       setQuickDDxErr]       = useState(null);
   const [quickDDxDismissed, setQuickDDxDismissed] = useState(false);
-  const [hpiSummary,   setHpiSummary]   = useState(null);  const [hpiSumBusy,   setHpiSumBusy]   = useState(false);  const [hpiSumError,  setHpiSumError]  = useState(null);  const [copiedHpiSum, setCopiedHpiSum] = useState(false);
+  const [hpiSummary,   setHpiSummary]   = useState(null);
+  const [hpiSumBusy,   setHpiSumBusy]   = useState(false);
+  const [hpiSumError,  setHpiSumError]  = useState(null);
+  const [copiedHpiSum, setCopiedHpiSum] = useState(false);
   const [hpiMode,      setHpiMode]      = useState("original");
   const [hpiStructureBusy,  setHpiStructureBusy]  = useState(false);
   const [hpiStructureError, setHpiStructureError] = useState(null);
@@ -197,7 +221,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [interventions,  setInterventions]  = useState([]);
   const [intLoading,     setIntLoading]     = useState(false);
   const [intGenerated,   setIntGenerated]   = useState(false);
-  const [copiedP1,     setCopiedP1]     = useState(false);  const [copiedP2,     setCopiedP2]     = useState(false);  const [copiedInputs, setCopiedInputs] = useState(false);
+  const [copiedP1,     setCopiedP1]     = useState(false);
+  const [copiedP2,     setCopiedP2]     = useState(false);
+  const [copiedInputs, setCopiedInputs] = useState(false);
   const [pmh,              setPmh]              = useState([]);
   const [psh,              setPsh]              = useState([]);
   const [patientMeds,      setPatientMeds]      = useState([]);
@@ -241,6 +267,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setMdmResult(res); setP2Open(true);
       const ts = new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
       setMdmInitialTs(ts);
+      // ── PATCH 3: ISO timestamp for MDMThread elapsed-time calculation ──
+      setMdmTimestamp(new Date().toISOString());
       setMdmHistory([{ts,trigger:"Initial Impression",
         working_diagnosis:res.working_diagnosis||"",mdm_level:res.mdm_level||"",
         mdm_narrative:res.mdm_narrative||""}]);
@@ -308,7 +336,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         ? "\nAllergies: "+parsedAllergies.map(a=>`${a.allergen} (${a.reaction})`).join(", "):"";
       const weightCtx = patientWeight ? `\nWeight: ${patientWeight}kg` : "";
       const pregnancyCtx = patientPregnant==="Yes" ? "\nPATIENT IS PREGNANT — avoid teratogenic medications." : "";
-
       const res = await base44.integrations.Core.InvokeLLM({
         prompt:`You are a board-certified emergency physician generating an evidence-based clinical management plan.
 
@@ -602,8 +629,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     finally { setIntLoading(false); }
   }, [intLoading,intGenerated,cc,mdmResult,dispResult]);
 
-
-
   const loadPriorVisits = useCallback(async () => {
     if (priorVisitsLoading) return;
     setPriorVisitsLoading(true);
@@ -653,6 +678,20 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     } catch(e) { console.error("Addendum failed:",e); }
     finally { setRerunAddendumBusy(false); }
   }, [mdmResult,cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,vhAnalysis,parsedMeds,parsedAllergies,encounterType,rerunAddendumBusy]);
+
+  // ── PATCH 4: handleAddendumReady — appends AI-drafted addendum to MDM ──────
+  const handleAddendumReady = useCallback((addendum) => {
+    const ts = new Date().toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit"});
+    setMdmResult(prev => prev ? {
+      ...prev,
+      mdm_narrative: (prev.mdm_narrative||"").trim() +
+        "\n\n---\nADDENDUM [" + ts + "]:\n" + addendum,
+    } : prev);
+    setMdmHistory(prev => [...prev, {
+      ts, trigger:"Treatment Response Addendum",
+      working_diagnosis:"", mdm_level:"", mdm_narrative:addendum,
+    }]);
+  }, []);
 
   // Auto-inject relevant PMH comorbidities into MDM narrative when diagnosis is flagged
   usePMHConditionInjector({
@@ -835,6 +874,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setQuickDDxDismissed(false); setIsBounceback(false);
     setTreatmentPlan(""); setActionPlan("");
     setPatientResponse(""); setMdmHistory([]); setMdmInitialTs(null);
+    setMdmTimestamp("");
     setHpiGaps([]); setLabRecs(null); setImagingRecs(null);
     setMedsFromHpi([]); setAllergiesFromHpi([]);
     clearSlotCache(activeSlot);
@@ -1060,7 +1100,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",
               letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.1)",
               border:"1px solid rgba(0,229,192,.25)",borderRadius:4,padding:"2px 7px"}}>
-              v12.0 · AI Plan · AI Labs · AI Imaging
+              v12.1 · E/M Meter · MDM Thread
             </span>
           </div>
         )}
@@ -1336,7 +1376,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
               onNarrativeEdit={text=>setMdmResult(prev=>({...prev,mdm_narrative:text}))} />
 
-            {/* ── v11.4: My Clinical Plan — AI Generate button + MDMPlanEntry ── */}
+            {/* My Clinical Plan */}
             <div style={{marginTop:12,padding:"12px 14px",borderRadius:10,
               background:"rgba(14,37,68,.4)",border:"1px solid rgba(42,79,122,.3)"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
@@ -1382,6 +1422,19 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
 
             <GuidelineAssist workingDx={mdmResult?.working_diagnosis||""} mdmNarrative={mdmResult?.mdm_narrative||""}
               onInsertSentence={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
+
+            {/* ── PATCH 5: Real-time E/M level meter ── */}
+            <div style={{marginTop:10}}>
+              <EMLevel
+                mdmText={mdmResult?.mdm_narrative||""}
+                hpi={effectiveHpi}
+                labs={labs}
+                imaging={imaging}
+                ekg={ekg}
+                newVitals={newVitals}
+                consults={consults}
+              />
+            </div>
 
             {mdmResult.mdm_level&&(
               <details style={{marginTop:10}}>
@@ -1475,22 +1528,25 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             onAddToMDM={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
         )}
 
-        {p2Open&&!dispResult&&(
-          <div style={{marginBottom:10}}>
-            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-              color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>
-              Patient Response to Treatment
-              <span style={{fontWeight:400,letterSpacing:.4,marginLeft:8,textTransform:"none"}}>— documented in MDM &amp; disposition rationale</span>
-            </div>
-            <textarea value={patientResponse} onChange={e=>setPatientResponse(e.target.value)}
-              placeholder="e.g., 2L NS IV, morphine 4mg IV. Pain 8/10 → 3/10 at 60 min. BP normalized…"
-              rows={3}
-              style={{width:"100%",boxSizing:"border-box",resize:"vertical",
-                padding:"9px 12px",borderRadius:8,background:"rgba(14,37,68,.5)",
-                border:"1px solid rgba(42,79,122,.4)",color:"var(--qn-txt1)",
-                fontFamily:"'DM Sans',sans-serif",fontSize:12,lineHeight:1.55,outline:"none"}}
-              onFocus={e=>e.target.style.borderColor="rgba(0,229,192,.5)"}
-              onBlur={e=>e.target.style.borderColor="rgba(42,79,122,.4)"} />
+        {/* ── PATCH 6: Patient Response + Longitudinal MDM Thread ── */}
+        {p2Open&&(
+          <div style={{marginBottom:14,padding:"14px 16px",background:"rgba(8,22,40,.5)",
+            border:"1px solid rgba(42,79,122,.3)",borderRadius:12}}>
+            <PatientResponsePanel
+              patientResponse={patientResponse}
+              setPatientResponse={setPatientResponse}
+              cc={cc}
+              hpi={effectiveHpi}
+              working_diagnosis={mdmResult?.working_diagnosis||""}
+              mdmResult={mdmResult?.mdm_narrative||""}
+              mdmTimestamp={mdmTimestamp}
+              labs={labs}
+              imaging={imaging}
+              ekg={ekg}
+              newVitals={newVitals}
+              consults={consults}
+              onAddendumReady={handleAddendumReady}
+            />
           </div>
         )}
 
@@ -1609,7 +1665,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           <div style={{textAlign:"center",padding:"24px 0 8px",
             fontFamily:"'JetBrains Mono',monospace",fontSize:8,
             color:"var(--qn-txt4)",letterSpacing:1.5}} className="no-print">
-            NOTRYA QUICKNOTE v12.0 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+            NOTRYA QUICKNOTE v12.1 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}

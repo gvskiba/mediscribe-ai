@@ -147,6 +147,7 @@ import OpioidOverdoseHub from '@/pages/OpioidOverdoseHub';
 import EMTALAHub from '@/pages/EMTALAHub';
 import SpecialtyNoteHub from '@/pages/SpecialtyNoteHub';
 import SpecialtyNoteHubT2 from '@/pages/SpecialtyNoteHubT2';
+import NotryaTechHub from '@/pages/NotryaTechHub';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -388,6 +389,8 @@ const AuthenticatedApp = () => {
         <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
         <Route path="/specialty-note-hub" element={<SpecialtyNoteHub />} />
         <Route path="/SpecialtyNoteHubT2" element={<SpecialtyNoteHubT2 />} />
+        <Route path="/tech-hub" element={<NotryaTechHub />} />
+        <Route path="/NotryaTechHub" element={<NotryaTechHub />} />
         <Route path="/Calendar" element={<HubIndex />} />
         <Route path="/unified-pharma"   element={<UnifiedPharmacologyHub />} />
         <Route path="/EdNoteGenerator"  element={<QuickNote />} />

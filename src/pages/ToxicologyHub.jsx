@@ -1,6 +1,5 @@
 // ToxicologyHub.jsx — Notrya
-// Search-first · stat card grid · master-detail panel
-// NEW: global weight · toxidrome matcher · weight-linked doses · recently viewed · contraindication banners
+// Modal overlay detail · contraindication-first · condition-treated on all cards · weight-dose callout
 // No router · no localStorage · no form/alert · straight quotes · <1600 lines
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
@@ -13,7 +12,7 @@ import NotryaNav from "@/components/HubHeader/NotryaNav";
   l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
   document.head.appendChild(l);
   const s = document.createElement("style"); s.id = "tox-css";
-  s.textContent = `@keyframes tox-fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.tox-fade{animation:tox-fade .16s ease forwards;}@keyframes panel-in{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}.panel-in{animation:panel-in .18s ease forwards;}@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}.shimmer-text{background:linear-gradient(90deg,#e8f0fe 0%,#fff 30%,#9b6dff 52%,#00e5c0 72%,#e8f0fe 100%);background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite;}`;
+  s.textContent = `@keyframes tox-fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.tox-fade{animation:tox-fade .16s ease forwards;}@keyframes panel-in{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}.panel-in{animation:panel-in .18s ease forwards;}@keyframes modal-in{from{opacity:0;transform:scale(0.95) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}.modal-in{animation:modal-in .22s cubic-bezier(.22,.68,0,1.15) forwards;}@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}.shimmer-text{background:linear-gradient(90deg,#e8f0fe 0%,#fff 30%,#9b6dff 52%,#00e5c0 72%,#e8f0fe 100%);background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite;}`;
   document.head.appendChild(s);
 })();
 
@@ -23,8 +22,6 @@ const TIER_ORDER = ["immediate","urgent","caution"];
 const TIER_META  = { immediate:{ label:"Immediate",color:T.red },urgent:{ label:"Urgent",color:T.orange },caution:{ label:"Caution",color:T.gold } };
 
 // ─── ANTIDOTES ────────────────────────────────────────────────────────────────
-// cardCalc(w) → string shown on stat card when weight is set
-// contraindication → string triggers red banner at top of detail panel
 const ANTIDOTES = [
   { antidote:"Atropine", toxin:"Organophosphates / Carbamates / Nerve agents", color:T.orange, route:"IV / IM", urgency:"immediate", evidence:"Guideline",
     quickDose:"2-4 mg IV q5-10 min — no ceiling, titrate to dry secretions",
@@ -218,50 +215,41 @@ const TOXIDROMES = [
 
 // ─── TOXIDROME MATCHER ────────────────────────────────────────────────────────
 const SYMPTOMS = [
-  { id:"miosis",      label:"Miosis (pinpoint pupils)",    group:"eyes" },
-  { id:"mydriasis",   label:"Mydriasis (dilated pupils)",  group:"eyes" },
-  { id:"bradycardia", label:"Bradycardia",                 group:"vitals" },
-  { id:"tachycardia", label:"Tachycardia",                 group:"vitals" },
-  { id:"hyperthermia",label:"Hyperthermia",                group:"vitals" },
-  { id:"hypotension", label:"Hypotension",                 group:"vitals" },
-  { id:"diaphoresis", label:"Diaphoresis (sweating)",      group:"skin" },
-  { id:"dry_skin",    label:"Dry / flushed skin",          group:"skin" },
-  { id:"agitation",   label:"Agitation / delirium",        group:"neuro" },
-  { id:"sedation",    label:"Sedation / decreased LOC",    group:"neuro" },
-  { id:"clonus",      label:"Clonus / hyperreflexia",      group:"neuro" },
-  { id:"rigidity",    label:"Muscle rigidity (lead-pipe)", group:"neuro" },
-  { id:"bronchorrhea",label:"Bronchorrhea / wheezing",     group:"resp" },
-  { id:"fasciculations",label:"Fasciculations",            group:"neuro" },
-  { id:"urinary_ret", label:"Urinary retention",           group:"other" },
-  { id:"bradypnea",   label:"Bradypnea / apnea",           group:"resp" },
+  { id:"miosis",        label:"Miosis (pinpoint pupils)",    group:"eyes" },
+  { id:"mydriasis",     label:"Mydriasis (dilated pupils)",  group:"eyes" },
+  { id:"bradycardia",   label:"Bradycardia",                 group:"vitals" },
+  { id:"tachycardia",   label:"Tachycardia",                 group:"vitals" },
+  { id:"hyperthermia",  label:"Hyperthermia",                group:"vitals" },
+  { id:"hypotension",   label:"Hypotension",                 group:"vitals" },
+  { id:"diaphoresis",   label:"Diaphoresis (sweating)",      group:"skin" },
+  { id:"dry_skin",      label:"Dry / flushed skin",          group:"skin" },
+  { id:"agitation",     label:"Agitation / delirium",        group:"neuro" },
+  { id:"sedation",      label:"Sedation / decreased LOC",    group:"neuro" },
+  { id:"clonus",        label:"Clonus / hyperreflexia",      group:"neuro" },
+  { id:"rigidity",      label:"Muscle rigidity (lead-pipe)", group:"neuro" },
+  { id:"bronchorrhea",  label:"Bronchorrhea / wheezing",     group:"resp" },
+  { id:"fasciculations",label:"Fasciculations",              group:"neuro" },
+  { id:"urinary_ret",   label:"Urinary retention",           group:"other" },
+  { id:"bradypnea",     label:"Bradypnea / apnea",           group:"resp" },
 ];
 
 const TSYNDROMES = [
-  { name:"Opioid",          color:T.purple, hallmarks:["miosis","sedation","bradypnea"],               supportive:["bradycardia","hypotension"],
-    antidotes:["Naloxone"], protocols:["opioid"] },
-  { name:"Cholinergic",     color:T.green,  hallmarks:["miosis","bronchorrhea","diaphoresis"],          supportive:["bradycardia","fasciculations","sedation"],
-    antidotes:["Atropine","Pralidoxime (2-PAM)"], protocols:["cholinergic"] },
-  { name:"Sympathomimetic", color:T.red,    hallmarks:["mydriasis","tachycardia","agitation"],          supportive:["hyperthermia","diaphoresis"],
-    antidotes:["Sodium Bicarbonate"], protocols:["sympathomimetic"] },
-  { name:"Anticholinergic", color:T.gold,   hallmarks:["mydriasis","dry_skin","tachycardia"],           supportive:["hyperthermia","agitation","urinary_ret"],
-    antidotes:["Physostigmine"], protocols:["sympathomimetic"] },
-  { name:"Serotonin Syndrome",color:T.coral,hallmarks:["clonus","tachycardia","agitation"],             supportive:["hyperthermia","diaphoresis","mydriasis"],
-    antidotes:["Cyproheptadine"], protocols:["serotonin"] },
-  { name:"Sedative-Hypnotic",color:T.blue,  hallmarks:["sedation"],                                     supportive:["bradycardia","bradypnea"],
-    antidotes:["Flumazenil"], protocols:["alcohol_withdrawal"] },
-  { name:"Cholinergic (NMJ)",color:T.green, hallmarks:["fasciculations","miosis","bronchorrhea"],        supportive:["diaphoresis","sedation"],
-    antidotes:["Atropine","Pralidoxime (2-PAM)"], protocols:["cholinergic"] },
-  { name:"NMS",              color:T.blue,  hallmarks:["rigidity","hyperthermia"],                       supportive:["agitation"],
-    antidotes:["Dantrolene/Bromocriptine"], protocols:["nms"] },
+  { name:"Opioid",           color:T.purple, hallmarks:["miosis","sedation","bradypnea"],              supportive:["bradycardia","hypotension"],          antidotes:["Naloxone"], protocols:["opioid"] },
+  { name:"Cholinergic",      color:T.green,  hallmarks:["miosis","bronchorrhea","diaphoresis"],         supportive:["bradycardia","fasciculations","sedation"], antidotes:["Atropine","Pralidoxime (2-PAM)"], protocols:["cholinergic"] },
+  { name:"Sympathomimetic",  color:T.red,    hallmarks:["mydriasis","tachycardia","agitation"],         supportive:["hyperthermia","diaphoresis"],          antidotes:["Sodium Bicarbonate"], protocols:["sympathomimetic"] },
+  { name:"Anticholinergic",  color:T.gold,   hallmarks:["mydriasis","dry_skin","tachycardia"],          supportive:["hyperthermia","agitation","urinary_ret"], antidotes:["Physostigmine"], protocols:["sympathomimetic"] },
+  { name:"Serotonin Syndrome",color:T.coral, hallmarks:["clonus","tachycardia","agitation"],            supportive:["hyperthermia","diaphoresis","mydriasis"], antidotes:["Cyproheptadine"], protocols:["serotonin"] },
+  { name:"Sedative-Hypnotic",color:T.blue,   hallmarks:["sedation"],                                    supportive:["bradycardia","bradypnea"],             antidotes:["Flumazenil"], protocols:["alcohol_withdrawal"] },
+  { name:"Cholinergic (NMJ)",color:T.green,  hallmarks:["fasciculations","miosis","bronchorrhea"],      supportive:["diaphoresis","sedation"],              antidotes:["Atropine","Pralidoxime (2-PAM)"], protocols:["cholinergic"] },
+  { name:"NMS",              color:T.blue,   hallmarks:["rigidity","hyperthermia"],                     supportive:["agitation"],                           antidotes:["Dantrolene/Bromocriptine"], protocols:["nms"] },
 ];
 
 function scoreSyndrome(syndrome, selectedSet) {
   let score = 0;
   syndrome.hallmarks.forEach(s => { if (selectedSet.has(s)) score += 3; });
   syndrome.supportive.forEach(s => { if (selectedSet.has(s)) score += 1; });
-  // penalize if opposite hallmark present
-  if (syndrome.hallmarks.includes("miosis") && selectedSet.has("mydriasis")) score -= 3;
-  if (syndrome.hallmarks.includes("mydriasis") && selectedSet.has("miosis")) score -= 3;
+  if (syndrome.hallmarks.includes("miosis")      && selectedSet.has("mydriasis"))   score -= 3;
+  if (syndrome.hallmarks.includes("mydriasis")   && selectedSet.has("miosis"))      score -= 3;
   if (syndrome.hallmarks.includes("tachycardia") && selectedSet.has("bradycardia")) score -= 2;
   if (syndrome.hallmarks.includes("bradycardia") && selectedSet.has("tachycardia")) score -= 2;
   return score;
@@ -328,12 +316,16 @@ function StatCard({ item, isProtocol, onClick, globalWeight }) {
     <div onClick={onClick} style={{ borderRadius:10,cursor:"pointer",border:"1px solid rgba(26,53,85,0.5)",borderLeft:`3px solid ${color}`,background:`linear-gradient(135deg,${color}09,rgba(8,22,40,0.85))`,padding:"11px 13px",transition:"border-color .15s,box-shadow .15s" }}
       onMouseEnter={e => { e.currentTarget.style.borderColor=color+"55"; e.currentTarget.style.boxShadow=`0 0 18px ${color}1a`; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(26,53,85,0.5)"; e.currentTarget.style.boxShadow="none"; }}>
-      <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:5 }}>
+      <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:3 }}>
         <span style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:13,color,lineHeight:1.2 }}>
           {isProtocol ? (item.icon+" "+item.name) : item.antidote}
         </span>
         <span style={{ color:T.txt4,fontSize:14,flexShrink:0,marginTop:1 }}>›</span>
       </div>
+      {/* Condition treated — always visible for antidotes */}
+      {!isProtocol && item.toxin && (
+        <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt3,fontWeight:500,marginBottom:5,lineHeight:1.35 }}>{item.toxin}</div>
+      )}
       {!isProtocol && item.urgency && (
         <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginBottom:5 }}>
           <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:urgCol,background:`${urgCol}15`,border:`1px solid ${urgCol}35`,borderRadius:4,padding:"1px 5px",textTransform:"uppercase",letterSpacing:0.8 }}>{item.urgency}</span>
@@ -349,108 +341,135 @@ function StatCard({ item, isProtocol, onClick, globalWeight }) {
           {w} kg → {wDose}
         </div>
       )}
-      {!isProtocol && !wDose && item.route && <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4,marginTop:3 }}>{item.toxin} · {item.route}</div>}
     </div>
   );
 }
 
-// ─── DETAIL PANEL ─────────────────────────────────────────────────────────────
-function DetailPanel({ item, isProtocol, onClose, globalWeight }) {
+// ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
+function DetailModal({ item, isProtocol, onClose, globalWeight }) {
   const color  = item.color;
   const urgCol = item.urgency ? { immediate:T.red,urgent:T.orange,caution:T.gold }[item.urgency] : color;
   const w      = parseFloat(globalWeight) || 0;
   const wDose  = !isProtocol && w > 0 && item.cardCalc ? item.cardCalc(w) : null;
-  return (
-    <div className="panel-in" style={{ background:"rgba(8,22,40,0.97)",border:`1px solid ${color}44`,borderRadius:12,overflow:"hidden",position:"sticky",top:8,maxHeight:"calc(100vh - 80px)",display:"flex",flexDirection:"column" }}>
-      {/* Contraindication banner — must be seen before dosing */}
-      {item.contraindication && (
-        <div style={{ padding:"10px 14px",background:"rgba(255,44,44,0.18)",border:"none",borderBottom:"2px solid rgba(255,44,44,0.6)" }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.red,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4 }}>⚠ Critical Contraindications — Read Before Dosing</div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#ffaaaa",lineHeight:1.6,fontWeight:600 }}>{item.contraindication}</div>
-        </div>
-      )}
 
-      {/* Header */}
-      <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",padding:"12px 14px",background:`linear-gradient(135deg,${color}1a,${color}06)`,borderBottom:`1px solid ${color}28` }}>
-        <div style={{ flex:1,minWidth:0 }}>
-          <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:16,color,lineHeight:1.2,marginBottom:6 }}>
-            {isProtocol ? (item.icon+" "+item.name) : item.antidote}
+  useEffect(() => {
+    const fn = e => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, [onClose]);
+
+  return (
+    <div onClick={onClose} style={{ position:"fixed",inset:0,zIndex:9000,background:"rgba(5,15,30,0.88)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}>
+      <div onClick={e => e.stopPropagation()} className="modal-in" style={{ width:"100%",maxWidth:680,maxHeight:"90vh",borderRadius:16,overflow:"hidden",display:"flex",flexDirection:"column",border:`1px solid ${color}55`,background:"rgba(8,22,40,0.98)",boxShadow:`0 0 60px ${color}22,0 24px 80px rgba(0,0,0,0.8)` }}>
+
+        {/* Contraindication banner — ALWAYS first, impossible to scroll past */}
+        {item.contraindication && (
+          <div style={{ padding:"12px 20px",background:"rgba(255,44,44,0.22)",borderBottom:"2px solid rgba(255,44,44,0.78)",flexShrink:0 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.red,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4 }}>⚠ Critical Contraindications — Read Before Dosing</div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#ffaaaa",lineHeight:1.65,fontWeight:600 }}>{item.contraindication}</div>
           </div>
-          {!isProtocol && (
-            <div style={{ display:"flex",gap:5,flexWrap:"wrap" }}>
-              {item.urgency && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:urgCol,background:`${urgCol}20`,border:`1px solid ${urgCol}45`,borderRadius:4,padding:"2px 7px",textTransform:"uppercase",letterSpacing:1 }}>{item.urgency}</span>}
-              {item.evidence && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:EVID_COLOR[item.evidence]||T.txt4,background:`${EVID_COLOR[item.evidence]||T.txt4}20`,border:`1px solid ${EVID_COLOR[item.evidence]||T.txt4}45`,borderRadius:4,padding:"2px 7px",textTransform:"uppercase",letterSpacing:1 }}>{item.evidence}</span>}
-              {item.route && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.blue,background:`${T.blue}20`,border:`1px solid ${T.blue}45`,borderRadius:4,padding:"2px 7px" }}>{item.route}</span>}
+        )}
+
+        {/* Header */}
+        <div style={{ padding:"16px 20px",background:`linear-gradient(135deg,${color}1e,${color}07)`,borderBottom:`1px solid ${color}33`,flexShrink:0 }}>
+          <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12 }}>
+            <div style={{ flex:1,minWidth:0 }}>
+              <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:20,color,lineHeight:1.2,marginBottom:6 }}>
+                {isProtocol ? (item.icon+" "+item.name) : item.antidote}
+              </div>
+              {/* Condition treated — prominent subtitle */}
+              {!isProtocol && item.toxin && (
+                <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:13,color:T.txt2,fontWeight:600,marginBottom:8,lineHeight:1.4 }}>
+                  <span style={{ color:T.txt4,fontWeight:400 }}>Treats: </span>{item.toxin}
+                </div>
+              )}
+              {!isProtocol && (
+                <div style={{ display:"flex",gap:5,flexWrap:"wrap" }}>
+                  {item.urgency && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:urgCol,background:`${urgCol}20`,border:`1px solid ${urgCol}45`,borderRadius:4,padding:"2px 7px",textTransform:"uppercase",letterSpacing:1 }}>{item.urgency}</span>}
+                  {item.evidence && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:EVID_COLOR[item.evidence]||T.txt4,background:`${EVID_COLOR[item.evidence]||T.txt4}20`,border:`1px solid ${EVID_COLOR[item.evidence]||T.txt4}45`,borderRadius:4,padding:"2px 7px",textTransform:"uppercase",letterSpacing:1 }}>{item.evidence}</span>}
+                  {item.route && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.blue,background:`${T.blue}20`,border:`1px solid ${T.blue}45`,borderRadius:4,padding:"2px 7px" }}>{item.route}</span>}
+                </div>
+              )}
+            </div>
+            <button onClick={onClose} style={{ flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"7px 13px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.14)",borderRadius:8,color:T.txt3,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,whiteSpace:"nowrap" }}>✕ Close</button>
+          </div>
+        </div>
+
+        {/* Scrollable body */}
+        <div style={{ overflowY:"auto",flex:1,padding:"18px 20px" }}>
+
+          {/* Weight-based dose — large, dominant callout when weight is set */}
+          {wDose && (
+            <div style={{ padding:"16px 20px",borderRadius:12,marginBottom:18,background:`${color}1e`,border:`2px solid ${color}60`,boxShadow:`0 0 28px ${color}1a` }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:5 }}>⚖ Calculated Dose — {w} kg Patient</div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:32,fontWeight:700,color,lineHeight:1.15,marginBottom:5 }}>{wDose}</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4 }}>See Calculate tab for full multi-bag regimen</div>
             </div>
           )}
-        </div>
-        <button onClick={onClose} style={{ marginLeft:8,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:7,color:T.txt3,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,padding:"5px 11px",flexShrink:0 }}>✕</button>
-      </div>
 
-      <div style={{ padding:"14px 16px",overflowY:"auto",flex:1 }}>
-        {/* Weight-linked dose — prominent when weight is set */}
-        {wDose && (
-          <div style={{ padding:"12px 14px",borderRadius:10,marginBottom:12,background:`${color}18`,border:`2px solid ${color}50` }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4 }}>Calculated Dose — {w} kg Patient</div>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:18,fontWeight:700,color,lineHeight:1.3 }}>{wDose}</div>
-            <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4,marginTop:3 }}>See Calculate tab for full regimen</div>
-          </div>
-        )}
-
-        {isProtocol ? (
-          <>
-            <div style={{ padding:"9px 12px",borderRadius:8,marginBottom:12,background:`${T.red}0d`,border:`1px solid ${T.red}30` }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.red,letterSpacing:1,textTransform:"uppercase",marginBottom:3 }}>Alert</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.6 }}>{item.alert}</div>
-            </div>
-            {item.sections.map((sec, i) => (
-              <div key={i} style={{ marginBottom:10,padding:"10px 12px",borderRadius:8,background:`${sec.color}0a`,border:`1px solid ${sec.color}25` }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:sec.color,letterSpacing:1.2,textTransform:"uppercase",marginBottom:7,paddingBottom:4,borderBottom:`1px solid ${sec.color}25` }}>{sec.label}</div>
-                {sec.items.map((it, j) => (
-                  <div key={j} style={{ display:"flex",gap:7,alignItems:"flex-start",marginBottom:4 }}>
-                    <span style={{ color:sec.color,fontSize:7,marginTop:3,flexShrink:0 }}>◆</span>
-                    <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2,lineHeight:1.6 }}>{it}</span>
-                  </div>
-                ))}
+          {isProtocol ? (
+            <>
+              <div style={{ padding:"11px 14px",borderRadius:9,marginBottom:14,background:`${T.red}0e`,border:`1px solid ${T.red}30` }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.red,letterSpacing:1,textTransform:"uppercase",marginBottom:3 }}>Alert</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.65 }}>{item.alert}</div>
               </div>
-            ))}
-            <div style={{ padding:"10px 12px",borderRadius:8,background:`${T.gold}0a`,border:`1px solid ${T.gold}25` }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.gold,letterSpacing:1,textTransform:"uppercase" }}>Pearl: </span>
-              <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2,lineHeight:1.6 }}>{item.pearl}</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ padding:"12px 14px",borderRadius:10,marginBottom:12,background:`${color}12`,border:`1px solid ${color}40` }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:5 }}>Quick Dose</div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,color,lineHeight:1.45 }}>{item.quickDose}</div>
-            </div>
-            <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4,marginBottom:12,paddingBottom:10,borderBottom:"1px solid rgba(26,53,85,0.4)" }}>For: {item.toxin}</div>
-            <div style={{ marginBottom:10,padding:"10px 12px",borderRadius:8,background:`${color}08`,border:`1px solid ${color}22` }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>Full Dosing</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.65 }}>{item.dosing}</div>
-            </div>
-            {item.timing && <div style={{ marginBottom:10,padding:"10px 12px",borderRadius:8,background:`${T.gold}08`,border:`1px solid ${T.gold}22` }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.gold,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>Timing</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.65 }}>{item.timing}</div>
-            </div>}
-            <div style={{ marginBottom:10,padding:"10px 12px",borderRadius:8,background:`${T.purple}08`,border:`1px solid ${T.purple}22` }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.purple,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>Pearl</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.65 }}>{item.pearls}</div>
-            </div>
-            {item.peds && <div style={{ padding:"10px 12px",borderRadius:8,background:`${T.teal}08`,border:`1px solid ${T.teal}22` }}>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.teal,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>Peds</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.65 }}>{item.peds}</div>
-            </div>}
-          </>
-        )}
+              {item.sections.map((sec, i) => (
+                <div key={i} style={{ marginBottom:10,padding:"11px 14px",borderRadius:9,background:`${sec.color}0a`,border:`1px solid ${sec.color}25` }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:sec.color,letterSpacing:1.2,textTransform:"uppercase",marginBottom:7,paddingBottom:4,borderBottom:`1px solid ${sec.color}25` }}>{sec.label}</div>
+                  {sec.items.map((it, j) => (
+                    <div key={j} style={{ display:"flex",gap:7,alignItems:"flex-start",marginBottom:5 }}>
+                      <span style={{ color:sec.color,fontSize:7,marginTop:4,flexShrink:0 }}>◆</span>
+                      <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.65 }}>{it}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div style={{ padding:"11px 14px",borderRadius:9,background:`${T.gold}0a`,border:`1px solid ${T.gold}25` }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.gold,letterSpacing:1,textTransform:"uppercase" }}>Pearl: </span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.65 }}>{item.pearl}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Quick dose box */}
+              <div style={{ padding:"13px 16px",borderRadius:11,marginBottom:14,background:`${color}12`,border:`1px solid ${color}44` }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:5 }}>Quick Dose</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:16,fontWeight:700,color,lineHeight:1.5 }}>{item.quickDose}</div>
+              </div>
+              {/* Full dosing */}
+              <div style={{ marginBottom:10,padding:"11px 14px",borderRadius:9,background:`${color}08`,border:`1px solid ${color}22` }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>Full Dosing</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.7 }}>{item.dosing}</div>
+              </div>
+              {/* Timing */}
+              {item.timing && (
+                <div style={{ marginBottom:10,padding:"11px 14px",borderRadius:9,background:`${T.gold}08`,border:`1px solid ${T.gold}22` }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.gold,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>Timing</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.7 }}>{item.timing}</div>
+                </div>
+              )}
+              {/* Pearl */}
+              <div style={{ marginBottom:10,padding:"11px 14px",borderRadius:9,background:`${T.purple}08`,border:`1px solid ${T.purple}22` }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.purple,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>Pearl</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.7 }}>{item.pearls}</div>
+              </div>
+              {/* Peds */}
+              {item.peds && (
+                <div style={{ padding:"11px 14px",borderRadius:9,background:`${T.teal}08`,border:`1px solid ${T.teal}22` }}>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.teal,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>Peds</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.7 }}>{item.peds}</div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 // ─── TOXIDROME MATCHER ────────────────────────────────────────────────────────
-function ToxidromeMatcher({ onSelectAntidote, onSelectProtocol }) {
+function ToxidromeMatcher({ onSelectAntidote }) {
   const [selected, setSelected] = useState(new Set());
   const toggle = id => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const clear  = () => setSelected(new Set());
@@ -481,8 +500,6 @@ function ToxidromeMatcher({ onSelectAntidote, onSelectProtocol }) {
         </div>
         {selected.size > 0 && <button onClick={clear} style={{ background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:7,color:T.txt4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:11,padding:"4px 10px" }}>Clear</button>}
       </div>
-
-      {/* Symptom groups */}
       {groups.map(g => (
         <div key={g.label} style={{ marginBottom:8 }}>
           <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:5 }}>{g.label}</div>
@@ -499,8 +516,6 @@ function ToxidromeMatcher({ onSelectAntidote, onSelectProtocol }) {
           </div>
         </div>
       ))}
-
-      {/* Results */}
       {matches.length > 0 && (
         <div style={{ marginTop:12,borderTop:"1px solid rgba(155,109,255,0.2)",paddingTop:12 }}>
           <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.purple,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8 }}>Likely Toxidrome{matches.length > 1 ? "s" : ""}</div>
@@ -539,9 +554,9 @@ function ToxidromeMatcher({ onSelectAntidote, onSelectProtocol }) {
 // ─── CALCULATE TAB ────────────────────────────────────────────────────────────
 function CalculateTab({ globalWeight, setGlobalWeight }) {
   const [selectedId, setSelectedId] = useState("nac");
-  const [level,  setLevel]  = useState("");
-  const [apapH,  setApapH]  = useState("");
-  const [apapL,  setApapL]  = useState("");
+  const [level,      setLevel]      = useState("");
+  const [apapH,      setApapH]      = useState("");
+  const [apapL,      setApapL]      = useState("");
 
   const calc = DOSE_CALCS.find(d => d.id === selectedId);
   const w    = parseFloat(globalWeight) || 0;
@@ -559,13 +574,10 @@ function CalculateTab({ globalWeight, setGlobalWeight }) {
 
   return (
     <div>
-      {/* Global weight input */}
       <div style={{ marginBottom:14,padding:"12px 16px",borderRadius:10,background:"rgba(20,184,166,0.06)",border:"1px solid rgba(20,184,166,0.2)" }}>
         <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.teal,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6 }}>Patient Weight (kg) — applies hub-wide to all doses and cards</div>
         <input value={globalWeight} onChange={e => setGlobalWeight(e.target.value)} placeholder="kg" style={{ ...iBase,fontSize:26,fontWeight:700,padding:"10px 14px" }} />
       </div>
-
-      {/* Agent pill strip */}
       <div style={{ display:"flex",gap:7,overflowX:"auto",paddingBottom:10,marginBottom:14,scrollbarWidth:"none" }}>
         {DOSE_CALCS.map(d => {
           const active = d.id === selectedId;
@@ -576,16 +588,12 @@ function CalculateTab({ globalWeight, setGlobalWeight }) {
           );
         })}
       </div>
-
-      {/* Digibind level */}
       {calc?.custom && (
         <div style={{ marginBottom:14,padding:"10px 14px",borderRadius:9,background:"rgba(59,158,255,0.06)",border:"1px solid rgba(59,158,255,0.22)" }}>
           <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6 }}>Dig Level (ng/mL)</div>
           <input value={level} onChange={e => setLevel(e.target.value)} placeholder="ng/mL" style={{ ...iBase,fontSize:18,fontWeight:700,padding:"8px 12px" }} />
         </div>
       )}
-
-      {/* Results */}
       {!w ? (
         <div style={{ padding:"28px",textAlign:"center",color:T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:13,background:"rgba(8,22,40,0.5)",border:"1px solid rgba(26,53,85,0.3)",borderRadius:10,marginBottom:20 }}>Enter weight above to calculate doses</div>
       ) : (
@@ -603,8 +611,6 @@ function CalculateTab({ globalWeight, setGlobalWeight }) {
           ))}
         </div>
       )}
-
-      {/* APAP Nomogram */}
       <div style={{ borderTop:"1px solid rgba(26,53,85,0.5)",paddingTop:18 }}>
         <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:T.orange,marginBottom:4 }}>APAP Nomogram</div>
         <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4,marginBottom:12,lineHeight:1.5 }}>{"Acute single-ingestion only · level ≥4h post-ingestion · invalid for extended-release APAP"}</div>
@@ -652,12 +658,12 @@ function CalculateTab({ globalWeight, setGlobalWeight }) {
 
 // ─── MAIN EXPORT ──────────────────────────────────────────────────────────────
 export default function ToxicologyHub({ embedded = false, onBack }) {
-  const [tab,           setTab]          = useState("search");
-  const [query,         setQuery]        = useState("");
-  const [detail,        setDetail]       = useState(null);
-  const [globalWeight,  setGlobalWeight] = useState("");
-  const [recentlyViewed,setRecentlyViewed] = useState([]);       // [{item,isProtocol}]
-  const [showMatcher,   setShowMatcher]  = useState(false);
+  const [tab,            setTab]           = useState("search");
+  const [query,          setQuery]         = useState("");
+  const [detail,         setDetail]        = useState(null);
+  const [globalWeight,   setGlobalWeight]  = useState("");
+  const [recentlyViewed, setRecentlyViewed]= useState([]);
+  const [showMatcher,    setShowMatcher]   = useState(false);
   const searchRef = useRef(null);
 
   useEffect(() => { if (tab === "search") setTimeout(() => searchRef.current?.focus(), 80); }, [tab]);
@@ -690,10 +696,10 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
     return TIER_ORDER.filter(t => groups[t]?.length).map(t => ({ tier:t, items:groups[t] }));
   }, []);
 
-  const tabStyle = (id) => {
+  const tabStyle = id => {
     const cols = { search:T.teal,agents:T.blue,calculate:T.cyan };
     const active = tab === id;
-    return { fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,padding:"8px 18px",borderRadius:9,cursor:"pointer",border:`1px solid ${active ? cols[id]+"66" : "rgba(26,53,85,0.4)"}`,background:active ? `linear-gradient(135deg,${cols[id]}18,${cols[id]}06)` : "transparent",color:active ? cols[id] : T.txt4,transition:"all .15s",position:"relative" };
+    return { fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,padding:"8px 18px",borderRadius:9,cursor:"pointer",border:`1px solid ${active ? cols[id]+"66" : "rgba(26,53,85,0.4)"}`,background:active ? `linear-gradient(135deg,${cols[id]}18,${cols[id]}06)` : "transparent",color:active ? cols[id] : T.txt4,transition:"all .15s" };
   };
 
   const w = parseFloat(globalWeight) || 0;
@@ -703,185 +709,184 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
       {!embedded && <NotryaNav currentHub="ToxicologyHub" />}
       <div style={{ flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0 }}>
         {!embedded && <NotryaHubHeader hubName="Toxicology Hub" category="Tox" homeUrl="/" />}
-      <div style={{ maxWidth:1300,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%" }}>
+        <div style={{ maxWidth:1100,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%" }}>
 
-        {/* Global weight badge — always visible when set */}
-        {w > 0 && (
-          <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10,padding:"7px 14px",borderRadius:9,background:"rgba(0,229,192,0.07)",border:"1px solid rgba(0,229,192,0.25)",width:"fit-content" }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.teal,fontWeight:700 }}>⚖ {w} kg patient</span>
-            <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4 }}>· weight-linked doses active on all cards</span>
-            <button onClick={() => setGlobalWeight("")} style={{ background:"none",border:"none",color:T.txt4,cursor:"pointer",fontSize:12,padding:"0 2px" }}>✕</button>
+          {/* Global weight badge */}
+          {w > 0 && (
+            <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10,padding:"7px 14px",borderRadius:9,background:"rgba(0,229,192,0.07)",border:"1px solid rgba(0,229,192,0.25)",width:"fit-content" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.teal,fontWeight:700 }}>⚖ {w} kg patient</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4 }}>· weight-linked doses active</span>
+              <button onClick={() => setGlobalWeight("")} style={{ background:"none",border:"none",color:T.txt4,cursor:"pointer",fontSize:12,padding:"0 2px" }}>✕</button>
+            </div>
+          )}
+
+          {/* Tab bar */}
+          <div style={{ display:"flex",gap:6,padding:"6px",background:"rgba(8,22,40,0.7)",border:"1px solid rgba(26,53,85,0.4)",borderRadius:12,marginBottom:14 }}>
+            <button onClick={() => setTab("search")}    style={tabStyle("search")}>🔍 Search</button>
+            <button onClick={() => setTab("agents")}    style={tabStyle("agents")}>⚗️ Agents</button>
+            <button onClick={() => setTab("calculate")} style={tabStyle("calculate")}>
+              ⚖️ Calculate{w > 0 && <span style={{ marginLeft:6,fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.teal,background:"rgba(0,229,192,0.15)",border:"1px solid rgba(0,229,192,0.35)",borderRadius:4,padding:"1px 5px" }}>{w}kg</span>}
+            </button>
           </div>
-        )}
 
-        {/* Tab bar */}
-        <div style={{ display:"flex",gap:6,padding:"6px",background:"rgba(8,22,40,0.7)",border:"1px solid rgba(26,53,85,0.4)",borderRadius:12,marginBottom:14 }}>
-          <button onClick={() => setTab("search")}    style={tabStyle("search")}>🔍 Search</button>
-          <button onClick={() => setTab("agents")}    style={tabStyle("agents")}>⚗️ Agents</button>
-          <button onClick={() => setTab("calculate")} style={tabStyle("calculate")}>
-            ⚖️ Calculate{w > 0 && <span style={{ marginLeft:6,fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.teal,background:"rgba(0,229,192,0.15)",border:"1px solid rgba(0,229,192,0.35)",borderRadius:4,padding:"1px 5px" }}>{w}kg</span>}
-          </button>
-        </div>
+          {/* ── SEARCH TAB ── */}
+          {tab === "search" && (
+            <div className="tox-fade">
+              <div style={{ marginBottom:12,position:"relative" }}>
+                <span style={{ position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16,pointerEvents:"none" }}>🔍</span>
+                <input ref={searchRef} value={query} onChange={e => setQuery(e.target.value)}
+                  placeholder="Search antidotes, toxins, protocols — type anything"
+                  style={{ width:"100%",padding:"14px 42px",background:"rgba(14,37,68,0.9)",border:`1px solid ${query?"rgba(0,229,192,0.5)":"rgba(42,79,122,0.4)"}`,borderRadius:14,outline:"none",fontFamily:"'DM Sans',sans-serif",fontSize:15,color:T.txt,boxSizing:"border-box",transition:"border-color .2s" }} />
+                {query && <button onClick={() => setQuery("")} style={{ position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,0.08)",border:"none",borderRadius:6,color:T.txt4,cursor:"pointer",fontSize:13,padding:"3px 8px" }}>✕</button>}
+              </div>
 
-        <div style={{ display:"flex",gap:14,alignItems:"flex-start",flexWrap:"wrap" }}>
-          <div style={{ flex:"1 1 480px",minWidth:0 }}>
+              {!query ? (
+                <>
+                  {/* Recently viewed */}
+                  {recentlyViewed.length > 0 && (
+                    <>
+                      <SectionLabel label="Recently Viewed" color={T.txt4} />
+                      <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:4 }}>
+                        {recentlyViewed.map((r, i) => {
+                          const name = r.isProtocol ? r.item.name : r.item.antidote;
+                          const col  = r.item.color;
+                          return (
+                            <button key={i} onClick={() => openDetail(r.item, r.isProtocol)} style={{ padding:"5px 12px",borderRadius:20,cursor:"pointer",border:`1px solid ${col}55`,background:`${col}10`,color:col,fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600 }}>
+                              {r.isProtocol ? r.item.icon+" " : ""}{name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
 
-            {/* ── SEARCH TAB ── */}
-            {tab === "search" && (
-              <div className="tox-fade">
-                {/* Search box */}
-                <div style={{ marginBottom:12,position:"relative" }}>
-                  <span style={{ position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16,pointerEvents:"none" }}>🔍</span>
-                  <input ref={searchRef} value={query} onChange={e => setQuery(e.target.value)}
-                    placeholder="Search antidotes, toxins, protocols — type anything"
-                    style={{ width:"100%",padding:"14px 42px",background:"rgba(14,37,68,0.9)",border:`1px solid ${query?"rgba(0,229,192,0.5)":"rgba(42,79,122,0.4)"}`,borderRadius:14,outline:"none",fontFamily:"'DM Sans',sans-serif",fontSize:15,color:T.txt,boxSizing:"border-box",transition:"border-color .2s" }} />
-                  {query && <button onClick={() => setQuery("")} style={{ position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,0.08)",border:"none",borderRadius:6,color:T.txt4,cursor:"pointer",fontSize:13,padding:"3px 8px" }}>✕</button>}
-                </div>
+                  {/* Toxidrome matcher toggle */}
+                  <div style={{ margin:"14px 0 6px",display:"flex",alignItems:"center",gap:8 }}>
+                    <button onClick={() => setShowMatcher(p => !p)} style={{ display:"flex",alignItems:"center",gap:7,padding:"7px 14px",borderRadius:9,cursor:"pointer",border:`1px solid ${showMatcher ? T.purple+"66" : "rgba(26,53,85,0.4)"}`,background:showMatcher ? `linear-gradient(135deg,${T.purple}18,${T.purple}06)` : "rgba(8,22,40,0.6)",color:showMatcher ? T.purple : T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600 }}>
+                      🧬 {showMatcher ? "Hide" : "Open"} Toxidrome Matcher
+                    </button>
+                    {!showMatcher && <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4 }}>Check symptoms → surface likely toxidrome</span>}
+                  </div>
+                  {showMatcher && <ToxidromeMatcher onSelectAntidote={a => openDetail(a, false)} />}
 
-                {!query ? (
-                  <>
-                    {/* Recently viewed */}
-                    {recentlyViewed.length > 0 && (
-                      <>
-                        <SectionLabel label="Recently Viewed" color={T.txt4} />
-                        <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:4 }}>
-                          {recentlyViewed.map((r, i) => {
-                            const name = r.isProtocol ? r.item.name : r.item.antidote;
-                            const col  = r.item.color;
-                            return (
-                              <button key={i} onClick={() => openDetail(r.item, r.isProtocol)} style={{ padding:"5px 12px",borderRadius:20,cursor:"pointer",border:`1px solid ${col}55`,background:`${col}10`,color:col,fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600 }}>
-                                {r.isProtocol ? r.item.icon+" " : ""}{name}
-                              </button>
-                            );
-                          })}
+                  {/* Quick Access — now includes condition treated */}
+                  <SectionLabel label="Quick Access — Most Critical" color={T.red} />
+                  <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:8,marginBottom:6 }}>
+                    {QUICK_ACCESS.map(name => {
+                      const a = ANTIDOTES.find(x => x.antidote === name);
+                      if (!a) return null;
+                      const uc   = { immediate:T.red,urgent:T.orange,caution:T.gold }[a.urgency];
+                      const wStr = w > 0 && a.cardCalc ? a.cardCalc(w) : null;
+                      return (
+                        <div key={name} onClick={() => openDetail(a, false)}
+                          style={{ padding:"12px 14px",borderRadius:10,cursor:"pointer",border:"1px solid rgba(26,53,85,0.5)",borderLeft:`3px solid ${a.color}`,background:`linear-gradient(135deg,${a.color}0e,rgba(8,22,40,0.85))`,transition:"all .15s" }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor=a.color+"55"; e.currentTarget.style.boxShadow=`0 0 16px ${a.color}22`; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(26,53,85,0.5)"; e.currentTarget.style.boxShadow="none"; }}>
+                          <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:13,color:a.color,marginBottom:3 }}>{a.antidote}</div>
+                          {/* Condition treated — visible on every quick access card */}
+                          <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2,fontWeight:500,marginBottom:6,lineHeight:1.35 }}>{a.toxin}</div>
+                          {wStr ? (
+                            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:a.color,lineHeight:1.35,marginBottom:5 }}>{w}kg → {wStr}</div>
+                          ) : (
+                            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:600,color:a.color,lineHeight:1.35,marginBottom:5 }}>{a.quickDose.split("—")[0].trim()}</div>
+                          )}
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:uc,background:`${uc}18`,border:`1px solid ${uc}35`,borderRadius:4,padding:"1px 5px",textTransform:"uppercase" }}>{a.urgency}</span>
                         </div>
-                      </>
-                    )}
+                      );
+                    })}
+                  </div>
 
-                    {/* Toxidrome matcher toggle */}
-                    <div style={{ margin:"14px 0 6px",display:"flex",alignItems:"center",gap:8 }}>
-                      <button onClick={() => setShowMatcher(p => !p)} style={{ display:"flex",alignItems:"center",gap:7,padding:"7px 14px",borderRadius:9,cursor:"pointer",border:`1px solid ${showMatcher ? T.purple+"66" : "rgba(26,53,85,0.4)"}`,background:showMatcher ? `linear-gradient(135deg,${T.purple}18,${T.purple}06)` : "rgba(8,22,40,0.6)",color:showMatcher ? T.purple : T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600 }}>
-                        🧬 {showMatcher ? "Hide" : "Open"} Toxidrome Matcher
-                      </button>
-                      {!showMatcher && <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4 }}>Check symptoms → surface likely toxidrome</span>}
+                  <SectionLabel label="All Antidotes" color={T.teal} count={ANTIDOTES.length} />
+                  <CardGrid>{ANTIDOTES.map(a => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a,false)} globalWeight={globalWeight} />)}</CardGrid>
+                </>
+              ) : (
+                <>
+                  {filteredAntidotes.length > 0 && (
+                    <>
+                      <SectionLabel label="Antidotes" color={T.teal} count={filteredAntidotes.length} />
+                      <CardGrid>{filteredAntidotes.map(a => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a,false)} globalWeight={globalWeight} />)}</CardGrid>
+                    </>
+                  )}
+                  {filteredProtocols.length > 0 && (
+                    <>
+                      <SectionLabel label="Protocols" color={T.coral} count={filteredProtocols.length} />
+                      <CardGrid>{filteredProtocols.map(p => <StatCard key={p.id} item={p} isProtocol={true} onClick={() => openDetail(p,true)} globalWeight={globalWeight} />)}</CardGrid>
+                    </>
+                  )}
+                  {filteredAntidotes.length === 0 && filteredProtocols.length === 0 && (
+                    <div style={{ padding:"32px",textAlign:"center",color:T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:13,background:"rgba(8,22,40,0.5)",border:"1px solid rgba(26,53,85,0.3)",borderRadius:10 }}>No results for "{query}"</div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── AGENTS TAB ── */}
+          {tab === "agents" && (
+            <div className="tox-fade">
+              {groupedAntidotes.map(({ tier, items }) => {
+                const m = TIER_META[tier];
+                return (
+                  <div key={tier}>
+                    <SectionLabel label={m.label} color={m.color} count={items.length} />
+                    <CardGrid>{items.map(a => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a,false)} globalWeight={globalWeight} />)}</CardGrid>
+                  </div>
+                );
+              })}
+              <SectionLabel label="Protocols" color={T.coral} count={PROTOCOLS.length} />
+              <CardGrid>{PROTOCOLS.map(p => <StatCard key={p.id} item={p} isProtocol={true} onClick={() => openDetail(p,true)} globalWeight={globalWeight} />)}</CardGrid>
+              <SectionLabel label="Toxidrome Reference" color={T.purple} />
+              <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:7 }}>
+                {TOXIDROMES.map(tox => (
+                  <div key={tox.name} style={{ padding:"10px 12px",borderRadius:9,background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,0.4)",borderLeft:`3px solid ${tox.color}` }}>
+                    <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}>
+                      <span style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:12,color:tox.color }}>{tox.name}</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,background:"rgba(0,229,192,0.09)",border:"1px solid rgba(0,229,192,0.3)",borderRadius:4,padding:"1px 7px" }}>Tx: {tox.tx}</span>
                     </div>
-                    {showMatcher && <ToxidromeMatcher onSelectAntidote={a => openDetail(a,false)} onSelectProtocol={p => openDetail(p,true)} />}
-
-                    <SectionLabel label="Quick Access — Most Critical" color={T.red} />
-                    <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8,marginBottom:6 }}>
-                      {QUICK_ACCESS.map(name => {
-                        const a = ANTIDOTES.find(x => x.antidote === name);
-                        if (!a) return null;
-                        const uc   = { immediate:T.red,urgent:T.orange,caution:T.gold }[a.urgency];
-                        const wStr = w > 0 && a.cardCalc ? a.cardCalc(w) : null;
-                        return (
-                          <div key={name} onClick={() => openDetail(a,false)}
-                            style={{ padding:"12px 14px",borderRadius:10,cursor:"pointer",border:"1px solid rgba(26,53,85,0.5)",borderLeft:`3px solid ${a.color}`,background:`linear-gradient(135deg,${a.color}0e,rgba(8,22,40,0.85))`,transition:"all .15s" }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor=a.color+"55"; e.currentTarget.style.boxShadow=`0 0 16px ${a.color}22`; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(26,53,85,0.5)"; e.currentTarget.style.boxShadow="none"; }}>
-                            <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:13,color:a.color,marginBottom:4 }}>{a.antidote}</div>
-                            {wStr ? (
-                              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:a.color,lineHeight:1.35,marginBottom:4 }}>{w}kg → {wStr}</div>
-                            ) : (
-                              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:600,color:a.color,lineHeight:1.35,marginBottom:4 }}>{a.quickDose.split("—")[0].trim()}</div>
-                            )}
-                            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:uc,background:`${uc}18`,border:`1px solid ${uc}35`,borderRadius:4,padding:"1px 5px",textTransform:"uppercase" }}>{a.urgency}</span>
-                          </div>
-                        );
-                      })}
+                    <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:5 }}>
+                      {[{ l:"Pupils",v:tox.pupils },{ l:"Mental Status",v:tox.ms },{ l:"Vitals",v:tox.vitals },{ l:"Skin",v:tox.skin }].map(f => (
+                        <div key={f.l} style={{ padding:"4px 7px",background:`${tox.color}09`,border:`1px solid ${tox.color}22`,borderRadius:5 }}>
+                          <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:tox.color,textTransform:"uppercase",letterSpacing:0.8,marginBottom:2 }}>{f.l}</div>
+                          <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt3,lineHeight:1.3 }}>{f.v}</div>
+                        </div>
+                      ))}
                     </div>
-
-                    <SectionLabel label="All Antidotes" color={T.teal} count={ANTIDOTES.length} />
-                    <CardGrid>{ANTIDOTES.map(a => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a,false)} globalWeight={globalWeight} />)}</CardGrid>
-                  </>
-                ) : (
-                  <>
-                    {filteredAntidotes.length > 0 && (
-                      <>
-                        <SectionLabel label="Antidotes" color={T.teal} count={filteredAntidotes.length} />
-                        <CardGrid>{filteredAntidotes.map(a => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a,false)} globalWeight={globalWeight} />)}</CardGrid>
-                      </>
-                    )}
-                    {filteredProtocols.length > 0 && (
-                      <>
-                        <SectionLabel label="Protocols" color={T.coral} count={filteredProtocols.length} />
-                        <CardGrid>{filteredProtocols.map(p => <StatCard key={p.id} item={p} isProtocol={true} onClick={() => openDetail(p,true)} globalWeight={globalWeight} />)}</CardGrid>
-                      </>
-                    )}
-                    {filteredAntidotes.length === 0 && filteredProtocols.length === 0 && (
-                      <div style={{ padding:"32px",textAlign:"center",color:T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:13,background:"rgba(8,22,40,0.5)",border:"1px solid rgba(26,53,85,0.3)",borderRadius:10 }}>No results for "{query}"</div>
-                    )}
-                  </>
-                )}
+                  </div>
+                ))}
               </div>
-            )}
-
-            {/* ── AGENTS TAB ── */}
-            {tab === "agents" && (
-              <div className="tox-fade">
-                {groupedAntidotes.map(({ tier, items }) => {
-                  const m = TIER_META[tier];
-                  return (
-                    <div key={tier}>
-                      <SectionLabel label={m.label} color={m.color} count={items.length} />
-                      <CardGrid>{items.map(a => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a,false)} globalWeight={globalWeight} />)}</CardGrid>
-                    </div>
-                  );
-                })}
-                <SectionLabel label="Protocols" color={T.coral} count={PROTOCOLS.length} />
-                <CardGrid>{PROTOCOLS.map(p => <StatCard key={p.id} item={p} isProtocol={true} onClick={() => openDetail(p,true)} globalWeight={globalWeight} />)}</CardGrid>
-                <SectionLabel label="Toxidrome Reference" color={T.purple} />
-                <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:7 }}>
-                  {TOXIDROMES.map(tox => (
-                    <div key={tox.name} style={{ padding:"10px 12px",borderRadius:9,background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,0.4)",borderLeft:`3px solid ${tox.color}` }}>
-                      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}>
-                        <span style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:12,color:tox.color }}>{tox.name}</span>
-                        <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,background:"rgba(0,229,192,0.09)",border:"1px solid rgba(0,229,192,0.3)",borderRadius:4,padding:"1px 7px" }}>Tx: {tox.tx}</span>
-                      </div>
-                      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:5 }}>
-                        {[{ l:"Pupils",v:tox.pupils },{ l:"Mental Status",v:tox.ms },{ l:"Vitals",v:tox.vitals },{ l:"Skin",v:tox.skin }].map(f => (
-                          <div key={f.l} style={{ padding:"4px 7px",background:`${tox.color}09`,border:`1px solid ${tox.color}22`,borderRadius:5 }}>
-                            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:tox.color,textTransform:"uppercase",letterSpacing:0.8,marginBottom:2 }}>{f.l}</div>
-                            <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt3,lineHeight:1.3 }}>{f.v}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <SectionLabel label="Poison Control" color={T.red} />
-                <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:8,marginBottom:14 }}>
-                  {[{ title:"US Poison Control",val:"1-800-222-1222",sub:"National 24/7 · physician-to-physician consult",color:T.red,icon:"☎️" },{ title:"CHEMTREC (hazmat)",val:"1-800-424-9300",sub:"24/7 chemical emergency response",color:T.orange,icon:"⚗️" },{ title:"Never Use Alone",val:"1-800-484-3731",sub:"Free overdose monitoring — stays on line, calls 911",color:T.purple,icon:"📞" }].map(c => (
-                    <div key={c.title} style={{ padding:"12px 14px",borderRadius:10,background:`${c.color}0a`,border:`1px solid ${c.color}33`,borderLeft:`3px solid ${c.color}` }}>
-                      <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:5 }}><span style={{ fontSize:18 }}>{c.icon}</span><span style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:13,color:c.color }}>{c.title}</span></div>
-                      <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:18,fontWeight:700,color:c.color,marginBottom:4 }}>{c.val}</div>
-                      <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4,lineHeight:1.5 }}>{c.sub}</div>
-                    </div>
-                  ))}
-                </div>
+              <SectionLabel label="Poison Control" color={T.red} />
+              <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:8,marginBottom:14 }}>
+                {[{ title:"US Poison Control",val:"1-800-222-1222",sub:"National 24/7 · physician-to-physician consult",color:T.red,icon:"☎️" },{ title:"CHEMTREC (hazmat)",val:"1-800-424-9300",sub:"24/7 chemical emergency response",color:T.orange,icon:"⚗️" },{ title:"Never Use Alone",val:"1-800-484-3731",sub:"Free overdose monitoring — stays on line, calls 911",color:T.purple,icon:"📞" }].map(c => (
+                  <div key={c.title} style={{ padding:"12px 14px",borderRadius:10,background:`${c.color}0a`,border:`1px solid ${c.color}33`,borderLeft:`3px solid ${c.color}` }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:5 }}><span style={{ fontSize:18 }}>{c.icon}</span><span style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:13,color:c.color }}>{c.title}</span></div>
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:18,fontWeight:700,color:c.color,marginBottom:4 }}>{c.val}</div>
+                    <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4,lineHeight:1.5 }}>{c.sub}</div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* ── CALCULATE TAB ── */}
-            {tab === "calculate" && <div className="tox-fade"><CalculateTab globalWeight={globalWeight} setGlobalWeight={setGlobalWeight} /></div>}
+          {/* ── CALCULATE TAB ── */}
+          {tab === "calculate" && <div className="tox-fade"><CalculateTab globalWeight={globalWeight} setGlobalWeight={setGlobalWeight} /></div>}
 
-          </div>
-
-          {/* Detail panel */}
-          {detail && (
-            <div style={{ flex:"0 0 400px",width:400,maxWidth:"100%" }}>
-              <DetailPanel item={detail.item} isProtocol={detail.isProtocol} onClose={closeDetail} globalWeight={globalWeight} />
+          {!embedded && (
+            <div style={{ textAlign:"center",padding:"24px 0 16px",fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5 }}>
+              NOTRYA TOX HUB · FOR CLINICAL DECISION SUPPORT ONLY · VERIFY WITH POISON CONTROL AND TOXICOLOGY
             </div>
           )}
         </div>
+      </div>
 
-        {!embedded && (
-          <div style={{ textAlign:"center",padding:"24px 0 16px",fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5 }}>
-            NOTRYA TOX HUB · FOR CLINICAL DECISION SUPPORT ONLY · VERIFY WITH POISON CONTROL AND TOXICOLOGY
-          </div>
-        )}
-      </div>
-      </div>
+      {/* Modal overlay — rendered outside main scroll container */}
+      {detail && (
+        <DetailModal
+          item={detail.item}
+          isProtocol={detail.isProtocol}
+          onClose={closeDetail}
+          globalWeight={globalWeight}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,14 @@
-// QuickNote.jsx  v12.1  — EMLevel + MDMThread integrated
+// QuickNote.jsx  v12.2  — CC-driven ROS + PE scaffold injection added
+// v12.2 adds:
+//   - QuickNoteROSPEScaffolds: auto-surfaces one-click ROS + PE templates on CC match
+//   - 13 chief complaints covered with full bracket-placeholder clinical templates
+//   - Mirrors HPI scaffold pattern — zero-latency, no API call
+// Carries forward all v12.1 features:
+//   - EMLevel meter, MDM Thread, PatientResponsePanel
+//   - PMHTab, EncounterPicker, MDMHandoffBridge
+//   - localStorage auto-save, slot persistence
+//   - All AI generators (plan, labs, imaging, recs)
+
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
@@ -23,6 +33,7 @@ import { QuickNoteExamHelper } from "@/components/quicknote/QuickNoteExamHelper"
 import { QuickNoteAbnormals } from "@/components/quicknote/QuickNoteAbnormals";
 import { GuidelineAssist } from "@/components/quicknote/QuickNoteGuidelines";
 import { DispositionCriteriaBuilder } from "@/components/quicknote/QuickNoteDispositionCriteria";
+import { QuickNoteROSPEScaffolds } from "@/components/quicknote/QuickNoteROSPEScaffolds";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
@@ -31,7 +42,6 @@ import {
 import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
 import { EncounterPicker } from "./QuickNoteEncounterPicker";
-// ── PATCH 1: EMLevel meter + longitudinal MDM thread ─────────────
 import { EMLevel, PatientResponsePanel } from "@/components/QuickNote/QuickNoteMDMEnhancer";
 import { MDMHandoffBridge } from "@/components/quicknote/MDMHandoffBridge";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
@@ -97,7 +107,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [patientResponse, setPatientResponse] = useState("");
   const [mdmHistory,      setMdmHistory]      = useState([]);
   const [mdmInitialTs,    setMdmInitialTs]    = useState(null);
-  // ── PATCH 2: ISO timestamp for elapsed-time math in MDMThread ──
   const [mdmTimestamp,    setMdmTimestamp]    = useState("");
   const [showMdmHistory,  setShowMdmHistory]  = useState(false);
   const [treatmentPlan,   setTreatmentPlan]   = useState("");
@@ -270,7 +279,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setMdmResult(res); setP2Open(true);
       const ts = new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
       setMdmInitialTs(ts);
-      // ── PATCH 3: ISO timestamp for MDMThread elapsed-time calculation ──
       setMdmTimestamp(new Date().toISOString());
       setMdmHistory([{ts,trigger:"Initial Impression",
         working_diagnosis:res.working_diagnosis||"",mdm_level:res.mdm_level||"",
@@ -354,7 +362,7 @@ ${medsCtx}${allergyCtx}${weightCtx}${pregnancyCtx}
 
 Generate two things:
 1. treatment_plan: A 2-4 sentence narrative of the evidence-based treatment plan for this ED presentation. Include specific medications with doses, routes, and frequencies where appropriate. Reference guidelines (ACEP, ACC/AHA, UpToDate) where applicable. Account for allergies and current medications.
-2. action_items: Array of 5-10 specific, actionable, discrete orders/tasks for this encounter. Each should be a single actionable statement (e.g., "Aspirin 325mg PO now if no aspirin allergy", "IV access x2 large bore, NS 1L bolus", "12-lead EKG within 10 minutes of arrival", "Cardiology consult — STEMI alert if EKG confirms", "NPO in anticipation of possible intervention"). Include monitoring, nursing orders, and disposition-related items.
+2. action_items: Array of 5-10 specific, actionable, discrete orders/tasks for this encounter. Each should be a single actionable statement. Include monitoring, nursing orders, and disposition-related items.
 
 Return JSON only.`,
         response_json_schema: schema,
@@ -392,14 +400,7 @@ VITALS: ${vitals}
 MDM LEVEL: ${mdmResult.mdm_level||""}
 ENCOUNTER TYPE: ${encounterType}
 
-Recommend evidence-based labs categorized as:
-- immediate: Must order now to guide resuscitation or time-sensitive treatment decisions
-- urgent: Should order this visit to support diagnosis or safe disposition
-- consider: May add clinical value based on exam findings or risk stratification
-
-For each lab: name (specific — e.g., "Troponin I serial q3h x2", "BMP", "Lactate"), rationale (one concise sentence explaining clinical question it answers), category (cardiac/metabolic/hematologic/infectious/coagulation/renal/hepatic/pulmonary/toxicology/other).
-
-Ground recommendations in ACEP clinical policies, ACC/AHA guidelines, UpToDate evidence. Return JSON only.`,
+Recommend evidence-based labs: immediate (must order now), urgent (should order this visit), consider (may add value). For each: name, rationale (one sentence), category. Ground in ACEP/ACC-AHA/UpToDate. Return JSON only.`,
         response_json_schema: schema,
       });
       setLabRecs(res);
@@ -433,13 +434,7 @@ MDM LEVEL: ${mdmResult.mdm_level||""}
 ENCOUNTER TYPE: ${encounterType}
 ${pregnancyWarning}
 
-Recommend imaging categorized as:
-- recommended: Clearly indicated by guidelines for this presentation (e.g., CXR for dyspnea, CT Head for thunderclap headache)
-- consider: May be indicated depending on exam findings, risk stratification, or clinical trajectory
-
-For each study: modality (specific — e.g., "CT Chest with IV contrast", "Bedside POCUS — cardiac views"), indication (why — one sentence), guideline (e.g., "ACR Appropriateness Criteria", "ACEP Clinical Policy", "Ottawa Rules", "HEART Pathway"), priority (stat/urgent/routine).
-
-Return JSON only.`,
+Recommend imaging: recommended (clearly indicated), consider (may be indicated). For each: modality, indication, guideline, priority. Return JSON only.`,
         response_json_schema: schema,
       });
       setImagingRecs(res);
@@ -494,11 +489,7 @@ Return JSON only.`,
       const res = await base44.integrations.Core.InvokeLLM({
         prompt:`Extract OPQRST from nursing triage note. CC: ${cc||"not specified"}. NOTE: ${hpi}.
 Format as labeled fields, one per line. Omit lines not present. No inference. Use exact phrasing.
-Also return:
-- chief_complaint_extracted: chief complaint as short phrase
-- fields_found: array of OPQRST field names populated
-- meds_extracted: array of medications mentioned in the note — each { name, dose, route, frequency } — use exact values, omit fields not stated. Return empty array if none mentioned.
-- allergies_extracted: array of allergies mentioned — each { allergen, reaction } — return empty array if none mentioned.
+Also return: chief_complaint_extracted, fields_found, meds_extracted (each {name,dose,route,frequency}), allergies_extracted (each {allergen,reaction}).
 Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fields_found": ["..."], "meds_extracted": [], "allergies_extracted": [] }`,
         response_json_schema:{
           type:"object",
@@ -507,14 +498,8 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             structured_hpi:{type:"string"},
             chief_complaint_extracted:{type:"string"},
             fields_found:{type:"array",items:{type:"string"}},
-            meds_extracted:{type:"array",items:{
-              type:"object",
-              properties:{name:{type:"string"},dose:{type:"string"},route:{type:"string"},frequency:{type:"string"}},
-            }},
-            allergies_extracted:{type:"array",items:{
-              type:"object",
-              properties:{allergen:{type:"string"},reaction:{type:"string"}},
-            }},
+            meds_extracted:{type:"array",items:{type:"object",properties:{name:{type:"string"},dose:{type:"string"},route:{type:"string"},frequency:{type:"string"}}}},
+            allergies_extracted:{type:"array",items:{type:"object",properties:{allergen:{type:"string"},reaction:{type:"string"}}}},
           },
         },
       });
@@ -606,7 +591,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         items:{type:"object",required:["code","description","type","specificity_note"],
           properties:{code:{type:"string"},description:{type:"string"},type:{type:"string"},specificity_note:{type:"string"}}}}}};
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`ICD-10-CM codes for "${diagnosisText}" in ED. 4-6 billable codes, primary→secondary. JSON only.`,
+        prompt:`ICD-10-CM codes for "${diagnosisText}" in ED. 4-6 billable codes, primary to secondary. JSON only.`,
         response_json_schema:schema,
       });
       setIcdSuggestions(res?.codes||[]);
@@ -682,13 +667,11 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     finally { setRerunAddendumBusy(false); }
   }, [mdmResult,cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,vhAnalysis,parsedMeds,parsedAllergies,encounterType,rerunAddendumBusy]);
 
-  // ── PATCH 4: handleAddendumReady — appends AI-drafted addendum to MDM ──────
   const handleAddendumReady = useCallback((addendum) => {
     const ts = new Date().toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit"});
     setMdmResult(prev => prev ? {
       ...prev,
-      mdm_narrative: (prev.mdm_narrative||"").trim() +
-        "\n\n---\nADDENDUM [" + ts + "]:\n" + addendum,
+      mdm_narrative: (prev.mdm_narrative||"").trim() + "\n\n---\nADDENDUM [" + ts + "]:\n" + addendum,
     } : prev);
     setMdmHistory(prev => [...prev, {
       ts, trigger:"Treatment Response Addendum",
@@ -696,7 +679,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     }]);
   }, []);
 
-  // Auto-inject relevant PMH comorbidities into MDM narrative when diagnosis is flagged
   usePMHConditionInjector({
     mdmResult,
     pmh,
@@ -1057,22 +1039,20 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       patientAge:demo?.age||"",lastActivity:Date.now()};
   });
 
-  // ── localStorage auto-save: write on every meaningful change, debounced 1.5s ──
+  // localStorage auto-save
   const LS_KEY = "qn_autosave_v1";
   useEffect(()=>{
-    if (!cc&&!hpi&&!mdmResult) return; // nothing worth saving
+    if (!cc&&!hpi&&!mdmResult) return;
     const t = setTimeout(()=>{
       try {
-        const payload = {
+        localStorage.setItem(LS_KEY, JSON.stringify({
           cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,
           medsRaw,allergiesRaw,parsedMeds,parsedAllergies,
           mdmResult,dispResult,icdSelected,
           hpiSummary,hpiMode,encounterType,p2Open,
-          treatmentPlan,actionPlan,
-          savedAt: Date.now(),
-        };
-        localStorage.setItem(LS_KEY, JSON.stringify(payload));
-      } catch(e){ /* quota errors silently ignored */ }
+          treatmentPlan,actionPlan, savedAt: Date.now(),
+        }));
+      } catch(e){}
     }, 1500);
     return ()=>clearTimeout(t);
   },[cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,
@@ -1080,7 +1060,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
      mdmResult,dispResult,icdSelected,
      hpiSummary,hpiMode,encounterType,p2Open,treatmentPlan,actionPlan]);
 
-  // ── localStorage restore on mount (runs before DB restore, instant) ──
   const [lsRestored, setLsRestored] = useState(false);
   const [lsRestoredAt, setLsRestoredAt] = useState(null);
   useEffect(()=>{
@@ -1088,7 +1067,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       const raw = localStorage.getItem(LS_KEY);
       if (!raw) return;
       const d = JSON.parse(raw);
-      // Only restore if saved within the last 8 hours and has meaningful content
       if (!d||!d.savedAt||Date.now()-d.savedAt>8*3600000) return;
       if (!d.cc&&!d.hpi&&!d.mdmResult) return;
       if (d.cc)       setCC(d.cc);
@@ -1114,7 +1092,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       if (d.actionPlan)    setActionPlan(d.actionPlan);
       setLsRestored(true);
       setLsRestoredAt(d.savedAt);
-    } catch(e){ /* corrupt cache silently ignored */ }
+    } catch(e){}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
@@ -1140,7 +1118,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",
               letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.1)",
               border:"1px solid rgba(0,229,192,.25)",borderRadius:4,padding:"2px 7px"}}>
-              v12.1 · E/M Meter · MDM Thread
+              v12.2 · ROS+PE Scaffolds · E/M Meter · MDM Thread
             </span>
           </div>
         )}
@@ -1163,15 +1141,9 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                   </span>}
                 </span>
                 <button onClick={()=>{localStorage.removeItem(LS_KEY);setLsRestored(false);}}
-                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",
-                    fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-                    border:"1px solid rgba(42,79,122,.4)",background:"transparent",
-                    color:"var(--qn-txt4)"}}>Clear cache</button>
+                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)"}}>Clear cache</button>
                 <button onClick={()=>setLsRestored(false)}
-                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",
-                    fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-                    border:"1px solid rgba(42,79,122,.4)",background:"transparent",
-                    color:"var(--qn-txt4)"}}>✕</button>
+                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)"}}>✕</button>
               </div>
             )}
             {slotsRestored&&(
@@ -1183,15 +1155,11 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                   <strong style={{color:"var(--qn-teal)"}}>{slotsRestoredCount} patient slot{slotsRestoredCount>1?"s":""}</strong> restored from your last session
                 </span>
                 <button onClick={()=>setSlotsRestored(false)}
-                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",
-                    fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-                    border:"1px solid rgba(42,79,122,.4)",background:"transparent",
-                    color:"var(--qn-txt4)"}}>✕</button>
+                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)"}}>✕</button>
               </div>
             )}
             {/* Patient Queue Bar */}
-            <div style={{display:"flex",gap:6,padding:"8px 10px",borderRadius:12,
-              background:"rgba(8,22,40,.7)",border:"1px solid rgba(42,79,122,.35)"}}>
+            <div style={{display:"flex",gap:6,padding:"8px 10px",borderRadius:12,background:"rgba(8,22,40,.7)",border:"1px solid rgba(42,79,122,.35)"}}>
               {slots.map((slot,i)=>{
                 const isActive=i===activeSlot;
                 const isEmpty=!slot.cc&&!slot.hpi&&!slot.mdmResult;
@@ -1217,8 +1185,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                 const saveLabel=getSaveLabel(slotSaveTimes[i]);
                 return (
                   <button key={i} onClick={()=>switchToSlot(i)}
-                    style={{flex:1,padding:"8px 10px",borderRadius:9,cursor:"pointer",
-                      textAlign:"left",transition:"all .15s",position:"relative",
+                    style={{flex:1,padding:"8px 10px",borderRadius:9,cursor:"pointer",textAlign:"left",transition:"all .15s",position:"relative",
                       border:`1px solid ${isActive?"rgba(0,229,192,.55)":isEmpty?"rgba(42,79,122,.2)":"rgba(42,79,122,.45)"}`,
                       background:isActive?"rgba(0,229,192,.1)":isEmpty?"rgba(8,22,40,.3)":"rgba(14,37,68,.55)"}}>
                     <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:isEmpty?0:4}}>
@@ -1251,8 +1218,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                         <div style={{display:"flex",alignItems:"center",gap:4,marginTop:5}}>
                           {saveLabel&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(59,158,255,.5)",flex:1}}>☁ {saveLabel}</span>}
                           <button onClick={e=>{e.stopPropagation();saveAllSlots(true);}} disabled={slotSaving}
-                            style={{padding:"1px 7px",borderRadius:4,cursor:"pointer",
-                              fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,
+                            style={{padding:"1px 7px",borderRadius:4,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,
                               border:`1px solid ${slotSaving?"rgba(42,79,122,.25)":"rgba(59,158,255,.4)"}`,
                               background:slotSaving?"rgba(14,37,68,.3)":"rgba(59,158,255,.08)",
                               color:slotSaving?"var(--qn-txt4)":"var(--qn-blue)"}}>
@@ -1268,10 +1234,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                 <div style={{width:1,height:40,background:"rgba(42,79,122,.35)"}} />
               </div>
               <button onClick={()=>setShowKbHelp(h=>!h)} title="Keyboard shortcuts (Shift+?)"
-                style={{alignSelf:"center",padding:"6px 10px",borderRadius:7,cursor:"pointer",
-                  fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,
-                  border:"1px solid rgba(42,79,122,.4)",background:"transparent",
-                  color:"var(--qn-txt4)",flexShrink:0}}>?</button>
+                style={{alignSelf:"center",padding:"6px 10px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)",flexShrink:0}}>?</button>
             </div>
             {slots.some(s=>!!(s.cc||s.hpi||s.mdmResult))&&(
               <div style={{display:"flex",gap:10,marginTop:5,paddingLeft:4,flexWrap:"wrap",alignItems:"center"}}>
@@ -1339,6 +1302,13 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
 
         <QuickNoteROSHelper ros={ros} />
         <QuickNoteExamHelper exam={exam} cc={cc} autoExamFromCC={autoExamFromCC} autoExamBusy={autoExamBusy} />
+
+        {/* ── v12.2: CC-driven ROS + PE scaffold injection ── */}
+        <QuickNoteROSPEScaffolds
+          cc={cc}
+          ros={ros}   setRos={setRos}
+          exam={exam} setExam={setExam}
+        />
 
         {/* Patient History Tab */}
         <PMHTab
@@ -1438,74 +1408,44 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                   color:rerunAddendumBusy?"var(--qn-txt4)":"var(--qn-purple)",transition:"all .15s"}}>
                 {rerunAddendumBusy?"● …":"+ Addendum Re-run"}
               </button>
-              <MDMHandoffBridge
-                mdmResult={mdmResult}
-                treatmentPlan={treatmentPlan}
-                actionPlan={actionPlan}
-                cc={cc}
-              />
+              <MDMHandoffBridge mdmResult={mdmResult} treatmentPlan={treatmentPlan} actionPlan={actionPlan} cc={cc} />
             </div>
 
             <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
               onNarrativeEdit={text=>setMdmResult(prev=>({...prev,mdm_narrative:text}))} />
 
-            {/* My Clinical Plan */}
-            <div style={{marginTop:12,padding:"12px 14px",borderRadius:10,
-              background:"rgba(14,37,68,.4)",border:"1px solid rgba(42,79,122,.3)"}}>
+            <div style={{marginTop:12,padding:"12px 14px",borderRadius:10,background:"rgba(14,37,68,.4)",border:"1px solid rgba(42,79,122,.3)"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-                <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-txt2)",flex:1}}>
-                  My Clinical Plan
-                </span>
-                <button
-                  onClick={generateClinicalPlan}
-                  disabled={treatmentPlanBusy}
-                  title="AI generates evidence-based treatment plan and action items from working diagnosis"
-                  style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",
-                    fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:11,
-                    transition:"all .15s",
+                <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-txt2)",flex:1}}>My Clinical Plan</span>
+                <button onClick={generateClinicalPlan} disabled={treatmentPlanBusy}
+                  style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:11,transition:"all .15s",
                     border:`1px solid ${treatmentPlanBusy?"rgba(42,79,122,.3)":"rgba(0,229,192,.5)"}`,
                     background:treatmentPlanBusy?"rgba(14,37,68,.4)":"rgba(0,229,192,.1)",
                     color:treatmentPlanBusy?"var(--qn-txt4)":"var(--qn-teal)",
                     boxShadow:treatmentPlanBusy?"none":"0 0 12px rgba(0,229,192,.08)"}}>
-                  {treatmentPlanBusy
-                    ? <><span style={{marginRight:5}}>●</span>Generating Plan…</>
-                    : (treatmentPlan||actionPlan)
-                    ? "↻ Re-generate Plan"
-                    : "✦ AI Generate Plan"}
+                  {treatmentPlanBusy?<><span style={{marginRight:5}}>●</span>Generating Plan…</>
+                    :(treatmentPlan||actionPlan)?"↻ Re-generate Plan":"✦ AI Generate Plan"}
                 </button>
                 {(treatmentPlan||actionPlan)&&(
                   <button onClick={()=>{setTreatmentPlan("");setActionPlan("");}}
-                    style={{padding:"5px 10px",borderRadius:7,cursor:"pointer",
-                      fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                      border:"1px solid rgba(42,79,122,.35)",background:"transparent",
-                      color:"var(--qn-txt4)"}}>Clear</button>
+                    style={{padding:"5px 10px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,border:"1px solid rgba(42,79,122,.35)",background:"transparent",color:"var(--qn-txt4)"}}>Clear</button>
                 )}
               </div>
               {!treatmentPlan&&!actionPlan&&!treatmentPlanBusy&&(
-                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-                  color:"rgba(107,158,200,.4)",letterSpacing:.4,marginBottom:8}}>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"rgba(107,158,200,.4)",letterSpacing:.4,marginBottom:8}}>
                   Click ✦ AI Generate Plan to get an evidence-based treatment plan and action item checklist for this presentation
                 </div>
               )}
-              <MDMPlanEntry
-                treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan}
-                actionPlan={actionPlan}       setActionPlan={setActionPlan}
-              />
+              <MDMPlanEntry treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan} actionPlan={actionPlan} setActionPlan={setActionPlan} />
             </div>
 
             <GuidelineAssist workingDx={mdmResult?.working_diagnosis||""} mdmNarrative={mdmResult?.mdm_narrative||""}
               onInsertSentence={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
 
-            {/* ── PATCH 5: Real-time E/M level meter ── */}
             <div style={{marginTop:10}}>
               <EMLevel
-                mdmText={mdmResult?.mdm_narrative||""}
-                hpi={effectiveHpi}
-                labs={labs}
-                imaging={imaging}
-                ekg={ekg}
-                newVitals={newVitals}
-                consults={consults}
+                mdmText={mdmResult?.mdm_narrative||""} hpi={effectiveHpi}
+                labs={labs} imaging={imaging} ekg={ekg} newVitals={newVitals} consults={consults}
               />
             </div>
 
@@ -1601,7 +1541,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             onAddToMDM={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
         )}
 
-        {/* ── PATCH 6: Patient Response + Longitudinal MDM Thread ── */}
         {p2Open&&(
           <div style={{marginBottom:14,padding:"14px 16px",background:"rgba(8,22,40,.5)",
             border:"1px solid rgba(42,79,122,.3)",borderRadius:12}}>
@@ -1738,7 +1677,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           <div style={{textAlign:"center",padding:"24px 0 8px",
             fontFamily:"'JetBrains Mono',monospace",fontSize:8,
             color:"var(--qn-txt4)",letterSpacing:1.5}} className="no-print">
-            NOTRYA QUICKNOTE v12.1 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+            NOTRYA QUICKNOTE v12.2 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
             AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
           </div>
         )}

@@ -34,6 +34,7 @@ import { QuickNoteAbnormals } from "@/components/quicknote/QuickNoteAbnormals";
 import { GuidelineAssist } from "@/components/quicknote/QuickNoteGuidelines";
 import { DispositionCriteriaBuilder } from "@/components/quicknote/QuickNoteDispositionCriteria";
 import { QuickNoteROSPEScaffolds } from "@/components/quicknote/QuickNoteROSPEScaffolds";
+import HighAlertMedAlert from "@/components/quicknote/HighAlertMedAlert";
 import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
@@ -1670,6 +1671,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           />
         )}
 
+        <HighAlertMedAlert medsRaw={medsRaw} />
         {showKbHelp&&<KbHelpModal onClose={()=>setShowKbHelp(false)} />}
         {showProcedureModal&&<ProcedureNoteModal onInsert={()=>{}} onClose={()=>setShowProcedureModal(false)} />}
 

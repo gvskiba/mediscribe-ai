@@ -1,811 +1,578 @@
-// PatientEncounter.jsx — Central encounter workspace for Notrya AI
-// Architecture: font IIFE → tokens → helpers → hub registry → primitives → columns → export
-
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import MedSafetyChecker from "@/components/patient/MedSafetyChecker";
 
-// ── Font loader ────────────────────────────────────────────────────────────
 (() => {
   if (document.getElementById("pe-fonts")) return;
   const l = document.createElement("link");
-  l.id = "pe-fonts";
-  l.rel = "stylesheet";
-  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap";
+  l.id = "pe-fonts"; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
   document.head.appendChild(l);
-  const s = document.createElement("style");
-  s.id = "pe-styles";
+  const s = document.createElement("style"); s.id = "pe-css";
   s.textContent = `
-    .pe-scroll::-webkit-scrollbar{width:4px}
-    .pe-scroll::-webkit-scrollbar-track{background:transparent}
-    .pe-scroll::-webkit-scrollbar-thumb{background:rgba(58,130,180,0.25);border-radius:2px}
-    .pe-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,229,192,0.35)}
-    .pe-lane-card:hover{filter:brightness(1.07)}
-    .pe-hub-card:hover{filter:brightness(1.08)}
+    @keyframes pe-fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+    .pe-fade{animation:pe-fade .18s ease forwards}
+    @keyframes pe-spin{to{transform:rotate(360deg)}}
+    .pe-spin{animation:pe-spin 1s linear infinite}
   `;
   document.head.appendChild(s);
 })();
 
-// ── Design tokens ──────────────────────────────────────────────────────────
+// ─── TOKENS ───────────────────────────────────────────────────────────────────
 const T = {
-  bg:"#050f1e", panel:"#081628", card:"#0b1e36",
-  txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
-  teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
-  orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", red:"#ff4444", cyan:"#00d4ff"
+  bg:"#050f1e",panel:"#081628",card:"#0b1e36",
+  txt:"#f2f7ff",txt2:"#b8d4f0",txt3:"#82aece",txt4:"#5a82a8",
+  teal:"#00e5c0",gold:"#f5c842",coral:"#ff6b6b",blue:"#3b9eff",
+  orange:"#ff9f43",purple:"#9b6dff",green:"#3dffa0",red:"#ff4444",cyan:"#00d4ff",
 };
 
-const BORDER = "1px solid rgba(26,53,85,0.5)";
-const CARD_R = 10;
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+// Replace with navigateTo(page) in Base44
+const nav = (page, params = {}) => { console.log("nav ->", page, params); };
 
-// ── Route map — page key → App.jsx route slug ──────────────────────────────
-const PAGE_ROUTES = {
-  QuickNote:           "QuickNote",
-  ProviderStudio:      "ProviderStudio",
-  ClinicalDecisionHub: "ClinicalDecisionHub",
-  AutocoderHub:        "AutocoderHub",
-  "order-generator":   "order-generator",
-  ERx:                 "ERx",
-  ERxHub:              "ERx",
-  ECGHub:              "ECGHub",
-  CardiacRiskPage:     "cardiac-hub",
-  StrokeHub:           "StrokeHub",
-  ToxHub:              "ToxHub",
-  SepsisHub:           "SepsisHub",
-  AirwayHub:           "AirwayHub",
-  LabHub:              "LabHub",
-  "imaging-interpreter":"imaging-interpreter",
-  "derm-hub":          "derm-hub",
-  "derm-morphology":   "derm-morphology",
-  POCUSHub:            "POCUSHub",
-  "electrolyte-hub":   "electrolyte-hub",
-  OrthoHub:            "OrthoHub",
-  OBGYNHub:            "OBGYNHub",
+// ─── SUGGEST HUBS BY CHIEF COMPLAINT ─────────────────────────────────────────
+const suggestHubs = (cc = "") => {
+  const c = cc.toLowerCase();
+  if (c.includes("chest pain") || c.includes("chest"))
+    return ["ECGHub","CardiacRiskPage","LabInterpreter","OrderGeneratorHub"];
+  if (c.includes("stroke") || c.includes("tpa") || c.includes("neuro"))
+    return ["StrokeHub","ImagingInterpreter","CardiacRiskPage"];
+  if (c.includes("overdose") || c.includes("opioid") || c.includes("tox") || c.includes("ingestion"))
+    return ["ToxicologyHub","AirwayHub","OrderGeneratorHub"];
+  if (c.includes("shortness") || c.includes("sob") || c.includes("breath") || c.includes("respiratory"))
+    return ["ECGHub","POCUSHub","LabInterpreter","ImagingInterpreter"];
+  if (c.includes("sepsis") || c.includes("fever") || c.includes("infection") || c.includes("uti"))
+    return ["SepsisHub","LabInterpreter","OrderGeneratorHub"];
+  if (c.includes("rash") || c.includes("derm") || c.includes("skin"))
+    return ["DermatologyHub","DermMorphologyRef","LabInterpreter"];
+  if (c.includes("abdominal") || c.includes("abd") || c.includes("belly"))
+    return ["POCUSHub","LabInterpreter","ImagingInterpreter"];
+  if (c.includes("altered") || c.includes("ams") || c.includes("confusion") || c.includes("mental"))
+    return ["ToxicologyHub","LabInterpreter","ImagingInterpreter"];
+  if (c.includes("weakness") || c.includes("electrolyte") || c.includes("k+") || c.includes("potassium"))
+    return ["ElectrolyteHub","ECGHub","LabInterpreter"];
+  if (c.includes("trauma") || c.includes("fracture") || c.includes("ortho") || c.includes("fall"))
+    return ["ImagingInterpreter","OrderGeneratorHub"];
+  if (c.includes("cardiac") || c.includes("heart") || c.includes("arrest"))
+    return ["ECGHub","CardiacRiskPage","OrderGeneratorHub"];
+  if (c.includes("airway") || c.includes("intub") || c.includes("rsi"))
+    return ["AirwayHub","OrderGeneratorHub"];
+  return ["LabInterpreter","ECGHub","OrderGeneratorHub"];
 };
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-function navigateTo(page, patientId) {
-  const route = PAGE_ROUTES[page] || page;
-  const url = "/" + route + (patientId ? "?patientId=" + patientId : "");
-  window.location.href = url;
-}
-
-function esiColor(esi) {
-  return { 1:T.red, 2:T.orange, 3:T.gold, 4:T.green, 5:T.txt4 }[esi] || T.txt4;
-}
-
-function timeColor(mins) {
-  if (mins > 120) return T.red;
-  if (mins > 60)  return T.gold;
-  return T.txt4;
-}
-
-function fmtTime(mins) {
-  if (!mins) return "--";
-  if (mins < 60) return mins + "m";
-  const h = Math.floor(mins / 60), m = mins % 60;
-  return h + "h" + (m > 0 ? " " + m + "m" : "");
-}
-
-function vitalStatus(key, val) {
-  if (val === undefined || val === null || val === "" || val === "--") return T.txt3;
-  const n = parseFloat(val);
-  if (isNaN(n)) return T.txt3;
-  if (key === "hr")   return n > 130 || n < 40 ? T.red : n > 100 || n < 50 ? T.gold : T.teal;
-  if (key === "spo2") return n < 90 ? T.red : n < 94 ? T.gold : T.teal;
-  if (key === "rr")   return n > 30 || n < 8  ? T.red : n > 20 || n < 12  ? T.gold : T.teal;
-  return T.txt3;
-}
-
-// ── Hub registry (page = key into PAGE_ROUTES) ─────────────────────────────
-const HUB_REG = {
-  ECGHub:            { label:"ECG Hub",        icon:"⚡", color:T.teal,   page:"ECGHub"             },
-  CardiacRiskPage:   { label:"Cardiac Risk",   icon:"🫀", color:T.coral,  page:"CardiacRiskPage"    },
-  StrokeHub:         { label:"Stroke Hub",     icon:"🧠", color:T.purple, page:"StrokeHub"          },
-  ToxicologyHub:     { label:"Toxicology",     icon:"☣️", color:T.orange, page:"ToxHub"             },
-  SepsisHub:         { label:"Sepsis Hub",     icon:"🔬", color:T.coral,  page:"SepsisHub"          },
-  AirwayHub:         { label:"Airway Hub",     icon:"💨", color:T.teal,   page:"AirwayHub"          },
-  LabInterpreter:    { label:"Lab Interpreter",icon:"🧪", color:T.teal,   page:"LabHub"             },
-  ImagingInterpreter:{ label:"Imaging",        icon:"🩻", color:T.gold,   page:"imaging-interpreter"},
-  DermatologyHub:    { label:"Derm Hub",       icon:"🔎", color:T.purple, page:"derm-hub"           },
-  DermMorphologyRef: { label:"Derm Ref",       icon:"📖", color:T.purple, page:"derm-morphology"    },
-  POCUSHub:          { label:"POCUS Hub",      icon:"📡", color:T.teal,   page:"POCUSHub"           },
-  OrderGeneratorHub: { label:"Orders",         icon:"📋", color:T.gold,   page:"order-generator"    },
-  ElectrolyteHub:    { label:"Electrolytes",   icon:"⚗️", color:T.cyan,   page:"electrolyte-hub"    },
-  OrthoHub:          { label:"Ortho Hub",      icon:"🦴", color:T.gold,   page:"OrthoHub"           },
-  OBGYNHub:          { label:"OB/GYN Hub",     icon:"🩺", color:T.purple, page:"OBGYNHub"           },
-  QuickNote:         { label:"Quick Note",     icon:"✏️", color:T.teal,   page:"QuickNote"          },
-  ClinicalNoteStudio:{ label:"Note Studio",    icon:"📝", color:T.purple, page:"ProviderStudio"     },
-  MDMBuilderTab:     { label:"MDM Builder",    icon:"🧠", color:T.blue,   page:"ClinicalDecisionHub"},
-  AutocoderHub:      { label:"Autocoder",      icon:"🏷️", color:T.gold,   page:"AutocoderHub"       },
+// ─── HUB REGISTRY ─────────────────────────────────────────────────────────────
+const HUBS = {
+  ECGHub:             { label:"ECG Hub",         icon:"⚡", color:T.teal   },
+  CardiacRiskPage:    { label:"Cardiac Risk",    icon:"🫀", color:T.coral  },
+  StrokeHub:          { label:"Stroke Hub",      icon:"🧠", color:T.purple },
+  ToxicologyHub:      { label:"Toxicology",      icon:"☣️", color:T.orange },
+  SepsisHub:          { label:"Sepsis Hub",      icon:"🔬", color:T.coral  },
+  AirwayHub:          { label:"Airway Hub",      icon:"💨", color:T.teal   },
+  LabInterpreter:     { label:"Lab Interpreter", icon:"🧪", color:T.teal   },
+  ImagingInterpreter: { label:"Imaging",         icon:"🩻", color:T.gold   },
+  DermatologyHub:     { label:"Derm Hub",        icon:"🔎", color:T.purple },
+  DermMorphologyRef:  { label:"Derm Ref",        icon:"📖", color:T.purple },
+  POCUSHub:           { label:"POCUS Hub",       icon:"📡", color:T.teal   },
+  OrderGeneratorHub:  { label:"Orders",          icon:"📋", color:T.gold   },
+  ElectrolyteHub:     { label:"Electrolytes",    icon:"⚗️", color:T.cyan   },
+  OrthoHub:           { label:"Ortho Hub",       icon:"🦴", color:T.gold   },
+  ERxHub:             { label:"ERx Hub",         icon:"💊", color:T.blue   },
+  ShockHub:           { label:"Shock Hub",       icon:"⚡", color:T.red    },
+  PsychHub:           { label:"Psych Hub",       icon:"🧩", color:T.purple },
 };
 
-const HUB_GROUPS = [
-  { label:"Cardiac & Vascular", color:T.coral,  keys:["ECGHub","CardiacRiskPage"] },
-  { label:"Neuro & Psych",      color:T.purple, keys:["StrokeHub"] },
-  { label:"Critical Care",      color:T.orange, keys:["SepsisHub","AirwayHub","ToxicologyHub"] },
-  { label:"Diagnostics",        color:T.teal,   keys:["LabInterpreter","ImagingInterpreter","POCUSHub","ElectrolyteHub"] },
-  { label:"Subspecialty",       color:T.gold,   keys:["DermatologyHub","DermMorphologyRef","OrthoHub","OBGYNHub"] },
-  { label:"Documentation",      color:T.blue,   keys:["QuickNote","ClinicalNoteStudio","MDMBuilderTab","AutocoderHub"] },
+const HUB_DOMAINS = [
+  { domain:"Cardiac & Vascular", color:T.coral,  hubs:["ECGHub","CardiacRiskPage","ShockHub"]             },
+  { domain:"Neuro & Psych",      color:T.purple, hubs:["StrokeHub","PsychHub"]                            },
+  { domain:"Critical Care",      color:T.orange, hubs:["SepsisHub","AirwayHub","ToxicologyHub"]            },
+  { domain:"Diagnostics",        color:T.teal,   hubs:["LabInterpreter","ImagingInterpreter","POCUSHub","ElectrolyteHub"] },
+  { domain:"Subspecialty",       color:T.gold,   hubs:["DermatologyHub","DermMorphologyRef","OrthoHub"]   },
+  { domain:"Orders & Rx",        color:T.blue,   hubs:["OrderGeneratorHub","ERxHub"]                      },
 ];
 
-function suggestHubs(cc) {
-  if (!cc) return ["LabInterpreter","ECGHub","OrderGeneratorHub"];
-  const s = cc.toLowerCase();
-  if (s.includes("chest pain"))                                        return ["ECGHub","CardiacRiskPage","LabInterpreter","OrderGeneratorHub"];
-  if (s.includes("stroke") || s.includes("neuro"))                    return ["StrokeHub","ImagingInterpreter","CardiacRiskPage"];
-  if (s.includes("overdose")||s.includes("opioid")||s.includes("tox")) return ["ToxicologyHub","AirwayHub","OrderGeneratorHub"];
-  if (s.includes("shortness")||s.includes("sob"))                     return ["ECGHub","POCUSHub","LabInterpreter","ImagingInterpreter"];
-  if (s.includes("sepsis")||s.includes("fever"))                      return ["SepsisHub","LabInterpreter","OrderGeneratorHub"];
-  if (s.includes("rash")||s.includes("derm"))                         return ["DermatologyHub","DermMorphologyRef","LabInterpreter"];
-  if (s.includes("abdominal")||s.includes("abd"))                     return ["POCUSHub","LabInterpreter","ImagingInterpreter"];
-  if (s.includes("altered")||s.includes("ams"))                       return ["ToxicologyHub","LabInterpreter","ImagingInterpreter"];
-  if (s.includes("weakness")||s.includes("electrolyte"))              return ["ElectrolyteHub","ECGHub","LabInterpreter"];
-  if (s.includes("trauma")||s.includes("fracture"))                   return ["ImagingInterpreter","OrderGeneratorHub"];
-  return ["LabInterpreter","ECGHub","OrderGeneratorHub"];
+// ─── MOCK PATIENTS — replace with Patient.get(patientId) in Base44 ───────────
+const MOCK_PATIENTS = [
+  { id:"1", room:"Trauma 1", name:"Mitchell, Robert J.", age:67, sex:"M",
+    cc:"Chest Pain", esi:1, mins:18,
+    vitals:{hr:108,bp:"158/94",spo2:94,rr:22,temp:"98.4"},
+    flags:["STEMI on ECG","Troponin pending"],
+    tasks:["12-lead done","IV x2","Aspirin given","Cath lab notified"],
+    allergies:["Penicillin"], pmhx:["HTN","DM2","Prior MI"],
+    alerts:[
+      {t:"critical",m:"STEMI pattern — cath lab activation required"},
+      {t:"warn",m:"Hold metformin — contrast study likely"},
+    ]},
+  { id:"2", room:"Room 4", name:"Nguyen, Thomas A.", age:52, sex:"M",
+    cc:"Altered Mental Status", esi:2, mins:40,
+    vitals:{hr:96,bp:"144/88",spo2:97,rr:18,temp:"101.2"},
+    flags:["Fever","GCS 13"],
+    tasks:["CT Head ordered","LP tray at bedside","BCx x2 sent"],
+    allergies:["Sulfa"], pmhx:["Alcoholism","Seizure disorder"],
+    alerts:[{t:"warn",m:"Fever + AMS — rule out meningitis"}]},
+  { id:"3", room:"Room 11", name:"Patel, Priya N.", age:45, sex:"F",
+    cc:"Sepsis — UTI Source", esi:2, mins:95,
+    vitals:{hr:114,bp:"94/58",spo2:95,rr:24,temp:"102.9"},
+    flags:["SIRS x4","Lactate 3.8"],
+    tasks:["2L NS given","BCx x2","Pip-tazo running","ICU notified"],
+    allergies:["Vancomycin"], pmhx:["DM2","Recurrent UTIs"],
+    alerts:[
+      {t:"critical",m:"Lactate 3.8 — septic shock, ICU bed requested"},
+      {t:"warn",m:"SEP-1 bundle: confirm abx < 1h from arrival"},
+    ]},
+];
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const esiColor = (n) => ({1:T.red,2:T.orange,3:T.gold,4:T.green,5:T.txt4}[n]||T.txt4);
+const fmtTime  = (m) => m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`;
+const gc       = (x={}) => ({ background:T.card, border:"1px solid rgba(26,53,85,0.5)", borderRadius:10, ...x });
+
+const vitalColor = (k, v) => {
+  const n = parseFloat(v);
+  if (k==="spo2") return n<90?T.red:n<94?T.gold:T.teal;
+  if (k==="hr")   return (n<50||n>120)?T.red:(n<60||n>100)?T.gold:T.teal;
+  if (k==="rr")   return (n<8||n>24)?T.red:(n<12||n>20)?T.gold:T.teal;
+  return T.teal;
+};
+
+// ─── PRIMITIVES ───────────────────────────────────────────────────────────────
+function Btn({ children, accent, onClick, sm, full }) {
+  return (
+    <button onClick={onClick} style={{
+      display:"inline-flex", alignItems:"center", gap:6,
+      fontFamily:"'DM Sans',sans-serif",
+      fontSize:sm?11:12, fontWeight:600, color:accent,
+      background:`linear-gradient(135deg,${accent}22,${accent}0a)`,
+      border:`1px solid ${accent}55`,
+      borderRadius:8, padding:sm?"4px 10px":"7px 15px",
+      cursor:"pointer", transition:"all .15s", whiteSpace:"nowrap",
+      width:full?"100%":"auto",
+    }}>
+      {children}
+    </button>
+  );
 }
 
-// ── Primitives ─────────────────────────────────────────────────────────────
-function Mono({ children, size = 9, color = T.txt4, style = {} }) {
+function EsiBadge({ esi }) {
+  const c = esiColor(esi);
   return (
-    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:size, color, ...style }}>
-      {children}
+    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:c, background:`${c}18`, border:`1px solid ${c}45`, borderRadius:5, padding:"2px 7px", whiteSpace:"nowrap" }}>
+      ESI {esi}
     </span>
   );
 }
 
-function AccentBtn({ label, accent, onClick }) {
+function VitalChip({ label, value, colorKey }) {
+  const c = colorKey ? vitalColor(colorKey, value) : T.teal;
   return (
-    <div onClick={onClick} style={{
-      display:"inline-flex", alignItems:"center", justifyContent:"center",
-      padding:"6px 13px", borderRadius:8,
-      background:`linear-gradient(135deg,${accent}22,${accent}0a)`,
-      border:`1px solid ${accent}55`,
-      color:accent,
-      fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12,
-      cursor:"pointer", whiteSpace:"nowrap", transition:"opacity .15s",
-    }}>
-      {label}
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2, minWidth:44 }}>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:15, fontWeight:700, color:c, lineHeight:1 }}>{value}</span>
+      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.09em" }}>{label}</span>
     </div>
   );
 }
 
-function SmallBtn({ label, onClick, style = {} }) {
+function AlertBubble({ t, m }) {
+  const cfg = {
+    critical:{ color:T.red,  bg:"rgba(255,68,68,0.1)",   border:"rgba(255,68,68,0.35)",  icon:"🚨" },
+    warn:    { color:T.gold, bg:"rgba(245,200,66,0.08)", border:"rgba(245,200,66,0.3)",  icon:"⚠️" },
+    info:    { color:T.blue, bg:"rgba(59,158,255,0.08)", border:"rgba(59,158,255,0.3)",  icon:"ℹ️" },
+  }[t]||{ color:T.txt4, bg:"rgba(26,53,85,0.2)", border:"rgba(26,53,85,0.4)", icon:"·" };
   return (
-    <div onClick={onClick} style={{
-      display:"inline-flex", alignItems:"center", gap:4,
-      padding:"4px 10px", borderRadius:6, cursor:"pointer",
-      fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4,
-      border:BORDER, background:"transparent",
-      transition:"color .15s", whiteSpace:"nowrap", ...style,
-    }}>
-      {label}
+    <div style={{ display:"flex", gap:8, alignItems:"flex-start", background:cfg.bg, border:`1px solid ${cfg.border}`, borderLeft:`3px solid ${cfg.color}`, borderRadius:8, padding:"8px 11px" }}>
+      <span style={{ fontSize:12, marginTop:1, flexShrink:0 }}>{cfg.icon}</span>
+      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2, lineHeight:1.55 }}>{m}</span>
     </div>
   );
 }
 
-function SectionLabel({ children }) {
+// ─── TOP CONTEXT BAR ──────────────────────────────────────────────────────────
+function TopContextBar({ patient }) {
+  const p = patient;
   return (
     <div style={{
-      fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
-      letterSpacing:"0.12em", textTransform:"uppercase", color:T.txt4,
+      display:"flex", alignItems:"center", justifyContent:"space-between",
+      padding:"0 20px", height:52, minHeight:52, flexShrink:0,
+      background:T.panel, borderBottom:"1px solid rgba(26,53,85,0.5)",
     }}>
-      {children}
+      {/* Left */}
+      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+        <button
+          onClick={() => nav("CommandCenter")}
+          style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4, background:"transparent", border:"1px solid rgba(26,53,85,0.5)", borderRadius:6, padding:"4px 10px", cursor:"pointer" }}
+        >
+          ← Census
+        </button>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(26,53,85,0.5)", borderRadius:5, padding:"2px 8px" }}>{p.room}</span>
+        <span style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:T.txt }}>{p.name}</span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt3 }}>{p.age}yo {p.sex==="M"?"M":"F"}</span>
+        <span style={{ color:T.txt4 }}>·</span>
+        <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:T.gold }}>{p.cc}</span>
+        <EsiBadge esi={p.esi} />
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:p.mins>120?T.red:p.mins>60?T.gold:T.txt4 }}>
+          {fmtTime(p.mins)}
+        </span>
+      </div>
+      {/* Right */}
+      <div style={{ display:"flex", gap:8 }}>
+        <Btn accent={T.teal} sm onClick={() => nav("QuickNote", { patientId:p.id })}>✏️ Quick Note</Btn>
+        <Btn accent={T.gold} sm onClick={() => nav("OrderGeneratorHub", { patientId:p.id })}>📋 Orders</Btn>
+      </div>
     </div>
   );
 }
 
-function Divider() {
-  return <div style={{ borderTop:BORDER, margin:"10px 0" }} />;
-}
-
-// ── Top Context Bar ────────────────────────────────────────────────────────
-function ContextBar({ patient, patientId }) {
-  const v = patient.vitals || {};
-  const timeMins = patient.mins || 0;
-  const tc = timeColor(timeMins);
-  const ec = esiColor(patient.esi);
-
-  return (
-    <div style={{
-      height:52, flexShrink:0,
-      background:T.panel, borderBottom:BORDER,
-      display:"flex", alignItems:"center",
-      padding:"0 16px", gap:12,
-    }}>
-      {/* Back button */}
-      <SmallBtn
-        label="← Census"
-        onClick={() => { window.location.href = "/"; }}
-      />
-
-      {/* Room */}
-      {patient.room && (
-        <span style={{
-          fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4,
-          background:"rgba(255,255,255,0.04)", border:BORDER,
-          borderRadius:5, padding:"2px 8px", flexShrink:0,
-        }}>
-          {patient.room}
-        </span>
-      )}
-
-      {/* Name */}
-      <span style={{
-        fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:15,
-        color:T.txt, flexShrink:0,
-      }}>
-        {patient.name}
-      </span>
-
-      {/* Age / Sex */}
-      {(patient.age || patient.sex) && (
-        <Mono size={10} color={T.txt3} style={{ flexShrink:0 }}>
-          {patient.age}{patient.sex}
-        </Mono>
-      )}
-
-      {/* Dot */}
-      <Mono size={10} color={T.txt4} style={{ flexShrink:0 }}>·</Mono>
-
-      {/* Chief Complaint */}
-      {patient.cc && (
-        <span style={{
-          fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
-          color:T.gold, flexShrink:0,
-          whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:220,
-        }}>
-          {patient.cc}
-        </span>
-      )}
-
-      {/* ESI badge */}
-      {patient.esi && (
-        <span style={{
-          fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
-          color:ec, background:`${ec}1a`, border:`1px solid ${ec}44`,
-          borderRadius:4, padding:"1px 6px", flexShrink:0,
-        }}>
-          ESI {patient.esi}
-        </span>
-      )}
-
-      {/* Time in dept */}
-      {timeMins > 0 && (
-        <span style={{
-          fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:tc, flexShrink:0,
-        }}>
-          {fmtTime(timeMins)}
-        </span>
-      )}
-
-      <div style={{ flex:1 }} />
-
-      {/* Action buttons */}
-      <AccentBtn label="Quick Note" accent={T.teal}
-        onClick={() => navigateTo("QuickNote", patientId)} />
-      <AccentBtn label="Orders" accent={T.gold}
-        onClick={() => navigateTo("order-generator", patientId)} />
-    </div>
-  );
-}
-
-// ── LEFT COLUMN — Documentation Lane ──────────────────────────────────────
-const DOC_CARDS = [
-  {
-    key:"QuickNote", page:"QuickNote",
-    icon:"✏️", label:"Quick Note", color:T.teal,
-    sub:"Fast bedside documentation",
-    badge:"START HERE", primary:true,
-  },
-  {
-    key:"ClinicalNoteStudio", page:"ProviderStudio",
-    icon:"📝", label:"Note Studio", color:T.purple,
-    sub:"APSO format, E&M estimator, Note Quality Score",
-  },
-  {
-    key:"MDMBuilder", page:"ClinicalDecisionHub",
-    icon:"🧠", label:"MDM Builder", color:T.blue,
-    sub:"CPT stepper, critical care time, comorbidities",
-  },
-  {
-    key:"Autocoder", page:"AutocoderHub",
-    icon:"🏷️", label:"Autocoder", color:T.gold,
-    sub:"ICD-10 coding and charge capture",
-  },
+// ─── DOCUMENTATION LANE (LEFT) ────────────────────────────────────────────────
+const DOC_STEPS = [
+  { key:"QuickNote",          icon:"✏️", label:"Quick Note",   sub:"Fast bedside documentation",           color:T.teal,   primary:true  },
+  { key:"ClinicalNoteStudio", icon:"📝", label:"Note Studio",  sub:"APSO format, E&M estimator, NQS",      color:T.purple, primary:false },
+  { key:"MDMBuilderTab",      icon:"🧠", label:"MDM Builder",  sub:"CPT stepper, critical care time",      color:T.blue,   primary:false },
+  { key:"AutocoderHub",       icon:"🏷️", label:"Autocoder",    sub:"ICD-10 coding and charge capture",     color:T.gold,   primary:false },
 ];
 
-
-
-const DOC_STEPS = ["Quick Note", "Note Studio", "MDM Builder", "Autocoder"];
-
-function DocCard({ card, patientId }) {
-  const [hov, setHov] = useState(false);
+function DocumentationLane({ patientId }) {
   return (
-    <div
-      className="pe-lane-card"
-      onClick={() => navigateTo(card.page, patientId)}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: hov ? `${card.color}09` : T.card,
-        border:BORDER, borderLeft:`3px solid ${card.color}`,
-        borderRadius:CARD_R, margin:"0 12px 10px", padding:"12px 14px",
-        cursor:"pointer", transition:"background .15s",
-      }}
-    >
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:16 }}>{card.icon}</span>
-          <span style={{
-            fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:13, color:card.color,
-          }}>
-            {card.label}
-          </span>
+    <div style={{ width:290, minWidth:290, height:"100%", background:T.panel, borderRight:"1px solid rgba(26,53,85,0.5)", display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      <div style={{ padding:"14px 14px 10px", borderBottom:"1px solid rgba(26,53,85,0.5)", flexShrink:0 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em" }}>
+          Documentation Lane
         </div>
-        {card.badge && (
-          <span style={{
-            fontFamily:"'JetBrains Mono',monospace", fontSize:7, fontWeight:700,
-            color:card.color, background:`${card.color}1a`,
-            border:`1px solid ${card.color}4d`, borderRadius:4, padding:"1px 6px",
-            flexShrink:0, letterSpacing:"0.05em",
-          }}>
-            {card.badge}
-          </span>
-        )}
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, marginTop:4 }}>
+          Follow the steps in order
+        </div>
       </div>
-      <div style={{
-        fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4,
-        marginTop:5, lineHeight:1.45,
-      }}>
-        {card.sub}
-      </div>
-    </div>
-  );
-}
 
-function DocStepper() {
-  return (
-    <div style={{ padding:"0 16px 16px" }}>
-      <SectionLabel>Documentation Flow</SectionLabel>
-      <div style={{ marginTop:10, display:"flex", flexDirection:"column", gap:0 }}>
+      {/* Step cards */}
+      <div style={{ padding:"10px 10px 0", flex:1 }}>
         {DOC_STEPS.map((step, i) => (
-          <div key={step} style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
-              <div style={{
-                width:8, height:8, borderRadius:"50%", flexShrink:0,
-                background:"transparent",
-                border:"1.5px solid rgba(26,53,85,0.6)",
-                marginTop:3,
-              }} />
-              {i < DOC_STEPS.length - 1 && (
-                <div style={{ width:1, height:18, background:"rgba(26,53,85,0.4)" }} />
+          <div
+            key={step.key}
+            onClick={() => nav(step.key, { patientId })}
+            style={{
+              ...gc({ borderRadius:10 }),
+              borderLeft:`3px solid ${step.color}`,
+              background:`linear-gradient(135deg,${step.color}0a,${T.card})`,
+              padding:"12px 13px", marginBottom:8,
+              cursor:"pointer", transition:"box-shadow .15s",
+              position:"relative",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 0 18px ${step.color}1a`; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow="none"; }}
+          >
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+              <span style={{ fontSize:16 }}>{step.icon}</span>
+              <span style={{ fontFamily:"'Playfair Display',serif", fontSize:13, fontWeight:700, color:step.color }}>{step.label}</span>
+              {step.primary && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:step.color, background:`${step.color}18`, border:`1px solid ${step.color}35`, borderRadius:4, padding:"1px 6px", textTransform:"uppercase", letterSpacing:"0.08em" }}>
+                  Start Here
+                </span>
               )}
             </div>
-            <span style={{
-              fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4,
-              paddingBottom: i < DOC_STEPS.length - 1 ? 8 : 0,
-            }}>
-              {step}
-            </span>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, lineHeight:1.45 }}>{step.sub}</div>
+            <div style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:T.txt4 }}>›</div>
           </div>
         ))}
+
+        {/* Progress stepper */}
+        <div style={{ padding:"14px 4px 14px" }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:12 }}>
+            Documentation Flow
+          </div>
+          {DOC_STEPS.map((step, i) => (
+            <div key={step.key} style={{ display:"flex", alignItems:"flex-start", gap:10, marginBottom:i<DOC_STEPS.length-1?0:0 }}>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:"rgba(26,53,85,0.6)", border:`1px solid ${step.color}44`, marginTop:2 }} />
+                {i < DOC_STEPS.length-1 && (
+                  <div style={{ width:1, height:22, background:"rgba(26,53,85,0.4)", margin:"2px 0" }} />
+                )}
+              </div>
+              <div style={{ paddingBottom:i<DOC_STEPS.length-1?0:0 }}>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, lineHeight:1.4, paddingBottom:i<DOC_STEPS.length-1?14:0 }}>
+                  {step.label}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-function DocLane({ patient, patientId }) {
-  return (
-    <div style={{
-      width:300, flexShrink:0, background:T.bg,
-      borderRight:BORDER, display:"flex", flexDirection:"column",
-      height:"100%", overflow:"hidden",
-    }}>
-      <div style={{ padding:"14px 16px 10px", flexShrink:0 }}>
-        <SectionLabel>Documentation</SectionLabel>
-      </div>
-      <div className="pe-scroll" style={{ flex:1, overflowY:"auto" }}>
-        {DOC_CARDS.map(card => (
-          <DocCard key={card.key} card={card} patientId={patientId} />
-        ))}
-        <Divider />
-        <DocStepper />
-      </div>
-    </div>
-  );
-}
-
-// ── CENTER COLUMN — Clinical Decision Lane ─────────────────────────────────
-function AlertRow({ alert }) {
-  const cfg = {
-    critical:{ color:T.red,  bg:`${T.red}1a`,  icon:"🚨" },
-    warn:    { color:T.gold, bg:`${T.gold}12`, icon:"⚠️" },
-    info:    { color:T.blue, bg:`${T.blue}12`, icon:"ℹ️" },
-  }[alert.t] || { color:T.txt3, bg:"transparent", icon:"ℹ️" };
-  return (
-    <div style={{
-      display:"flex", alignItems:"flex-start", gap:9,
-      padding:"9px 12px", background:cfg.bg,
-      borderLeft:`3px solid ${cfg.color}`,
-      borderRadius:"0 8px 8px 0", marginBottom:6,
-    }}>
-      <span style={{ fontSize:14, flexShrink:0 }}>{cfg.icon}</span>
-      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2, lineHeight:1.55 }}>
-        {alert.m}
-      </span>
-    </div>
-  );
-}
-
-function HubCard2col({ hubKey, patientId }) {
-  const [hov, setHov] = useState(false);
-  const h = HUB_REG[hubKey];
-  if (!h) return null;
-  return (
-    <div
-      className="pe-hub-card"
-      onClick={() => navigateTo(h.page, patientId)}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background:`linear-gradient(135deg,${h.color}0d,${h.color}05)`,
-        border:`1px solid ${h.color}30`,
-        borderLeft:`3px solid ${h.color}`,
-        borderRadius:CARD_R, padding:"11px 13px", cursor:"pointer",
-        transition:"box-shadow .15s",
-        boxShadow: hov ? `0 0 16px ${h.color}1a` : "none",
-      }}
-    >
-      <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:3 }}>
-        <span style={{ fontSize:18 }}>{h.icon}</span>
-        <span style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:12, color:h.color }}>
-          {h.label}
-        </span>
-      </div>
-      <Mono size={8} color={T.txt4}>Open for this patient →</Mono>
-    </div>
-  );
-}
-
-function HubLibraryGroup({ group, patientId }) {
-  return (
-    <div style={{ marginBottom:14 }}>
-      <Mono size={8} color={group.color} style={{ letterSpacing:"0.08em", textTransform:"uppercase", display:"block", marginBottom:6 }}>
-        {group.label}
-      </Mono>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-        {group.keys.map(k => <HubCard2col key={k} hubKey={k} patientId={patientId} />)}
-      </div>
-    </div>
-  );
-}
-
-function ClinicalDecisionLane({ patient, patientId }) {
-  const [showAll, setShowAll] = useState(false);
-  const alerts = patient.alerts || [];
+// ─── CLINICAL DECISION LANE (CENTER) ─────────────────────────────────────────
+function ClinicalDecisionLane({ patient }) {
+  const [showLib, setShowLib] = useState(false);
   const suggested = suggestHubs(patient.cc);
 
   return (
-    <div style={{ flex:1, background:T.bg, display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
+    <div style={{ flex:1, height:"100%", background:T.bg, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      <div style={{ padding:"18px 20px 0" }}>
 
-      {/* CDS Alerts */}
-      <div style={{ flexShrink:0, padding:"14px 16px 0" }}>
-        <SectionLabel>CDS Alerts</SectionLabel>
-        <div style={{ marginTop:8 }}>
-          {alerts.length === 0
-            ? <Mono size={10} color={T.txt4}>No active alerts</Mono>
-            : alerts.map((a, i) => <AlertRow key={i} alert={a} />)
+        {/* CDS Alerts */}
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:10 }}>
+            CDS Alerts
+          </div>
+          {patient.alerts.length > 0
+            ? patient.alerts.map((a, i) => <div key={i} style={{ marginBottom:6 }}><AlertBubble t={a.t} m={a.m} /></div>)
+            : <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4, padding:"10px 14px", background:"rgba(26,53,85,0.2)", borderRadius:8 }}>No active alerts for this patient</div>
           }
         </div>
+
+        {/* Divider */}
+        <div style={{ height:1, background:"rgba(26,53,85,0.5)", marginBottom:20 }} />
+
+        {/* Hub section header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+          <div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em" }}>
+              {showLib ? "Hub Library — All Hubs" : "Clinical Decision Hubs"}
+            </div>
+            {!showLib && (
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, marginTop:2 }}>
+                Auto-surfaced for: <span style={{ color:T.gold }}>{patient.cc}</span>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setShowLib(v=>!v)}
+            style={{ padding:"4px 11px", borderRadius:6, cursor:"pointer", border:`1px solid ${showLib?T.teal+"55":"rgba(26,53,85,0.5)"}`, background:showLib?"rgba(0,229,192,0.08)":"transparent", color:showLib?T.teal:T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600 }}
+          >
+            {showLib ? "← Suggested" : "All Hubs"}
+          </button>
+        </div>
+
+        {/* Suggested hubs grid */}
+        {!showLib && (
+          <div className="pe-fade" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, paddingBottom:20 }}>
+            {suggested.map((key) => {
+              const h = HUBS[key];
+              if (!h) return null;
+              return (
+                <div
+                  key={key}
+                  onClick={() => nav(key, { patientId:patient.id })}
+                  style={{ background:`linear-gradient(135deg,${h.color}0d,${h.color}05)`, border:`1px solid ${h.color}30`, borderLeft:`3px solid ${h.color}`, borderRadius:10, padding:"11px 13px", cursor:"pointer", transition:"box-shadow .15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 0 16px ${h.color}1a`; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow="none"; }}
+                >
+                  <div style={{ fontSize:18, marginBottom:5 }}>{h.icon}</div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:h.color, marginBottom:2 }}>{h.label}</div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4 }}>Open for this patient →</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Hub Library — full grouped list */}
+        {showLib && (
+          <div className="pe-fade" style={{ paddingBottom:20 }}>
+            {HUB_DOMAINS.map((dom, di) => (
+              <div key={di} style={{ marginBottom:16 }}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:dom.color, textTransform:"uppercase", letterSpacing:"0.10em", marginBottom:7 }}>
+                  {dom.domain}
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {dom.hubs.map((key) => {
+                    const h = HUBS[key];
+                    if (!h) return null;
+                    return (
+                      <div
+                        key={key}
+                        onClick={() => nav(key, { patientId:patient.id })}
+                        style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(26,53,85,0.4)", cursor:"pointer", transition:"all .12s" }}
+                        onMouseEnter={e => { e.currentTarget.style.background=`${h.color}0d`; e.currentTarget.style.borderColor=`${h.color}35`; }}
+                        onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor="rgba(26,53,85,0.4)"; }}
+                      >
+                        <span style={{ fontSize:14 }}>{h.icon}</span>
+                        <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:500, color:T.txt2 }}>{h.label}</span>
+                        <span style={{ marginLeft:"auto", fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>›</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
       </div>
+    </div>
+  );
+}
 
-      <Divider />
+// ─── ORDERS LANE (RIGHT) ──────────────────────────────────────────────────────
+const ORDER_CARDS = [
+  { key:"OrderGeneratorHub", icon:"📋", label:"Order Generator", sub:"43-drug CPOE, 6 quick bundles", color:T.gold   },
+  { key:"ERxHub",            icon:"💊", label:"ERx Hub",         sub:"Discharge Rx and prescriptions", color:T.blue  },
+];
 
-      {/* Hub section */}
-      <div style={{ padding:"0 16px 8px", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <SectionLabel>Clinical Decision Hubs</SectionLabel>
-        <div
-          onClick={() => setShowAll(v => !v)}
-          style={{
-            fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            color: showAll ? T.teal : T.txt4,
-            border:`1px solid ${showAll ? T.teal + "40" : "rgba(26,53,85,0.4)"}`,
-            background: showAll ? `${T.teal}12` : "transparent",
-            borderRadius:4, padding:"2px 8px", cursor:"pointer",
-          }}
-        >
-          {showAll ? "Suggested" : "Hub Library"}
+function OrdersLane({ patient }) {
+  const p = patient;
+  const v = p.vitals;
+
+  return (
+    <div style={{ width:264, minWidth:264, height:"100%", background:T.panel, borderLeft:"1px solid rgba(26,53,85,0.5)", display:"flex", flexDirection:"column", overflowY:"auto" }}>
+
+      {/* Orders header */}
+      <div style={{ padding:"14px 14px 10px", borderBottom:"1px solid rgba(26,53,85,0.5)", flexShrink:0 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em" }}>
+          Orders & Rx
         </div>
       </div>
 
-      <div className="pe-scroll" style={{ flex:1, overflowY:"auto", padding:"0 16px 16px" }}>
-        {showAll
-          ? HUB_GROUPS.map(g => <HubLibraryGroup key={g.label} group={g} patientId={patientId} />)
-          : (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-              {suggested.map(k => <HubCard2col key={k} hubKey={k} patientId={patientId} />)}
+      <div style={{ padding:"10px 10px 0", flex:1 }}>
+
+        {/* Order lane cards */}
+        {ORDER_CARDS.map(card => (
+          <div
+            key={card.key}
+            onClick={() => nav(card.key, { patientId:p.id })}
+            style={{ ...gc({ borderRadius:10, borderLeft:`3px solid ${card.color}`, background:`linear-gradient(135deg,${card.color}0a,${T.card})` }), padding:"11px 12px", marginBottom:8, cursor:"pointer", transition:"box-shadow .15s" }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 0 16px ${card.color}1a`; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow="none"; }}
+          >
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+              <span style={{ fontSize:15 }}>{card.icon}</span>
+              <span style={{ fontFamily:"'Playfair Display',serif", fontSize:12, fontWeight:700, color:card.color }}>{card.label}</span>
             </div>
-          )
-        }
-      </div>
-    </div>
-  );
-}
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4 }}>{card.sub}</div>
+          </div>
+        ))}
 
-// ── RIGHT COLUMN — Orders Lane ─────────────────────────────────────────────
-function VitalChip({ label, value, colorKey }) {
-  const c = colorKey ? vitalStatus(colorKey, value) : T.txt3;
-  const display = value !== undefined && value !== null && value !== "" && value !== "--"
-    ? (colorKey === "spo2" ? value + "%" : String(value))
-    : "--";
-  return (
-    <div style={{
-      display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-      padding:"8px 10px", background:`${c}0d`, border:`1px solid ${c}30`,
-      borderRadius:7, flex:1, minWidth:0,
-    }}>
-      <Mono size={7} color={T.txt4}>{label}</Mono>
-      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:700, color:c }}>
-        {display}
-      </span>
-    </div>
-  );
-}
+        {/* Divider */}
+        <div style={{ height:1, background:"rgba(26,53,85,0.5)", margin:"4px 0 12px" }} />
 
-function OrderCard({ page, icon, label, color, sub, patientId }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <div
-      className="pe-lane-card"
-      onClick={() => navigateTo(page, patientId)}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: hov ? `${color}09` : T.card,
-        border:BORDER, borderLeft:`3px solid ${color}`,
-        borderRadius:CARD_R, marginBottom:10, padding:"12px 14px",
-        cursor:"pointer", transition:"background .15s",
-      }}
-    >
-      <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:3 }}>
-        <span style={{ fontSize:15 }}>{icon}</span>
-        <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:13, color }}>
-          {label}
-        </span>
-      </div>
-      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, lineHeight:1.4 }}>
-        {sub}
-      </div>
-    </div>
-  );
-}
-
-function OrderLane({ patient, patientId }) {
-  const tasks    = patient.tasks    || [];
-  const pmhx     = patient.pmhx     || [];
-  const allergies = patient.allergies || [];
-  const v = patient.vitals || {};
-
-  return (
-    <div style={{
-      width:260, flexShrink:0, background:T.panel,
-      borderLeft:BORDER, display:"flex", flexDirection:"column",
-      height:"100%", overflow:"hidden",
-    }}>
-      <div style={{ padding:"14px 14px 10px", flexShrink:0 }}>
-        <SectionLabel>Orders &amp; Rx</SectionLabel>
-      </div>
-
-      <div className="pe-scroll" style={{ flex:1, overflowY:"auto", padding:"0 12px 16px" }}>
-
-        {/* Order cards */}
-        <OrderCard page="order-generator" icon="📋" label="Order Generator" color={T.gold}
-          sub="43-drug CPOE generator, 6 quick bundles" patientId={patientId} />
-        <OrderCard page="ERx" icon="💊" label="ERx Hub" color={T.blue}
-          sub="Discharge medications and prescriptions" patientId={patientId} />
-
-        <Divider />
-
-        {/* Active Tasks */}
+        {/* Active tasks */}
         <div style={{ marginBottom:14 }}>
-          <SectionLabel>Active Tasks</SectionLabel>
-          <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
-            {tasks.length === 0
-              ? <Mono size={10} color={T.txt4}>No active tasks</Mono>
-              : tasks.map((task, i) => (
-                <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
-                  <div style={{
-                    width:14, height:14, borderRadius:"50%",
-                    border:`2px solid ${T.teal}`,
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    flexShrink:0, marginTop:1,
-                  }}>
-                    <div style={{ width:5, height:5, borderRadius:"50%", background:T.teal }} />
-                  </div>
-                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2, lineHeight:1.4 }}>
-                    {task}
-                  </span>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:9 }}>
+            Active Tasks
+          </div>
+          {p.tasks.length > 0
+            ? p.tasks.map((task, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:T.teal, background:"rgba(0,229,192,0.1)", border:"1px solid rgba(0,229,192,0.3)", borderRadius:"50%", width:15, height:15, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>v</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2 }}>{task}</span>
                 </div>
               ))
+            : <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4 }}>No active tasks</div>
+          }
+        </div>
+
+        {/* Divider */}
+        <div style={{ height:1, background:"rgba(26,53,85,0.5)", margin:"0 0 12px" }} />
+
+        {/* Vitals snapshot */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:10 }}>
+            Vitals
+          </div>
+          <div style={{ ...gc({ borderRadius:9 }), padding:"10px 12px", display:"flex", gap:14, flexWrap:"wrap", justifyContent:"center" }}>
+            <VitalChip label="HR"   value={v.hr}         colorKey="hr"   />
+            <VitalChip label="SpO2" value={`${v.spo2}%`} colorKey="spo2" />
+            <VitalChip label="RR"   value={v.rr}         colorKey="rr"   />
+            <VitalChip label="BP"   value={v.bp}                         />
+            <VitalChip label="Temp" value={`${v.temp}F`}                 />
+          </div>
+        </div>
+
+        {/* PMHx + Allergies */}
+        <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+          <div style={{ ...gc({ borderRadius:8 }), padding:"10px 10px", flex:1 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:6 }}>PMHx</div>
+            {p.pmhx.length
+              ? p.pmhx.map((x,i) => <div key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt3, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(26,53,85,0.4)", borderRadius:4, padding:"2px 6px", marginBottom:3, display:"inline-block", marginRight:3 }}>{x}</div>)
+              : <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4 }}>None</div>
+            }
+          </div>
+          <div style={{ ...gc({ borderRadius:8 }), padding:"10px 10px", flex:1 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:6 }}>Allergies</div>
+            {p.allergies.length
+              ? p.allergies.map((a,i) => <div key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.coral, background:"rgba(255,107,107,0.1)", border:"1px solid rgba(255,107,107,0.3)", borderRadius:4, padding:"2px 6px", marginBottom:3, display:"inline-block", marginRight:3 }}>{a}</div>)
+              : <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4 }}>NKDA</div>
             }
           </div>
         </div>
 
-        <Divider />
-
-        {/* Patient Info */}
-        <div style={{ marginBottom:14 }}>
-          <SectionLabel>Patient Info</SectionLabel>
-          <div style={{ marginTop:8, display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-            {/* PMHx */}
-            <div style={{ background:T.card, border:BORDER, borderRadius:8, padding:"8px 10px" }}>
-              <Mono size={7} color={T.txt4} style={{ letterSpacing:"0.1em", textTransform:"uppercase", display:"block", marginBottom:5 }}>PMHx</Mono>
-              {pmhx.length === 0
-                ? <Mono size={9} color={T.txt4}>None</Mono>
-                : (
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-                    {pmhx.map((p, i) => (
-                      <span key={i} style={{
-                        fontFamily:"'DM Sans',sans-serif", fontSize:9, color:T.txt3,
-                        background:"rgba(130,174,206,0.10)", border:"1px solid rgba(130,174,206,0.2)",
-                        borderRadius:4, padding:"1px 6px",
-                      }}>{p}</span>
-                    ))}
-                  </div>
-                )
-              }
-            </div>
-            {/* Allergies */}
-            <div style={{ background:T.card, border:BORDER, borderRadius:8, padding:"8px 10px" }}>
-              <Mono size={7} color={T.txt4} style={{ letterSpacing:"0.1em", textTransform:"uppercase", display:"block", marginBottom:5 }}>Allergies</Mono>
-              {allergies.length === 0
-                ? <Mono size={9} color={T.txt4}>NKDA</Mono>
-                : (
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-                    {allergies.map((a, i) => (
-                      <span key={i} style={{
-                        fontFamily:"'DM Sans',sans-serif", fontSize:9, fontWeight:600,
-                        color:T.coral, background:`${T.coral}12`,
-                        border:`1px solid ${T.coral}30`, borderRadius:4, padding:"1px 6px",
-                      }}>{a}</span>
-                    ))}
-                  </div>
-                )
-              }
+        {/* Flags */}
+        {p.flags.length > 0 && (
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:8 }}>Flags</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+              {p.flags.map((f,i) => (
+                <span key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.red, background:"rgba(255,68,68,0.1)", border:"1px solid rgba(255,68,68,0.3)", borderRadius:16, padding:"2px 9px" }}>{f}</span>
+              ))}
             </div>
           </div>
-        </div>
-
-        <Divider />
-
-        {/* Med Safety Checker */}
-        <MedSafetyChecker patient={patient} />
-
-        <Divider />
-
-        {/* Vitals Snapshot */}
-        <div>
-          <SectionLabel>Vitals Snapshot</SectionLabel>
-          <div style={{ marginTop:8, display:"flex", gap:5, flexWrap:"wrap" }}>
-            <VitalChip label="HR"   value={v.hr}   colorKey="hr"   />
-            <VitalChip label="BP"   value={v.bp}                   />
-            <VitalChip label="SpO2" value={v.spo2} colorKey="spo2" />
-            <VitalChip label="RR"   value={v.rr}   colorKey="rr"   />
-            <VitalChip label="Temp" value={v.temp}                 />
-          </div>
-        </div>
+        )}
 
       </div>
     </div>
   );
 }
 
-// ── Main export ────────────────────────────────────────────────────────────
+// ─── LOADING STATE ─────────────────────────────────────────────────────────────
+function LoadingState() {
+  return (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14, background:T.bg }}>
+      <div className="pe-spin" style={{ width:32, height:32, border:`3px solid rgba(0,229,192,0.2)`, borderTop:`3px solid ${T.teal}`, borderRadius:"50%" }} />
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt3 }}>Loading patient...</div>
+    </div>
+  );
+}
+
+function ErrorState() {
+  return (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14, background:T.bg }}>
+      <div style={{ fontSize:40 }}>⚠️</div>
+      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, color:T.txt3 }}>Patient not found</div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt4 }}>The patient record could not be loaded.</div>
+      <Btn accent={T.teal} onClick={() => nav("CommandCenter")}>← Back to Census</Btn>
+    </div>
+  );
+}
+
+// ─── PATIENT ENCOUNTER — MAIN EXPORT ──────────────────────────────────────────
 export default function PatientEncounter() {
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-
-  const params = new URLSearchParams(window.location.search);
-  const patientId = params.get("patientId");
 
   useEffect(() => {
-    if (!patientId) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-    base44.entities.Patient.filter({ id: patientId }, "-created_date", 1)
-      .then(results => {
-        if (results && results.length > 0) {
-          setPatient(results[0]);
-        } else {
-          setNotFound(true);
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setNotFound(true);
-        setLoading(false);
-      });
-  }, [patientId]);
+    // ── Read patientId from URL params ──────────────────────────────────────
+    // In Base44, replace this block with: Patient.get(patientId)
+    let patientId = null;
+    try { patientId = new URLSearchParams(window.location.search).get("patientId"); } catch {}
 
-  // Loading state
+    // Fallback: default to first mock patient for dev/testing
+    const found = MOCK_PATIENTS.find(p => String(p.id) === String(patientId)) || MOCK_PATIENTS[0];
+
+    setTimeout(() => {
+      setPatient(found || null);
+      setLoading(false);
+    }, 300);
+  }, []);
+
   if (loading) {
     return (
-      <div style={{
-        height:"100vh", background:T.bg,
-        display:"flex", alignItems:"center", justifyContent:"center",
-        fontFamily:"'DM Sans',sans-serif",
-      }}>
-        <div style={{ textAlign:"center" }}>
-          <div style={{
-            width:32, height:32, borderRadius:"50%",
-            border:`3px solid ${T.teal}`, borderTopColor:"transparent",
-            animation:"spin 0.8s linear infinite", margin:"0 auto 16px",
-          }} />
-          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt3 }}>
-            Loading patient...
-          </span>
-        </div>
+      <div style={{ display:"flex", flexDirection:"column", height:"100vh", overflow:"hidden", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
+        <LoadingState />
       </div>
     );
   }
 
-  // Error / not found state
-  if (notFound || !patient) {
+  if (!patient) {
     return (
-      <div style={{
-        height:"100vh", background:T.bg,
-        display:"flex", alignItems:"center", justifyContent:"center",
-        fontFamily:"'DM Sans',sans-serif",
-      }}>
-        <div style={{
-          background:T.card, border:BORDER, borderRadius:14,
-          padding:"32px 40px", textAlign:"center", maxWidth:380,
-        }}>
-          <div style={{ fontSize:40, marginBottom:14 }}>🏥</div>
-          <div style={{
-            fontFamily:"'Playfair Display',serif", fontWeight:700,
-            fontSize:18, color:T.txt, marginBottom:6,
-          }}>
-            Patient not found
-          </div>
-          <div style={{
-            fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt4, marginBottom:20,
-          }}>
-            {patientId ? "This patient record could not be loaded." : "No patient ID was provided in the URL."}
-          </div>
-          <div
-            onClick={() => { window.location.href = "/"; }}
-            style={{
-              display:"inline-flex", alignItems:"center", gap:6,
-              padding:"8px 18px", borderRadius:8, cursor:"pointer",
-              background:`linear-gradient(135deg,${T.teal}22,${T.teal}0a)`,
-              border:`1px solid ${T.teal}55`, color:T.teal,
-              fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:13,
-            }}
-          >
-            ← Back to Census
-          </div>
-        </div>
+      <div style={{ display:"flex", flexDirection:"column", height:"100vh", overflow:"hidden", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
+        <ErrorState />
       </div>
     );
   }
 
   return (
-    <div style={{
-      height:"100vh", width:"100vw",
-      display:"flex", flexDirection:"column",
-      background:T.bg, color:T.txt,
-      overflow:"hidden", fontFamily:"'DM Sans',sans-serif",
-    }}>
-      <ContextBar patient={patient} patientId={patientId} />
-      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <DocLane patient={patient} patientId={patientId} />
-        <ClinicalDecisionLane patient={patient} patientId={patientId} />
-        <OrderLane patient={patient} patientId={patientId} />
+    <div style={{ display:"flex", flexDirection:"column", height:"100vh", overflow:"hidden", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
+      <TopContextBar patient={patient} />
+      <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
+        <DocumentationLane patientId={patient.id} />
+        <ClinicalDecisionLane patient={patient} />
+        <OrdersLane patient={patient} />
       </div>
     </div>
   );

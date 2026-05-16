@@ -148,6 +148,7 @@ import EMTALAHub from '@/pages/EMTALAHub';
 import SpecialtyNoteHub from '@/pages/SpecialtyNoteHub';
 import SpecialtyNoteHubT2 from '@/pages/SpecialtyNoteHubT2';
 import NotryaTechHub from '@/pages/NotryaTechHub';
+import CommandCenter from '@/pages/CommandCenter';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -203,7 +204,8 @@ const AuthenticatedApp = () => {
       <PatientSidebar />
       <GlobalFloatingAI />
       <Routes>
-        <Route path="/" element={<LayoutWrapper currentPageName={mainPageKey}><MainPage /></LayoutWrapper>} />
+        <Route path="/" element={<CommandCenter />} />
+        <Route path="/CommandCenter" element={<CommandCenter />} />
 
         {Object.entries(Pages).map(([path, Page]) => (
           <Route key={path} path={`/${path}`} element={

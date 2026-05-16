@@ -14,6 +14,7 @@ import { InputZone, QuickDDxCard } from "./QuickNoteComponents";
 import { MedsAllergyZone } from "./QuickNoteMedsAllergy";
 import MedTermHighlighter from "@/components/MedTermHighlighter";
 import ExamShortcuts from "@/components/quicknote/ExamShortcuts";
+import VoiceDictationButton from "@/components/quicknote/VoiceDictationButton";
 
 export function Phase1Panel({
   // Core inputs
@@ -164,6 +165,10 @@ export function Phase1Panel({
               {hpiWordCount}w · {hpiCharCount}c
             </span>
           )}
+          <VoiceDictationButton
+            fieldLabel="HPI"
+            onTranscript={(t) => setHpi(prev => (prev ? prev.trimEnd() + " " + t.trimStart() : t.trimStart()))}
+          />
         </div>
 
         {/* ── v11.2: Paste-detecting wrapper — fires toast on large paste ── */}
@@ -420,7 +425,17 @@ export function Phase1Panel({
           onRef={setRef(3)}
           onKeyDown={makeKeyDown(3, false, runMDM)} />
         <div>
-          <InputZone label="Physical Exam" value={exam} onChange={setExam} phase={1}
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
+              textTransform:"uppercase" }}>Physical Exam</span>
+            <VoiceDictationButton
+              fieldLabel="Physical Exam"
+              compact
+              onTranscript={(t) => setExam(prev => (prev ? prev.trimEnd() + " " + t.trimStart() : t.trimStart()))}
+            />
+          </div>
+          <InputZone label="" value={exam} onChange={setExam} phase={1}
             rows={4} copyable templateType="pe" smartfill kbdHint="Alt+E"
             placeholder="Paste physical exam, or press T to insert a template..."
             onRef={setRef(4)}

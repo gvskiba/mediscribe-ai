@@ -472,7 +472,7 @@ function LauncherTile({hub}){
   const shortTitle=hub.title.replace(/ Hub$/,"").replace(/ Hub\b/,"");
   return(
     <button className="nh-tile" tabIndex={0}
-      onClick={()=>{addRecent(hub.id);window.location.href=hub.route;}}
+      onClick={()=>{window.location.href=hub.route; addRecent(hub.id);}}
       onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,padding:"11px 6px 9px",borderRadius:10,
         background:hov?hub.color+"1e":hot?hub.color+"13":hub.color+"0a",
@@ -495,8 +495,8 @@ function HubCard({hub}){
   const [hov,setHov]=useState(false); useSession(); const fav=_s.favorites.has(hub.id); const hot=HIGH_ACUITY.has(hub.id);
   return(
     <div className="nh-card" tabIndex={0}
-      onClick={()=>{addRecent(hub.id);window.location.href=hub.route;}}
-      onKeyDown={e=>{if(e.key==="Enter"){addRecent(hub.id);window.location.href=hub.route;}}}
+      onClick={()=>{window.location.href=hub.route; addRecent(hub.id);}}
+      onKeyDown={e=>{if(e.key==="Enter"){window.location.href=hub.route; addRecent(hub.id);}}}
       onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{position:"relative",padding:"11px 13px",borderRadius:11,cursor:"pointer",background:hov?hub.color+"13":hot?hub.color+"0f":hub.color+"09",border:`1px solid ${hov?hub.color+"45":hot?hub.color+"38":hub.color+"22"}`,display:"flex",flexDirection:"column",gap:6,overflow:"hidden"}}>
       {hot&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:hub.color,animation:"nh-glow 2.2s ease-in-out infinite"}}/>}

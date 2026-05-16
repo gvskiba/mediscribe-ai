@@ -3,20 +3,19 @@
 // No router · no localStorage · no form/alert · straight quotes · <1600 lines
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { InvokeLLM } from "@/integrations/Core";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 
-function useToxStyles() {
-  useEffect(() => {
-    if (document.getElementById("tox-fonts")) return;
-    const l = document.createElement("link"); l.id = "tox-fonts"; l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
-    document.head.appendChild(l);
-    const s = document.createElement("style"); s.id = "tox-css";
-    s.textContent = `@keyframes tox-fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.tox-fade{animation:tox-fade .16s ease forwards;}@keyframes panel-in{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}.panel-in{animation:panel-in .18s ease forwards;}@keyframes modal-in{from{opacity:0;transform:scale(0.95) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}.modal-in{animation:modal-in .22s cubic-bezier(.22,.68,0,1.15) forwards;}@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}.shimmer-text{background:linear-gradient(90deg,#e8f0fe 0%,#fff 30%,#9b6dff 52%,#00e5c0 72%,#e8f0fe 100%);background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite;}`;
-    document.head.appendChild(s);
-  }, []);
-}
+(() => {
+  if (document.getElementById("tox-fonts")) return;
+  const l = document.createElement("link"); l.id = "tox-fonts"; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+  document.head.appendChild(l);
+  const s = document.createElement("style"); s.id = "tox-css";
+  s.textContent = `@keyframes tox-fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.tox-fade{animation:tox-fade .16s ease forwards;}@keyframes panel-in{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}.panel-in{animation:panel-in .18s ease forwards;}@keyframes modal-in{from{opacity:0;transform:scale(0.95) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}.modal-in{animation:modal-in .22s cubic-bezier(.22,.68,0,1.15) forwards;}@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}.shimmer-text{background:linear-gradient(90deg,#e8f0fe 0%,#fff 30%,#9b6dff 52%,#00e5c0 72%,#e8f0fe 100%);background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite;}`;
+  document.head.appendChild(s);
+})();
 
 const T = { bg:"#050f1e",panel:"#081628",card:"#0b1e36",txt:"#f2f7ff",txt2:"#b8d4f0",txt3:"#82aece",txt4:"#5a82a8",teal:"#00e5c0",gold:"#f5c842",coral:"#ff6b6b",blue:"#3b9eff",orange:"#ff9f43",purple:"#9b6dff",green:"#3dffa0",red:"#ff4444",cyan:"#00d4ff" };
 const EVID_COLOR = { "ACEP Policy":T.teal,"ACMT Statement":T.cyan,"Expert Consensus":T.gold,"Guideline":T.blue,"ACEP/ACMT":T.teal };
@@ -293,6 +292,29 @@ const DOSE_CALCS = [
 
 const QUICK_ACCESS = ["Naloxone","N-Acetylcysteine (NAC)","Atropine","Sodium Bicarbonate","Hydroxocobalamin","Calcium (Gluconate or Chloride)","Fomepizole (4-MP)","Digoxin-Specific Fab (Digibind)"];
 
+const SUBSTITUTES = {
+  "Fomepizole (4-MP)":               "Ethanol infusion 10% in D5W — load 0.6 g/kg IV, titrate to serum level 100–150 mg/dL",
+  "Hydroxocobalamin":                 "Sodium thiosulfate 12.5 g IV (second-line only) — call Poison Control 1-800-222-1222",
+  "Methylene Blue":                   "Exchange transfusion for G6PD deficiency or refractory MetHb — call hematology",
+  "Digoxin-Specific Fab (Digibind)": "No adequate substitute — call Poison Control 1-800-222-1222 immediately",
+  "Lipid Emulsion (Intralipid 20%)": "No substitute — contact pharmacy STAT, consider ECMO if available",
+  "Pralidoxime (2-PAM)":             "Atropine only — escalate dose aggressively, no reactivator available; call Poison Control",
+  "Deferoxamine":                    "Supportive care only — whole bowel irrigation if early; call Poison Control",
+  "Pyridoxine (Vitamin B6)":         "No substitute — give max available dose + aggressive BZD; call Poison Control",
+};
+  { id:"hr",    label:"Resting Pulse Rate",    opts:[{v:0,l:"≤ 80 bpm"},{v:1,l:"81–100"},{v:2,l:"101–120"},{v:4,l:"> 120 bpm"}] },
+  { id:"sweat", label:"Sweating",              opts:[{v:0,l:"None"},{v:1,l:"Moist brow"},{v:2,l:"Beads on brow"},{v:3,l:"Streaming"},{v:4,l:"Drenched"}] },
+  { id:"rest",  label:"Restlessness",          opts:[{v:0,l:"Can sit still"},{v:1,l:"Difficulty sitting"},{v:3,l:"Frequent shifts"},{v:5,l:"Cannot sit still"}] },
+  { id:"pupil", label:"Pupil Size",            opts:[{v:0,l:"Pinned < 2 mm"},{v:1,l:"Normal / slightly large"},{v:2,l:"Large > 3 mm"},{v:5,l:"Very dilated > 5 mm"}] },
+  { id:"bone",  label:"Bone / Joint Aches",   opts:[{v:0,l:"None"},{v:1,l:"Mild diffuse"},{v:2,l:"Severe cramps"},{v:4,l:"Severe + rubbing"}] },
+  { id:"nose",  label:"Runny Nose / Tearing", opts:[{v:0,l:"None"},{v:1,l:"Stuffiness"},{v:2,l:"Runny nose"},{v:4,l:"Constant flow"}] },
+  { id:"gi",    label:"GI Upset",             opts:[{v:0,l:"None"},{v:1,l:"Stomach cramps"},{v:2,l:"Nausea / loose stool"},{v:3,l:"Vomiting"},{v:5,l:"Diarrhea + vomiting + cramps"}] },
+  { id:"tremor",label:"Tremor",               opts:[{v:0,l:"None"},{v:1,l:"Slight on movement"},{v:2,l:"Moderate"},{v:4,l:"Severe"}] },
+  { id:"yawn",  label:"Yawning",              opts:[{v:0,l:"None"},{v:1,l:"1–2× observed"},{v:2,l:"3× observed"},{v:4,l:"≥ 4× observed"}] },
+  { id:"anx",   label:"Anxiety / Irritability",opts:[{v:0,l:"None"},{v:1,l:"Reports anxiety"},{v:2,l:"Obvious irritability"},{v:4,l:"Combative"}] },
+  { id:"goose", label:"Gooseflesh Skin",      opts:[{v:0,l:"Smooth"},{v:3,l:"Piloerection felt"},{v:5,l:"Prominent piloerection"}] },
+];
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function SectionLabel({ label, color, count }) {
   return (
@@ -309,13 +331,14 @@ function CardGrid({ children }) {
 }
 
 // ─── STAT CARD ────────────────────────────────────────────────────────────────
-function StatCard({ item, isProtocol, onClick, globalWeight }) {
+function StatCard({ item, isProtocol, onClick, globalWeight, notStocked }) {
   const color  = item.color;
   const urgCol = item.urgency ? { immediate:T.red,urgent:T.orange,caution:T.gold }[item.urgency] : color;
   const w      = parseFloat(globalWeight) || 0;
   const wDose  = !isProtocol && w > 0 && item.cardCalc ? item.cardCalc(w) : null;
+  const isNS   = !isProtocol && notStocked?.has(item.antidote);
   return (
-    <div onClick={onClick} style={{ borderRadius:10,cursor:"pointer",border:"1px solid rgba(26,53,85,0.5)",borderLeft:`3px solid ${color}`,background:`linear-gradient(135deg,${color}09,rgba(8,22,40,0.85))`,padding:"11px 13px",transition:"border-color .15s,box-shadow .15s" }}
+    <div onClick={onClick} style={{ borderRadius:10,cursor:"pointer",border:"1px solid rgba(26,53,85,0.5)",borderLeft:`3px solid ${color}`,background:`linear-gradient(135deg,${color}09,rgba(8,22,40,0.85))`,padding:"11px 13px",transition:"border-color .15s,box-shadow .15s",opacity:isNS?0.55:1 }}
       onMouseEnter={e => { e.currentTarget.style.borderColor=color+"55"; e.currentTarget.style.boxShadow=`0 0 18px ${color}1a`; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(26,53,85,0.5)"; e.currentTarget.style.boxShadow="none"; }}>
       <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:3 }}>
@@ -333,6 +356,7 @@ function StatCard({ item, isProtocol, onClick, globalWeight }) {
           <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:urgCol,background:`${urgCol}15`,border:`1px solid ${urgCol}35`,borderRadius:4,padding:"1px 5px",textTransform:"uppercase",letterSpacing:0.8 }}>{item.urgency}</span>
           {item.evidence && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:EVID_COLOR[item.evidence]||T.txt4,background:`${EVID_COLOR[item.evidence]||T.txt4}15`,border:`1px solid ${EVID_COLOR[item.evidence]||T.txt4}35`,borderRadius:4,padding:"1px 5px",textTransform:"uppercase",letterSpacing:0.8 }}>{item.evidence}</span>}
           {item.contraindication && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:T.red,background:"rgba(255,68,68,0.15)",border:"1px solid rgba(255,68,68,0.4)",borderRadius:4,padding:"1px 5px",textTransform:"uppercase",letterSpacing:0.8 }}>⚠ contraindications</span>}
+          {isNS && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:T.txt4,background:"rgba(90,130,168,0.15)",border:"1px solid rgba(90,130,168,0.3)",borderRadius:4,padding:"1px 5px",textTransform:"uppercase",letterSpacing:0.8 }}>⊗ not stocked</span>}
         </div>
       )}
       <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:600,color,lineHeight:1.4,marginBottom:wDose?4:0 }}>
@@ -347,18 +371,88 @@ function StatCard({ item, isProtocol, onClick, globalWeight }) {
   );
 }
 
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function generateOrderText(item, w) {
+  const wdose = w > 0 && item.cardCalc ? item.cardCalc(w) : null;
+  const parts = [item.antidote];
+  if (item.toxin)          parts.push("Indication: " + item.toxin);
+  if (wdose)               parts.push("Dose (" + w + "kg): " + wdose);
+  else if (item.quickDose) parts.push("Dose: " + item.quickDose);
+  if (item.route)          parts.push("Route: " + item.route);
+  if (item.timing)         parts.push("Timing: " + item.timing.split(".")[0].trim());
+  return parts.join(" | ");
+}
+
+function printCard(item, w) {
+  const win = window.open("", "_blank");
+  if (!win) return;
+  const wdose = w > 0 && item.cardCalc ? item.cardCalc(w) : null;
+  const row = (lbl, content) => `<div class="sec"><div class="lbl">${lbl}</div>${content}</div>`;
+  win.document.write(`<!DOCTYPE html><html><head><title>${item.antidote} — Notrya Tox</title>
+<style>
+  body { font-family: 'Courier New', monospace; padding: 28px; background: #fff; color: #000; max-width: 620px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 3px; font-family: Georgia, serif; }
+  .toxin { font-size: 13px; color: #444; margin: 0 0 10px; }
+  .badges { margin: 0 0 14px; }
+  .badge { display: inline-block; font-size: 9px; padding: 2px 8px; border: 1px solid #bbb; border-radius: 3px; margin-right: 5px; text-transform: uppercase; letter-spacing: .8px; }
+  .contra { background: #fff0f0; border: 2px solid #c00; padding: 12px 14px; margin-bottom: 16px; border-radius: 4px; }
+  .contra-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #c00; margin-bottom: 4px; font-weight: bold; }
+  .sec { margin-bottom: 12px; padding: 10px 13px; border-left: 3px solid #333; background: #f7f7f7; }
+  .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1.3px; color: #666; margin-bottom: 4px; }
+  .big { font-size: 26px; font-weight: bold; margin: 0 0 2px; font-family: 'Courier New', monospace; }
+  .dose { font-size: 15px; font-weight: bold; line-height: 1.5; }
+  p { font-size: 12px; line-height: 1.65; margin: 0; }
+  .foot { margin-top: 22px; font-size: 9px; color: #aaa; border-top: 1px solid #ddd; padding-top: 8px; }
+  @media print { body { padding: 16px; } }
+</style></head><body>`);
+  if (item.contraindication) {
+    win.document.write(`<div class="contra"><div class="contra-lbl">⚠ Critical Contraindications — Read Before Dosing</div><p>${item.contraindication}</p></div>`);
+  }
+  win.document.write(`<h1>${item.antidote}</h1><div class="toxin">Treats: ${item.toxin || ""}</div>`);
+  win.document.write(`<div class="badges"><span class="badge">${item.urgency || ""}</span><span class="badge">${item.route || ""}</span><span class="badge">${item.evidence || ""}</span></div>`);
+  if (wdose) win.document.write(row("Calculated Dose — " + w + " kg Patient", `<div class="big">${wdose}</div>`));
+  win.document.write(row("Quick Dose", `<div class="dose">${item.quickDose || ""}</div>`));
+  win.document.write(row("Full Dosing", `<p>${item.dosing || ""}</p>`));
+  if (item.timing) win.document.write(row("Timing", `<p>${item.timing}</p>`));
+  win.document.write(row("Pearl", `<p>${item.pearls || ""}</p>`));
+  if (item.peds) win.document.write(row("Peds", `<p>${item.peds}</p>`));
+  win.document.write(`<div class="foot">NOTRYA TOX HUB · CLINICAL DECISION SUPPORT ONLY · Verify with Poison Control 1-800-222-1222 · ${new Date().toLocaleDateString()}</div>`);
+  win.document.write(`</body></html>`);
+  win.document.close();
+  setTimeout(() => win.print(), 450);
+}
+
 // ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
-function DetailModal({ item, isProtocol, onClose, globalWeight }) {
+function DetailModal({ item, isProtocol, onClose, globalWeight, list, listIdx, onNavigate, notStocked, toggleNotStocked }) {
   const color  = item.color;
   const urgCol = item.urgency ? { immediate:T.red,urgent:T.orange,caution:T.gold }[item.urgency] : color;
   const w      = parseFloat(globalWeight) || 0;
   const wDose  = !isProtocol && w > 0 && item.cardCalc ? item.cardCalc(w) : null;
+  const [copied, setCopied] = useState(false);
+  const isNS = !isProtocol && notStocked?.has(item.antidote);
+
+  const canPrev = list && listIdx > 0;
+  const canNext = list && listIdx < list.length - 1;
+  const goPrev  = () => { if (canPrev) onNavigate(list[listIdx - 1], isProtocol, list, listIdx - 1); };
+  const goNext  = () => { if (canNext) onNavigate(list[listIdx + 1], isProtocol, list, listIdx + 1); };
+
+  const copyOrder = () => {
+    if (isProtocol) return;
+    navigator.clipboard.writeText(generateOrderText(item, w)).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    });
+  };
 
   useEffect(() => {
-    const fn = e => { if (e.key === "Escape") onClose(); };
+    const fn = e => {
+      if (e.key === "Escape")     onClose();
+      if (e.key === "ArrowLeft")  goPrev();
+      if (e.key === "ArrowRight") goNext();
+    };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, [onClose]);
+  }, [onClose, canPrev, canNext, listIdx]);
 
   return (
     <div onClick={onClose} style={{ position:"fixed",inset:0,zIndex:9000,background:"rgba(5,15,30,0.88)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}>
@@ -369,6 +463,17 @@ function DetailModal({ item, isProtocol, onClose, globalWeight }) {
           <div style={{ padding:"12px 20px",background:"rgba(255,44,44,0.22)",borderBottom:"2px solid rgba(255,44,44,0.78)",flexShrink:0 }}>
             <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.red,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4 }}>⚠ Critical Contraindications — Read Before Dosing</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#ffaaaa",lineHeight:1.65,fontWeight:600 }}>{item.contraindication}</div>
+          </div>
+        )}
+
+        {/* Not stocked banner */}
+        {isNS && (
+          <div style={{ padding:"10px 20px",background:"rgba(90,130,168,0.14)",borderBottom:"1px solid rgba(90,130,168,0.4)",flexShrink:0 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt3,letterSpacing:1.3,textTransform:"uppercase",marginBottom:3 }}>⊗ Not in Formulary</div>
+            {SUBSTITUTES[item.antidote]
+              ? <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.55 }}><span style={{ color:T.gold,fontWeight:600 }}>Alternative: </span>{SUBSTITUTES[item.antidote]}</div>
+              : <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt4 }}>Contact pharmacy or call Poison Control 1-800-222-1222 for alternatives</div>
+            }
           </div>
         )}
 
@@ -393,7 +498,34 @@ function DetailModal({ item, isProtocol, onClose, globalWeight }) {
                 </div>
               )}
             </div>
-            <button onClick={onClose} style={{ flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"7px 13px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.14)",borderRadius:8,color:T.txt3,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,whiteSpace:"nowrap" }}>✕ Close</button>
+            <div style={{ display:"flex",gap:6,flexShrink:0,alignItems:"center" }}>
+              {!isProtocol && (
+                <button onClick={() => toggleNotStocked(item.antidote)} style={{ padding:"7px 13px",borderRadius:8,cursor:"pointer",border:`1px solid ${isNS ? "rgba(90,130,168,0.5)" : "rgba(255,255,255,0.14)"}`,background:isNS ? "rgba(90,130,168,0.18)" : "rgba(255,255,255,0.07)",color:isNS ? T.txt3 : T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:isNS?600:400,whiteSpace:"nowrap" }}>
+                  {isNS ? "⊗ Not Stocked" : "Mark Not Stocked"}
+                </button>
+              )}
+              {!isProtocol && (
+                <button onClick={() => printCard(item, w)} style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 13px",borderRadius:8,cursor:"pointer",border:"1px solid rgba(255,255,255,0.14)",background:"rgba(255,255,255,0.07)",color:T.txt3,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,whiteSpace:"nowrap" }}>
+                  🖨 Print
+                </button>
+              )}
+              {!isProtocol && (
+                <button onClick={copyOrder} style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 13px",borderRadius:8,cursor:"pointer",border:`1px solid ${copied ? T.green+"66" : "rgba(255,255,255,0.14)"}`,background:copied ? "rgba(61,255,160,0.1)" : "rgba(255,255,255,0.07)",color:copied ? T.green : T.txt3,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,whiteSpace:"nowrap",transition:"all .2s" }}>
+                  {copied ? "✓ Copied" : "Copy Order"}
+                </button>
+              )}
+              <button onClick={onClose} style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 13px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.14)",borderRadius:8,color:T.txt3,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,whiteSpace:"nowrap" }}>✕ Close</button>
+            </div>
+          </div>
+          {/* Prev / Next navigation — shows only when list context is available */}
+          {list && list.length > 1 && (
+            <div style={{ display:"flex",alignItems:"center",gap:8,marginTop:10 }}>
+              <button onClick={goPrev} disabled={!canPrev} style={{ padding:"4px 14px",borderRadius:6,cursor:canPrev?"pointer":"default",border:`1px solid ${canPrev?color+"44":"rgba(26,53,85,0.3)"}`,background:"rgba(8,22,40,0.5)",color:canPrev?T.txt2:T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:12,opacity:canPrev?1:0.35,transition:"all .15s" }}>← Prev</button>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4 }}>{listIdx + 1} / {list.length}</span>
+              <button onClick={goNext} disabled={!canNext} style={{ padding:"4px 14px",borderRadius:6,cursor:canNext?"pointer":"default",border:`1px solid ${canNext?color+"44":"rgba(26,53,85,0.3)"}`,background:"rgba(8,22,40,0.5)",color:canNext?T.txt2:T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:12,opacity:canNext?1:0.35,transition:"all .15s" }}>Next →</button>
+              <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:9,color:T.txt4,marginLeft:2 }}>← → keys</span>
+            </div>
+          )}
           </div>
         </div>
 
@@ -553,6 +685,426 @@ function ToxidromeMatcher({ onSelectAntidote }) {
   );
 }
 
+// ─── AI TOXIDROME INTERPRETER ─────────────────────────────────────────────────
+function AIToxInterpreter() {
+  const [text,    setText]    = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result,  setResult]  = useState(null);
+  const [err,     setErr]     = useState(false);
+
+  const confColor = { high:T.red, moderate:T.orange, low:T.gold };
+  const urgColor  = { immediate:T.red, urgent:T.orange, caution:T.gold };
+
+  const analyze = async () => {
+    if (!text.trim() || loading) return;
+    setLoading(true); setErr(false); setResult(null);
+    try {
+      const res = await InvokeLLM({
+        prompt: `You are a board-certified emergency medicine toxicologist. Analyze this ED patient presentation and identify the most likely toxidrome(s), antidotes, and immediate actions. Be concise and clinically precise.
+
+Patient presentation: ${text}
+
+Return valid JSON only — no preamble, no markdown.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            toxidromes: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name:       { type: "string" },
+                  confidence: { type: "string", enum: ["high","moderate","low"] },
+                  rationale:  { type: "string" }
+                },
+                required: ["name","confidence","rationale"]
+              }
+            },
+            antidotes: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name:    { type: "string" },
+                  urgency: { type: "string", enum: ["immediate","urgent","caution"] },
+                  note:    { type: "string" }
+                },
+                required: ["name","urgency","note"]
+              }
+            },
+            immediate_actions: { type: "array", items: { type: "string" } },
+            pearl:             { type: "string" }
+          },
+          required: ["toxidromes","antidotes","immediate_actions","pearl"]
+        }
+      });
+      setResult(res);
+    } catch { setErr(true); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ marginBottom:28 }}>
+      <div style={{ marginBottom:5 }}>
+        <div style={{ fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:T.purple }}>AI Toxidrome Interpreter</div>
+        <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4,marginTop:2,lineHeight:1.55 }}>
+          Describe the patient in plain language — vitals, exam findings, suspected exposure. AI surfaces the most likely toxidrome and recommended antidotes.
+        </div>
+      </div>
+
+      <textarea
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="e.g. 55M found unresponsive, pinpoint pupils, RR 6, HR 44, diaphoretic, bilateral crackles, family reports lawn chemical exposure..."
+        style={{ width:"100%",minHeight:90,padding:"10px 13px",background:"rgba(255,255,255,0.05)",border:`1px solid ${text ? "rgba(155,109,255,0.4)" : "rgba(255,255,255,0.1)"}`,borderRadius:9,color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:12,lineHeight:1.6,outline:"none",resize:"vertical",boxSizing:"border-box",marginTop:8,transition:"border-color .2s" }}
+      />
+
+      <button
+        onClick={analyze}
+        disabled={!text.trim() || loading}
+        style={{ display:"block",width:"100%",marginTop:8,padding:"11px",borderRadius:9,cursor:text.trim()&&!loading?"pointer":"default",border:`1px solid ${T.purple}55`,background:loading ? "rgba(155,109,255,0.06)" : `linear-gradient(135deg,${T.purple}22,${T.purple}08)`,color:text.trim()&&!loading?T.purple:T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,opacity:text.trim()&&!loading?1:0.55,transition:"all .2s" }}
+      >
+        {loading ? "Analyzing — please wait..." : "Analyze Toxidrome"}
+      </button>
+
+      {err && (
+        <div style={{ marginTop:10,padding:"9px 13px",borderRadius:8,background:"rgba(255,68,68,0.08)",border:"1px solid rgba(255,68,68,0.3)",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.red }}>
+          Analysis failed — check connection and retry
+        </div>
+      )}
+
+      {result && (
+        <div className="tox-fade" style={{ marginTop:14 }}>
+          {/* Toxidromes */}
+          {result.toxidromes?.length > 0 && (
+            <div style={{ marginBottom:12,padding:"12px 14px",borderRadius:10,background:"rgba(155,109,255,0.07)",border:"1px solid rgba(155,109,255,0.3)" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.purple,letterSpacing:1.3,textTransform:"uppercase",marginBottom:9 }}>Likely Toxidrome{result.toxidromes.length > 1 ? "s" : ""}</div>
+              {result.toxidromes.map((t, i) => (
+                <div key={i} style={{ marginBottom:9,padding:"9px 11px",borderRadius:8,background:`${confColor[t.confidence]||T.gold}0d`,border:`1px solid ${confColor[t.confidence]||T.gold}35`,borderLeft:`3px solid ${confColor[t.confidence]||T.gold}` }}>
+                  <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:4 }}>
+                    <span style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:confColor[t.confidence]||T.gold }}>{t.name}</span>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:confColor[t.confidence]||T.gold,background:`${confColor[t.confidence]||T.gold}20`,border:`1px solid ${confColor[t.confidence]||T.gold}40`,borderRadius:4,padding:"1px 6px",textTransform:"uppercase" }}>{t.confidence}</span>
+                    {i === 0 && <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:T.txt4,background:"rgba(255,255,255,0.06)",borderRadius:4,padding:"1px 6px",textTransform:"uppercase" }}>best match</span>}
+                  </div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt3,lineHeight:1.6 }}>{t.rationale}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Antidotes */}
+          {result.antidotes?.length > 0 && (
+            <div style={{ marginBottom:12,padding:"12px 14px",borderRadius:10,background:"rgba(0,229,192,0.05)",border:"1px solid rgba(0,229,192,0.25)" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.teal,letterSpacing:1.3,textTransform:"uppercase",marginBottom:9 }}>Recommended Antidotes</div>
+              {result.antidotes.map((a, i) => (
+                <div key={i} style={{ marginBottom:8,padding:"8px 11px",borderRadius:8,background:`${urgColor[a.urgency]||T.blue}0a`,border:`1px solid ${urgColor[a.urgency]||T.blue}28`,borderLeft:`3px solid ${urgColor[a.urgency]||T.blue}` }}>
+                  <div style={{ display:"flex",gap:7,alignItems:"center",marginBottom:3 }}>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,color:urgColor[a.urgency]||T.blue }}>{a.name}</span>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:urgColor[a.urgency]||T.blue,background:`${urgColor[a.urgency]||T.blue}20`,borderRadius:4,padding:"1px 6px",textTransform:"uppercase" }}>{a.urgency}</span>
+                  </div>
+                  <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt3,lineHeight:1.55 }}>{a.note}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Immediate actions */}
+          {result.immediate_actions?.length > 0 && (
+            <div style={{ marginBottom:12,padding:"12px 14px",borderRadius:10,background:`${T.orange}08`,border:`1px solid ${T.orange}28` }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.orange,letterSpacing:1.3,textTransform:"uppercase",marginBottom:9 }}>Immediate Actions</div>
+              {result.immediate_actions.map((a, i) => (
+                <div key={i} style={{ display:"flex",gap:8,alignItems:"flex-start",marginBottom:6 }}>
+                  <span style={{ color:T.orange,fontSize:7,marginTop:4,flexShrink:0 }}>◆</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.6 }}>{a}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pearl */}
+          {result.pearl && (
+            <div style={{ padding:"11px 14px",borderRadius:9,background:`${T.gold}08`,border:`1px solid ${T.gold}28` }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.gold,letterSpacing:1,textTransform:"uppercase" }}>Pearl: </span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.65 }}>{result.pearl}</span>
+            </div>
+          )}
+
+          <div style={{ marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:9,color:T.txt4,textAlign:"right" }}>
+            AI analysis · Always verify with Poison Control 1-800-222-1222
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── DIGOXIN TOXICITY STAGING ─────────────────────────────────────────────────
+const DIG_SX = [
+  { id:"dysrhythmia", label:"Life-threatening dysrhythmia (VF / VT / CHB)" },
+  { id:"unstable",    label:"Hemodynamic instability" },
+  { id:"bradycardia", label:"Symptomatic bradycardia" },
+  { id:"nv",          label:"Nausea, vomiting, or visual changes (xanthopsia)" },
+];
+function DigoxinStaging() {
+  const [level, setLevel] = useState("");
+  const [potK,  setPotK]  = useState("");
+  const [sxSet, setSxSet] = useState(new Set());
+  const toggle = id => setSxSet(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const result = useMemo(() => {
+    const l = parseFloat(level), k = parseFloat(potK);
+    const hasCrit = sxSet.has("dysrhythmia") || sxSet.has("unstable");
+    const highK   = !isNaN(k) && k > 5.5;
+    const highL   = !isNaN(l) && l > 5;
+    const vHighL  = !isNaN(l) && l > 15;
+    if (hasCrit || vHighL || (highK && highL))
+      return { tier:"Severe",      color:T.red,    vials:"10–20 vials IV empiric",     action:"Digibind NOW — life-threatening toxicity. Monitor K+ closely post-treatment." };
+    if (highL || highK || sxSet.has("bradycardia"))
+      return { tier:"Moderate",    color:T.orange, vials:"2–6 vials — consult toxicology", action:"Digibind likely indicated. Serial levels, continuous telemetry, Poison Control." };
+    if (sxSet.has("nv") || (!isNaN(l) && l >= 2))
+      return { tier:"Mild",        color:T.gold,   vials:"Monitor — may not need Digibind", action:"Hold digoxin. Serial levels q2–4h. Cardiac monitor. Treat symptoms." };
+    if (level || potK || sxSet.size > 0)
+      return { tier:"Subtherapeutic / Indeterminate", color:T.green, vials:"Digibind not indicated", action:"Review dose and renal function. Repeat level if clinical suspicion remains." };
+    return null;
+  }, [level, potK, sxSet]);
+
+  const iS = { padding:"9px 12px", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:8, color:T.txt, fontFamily:"'JetBrains Mono',monospace", fontSize:15, fontWeight:700, outline:"none", width:"100%", boxSizing:"border-box" };
+
+  return (
+    <div style={{ marginBottom:28 }}>
+      <div style={{ marginBottom:10 }}>
+        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:700, color:T.blue }}>Digoxin Toxicity Staging</div>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, marginTop:2 }}>Level + potassium + symptoms → Digibind vial recommendation</div>
+      </div>
+      <div style={{ display:"flex", gap:10, marginBottom:12, flexWrap:"wrap" }}>
+        <div style={{ flex:"1 1 140px" }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, letterSpacing:1.2, textTransform:"uppercase", marginBottom:5 }}>Dig Level (ng/mL)</div>
+          <input type="number" value={level} onChange={e => setLevel(e.target.value)} placeholder="e.g. 3.2" style={{ ...iS, color:T.blue }} />
+        </div>
+        <div style={{ flex:"1 1 140px" }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, letterSpacing:1.2, textTransform:"uppercase", marginBottom:5 }}>Potassium (mEq/L)</div>
+          <input type="number" value={potK} onChange={e => setPotK(e.target.value)} placeholder="e.g. 5.8" style={{ ...iS, color:T.gold }} />
+        </div>
+      </div>
+      <div style={{ marginBottom:12 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, letterSpacing:1.2, textTransform:"uppercase", marginBottom:8 }}>Symptoms / Signs</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+          {DIG_SX.map(s => {
+            const on = sxSet.has(s.id);
+            return (
+              <button key={s.id} onClick={() => toggle(s.id)} style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 12px", borderRadius:8, cursor:"pointer", border:`1px solid ${on ? T.blue+"66" : "rgba(26,53,85,0.4)"}`, background:on ? `${T.blue}15` : "rgba(8,22,40,0.6)", color:on ? T.blue : T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:on ? 600 : 400, textAlign:"left" }}>
+                <span style={{ fontSize:13, flexShrink:0 }}>{on ? "✓" : "○"}</span>{s.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {result ? (
+        <div style={{ padding:"14px 18px", borderRadius:12, background:`${result.color}10`, border:`2px solid ${result.color}50` }}>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:17, fontWeight:700, color:result.color, marginBottom:5 }}>{result.tier}</div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:14, fontWeight:700, color:result.color, marginBottom:8 }}>{result.vials}</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2, lineHeight:1.6 }}>{result.action}</div>
+          {result.tier !== "Subtherapeutic / Indeterminate" && (
+            <div style={{ marginTop:10, padding:"8px 11px", borderRadius:7, background:"rgba(8,22,40,0.5)", fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, lineHeight:1.55 }}>
+              Post-Digibind levels unreliable · K+ shifts rapidly after treatment · Renal failure prolongs Fab complex half-life · Poison Control 1-800-222-1222
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ padding:"20px", textAlign:"center", color:T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:12, background:"rgba(8,22,40,0.5)", border:"1px solid rgba(26,53,85,0.3)", borderRadius:10 }}>
+          Enter level, potassium, or symptoms above
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SERIAL LEVEL TRACKER ─────────────────────────────────────────────────────
+function SerialLevelTracker() {
+  const [mode,    setMode]    = useState("apap");
+  const [entries, setEntries] = useState([]);
+  const [timeH,   setTimeH]   = useState("");
+  const [levelV,  setLevelV]  = useState("");
+
+  const scol = { treat:T.red, severe:T.red, toxic:T.orange, below:T.green, early:T.txt4, range:T.gold };
+  const slbl = { treat:"TREAT NOW", severe:"SEVERE", toxic:"TOXIC", below:"Below line", early:"Too early (< 4h)", range:"Out of range" };
+
+  const addEntry = () => {
+    const h = parseFloat(timeH), l = parseFloat(levelV);
+    if (isNaN(h) || isNaN(l) || l < 0) return;
+    const thresh = mode === "apap" ? rmThreshold(h) : null;
+    const status = mode === "apap"
+      ? (h < 4 ? "early" : !thresh ? "range" : l >= thresh ? "treat" : "below")
+      : (l >= 80 ? "severe" : l >= 30 ? "toxic" : "below");
+    setEntries(prev => [...prev, { h, l, thresh, status }].sort((a, b) => a.h - b.h));
+    setTimeH(""); setLevelV("");
+  };
+
+  const units = mode === "apap" ? "mcg/mL" : "mg/dL";
+  const iBase = { padding:"9px 12px", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:8, color:T.txt, fontFamily:"'JetBrains Mono',monospace", fontSize:14, fontWeight:700, outline:"none", flex:1 };
+
+  return (
+    <div style={{ marginBottom:28 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+        <div>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:700, color:T.orange }}>Serial Level Tracker</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, marginTop:2 }}>Plot levels against treatment thresholds over time</div>
+        </div>
+        {entries.length > 0 && (
+          <button onClick={() => setEntries([])} style={{ padding:"5px 12px", borderRadius:7, cursor:"pointer", border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.06)", color:T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:11 }}>Clear all</button>
+        )}
+      </div>
+
+      {/* Mode toggle */}
+      <div style={{ display:"flex", gap:6, marginBottom:12 }}>
+        {[["apap","APAP (Rumack-Matthew)"],["salicylate","Salicylate"]].map(([m, label]) => (
+          <button key={m} onClick={() => { setMode(m); setEntries([]); setTimeH(""); setLevelV(""); }}
+            style={{ padding:"6px 16px", borderRadius:8, cursor:"pointer", border:`1px solid ${mode===m ? T.orange+"66" : "rgba(26,53,85,0.4)"}`, background:mode===m ? `${T.orange}15` : "transparent", color:mode===m ? T.orange : T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:mode===m ? 600 : 400 }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Threshold reference strip for APAP */}
+      {mode === "apap" && (
+        <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:12 }}>
+          {[[4,150],[6,99],[8,70],[10,51],[12,38],[16,21],[20,12],[24,7]].map(([h, thr]) => (
+            <div key={h} style={{ padding:"4px 8px", borderRadius:5, background:"rgba(255,159,67,0.08)", border:"1px solid rgba(255,159,67,0.2)", textAlign:"center" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:T.txt4 }}>{h}h</div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, color:T.orange }}>{thr}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Salicylate reference */}
+      {mode === "salicylate" && (
+        <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
+          {[{lbl:"Toxic threshold",val:"≥ 30 mg/dL",col:T.orange},{lbl:"Severe / HD consider",val:"≥ 80 mg/dL",col:T.red},{lbl:"HD threshold",val:"≥ 100 mg/dL + sx",col:T.red}].map(r => (
+            <div key={r.lbl} style={{ padding:"6px 10px", borderRadius:7, background:`${r.col}0a`, border:`1px solid ${r.col}30`, flex:"1 1 140px" }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, marginBottom:2 }}>{r.lbl}</div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, fontWeight:700, color:r.col }}>{r.val}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Input row */}
+      <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+        <input type="number" value={timeH} onChange={e => setTimeH(e.target.value)}
+          placeholder="Hours post-ingestion" style={{ ...iBase, color:T.gold }} />
+        <input type="number" value={levelV} onChange={e => setLevelV(e.target.value)}
+          placeholder={`Level (${units})`} style={{ ...iBase, color:T.teal }} />
+        <button onClick={addEntry} style={{ padding:"9px 20px", borderRadius:8, cursor:"pointer", border:`1px solid ${T.orange}55`, background:`${T.orange}15`, color:T.orange, fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600 }}>+ Add</button>
+      </div>
+
+      {/* Empty state */}
+      {entries.length === 0 && (
+        <div style={{ padding:"22px", textAlign:"center", color:T.txt4, fontFamily:"'DM Sans',sans-serif", fontSize:12, background:"rgba(8,22,40,0.5)", border:"1px solid rgba(26,53,85,0.3)", borderRadius:10 }}>
+          Add time + level pairs — each plotted against the treatment threshold
+        </div>
+      )}
+
+      {/* Entry list */}
+      {entries.map((e, i) => (
+        <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"11px 14px", borderRadius:10, marginBottom:7, background:`${scol[e.status]}0d`, border:`1px solid ${scol[e.status]}35`, borderLeft:`3px solid ${scol[e.status]}` }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:17, fontWeight:700, color:T.gold, minWidth:38 }}>{e.h}h</div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:20, fontWeight:700, color:scol[e.status], flex:1 }}>{e.l} <span style={{ fontSize:11, fontWeight:400 }}>{units}</span></div>
+          {e.thresh != null && (
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, textAlign:"right" }}>threshold<br />{e.thresh} {units}</div>
+          )}
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:scol[e.status], background:`${scol[e.status]}20`, border:`1px solid ${scol[e.status]}40`, borderRadius:4, padding:"2px 7px", textTransform:"uppercase", whiteSpace:"nowrap" }}>{slbl[e.status]}</span>
+          <button onClick={() => setEntries(p => p.filter((_, j) => j !== i))} style={{ background:"none", border:"none", color:T.txt4, cursor:"pointer", fontSize:14, padding:0, flexShrink:0 }}>✕</button>
+        </div>
+      ))}
+
+      {/* Trend indicator */}
+      {entries.length >= 2 && (() => {
+        const last2 = entries.slice(-2);
+        const rising = last2[1].l > last2[0].l;
+        return (
+          <div style={{ marginTop:4, padding:"9px 13px", borderRadius:8, background:`${rising ? T.coral : T.green}0d`, border:`1px solid ${rising ? T.coral : T.green}30`, fontFamily:"'DM Sans',sans-serif", fontSize:12, color:rising ? T.coral : T.green, fontWeight:600 }}>
+            {rising ? "⬆ Rising — consider ER-APAP, delayed absorption, or repeat nomogram" : "⬇ Trending down — reassess per stop criteria before discontinuing NAC"}
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+// ─── COWS CALCULATOR ──────────────────────────────────────────────────────────
+function COWSCalculator() {
+  const initScores = () => Object.fromEntries(COWS_ITEMS.map(i => [i.id, 0]));
+  const [scores,   setScores]   = useState(initScores);
+  const [fentanyl, setFentanyl] = useState(false);
+
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  const tier  = total < 5 ? null : total <= 12 ? "mild" : total <= 24 ? "moderate" : total <= 36 ? "mod_severe" : "severe";
+  const TIERS = {
+    mild:       { label:"Mild (5–12)",              color:T.gold,   bupe:"Monitor — initiate buprenorphine when COWS ≥ 8" },
+    moderate:   { label:"Moderate (13–24)",          color:T.orange, bupe:"Buprenorphine 4–8 mg SL" },
+    mod_severe: { label:"Moderately Severe (25–36)", color:T.coral,  bupe:"Buprenorphine 8–12 mg SL" },
+    severe:     { label:"Severe (> 36)",             color:T.red,    bupe:"Buprenorphine 8–16 mg SL" },
+  };
+  const tc = tier ? TIERS[tier].color : T.txt4;
+  const selStyle = { width:"100%",padding:"5px 8px",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:7,color:T.txt2,fontFamily:"'JetBrains Mono',monospace",fontSize:11,outline:"none" };
+
+  return (
+    <div>
+      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
+        <div>
+          <div style={{ fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:T.purple }}>COWS Score Calculator</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4,marginTop:2 }}>Clinical Opiate Withdrawal Scale — buprenorphine initiation guide</div>
+        </div>
+        <button onClick={() => { setScores(initScores()); setFentanyl(false); }} style={{ padding:"5px 12px",borderRadius:7,cursor:"pointer",border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.06)",color:T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:11 }}>Reset</button>
+      </div>
+
+      {/* Score display */}
+      <div style={{ display:"flex",alignItems:"center",gap:18,padding:"16px 20px",borderRadius:12,marginBottom:14,background:`${tc}10`,border:`2px solid ${tc}${tier?"55":"30"}` }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:56,fontWeight:700,color:tc,lineHeight:1,flexShrink:0 }}>{total}</div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:tc,marginBottom:5 }}>
+            {tier ? TIERS[tier].label : "No significant withdrawal (< 5)"}
+          </div>
+          {tier && (
+            <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt2,lineHeight:1.55 }}>
+              {TIERS[tier].bupe}
+              {fentanyl && tier !== "mild" && (
+                <div style={{ marginTop:5,color:T.coral,fontWeight:600 }}>
+                  Fentanyl: high-dose induction 16–24 mg SL — wait 12–24h after last use, or use low-dose split protocol to avoid precipitated withdrawal
+                </div>
+              )}
+            </div>
+          )}
+          {!tier && <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt4 }}>Buprenorphine not yet indicated — reassess in 1–2h if symptomatic</div>}
+        </div>
+      </div>
+
+      {/* Fentanyl flag */}
+      <button onClick={() => setFentanyl(f => !f)} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"8px 14px",borderRadius:9,cursor:"pointer",border:`1px solid ${fentanyl ? T.coral+"66" : "rgba(26,53,85,0.4)"}`,background:fentanyl ? "rgba(255,107,107,0.1)" : "rgba(8,22,40,0.6)",color:fentanyl ? T.coral : T.txt4,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:fentanyl ? 600 : 400,width:"100%" }}>
+        <span style={{ fontSize:14 }}>{fentanyl ? "✓" : "○"}</span>
+        Suspected fentanyl / long-acting opioid exposure — apply high-dose induction guidance
+      </button>
+
+      {/* COWS items — 2 column grid */}
+      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
+        {COWS_ITEMS.map(item => (
+          <div key={item.id} style={{ padding:"9px 11px",borderRadius:9,background:"rgba(8,22,40,0.65)",border:"1px solid rgba(26,53,85,0.45)" }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>{item.label}</div>
+            <select value={scores[item.id]} onChange={e => setScores(s => ({ ...s, [item.id]:+e.target.value }))} style={selStyle}>
+              {item.opts.map(o => <option key={o.v} value={o.v}>{o.v} — {o.l}</option>)}
+            </select>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop:12,padding:"9px 13px",borderRadius:8,background:"rgba(155,109,255,0.06)",border:"1px solid rgba(155,109,255,0.2)",fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4,lineHeight:1.6 }}>
+        COWS ≥ 8 = initiate buprenorphine · No X-waiver required (DEA 2023) · Reassess 45–60 min post-dose
+      </div>
+    </div>
+  );
+}
+
 // ─── CALCULATE TAB ────────────────────────────────────────────────────────────
 function CalculateTab({ globalWeight, setGlobalWeight }) {
   const [selectedId, setSelectedId] = useState("nac");
@@ -660,19 +1212,28 @@ function CalculateTab({ globalWeight, setGlobalWeight }) {
 
 // ─── MAIN EXPORT ──────────────────────────────────────────────────────────────
 export default function ToxicologyHub({ embedded = false, onBack }) {
-  useToxStyles();
   const [tab,            setTab]           = useState("search");
   const [query,          setQuery]         = useState("");
   const [detail,         setDetail]        = useState(null);
   const [globalWeight,   setGlobalWeight]  = useState("");
   const [recentlyViewed, setRecentlyViewed]= useState([]);
   const [showMatcher,    setShowMatcher]   = useState(false);
+  const [notStocked,     setNotStocked]    = useState(new Set());
+  const [showShortcuts,  setShowShortcuts] = useState(false);
   const searchRef = useRef(null);
+
+  const toggleNotStocked = useCallback(name => {
+    setNotStocked(prev => {
+      const next = new Set(prev);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
+  }, []);
 
   useEffect(() => { if (tab === "search") setTimeout(() => searchRef.current?.focus(), 80); }, [tab]);
 
-  const openDetail = useCallback((item, isProtocol) => {
-    setDetail({ item, isProtocol });
+  const openDetail = useCallback((item, isProtocol, list = null, listIdx = -1) => {
+    setDetail({ item, isProtocol, list, listIdx });
     setRecentlyViewed(prev => {
       const key = isProtocol ? item.id : item.antidote;
       const filtered = prev.filter(r => (r.isProtocol ? r.item.id : r.item.antidote) !== key);
@@ -680,6 +1241,51 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
     });
   }, []);
   const closeDetail = useCallback(() => setDetail(null), []);
+
+  // ── Global keyboard shortcuts ──────────────────────────────────────────────
+  // Skip when focus is inside any text input / textarea / select
+  useEffect(() => {
+    const isTyping = () => {
+      const el = document.activeElement;
+      return el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT");
+    };
+    const handler = e => {
+      if (isTyping()) return;
+      if (detail) return;              // modal open — only Esc handled inside modal
+      switch (e.key) {
+        case "1": case "2": case "3": case "4":
+        case "5": case "6": case "7": case "8": {
+          const idx = parseInt(e.key, 10) - 1;
+          const name = QUICK_ACCESS[idx];
+          if (!name) return;
+          const a = ANTIDOTES.find(x => x.antidote === name);
+          if (a) openDetail(a, false, ANTIDOTES, ANTIDOTES.indexOf(a));
+          break;
+        }
+        case "s": case "S": case "/":
+          e.preventDefault();
+          setTab("search");
+          setTimeout(() => searchRef.current?.focus(), 80);
+          break;
+        case "a": case "A":
+          setTab("agents");
+          break;
+        case "c": case "C":
+          setTab("calculate");
+          break;
+        case "t": case "T":
+          setTab("search");
+          setShowMatcher(p => !p);
+          break;
+        case "?":
+          setShowShortcuts(p => !p);
+          break;
+        default: break;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [detail, openDetail]);
 
   const filteredAntidotes = useMemo(() => {
     const q = query.toLowerCase();
@@ -700,7 +1306,7 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
   }, []);
 
   const tabStyle = id => {
-    const cols = { search:T.teal,agents:T.blue,calculate:T.cyan };
+    const cols = { search:T.teal, agents:T.blue, calculate:T.cyan, tools:T.purple };
     const active = tab === id;
     return { fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,padding:"8px 18px",borderRadius:9,cursor:"pointer",border:`1px solid ${active ? cols[id]+"66" : "rgba(26,53,85,0.4)"}`,background:active ? `linear-gradient(135deg,${cols[id]}18,${cols[id]}06)` : "transparent",color:active ? cols[id] : T.txt4,transition:"all .15s" };
   };
@@ -730,7 +1336,37 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
             <button onClick={() => setTab("calculate")} style={tabStyle("calculate")}>
               ⚖️ Calculate{w > 0 && <span style={{ marginLeft:6,fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.teal,background:"rgba(0,229,192,0.15)",border:"1px solid rgba(0,229,192,0.35)",borderRadius:4,padding:"1px 5px" }}>{w}kg</span>}
             </button>
+            <button onClick={() => setTab("tools")} style={tabStyle("tools")}>🩺 Tools</button>
+            <button onClick={() => setShowShortcuts(p => !p)} style={{ marginLeft:"auto",padding:"8px 14px",borderRadius:9,cursor:"pointer",border:`1px solid ${showShortcuts ? T.txt3+"44" : "rgba(26,53,85,0.4)"}`,background:showShortcuts ? "rgba(255,255,255,0.08)" : "transparent",color:T.txt4,fontFamily:"'JetBrains Mono',monospace",fontSize:11 }}>?</button>
           </div>
+
+          {/* Keyboard shortcut overlay */}
+          {showShortcuts && (
+            <div className="tox-fade" style={{ marginBottom:14,padding:"14px 18px",borderRadius:11,background:"rgba(8,22,40,0.9)",border:"1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
+                <div style={{ fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:T.txt2 }}>Keyboard Shortcuts</div>
+                <button onClick={() => setShowShortcuts(false)} style={{ background:"none",border:"none",color:T.txt4,cursor:"pointer",fontSize:14 }}>✕</button>
+              </div>
+              <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:6 }}>
+                {[
+                  { key:"1 – 8",  desc:"Open Quick Access antidote" },
+                  { key:"S  or  /", desc:"Focus search bar" },
+                  { key:"A",       desc:"Go to Agents tab" },
+                  { key:"C",       desc:"Go to Calculate tab" },
+                  { key:"T",       desc:"Toggle Toxidrome Matcher" },
+                  { key:"?",       desc:"Toggle this shortcut guide" },
+                  { key:"← →",    desc:"Prev / Next in modal" },
+                  { key:"Esc",     desc:"Close modal" },
+                ].map(({ key, desc }) => (
+                  <div key={key} style={{ display:"flex",alignItems:"center",gap:10 }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:T.teal,background:"rgba(0,229,192,0.1)",border:"1px solid rgba(0,229,192,0.25)",borderRadius:5,padding:"2px 9px",whiteSpace:"nowrap",minWidth:40,textAlign:"center" }}>{key}</span>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt3 }}>{desc}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop:10,fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4 }}>Shortcuts disabled while typing in any input field</div>
+            </div>
+          )}
 
           {/* ── SEARCH TAB ── */}
           {tab === "search" && (
@@ -800,20 +1436,20 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
                   </div>
 
                   <SectionLabel label="All Antidotes" color={T.teal} count={ANTIDOTES.length} />
-                  <CardGrid>{ANTIDOTES.map(a => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a,false)} globalWeight={globalWeight} />)}</CardGrid>
+                  <CardGrid>{ANTIDOTES.map((a, i) => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a, false, ANTIDOTES, i)} globalWeight={globalWeight} notStocked={notStocked} />)}</CardGrid>
                 </>
               ) : (
                 <>
                   {filteredAntidotes.length > 0 && (
                     <>
                       <SectionLabel label="Antidotes" color={T.teal} count={filteredAntidotes.length} />
-                      <CardGrid>{filteredAntidotes.map(a => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a,false)} globalWeight={globalWeight} />)}</CardGrid>
+                      <CardGrid>{filteredAntidotes.map((a, i) => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a, false, filteredAntidotes, i)} globalWeight={globalWeight} notStocked={notStocked} />)}</CardGrid>
                     </>
                   )}
                   {filteredProtocols.length > 0 && (
                     <>
                       <SectionLabel label="Protocols" color={T.coral} count={filteredProtocols.length} />
-                      <CardGrid>{filteredProtocols.map(p => <StatCard key={p.id} item={p} isProtocol={true} onClick={() => openDetail(p,true)} globalWeight={globalWeight} />)}</CardGrid>
+                      <CardGrid>{filteredProtocols.map((p, i) => <StatCard key={p.id} item={p} isProtocol={true} onClick={() => openDetail(p, true, filteredProtocols, i)} globalWeight={globalWeight} notStocked={notStocked} />)}</CardGrid>
                     </>
                   )}
                   {filteredAntidotes.length === 0 && filteredProtocols.length === 0 && (
@@ -832,12 +1468,12 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
                 return (
                   <div key={tier}>
                     <SectionLabel label={m.label} color={m.color} count={items.length} />
-                    <CardGrid>{items.map(a => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a,false)} globalWeight={globalWeight} />)}</CardGrid>
+                    <CardGrid>{items.map((a, i) => <StatCard key={a.antidote} item={a} isProtocol={false} onClick={() => openDetail(a, false, items, i)} globalWeight={globalWeight} notStocked={notStocked} />)}</CardGrid>
                   </div>
                 );
               })}
               <SectionLabel label="Protocols" color={T.coral} count={PROTOCOLS.length} />
-              <CardGrid>{PROTOCOLS.map(p => <StatCard key={p.id} item={p} isProtocol={true} onClick={() => openDetail(p,true)} globalWeight={globalWeight} />)}</CardGrid>
+              <CardGrid>{PROTOCOLS.map((p, i) => <StatCard key={p.id} item={p} isProtocol={true} onClick={() => openDetail(p, true, PROTOCOLS, i)} globalWeight={globalWeight} notStocked={notStocked} />)}</CardGrid>
               <SectionLabel label="Toxidrome Reference" color={T.purple} />
               <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:7 }}>
                 {TOXIDROMES.map(tox => (
@@ -873,6 +1509,19 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
           {/* ── CALCULATE TAB ── */}
           {tab === "calculate" && <div className="tox-fade"><CalculateTab globalWeight={globalWeight} setGlobalWeight={setGlobalWeight} /></div>}
 
+          {/* ── TOOLS TAB ── */}
+          {tab === "tools" && (
+            <div className="tox-fade">
+              <AIToxInterpreter />
+              <div style={{ height:1, background:"rgba(26,53,85,0.5)", margin:"4px 0 24px" }} />
+              <SerialLevelTracker />
+              <div style={{ height:1, background:"rgba(26,53,85,0.5)", margin:"4px 0 24px" }} />
+              <COWSCalculator />
+              <div style={{ height:1, background:"rgba(26,53,85,0.5)", margin:"4px 0 24px" }} />
+              <DigoxinStaging />
+            </div>
+          )}
+
           {!embedded && (
             <div style={{ textAlign:"center",padding:"24px 0 16px",fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5 }}>
               NOTRYA TOX HUB · FOR CLINICAL DECISION SUPPORT ONLY · VERIFY WITH POISON CONTROL AND TOXICOLOGY
@@ -888,6 +1537,11 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
           isProtocol={detail.isProtocol}
           onClose={closeDetail}
           globalWeight={globalWeight}
+          list={detail.list}
+          listIdx={detail.listIdx}
+          onNavigate={openDetail}
+          notStocked={notStocked}
+          toggleNotStocked={toggleNotStocked}
         />
       )}
     </div>

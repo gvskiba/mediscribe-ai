@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+const Patient = base44.entities.Patient;
 
 (() => {
   if (document.getElementById("pe-fonts")) return;
@@ -88,36 +90,7 @@ const HUB_DOMAINS = [
   { domain:"Orders & Rx",        color:T.blue,   hubs:["OrderGeneratorHub","ERxHub"]                      },
 ];
 
-// ─── MOCK PATIENTS — replace with Patient.get(patientId) in Base44 ───────────
-const MOCK_PATIENTS = [
-  { id:"1", room:"Trauma 1", name:"Mitchell, Robert J.", age:67, sex:"M",
-    cc:"Chest Pain", esi:1, mins:18,
-    vitals:{hr:108,bp:"158/94",spo2:94,rr:22,temp:"98.4"},
-    flags:["STEMI on ECG","Troponin pending"],
-    tasks:["12-lead done","IV x2","Aspirin given","Cath lab notified"],
-    allergies:["Penicillin"], pmhx:["HTN","DM2","Prior MI"],
-    alerts:[
-      {t:"critical",m:"STEMI pattern — cath lab activation required"},
-      {t:"warn",m:"Hold metformin — contrast study likely"},
-    ]},
-  { id:"2", room:"Room 4", name:"Nguyen, Thomas A.", age:52, sex:"M",
-    cc:"Altered Mental Status", esi:2, mins:40,
-    vitals:{hr:96,bp:"144/88",spo2:97,rr:18,temp:"101.2"},
-    flags:["Fever","GCS 13"],
-    tasks:["CT Head ordered","LP tray at bedside","BCx x2 sent"],
-    allergies:["Sulfa"], pmhx:["Alcoholism","Seizure disorder"],
-    alerts:[{t:"warn",m:"Fever + AMS — rule out meningitis"}]},
-  { id:"3", room:"Room 11", name:"Patel, Priya N.", age:45, sex:"F",
-    cc:"Sepsis — UTI Source", esi:2, mins:95,
-    vitals:{hr:114,bp:"94/58",spo2:95,rr:24,temp:"102.9"},
-    flags:["SIRS x4","Lactate 3.8"],
-    tasks:["2L NS given","BCx x2","Pip-tazo running","ICU notified"],
-    allergies:["Vancomycin"], pmhx:["DM2","Recurrent UTIs"],
-    alerts:[
-      {t:"critical",m:"Lactate 3.8 — septic shock, ICU bed requested"},
-      {t:"warn",m:"SEP-1 bundle: confirm abx < 1h from arrival"},
-    ]},
-];
+
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const esiColor = (n) => ({1:T.red,2:T.orange,3:T.gold,4:T.green,5:T.txt4}[n]||T.txt4);
@@ -536,18 +509,10 @@ export default function PatientEncounter() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ── Read patientId from URL params ──────────────────────────────────────
-    // In Base44, replace this block with: Patient.get(patientId)
-    let patientId = null;
-    try { patientId = new URLSearchParams(window.location.search).get("patientId"); } catch {}
-
-    // Fallback: default to first mock patient for dev/testing
-    const found = MOCK_PATIENTS.find(p => String(p.id) === String(patientId)) || MOCK_PATIENTS[0];
-
-    setTimeout(() => {
-      setPatient(found || null);
-      setLoading(false);
-    }, 300);
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("patientId");
+    if (!id) { setLoading(false); return; }
+    Patient.get(id).then(data => { setPatient(data); setLoading(false); });
   }, []);
 
   if (loading) {

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import MedSafetyChecker from "@/components/patient/MedSafetyChecker";
 
 // ── Font loader ────────────────────────────────────────────────────────────
 (() => {
@@ -674,6 +675,11 @@ function OrderLane({ patient, patientId }) {
             </div>
           </div>
         </div>
+
+        <Divider />
+
+        {/* Med Safety Checker */}
+        <MedSafetyChecker patient={patient} />
 
         <Divider />
 

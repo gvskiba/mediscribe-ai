@@ -6,15 +6,17 @@ import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 
-(() => {
-  if (document.getElementById("tox-fonts")) return;
-  const l = document.createElement("link"); l.id = "tox-fonts"; l.rel = "stylesheet";
-  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
-  document.head.appendChild(l);
-  const s = document.createElement("style"); s.id = "tox-css";
-  s.textContent = `@keyframes tox-fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.tox-fade{animation:tox-fade .16s ease forwards;}@keyframes panel-in{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}.panel-in{animation:panel-in .18s ease forwards;}@keyframes modal-in{from{opacity:0;transform:scale(0.95) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}.modal-in{animation:modal-in .22s cubic-bezier(.22,.68,0,1.15) forwards;}@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}.shimmer-text{background:linear-gradient(90deg,#e8f0fe 0%,#fff 30%,#9b6dff 52%,#00e5c0 72%,#e8f0fe 100%);background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite;}`;
-  document.head.appendChild(s);
-})();
+function useToxStyles() {
+  useEffect(() => {
+    if (document.getElementById("tox-fonts")) return;
+    const l = document.createElement("link"); l.id = "tox-fonts"; l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
+    document.head.appendChild(l);
+    const s = document.createElement("style"); s.id = "tox-css";
+    s.textContent = `@keyframes tox-fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.tox-fade{animation:tox-fade .16s ease forwards;}@keyframes panel-in{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}.panel-in{animation:panel-in .18s ease forwards;}@keyframes modal-in{from{opacity:0;transform:scale(0.95) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}.modal-in{animation:modal-in .22s cubic-bezier(.22,.68,0,1.15) forwards;}@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}.shimmer-text{background:linear-gradient(90deg,#e8f0fe 0%,#fff 30%,#9b6dff 52%,#00e5c0 72%,#e8f0fe 100%);background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite;}`;
+    document.head.appendChild(s);
+  }, []);
+}
 
 const T = { bg:"#050f1e",panel:"#081628",card:"#0b1e36",txt:"#f2f7ff",txt2:"#b8d4f0",txt3:"#82aece",txt4:"#5a82a8",teal:"#00e5c0",gold:"#f5c842",coral:"#ff6b6b",blue:"#3b9eff",orange:"#ff9f43",purple:"#9b6dff",green:"#3dffa0",red:"#ff4444",cyan:"#00d4ff" };
 const EVID_COLOR = { "ACEP Policy":T.teal,"ACMT Statement":T.cyan,"Expert Consensus":T.gold,"Guideline":T.blue,"ACEP/ACMT":T.teal };
@@ -658,6 +660,7 @@ function CalculateTab({ globalWeight, setGlobalWeight }) {
 
 // ─── MAIN EXPORT ──────────────────────────────────────────────────────────────
 export default function ToxicologyHub({ embedded = false, onBack }) {
+  useToxStyles();
   const [tab,            setTab]           = useState("search");
   const [query,          setQuery]         = useState("");
   const [detail,         setDetail]        = useState(null);

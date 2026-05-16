@@ -140,7 +140,7 @@ function NewPatientModal({ onClose }) {
 // ─── CENSUS PANEL ─────────────────────────────────────────────────────────────
 function CensusPanel({ patients, search, onSearch }) {
   const filtered = patients.filter(p =>
-    [p.name, p.cc, p.room].some(s => s.toLowerCase().includes(search.toLowerCase()))
+    [p.name, p.cc, p.room].some(s => (s || "").toLowerCase().includes(search.toLowerCase()))
   );
   const sorted = [...filtered].sort((a, b) => a.esi !== b.esi ? a.esi - b.esi : b.mins - a.mins);
 

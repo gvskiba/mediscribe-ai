@@ -206,6 +206,7 @@ const AuthenticatedApp = () => {
       <Routes>
         <Route path="/" element={<CommandCenter />} />
         <Route path="/CommandCenter" element={<CommandCenter />} />
+        <Route path="/command-center-home" element={<CommandCenter />} />
 
         {Object.entries(Pages).map(([path, Page]) => (
           <Route key={path} path={`/${path}`} element={

@@ -31,7 +31,10 @@ export default function NotryaHubHeader({
   const ptWeight  = params.get("pt_weight") || "";
   const ptMrn     = params.get("pt_mrn")    || "";
   const ptRoom    = params.get("pt_room")   || "";
+  const patientId = params.get("patientId") || "";
   const hasPatient = !!(ptName || ptMrn);
+  // Show census link when no patientId in URL
+  const showCensusLink = !patientId;
 
   const goHome = function() { window.location.href = homeUrl; };
   const goCat  = function() { window.location.href = homeUrl + "?category=" + encodeURIComponent(category); };
@@ -139,6 +142,36 @@ export default function NotryaHubHeader({
       },
         statusSlot,
         actions,
+        showCensusLink && React.createElement("button", {
+          onClick: function() { window.location.href = "/"; },
+          style: {
+            display: "flex", alignItems: "center", gap: "5px",
+            padding: "4px 11px", borderRadius: "7px",
+            border: "1px solid rgba(232,237,245,0.10)",
+            background: "transparent",
+            color: "rgba(232,237,245,0.35)", fontSize: "12px", cursor: "pointer",
+            fontFamily: '"DM Sans","Inter",sans-serif', fontWeight: "400",
+            transition: "color 0.15s, border-color 0.15s", whiteSpace: "nowrap",
+          },
+          onMouseEnter: function(e) {
+            e.currentTarget.style.color = "rgba(232,237,245,0.70)";
+            e.currentTarget.style.borderColor = "rgba(232,237,245,0.22)";
+          },
+          onMouseLeave: function(e) {
+            e.currentTarget.style.color = "rgba(232,237,245,0.35)";
+            e.currentTarget.style.borderColor = "rgba(232,237,245,0.10)";
+          },
+        },
+          React.createElement("svg", {
+            width: "11", height: "11", viewBox: "0 0 24 24",
+            fill: "none", stroke: "currentColor",
+            strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round",
+          },
+            React.createElement("line", { x1: "19", y1: "12", x2: "5", y2: "12" }),
+            React.createElement("polyline", { points: "12 19 5 12 12 5" })
+          ),
+          "Patient Census"
+        ),
         React.createElement("button", {
           onClick: goHome,
           onMouseEnter: function() { setHomeHov(true); },

@@ -54,6 +54,9 @@ export default function NotryaNav({ currentHub }) {
   const [hovHub,    setHovHub]    = React.useState(null);
   const W = collapsed ? 52 : 220;
 
+  const isHomeActive = currentHub === "CommandCenter" || currentHub === "Home";
+  const [hovHome, setHovHome] = React.useState(false);
+
   return (
     <nav
       aria-label="Notrya hub navigation"
@@ -84,6 +87,43 @@ export default function NotryaNav({ currentHub }) {
           ? <span style={{ fontFamily: '"Playfair Display",Georgia,serif', fontSize: "17px", fontWeight: "700", color: "#00BFA5" }}>N</span>
           : <span style={{ fontFamily: '"Playfair Display",Georgia,serif', fontSize: "17px", fontWeight: "700", color: "#E8EDF5", letterSpacing: "-0.3px" }}>Notrya</span>
         }
+      </div>
+
+      {/* Home link */}
+      <div
+        title={collapsed ? "Patient Census" : undefined}
+        onClick={function() { window.location.href = "/"; }}
+        onMouseEnter={function() { setHovHome(true); }}
+        onMouseLeave={function() { setHovHome(false); }}
+        style={{
+          display: "flex", alignItems: "center",
+          justifyContent: collapsed ? "center" : "flex-start",
+          gap: "8px",
+          padding: collapsed ? "10px 0" : "10px 16px",
+          cursor: "pointer",
+          borderLeft: isHomeActive ? "2px solid #00BFA5" : "2px solid transparent",
+          background: isHomeActive ? "rgba(0,191,165,0.10)" : hovHome ? "rgba(232,237,245,0.035)" : "transparent",
+          borderBottom: "1px solid rgba(0,191,165,0.07)",
+          transition: "background 0.1s",
+          flexShrink: 0,
+        }}
+      >
+        {/* House icon */}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke={isHomeActive ? "#00BFA5" : hovHome ? "rgba(232,237,245,0.6)" : "rgba(232,237,245,0.35)"}
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          style={{ flexShrink: 0 }}>
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+        {!collapsed && (
+          <span style={{
+            fontSize: "13px",
+            color: isHomeActive ? "#00BFA5" : hovHome ? "rgba(232,237,245,0.6)" : "rgba(232,237,245,0.45)",
+            fontWeight: isHomeActive ? "600" : "400",
+            whiteSpace: "nowrap",
+          }}>Patient Census</span>
+        )}
       </div>
 
       {/* Hub list */}

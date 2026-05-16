@@ -244,6 +244,10 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [patientAllergies, setPatientAllergies] = useState([]);
   const [pmhMDMData,       setPmhMDMData]       = useState(null);
 
+  // ── Patient-context awareness (patientId URL param) ──────────────────────
+  const [patientRecord,    setPatientRecord]    = useState(null);
+  const [patientIdParam,   setPatientIdParam]   = useState(null);
+
   const effectiveHpi = hpiMode === "summary" && hpiSummary ? hpiSummary : hpi;
   const phase1Ready  = Boolean(cc.trim() || hpi.trim() || exam.trim());
   const phase2Ready  = Boolean(mdmResult && (labs.trim() || imaging.trim() || newVitals.trim()));
@@ -828,6 +832,14 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       setSlots(prev=>{const next=[...prev];next[activeSlot]={...next[activeSlot],savedNoteId:"saved"};return next;});
       clearSlotCache(activeSlot);
       if (draftId) { base44.entities.ClinicalNote.update(draftId,{status:"superseded"}).catch(()=>null); setDraftId(null); }
+      // ── If launched from census, mark note completion on patient record ──
+      if (patientIdParam) {
+        const ts = new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+        const noteTask = `QuickNote completed — ${ts}`;
+        base44.entities.Patient.update(patientIdParam, {
+          tasks: [...(patientRecord?.tasks || []), noteTask],
+        }).catch(() => null);
+      }
     } catch(e) { console.error("Save failed:",e); }
     finally { setSaving(false); }
   }, [saving,hasAnyResult,cc,vitals,hpi,ros,exam,labs,imaging,newVitals,mdmResult,dispResult,demo,icdSelected,interventions,parsedMeds,parsedAllergies,medsRaw,allergiesRaw,draftId,activeSlot,clearSlotCache]);
@@ -1032,6 +1044,28 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     }).catch(()=>null);
   },[]);
 
+  // ── Patient-context mount effect ─────────────────────────────────────────
+  useEffect(()=>{
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get("patientId");
+    if (!pid) return;
+    setPatientIdParam(pid);
+    base44.entities.Patient.get(pid).then(patient => {
+      if (!patient) return;
+      setPatientRecord(patient);
+      // Auto-populate fields only if they are currently empty
+      if (patient.cc)       setCC(prev => prev || patient.cc);
+      if (patient.allergies?.length) {
+        const allergyStr = patient.allergies.join(", ");
+        setAllergiesRaw(prev => prev || allergyStr);
+      }
+      if (patient.pmhx?.length) {
+        setPmh(prev => prev.length ? prev : patient.pmhx);
+      }
+    }).catch(() => null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(()=>{
     slotStateRef.current={cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,
       medsRaw,allergiesRaw,parsedMeds,parsedAllergies,
@@ -1113,6 +1147,66 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       <div style={embedded ? {} : {flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,paddingBottom:80}}>
         {!embedded && <NotryaHubHeader hubName="QuickNote" category="Documentation" homeUrl="/" />}
         {!embedded && <NotryaPatientBar />}
+
+        {/* ── Census patient context banner ── */}
+        {!embedded && patientRecord && (
+          <div style={{
+            maxWidth:1100, margin:"0 auto", width:"100%", padding:"0 16px 8px",
+          }}>
+            <div style={{
+              display:"flex", alignItems:"center", gap:12, flexWrap:"wrap",
+              padding:"10px 16px", borderRadius:10,
+              background:"rgba(8,22,40,.75)", border:"1px solid rgba(0,229,192,.25)",
+              borderLeft:"3px solid rgba(0,229,192,.6)",
+            }}>
+              {/* Room */}
+              {patientRecord.room && (
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,
+                  color:"var(--qn-teal)",background:"rgba(0,229,192,.1)",
+                  border:"1px solid rgba(0,229,192,.3)",borderRadius:5,padding:"2px 8px"}}>
+                  Rm {patientRecord.room}
+                </span>
+              )}
+              {/* Name */}
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#f2f7ff"}}>
+                {patientRecord.name}
+              </span>
+              {/* Age / sex */}
+              {(patientRecord.age || patientRecord.sex) && (
+                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(184,212,240,.7)"}}>
+                  {[patientRecord.age && `${patientRecord.age}y`, patientRecord.sex].filter(Boolean).join(" · ")}
+                </span>
+              )}
+              {/* CC */}
+              {patientRecord.cc && (
+                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,
+                  color:"var(--qn-teal)",background:"rgba(0,229,192,.07)",
+                  border:"1px solid rgba(0,229,192,.2)",borderRadius:20,padding:"1px 10px"}}>
+                  CC: {patientRecord.cc}
+                </span>
+              )}
+              {/* ESI */}
+              {patientRecord.esi && (
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,
+                  color: patientRecord.esi<=2?"#ff6b6b": patientRecord.esi===3?"#ffa726":"var(--qn-teal)",
+                  background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",
+                  borderRadius:6,padding:"2px 8px"}}>
+                  ESI {patientRecord.esi}
+                </span>
+              )}
+              <div style={{flex:1}} />
+              {/* Back to Census */}
+              <button onClick={()=>{ window.location.href="/CommandCenter"; }}
+                style={{padding:"5px 14px",borderRadius:8,cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,
+                  border:"1px solid rgba(42,79,122,.5)",background:"rgba(8,22,46,.8)",
+                  color:"rgba(130,174,206,.85)"}}>
+                ← Back to Census
+              </button>
+            </div>
+          </div>
+        )}
+
         <div style={{maxWidth:1100,margin:"0 auto",width:"100%",padding:embedded?"0":"0 16px 40px"}}>
 
         {embedded&&(

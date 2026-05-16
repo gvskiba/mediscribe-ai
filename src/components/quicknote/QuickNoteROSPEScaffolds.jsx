@@ -3,7 +3,7 @@
 // Auto-surfaces when a recognized CC is entered. Zero-latency, no API call.
 // Mirrors the HPI scaffold pattern. Drop-in for QuickNote v12.2.
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 // ── CC alias normalization ─────────────────────────────────────────────────────
 const CC_ALIASES = {
@@ -335,10 +335,12 @@ export function QuickNoteROSPEScaffolds({ cc, ros, setRos, exam, setExam }) {
 
   const matched = useMemo(() => resolveCC(cc), [cc]);
 
-  if (matched !== lastCC) {
-    setLastCC(matched);
-    if (matched !== dismissed) setDismissed(null);
-  }
+  useEffect(() => {
+    if (matched !== lastCC) {
+      setLastCC(matched);
+      if (matched !== dismissed) setDismissed(null);
+    }
+  }, [matched]);
 
   if (!matched || dismissed === matched) return null;
 

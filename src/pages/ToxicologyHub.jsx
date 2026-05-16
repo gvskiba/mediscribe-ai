@@ -6,6 +6,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { InvokeLLM } from "@/integrations/Core";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import LabResultsUploader from "@/components/toxicology/LabResultsUploader";
 
 (() => {
   if (document.getElementById("tox-fonts")) return;
@@ -1307,7 +1308,7 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
   }, []);
 
   const tabStyle = id => {
-    const cols = { search:T.teal, agents:T.blue, calculate:T.cyan, tools:T.purple };
+    const cols = { search:T.teal, agents:T.blue, calculate:T.cyan, tools:T.purple, labs:T.green };
     const active = tab === id;
     return { fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,padding:"8px 18px",borderRadius:9,cursor:"pointer",border:`1px solid ${active ? cols[id]+"66" : "rgba(26,53,85,0.4)"}`,background:active ? `linear-gradient(135deg,${cols[id]}18,${cols[id]}06)` : "transparent",color:active ? cols[id] : T.txt4,transition:"all .15s" };
   };
@@ -1338,6 +1339,7 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
               ⚖️ Calculate{w > 0 && <span style={{ marginLeft:6,fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.teal,background:"rgba(0,229,192,0.15)",border:"1px solid rgba(0,229,192,0.35)",borderRadius:4,padding:"1px 5px" }}>{w}kg</span>}
             </button>
             <button onClick={() => setTab("tools")} style={tabStyle("tools")}>🩺 Tools</button>
+            <button onClick={() => setTab("labs")}  style={tabStyle("labs")}>🧪 Labs</button>
             <button onClick={() => setShowShortcuts(p => !p)} style={{ marginLeft:"auto",padding:"8px 14px",borderRadius:9,cursor:"pointer",border:`1px solid ${showShortcuts ? T.txt3+"44" : "rgba(26,53,85,0.4)"}`,background:showShortcuts ? "rgba(255,255,255,0.08)" : "transparent",color:T.txt4,fontFamily:"'JetBrains Mono',monospace",fontSize:11 }}>?</button>
           </div>
 
@@ -1509,6 +1511,13 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
 
           {/* ── CALCULATE TAB ── */}
           {tab === "calculate" && <div className="tox-fade"><CalculateTab globalWeight={globalWeight} setGlobalWeight={setGlobalWeight} /></div>}
+
+          {/* ── LABS TAB ── */}
+          {tab === "labs" && (
+            <div className="tox-fade">
+              <LabResultsUploader />
+            </div>
+          )}
 
           {/* ── TOOLS TAB ── */}
           {tab === "tools" && (

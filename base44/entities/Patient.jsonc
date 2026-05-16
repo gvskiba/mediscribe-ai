@@ -2,68 +2,113 @@
   "name": "Patient",
   "type": "object",
   "properties": {
-    "patient_name": {
+    "room": {
       "type": "string",
-      "description": "Patient's full name"
+      "description": "Room assignment e.g. Trauma 1, Room 4, Hallway A"
     },
-    "patient_id": {
+    "name": {
       "type": "string",
-      "description": "Patient MRN or medical record number"
+      "description": "Patient name in Last, First M. format"
     },
-    "date_of_birth": {
+    "age": {
+      "type": "number",
+      "description": "Patient age in years"
+    },
+    "sex": {
       "type": "string",
-      "format": "date",
-      "description": "Patient's date of birth"
+      "description": "M or F"
     },
-    "gender": {
+    "cc": {
       "type": "string",
-      "enum": [
-        "male",
-        "female",
-        "other"
-      ],
-      "description": "Patient's gender"
+      "description": "Chief complaint, plain text"
     },
-    "contact_number": {
-      "type": "string",
-      "description": "Patient's contact phone number"
+    "esi": {
+      "type": "number",
+      "description": "ESI triage level 1 through 5",
+      "minimum": 1,
+      "maximum": 5
     },
-    "email": {
-      "type": "string",
-      "description": "Patient's email address"
+    "mins": {
+      "type": "number",
+      "description": "Minutes patient has been in the department"
     },
-    "address": {
-      "type": "string",
-      "description": "Patient's address"
+    "vitals": {
+      "type": "object",
+      "description": "Vital signs object with keys: hr, bp, spo2, rr, temp",
+      "properties": {
+        "hr": {
+          "type": "number"
+        },
+        "bp": {
+          "type": "string"
+        },
+        "spo2": {
+          "type": "number"
+        },
+        "rr": {
+          "type": "number"
+        },
+        "temp": {
+          "type": "string"
+        }
+      }
     },
-    "emergency_contact": {
-      "type": "string",
-      "description": "Emergency contact name and number"
-    },
-    "insurance_provider": {
-      "type": "string",
-      "description": "Insurance provider name"
-    },
-    "insurance_id": {
-      "type": "string",
-      "description": "Insurance policy/member ID"
-    },
-    "allergies": {
+    "flags": {
       "type": "array",
-      "description": "Known allergies",
+      "description": "Clinical flags e.g. STEMI on ECG, Troponin pending",
       "items": {
         "type": "string"
       }
     },
-    "chronic_conditions": {
+    "tasks": {
       "type": "array",
-      "description": "Known chronic conditions",
+      "description": "Task list e.g. IV x2, 12-lead done",
       "items": {
         "type": "string"
+      }
+    },
+    "allergies": {
+      "type": "array",
+      "description": "Known drug allergies",
+      "items": {
+        "type": "string"
+      }
+    },
+    "pmhx": {
+      "type": "array",
+      "description": "Past medical history e.g. HTN, DM2",
+      "items": {
+        "type": "string"
+      }
+    },
+    "alerts": {
+      "type": "array",
+      "description": "Clinical alerts with severity and message",
+      "items": {
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "warn",
+              "info"
+            ]
+          },
+          "m": {
+            "type": "string"
+          }
+        }
       }
     }
   },
   "required": [
-    "patient_name"
+    "room",
+    "name",
+    "age",
+    "sex",
+    "cc",
+    "esi",
+    "mins"
   ]
 }

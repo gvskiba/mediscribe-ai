@@ -19,14 +19,14 @@ import { useState, useRef, useEffect } from "react";
     @keyframes nh-glow{0%,100%{opacity:.55}50%{opacity:1}}
     @keyframes nh-ring{0%,100%{box-shadow:0 0 0 0 rgba(255,61,61,0.7)}65%{box-shadow:0 0 0 7px rgba(255,61,61,0)}}
     @keyframes nh-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-    .nh-card{transition:background .14s,border-color .14s,box-shadow .14s}
-    .nh-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.25)!important;transform:translateY(-1px)}
+    .nh-card{transition:background .14s,border-color .14s,box-shadow .14s;will-change:transform}
+    .nh-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.25)!important}
     .nh-star{opacity:0;transition:opacity .12s}.nh-card:hover .nh-star,.nh-star-on{opacity:1!important}
     .nh-row{transition:background .12s}.nh-row:hover{background:rgba(59,158,255,0.05)!important}
     .nh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
     .nh-launcher{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-    .nh-tile{transition:all .14s!important}
-    .nh-tile:hover{transform:translateY(-2px)!important}
+    .nh-tile{transition:background .14s,border-color .14s,box-shadow .14s!important;will-change:transform}
+    .nh-tile:hover{box-shadow:0 4px 18px rgba(0,0,0,0.22)!important}
     .nh-srch::placeholder{color:#3a5f80}.nh-srch:focus{outline:none}
     .nh-scroll{overflow-x:auto;scrollbar-width:none}.nh-scroll::-webkit-scrollbar{display:none}
     .nh-layout{display:grid;grid-template-columns:256px 1fr;gap:16px;align-items:start}
@@ -408,8 +408,8 @@ function ClinicalStrip({patients=[]}){
         {ACTIONS.map(a=>(
           <button key={a.label} className="nh-act" onClick={()=>{window.location.href=a.route;}}
             style={{display:"flex",alignItems:"center",gap:9,padding:"9px 13px",borderRadius:9,background:a.primary?`linear-gradient(135deg,${a.color}22,${a.color}0c)`:a.color+"0c",border:`1px solid ${a.primary?a.color+"55":a.color+"28"}`,cursor:"pointer",whiteSpace:"nowrap"}}
-            onMouseEnter={e=>{e.currentTarget.style.background=a.color+"26";e.currentTarget.style.borderColor=a.color+"70";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 14px ${a.color}18`;}}
-            onMouseLeave={e=>{e.currentTarget.style.background=a.primary?a.color+"22":a.color+"0c";e.currentTarget.style.borderColor=a.primary?a.color+"55":a.color+"28";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>
+            onMouseEnter={e=>{e.currentTarget.style.background=a.color+"26";e.currentTarget.style.borderColor=a.color+"70";e.currentTarget.style.boxShadow=`0 4px 14px ${a.color}18`;}}
+            onMouseLeave={e=>{e.currentTarget.style.background=a.primary?a.color+"22":a.color+"0c";e.currentTarget.style.borderColor=a.primary?a.color+"55":a.color+"28";e.currentTarget.style.boxShadow="";}}>
             <span style={{fontSize:18,flexShrink:0}}>{a.icon}</span>
             <div>
               <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:11.5,color:a.primary?a.color:T.txt}}>{a.label}</div>
@@ -425,8 +425,8 @@ function ClinicalStrip({patients=[]}){
           :favHubs.map(h=>(
             <button key={h.id} className="nh-pin" onClick={()=>{addRecent(h.id);window.location.href=h.route;}}
               style={{display:"flex",alignItems:"center",gap:7,flexShrink:0,padding:"7px 11px",borderRadius:8,background:h.color+"0e",border:`1px solid ${h.color}28`,cursor:"pointer"}}
-              onMouseEnter={e=>{e.currentTarget.style.background=h.color+"1e";e.currentTarget.style.borderColor=h.color+"55";e.currentTarget.style.transform="translateY(-1px)";}}
-              onMouseLeave={e=>{e.currentTarget.style.background=h.color+"0e";e.currentTarget.style.borderColor=h.color+"28";e.currentTarget.style.transform="";}}>
+              onMouseEnter={e=>{e.currentTarget.style.background=h.color+"1e";e.currentTarget.style.borderColor=h.color+"55";}}
+              onMouseLeave={e=>{e.currentTarget.style.background=h.color+"0e";e.currentTarget.style.borderColor=h.color+"28";}}>
               <span style={{fontSize:15}}>{h.icon}</span>
               <div>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:10.5,color:T.txt,whiteSpace:"nowrap"}}>{h.title}</div>

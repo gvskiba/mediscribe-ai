@@ -219,7 +219,7 @@ function LiveClock() {
 }
 
 // ── Top Bar ────────────────────────────────────────────────────────────────
-function TopBar({ selectedPatient }) {
+function TopBar({ selectedPatient, onNewPatient }) {
   return (
     <div style={{
       height:58, background:T.panel, borderBottom:BORDER,
@@ -256,7 +256,7 @@ function TopBar({ selectedPatient }) {
         <Btn label="Quick Note" accent={T.teal} small
           onClick={() => navigateTo("QuickNote", selectedPatient?.id)} />
         <Btn label="+ New Patient" accent={T.gold} small
-          onClick={() => navigateTo("NewPatientInput")} />
+          onClick={onNewPatient} />
         {/* Avatar */}
         <div style={{
           width:32, height:32, borderRadius:"50%",
@@ -552,6 +552,191 @@ function CenterPanel({ patient }) {
   );
 }
 
+// ── New Patient Modal ──────────────────────────────────────────────────────
+const EMPTY_FORM = { room:"", name:"", age:"", sex:"", cc:"", esi:3, allergiesText:"" };
+
+function FieldLabel({ children }) {
+  return (
+    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+      letterSpacing:1.5, textTransform:"uppercase", color:T.txt4, marginBottom:5 }}>
+      {children}
+    </div>
+  );
+}
+
+function ModalInput({ value, onChange, placeholder, type="text" }) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      style={{
+        width:"100%", boxSizing:"border-box",
+        background:"rgba(255,255,255,0.04)", border:BORDER,
+        borderRadius:7, padding:"8px 11px",
+        fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt,
+        outline:"none", caretColor:T.teal,
+      }}
+    />
+  );
+}
+
+function ToggleGroup({ options, value, onChange, colorFn }) {
+  return (
+    <div style={{ display:"flex", gap:6 }}>
+      {options.map(opt => {
+        const active = value === opt;
+        const c = colorFn ? colorFn(opt) : T.teal;
+        return (
+          <div key={opt} onClick={() => onChange(opt)} style={{
+            padding:"5px 14px", borderRadius:7, cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace", fontWeight:700, fontSize:11,
+            border:`1px solid ${active ? c + "88" : "rgba(26,53,85,0.5)"}`,
+            background: active ? `${c}1a` : "rgba(255,255,255,0.03)",
+            color: active ? c : T.txt4,
+            transition:"all .12s",
+          }}>
+            {opt}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function NewPatientModal({ onClose, onCreated }) {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+
+  const set = (field) => (val) => setForm(f => ({ ...f, [field]:val }));
+
+  const canSubmit = form.room.trim() && form.name.trim() && form.cc.trim() && !saving;
+
+  const handleCreate = async () => {
+    if (!canSubmit) return;
+    setSaving(true);
+    const allergies = form.allergiesText
+      .split(",").map(s => s.trim()).filter(Boolean);
+    const record = await base44.entities.Patient.create({
+      room: form.room.trim(),
+      name: form.name.trim(),
+      age: form.age ? Number(form.age) : 0,
+      sex: form.sex || "M",
+      cc: form.cc.trim(),
+      esi: form.esi,
+      mins: 0,
+      vitals: { hr:"--", bp:"--/--", spo2:"--", rr:"--", temp:"--" },
+      flags: [], tasks: [], pmhx: [], alerts: [],
+      allergies,
+    });
+    setSaving(false);
+    onCreated(record);
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed", inset:0, zIndex:1000,
+      background:"rgba(5,15,30,0.88)",
+      backdropFilter:"blur(8px)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background:T.card,
+        border:"1px solid rgba(0,229,192,0.3)",
+        borderRadius:16,
+        width:"100%", maxWidth:500,
+        padding:"24px 28px",
+        display:"flex", flexDirection:"column", gap:18,
+        maxHeight:"90vh", overflowY:"auto",
+      }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:20, color:T.teal }}>
+            New Patient
+          </div>
+          <div onClick={onClose} style={{
+            width:28, height:28, borderRadius:"50%",
+            background:"rgba(255,255,255,0.05)", border:BORDER,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            cursor:"pointer", color:T.txt4, fontSize:14, fontWeight:700,
+            transition:"background .15s",
+          }}>✕</div>
+        </div>
+
+        {/* Room */}
+        <div>
+          <FieldLabel>Room *</FieldLabel>
+          <ModalInput value={form.room} onChange={set("room")} placeholder="Trauma 1, Room 4, Hallway A..." />
+        </div>
+
+        {/* Name */}
+        <div>
+          <FieldLabel>Patient Name *</FieldLabel>
+          <ModalInput value={form.name} onChange={set("name")} placeholder="Last, First M." />
+        </div>
+
+        {/* Age + Sex row */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+          <div>
+            <FieldLabel>Age</FieldLabel>
+            <ModalInput value={form.age} onChange={set("age")} placeholder="—" type="number" />
+          </div>
+          <div>
+            <FieldLabel>Sex</FieldLabel>
+            <ToggleGroup options={["M","F"]} value={form.sex} onChange={set("sex")} colorFn={() => T.teal} />
+          </div>
+        </div>
+
+        {/* Chief Complaint */}
+        <div>
+          <FieldLabel>Chief Complaint *</FieldLabel>
+          <ModalInput value={form.cc} onChange={set("cc")} placeholder="Chest Pain, Stroke Symptoms, Opioid Overdose..." />
+        </div>
+
+        {/* ESI */}
+        <div>
+          <FieldLabel>ESI Level</FieldLabel>
+          <ToggleGroup
+            options={[1,2,3,4,5]}
+            value={form.esi}
+            onChange={set("esi")}
+            colorFn={esiColor}
+          />
+        </div>
+
+        {/* Allergies */}
+        <div>
+          <FieldLabel>Allergies (comma-separated)</FieldLabel>
+          <ModalInput value={form.allergiesText} onChange={set("allergiesText")} placeholder="Penicillin, Sulfa..." />
+        </div>
+
+        {/* Submit */}
+        <div onClick={canSubmit ? handleCreate : undefined} style={{
+          width:"100%", padding:"11px 0", borderRadius:9, textAlign:"center",
+          background: canSubmit ? `linear-gradient(135deg,${T.teal}28,${T.teal}10)` : "rgba(255,255,255,0.04)",
+          border:`1px solid ${canSubmit ? T.teal + "66" : "rgba(26,53,85,0.4)"}`,
+          color: canSubmit ? T.teal : T.txt4,
+          fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:13,
+          cursor: canSubmit ? "pointer" : "default",
+          transition:"all .15s", letterSpacing:.4,
+        }}>
+          {saving ? "Adding..." : "Add to Census"}
+        </div>
+
+        {/* Cancel */}
+        <div onClick={onClose} style={{
+          textAlign:"center", fontFamily:"'DM Sans',sans-serif", fontSize:11,
+          color:T.txt4, cursor:"pointer", marginTop:-8,
+          textDecoration:"underline", textDecorationColor:"rgba(90,130,168,0.4)",
+        }}>
+          Cancel
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Right Rail ─────────────────────────────────────────────────────────────
 function HubCard({ hubKey, patientId }) {
   const h = HUB_REG[hubKey];
@@ -665,6 +850,7 @@ export default function CommandCenter() {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -674,6 +860,15 @@ export default function CommandCenter() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleCreated = useCallback(async (record) => {
+    setShowModal(false);
+    const list = await base44.entities.Patient.list();
+    const refreshed = list || [];
+    setPatients(refreshed);
+    const found = refreshed.find(p => p.id === record.id) || record;
+    setSelected(found);
+  }, []);
 
   if (loading) {
     return (
@@ -692,12 +887,15 @@ export default function CommandCenter() {
       background:T.bg, color:T.txt, overflow:"hidden",
       fontFamily:"'DM Sans',sans-serif",
     }}>
-      <TopBar selectedPatient={selected} />
+      <TopBar selectedPatient={selected} onNewPatient={() => setShowModal(true)} />
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <LeftRail  patients={patients} selected={selected} onSelect={setSelected} />
         <CenterPanel patient={selected} />
         <RightRail  patient={selected} patients={patients} />
       </div>
+      {showModal && (
+        <NewPatientModal onClose={() => setShowModal(false)} onCreated={handleCreated} />
+      )}
     </div>
   );
 }

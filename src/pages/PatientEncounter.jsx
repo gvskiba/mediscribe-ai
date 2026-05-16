@@ -157,7 +157,7 @@ function AlertBubble({ t, m }) {
 }
 
 // ─── TOP CONTEXT BAR ──────────────────────────────────────────────────────────
-function TopContextBar({ patient }) {
+function TopContextBar({ patient, onDischarge }) {
   const p = patient;
   return (
     <div style={{
@@ -187,6 +187,7 @@ function TopContextBar({ patient }) {
       <div style={{ display:"flex", gap:8 }}>
         <Btn accent={T.teal} sm onClick={() => nav("QuickNote", { patientId:p.id })}>✏️ Quick Note</Btn>
         <Btn accent={T.gold} sm onClick={() => nav("OrderGeneratorHub", { patientId:p.id })}>📋 Orders</Btn>
+        <Btn accent={T.green} sm onClick={onDischarge}>🏥 Discharge</Btn>
       </div>
     </div>
   );
@@ -503,10 +504,94 @@ function ErrorState() {
   );
 }
 
+// ─── DISCHARGE SUMMARY MODAL ──────────────────────────────────────────────────
+function DischargeSummaryModal({ patient, onConfirm, onCancel, discharging }) {
+  const p = patient;
+  const v = p.vitals || {};
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(5,15,30,0.85)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div className="pe-fade" style={{ background:T.panel, border:"1px solid rgba(26,53,85,0.7)", borderRadius:14, padding:"28px 30px", maxWidth:480, width:"90%", boxShadow:"0 24px 80px rgba(0,0,0,0.6)" }}>
+
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
+          <span style={{ fontSize:22 }}>🏥</span>
+          <div>
+            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:17, fontWeight:900, color:T.txt }}>Discharge Summary</div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, marginTop:1 }}>Review before confirming</div>
+          </div>
+        </div>
+
+        {/* Patient snapshot */}
+        <div style={{ ...gc({ borderRadius:10 }), padding:"13px 15px", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:14, fontWeight:700, color:T.txt }}>{p.name}</span>
+            <EsiBadge esi={p.esi} />
+          </div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4, marginBottom:4 }}>
+            {p.room} · {p.age}yo {p.sex} · {fmtTime(p.mins)} in dept
+          </div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.gold, fontWeight:600 }}>CC: {p.cc}</div>
+        </div>
+
+        {/* Vitals at discharge */}
+        {(v.hr || v.bp || v.spo2) && (
+          <div style={{ ...gc({ borderRadius:10 }), padding:"11px 14px", marginBottom:14 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:8 }}>Vitals at Discharge</div>
+            <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
+              {v.hr   && <VitalChip label="HR"   value={v.hr}         colorKey="hr"   />}
+              {v.spo2 && <VitalChip label="SpO2" value={`${v.spo2}%`} colorKey="spo2" />}
+              {v.rr   && <VitalChip label="RR"   value={v.rr}         colorKey="rr"   />}
+              {v.bp   && <VitalChip label="BP"   value={v.bp}                         />}
+              {v.temp && <VitalChip label="Temp" value={`${v.temp}F`}                 />}
+            </div>
+          </div>
+        )}
+
+        {/* Active tasks */}
+        {p.tasks && p.tasks.length > 0 && (
+          <div style={{ ...gc({ borderRadius:10, borderLeft:`3px solid ${T.gold}` }), padding:"10px 13px", marginBottom:14 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.gold, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:6 }}>Pending Tasks</div>
+            {p.tasks.map((t, i) => (
+              <div key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt3, marginBottom:3 }}>· {t}</div>
+            ))}
+          </div>
+        )}
+
+        {/* Active alerts warning */}
+        {p.alerts && p.alerts.some(a => a.t === "critical") && (
+          <div style={{ background:"rgba(255,68,68,0.1)", border:"1px solid rgba(255,68,68,0.35)", borderLeft:`3px solid ${T.red}`, borderRadius:10, padding:"10px 13px", marginBottom:14 }}>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.red, fontWeight:600 }}>⚠️ Patient has unresolved critical alerts. Confirm discharge with caution.</div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop:4 }}>
+          <button
+            onClick={onCancel}
+            style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:T.txt4, background:"transparent", border:"1px solid rgba(26,53,85,0.5)", borderRadius:8, padding:"8px 18px", cursor:"pointer" }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={discharging}
+            style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700, color:"#fff", background:`linear-gradient(135deg,${T.teal},${T.blue})`, border:"none", borderRadius:8, padding:"8px 22px", cursor:discharging?"not-allowed":"pointer", opacity:discharging?0.6:1 }}
+          >
+            {discharging ? "Discharging…" : "✓ Confirm Discharge"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── PATIENT ENCOUNTER — MAIN EXPORT ──────────────────────────────────────────
 export default function PatientEncounter() {
-  const [patient, setPatient] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [patient,          setPatient]          = useState(null);
+  const [loading,          setLoading]          = useState(true);
+  const [showDischarge,    setShowDischarge]    = useState(false);
+  const [discharging,      setDischarging]      = useState(false);
+  const [discharged,       setDischarged]       = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -514,6 +599,14 @@ export default function PatientEncounter() {
     if (!id) { setLoading(false); return; }
     Patient.get(id).then(data => { setPatient(data); setLoading(false); });
   }, []);
+
+  const handleDischargeConfirm = async () => {
+    setDischarging(true);
+    await Patient.update(patient.id, { ...patient, flags: [...(patient.flags||[]), "Discharged"] });
+    setDischarging(false);
+    setShowDischarge(false);
+    setDischarged(true);
+  };
 
   if (loading) {
     return (
@@ -531,14 +624,33 @@ export default function PatientEncounter() {
     );
   }
 
+  if (discharged) {
+    return (
+      <div style={{ display:"flex", flexDirection:"column", height:"100vh", overflow:"hidden", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif", alignItems:"center", justifyContent:"center", gap:16 }}>
+        <span style={{ fontSize:52 }}>✅</span>
+        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, color:T.teal }}>Patient Discharged</div>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt4 }}>{patient.name} has been marked as discharged in the census.</div>
+        <Btn accent={T.teal} onClick={() => window.location.href = "/CommandCenter"}>← Back to Census</Btn>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100vh", overflow:"hidden", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
-      <TopContextBar patient={patient} />
+      <TopContextBar patient={patient} onDischarge={() => setShowDischarge(true)} />
       <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
         <DocumentationLane patientId={patient.id} />
         <ClinicalDecisionLane patient={patient} />
         <OrdersLane patient={patient} />
       </div>
+      {showDischarge && (
+        <DischargeSummaryModal
+          patient={patient}
+          onConfirm={handleDischargeConfirm}
+          onCancel={() => setShowDischarge(false)}
+          discharging={discharging}
+        />
+      )}
     </div>
   );
 }

@@ -358,7 +358,8 @@ function LeftRail({ patients, selected, onSelect }) {
           </div>
         )}
         {filtered.map(p => (
-          <PatientRow key={p.id} patient={p} selected={selected} onClick={() => onSelect(p)} />
+          <PatientRow key={p.id} patient={p} selected={selected}
+            onClick={() => { window.location.href = "/PatientEncounter?patientId=" + p.id; }} />
         ))}
       </div>
     </div>
@@ -366,187 +367,15 @@ function LeftRail({ patients, selected, onSelect }) {
 }
 
 // ── Center Panel ───────────────────────────────────────────────────────────
-function VitalChip({ label, value, colorKey }) {
-  const c = colorKey ? vitalStatus(colorKey, value) : T.txt3;
+function CenterPanel() {
   return (
-    <div style={{
-      display:"flex", flexDirection:"column", alignItems:"center", gap:4,
-      padding:"10px 14px", background:`${c}0d`, border:`1px solid ${c}35`,
-      borderRadius:8, minWidth:62,
-    }}>
-      <Mono size={8} color={T.txt4}>{label}</Mono>
-      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:15, fontWeight:700, color:c }}>
-        {value ?? "--"}
-      </div>
-    </div>
-  );
-}
-
-function AlertRow({ alert }) {
-  const cfg = {
-    critical:{ color:T.red,    bg:`${T.red}10`,    icon:"🚨" },
-    warn:    { color:T.gold,   bg:`${T.gold}10`,   icon:"⚠️" },
-    info:    { color:T.blue,   bg:`${T.blue}10`,   icon:"ℹ️" },
-  }[alert.t] || { color:T.txt3, bg:"transparent", icon:"ℹ️" };
-  return (
-    <div style={{
-      display:"flex", alignItems:"flex-start", gap:9, padding:"9px 12px",
-      background:cfg.bg, borderLeft:`3px solid ${cfg.color}`,
-      borderRadius:"0 7px 7px 0", marginBottom:5,
-    }}>
-      <span style={{ fontSize:14, flexShrink:0 }}>{cfg.icon}</span>
-      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2, lineHeight:1.5 }}>{alert.m}</span>
-    </div>
-  );
-}
-
-function CenterPanel({ patient }) {
-  if (!patient) {
-    return (
-      <div style={{ flex:1, background:T.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <div style={{ textAlign:"center" }}>
-          <div style={{ fontSize:56, marginBottom:16 }}>🏥</div>
-          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, color:T.txt3, marginBottom:6 }}>No patient selected</div>
-          <Mono size={10} color={T.txt4}>Select a patient from the census rail</Mono>
+    <div style={{ flex:1, background:T.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontSize:48, marginBottom:14, opacity:0.35 }}>🏥</div>
+        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, color:T.txt3, marginBottom:6 }}>
+          Select a patient from the census
         </div>
-      </div>
-    );
-  }
-
-  const v = patient.vitals || {};
-  const flags = patient.flags || [];
-  const alerts = patient.alerts || [];
-  const tasks = patient.tasks || [];
-  const pmhx = patient.pmhx || [];
-  const allergies = patient.allergies || [];
-
-  return (
-    <div className="cc-scroll" style={{ flex:1, background:T.bg, overflowY:"auto", padding:16, display:"flex", flexDirection:"column", gap:10 }}>
-
-      {/* Header card */}
-      <Card>
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
-          <div>
-            <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:900, fontSize:20, color:T.txt, marginBottom:5 }}>
-              {patient.name}
-            </div>
-            <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-              <Mono size={10} color={T.txt3}>{patient.age}{patient.sex}</Mono>
-              <Mono size={10} color={T.txt4}>&middot;</Mono>
-              <Mono size={10} color={T.txt3}>{patient.room}</Mono>
-              <Mono size={10} color={T.txt4}>&middot;</Mono>
-              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt2 }}>{patient.cc}</span>
-            </div>
-          </div>
-          <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-            <EsiBadge esi={patient.esi} />
-            <TimeBadge mins={patient.mins} />
-          </div>
-        </div>
-        {/* Action buttons */}
-        <div style={{ display:"flex", gap:7, marginTop:12, flexWrap:"wrap" }}>
-          <Btn label="Quick Note"   accent={T.teal}   onClick={() => navigateTo("QuickNote",         patient.id)} />
-          <Btn label="Full Intake"  accent={T.gold}   onClick={() => navigateTo("NewPatientInput",   patient.id)} />
-          <Btn label="Note Studio"  accent={T.purple} onClick={() => navigateTo("ProviderStudio",    patient.id)} />
-          <Btn label="Orders"       accent={T.coral}  onClick={() => navigateTo("OrderGeneratorHub", patient.id)} />
-        </div>
-      </Card>
-
-      {/* Vitals */}
-      <Card>
-        <SectionLabel>Vitals</SectionLabel>
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          <VitalChip label="HR"   value={v.hr}   colorKey="hr"   />
-          <VitalChip label="BP"   value={v.bp}                   />
-          <VitalChip label="SpO2" value={v.spo2 !== undefined ? v.spo2 + "%" : "--"} colorKey="spo2" />
-          <VitalChip label="RR"   value={v.rr}   colorKey="rr"   />
-          <VitalChip label="Temp" value={v.temp}                 />
-        </div>
-      </Card>
-
-      {/* Flags */}
-      {flags.length > 0 && (
-        <Card>
-          <SectionLabel>Flags</SectionLabel>
-          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-            {flags.map((f, i) => (
-              <span key={i} style={{
-                fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
-                color:T.red, background:`${T.red}15`, border:`1px solid ${T.red}40`,
-                borderRadius:5, padding:"3px 10px",
-              }}>{f}</span>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {/* CDS Alerts */}
-      {alerts.length > 0 && (
-        <Card>
-          <SectionLabel>CDS Alerts</SectionLabel>
-          <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-            {alerts.map((a, i) => <AlertRow key={i} alert={a} />)}
-          </div>
-        </Card>
-      )}
-
-      {/* Tasks */}
-      {tasks.length > 0 && (
-        <Card>
-          <SectionLabel>Tasks</SectionLabel>
-          <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-            {tasks.map((t, i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <div style={{ width:14, height:14, borderRadius:"50%", border:`2px solid ${T.teal}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <div style={{ width:5, height:5, borderRadius:"50%", background:T.teal }} />
-                </div>
-                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2 }}>{t}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {/* PMHx + Allergies side by side */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-        {/* PMHx */}
-        <Card>
-          <SectionLabel>Past Medical Hx</SectionLabel>
-          {pmhx.length === 0
-            ? <Mono size={10} color={T.txt4}>None documented</Mono>
-            : (
-              <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                {pmhx.map((p, i) => (
-                  <span key={i} style={{
-                    fontFamily:"'DM Sans',sans-serif", fontSize:11,
-                    color:T.txt3, background:"rgba(130,174,206,0.1)",
-                    border:"1px solid rgba(130,174,206,0.2)",
-                    borderRadius:5, padding:"2px 9px",
-                  }}>{p}</span>
-                ))}
-              </div>
-            )
-          }
-        </Card>
-        {/* Allergies */}
-        <Card>
-          <SectionLabel>Allergies</SectionLabel>
-          {allergies.length === 0
-            ? <Mono size={10} color={T.txt4}>NKDA</Mono>
-            : (
-              <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                {allergies.map((a, i) => (
-                  <span key={i} style={{
-                    fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
-                    color:T.coral, background:`${T.coral}12`,
-                    border:`1px solid ${T.coral}40`,
-                    borderRadius:5, padding:"2px 9px",
-                  }}>{a}</span>
-                ))}
-              </div>
-            )
-          }
-        </Card>
+        <Mono size={10} color={T.txt4}>Their encounter workspace will open here</Mono>
       </div>
     </div>
   );
@@ -890,7 +719,7 @@ export default function CommandCenter() {
       <TopBar selectedPatient={selected} onNewPatient={() => setShowModal(true)} />
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <LeftRail  patients={patients} selected={selected} onSelect={setSelected} />
-        <CenterPanel patient={selected} />
+        <CenterPanel />
         <RightRail  patient={selected} patients={patients} />
       </div>
       {showModal && (

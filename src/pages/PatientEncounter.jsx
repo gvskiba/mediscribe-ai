@@ -36,9 +36,35 @@ const T = {
 const BORDER = "1px solid rgba(26,53,85,0.5)";
 const CARD_R = 10;
 
+// ── Route map — page key → App.jsx route slug ──────────────────────────────
+const PAGE_ROUTES = {
+  QuickNote:           "QuickNote",
+  ProviderStudio:      "ProviderStudio",
+  ClinicalDecisionHub: "ClinicalDecisionHub",
+  AutocoderHub:        "AutocoderHub",
+  "order-generator":   "order-generator",
+  ERx:                 "ERx",
+  ERxHub:              "ERx",
+  ECGHub:              "ECGHub",
+  CardiacRiskPage:     "cardiac-hub",
+  StrokeHub:           "StrokeHub",
+  ToxHub:              "ToxHub",
+  SepsisHub:           "SepsisHub",
+  AirwayHub:           "AirwayHub",
+  LabHub:              "LabHub",
+  "imaging-interpreter":"imaging-interpreter",
+  "derm-hub":          "derm-hub",
+  "derm-morphology":   "derm-morphology",
+  POCUSHub:            "POCUSHub",
+  "electrolyte-hub":   "electrolyte-hub",
+  OrthoHub:            "OrthoHub",
+  OBGYNHub:            "OBGYNHub",
+};
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 function navigateTo(page, patientId) {
-  const url = "/" + page + (patientId ? "?patientId=" + patientId : "");
+  const route = PAGE_ROUTES[page] || page;
+  const url = "/" + route + (patientId ? "?patientId=" + patientId : "");
   window.location.href = url;
 }
 
@@ -69,27 +95,27 @@ function vitalStatus(key, val) {
   return T.txt3;
 }
 
-// ── Hub registry ───────────────────────────────────────────────────────────
+// ── Hub registry (page = key into PAGE_ROUTES) ─────────────────────────────
 const HUB_REG = {
-  ECGHub:            { label:"ECG Hub",        icon:"⚡", color:T.teal,   page:"ECGHub"            },
-  CardiacRiskPage:   { label:"Cardiac Risk",   icon:"🫀", color:T.coral,  page:"CardiacRiskPage"   },
-  StrokeHub:         { label:"Stroke Hub",     icon:"🧠", color:T.purple, page:"StrokeHub"         },
-  ToxicologyHub:     { label:"Toxicology",     icon:"☣️", color:T.orange, page:"ToxHub"            },
-  SepsisHub:         { label:"Sepsis Hub",     icon:"🔬", color:T.coral,  page:"SepsisHub"         },
-  AirwayHub:         { label:"Airway Hub",     icon:"💨", color:T.teal,   page:"AirwayHub"         },
-  LabInterpreter:    { label:"Lab Interpreter",icon:"🧪", color:T.teal,   page:"LabHub"            },
+  ECGHub:            { label:"ECG Hub",        icon:"⚡", color:T.teal,   page:"ECGHub"             },
+  CardiacRiskPage:   { label:"Cardiac Risk",   icon:"🫀", color:T.coral,  page:"CardiacRiskPage"    },
+  StrokeHub:         { label:"Stroke Hub",     icon:"🧠", color:T.purple, page:"StrokeHub"          },
+  ToxicologyHub:     { label:"Toxicology",     icon:"☣️", color:T.orange, page:"ToxHub"             },
+  SepsisHub:         { label:"Sepsis Hub",     icon:"🔬", color:T.coral,  page:"SepsisHub"          },
+  AirwayHub:         { label:"Airway Hub",     icon:"💨", color:T.teal,   page:"AirwayHub"          },
+  LabInterpreter:    { label:"Lab Interpreter",icon:"🧪", color:T.teal,   page:"LabHub"             },
   ImagingInterpreter:{ label:"Imaging",        icon:"🩻", color:T.gold,   page:"imaging-interpreter"},
-  DermatologyHub:    { label:"Derm Hub",       icon:"🔎", color:T.purple, page:"derm-hub"          },
-  DermMorphologyRef: { label:"Derm Ref",       icon:"📖", color:T.purple, page:"derm-morphology"   },
-  POCUSHub:          { label:"POCUS Hub",      icon:"📡", color:T.teal,   page:"POCUSHub"          },
-  OrderGeneratorHub: { label:"Orders",         icon:"📋", color:T.gold,   page:"order-generator"   },
-  ElectrolyteHub:    { label:"Electrolytes",   icon:"⚗️", color:T.cyan,   page:"electrolyte-hub"   },
-  OrthoHub:          { label:"Ortho Hub",      icon:"🦴", color:T.gold,   page:"OrthoHub"          },
-  OBGYNHub:          { label:"OB/GYN Hub",     icon:"🩺", color:T.purple, page:"OBGYNHub"          },
-  QuickNote:         { label:"Quick Note",     icon:"✏️", color:T.teal,   page:"QuickNote"         },
-  ClinicalNoteStudio:{ label:"Note Studio",    icon:"📝", color:T.purple, page:"ProviderStudio"    },
+  DermatologyHub:    { label:"Derm Hub",       icon:"🔎", color:T.purple, page:"derm-hub"           },
+  DermMorphologyRef: { label:"Derm Ref",       icon:"📖", color:T.purple, page:"derm-morphology"    },
+  POCUSHub:          { label:"POCUS Hub",      icon:"📡", color:T.teal,   page:"POCUSHub"           },
+  OrderGeneratorHub: { label:"Orders",         icon:"📋", color:T.gold,   page:"order-generator"    },
+  ElectrolyteHub:    { label:"Electrolytes",   icon:"⚗️", color:T.cyan,   page:"electrolyte-hub"    },
+  OrthoHub:          { label:"Ortho Hub",      icon:"🦴", color:T.gold,   page:"OrthoHub"           },
+  OBGYNHub:          { label:"OB/GYN Hub",     icon:"🩺", color:T.purple, page:"OBGYNHub"           },
+  QuickNote:         { label:"Quick Note",     icon:"✏️", color:T.teal,   page:"QuickNote"          },
+  ClinicalNoteStudio:{ label:"Note Studio",    icon:"📝", color:T.purple, page:"ProviderStudio"     },
   MDMBuilderTab:     { label:"MDM Builder",    icon:"🧠", color:T.blue,   page:"ClinicalDecisionHub"},
-  AutocoderHub:      { label:"Autocoder",      icon:"🏷️", color:T.gold,   page:"AutocoderHub"      },
+  AutocoderHub:      { label:"Autocoder",      icon:"🏷️", color:T.gold,   page:"AutocoderHub"       },
 };
 
 const HUB_GROUPS = [
@@ -287,6 +313,8 @@ const DOC_CARDS = [
   },
 ];
 
+
+
 const DOC_STEPS = ["Quick Note", "Note Studio", "MDM Builder", "Autocoder"];
 
 function DocCard({ card, patientId }) {
@@ -409,9 +437,9 @@ function AlertRow({ alert }) {
 }
 
 function HubCard2col({ hubKey, patientId }) {
+  const [hov, setHov] = useState(false);
   const h = HUB_REG[hubKey];
   if (!h) return null;
-  const [hov, setHov] = useState(false);
   return (
     <div
       className="pe-hub-card"

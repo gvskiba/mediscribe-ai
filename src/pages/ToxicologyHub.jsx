@@ -302,6 +302,8 @@ const SUBSTITUTES = {
   "Deferoxamine":                    "Supportive care only — whole bowel irrigation if early; call Poison Control",
   "Pyridoxine (Vitamin B6)":         "No substitute — give max available dose + aggressive BZD; call Poison Control",
 };
+
+const COWS_ITEMS = [
   { id:"hr",    label:"Resting Pulse Rate",    opts:[{v:0,l:"≤ 80 bpm"},{v:1,l:"81–100"},{v:2,l:"101–120"},{v:4,l:"> 120 bpm"}] },
   { id:"sweat", label:"Sweating",              opts:[{v:0,l:"None"},{v:1,l:"Moist brow"},{v:2,l:"Beads on brow"},{v:3,l:"Streaming"},{v:4,l:"Drenched"}] },
   { id:"rest",  label:"Restlessness",          opts:[{v:0,l:"Can sit still"},{v:1,l:"Difficulty sitting"},{v:3,l:"Frequent shifts"},{v:5,l:"Cannot sit still"}] },
@@ -526,7 +528,6 @@ function DetailModal({ item, isProtocol, onClose, globalWeight, list, listIdx, o
               <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:9,color:T.txt4,marginLeft:2 }}>← → keys</span>
             </div>
           )}
-          </div>
         </div>
 
         {/* Scrollable body */}

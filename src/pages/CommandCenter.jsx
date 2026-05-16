@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 
 (() => {
   if (document.getElementById("cc-fonts")) return;
@@ -29,69 +30,6 @@ const T = {
 const nav = (page, params = {}) => { console.log("nav ->", page, params); };
 
 // ─── PATIENT DATA ─────────────────────────────────────────────────────────────
-// Replace with Patient.list() from Base44 entity
-const PATIENTS = [
-  { id:"1", room:"Trauma 1", name:"Mitchell, Robert J.", age:67, sex:"M",
-    cc:"Chest Pain", esi:1, mins:12,
-    vitals:{hr:108,bp:"158/94",spo2:94,rr:22,temp:"98.4"},
-    flags:["STEMI on ECG","Troponin pending"],
-    tasks:["12-lead done","IV x2","Aspirin given","Cath lab notified"],
-    allergies:["Penicillin"], pmhx:["HTN","DM2","Prior MI"],
-    alerts:[{t:"critical",m:"STEMI pattern — cath lab activation required"},{t:"warn",m:"Hold metformin — contrast study likely"}]},
-  { id:"2", room:"Room 2", name:"Hartwell, Susan K.", age:34, sex:"F",
-    cc:"Shortness of Breath", esi:2, mins:78,
-    vitals:{hr:122,bp:"102/64",spo2:88,rr:28,temp:"99.1"},
-    flags:["SpO2 88%","Tachycardic"], tasks:["ABG ordered","CXR awaiting read","Albuterol x2"],
-    allergies:[], pmhx:["Asthma","Anxiety"],
-    alerts:[{t:"critical",m:"SpO2 88% — airway reassessment needed"},{t:"warn",m:"BP trending down"}]},
-  { id:"3", room:"Room 4", name:"Nguyen, Thomas A.", age:52, sex:"M",
-    cc:"Altered Mental Status", esi:2, mins:34,
-    vitals:{hr:96,bp:"144/88",spo2:97,rr:18,temp:"101.2"},
-    flags:["Fever","GCS 13"], tasks:["CT Head ordered","LP tray at bedside","BCx x2 sent"],
-    allergies:["Sulfa"], pmhx:["Alcoholism","Seizure disorder"],
-    alerts:[{t:"warn",m:"Fever + AMS — rule out meningitis"}]},
-  { id:"4", room:"Room 6", name:"Garcia, Maria L.", age:28, sex:"F",
-    cc:"Abdominal Pain", esi:3, mins:130,
-    vitals:{hr:88,bp:"118/72",spo2:99,rr:16,temp:"98.6"},
-    flags:["Beta-hCG pending"], tasks:["UA sent","Pelvic US ordered","Morphine 4mg given"],
-    allergies:["Codeine"], pmhx:["G2P1"],
-    alerts:[{t:"warn",m:"hCG pending — must rule out ectopic pregnancy"}]},
-  { id:"5", room:"Room 8", name:"Brooks, David M.", age:71, sex:"M",
-    cc:"Stroke Symptoms", esi:1, mins:8,
-    vitals:{hr:78,bp:"186/104",spo2:96,rr:16,temp:"98.2"},
-    flags:["LKW 45m ago","Right arm weak"], tasks:["Stroke alert active","CT done","CTA ordered","Neuro at bedside"],
-    allergies:[], pmhx:["A-fib","HTN","Prior TIA"],
-    alerts:[{t:"critical",m:"Within tPA window — CT results pending"},{t:"warn",m:"On warfarin — check INR before lytics"}]},
-  { id:"6", room:"Room 9", name:"Coleman, James R.", age:19, sex:"M",
-    cc:"Opioid Overdose", esi:1, mins:6,
-    vitals:{hr:54,bp:"88/50",spo2:82,rr:6,temp:"96.8"},
-    flags:["Naloxone x2 given","Pinpoint pupils"], tasks:["Narcan drip running","Tox paged","RSI tray open"],
-    allergies:[], pmhx:["IVDU"],
-    alerts:[{t:"critical",m:"Hypoxia + bradypnea — RSI preparation advised"}]},
-  { id:"7", room:"Room 11", name:"Patel, Priya N.", age:45, sex:"F",
-    cc:"Sepsis — UTI Source", esi:2, mins:95,
-    vitals:{hr:114,bp:"94/58",spo2:95,rr:24,temp:"102.9"},
-    flags:["SIRS x4","Lactate 3.8"], tasks:["2L NS given","BCx x2","Pip-tazo running","ICU notified"],
-    allergies:["Vancomycin"], pmhx:["DM2","Recurrent UTIs"],
-    alerts:[{t:"critical",m:"Lactate 3.8 — septic shock, ICU bed requested"},{t:"warn",m:"SEP-1 bundle: confirm abx < 1h from arrival"}]},
-  { id:"8", room:"Room 13", name:"Whitfield, Carol A.", age:58, sex:"F",
-    cc:"Diffuse Rash", esi:3, mins:112,
-    vitals:{hr:94,bp:"128/80",spo2:98,rr:16,temp:"100.4"},
-    flags:["Mucosal involvement","New Lamotrigine"], tasks:["Derm consult called","BSA calculated"],
-    allergies:["Sulfa","Lamotrigine — NEW"], pmhx:["Epilepsy","HTN"],
-    alerts:[{t:"critical",m:"Lamotrigine + mucosal involvement — rule out SJS/TEN"}]},
-  { id:"9", room:"Room 15", name:"O'Brien, Kathleen M.", age:62, sex:"F",
-    cc:"Generalized Weakness", esi:3, mins:90,
-    vitals:{hr:82,bp:"136/84",spo2:97,rr:16,temp:"98.8"},
-    flags:["K+ 2.8 on BMP"], tasks:["KCl IV x2 ordered","Repeat BMP in 2h","ECG done"],
-    allergies:["Latex"], pmhx:["HTN","HFrEF","Lasix daily"],
-    alerts:[{t:"warn",m:"K+ 2.8 in HFrEF — continuous cardiac monitoring"}]},
-  { id:"10", room:"Hallway A", name:"Jenkins, Frank O.", age:44, sex:"M",
-    cc:"Low Back Pain", esi:4, mins:185,
-    vitals:{hr:76,bp:"122/78",spo2:99,rr:14,temp:"98.2"},
-    flags:["Awaiting discharge"], tasks:["Ketorolac given","D/C instructions pending"],
-    allergies:[], pmhx:["Chronic LBP"], alerts:[]},
-];
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const esiColor = (n) => ({1:T.red,2:T.orange,3:T.gold,4:T.green,5:T.txt4}[n]||T.txt4);
@@ -222,7 +160,7 @@ function CensusPanel({ patients, search, onSearch }) {
 
       <div style={{ flex:1, overflowY:"auto", paddingBottom:8 }}>
         {sorted.map(p => {
-          const hasCrit = p.alerts.some(a => a.t === "critical");
+          const hasCrit = p.alerts && p.alerts.some(a => a.t === "critical");
           return (
             <div
               key={p.id}
@@ -256,7 +194,7 @@ function CensusPanel({ patients, search, onSearch }) {
 }
 
 // ─── CENTER — SELECT PATIENT PROMPT ───────────────────────────────────────────
-function SelectPatientPrompt() {
+function SelectPatientPrompt({ patients }) {
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16, background:T.bg }}>
       <div style={{ fontSize:52 }}>🏥</div>
@@ -265,7 +203,7 @@ function SelectPatientPrompt() {
         Choose a patient from the census to open their encounter workspace
       </div>
       <div style={{ marginTop:8, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center" }}>
-        {PATIENTS.filter(p => p.alerts.some(a => a.t==="critical")).slice(0,3).map(p => (
+        {patients.filter(p => p.alerts && p.alerts.some(a => a.t==="critical")).slice(0,3).map(p => (
           <div key={p.id} onClick={() => nav("PatientEncounter", { patientId:p.id })} style={{ padding:"6px 14px", borderRadius:20, background:"rgba(255,68,68,0.08)", border:"1px solid rgba(255,68,68,0.25)", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.red }}>
             🚨 {p.room} — {p.cc}
           </div>
@@ -276,9 +214,9 @@ function SelectPatientPrompt() {
 }
 
 // ─── RIGHT RAIL — SHIFT OVERVIEW ──────────────────────────────────────────────
-function ShiftRail() {
-  const critPts = PATIENTS.filter(p => p.alerts.some(a => a.t==="critical"));
-  const avgTime = Math.round(PATIENTS.reduce((s,p) => s+p.mins, 0) / PATIENTS.length);
+function ShiftRail({ patients }) {
+  const critPts = patients.filter(p => p.alerts && p.alerts.some(a => a.t==="critical"));
+  const avgTime = patients.length ? Math.round(patients.reduce((s,p) => s+(p.mins||0), 0) / patients.length) : 0;
 
   return (
     <div style={{ width:258, minWidth:258, height:"100%", borderLeft:"1px solid rgba(26,53,85,0.5)", background:T.panel, display:"flex", flexDirection:"column", overflowY:"auto" }}>
@@ -291,10 +229,10 @@ function ShiftRail() {
         {/* Stats grid */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:16 }}>
           {[
-            { label:"Total Pts",    value:PATIENTS.length,                                           color:T.teal  },
-            { label:"ESI 1–2",      value:PATIENTS.filter(p=>p.esi<=2).length,                       color:T.coral },
-            { label:"Crit Alerts",  value:PATIENTS.filter(p=>p.alerts.some(a=>a.t==="critical")).length, color:T.red },
-            { label:"Avg Time",     value:`${avgTime}m`,                                             color:T.gold  },
+            { label:"Total Pts",    value:patients.length,                                                                   color:T.teal  },
+            { label:"ESI 1–2",      value:patients.filter(p=>p.esi<=2).length,                                               color:T.coral },
+            { label:"Crit Alerts",  value:patients.filter(p=>p.alerts&&p.alerts.some(a=>a.t==="critical")).length,           color:T.red   },
+            { label:"Avg Time",     value:`${avgTime}m`,                                                                     color:T.gold  },
           ].map((s,i) => (
             <div key={i} style={{ ...gc({ borderRadius:9 }), padding:"10px 11px", textAlign:"center" }}>
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:20, fontWeight:700, color:s.color, lineHeight:1 }}>{s.value}</div>
@@ -331,9 +269,9 @@ function ShiftRail() {
             ESI Breakdown
           </div>
           {[1,2,3,4,5].map(esi => {
-            const count = PATIENTS.filter(p=>p.esi===esi).length;
+            const count = patients.filter(p=>p.esi===esi).length;
             const c = esiColor(esi);
-            const pct = PATIENTS.length ? (count/PATIENTS.length)*100 : 0;
+            const pct = patients.length ? (count/patients.length)*100 : 0;
             return (
               <div key={esi} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:c, minWidth:36 }}>ESI {esi}</span>
@@ -390,6 +328,22 @@ function TopBar({ onQuickNote, onNewPatient }) {
 export default function CommandCenter() {
   const [search,         setSearch]         = useState("");
   const [showNewPatient, setShowNewPatient] = useState(false);
+  const [patients,       setPatients]       = useState([]);
+  const [loading,        setLoading]        = useState(true);
+
+  useEffect(() => {
+    base44.entities.Patient.list().then(data => { setPatients(data); setLoading(false); });
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ display:"flex", height:"100vh", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:14, background:T.bg, fontFamily:"'DM Sans',sans-serif" }}>
+        <div style={{ width:32, height:32, borderRadius:"50%", border:`3px solid rgba(0,229,192,0.2)`, borderTop:`3px solid ${T.teal}`, animation:"cc-spin 1s linear infinite" }} />
+        <style>{`@keyframes cc-spin{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt3 }}>Loading census...</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100vh", overflow:"hidden", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
@@ -400,12 +354,12 @@ export default function CommandCenter() {
 
       <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
         <CensusPanel
-          patients={PATIENTS}
+          patients={patients}
           search={search}
           onSearch={setSearch}
         />
-        <SelectPatientPrompt />
-        <ShiftRail />
+        <SelectPatientPrompt patients={patients} />
+        <ShiftRail patients={patients} />
       </div>
 
       {/* New Patient Choice Modal */}

@@ -47,6 +47,7 @@ import { EMLevel, PatientResponsePanel } from "@/components/QuickNote/QuickNoteM
 import { MDMHandoffBridge } from "@/components/quicknote/MDMHandoffBridge";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 injectQNStyles();
 
@@ -1111,6 +1112,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       {!embedded && <NotryaNav currentHub="QuickNote" />}
       <div style={embedded ? {} : {flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,paddingBottom:80}}>
         {!embedded && <NotryaHubHeader hubName="QuickNote" category="Documentation" homeUrl="/" />}
+        {!embedded && <NotryaPatientBar />}
         <div style={{maxWidth:1100,margin:"0 auto",width:"100%",padding:embedded?"0":"0 16px 40px"}}>
 
         {embedded&&(

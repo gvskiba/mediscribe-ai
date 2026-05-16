@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceLine, ResponsiveContainer, Label,
@@ -1066,6 +1067,7 @@ export default function LabHub({
       {!embedded && <NotryaNav currentHub="LabInterpreter" />}
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
         {!embedded && <NotryaHubHeader hubName="Lab Interpreter" category="Labs" homeUrl="/" />}
+        {!embedded && <NotryaPatientBar />}
       <div style={{maxWidth:1100,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%"}}>
 
         {embedded&&(

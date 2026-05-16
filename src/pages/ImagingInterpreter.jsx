@@ -9,6 +9,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 // ─── STYLE INJECTION ──────────────────────────────────────────────────────────
 (() => {
@@ -917,6 +918,7 @@ export default function ImagingInterpreter({
       {!embedded && <NotryaNav currentHub="ImagingInterpreter" />}
       <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
         {!embedded && <NotryaHubHeader hubName="Imaging Interpreter" category="Imaging" homeUrl="/" />}
+        {!embedded && <NotryaPatientBar />}
       <div style={{ maxWidth:1200, margin:"0 auto", padding:embedded ? "0" : "0 16px", width:"100%" }}>
 
         

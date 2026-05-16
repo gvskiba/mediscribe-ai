@@ -6,6 +6,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 import { ClinicalNote } from "@/api/entities";
 import ECGNSTEMIHub from "@/components/ecg/ECGNSTEMIHub";
 import ECGAFPathway  from "@/components/ecg/ECGAFPathway";
@@ -1693,6 +1694,7 @@ export default function ECGHub({ embedded = false, onBack }) {
       {!embedded && <NotryaNav currentHub="ECGHub" />}
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
         {!embedded && <NotryaHubHeader hubName="ECG Hub" category="Cardiac" homeUrl="/" />}
+        {!embedded && <NotryaPatientBar />}
       <div style={{maxWidth:960,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%"}}>
 
         {/* Grouped tab bar */}

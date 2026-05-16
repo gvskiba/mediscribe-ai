@@ -15,6 +15,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 // ─── STYLE INJECTION ──────────────────────────────────────────────────────────
 (() => {
@@ -991,6 +992,7 @@ export default function DermatologyHub({
       {!embedded && <NotryaNav currentHub="DermatologyHub" />}
       <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
         {!embedded && <NotryaHubHeader hubName="Dermatology Hub" category="Imaging" homeUrl="/" />}
+        {!embedded && <NotryaPatientBar />}
       <div style={{ maxWidth:1300, margin:"0 auto", padding:embedded ? "0" : "0 16px", width:"100%" }}>
 
         

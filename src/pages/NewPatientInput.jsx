@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { useNPIState } from "@/components/npi/useNPIState";
@@ -701,6 +702,7 @@ export default function NewPatientInput() {
   return (
     <div>
       <style>{NPI_CSS}</style>
+      <NotryaPatientBar />
 
       {/* ── QuickNote Handoff Import Banner ── */}
       {qnHandoff && !qnDismissed && (

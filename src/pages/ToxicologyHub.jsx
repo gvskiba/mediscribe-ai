@@ -6,6 +6,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { InvokeLLM } from "@/integrations/Core";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 import LabResultsUploader from "@/components/toxicology/LabResultsUploader";
 
 (() => {
@@ -1320,6 +1321,7 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
       {!embedded && <NotryaNav currentHub="ToxicologyHub" />}
       <div style={{ flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0 }}>
         {!embedded && <NotryaHubHeader hubName="Toxicology Hub" category="Tox" homeUrl="/" />}
+        {!embedded && <NotryaPatientBar />}
         <div style={{ maxWidth:1100,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%" }}>
 
           {/* Global weight badge */}

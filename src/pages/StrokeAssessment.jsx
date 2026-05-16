@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 const StrokeQualityLog = base44.entities.StrokeQualityLog;
 
 const PRINT_CSS = `@media print { body { background: #fff !important; } .sh-no-print { display: none !important; } }`;
@@ -683,6 +684,7 @@ export default function StrokeHub({embedded=false,onBack,demo={},vitals={},cc={}
       background:"linear-gradient(160deg,rgba(7,12,32,1) 0%,rgba(11,19,46,1) 100%)",
       fontFamily:"'DM Sans',sans-serif",color:C.text}}>
       {!embedded && <NotryaHubHeader hubName="Stroke Hub" category="Neurology" homeUrl="/" />}
+      {!embedded && <NotryaPatientBar />}
       <div style={{display:"flex",flex:1}}>
 
       {/* Left rail */}

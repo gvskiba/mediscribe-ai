@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 // ── Font IIFE ─────────────────────────────────────────────────────────────────
 (function f(){if(document.getElementById("ogh-f"))return;const l=document.createElement("link");l.id="ogh-f";l.rel="stylesheet";l.href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap";document.head.appendChild(l);})();
@@ -280,6 +281,7 @@ export default function OrderGeneratorHub(){
 
   return(
     <div style={{fontFamily:"'DM Sans',sans-serif",color:T.txt,minHeight:"100%",padding:"0 0 40px"}}>
+      <NotryaPatientBar />
 
       {/* ── Header ── */}
       <div style={{...G.glass({borderRadius:14,padding:"16px 20px",marginBottom:14,borderLeft:`3px solid ${T.coral}`}),boxShadow:`0 4px 24px rgba(0,0,0,0.4), 0 0 20px rgba(255,107,107,.08)`}}>

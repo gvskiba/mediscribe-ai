@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { base44, InvokeLLM } from "@/api/base44Client";
+import { base44 } from "@/api/base44Client";
 
 (() => {
   if (document.getElementById("cc-fonts")) return;
@@ -1398,7 +1398,7 @@ export default function CommandCenter() {
     const ordersText = (patient.orders || []).slice(0, 4).map(o => `${o.name} (${o.status})`).join(", ") || "none placed yet";
     const alertsText = (patient.alerts || []).map(a => a.m).join("; ") || "none";
     try {
-      const result = await InvokeLLM({
+      const result = await base44.integrations.Core.InvokeLLM({
         prompt: `You are writing a one-line ED census summary for a physician scanning a trackboard.\n\nPatient: ${patient.age || ""}${patient.sex || ""}, ESI ${patient.esi || "?"}, LOS ${patient.mins || 0}min\nCC: ${patient.cc || "unknown"}\nOrders: ${ordersText}\nCritical alerts: ${alertsText}\n\nWrite exactly ONE sentence under 25 words. Lead with the key clinical finding or working diagnosis, then the most urgent pending action or current status. Be specific and clinical. No filler phrases like "patient presents with."`,
         response_json_schema: { type:"object", properties:{ summary:{ type:"string" } }, required:["summary"] }
       });

@@ -27,8 +27,12 @@ const T = {
 };
 
 // ─── NAVIGATION ───────────────────────────────────────────────────────────────
-// Replace with navigateTo(page) in Base44
-const nav = (page, params = {}) => { console.log("nav ->", page, params); };
+const nav = (page, params = {}) => {
+  const query = Object.keys(params).length
+    ? "?" + new URLSearchParams(params).toString()
+    : "";
+  window.location.href = `/${page}${query}`;
+};
 
 // ─── SUGGEST HUBS BY CHIEF COMPLAINT ─────────────────────────────────────────
 const suggestHubs = (cc = "") => {

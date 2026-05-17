@@ -148,7 +148,7 @@ export default function NotryaSplash() {
         {/* CTA */}
         <div
           className="su4"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/CommandCenter")}
           onMouseEnter={() => setHov(true)}
           onMouseLeave={() => setHov(false)}
           style={{

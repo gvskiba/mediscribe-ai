@@ -870,8 +870,6 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
 
   const removeFromQueue=useCallback(id=>setQueue(p=>p.filter(q=>q.id!==id)),[]);
 
-  // startTimer declared above addToQueue to avoid hoisting error
-
   const dismissTimer=useCallback(type=>setTimers(p=>p.filter(t=>t.id!==type)),[]);
 
   React.useEffect(()=>{

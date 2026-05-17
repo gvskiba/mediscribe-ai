@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import NotryaPatientBar from '@/components/HubHeader/NotryaPatientBar';
 
@@ -522,11 +522,7 @@ const PRESENTATION_RECS={
   'Anaphylaxis':new Set(['epi_anap','p_o2','p_iv2','p_tele','zofran']),
 };
 
-// ── Category meta ─────────────────────────────────────────────────────────────
-// ── Also Consider — clinical order chaining map ──────────────────────────────
-// Each entry: orderId -> [{id, reason}] suggestions triggered when that order is queued
-// ── Allergy Alternative Suggestions ───────────────────────────────────────────────────────────────────────────────
-// Keyed by allergy identifier (matches AMAP keys and item.alert values)
+// ── Drug Conflict Pairs ───────────────────────────────────────────────────────
 const CONFLICT_PAIRS=[
   {ids:['diltia','metro_iv'],sev:'alert',icon:'⚡',title:'Combined AV Nodal Blockade',msg:'Diltiazem + Metoprolol — high risk of bradycardia and complete AV block',rec:'Use one rate-control agent. Have atropine + TCP available if combining.'},
   {ids:['amio_iv','procain'],sev:'alert',icon:'⚡',title:'Dual Antiarrhythmic — Torsades Risk',msg:'Amiodarone + Procainamide — additive QT prolongation, torsades de pointes risk',rec:'Avoid combination. Choose one antiarrhythmic; amiodarone preferred for most presentations.'},
@@ -770,6 +766,11 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
     return[...sr,...dr].sort((a,b)=>b._score-a._score).slice(0,15);
   },[palQ]);
 
+  const startTimer=useCallback(type=>{
+    if(!TIMER_DEFS[type])return;
+    setTimers(p=>p.some(t=>t.id===type)?p:[...p,{id:type,startedAt:Date.now()}]);
+  },[]);
+
   const addToQueue=useCallback((item,cpoeText=null,opts={})=>{
     const aw=getAllergyWarn(item);
     setQueue(p=>{
@@ -789,8 +790,6 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
       if(!opts.silent){
         const suggs=(ALSO_CONSIDER[item.id]||[]).filter(s=>!p.some(q=>q.id===s.id)&&s.id!==item.id).slice(0,3);
         setTimeout(()=>setSuggestions(suggs),0);
-      }
-      if(!opts.silent){
         const tType=ORDER_TIMER_TRIGGERS[item.id];
         if(tType)setTimeout(()=>startTimer(tType),0);
       }
@@ -800,14 +799,9 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
 
   const removeFromQueue=useCallback(id=>setQueue(p=>p.filter(q=>q.id!==id)),[]);
 
-  const startTimer=useCallback(type=>{
-    if(!TIMER_DEFS[type])return;
-    setTimers(p=>p.some(t=>t.id===type)?p:[...p,{id:type,startedAt:Date.now()}]);
-  },[]);
-
   const dismissTimer=useCallback(type=>setTimers(p=>p.filter(t=>t.id!==type)),[]);
 
-  React.useEffect(()=>{
+  useEffect(()=>{
     if(timers.length===0)return;
     const iv=setInterval(()=>setTick(t=>t+1),1000);
     return()=>clearInterval(iv);
@@ -851,7 +845,7 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
   },[addToQueue,drugScIdx,W,showToast,queue]);
 
   // ⌘K keyboard listener
-  React.useEffect(()=>{
+  useEffect(()=>{
     const down=e=>{
       if((e.metaKey||e.ctrlKey)&&e.key==='k'){
         e.preventDefault();
@@ -952,7 +946,6 @@ Mark each order status as: done (already given), active (currently running), or 
   const isInQ=id=>queue.some(q=>q.id===id);
   const hasAllergyInQueue=queue.some(qi=>qi.allergyWarn);
 
-  // Render bundle chips with group separators
   // Save current queue as a named set
   const saveCurrentQueue=useCallback(()=>{
     const name=saveNameInput.trim();
@@ -1002,7 +995,7 @@ Mark each order status as: done (already given), active (currently running), or 
     }
   },[showToast]);
 
-  React.useEffect(()=>{
+  useEffect(()=>{
     const qids=new Set(queue.map(q=>q.id));
     const active=CONFLICT_PAIRS
       .filter(r=>r.ids.every(id=>qids.has(id)))

@@ -967,6 +967,12 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
     showToast(`📦 ${bundle.label} bundle applied · ACEP recs highlighted in catalog`);
   },[W,showToast,startTimer]);
 
+  // Stable ref to avoid stale-closure / TDZ issues in keyboard listener
+  const applyBundleRef=useRef(applyBundle);
+  applyBundleRef.current=applyBundle;
+  const palQueueRef=useRef(palQueue);
+  palQueueRef.current=palQueue;
+
   // ⌘K keyboard listener
   React.useEffect(()=>{
     const down=e=>{
@@ -988,18 +994,18 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
         if(e.key==='Escape'){e.preventDefault();setPalOpen(false);return;}
         if(e.key==='ArrowDown'){e.preventDefault();setPalIdx(p=>Math.min(p+1,(palResults.length||1)-1));return;}
         if(e.key==='ArrowUp'){e.preventDefault();setPalIdx(p=>Math.max(p-1,0));return;}
-        if(e.key==='Enter'){e.preventDefault();const it=palResults[palIdx];if(it)palQueue(it);return;}
+        if(e.key==='Enter'){e.preventDefault();const it=palResults[palIdx];if(it)palQueueRef.current(it);return;}
       }
       if(bundlePalOpen){
         if(e.key==='Escape'){e.preventDefault();setBundlePalOpen(false);return;}
         if(e.key==='ArrowDown'){e.preventDefault();setBundlePalIdx(p=>Math.min(p+1,(bundlePalResults.length||1)-1));return;}
         if(e.key==='ArrowUp'){e.preventDefault();setBundlePalIdx(p=>Math.max(p-1,0));return;}
-        if(e.key==='Enter'){e.preventDefault();const b=bundlePalResults[bundlePalIdx];if(b){applyBundle(b);setBundlePalOpen(false);}return;}
+        if(e.key==='Enter'){e.preventDefault();const b=bundlePalResults[bundlePalIdx];if(b){applyBundleRef.current(b);setBundlePalOpen(false);}return;}
       }
     };
     window.addEventListener('keydown',down);
     return()=>window.removeEventListener('keydown',down);
-  },[palOpen,bundlePalOpen,palResults,palIdx,palQueue,bundlePalResults,bundlePalIdx,applyBundle]);
+  },[palOpen,bundlePalOpen,palResults,palIdx,bundlePalResults,bundlePalIdx]);
 
   const runAI=async()=>{
     setAiLoading(true);

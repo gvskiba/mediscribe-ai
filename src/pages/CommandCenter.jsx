@@ -123,11 +123,12 @@ const WORKUP_PROFILES = [
 
 function deriveResultChips(patient) {
   // ── Real data path: uses patient.orders when entity is extended ──
-  if (patient.orders && patient.orders.length > 0) {
+  const patientOrders = Array.isArray(patient.orders) ? patient.orders : [];
+  if (patientOrders.length > 0) {
     const chips   = [];
-    const labs    = patient.orders.filter(o => o.type === "lab");
-    const imaging = patient.orders.filter(o => o.type === "imaging");
-    const consults= patient.orders.filter(o => o.type === "consult");
+    const labs    = patientOrders.filter(o => o.type === "lab");
+    const imaging = patientOrders.filter(o => o.type === "imaging");
+    const consults= patientOrders.filter(o => o.type === "consult");
 
     // Critical labs surface individually; pending aggregated; resulted collapsed
     labs.filter(o => o.status === "critical").forEach(o =>
@@ -323,11 +324,12 @@ function deriveTimelineStages(patient) {
   const h = idHash(String(patient.id || ""));
 
   // Completion — real entity fields take priority over mock
-  const hasOrders  = patient.orders
-    ? patient.orders.length > 0
+  const ordersArr  = Array.isArray(patient.orders) ? patient.orders : null;
+  const hasOrders  = ordersArr != null
+    ? ordersArr.length > 0
     : (patient.mins || 0) > 10 && h % 7 !== 0;
-  const hasResults = patient.orders
-    ? patient.orders.some(o => o.status === "resulted" || o.status === "given")
+  const hasResults = ordersArr != null
+    ? ordersArr.some(o => o.status === "resulted" || o.status === "given")
     : (patient.mins || 0) > 40 && h % 4 !== 0;
   const disp     = deriveDispoStatus(patient);
   const hasDispo = !!DISPO_MAP[disp];
@@ -1035,7 +1037,7 @@ function CensusPanel({ patients, search, onSearch, selectedId, onSelect, summari
 
         {displayed.map(p => {
           const isSelected = p.id === selectedId;
-          const hasCrit    = p.alerts && p.alerts.some(a => a.t === "critical");
+          const hasCrit    = Array.isArray(p.alerts) && p.alerts.some(a => a.t === "critical");
           return (
             <div
               key={p.id}
@@ -1089,7 +1091,7 @@ function SelectPatientPrompt({ patients }) {
         Choose a patient from the census to open their encounter workspace
       </div>
       <div style={{ marginTop:8, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center" }}>
-        {patients.filter(p => p.alerts && p.alerts.some(a => a.t==="critical")).slice(0,3).map(p => (
+        {patients.filter(p => Array.isArray(p.alerts) && p.alerts.some(a => a.t==="critical")).slice(0,3).map(p => (
           <div key={p.id} onClick={() => nav("PatientEncounter", { patientId:p.id })} style={{ padding:"6px 14px", borderRadius:20, background:"rgba(255,68,68,0.08)", border:"1px solid rgba(255,68,68,0.25)", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.red }}>
             🚨 {p.room} — {p.cc}
           </div>
@@ -1138,7 +1140,7 @@ const mockLastOrderMins = (p) => {
 
 // ─── RIGHT RAIL — SHIFT OVERVIEW ──────────────────────────────────────────────
 function ShiftRail({ patients }) {
-  const critPts = patients.filter(p => p.alerts && p.alerts.some(a => a.t === "critical"));
+  const critPts = patients.filter(p => Array.isArray(p.alerts) && p.alerts.some(a => a.t === "critical"));
   const avgTime = patients.length
     ? Math.round(patients.reduce((s, p) => s + (p.mins || 0), 0) / patients.length)
     : 0;
@@ -1197,7 +1199,7 @@ function ShiftRail({ patients }) {
           {[
             { label:"Total Pts",   value:patients.length,                                                                        color:T.teal  },
             { label:"ESI 1-2",     value:patients.filter(p => p.esi <= 2).length,                                                color:T.coral },
-            { label:"Crit Alerts", value:patients.filter(p => p.alerts && p.alerts.some(a => a.t === "critical")).length,        color:T.red   },
+            { label:"Crit Alerts", value:patients.filter(p => Array.isArray(p.alerts) && p.alerts.some(a => a.t === "critical")).length, color:T.red   },
             { label:"Avg LOS",     value:`${avgTime}m`,                                                                          color:T.gold  },
           ].map((s, i) => (
             <div key={i} style={{ ...gc({ borderRadius:9 }), padding:"10px 11px", textAlign:"center" }}>

@@ -151,6 +151,7 @@ import SpecialtyNoteHub from '@/pages/SpecialtyNoteHub';
 import SpecialtyNoteHubT2 from '@/pages/SpecialtyNoteHubT2';
 import NotryaTechHub from '@/pages/NotryaTechHub';
 import CommandCenter from '@/pages/CommandCenter';
+import FollowUpHub from '@/pages/FollowUpHub';
 import PatientEncounter from '@/pages/PatientEncounter';
 import NotryaSplash from '@/pages/NotryaSplash';
 
@@ -402,6 +403,8 @@ const AuthenticatedApp = () => {
         <Route path="/specialty-note-hub" element={<SpecialtyNoteHub />} />
         <Route path="/SpecialtyNoteHubT2" element={<SpecialtyNoteHubT2 />} />
         <Route path="/tech-hub" element={<NotryaTechHub />} />
+        <Route path="/FollowUpHub" element={<FollowUpHub />} />
+        <Route path="/follow-up-hub" element={<FollowUpHub />} />
         <Route path="/NotryaTechHub" element={<NotryaTechHub />} />
         <Route path="/Calendar" element={<HubIndex />} />
         <Route path="/unified-pharma"   element={<UnifiedPharmacologyHub />} />

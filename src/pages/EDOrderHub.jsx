@@ -915,40 +915,6 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
     setPalIdx(0);
   },[addToQueue,drugScIdx,W,showToast,queue]);
 
-  // ⌘K keyboard listener
-  React.useEffect(()=>{
-    const down=e=>{
-      if((e.metaKey||e.ctrlKey)&&e.key==='k'){
-        e.preventDefault();
-        if(bundlePalOpen)setBundlePalOpen(false);
-        setPalOpen(p=>{if(!p)setTimeout(()=>palInputRef.current&&palInputRef.current.focus(),40);return!p;});
-        setPalQ('');setPalIdx(0);
-        return;
-      }
-      if((e.metaKey||e.ctrlKey)&&e.key==='b'){
-        e.preventDefault();
-        if(palOpen)setPalOpen(false);
-        setBundlePalOpen(p=>{if(!p)setTimeout(()=>bundlePalRef.current&&bundlePalRef.current.focus(),40);return!p;});
-        setBundlePalQ('');setBundlePalIdx(0);
-        return;
-      }
-      if(palOpen){
-        if(e.key==='Escape'){e.preventDefault();setPalOpen(false);return;}
-        if(e.key==='ArrowDown'){e.preventDefault();setPalIdx(p=>Math.min(p+1,(palResults.length||1)-1));return;}
-        if(e.key==='ArrowUp'){e.preventDefault();setPalIdx(p=>Math.max(p-1,0));return;}
-        if(e.key==='Enter'){e.preventDefault();const it=palResults[palIdx];if(it)palQueue(it);return;}
-      }
-      if(bundlePalOpen){
-        if(e.key==='Escape'){e.preventDefault();setBundlePalOpen(false);return;}
-        if(e.key==='ArrowDown'){e.preventDefault();setBundlePalIdx(p=>Math.min(p+1,(bundlePalResults.length||1)-1));return;}
-        if(e.key==='ArrowUp'){e.preventDefault();setBundlePalIdx(p=>Math.max(p-1,0));return;}
-        if(e.key==='Enter'){e.preventDefault();const b=bundlePalResults[bundlePalIdx];if(b){applyBundle(b);setBundlePalOpen(false);}return;}
-      }
-    };
-    window.addEventListener('keydown',down);
-    return()=>window.removeEventListener('keydown',down);
-  },[palOpen,bundlePalOpen,palResults,palIdx,palQueue,bundlePalResults,bundlePalIdx,applyBundle]);
-
   const handleAddDrug=useCallback(drug=>{
     const si=drugScIdx[drug.id]||0;
     const sc=drug.scenarios[si];
@@ -1000,6 +966,40 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
     if(bTT)startTimer(bTT);
     showToast(`📦 ${bundle.label} bundle applied · ACEP recs highlighted in catalog`);
   },[W,showToast,startTimer]);
+
+  // ⌘K keyboard listener
+  React.useEffect(()=>{
+    const down=e=>{
+      if((e.metaKey||e.ctrlKey)&&e.key==='k'){
+        e.preventDefault();
+        if(bundlePalOpen)setBundlePalOpen(false);
+        setPalOpen(p=>{if(!p)setTimeout(()=>palInputRef.current&&palInputRef.current.focus(),40);return!p;});
+        setPalQ('');setPalIdx(0);
+        return;
+      }
+      if((e.metaKey||e.ctrlKey)&&e.key==='b'){
+        e.preventDefault();
+        if(palOpen)setPalOpen(false);
+        setBundlePalOpen(p=>{if(!p)setTimeout(()=>bundlePalRef.current&&bundlePalRef.current.focus(),40);return!p;});
+        setBundlePalQ('');setBundlePalIdx(0);
+        return;
+      }
+      if(palOpen){
+        if(e.key==='Escape'){e.preventDefault();setPalOpen(false);return;}
+        if(e.key==='ArrowDown'){e.preventDefault();setPalIdx(p=>Math.min(p+1,(palResults.length||1)-1));return;}
+        if(e.key==='ArrowUp'){e.preventDefault();setPalIdx(p=>Math.max(p-1,0));return;}
+        if(e.key==='Enter'){e.preventDefault();const it=palResults[palIdx];if(it)palQueue(it);return;}
+      }
+      if(bundlePalOpen){
+        if(e.key==='Escape'){e.preventDefault();setBundlePalOpen(false);return;}
+        if(e.key==='ArrowDown'){e.preventDefault();setBundlePalIdx(p=>Math.min(p+1,(bundlePalResults.length||1)-1));return;}
+        if(e.key==='ArrowUp'){e.preventDefault();setBundlePalIdx(p=>Math.max(p-1,0));return;}
+        if(e.key==='Enter'){e.preventDefault();const b=bundlePalResults[bundlePalIdx];if(b){applyBundle(b);setBundlePalOpen(false);}return;}
+      }
+    };
+    window.addEventListener('keydown',down);
+    return()=>window.removeEventListener('keydown',down);
+  },[palOpen,bundlePalOpen,palResults,palIdx,palQueue,bundlePalResults,bundlePalIdx,applyBundle]);
 
   const runAI=async()=>{
     setAiLoading(true);

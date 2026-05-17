@@ -796,6 +796,11 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
     return BUNDLES.filter(b=>b.label.toLowerCase().includes(q)||b.group.toLowerCase().includes(q));
   },[bundlePalQ]);
 
+  const startTimer=useCallback(type=>{
+    if(!TIMER_DEFS[type])return;
+    setTimers(p=>p.some(t=>t.id===type)?p:[...p,{id:type,startedAt:Date.now()}]);
+  },[]);
+
   const addToQueue=useCallback((item,cpoeText=null,opts={})=>{
     const aw=getAllergyWarn(item);
     setQueue(p=>{
@@ -825,11 +830,6 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
   },[showToast,startTimer]);
 
   const removeFromQueue=useCallback(id=>setQueue(p=>p.filter(q=>q.id!==id)),[]);
-
-  const startTimer=useCallback(type=>{
-    if(!TIMER_DEFS[type])return;
-    setTimers(p=>p.some(t=>t.id===type)?p:[...p,{id:type,startedAt:Date.now()}]);
-  },[]);
 
   const dismissTimer=useCallback(type=>setTimers(p=>p.filter(t=>t.id!==type)),[]);
 

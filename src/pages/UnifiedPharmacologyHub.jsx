@@ -3,6 +3,7 @@ import { InvokeLLM } from "@/integrations/Core";
 import { DrugDosing } from "@/api/entities";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (() => {
@@ -1808,6 +1809,7 @@ export default function UnifiedPharmacologyHub() {
       <NotryaNav currentHub="UnifiedPharmacologyHub" />
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
         <NotryaHubHeader hubName="Unified Pharmacology Hub" category="Pharmacology" homeUrl="/" />
+        <NotryaPatientBar />
       <div style={{padding:"20px 18px 60px",fontFamily:"DM Sans,sans-serif"}}>
 
       {/* Patient Banner */}

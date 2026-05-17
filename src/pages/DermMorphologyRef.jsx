@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 // ─── STYLE INJECTION ──────────────────────────────────────────────────────────
 (() => {
@@ -658,6 +659,7 @@ export default function DermMorphologyRef({ embedded = false, onBack }) {
     <div style={{ fontFamily:"'DM Sans',sans-serif",
       background:embedded ? "transparent" : "var(--dmr-bg)",
       minHeight:embedded ? "auto" : "100vh", color:"var(--dmr-txt)" }}>
+      {!embedded && <NotryaPatientBar />}
       <div style={{ maxWidth:1300, margin:"0 auto", padding:embedded ? "0" : "0 16px" }}>
 
         <div style={{ padding: embedded ? "0 0 14px" : "18px 0 14px" }}>

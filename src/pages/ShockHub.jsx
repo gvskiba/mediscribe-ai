@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 // ── Font + CSS Injection ─────────────────────────────────────────
 (() => {
@@ -369,6 +370,7 @@ export default function ShockHub() {
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,position:"relative"}}>
         <AmbientBg/>
         <NotryaHubHeader hubName="Shock Hub" category="Critical Care" homeUrl="/" />
+        <NotryaPatientBar />
       <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 16px",width:"100%"}}>
 
         {/* Stat Banner */}

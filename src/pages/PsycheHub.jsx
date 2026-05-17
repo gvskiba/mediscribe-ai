@@ -18,6 +18,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 (() => {
   if (document.getElementById("psych-fonts")) return;
@@ -650,6 +651,7 @@ export default function PsychHub({ embedded = false }) {
       {!embedded && <NotryaNav currentHub="PsychHub" />}
       <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
         {!embedded && <NotryaHubHeader hubName="Psych Hub" category="Neurology" homeUrl="/" />}
+        {!embedded && <NotryaPatientBar />}
       <div style={{ maxWidth:900, margin:"0 auto",
         padding:embedded ? "0" : "0 16px", width:"100%" }}>
         <div style={{ display:"flex", gap:5, flexWrap:"wrap", padding:"6px",

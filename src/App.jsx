@@ -403,7 +403,6 @@ const AuthenticatedApp = () => {
         <Route path="/specialty-note-hub" element={<SpecialtyNoteHub />} />
         <Route path="/SpecialtyNoteHubT2" element={<SpecialtyNoteHubT2 />} />
         <Route path="/tech-hub" element={<NotryaTechHub />} />
-        <Route path="/FollowUpHub" element={<FollowUpHub />} />
         <Route path="/follow-up-hub" element={<FollowUpHub />} />
         <Route path="/NotryaTechHub" element={<NotryaTechHub />} />
         <Route path="/Calendar" element={<HubIndex />} />

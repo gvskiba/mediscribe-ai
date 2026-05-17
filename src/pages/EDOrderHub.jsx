@@ -84,6 +84,16 @@ const CSS=`
 .bchip:hover{filter:brightness(1.15);}
 .bchip.active{box-shadow:0 0 0 2px currentColor;filter:brightness(1.18);}
 .bchip-empty{font-size:10px;color:${T.txt4};font-style:italic;}
+/* ── QUICK DOSE STRIP ── */
+.qdose-row{flex-shrink:0;display:flex;gap:4px;padding:5px 11px 6px;border-bottom:1px solid ${T.bd};background:${T.bg};overflow-x:auto;align-items:center;}
+.qdose-row::-webkit-scrollbar{height:0;}
+.qdose-hdr{font-size:8px;font-family:'JetBrains Mono',monospace;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${T.txt4};flex-shrink:0;white-space:nowrap;margin-right:3px;}
+.qdose-chip{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 9px;border-radius:8px;border:1px solid transparent;cursor:pointer;flex-shrink:0;transition:all .16s;min-width:58px;text-align:center;}
+.qdose-chip:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.3);}
+.qdose-chip.inq{box-shadow:0 0 0 2px currentColor;}
+.qd-name{font-size:10px;font-weight:700;white-space:nowrap;line-height:1.2;}
+.qd-dose{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:600;opacity:.85;white-space:nowrap;line-height:1.2;}
+.qd-check{font-size:8px;font-weight:900;line-height:1;}
 .acep-banner{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:5px 13px;background:rgba(0,229,192,.06);border-bottom:1px solid rgba(0,229,192,.2);}
 .acep-banner-txt{font-size:11px;font-weight:600;color:${T.teal};}
 .acep-banner-sub{font-size:10px;color:${T.txt4};}
@@ -699,6 +709,35 @@ const buildMDMText=(orders,time)=>{
   return`${BAR}\n[MDM — Auto-populated from Notrya EDOrderHub]\n${'─'.repeat(46)}\n${L.join('\n')}\n${BAR}\n[Signed: ${time}]`;
 };
 
+// ── Quick Dose Strip ───────────────────────────────────────────────────────────────────────────────
+// Each id matches a DRUGS entry so queue deduplication + allergy checking work natively
+const QUICK_DOSES=[
+  {id:'zofran',label:'Zofran',icon:'🤮',color:'#3dffa0',
+   doseLabel:()=>'4 mg IV',
+   build:()=>buildBlock('Ondansetron',[['DRUG','Ondansetron (Zofran) — Quick Dose'],['DOSE','4 mg IV over 2–5 min'],['FREQUENCY','Q4–6h PRN nausea'],['INDICATION','Acute nausea / vomiting']])},
+  {id:'morph',label:'Morphine',icon:'🩹',color:'#3b9eff',
+   doseLabel:()=>'4 mg IV',
+   build:()=>buildBlock('Morphine Sulfate',[['DRUG','Morphine Sulfate — Quick Dose'],['DOSE','4 mg IV over 2–5 min'],['REPEAT','q15–20 min PRN NRS ≥ 7'],['INDICATION','Moderate–severe pain']],'Monitor resp rate · Reversal: naloxone 0.4 mg IV')},
+  {id:'fent',label:'Fentanyl',icon:'🩹',color:'#3b9eff',
+   doseLabel:(W)=>`${Math.round(W)} mcg IV`,
+   build:(W)=>buildBlock('Fentanyl',[['DRUG','Fentanyl Citrate — Quick Dose'],['DOSE',`${Math.round(W)} mcg IV over 2–3 min  [1 mcg/kg × ${W} kg]`],['REPEAT','Titrate q5–10 min PRN NRS ≥ 7'],['INDICATION','Moderate–severe pain']],'REVERSAL: naloxone 0.4 mg IV · 100× more potent than morphine')},
+  {id:'ketor',label:'Ketorolac',icon:'🩹',color:'#ff9f43',
+   doseLabel:()=>'15 mg IV',
+   build:()=>buildBlock('Ketorolac',[['DRUG','Ketorolac (Toradol) — Quick Dose'],['DOSE','15 mg IV over 2 min'],['FREQUENCY','Q6h PRN, max 5 days total'],['INDICATION','Non-opioid analgesia — renal colic, MSK, HA']],'AVOID: CrCl < 30, GI bleed, anticoagulation')},
+  {id:'apap',label:'Tylenol',icon:'🩹',color:'#ff9f43',
+   doseLabel:(W)=>`${W<50?'650':'1,000'} mg IV`,
+   build:(W)=>buildBlock('Acetaminophen',[['DRUG','Acetaminophen (Ofirmev IV) — Quick Dose'],['DOSE',`${W<50?'650 mg':'1,000 mg'} IV over 15 min  [${W} kg]`],['FREQUENCY','Q6h scheduled or Q4–6h PRN'],['INDICATION','Pain adjunct / antipyretic — safe in renal failure']],'Max 2 g/24h hepatic impairment or chronic ETOH')},
+  {id:'lzp',label:'Ativan',icon:'😴',color:'#9b6dff',
+   doseLabel:()=>'2 mg IV',
+   build:()=>buildBlock('Lorazepam',[['DRUG','Lorazepam (Ativan) — Quick Dose'],['DOSE','2 mg IV over 2 min'],['REPEAT','May repeat × 1 in 5–10 min if seizing'],['INDICATION','Anxiety / agitation / seizure']],'REVERSAL: flumazenil 0.2 mg IV q1 min × 5 · Airway monitoring')},
+  {id:'haldo',label:'Haldol',icon:'🧠',color:'#c084fc',
+   doseLabel:()=>'5 mg IM',
+   build:()=>buildBlock('Haloperidol',[['DRUG','Haloperidol (Haldol) — Quick Dose'],['DOSE','5 mg IM — anterolateral thigh or deltoid'],['REPEAT','May repeat 5 mg IM q30–60 min PRN, max ~20 mg/24h'],['INDICATION','Acute agitation']],'Baseline QTc · No respiratory depression unlike BZDs')},
+  {id:'nalox',label:'Narcan',icon:'⚤',color:'#ff6b6b',
+   doseLabel:()=>'0.4 mg IV',
+   build:()=>buildBlock('Naloxone',[['DRUG','Naloxone (Narcan) — Quick Dose'],['DOSE','0.4 mg IV — titrate to respiratory drive, NOT full reversal'],['ROUTE','IV preferred · IN: 4 mg per nare'],['REPEAT','q2–3 min PRN; infusion if renarcotization risk'],['INDICATION','Opioid respiratory depression']],'Duration 30–90 min — WATCH FOR RENARCOTIZATION · Avoid full reversal in opioid-dependent')},
+];
+
 const CAT_META={
   cardiac:{label:'Cardiac',color:T.coral},
   rhythm:{label:'Arrhythmia',color:T.gold},
@@ -796,11 +835,6 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
     return BUNDLES.filter(b=>b.label.toLowerCase().includes(q)||b.group.toLowerCase().includes(q));
   },[bundlePalQ]);
 
-  const startTimer=useCallback(type=>{
-    if(!TIMER_DEFS[type])return;
-    setTimers(p=>p.some(t=>t.id===type)?p:[...p,{id:type,startedAt:Date.now()}]);
-  },[]);
-
   const addToQueue=useCallback((item,cpoeText=null,opts={})=>{
     const aw=getAllergyWarn(item);
     setQueue(p=>{
@@ -830,6 +864,11 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
   },[showToast,startTimer]);
 
   const removeFromQueue=useCallback(id=>setQueue(p=>p.filter(q=>q.id!==id)),[]);
+
+  const startTimer=useCallback(type=>{
+    if(!TIMER_DEFS[type])return;
+    setTimers(p=>p.some(t=>t.id===type)?p:[...p,{id:type,startedAt:Date.now()}]);
+  },[]);
 
   const dismissTimer=useCallback(type=>setTimers(p=>p.filter(t=>t.id!==type)),[]);
 
@@ -1165,6 +1204,42 @@ Mark each order status as: done (already given), active (currently running), or 
               </div>
             );
           })()}
+
+          {/* QUICK DOSE STRIP */}
+          <div className="qdose-row">
+            <span className="qdose-hdr">Fast Rx</span>
+            {QUICK_DOSES.map(qd=>{
+              const inQ=isInQ(qd.id);
+              const doseStr=qd.doseLabel(W);
+              const drugRef=DRUGS.find(d=>d.id===qd.id)||{};
+              return(
+                <button key={qd.id}
+                  className={`qdose-chip ${inQ?'inq':''}`}
+                  style={{
+                    borderColor:`${qd.color}${inQ?'99':'44'}`,
+                    color:inQ?T.bg:qd.color,
+                    background:inQ?qd.color:`${qd.color}12`,
+                  }}
+                  onClick={()=>{
+                    if(inQ){removeFromQueue(qd.id);return;}
+                    addToQueue({
+                      id:qd.id,
+                      name:drugRef.name||qd.label,
+                      cat:'meds',
+                      icon:qd.icon,
+                      priority:'URGENT',
+                      detail:`${doseStr} · Quick Dose`,
+                      alert:drugRef.alert||null,
+                      contrast:drugRef.contrast||false,
+                    },qd.build(W));
+                  }}>
+                  {inQ&&<span className="qd-check">✓</span>}
+                  <span className="qd-name">{qd.label}</span>
+                  <span className="qd-dose">{doseStr}</span>
+                </button>
+              );
+            })}
+          </div>
 
           {/* ACEP guideline highlight banner */}
           {activeBundle&&(

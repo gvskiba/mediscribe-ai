@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import NotryaPatientBar from '@/components/HubHeader/NotryaPatientBar';
 
@@ -72,14 +72,18 @@ const CSS=`
 .wt-inp{width:60px;background:rgba(14,37,68,.8);border:1px solid ${T.bd};border-radius:7px;padding:5px 7px;color:${T.txt};font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;outline:none;text-align:center;transition:border-color .15s;}
 .wt-inp:focus{border-color:rgba(0,229,192,.5);}
 .wt-inp.filled{border-color:rgba(0,229,192,.35);}
-.bundles-row{flex-shrink:0;padding:5px 13px;border-bottom:1px solid ${T.bd};background:${T.bgP};display:flex;gap:5px;overflow-x:auto;align-items:center;}
-.bundles-row::-webkit-scrollbar{height:3px;}
-.bl-lbl{font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${T.txt4};flex-shrink:0;white-space:nowrap;}
-.bg-sep{font-size:8px;font-weight:700;color:${T.txt4};font-family:'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0;padding:0 2px;white-space:nowrap;align-self:center;opacity:.7;}
-.bg-dot{color:${T.bd};font-size:14px;flex-shrink:0;align-self:center;line-height:1;}
+/* Bundle 2-row layout */
+.bcat-row{flex-shrink:0;display:flex;gap:3px;padding:5px 11px;border-bottom:1px solid ${T.bd};background:${T.bgP};overflow-x:auto;}
+.bcat-row::-webkit-scrollbar{height:0;}
+.bcat-tab{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;background:${T.bgU};border:1px solid ${T.bd};color:${T.txt3};transition:all .15s;}
+.bcat-tab:hover{border-color:${T.bdH};color:${T.txt2};filter:brightness(1.1);}
+.bcat-tab.active{font-weight:700;}
+.bchips-row{flex-shrink:0;display:flex;gap:5px;padding:5px 11px 6px;border-bottom:1px solid ${T.bd};background:${T.bgP};overflow-x:auto;align-items:center;min-height:34px;}
+.bchips-row::-webkit-scrollbar{height:0;}
 .bchip{display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .18s;}
 .bchip:hover{filter:brightness(1.15);}
 .bchip.active{box-shadow:0 0 0 2px currentColor;filter:brightness(1.18);}
+.bchip-empty{font-size:10px;color:${T.txt4};font-style:italic;}
 .acep-banner{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:5px 13px;background:rgba(0,229,192,.06);border-bottom:1px solid rgba(0,229,192,.2);}
 .acep-banner-txt{font-size:11px;font-weight:600;color:${T.teal};}
 .acep-banner-sub{font-size:10px;color:${T.txt4};}
@@ -465,6 +469,17 @@ const DRUGS=[
 // ── Bundles ───────────────────────────────────────────────────────────────────
 // ids format: [itemId, scenarioLabel?]
 // itemId can be a DRUG id or SIMPLE order id — applyBundle handles both
+const BUNDLE_GROUPS=[
+  {id:'Cardiac',label:'Cardiac',icon:'🫀',color:T.coral},
+  {id:'Respiratory',label:'Resp',icon:'🫁',color:T.blue},
+  {id:'Airway',label:'Airway',icon:'😴',color:T.purple},
+  {id:'Neuro',label:'Neuro',icon:'🧠',color:'#b890ff'},
+  {id:'Metabolic',label:'Metabolic',icon:'🧪',color:T.gold},
+  {id:'Infxn',label:'Infxn',icon:'🦠',color:T.teal},
+  {id:'Psych/Tox',label:'Psych/Tox',icon:'🧠',color:'#c084fc'},
+  {id:'Allergy',label:'Allergy',icon:'⚠️',color:T.orange},
+];
+
 const BUNDLES=[
   // ── Cardiac
   {label:'STEMI',group:'Cardiac',icon:'🫀',color:T.coral,ids:[['asa','ACS Load'],['tica','ACS Load'],['heparin','STEMI / PCI'],['statin','ACS High-Intensity'],['nitro_sl','ACS Sublingual'],['p_ecg'],['p_tele'],['l_trop'],['l_coag'],['l_type'],['c_cards']]},
@@ -522,7 +537,11 @@ const PRESENTATION_RECS={
   'Anaphylaxis':new Set(['epi_anap','p_o2','p_iv2','p_tele','zofran']),
 };
 
-// ── Drug Conflict Pairs ───────────────────────────────────────────────────────
+// ── Category meta ─────────────────────────────────────────────────────────────
+// ── Also Consider — clinical order chaining map ──────────────────────────────
+// Each entry: orderId -> [{id, reason}] suggestions triggered when that order is queued
+// ── Allergy Alternative Suggestions ───────────────────────────────────────────────────────────────────────────────
+// Keyed by allergy identifier (matches AMAP keys and item.alert values)
 const CONFLICT_PAIRS=[
   {ids:['diltia','metro_iv'],sev:'alert',icon:'⚡',title:'Combined AV Nodal Blockade',msg:'Diltiazem + Metoprolol — high risk of bradycardia and complete AV block',rec:'Use one rate-control agent. Have atropine + TCP available if combining.'},
   {ids:['amio_iv','procain'],sev:'alert',icon:'⚡',title:'Dual Antiarrhythmic — Torsades Risk',msg:'Amiodarone + Procainamide — additive QT prolongation, torsades de pointes risk',rec:'Avoid combination. Choose one antiarrhythmic; amiodarone preferred for most presentations.'},
@@ -698,6 +717,11 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
   const[queue,setQueue]=useState([]);
   const[activeCat,setActiveCat]=useState('all');
   const[activeBundle,setActiveBundle]=useState(null);
+  const[activeBundleCat,setActiveBundleCat]=useState('Cardiac');
+  const[bundlePalOpen,setBundlePalOpen]=useState(false);
+  const[bundlePalQ,setBundlePalQ]=useState('');
+  const[bundlePalIdx,setBundlePalIdx]=useState(0);
+  const bundlePalRef=useRef(null);
   const[suggestions,setSuggestions]=useState([]);
   const[allergyAlts,setAllergyAlts]=useState(null);
   const[conflicts,setConflicts]=useState([]);
@@ -766,10 +790,11 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
     return[...sr,...dr].sort((a,b)=>b._score-a._score).slice(0,15);
   },[palQ]);
 
-  const startTimer=useCallback(type=>{
-    if(!TIMER_DEFS[type])return;
-    setTimers(p=>p.some(t=>t.id===type)?p:[...p,{id:type,startedAt:Date.now()}]);
-  },[]);
+  const bundlePalResults=useMemo(()=>{
+    const q=bundlePalQ.trim().toLowerCase();
+    if(!q)return BUNDLES;
+    return BUNDLES.filter(b=>b.label.toLowerCase().includes(q)||b.group.toLowerCase().includes(q));
+  },[bundlePalQ]);
 
   const addToQueue=useCallback((item,cpoeText=null,opts={})=>{
     const aw=getAllergyWarn(item);
@@ -790,6 +815,8 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
       if(!opts.silent){
         const suggs=(ALSO_CONSIDER[item.id]||[]).filter(s=>!p.some(q=>q.id===s.id)&&s.id!==item.id).slice(0,3);
         setTimeout(()=>setSuggestions(suggs),0);
+      }
+      if(!opts.silent){
         const tType=ORDER_TIMER_TRIGGERS[item.id];
         if(tType)setTimeout(()=>startTimer(tType),0);
       }
@@ -799,9 +826,14 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
 
   const removeFromQueue=useCallback(id=>setQueue(p=>p.filter(q=>q.id!==id)),[]);
 
+  const startTimer=useCallback(type=>{
+    if(!TIMER_DEFS[type])return;
+    setTimers(p=>p.some(t=>t.id===type)?p:[...p,{id:type,startedAt:Date.now()}]);
+  },[]);
+
   const dismissTimer=useCallback(type=>setTimers(p=>p.filter(t=>t.id!==type)),[]);
 
-  useEffect(()=>{
+  React.useEffect(()=>{
     if(timers.length===0)return;
     const iv=setInterval(()=>setTick(t=>t+1),1000);
     return()=>clearInterval(iv);
@@ -845,23 +877,38 @@ export default function EDOrderHub({embedded=false,patientName='',patientAllergi
   },[addToQueue,drugScIdx,W,showToast,queue]);
 
   // ⌘K keyboard listener
-  useEffect(()=>{
+  React.useEffect(()=>{
     const down=e=>{
       if((e.metaKey||e.ctrlKey)&&e.key==='k'){
         e.preventDefault();
+        if(bundlePalOpen)setBundlePalOpen(false);
         setPalOpen(p=>{if(!p)setTimeout(()=>palInputRef.current&&palInputRef.current.focus(),40);return!p;});
         setPalQ('');setPalIdx(0);
         return;
       }
-      if(!palOpen)return;
-      if(e.key==='Escape'){e.preventDefault();setPalOpen(false);return;}
-      if(e.key==='ArrowDown'){e.preventDefault();setPalIdx(p=>Math.min(p+1,(palResults.length||1)-1));return;}
-      if(e.key==='ArrowUp'){e.preventDefault();setPalIdx(p=>Math.max(p-1,0));return;}
-      if(e.key==='Enter'){e.preventDefault();const it=palResults[palIdx];if(it)palQueue(it);return;}
+      if((e.metaKey||e.ctrlKey)&&e.key==='b'){
+        e.preventDefault();
+        if(palOpen)setPalOpen(false);
+        setBundlePalOpen(p=>{if(!p)setTimeout(()=>bundlePalRef.current&&bundlePalRef.current.focus(),40);return!p;});
+        setBundlePalQ('');setBundlePalIdx(0);
+        return;
+      }
+      if(palOpen){
+        if(e.key==='Escape'){e.preventDefault();setPalOpen(false);return;}
+        if(e.key==='ArrowDown'){e.preventDefault();setPalIdx(p=>Math.min(p+1,(palResults.length||1)-1));return;}
+        if(e.key==='ArrowUp'){e.preventDefault();setPalIdx(p=>Math.max(p-1,0));return;}
+        if(e.key==='Enter'){e.preventDefault();const it=palResults[palIdx];if(it)palQueue(it);return;}
+      }
+      if(bundlePalOpen){
+        if(e.key==='Escape'){e.preventDefault();setBundlePalOpen(false);return;}
+        if(e.key==='ArrowDown'){e.preventDefault();setBundlePalIdx(p=>Math.min(p+1,(bundlePalResults.length||1)-1));return;}
+        if(e.key==='ArrowUp'){e.preventDefault();setBundlePalIdx(p=>Math.max(p-1,0));return;}
+        if(e.key==='Enter'){e.preventDefault();const b=bundlePalResults[bundlePalIdx];if(b){applyBundle(b);setBundlePalOpen(false);}return;}
+      }
     };
     window.addEventListener('keydown',down);
     return()=>window.removeEventListener('keydown',down);
-  },[palOpen,palResults,palIdx,palQueue]);
+  },[palOpen,bundlePalOpen,palResults,palIdx,palQueue,bundlePalResults,bundlePalIdx,applyBundle]);
 
   const handleAddDrug=useCallback(drug=>{
     const si=drugScIdx[drug.id]||0;
@@ -946,6 +993,7 @@ Mark each order status as: done (already given), active (currently running), or 
   const isInQ=id=>queue.some(q=>q.id===id);
   const hasAllergyInQueue=queue.some(qi=>qi.allergyWarn);
 
+  // Render bundle chips with group separators
   // Save current queue as a named set
   const saveCurrentQueue=useCallback(()=>{
     const name=saveNameInput.trim();
@@ -995,7 +1043,7 @@ Mark each order status as: done (already given), active (currently running), or 
     }
   },[showToast]);
 
-  useEffect(()=>{
+  React.useEffect(()=>{
     const qids=new Set(queue.map(q=>q.id));
     const active=CONFLICT_PAIRS
       .filter(r=>r.ids.every(id=>qids.has(id)))
@@ -1008,27 +1056,6 @@ Mark each order status as: done (already given), active (currently running), or 
     dismissedRef.current.add(uid);
     setConflicts(p=>p.filter(c=>c.uid!==uid));
   },[]);
-
-  const renderBundles=()=>{
-    const out=[];
-    let lastGroup=null;
-    BUNDLES.forEach((b,i)=>{
-      if(b.group!==lastGroup){
-        if(lastGroup!==null)out.push(<span key={`dot-${i}`} className="bg-dot">·</span>);
-        out.push(<span key={`grp-${b.group}`} className="bg-sep">{b.group}</span>);
-        lastGroup=b.group;
-      }
-      out.push(
-        <button key={b.label}
-          className={`bchip ${activeBundle===b.label?'active':''}`}
-          onClick={()=>activeBundle===b.label?setActiveBundle(null):applyBundle(b)}
-          style={{border:`1px solid ${b.color}44`,background:`${b.color}14`,color:b.color}}>
-          <span>{b.icon}</span>{b.label}
-        </button>
-      );
-    });
-    return out;
-  };
 
   return(
     <div className="edoh-wrap" style={{height:embedded?'100%':'calc(100vh - 186px)'}}>
@@ -1100,11 +1127,44 @@ Mark each order status as: done (already given), active (currently running), or 
             </button>
           </div>
 
-          {/* Bundle row — grouped with group labels */}
-          <div className="bundles-row">
-            <span className="bl-lbl">Bundles:</span>
-            {renderBundles()}
+          {/* Bundle Category Tabs — Row 1 */}
+          <div className="bcat-row">
+            {BUNDLE_GROUPS.map(g=>{
+              const col=g.color;
+              const isA=activeBundleCat===g.id;
+              return(
+                <button key={g.id} className={`bcat-tab ${isA?'active':''}`}
+                  style={isA?{background:`${col}18`,border:`1px solid ${col}55`,color:col}:{}}
+                  onClick={()=>setActiveBundleCat(g.id)}>
+                  <span>{g.icon}</span>{g.label}
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,opacity:.6,marginLeft:1}}>
+                    ({BUNDLES.filter(b=>b.group===g.id).length})
+                  </span>
+                </button>
+              );
+            })}
           </div>
+          {/* Bundle Chips — Row 2 (filtered by active category) */}
+          {(()=>{
+            const catBundles=BUNDLES.filter(b=>b.group===activeBundleCat);
+            return(
+              <div className="bchips-row">
+                {catBundles.map(b=>(
+                  <button key={b.label}
+                    className={`bchip ${activeBundle===b.label?'active':''}`}
+                    onClick={()=>activeBundle===b.label?setActiveBundle(null):applyBundle(b)}
+                    style={{border:`1px solid ${b.color}44`,background:`${b.color}14`,color:b.color}}>
+                    <span>{b.icon}</span>{b.label}
+                  </button>
+                ))}
+                {catBundles.length===0&&<span className="bchip-empty">No bundles in this category</span>}
+                <button className="pal-trigger" style={{marginLeft:'auto',flexShrink:0}}
+                  onClick={()=>{setBundlePalOpen(true);setBundlePalQ('');setBundlePalIdx(0);setTimeout(()=>bundlePalRef.current&&bundlePalRef.current.focus(),40);}}>
+                  ⌘B
+                </button>
+              </div>
+            );
+          })()}
 
           {/* ACEP guideline highlight banner */}
           {activeBundle&&(
@@ -1527,6 +1587,74 @@ Mark each order status as: done (already given), active (currently running), or 
                 onClick={()=>setSignedSnapshot(null)}>New Session
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* BUNDLE PALETTE ⌘B */}
+      {bundlePalOpen&&(
+        <div className="pal-overlay" onClick={()=>setBundlePalOpen(false)}>
+          <div className="pal-box" onClick={e=>e.stopPropagation()}>
+            <div className="pal-top">
+              <span className="pal-icon">📦</span>
+              <input
+                ref={bundlePalRef}
+                className="pal-inp"
+                value={bundlePalQ}
+                onChange={e=>{setBundlePalQ(e.target.value);setBundlePalIdx(0);}}
+                placeholder="Search bundles by name or category…"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              {bundlePalQ&&<button onClick={()=>{setBundlePalQ('');setBundlePalIdx(0);bundlePalRef.current&&bundlePalRef.current.focus();}} style={{background:'none',border:'none',color:T.txt4,cursor:'pointer',fontSize:13,padding:'0 4px'}}>✕</button>}
+              <span className="pal-esc">ESC</span>
+            </div>
+            <div className="pal-results">
+              {!bundlePalQ.trim()&&(
+                <div className="pal-empty">
+                  <div style={{fontSize:28,opacity:.15,marginBottom:10}}>📦</div>
+                  <div>{BUNDLES.length} bundles across {BUNDLE_GROUPS.length} categories</div>
+                  <div style={{marginTop:6,fontSize:11,color:T.txt4}}>Type to filter · ↑↓ navigate · ↵ apply</div>
+                </div>
+              )}
+              {bundlePalResults.length===0&&bundlePalQ.trim()&&(
+                <div className="pal-empty">No bundles matching &ldquo;{bundlePalQ}&rdquo;</div>
+              )}
+              {bundlePalResults.length>0&&(()=>{
+                let lastGrp=null;
+                return bundlePalResults.map((b,i)=>{
+                  const grpDef=BUNDLE_GROUPS.find(g=>g.id===b.group);
+                  const showGrp=b.group!==lastGrp&&!bundlePalQ.trim();
+                  lastGrp=b.group;
+                  const isActive=activeBundle===b.label;
+                  return(
+                    <React.Fragment key={b.label}>
+                      {showGrp&&<div className="pal-group-lbl" style={{color:grpDef?.color||T.txt4}}>{b.group}</div>}
+                      <div className={`pal-item ${bundlePalIdx===i?'sel':''}`}
+                        onClick={()=>{applyBundle(b);setBundlePalOpen(false);setActiveBundleCat(b.group);}}
+                        onMouseEnter={()=>setBundlePalIdx(i)}>
+                        <span className="pi-icon">{b.icon}</span>
+                        <div className="pi-body">
+                          <div className="pi-name">{b.label}</div>
+                          <div className="pi-detail">{b.ids.length} orders · {b.group}</div>
+                        </div>
+                        <div className="pi-tags">
+                          <span className="pi-tag" style={{background:`${b.color}18`,color:b.color,border:`1px solid ${b.color}33`}}>{b.group}</span>
+                          {isActive&&<span className="pi-inq">✓ Active</span>}
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  );
+                });
+              })()}
+            </div>
+            {bundlePalResults.length>0&&(
+              <div className="pal-footer">
+                <span className="pf-hint"><span className="pf-k">↑↓</span>navigate</span>
+                <span className="pf-hint"><span className="pf-k">↵</span>apply bundle</span>
+                <span className="pf-hint"><span className="pf-k">ESC</span>close</span>
+                <span style={{marginLeft:'auto',fontSize:10,color:T.txt4}}>{bundlePalResults.length} bundle{bundlePalResults.length!==1?'s':''}</span>
+              </div>
+            )}
           </div>
         </div>
       )}

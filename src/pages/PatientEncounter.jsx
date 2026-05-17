@@ -199,6 +199,7 @@ const DOC_STEPS = [
   { key:"ClinicalNoteStudio", icon:"📝", label:"Note Studio",  sub:"APSO format, E&M estimator, NQS",      color:T.purple, primary:false },
   { key:"MDMBuilderTab",      icon:"🧠", label:"MDM Builder",  sub:"CPT stepper, critical care time",      color:T.blue,   primary:false },
   { key:"AutocoderHub",       icon:"🏷️", label:"Autocoder",    sub:"ICD-10 coding and charge capture",     color:T.gold,   primary:false },
+  { key:"DischargeHub",       icon:"🏥", label:"Discharge Hub", sub:"AI discharge card, meds, precautions", color:T.green,  primary:false },
 ];
 
 function DocumentationLane({ patientId }) {

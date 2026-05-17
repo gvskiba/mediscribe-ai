@@ -1,526 +1,485 @@
-import { useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 
+const Patient = base44.entities.Patient;
+const ClinicalNote = base44.entities.ClinicalNote;
+
+// ─── INJECT FONTS & ANIMATIONS ────────────────────────────────────────────────
 (() => {
-  if (document.getElementById("sdh-fonts")) return;
-  const l = document.createElement("link"); l.id="sdh-fonts"; l.rel="stylesheet";
-  l.href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap";
+  if (document.getElementById("dh-fonts")) return;
+  const l = document.createElement("link");
+  l.id = "dh-fonts"; l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
   document.head.appendChild(l);
-  const s = document.createElement("style"); s.id="sdh-css";
-  s.textContent=`*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(42,79,122,.5);border-radius:2px}@keyframes sdhfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes sdhorb0{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.1)}}@keyframes sdhorb1{0%,100%{transform:translate(-50%,-50%) scale(1.07)}50%{transform:translate(-50%,-50%) scale(.92)}}@keyframes sdhorb2{0%,100%{transform:translate(-50%,-50%) scale(.95)}50%{transform:translate(-50%,-50%) scale(1.09)}}@keyframes sdhpulse{0%,100%{opacity:.7}50%{opacity:1}}@keyframes sdhspin{to{transform:rotate(360deg)}}.sdh-fade{animation:sdhfade .25s ease both}.sdh-spin{animation:sdhspin .9s linear infinite}@media print{.sdh-no-print{display:none!important}.sdh-print-only{display:block!important}.sdh-sheet{box-shadow:none!important;border:none!important;background:white!important;padding:20px!important}}`;
+  const s = document.createElement("style"); s.id = "dh-css";
+  s.textContent = `
+    @keyframes dh-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .dh-fade{animation:dh-fade .2s ease forwards}
+    @keyframes dh-spin{to{transform:rotate(360deg)}}
+    .dh-spin{animation:dh-spin 1s linear infinite}
+    @media print{.dh-no-print{display:none!important}.dh-print-card{background:#fff!important;color:#111!important;border:1px solid #ddd!important}}
+  `;
   document.head.appendChild(s);
 })();
 
+// ─── TOKENS ───────────────────────────────────────────────────────────────────
 const T = {
-  bg:"#050f1e", panel:"rgba(8,22,40,0.78)", card:"rgba(11,30,54,0.65)",
-  txt:"#e8f0fe", txt2:"#8aaccc", txt3:"#4a6a8a", txt4:"#2e4a6a",
-  teal:"#00e5c0", gold:"#f5c842", red:"#ff4444", coral:"#ff6b6b",
-  green:"#3dffa0", blue:"#3b9eff", purple:"#9b6dff", orange:"#ff9f43",
+  bg:"#050f1e", panel:"#081628", card:"#0b1e36",
+  txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
+  teal:"#00e5c0", gold:"#f5c842", coral:"#ff6b6b", blue:"#3b9eff",
+  orange:"#ff9f43", green:"#3dffa0", red:"#ff4444",
 };
-const glass = { backdropFilter:"blur(20px) saturate(180%)", WebkitBackdropFilter:"blur(20px) saturate(180%)", background:"rgba(8,22,40,0.78)", border:"1px solid rgba(42,79,122,0.35)", borderRadius:14 };
 
-const LANGS = [["English","English"],["Spanish","Español"],["Simplified English","Plain English (Grade 5)"],["Mandarin Chinese","中文"],["Vietnamese","Tiếng Việt"],["Portuguese","Português"]];
-const LEVELS = [["simple","Simple — Explain like I'm 12"],["standard","Standard — Clear adult language"],["detailed","Detailed — Health-literate patient"]];
-const MED_STATUS = ["New","Continued","Changed","Stopped","As Needed (PRN)"];
-const FOLLOWUP_WHO = ["Primary Care Doctor","Cardiologist","Neurologist","Orthopedic Surgeon","Urologist","OB/GYN","Pulmonologist","Gastroenterologist","Oncologist","Infectious Disease","Wound Clinic","Other Specialist"];
+const gc = (x={}) => ({ background:T.card, border:"1px solid rgba(26,53,85,0.5)", borderRadius:10, ...x });
+const label = (txt) => (
+  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:8 }}>
+    {txt}
+  </div>
+);
 
-function AmbientBg() {
+// ─── SPINNER ──────────────────────────────────────────────────────────────────
+function Spinner() {
   return (
-    <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
-      {[{l:"10%",t:"15%",r:300,c:"rgba(0,229,192,0.05)"},{l:"85%",t:"10%",r:250,c:"rgba(59,158,255,0.045)"},{l:"75%",t:"75%",r:320,c:"rgba(155,109,255,0.04)"},{l:"18%",t:"78%",r:200,c:"rgba(245,200,66,0.035)"}].map((o,i)=>(
-        <div key={i} style={{position:"absolute",left:o.l,top:o.t,width:o.r*2,height:o.r*2,borderRadius:"50%",background:`radial-gradient(circle,${o.c} 0%,transparent 68%)`,transform:"translate(-50%,-50%)",animation:`sdhorb${i%3} ${8+i*1.4}s ease-in-out infinite`}}/>
-      ))}
+    <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 0" }}>
+      <div className="dh-spin" style={{ width:16, height:16, border:`2px solid rgba(0,229,192,0.2)`, borderTop:`2px solid ${T.teal}`, borderRadius:"50%", flexShrink:0 }} />
+      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4 }}>Generating with AI…</span>
     </div>
   );
 }
 
-function MedRow({ med, idx, onChange, onRemove }) {
+// ─── AI SECTION BLOCK ─────────────────────────────────────────────────────────
+function AISectionBlock({ icon, title, content, loading, accent }) {
+  const c = accent || T.teal;
   return (
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto auto",gap:6,marginBottom:6,alignItems:"center"}}>
-      <input value={med.name} onChange={e=>onChange(idx,"name",e.target.value)}
-        placeholder="Medication name + dose"
-        style={{background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,padding:"6px 10px",color:T.txt,fontFamily:"DM Sans",fontSize:12,outline:"none"}}/>
-      <input value={med.freq} onChange={e=>onChange(idx,"freq",e.target.value)}
-        placeholder="e.g. twice daily with food"
-        style={{background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,padding:"6px 10px",color:T.txt,fontFamily:"DM Sans",fontSize:12,outline:"none"}}/>
-      <select value={med.status} onChange={e=>onChange(idx,"status",e.target.value)}
-        style={{background:"rgba(14,37,68,0.85)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,padding:"6px 9px",color:T.txt,fontFamily:"DM Sans",fontSize:11,outline:"none",cursor:"pointer"}}>
-        {MED_STATUS.map(s=><option key={s} value={s}>{s}</option>)}
-      </select>
-      <button onClick={()=>onRemove(idx)} style={{width:28,height:28,borderRadius:6,border:"1px solid rgba(255,107,107,0.3)",background:"rgba(255,107,107,0.1)",color:T.coral,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-    </div>
-  );
-}
-
-function FollowUpRow({ fu, idx, onChange, onRemove }) {
-  return (
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto auto",gap:6,marginBottom:6,alignItems:"center"}}>
-      <select value={fu.who} onChange={e=>onChange(idx,"who",e.target.value)}
-        style={{background:"rgba(14,37,68,0.85)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,padding:"6px 9px",color:T.txt,fontFamily:"DM Sans",fontSize:11,outline:"none",cursor:"pointer"}}>
-        {FOLLOWUP_WHO.map(w=><option key={w} value={w}>{w}</option>)}
-      </select>
-      <input value={fu.when} onChange={e=>onChange(idx,"when",e.target.value)}
-        placeholder="e.g. within 3–5 days"
-        style={{background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,padding:"6px 10px",color:T.txt,fontFamily:"DM Sans",fontSize:12,outline:"none"}}/>
-      <select value={fu.urgency} onChange={e=>onChange(idx,"urgency",e.target.value)}
-        style={{background:"rgba(14,37,68,0.85)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,padding:"6px 8px",color:fu.urgency==="urgent"?T.coral:T.green,fontFamily:"DM Sans",fontSize:11,outline:"none",cursor:"pointer"}}>
-        <option value="urgent">Urgent</option>
-        <option value="routine">Routine</option>
-      </select>
-      <button onClick={()=>onRemove(idx)} style={{width:28,height:28,borderRadius:6,border:"1px solid rgba(255,107,107,0.3)",background:"rgba(255,107,107,0.1)",color:T.coral,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-    </div>
-  );
-}
-
-function SheetSection({ icon, title, color, children, bg }) {
-  return (
-    <div style={{marginBottom:20,borderRadius:12,overflow:"hidden",border:`1px solid ${color}25`,background:bg||`${color}08`}}>
-      <div style={{padding:"10px 16px",borderBottom:`1px solid ${color}20`,background:`${color}12`,display:"flex",alignItems:"center",gap:8}}>
-        <span style={{fontSize:18}}>{icon}</span>
-        <span style={{fontFamily:"Lora",fontWeight:600,fontSize:15,color:color}}>{title}</span>
+    <div style={{ ...gc({ borderRadius:12, borderLeft:`3px solid ${c}` }), padding:"14px 16px", marginBottom:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+        <span style={{ fontSize:16 }}>{icon}</span>
+        <span style={{ fontFamily:"'Playfair Display',serif", fontSize:13, fontWeight:700, color:c }}>{title}</span>
       </div>
-      <div style={{padding:"14px 16px"}}>{children}</div>
+      {loading
+        ? <Spinner />
+        : content
+          ? <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt2, lineHeight:1.65, whiteSpace:"pre-wrap" }}>{content}</div>
+          : <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4, fontStyle:"italic" }}>Not yet generated</div>
+      }
     </div>
   );
 }
 
-function DischargeSheet({ data, patientName, diagnosis, lang, onCopy, onPrint }) {
-  const statusColor = { New:T.teal, Continued:T.txt2, Changed:T.gold, Stopped:T.coral, "As Needed (PRN)":T.purple };
-  const statusIcon = { New:"✦", Continued:"●", Changed:"◈", Stopped:"✕", "As Needed (PRN)":"◎" };
+// ─── SECTION HEADER ───────────────────────────────────────────────────────────
+function SectionHeader({ step, title, sub }) {
   return (
-    <div className="sdh-sheet sdh-fade" style={{background:"rgba(8,22,40,0.92)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:16,overflow:"hidden"}}>
+    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:T.teal, background:"rgba(0,229,192,0.12)", border:`1px solid ${T.teal}40`, borderRadius:6, padding:"3px 9px" }}>
+        {step}
+      </div>
+      <div>
+        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:T.txt }}>{title}</div>
+        {sub && <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, marginTop:1 }}>{sub}</div>}
+      </div>
+    </div>
+  );
+}
 
-      {/* Sheet header */}
-      <div style={{background:"linear-gradient(135deg,rgba(0,229,192,0.15),rgba(59,158,255,0.08))",borderBottom:"1px solid rgba(0,229,192,0.25)",padding:"18px 20px"}}>
-        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-          <div>
-            <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.teal,letterSpacing:3,textTransform:"uppercase",marginBottom:4}}>Discharge Instructions</div>
-            <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:22,color:T.txt,lineHeight:1.2}}>{diagnosis}</div>
-            {patientName && <div style={{fontFamily:"DM Sans",fontSize:13,color:T.txt2,marginTop:4}}>For: <strong style={{color:T.txt}}>{patientName}</strong></div>}
-            <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,marginTop:4}}>{new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
-          </div>
-          <div style={{display:"flex",gap:8,flexShrink:0}}>
-            <button onClick={onCopy} className="sdh-no-print"
-              style={{fontFamily:"DM Sans",fontWeight:600,fontSize:11,padding:"7px 14px",borderRadius:8,cursor:"pointer",border:"1px solid rgba(42,79,122,0.5)",background:"rgba(14,37,68,0.7)",color:T.txt2}}>
-              📋 Copy
+// ─── PRINTABLE CARD ───────────────────────────────────────────────────────────
+function PrintableCard({ patient, diagnosis, medications, precautions, followUp }) {
+  const today = new Date().toLocaleDateString("en-US", { month:"long", day:"numeric", year:"numeric" });
+  return (
+    <div className="dh-print-card" style={{ background:T.card, border:"1px solid rgba(26,53,85,0.5)", borderRadius:12, padding:"22px 24px", marginBottom:16 }}>
+      {/* Header */}
+      <div style={{ borderBottom:"1px solid rgba(26,53,85,0.5)", paddingBottom:12, marginBottom:14, display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+        <div>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:900, color:T.teal }}>Discharge Instructions</div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, marginTop:3 }}>{today}</div>
+        </div>
+        <div style={{ textAlign:"right" }}>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:14, fontWeight:700, color:T.txt }}>{patient.name}</div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>{patient.age}yo {patient.sex} · {patient.room}</div>
+        </div>
+      </div>
+
+      {diagnosis && (
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.teal, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:6 }}>What We Found</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt2, lineHeight:1.65, whiteSpace:"pre-wrap" }}>{diagnosis}</div>
+        </div>
+      )}
+
+      {medications && (
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.gold, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:6 }}>Your Medications</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt2, lineHeight:1.65, whiteSpace:"pre-wrap" }}>{medications}</div>
+        </div>
+      )}
+
+      {precautions && (
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.coral, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:6 }}>Return If…</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt2, lineHeight:1.65, whiteSpace:"pre-wrap" }}>{precautions}</div>
+        </div>
+      )}
+
+      {followUp && (
+        <div style={{ marginBottom:6 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.blue, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:6 }}>Follow-Up</div>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt2, lineHeight:1.65, whiteSpace:"pre-wrap" }}>{followUp}</div>
+        </div>
+      )}
+
+      {/* Allergies footer */}
+      {patient.allergies && patient.allergies.length > 0 && (
+        <div style={{ marginTop:14, borderTop:"1px solid rgba(26,53,85,0.4)", paddingTop:10 }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.coral, fontWeight:700 }}>⚠️ ALLERGIES: </span>
+          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt3 }}>{patient.allergies.join(", ")}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MAIN PAGE ─────────────────────────────────────────────────────────────────
+export default function DischargeHub() {
+  const params     = new URLSearchParams(window.location.search);
+  const patientId  = params.get("patientId");
+
+  const [patient,      setPatient]      = useState(null);
+  const [clinicalNote, setClinicalNote] = useState(null);
+  const [loading,      setLoading]      = useState(true);
+
+  // Inputs
+  const [assessment,  setAssessment]  = useState("");
+  const [medsRaw,     setMedsRaw]     = useState("");
+  const [followUp,    setFollowUp]    = useState("");
+
+  // AI outputs
+  const [diagnosis,   setDiagnosis]   = useState("");
+  const [medications, setMedications] = useState("");
+  const [precautions, setPrecautions] = useState("");
+
+  // Loading per section
+  const [genDx,   setGenDx]   = useState(false);
+  const [genMeds, setGenMeds] = useState(false);
+  const [genPrec, setGenPrec] = useState(false);
+  const [genAll,  setGenAll]  = useState(false);
+
+  const [copied, setCopied] = useState(false);
+
+  // ── Load patient + most recent ClinicalNote ──────────────────────────────────
+  useEffect(() => {
+    if (!patientId) { setLoading(false); return; }
+    Promise.all([
+      Patient.get(patientId),
+      ClinicalNote.filter({ patient_id: patientId }, "-created_date", 1)
+        .catch(() => []),
+    ]).then(([p, notes]) => {
+      setPatient(p);
+      const note = notes && notes[0];
+      if (note) {
+        setClinicalNote(note);
+        const noteText = [
+          note.assessment && `Assessment: ${note.assessment}`,
+          note.plan && `Plan: ${note.plan}`,
+          note.working_diagnosis && `Working Dx: ${note.working_diagnosis}`,
+          note.mdm && `MDM: ${note.mdm}`,
+        ].filter(Boolean).join("\n\n");
+        if (noteText) setAssessment(noteText);
+        // Pre-fill meds from note
+        if (note.medications && note.medications.length) {
+          setMedsRaw(note.medications.join("\n"));
+        }
+      }
+      setLoading(false);
+    });
+  }, [patientId]);
+
+  // ── AI generators ─────────────────────────────────────────────────────────────
+  const genDiagnosis = async () => {
+    if (!assessment) return;
+    setGenDx(true);
+    const res = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are an emergency physician writing discharge instructions for a patient. Based on the clinical assessment below, write a plain-language explanation of what was found and diagnosed. Use simple, non-medical language that a patient can understand. Keep it to 3-4 sentences.
+
+Patient: ${patient.name}, ${patient.age}yo, CC: ${patient.cc}
+Clinical Assessment:
+${assessment}`,
+    });
+    setDiagnosis(typeof res === "string" ? res : res?.text || res?.content || JSON.stringify(res));
+    setGenDx(false);
+  };
+
+  const genMedications = async () => {
+    if (!medsRaw) return;
+    setGenMeds(true);
+    const allergies = patient?.allergies?.length ? patient.allergies.join(", ") : "None";
+    const res = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are an emergency physician writing discharge instructions. Convert the following medication list into a clear, patient-friendly format. For each medication include: what it is, what it's for, how to take it, and any key warnings. Flag any potential concerns given allergies: ${allergies}.
+
+Medications:
+${medsRaw}
+
+Patient: ${patient.name}, ${patient.age}yo`,
+    });
+    setMedications(typeof res === "string" ? res : res?.text || res?.content || JSON.stringify(res));
+    setGenMeds(false);
+  };
+
+  const genPrecautions = async () => {
+    setGenPrec(true);
+    const res = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are an emergency physician writing return precautions for a patient being discharged. Based on the chief complaint and clinical assessment, list 5-7 specific "Return to the ER if…" warning signs in plain language. Be specific and clinically appropriate.
+
+Patient: ${patient.name}, ${patient.age}yo
+Chief Complaint: ${patient.cc}
+Assessment: ${assessment || "(not provided)"}
+PMHx: ${patient?.pmhx?.join(", ") || "None"}`,
+    });
+    setPrecautions(typeof res === "string" ? res : res?.text || res?.content || JSON.stringify(res));
+    setGenPrec(false);
+  };
+
+  const generateAll = async () => {
+    setGenAll(true);
+    await Promise.all([
+      assessment ? genDiagnosis() : Promise.resolve(),
+      medsRaw    ? genMedications() : Promise.resolve(),
+      genPrecautions(),
+    ]);
+    setGenAll(false);
+  };
+
+  // ── Copy text block ──────────────────────────────────────────────────────────
+  const buildCopyText = () => {
+    const today = new Date().toLocaleDateString("en-US", { month:"long", day:"numeric", year:"numeric" });
+    return [
+      `DISCHARGE INSTRUCTIONS — ${today}`,
+      `Patient: ${patient?.name || ""} | ${patient?.age || ""}yo ${patient?.sex || ""} | Room: ${patient?.room || ""}`,
+      `Chief Complaint: ${patient?.cc || ""}`,
+      diagnosis   && `\n── WHAT WE FOUND ──\n${diagnosis}`,
+      medications && `\n── YOUR MEDICATIONS ──\n${medications}`,
+      precautions && `\n── RETURN TO ER IF… ──\n${precautions}`,
+      followUp    && `\n── FOLLOW-UP ──\n${followUp}`,
+      patient?.allergies?.length && `\nAllergies: ${patient.allergies.join(", ")}`,
+    ].filter(Boolean).join("\n");
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(buildCopyText());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // ── Render states ─────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div style={{ minHeight:"100vh", background:T.bg, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:14 }}>
+        <div className="dh-spin" style={{ width:32, height:32, border:`3px solid rgba(0,229,192,0.2)`, borderTop:`3px solid ${T.teal}`, borderRadius:"50%" }} />
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt4 }}>Loading discharge data…</div>
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div style={{ minHeight:"100vh", background:T.bg, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:14 }}>
+        <div style={{ fontSize:40 }}>⚠️</div>
+        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, color:T.txt3 }}>No patient found</div>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt4 }}>Pass ?patientId= in the URL to load a patient.</div>
+        <a href="/CommandCenter" style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.teal, textDecoration:"none", border:`1px solid ${T.teal}55`, borderRadius:8, padding:"7px 16px" }}>← Back to Census</a>
+      </div>
+    );
+  }
+
+  const anyGenerated = !!(diagnosis || medications || precautions);
+
+  return (
+    <div style={{ minHeight:"100vh", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
+
+      {/* Top bar */}
+      <div className="dh-no-print" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px", height:52, background:T.panel, borderBottom:"1px solid rgba(26,53,85,0.5)", position:"sticky", top:0, zIndex:10 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <a href={`/PatientEncounter?patientId=${patientId}`} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4, background:"transparent", border:"1px solid rgba(26,53,85,0.5)", borderRadius:6, padding:"4px 10px", cursor:"pointer", textDecoration:"none" }}>← Encounter</a>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(26,53,85,0.5)", borderRadius:5, padding:"2px 8px" }}>{patient.room}</span>
+          <span style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:T.txt }}>{patient.name}</span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt3 }}>{patient.age}yo {patient.sex}</span>
+          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:T.gold }}>· {patient.cc}</span>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          {anyGenerated && (
+            <button onClick={handleCopy} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:copied ? T.green : T.teal, background: copied ? "rgba(61,255,160,0.08)" : "rgba(0,229,192,0.08)", border:`1px solid ${copied ? T.green : T.teal}55`, borderRadius:8, padding:"6px 14px", cursor:"pointer" }}>
+              {copied ? "✓ Copied!" : "📋 Copy Text"}
             </button>
-            <button onClick={onPrint} className="sdh-no-print"
-              style={{fontFamily:"DM Sans",fontWeight:600,fontSize:11,padding:"7px 14px",borderRadius:8,cursor:"pointer",border:`1px solid ${T.teal}44`,background:`rgba(0,229,192,0.1)`,color:T.teal}}>
+          )}
+          {anyGenerated && (
+            <button onClick={() => window.print()} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:T.gold, background:"rgba(245,200,66,0.08)", border:`1px solid ${T.gold}55`, borderRadius:8, padding:"6px 14px", cursor:"pointer" }}>
               🖨️ Print
             </button>
-          </div>
+          )}
         </div>
-        {data.keyReminder && (
-          <div style={{marginTop:14,padding:"12px 15px",borderRadius:10,background:"rgba(245,200,66,0.12)",border:"1px solid rgba(245,200,66,0.35)",display:"flex",gap:10,alignItems:"flex-start"}}>
-            <span style={{fontSize:20,flexShrink:0}}>⭐</span>
-            <div>
-              <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Most Important Thing</div>
-              <div style={{fontFamily:"Lora",fontSize:14,color:T.txt,lineHeight:1.55}}>{data.keyReminder}</div>
-            </div>
-          </div>
-        )}
       </div>
 
-      <div style={{padding:"20px"}}>
+      {/* Main content */}
+      <div style={{ maxWidth:980, margin:"0 auto", padding:"28px 24px 60px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:24 }}>
 
-        {/* What happened */}
-        {data.whatHappened && (
-          <SheetSection icon="📋" title="Why You Were Here" color={T.blue}>
-            <p style={{fontFamily:"Lora",fontSize:14,color:T.txt,lineHeight:1.7}}>{data.whatHappened}</p>
-          </SheetSection>
-        )}
+        {/* ── LEFT COLUMN: INPUTS ────────────────────────────────────────── */}
+        <div className="dh-no-print">
 
-        {/* What we did */}
-        {data.whatWeDid?.length > 0 && (
-          <SheetSection icon="🩺" title="What We Found & Did" color={T.teal}>
-            {data.whatWeDid.map((item,i)=>(
-              <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:8}}>
-                <span style={{color:T.teal,fontSize:11,marginTop:3,flexShrink:0}}>✓</span>
-                <span style={{fontFamily:"DM Sans",fontSize:13,color:T.txt,lineHeight:1.55}}>{item}</span>
-              </div>
-            ))}
-          </SheetSection>
-        )}
-
-        {/* Return NOW */}
-        {data.returnNow?.length > 0 && (
-          <SheetSection icon="🚨" title="Call 911 or Return to the ER Immediately If..." color={T.red} bg="rgba(255,68,68,0.07)">
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:8}}>
-              {data.returnNow.map((item,i)=>(
-                <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",padding:"8px 10px",borderRadius:8,background:"rgba(255,68,68,0.08)",border:"1px solid rgba(255,68,68,0.2)"}}>
-                  <span style={{color:T.red,fontSize:13,flexShrink:0,marginTop:1}}>⚠</span>
-                  <span style={{fontFamily:"DM Sans",fontWeight:500,fontSize:13,color:T.txt,lineHeight:1.45}}>{item}</span>
+          {/* Section 1 — Patient Info (read-only) */}
+          <div style={{ marginBottom:24 }}>
+            <SectionHeader step="1" title="Patient Data" sub="Pulled from the Patient entity" />
+            <div style={{ ...gc({ borderRadius:12 }), padding:"14px 16px" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+                <div>
+                  {label("Name")}
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt }}>{patient.name}</div>
                 </div>
-              ))}
-            </div>
-          </SheetSection>
-        )}
-
-        {/* Call doctor */}
-        {data.callDoctor?.length > 0 && (
-          <SheetSection icon="📞" title="Call Your Doctor If You Notice..." color={T.orange}>
-            {data.callDoctor.map((item,i)=>(
-              <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:7}}>
-                <span style={{color:T.orange,fontSize:10,marginTop:4,flexShrink:0}}>▶</span>
-                <span style={{fontFamily:"DM Sans",fontSize:13,color:T.txt,lineHeight:1.5}}>{item}</span>
+                <div>
+                  {label("Age / Sex")}
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt }}>{patient.age}yo {patient.sex}</div>
+                </div>
+                <div>
+                  {label("Chief Complaint")}
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.gold }}>{patient.cc}</div>
+                </div>
+                <div>
+                  {label("Room")}
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt }}>{patient.room}</div>
+                </div>
               </div>
-            ))}
-          </SheetSection>
-        )}
-
-        {/* Medications */}
-        {data.medications?.length > 0 && (
-          <SheetSection icon="💊" title="Your Medications" color={T.purple}>
-            <div style={{fontFamily:"DM Sans",fontSize:11,color:T.txt3,marginBottom:12}}>Review every medication listed here before you leave.</div>
-            {data.medications.map((med,i)=>{
-              const sc = statusColor[med.status]||T.txt2;
-              const si = statusIcon[med.status]||"●";
-              return (
-                <div key={i} style={{padding:"11px 13px",borderRadius:10,marginBottom:8,background:"rgba(14,37,68,0.5)",border:`1px solid ${sc}28`}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
-                    <span style={{fontFamily:"JetBrains Mono",fontWeight:700,fontSize:13,color:T.txt}}>{med.name}</span>
-                    <span style={{fontFamily:"JetBrains Mono",fontSize:8,fontWeight:700,padding:"2px 8px",borderRadius:20,background:`${sc}18`,border:`1px solid ${sc}35`,color:sc}}>{si} {med.status?.toUpperCase()}</span>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div>
+                  {label("PMHx")}
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt3 }}>
+                    {patient.pmhx?.length ? patient.pmhx.join(", ") : "None on record"}
                   </div>
-                  {med.dose && <div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt2,marginBottom:3}}>Take: <strong style={{color:T.txt}}>{med.dose}</strong></div>}
-                  {med.why && <div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3,marginBottom:med.warning?4:0}}>Why: {med.why}</div>}
-                  {med.warning && <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:12,color:T.coral,padding:"4px 8px",borderRadius:6,background:"rgba(255,107,107,0.08)",marginTop:4}}>⚠ {med.warning}</div>}
                 </div>
-              );
-            })}
-          </SheetSection>
-        )}
-
-        {/* Follow up */}
-        {data.followUp?.length > 0 && (
-          <SheetSection icon="📅" title="Your Follow-Up Plan" color={T.gold}>
-            {data.followUp.map((fu,i)=>(
-              <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10,padding:"10px 12px",borderRadius:10,background:"rgba(245,200,66,0.06)",border:"1px solid rgba(245,200,66,0.18)"}}>
-                <div style={{width:36,height:36,borderRadius:8,background:`${fu.urgency==="urgent"?T.coral:T.gold}18`,border:`1px solid ${fu.urgency==="urgent"?T.coral:T.gold}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
-                  {fu.urgency==="urgent"?"🔴":"📅"}
-                </div>
-                <div style={{flex:1}}>
-                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:13,color:T.txt,marginBottom:2}}>{fu.provider}</div>
-                  <div style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:700,color:fu.urgency==="urgent"?T.coral:T.gold}}>{fu.timeframe}</div>
-                  {fu.why && <div style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3,marginTop:3}}>{fu.why}</div>}
+                <div>
+                  {label("Allergies")}
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color: patient.allergies?.length ? T.coral : T.txt4 }}>
+                    {patient.allergies?.length ? patient.allergies.join(", ") : "NKDA"}
+                  </div>
                 </div>
               </div>
-            ))}
-          </SheetSection>
-        )}
+            </div>
+          </div>
 
-        {/* Self care */}
-        {data.selfCare?.length > 0 && (
-          <SheetSection icon="🏠" title="Taking Care of Yourself at Home" color={T.green}>
-            {data.selfCare.map((item,i)=>(
-              <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:8}}>
-                <span style={{color:T.green,fontSize:11,marginTop:3,flexShrink:0}}>◆</span>
-                <span style={{fontFamily:"DM Sans",fontSize:13,color:T.txt,lineHeight:1.55}}>{item}</span>
+          {/* Section 2 — Clinical Assessment */}
+          <div style={{ marginBottom:24 }}>
+            <SectionHeader step="2" title="Clinical Assessment" sub={clinicalNote ? "Auto-filled from most recent ClinicalNote — edit as needed" : "Paste from Note Studio or type below"} />
+            <textarea
+              value={assessment}
+              onChange={e => setAssessment(e.target.value)}
+              placeholder="Paste your assessment, working diagnosis, and plan here…"
+              rows={8}
+              style={{ width:"100%", background:"rgba(11,30,54,0.8)", border:"1px solid rgba(26,53,85,0.6)", borderRadius:10, padding:"12px 14px", fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2, resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.6 }}
+            />
+            {clinicalNote && (
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.teal, marginTop:4 }}>
+                ✓ Loaded from ClinicalNote · {clinicalNote.created_date ? new Date(clinicalNote.created_date).toLocaleDateString() : ""}
               </div>
-            ))}
-          </SheetSection>
-        )}
-
-        {/* Clinical handoff — visually distinct */}
-        {data.handoffSummary && (
-          <div style={{marginTop:24,paddingTop:18,borderTop:"2px dashed rgba(42,79,122,0.35)"}}>
-            <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.txt4,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>⚕ For the Next Provider — Clinical Handoff Summary</div>
-            <div style={{padding:"14px 16px",borderRadius:12,background:"rgba(155,109,255,0.07)",border:"1px solid rgba(155,109,255,0.2)"}}>
-              <p style={{fontFamily:"JetBrains Mono",fontSize:12,color:T.txt2,lineHeight:1.7}}>{data.handoffSummary}</p>
-            </div>
+            )}
           </div>
-        )}
 
-      </div>
-    </div>
-  );
-}
-
-function FieldLabel({ children }) {
-  return <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.txt4,letterSpacing:2,textTransform:"uppercase",marginBottom:5}}>{children}</div>;
-}
-
-function Textarea({ value, onChange, placeholder, rows=3 }) {
-  return (
-    <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
-      style={{width:"100%",background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,padding:"8px 11px",color:T.txt,fontFamily:"DM Sans",fontSize:12,outline:"none",resize:"vertical",lineHeight:1.55}}/>
-  );
-}
-
-function AddButton({ onClick, label }) {
-  return (
-    <button onClick={onClick}
-      style={{fontFamily:"DM Sans",fontWeight:600,fontSize:10,padding:"4px 12px",borderRadius:20,cursor:"pointer",border:`1px solid ${T.teal}35`,background:`rgba(0,229,192,0.07)`,color:T.teal,marginTop:4}}>
-      + {label}
-    </button>
-  );
-}
-
-function Toast({ msg }) {
-  return (
-    <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"rgba(8,22,40,0.96)",border:"1px solid rgba(0,229,192,0.4)",borderRadius:10,padding:"10px 20px",fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:T.teal,zIndex:99999,pointerEvents:"none",animation:"sdhfade .2s ease both"}}>
-      {msg}
-    </div>
-  );
-}
-
-export default function DischargeHub({ onBack }) {
-  const navigate = useNavigate();
-  const [tab, setTab] = useState("build");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [toast, setToast] = useState("");
-  const [output, setOutput] = useState(null);
-  const sheetRef = useRef(null);
-
-  // Form state
-  const [patientName, setPatientName] = useState("");
-  const [diagnosis, setDiagnosis] = useState("");
-  const [age, setAge] = useState("");
-  const [sex, setSex] = useState("the patient");
-  const [lang, setLang] = useState("English");
-  const [level, setLevel] = useState("standard");
-  const [findings, setFindings] = useState("");
-  const [procedures, setProcedures] = useState("");
-  const [special, setSpecial] = useState("");
-  const [meds, setMeds] = useState([{ name:"", freq:"", status:"Continued" }]);
-  const [followups, setFollowups] = useState([{ who:"Primary Care Doctor", when:"within 3–5 days", urgency:"routine" }]);
-
-  const addMed = useCallback(()=>setMeds(m=>[...m,{name:"",freq:"",status:"Continued"}]),[]);
-  const removeMed = useCallback((i)=>setMeds(m=>m.filter((_,idx)=>idx!==i)),[]);
-  const changeMed = useCallback((i,k,v)=>setMeds(m=>m.map((med,idx)=>idx===i?{...med,[k]:v}:med)),[]);
-
-  const addFu = useCallback(()=>setFollowups(f=>[...f,{who:"Primary Care Doctor",when:"",urgency:"routine"}]),[]);
-  const removeFu = useCallback((i)=>setFollowups(f=>f.filter((_,idx)=>idx!==i)),[]);
-  const changeFu = useCallback((i,k,v)=>setFollowups(f=>f.map((fu,idx)=>idx===i?{...fu,[k]:v}:fu)),[]);
-
-  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(""),2200); };
-
-  const generate = useCallback(async () => {
-    if (!diagnosis.trim()) { setError("Please enter a diagnosis or reason for visit."); return; }
-    setError(""); setLoading(true); setOutput(null);
-    const medList = meds.filter(m=>m.name.trim()).map(m=>`${m.name}${m.freq?" — "+m.freq:""} [${m.status}]`).join("\n");
-    const fuList = followups.map(f=>`${f.who} ${f.when} (${f.urgency})`).join("; ");
-    const prompt = `You are an emergency physician creating discharge instructions. Generate clear, compassionate, diagnosis-specific discharge instructions.
-
-Patient context:
-- Name: ${patientName||"not provided"}
-- Age/Sex: ${age||"adult"} ${sex}
-- Diagnosis/Reason for visit: ${diagnosis}
-- Language: ${lang}
-- Reading level: ${level==="simple"?"Grade 5-6 plain language — short sentences, no medical jargon":"standard clear adult language"}
-- Key findings / what happened: ${findings||"not specified"}
-- Treatments/procedures done: ${procedures||"standard emergency care provided"}
-- Medications: ${medList||"no medication changes"}
-- Follow-up plan: ${fuList||"primary care within 3-5 days"}
-- Special instructions: ${special||"none"}
-
-Return ONLY a valid JSON object with exactly these fields. No markdown fences. No preamble.
-{
-  "whatHappened": "2-3 sentence plain-language explanation of what brought them to the ER and what was found. Write in ${lang}.",
-  "whatWeDid": ["bullet: what was done", "bullet: test or treatment", "..."],
-  "medications": [
-    {"name":"medication name only","dose":"dose and exact schedule in plain language","why":"one sentence why","status":"New|Continued|Changed|Stopped|As Needed (PRN)","warning":"important warning or empty string"}
-  ],
-  "returnNow": ["specific emergency sign for THIS diagnosis 1", "..."],
-  "callDoctor": ["less urgent concern specific to THIS diagnosis 1", "..."],
-  "followUp": [
-    {"provider":"who to see","timeframe":"when","why":"brief reason","urgency":"urgent|routine"}
-  ],
-  "selfCare": ["specific home care instruction for THIS diagnosis 1", "..."],
-  "handoffSummary": "2-3 sentence clinical paragraph for the next provider: key findings, workup performed, results, outstanding items, and follow-up rationale. Use medical language.",
-  "keyReminder": "THE single most important actionable thing for this specific patient"
-}
-
-Make the return precautions, self-care, and follow-up SPECIFIC to ${diagnosis} — not generic boilerplate. The patient should feel these were written just for them.`;
-
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            whatHappened: { type: "string" },
-            whatWeDid: { type: "array", items: { type: "string" } },
-            medications: { type: "array", items: { type: "object", properties: { name:{type:"string"}, dose:{type:"string"}, why:{type:"string"}, status:{type:"string"}, warning:{type:"string"} } } },
-            returnNow: { type: "array", items: { type: "string" } },
-            callDoctor: { type: "array", items: { type: "string" } },
-            followUp: { type: "array", items: { type: "object", properties: { provider:{type:"string"}, timeframe:{type:"string"}, why:{type:"string"}, urgency:{type:"string"} } } },
-            selfCare: { type: "array", items: { type: "string" } },
-            handoffSummary: { type: "string" },
-            keyReminder: { type: "string" }
-          }
-        }
-      });
-      setOutput(result);
-      setTab("preview");
-    } finally { setLoading(false); }
-  }, [diagnosis, patientName, age, sex, lang, level, findings, procedures, special, meds, followups]);
-
-  const handleCopy = useCallback(()=>{
-    if (!output) return;
-    const lines = [
-      `DISCHARGE INSTRUCTIONS — ${diagnosis}`,
-      patientName ? `Patient: ${patientName}` : "",
-      new Date().toLocaleDateString(),
-      "", "WHY YOU WERE HERE", output.whatHappened||"",
-      "", "WHAT WE FOUND & DID", ...(output.whatWeDid||[]).map(x=>"• "+x),
-      "", "⚠ RETURN TO ER IMMEDIATELY IF:", ...(output.returnNow||[]).map(x=>"• "+x),
-      "", "CALL YOUR DOCTOR IF:", ...(output.callDoctor||[]).map(x=>"• "+x),
-      "", "YOUR MEDICATIONS:", ...(output.medications||[]).map(m=>`• ${m.name} — ${m.dose||""} [${m.status}]${m.why?" — "+m.why:""}`),
-      "", "FOLLOW-UP PLAN:", ...(output.followUp||[]).map(f=>`• ${f.provider}: ${f.timeframe}`),
-      "", "HOME CARE:", ...(output.selfCare||[]).map(x=>"• "+x),
-      "", "⭐ MOST IMPORTANT:", output.keyReminder||"",
-      "", "--- FOR NEXT PROVIDER ---", output.handoffSummary||"",
-    ].filter(l=>l!==undefined).join("\n");
-    navigator.clipboard.writeText(lines).then(()=>showToast("Copied to clipboard!")).catch(()=>showToast("Copy failed — use print instead"));
-  }, [output, diagnosis, patientName]);
-
-  const handlePrint = useCallback(()=>window.print(),[]);
-
-  const inputStyle = {width:"100%",background:"rgba(14,37,68,0.7)",border:"1px solid rgba(42,79,122,0.4)",borderRadius:8,padding:"7px 10px",color:T.txt,fontFamily:"DM Sans",fontSize:12,outline:"none"};
-  const selectStyle = {...inputStyle,cursor:"pointer"};
-
-  return (
-    <div style={{fontFamily:"DM Sans, sans-serif",background:T.bg,minHeight:"100vh",position:"relative",overflowX:"hidden",color:T.txt}}>
-      <AmbientBg/>
-      {toast && <Toast msg={toast}/>}
-      <div style={{position:"relative",zIndex:1,maxWidth:1260,margin:"0 auto",padding:"0 16px"}}>
-
-        {/* Header */}
-        <div style={{padding:"18px 0 14px"}} className="sdh-no-print">
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:9}}>
-            <div style={{backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",background:"rgba(5,15,30,0.9)",border:"1px solid rgba(42,79,122,0.6)",borderRadius:10,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.gold,letterSpacing:3}}>NOTRYA</span>
-              <span style={{color:T.txt4,fontFamily:"JetBrains Mono",fontSize:10}}>/</span>
-              <span style={{fontFamily:"JetBrains Mono",fontSize:10,color:T.txt3,letterSpacing:2}}>DISCHARGE</span>
-            </div>
-            <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(0,229,192,0.5),transparent)"}}/>
-            <button onClick={onBack || (()=>navigate("/hub"))} style={{fontFamily:"DM Sans",fontSize:12,fontWeight:600,padding:"5px 14px",borderRadius:8,cursor:"pointer",border:"1px solid rgba(42,79,122,0.5)",background:"rgba(14,37,68,0.6)",color:T.txt3,display:"inline-flex",alignItems:"center",gap:6}} onMouseEnter={e=>{e.currentTarget.style.color=T.txt2;e.currentTarget.style.borderColor="rgba(0,229,192,0.4)";}} onMouseLeave={e=>{e.currentTarget.style.color=T.txt3;e.currentTarget.style.borderColor="rgba(42,79,122,0.5)";}}>← Back to Hub</button>
+          {/* Section 3 — Discharge Medications */}
+          <div style={{ marginBottom:24 }}>
+            <SectionHeader step="3" title="Discharge Medications" sub="From ERx / ClinicalNote meds, or enter manually" />
+            <textarea
+              value={medsRaw}
+              onChange={e => setMedsRaw(e.target.value)}
+              placeholder={"e.g.\nIbuprofen 600mg PO TID x 5 days\nAugmentin 875mg PO BID x 10 days\nOndansetron 4mg PO q6h PRN nausea"}
+              rows={6}
+              style={{ width:"100%", background:"rgba(11,30,54,0.8)", border:"1px solid rgba(26,53,85,0.6)", borderRadius:10, padding:"12px 14px", fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2, resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.6 }}
+            />
           </div>
-          <h1 style={{fontFamily:"Playfair Display",fontSize:"clamp(24px,4vw,38px)",fontWeight:900,letterSpacing:-1,lineHeight:1.1,marginBottom:4,background:"linear-gradient(90deg,#e8f0fe 0%,#3dffa0 40%,#3b9eff 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>SmartDischargeHub</h1>
-          <p style={{fontFamily:"DM Sans",fontSize:12,color:T.txt3}}>AI-Generated · Diagnosis-Specific · Plain Language · Return Precautions · Medication Reconciliation · Clinical Handoff</p>
-        </div>
 
-        {/* Tabs */}
-        <div className="sdh-no-print" style={{...glass,padding:"5px",display:"flex",gap:4,marginBottom:16}}>
-          {[{id:"build",label:"📝  Build Instructions"},{id:"preview",label:"📄  Preview & Print",badge:output?"Ready":""}].map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)}
-              style={{flex:"1 1 auto",fontFamily:"DM Sans",fontWeight:600,fontSize:12,padding:"9px 8px",borderRadius:9,cursor:"pointer",textAlign:"center",transition:"all .15s",
-                border:`1px solid ${tab===t.id?"rgba(0,229,192,0.5)":"transparent"}`,
-                background:tab===t.id?"linear-gradient(135deg,rgba(0,229,192,0.14),rgba(0,229,192,0.05))":"transparent",
-                color:tab===t.id?T.teal:T.txt3}}>
-              {t.label}{t.badge&&<span style={{marginLeft:8,fontFamily:"JetBrains Mono",fontSize:8,color:T.green,background:"rgba(61,255,160,0.12)",border:"1px solid rgba(61,255,160,0.3)",borderRadius:20,padding:"1px 7px"}}>{t.badge}</span>}
+          {/* Section 4 — Follow-up (manual) */}
+          <div style={{ marginBottom:24 }}>
+            <SectionHeader step="4" title="Follow-Up Instructions" sub="Provider fills in — not AI generated" />
+            <textarea
+              value={followUp}
+              onChange={e => setFollowUp(e.target.value)}
+              placeholder={"e.g.\nFollow up with your primary care doctor in 3-5 days.\nReturn to ED immediately if symptoms worsen.\nCardiology referral placed — office will call you within 1 week."}
+              rows={5}
+              style={{ width:"100%", background:"rgba(11,30,54,0.8)", border:"1px solid rgba(26,53,85,0.6)", borderRadius:10, padding:"12px 14px", fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2, resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.6 }}
+            />
+          </div>
+
+          {/* Generate buttons */}
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            <button
+              onClick={generateAll}
+              disabled={genAll}
+              style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:"#fff", background:`linear-gradient(135deg,${T.teal},${T.blue})`, border:"none", borderRadius:10, padding:"10px 22px", cursor:genAll?"not-allowed":"pointer", opacity:genAll?0.6:1 }}
+            >
+              {genAll ? "Generating all…" : "✨ Generate All AI Sections"}
             </button>
-          ))}
+            <button
+              onClick={genDiagnosis}
+              disabled={genDx || !assessment}
+              style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:T.teal, background:"rgba(0,229,192,0.08)", border:`1px solid ${T.teal}55`, borderRadius:9, padding:"8px 14px", cursor:(genDx||!assessment)?"not-allowed":"pointer", opacity:(genDx||!assessment)?0.5:1 }}
+            >
+              Dx only
+            </button>
+            <button
+              onClick={genMedications}
+              disabled={genMeds || !medsRaw}
+              style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:T.gold, background:"rgba(245,200,66,0.08)", border:`1px solid ${T.gold}55`, borderRadius:9, padding:"8px 14px", cursor:(genMeds||!medsRaw)?"not-allowed":"pointer", opacity:(genMeds||!medsRaw)?0.5:1 }}
+            >
+              Meds only
+            </button>
+            <button
+              onClick={genPrecautions}
+              disabled={genPrec}
+              style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:T.coral, background:"rgba(255,107,107,0.08)", border:`1px solid ${T.coral}55`, borderRadius:9, padding:"8px 14px", cursor:genPrec?"not-allowed":"pointer", opacity:genPrec?0.5:1 }}
+            >
+              Precautions only
+            </button>
+          </div>
         </div>
 
-        {/* BUILD TAB */}
-        {tab==="build" && (
-          <div className="sdh-fade sdh-no-print" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:16}}>
-
-            {/* Left column */}
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              <div style={{...glass,padding:"16px 18px"}}>
-                <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:14,color:T.teal,marginBottom:12}}>Patient & Visit</div>
-                <div style={{marginBottom:10}}><FieldLabel>Diagnosis / Reason for Visit *</FieldLabel>
-                  <input value={diagnosis} onChange={e=>setDiagnosis(e.target.value)} placeholder="e.g. Right lower lobe pneumonia" style={inputStyle}/>
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                  <div><FieldLabel>Patient Name (optional)</FieldLabel>
-                    <input value={patientName} onChange={e=>setPatientName(e.target.value)} placeholder="For personalization" style={inputStyle}/>
-                  </div>
-                  <div><FieldLabel>Age</FieldLabel>
-                    <input value={age} onChange={e=>setAge(e.target.value)} placeholder="e.g. 67-year-old" style={inputStyle}/>
-                  </div>
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                  <div><FieldLabel>Pronoun / Sex</FieldLabel>
-                    <select value={sex} onChange={e=>setSex(e.target.value)} style={selectStyle}>
-                      <option value="the patient">Gender-neutral</option>
-                      <option value="he">He/Him</option>
-                      <option value="she">She/Her</option>
-                      <option value="they">They/Them</option>
-                    </select>
-                  </div>
-                  <div><FieldLabel>Language</FieldLabel>
-                    <select value={lang} onChange={e=>setLang(e.target.value)} style={selectStyle}>
-                      {LANGS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div><FieldLabel>Reading Level</FieldLabel>
-                  <select value={level} onChange={e=>setLevel(e.target.value)} style={selectStyle}>
-                    {LEVELS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div style={{...glass,padding:"16px 18px"}}>
-                <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:14,color:T.blue,marginBottom:12}}>Clinical Context</div>
-                <div style={{marginBottom:10}}><FieldLabel>Key Findings / What Happened</FieldLabel>
-                  <Textarea value={findings} onChange={setFindings} placeholder="e.g. CXR: RLL consolidation. WBC 14.2, CRP elevated. Afebrile, O2 sat 96% on RA at discharge. No bacteremia." rows={3}/>
-                </div>
-                <div><FieldLabel>Treatments & Procedures Done in ED</FieldLabel>
-                  <Textarea value={procedures} onChange={setProcedures} placeholder="e.g. IV azithromycin given. Started on levofloxacin. IV fluids. Urine culture sent." rows={3}/>
-                </div>
-              </div>
-            </div>
-
-            {/* Right column */}
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              <div style={{...glass,padding:"16px 18px"}}>
-                <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:14,color:T.purple,marginBottom:12}}>Medication Reconciliation</div>
-                <div style={{fontFamily:"DM Sans",fontSize:10,color:T.txt3,marginBottom:10}}>Name + dose/frequency · Select status for each</div>
-                {meds.map((med,i)=><MedRow key={i} med={med} idx={i} onChange={changeMed} onRemove={removeMed}/>)}
-                <AddButton onClick={addMed} label="Add Medication"/>
-              </div>
-
-              <div style={{...glass,padding:"16px 18px"}}>
-                <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:14,color:T.gold,marginBottom:12}}>Follow-Up Plan</div>
-                <div style={{fontFamily:"DM Sans",fontSize:10,color:T.txt3,marginBottom:10}}>Who to see · When · Urgency level</div>
-                {followups.map((fu,i)=><FollowUpRow key={i} fu={fu} idx={i} onChange={changeFu} onRemove={removeFu}/>)}
-                <AddButton onClick={addFu} label="Add Follow-Up"/>
-              </div>
-
-              <div style={{...glass,padding:"16px 18px"}}>
-                <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:14,color:T.orange,marginBottom:12}}>Special Instructions</div>
-                <FieldLabel>Activity, Diet, Wound Care, Restrictions</FieldLabel>
-                <Textarea value={special} onChange={setSpecial} placeholder="e.g. No driving for 24h. Clear liquids advancing to regular diet as tolerated. No heavy lifting > 5 lbs for 2 weeks. Wound check in 3 days." rows={4}/>
-              </div>
-
-              {error && <div style={{padding:"10px 14px",borderRadius:10,background:"rgba(255,68,68,0.1)",border:"1px solid rgba(255,68,68,0.3)",fontFamily:"DM Sans",fontSize:12,color:T.coral}}>{error}</div>}
-
-              <button onClick={generate} disabled={loading}
-                style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:16,padding:"16px",borderRadius:12,cursor:loading?"wait":"pointer",border:`1px solid ${T.teal}55`,
-                  background:loading?"rgba(0,229,192,0.06)":"linear-gradient(135deg,rgba(0,229,192,0.2),rgba(59,158,255,0.12))",
-                  color:loading?T.txt3:T.teal,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-                {loading
-                  ? <><span className="sdh-spin" style={{display:"inline-block",fontSize:18}}>⚙</span> Generating instructions...</>
-                  : "✦ Generate Discharge Instructions"}
-              </button>
-            </div>
+        {/* ── RIGHT COLUMN: AI OUTPUT ────────────────────────────────────── */}
+        <div>
+          <div className="dh-no-print" style={{ marginBottom:16 }}>
+            <SectionHeader step="5" title="AI-Generated Discharge Card" sub="Plain-language patient-ready output" />
           </div>
-        )}
 
-        {/* PREVIEW TAB */}
-        {tab==="preview" && (
-          <div className="sdh-fade" ref={sheetRef}>
-            {output
-              ? <DischargeSheet data={output} patientName={patientName} diagnosis={diagnosis} lang={lang} onCopy={handleCopy} onPrint={handlePrint}/>
-              : (
-                <div style={{...glass,padding:"60px 20px",textAlign:"center"}}>
-                  <div style={{fontSize:48,marginBottom:16}}>📄</div>
-                  <div style={{fontFamily:"Playfair Display",fontWeight:700,fontSize:20,color:T.txt,marginBottom:8}}>No Instructions Generated Yet</div>
-                  <div style={{fontFamily:"DM Sans",fontSize:13,color:T.txt3,marginBottom:20,maxWidth:400,margin:"0 auto 20px"}}>Fill in the Build tab with diagnosis, medications, and follow-up plan, then generate.</div>
-                  <button onClick={()=>setTab("build")} style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,padding:"10px 24px",borderRadius:10,cursor:"pointer",border:`1px solid ${T.teal}44`,background:`rgba(0,229,192,0.1)`,color:T.teal}}>← Go to Build Tab</button>
-                </div>
-              )}
-          </div>
-        )}
+          {/* AI sections (always visible for print) */}
+          <AISectionBlock icon="🔬" title="What We Found" content={diagnosis} loading={genDx} accent={T.teal} />
+          <AISectionBlock icon="💊" title="Your Medications" content={medications} loading={genMeds} accent={T.gold} />
+          <AISectionBlock icon="🚨" title="Return Precautions" content={precautions} loading={genPrec} accent={T.coral} />
 
-        <div className="sdh-no-print" style={{textAlign:"center",paddingBottom:24,paddingTop:14}}>
-          <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,letterSpacing:1.5}}>NOTRYA SMARTDISCHARGE · AI-GENERATED INSTRUCTIONS · REVIEW BEFORE PRINTING · NOT A SUBSTITUTE FOR CLINICAL JUDGMENT</span>
+          {followUp && (
+            <div style={{ ...gc({ borderRadius:12, borderLeft:`3px solid ${T.blue}` }), padding:"14px 16px", marginBottom:12 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                <span style={{ fontSize:16 }}>📅</span>
+                <span style={{ fontFamily:"'Playfair Display',serif", fontSize:13, fontWeight:700, color:T.blue }}>Follow-Up</span>
+              </div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt2, lineHeight:1.65, whiteSpace:"pre-wrap" }}>{followUp}</div>
+            </div>
+          )}
+
+          {/* Printable card below (hidden unless all generated) */}
+          {anyGenerated && (
+            <div style={{ marginTop:20 }}>
+              <div className="dh-no-print" style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:10 }}>
+                Print Preview
+              </div>
+              <PrintableCard
+                patient={patient}
+                diagnosis={diagnosis}
+                medications={medications}
+                precautions={precautions}
+                followUp={followUp}
+              />
+            </div>
+          )}
+
+          {!anyGenerated && !genAll && (
+            <div style={{ textAlign:"center", padding:"40px 20px", background:"rgba(26,53,85,0.12)", borderRadius:12, border:"1px dashed rgba(26,53,85,0.5)" }}>
+              <div style={{ fontSize:32, marginBottom:12 }}>✨</div>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:15, color:T.txt3, marginBottom:6 }}>Ready to generate</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4 }}>Fill in the assessment and medications on the left, then click Generate All.</div>
+            </div>
+          )}
         </div>
       </div>
     </div>

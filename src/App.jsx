@@ -52,6 +52,7 @@ import ConsultHub from '@/pages/ConsultHub';
 import ProcedureHub from '@/pages/ProcedureHub';
 import InfectiousDiseaseHub from '@/pages/InfectiousDiseaseHub';
 import DischargeHub from '@/pages/DischargeHub';
+import DischargeHubNew from '@/pages/DischargeHub.jsx';
 import BillingSubmissions from '@/pages/BillingSubmissions';
 import WoundHub from '@/pages/WoundHub';
 import DispositionBoard from '@/pages/DispositionBoard';
@@ -362,6 +363,7 @@ const AuthenticatedApp = () => {
         <Route path="/id-hub"          element={<InfectiousDiseaseHub />} />
         <Route path="/discharge-hub"   element={<DischargeHub />} />
         <Route path="/SmartDischargeHub" element={<DischargeHub />} />
+        <Route path="/DischargeHub"    element={<DischargeHubNew />} />
         <Route path="/wound-hub"       element={<LayoutWrapper currentPageName="WoundHub"><WoundHub /></LayoutWrapper>} />
         <Route path="/wound-care-hub"  element={<WoundCareHub />} />
         <Route path="/WoundCareHub"    element={<WoundCareHub />} />

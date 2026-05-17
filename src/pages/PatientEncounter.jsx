@@ -289,8 +289,8 @@ function ClinicalDecisionLane({ patient }) {
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:10 }}>
             CDS Alerts
           </div>
-          {patient.alerts.length > 0
-            ? patient.alerts.map((a, i) => <div key={i} style={{ marginBottom:6 }}><AlertBubble t={a.t} m={a.m} /></div>)
+          {(patient.alerts || []).length > 0
+            ? (patient.alerts || []).map((a, i) => <div key={i} style={{ marginBottom:6 }}><AlertBubble t={a.t} m={a.m} /></div>)
             : <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4, padding:"10px 14px", background:"rgba(26,53,85,0.2)", borderRadius:8 }}>No active alerts for this patient</div>
           }
         </div>
@@ -425,8 +425,8 @@ function OrdersLane({ patient }) {
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:9 }}>
             Active Tasks
           </div>
-          {p.tasks.length > 0
-            ? p.tasks.map((task, i) => (
+          {(p.tasks || []).length > 0
+            ? (p.tasks || []).map((task, i) => (
                 <div key={i} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
                   <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:T.teal, background:"rgba(0,229,192,0.1)", border:"1px solid rgba(0,229,192,0.3)", borderRadius:"50%", width:15, height:15, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>v</span>
                   <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt2 }}>{task}</span>
@@ -472,11 +472,11 @@ function OrdersLane({ patient }) {
         </div>
 
         {/* Flags */}
-        {p.flags.length > 0 && (
+        {(p.flags || []).length > 0 && (
           <div style={{ marginBottom:14 }}>
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:8 }}>Flags</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-              {p.flags.map((f,i) => (
+              {(p.flags || []).map((f,i) => (
                 <span key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.red, background:"rgba(255,68,68,0.1)", border:"1px solid rgba(255,68,68,0.3)", borderRadius:16, padding:"2px 9px" }}>{f}</span>
               ))}
             </div>
@@ -553,7 +553,7 @@ function DischargeSummaryModal({ patient, onConfirm, onCancel, discharging }) {
         )}
 
         {/* Active tasks */}
-        {p.tasks && p.tasks.length > 0 && (
+        {(p.tasks || []).length > 0 && (
           <div style={{ ...gc({ borderRadius:10, borderLeft:`3px solid ${T.gold}` }), padding:"10px 13px", marginBottom:14 }}>
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.gold, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:6 }}>Pending Tasks</div>
             {p.tasks.map((t, i) => (
@@ -563,7 +563,7 @@ function DischargeSummaryModal({ patient, onConfirm, onCancel, discharging }) {
         )}
 
         {/* Active alerts warning */}
-        {p.alerts && p.alerts.some(a => a.t === "critical") && (
+        {(p.alerts || []).some(a => a.t === "critical") && (
           <div style={{ background:"rgba(255,68,68,0.1)", border:"1px solid rgba(255,68,68,0.35)", borderLeft:`3px solid ${T.red}`, borderRadius:10, padding:"10px 13px", marginBottom:14 }}>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.red, fontWeight:600 }}>⚠️ Patient has unresolved critical alerts. Confirm discharge with caution.</div>
           </div>

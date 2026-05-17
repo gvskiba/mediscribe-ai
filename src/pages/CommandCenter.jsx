@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { useState, useEffect, useRef } from "react";
+import { base44, InvokeLLM } from "@/api/base44Client";
 
 (() => {
   if (document.getElementById("cc-fonts")) return;
@@ -13,6 +13,9 @@ import { base44 } from "@/api/base44Client";
     .cc-fade{animation:cc-fade .16s ease forwards}
     @keyframes modal-in{from{opacity:0;transform:scale(0.95) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
     .modal-in{animation:modal-in .2s cubic-bezier(.22,.68,0,1.15) forwards}
+    @keyframes cc-spin{to{transform:rotate(360deg)}}
+    @keyframes pulse-red{0%,100%{opacity:1}50%{opacity:0.45}}
+    .pulse-red{animation:pulse-red 1.6s ease-in-out infinite}
   `;
   document.head.appendChild(s);
 })();
@@ -33,17 +36,265 @@ const nav = (page, params = {}) => {
   window.location.href = `/${page}${query}`;
 };
 
-// ─── PATIENT DATA ─────────────────────────────────────────────────────────────
+// Current authenticated provider — replace with auth context in production
+const CURRENT_USER = "Skiba";
+
+// ─── COMMAND PALETTE DATA ─────────────────────────────────────────────────────
+const HUBS = [
+  { key:"ECGHub",                 label:"ECG Interpreter",           icon:"💓", cat:"Clinical" },
+  { key:"AirwayHub",              label:"Airway Management",          icon:"🫁", cat:"Clinical" },
+  { key:"ShockHub",               label:"Shock Hub",                  icon:"⚡", cat:"Clinical" },
+  { key:"SepsisHub",              label:"Sepsis Protocol",            icon:"🦠", cat:"Clinical" },
+  { key:"StrokeHub",              label:"Stroke Assessment",          icon:"🧠", cat:"Clinical" },
+  { key:"ToxicologyHub",          label:"Toxicology",                 icon:"☣️", cat:"Clinical" },
+  { key:"PsychHub",               label:"Psych Evaluation",           icon:"🧩", cat:"Clinical" },
+  { key:"OrthoHub",               label:"Ortho Reference",            icon:"🦴", cat:"Clinical" },
+  { key:"CardiacRiskPage",        label:"Cardiac Risk Calc",          icon:"❤️", cat:"Clinical" },
+  { key:"POCUSHub",               label:"POCUS Guide",                icon:"🔊", cat:"Clinical" },
+  { key:"DermatologyHub",         label:"Dermatology",                icon:"🔬", cat:"Clinical" },
+  { key:"ElectrolyteAcidBaseHub", label:"Electrolytes & Acid-Base",   icon:"⚗️", cat:"Clinical" },
+  { key:"TriageHub",              label:"Triage Tools",               icon:"🏥", cat:"Workflow" },
+  { key:"RapidAssessmentHub",     label:"Rapid Assessment",           icon:"🚀", cat:"Workflow" },
+  { key:"ERxHub",                 label:"ED Prescribing",             icon:"💊", cat:"Workflow" },
+  { key:"OrderGeneratorHub",      label:"Order Generator",            icon:"📋", cat:"Workflow" },
+  { key:"AutocoderHub",           label:"Auto-Coder / ICD-10",        icon:"🏷️", cat:"Workflow" },
+  { key:"ImagingInterpreter",     label:"Imaging Interpreter",        icon:"🩻", cat:"Workflow" },
+  { key:"NewPatientInput",        label:"Full Intake (NPI)",          icon:"📝", cat:"Documentation" },
+  { key:"QuickNote",              label:"Quick Note",                 icon:"✏️", cat:"Documentation" },
+];
+
+// Filters + ranks palette results. `onNewPatient` injected at call site.
+const paletteFilter = (query, patients) => {
+  const q = query.toLowerCase().trim();
+  const match = (strs) => !q || strs.some(s => (s||"").toLowerCase().includes(q));
+
+  const actions = [
+    { key:"act-qn",  label:"Quick Note",     sub:"Fast bedside documentation",  icon:"✏️", badge:"Action", badgeColor:T.teal,   execute:() => nav("QuickNote")      },
+    { key:"act-np",  label:"New Patient",    sub:"Open patient mode selector",  icon:"➕", badge:"Action", badgeColor:T.gold,   execute:"__newPatient__"             },
+    { key:"act-cc",  label:"Command Center", sub:"Return to census board",      icon:"⚡", badge:"Action", badgeColor:T.purple, execute:() => nav("CommandCenter")  },
+  ].filter(a => match([a.label, a.sub]));
+
+  const pts = patients
+    .filter(p => match([p.name, p.cc, p.room, `esi ${p.esi}`, `${p.age}${p.sex}`]))
+    .sort((a, b) => a.esi - b.esi)
+    .slice(0, q ? 6 : 4);
+
+  const hubs = HUBS
+    .filter(h => match([h.label, h.key, h.cat]))
+    .slice(0, q ? 10 : 5);
+
+  return { actions, pts, hubs };
+};
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const esiColor = (n) => ({1:T.red,2:T.orange,3:T.gold,4:T.green,5:T.txt4}[n]||T.txt4);
 const fmtTime  = (m) => m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`;
 const gc       = (x={}) => ({ background:T.card, border:"1px solid rgba(26,53,85,0.5)", borderRadius:10, ...x });
 
+// ─── RESULT CHIPS ─────────────────────────────────────────────────────────────
+const CHIP_STYLE = {
+  pending:  { color:T.gold,   marker:"⏳", bg:"rgba(245,200,66,0.08)",   border:"rgba(245,200,66,0.38)"   },
+  resulted: { color:T.teal,   marker:"✓",  bg:"rgba(0,229,192,0.07)",   border:"rgba(0,229,192,0.38)"    },
+  critical: { color:T.red,    marker:"!",  bg:"rgba(255,68,68,0.12)",   border:"rgba(255,68,68,0.55)"    },
+  running:  { color:T.cyan,   marker:"↻",  bg:"rgba(0,212,255,0.07)",   border:"rgba(0,212,255,0.38)"    },
+  consult:  { color:T.purple, marker:"→",  bg:"rgba(155,109,255,0.08)", border:"rgba(155,109,255,0.38)"  },
+};
+
+// Deterministic hash so mock data is stable per patient across renders
+const idHash = (id = "") =>
+  id.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) & 0xffff, 0);
+
+// Ten preset workup profiles — assigned by ESI band + hash remainder
+const WORKUP_PROFILES = [
+  // ESI 1-2 (indices 0-3) — high-acuity
+  [{ label:"3 Labs", status:"pending"  }, { label:"Troponin", status:"critical" }, { label:"CT",  status:"pending"  }, { label:"Cards",  status:"consult"  }],
+  [{ label:"2 Labs", status:"pending"  }, { label:"CXR",      status:"resulted" }, { label:"EKG", status:"resulted" }],
+  [{ label:"Lactate",status:"critical" }, { label:"BC x2",    status:"pending"  }, { label:"CT",  status:"running"  }, { label:"ID",     status:"consult"  }],
+  [{ label:"Labs",   status:"pending"  }, { label:"CT",       status:"critical" }, { label:"Neuro",status:"consult" }],
+  // ESI 3 (indices 4-7) — mid-acuity
+  [{ label:"2 Labs", status:"pending"  }, { label:"XR",       status:"pending"  }],
+  [{ label:"Labs",   status:"resulted" }, { label:"CT",       status:"resulted" }, { label:"Neuro",status:"consult" }],
+  [{ label:"2 Labs", status:"pending"  }, { label:"US",       status:"running"  }],
+  [{ label:"Labs",   status:"resulted" }, { label:"XR",       status:"resulted" }],
+  // ESI 4-5 (indices 8-9) — minimal
+  [{ label:"UA",     status:"pending"  }],
+  [{ label:"UA",     status:"resulted" }, { label:"XR",       status:"resulted" }],
+];
+
+function deriveResultChips(patient) {
+  // ── Real data path: uses patient.orders when entity is extended ──
+  if (patient.orders && patient.orders.length > 0) {
+    const chips   = [];
+    const labs    = patient.orders.filter(o => o.type === "lab");
+    const imaging = patient.orders.filter(o => o.type === "imaging");
+    const consults= patient.orders.filter(o => o.type === "consult");
+
+    // Critical labs surface individually; pending aggregated; resulted collapsed
+    labs.filter(o => o.status === "critical").forEach(o =>
+      chips.push({ label:(o.name||"Lab").split(" ")[0], status:"critical" }));
+    const pend = labs.filter(o => o.status === "pending");
+    const done = labs.filter(o => o.status === "resulted" || o.status === "given");
+    if (pend.length) chips.push({ label:`${pend.length} Lab${pend.length>1?"s":""}`, status:"pending" });
+    else if (done.length) chips.push({ label:"Labs", status:"resulted" });
+
+    // Imaging: one chip per order, modality as label
+    imaging.forEach(o => {
+      const lbl = (o.name||"Img").split(" ")[0];
+      const st  = o.status==="critical" ? "critical"
+                : o.status==="resulted" ? "resulted"
+                : o.status==="running"  ? "running"
+                : "pending";
+      chips.push({ label:lbl, status:st });
+    });
+
+    // Consults
+    consults.forEach(o =>
+      chips.push({ label:(o.name||"Consult").split(" ")[0], status:"consult" }));
+
+    return chips;
+  }
+
+  // ── Seeded mock path: deterministic per patient, never random ──
+  const h   = idHash(String(patient.id || "") + String(patient.mins || ""));
+  const esi = patient.esi || 3;
+  if (esi <= 2) return WORKUP_PROFILES[h % 4];
+  if (esi === 3) return WORKUP_PROFILES[4 + (h % 4)];
+  return WORKUP_PROFILES[8 + (h % 2)];
+}
+
+// Renders the chip strip — max 4 visible with +N overflow
+function ResultChipsRow({ chips }) {
+  if (!chips || chips.length === 0) return null;
+  const visible  = chips.slice(0, 4);
+  const overflow = chips.length - 4;
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:4, flexWrap:"nowrap", marginTop:3 }}>
+      {visible.map((chip, i) => {
+        const s      = CHIP_STYLE[chip.status] || CHIP_STYLE.pending;
+        const isCrit = chip.status === "critical";
+        return (
+          <span
+            key={i}
+            className={isCrit ? "pulse-red" : undefined}
+            style={{ display:"inline-flex", alignItems:"center", gap:3, fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:isCrit?700:500, color:s.color, background:s.bg, border:`1px solid ${s.border}`, borderRadius:5, padding:"2px 6px", whiteSpace:"nowrap", flexShrink:0, letterSpacing:"0.02em" }}
+          >
+            {chip.label} {s.marker}
+          </span>
+        );
+      })}
+      {overflow > 0 && (
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, flexShrink:0 }}>
+          +{overflow}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── DISPOSITION STATUS ───────────────────────────────────────────────────────
+const DISPO_MAP = {
+  dc_ready:         { label:"D/C Ready",       color:T.green,  },
+  admitted:         { label:"Bed Pending",      color:T.cyan,   },
+  obs:              { label:"Obs Pending",      color:T.gold,   },
+  awaiting_consult: { label:"Consult Pending",  color:T.purple, },
+  transfer:         { label:"Transfer Pending", color:T.orange, },
+  boarding:         { label:"Boarding",         color:T.blue,   },
+};
+
+// Separate hash multiplier so dispo never collides with chip profiles
+const dispoHash = (id = "", mins = 0) =>
+  (id.split("").reduce((a, c) => (a * 17 + c.charCodeAt(0)) & 0xffff, 0) + mins * 7) & 0xffff;
+
+// Clinically appropriate pools by ESI — high acuity → admitted/boarding, low → D/C
+const DISPO_BY_ESI = {
+  1: ["admitted",  "boarding",         "awaiting_consult", "admitted"        ],
+  2: ["admitted",  "awaiting_consult", "obs",              "boarding"        ],
+  3: ["dc_ready",  "obs",              "awaiting_consult", "workup"          ],
+  4: ["dc_ready",  "workup",           "dc_ready",         "workup"          ],
+  5: ["dc_ready",  "workup"                                                  ],
+};
+
+function deriveDispoStatus(patient) {
+  if (patient.dispo_status) return patient.dispo_status; // real data path
+  const esi  = patient.esi || 3;
+  const pool = DISPO_BY_ESI[esi] || DISPO_BY_ESI[3];
+  const h    = dispoHash(String(patient.id || ""), patient.mins || 0);
+  return pool[h % pool.length];
+}
+
+// Renders nothing for "workup" / unknown — only fires when there is a definitive direction
+function DispoBadge({ status }) {
+  const d = DISPO_MAP[status];
+  if (!d) return null;
+  return (
+    <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:600, color:d.color, background:`${d.color}14`, border:`1px solid ${d.color}44`, borderRadius:5, padding:"2px 7px", whiteSpace:"nowrap", flexShrink:0 }}>
+      <span style={{ width:4, height:4, borderRadius:"50%", background:d.color, display:"inline-block", flexShrink:0 }} />
+      {d.label}
+    </span>
+  );
+}
+
+// ─── PROVIDER ASSIGNMENT ──────────────────────────────────────────────────────
+const ROLE_STYLE = {
+  MD: { color:T.teal,   abbr:"MD" },
+  RN: { color:T.gold,   abbr:"RN" },
+  R:  { color:T.purple, abbr:"R"  },
+  NP: { color:T.blue,   abbr:"NP" },
+  PA: { color:T.cyan,   abbr:"PA" },
+};
+
+const ATTENDING_POOL = ["Skiba","Chen","Patel","Williams","Martinez","Johnson","Park","Thompson"];
+const NURSE_POOL     = ["Torres","Kim","Johnson","Davis","Lee","Nguyen","Brown","Wilson"];
+const RESIDENT_POOL  = ["Smith (R1)","Brown (R2)","Garcia (R3)","Wilson (R1)","Patel (R2)"];
+
+// Multiplier ×23 — distinct from chip hash (×31) and dispo hash (×17)
+const providerHash = (id = "", mins = 0) =>
+  (id.split("").reduce((a, c) => (a * 23 + c.charCodeAt(0)) & 0xffff, 0) + mins * 11) & 0xffff;
+
+function deriveProviders(patient) {
+  if (patient.providers && patient.providers.length > 0) return patient.providers;
+  const h   = providerHash(String(patient.id || ""), patient.mins || 0);
+  const esi = patient.esi || 3;
+  const list = [
+    { role:"MD", name:ATTENDING_POOL[h % ATTENDING_POOL.length]          },
+    { role:"RN", name:NURSE_POOL[(h * 3 + 7) % NURSE_POOL.length]       },
+  ];
+  // Residents on all ESI 1–2; ~1-in-3 ESI 3 patients
+  if (esi <= 2 || (esi === 3 && h % 3 === 0)) {
+    list.push({ role:"R", name:RESIDENT_POOL[(h * 5) % RESIDENT_POOL.length] });
+  }
+  return list;
+}
+
+// compact=true for census rows; full size for PatientSummaryPanel
+function ProviderRow({ providers, compact }) {
+  if (!providers || providers.length === 0) return null;
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:compact ? 6 : 10, flexWrap:"nowrap", overflow:"hidden" }}>
+      {providers.map((prov, i) => {
+        const rs = ROLE_STYLE[prov.role] || ROLE_STYLE.MD;
+        return (
+          <div key={i} style={{ display:"inline-flex", alignItems:"center", gap:3, flexShrink:0 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:compact ? 7 : 8, fontWeight:700, color:rs.color, background:`${rs.color}18`, border:`1px solid ${rs.color}44`, borderRadius:3, padding:"1px 4px", lineHeight:1.5 }}>
+              {rs.abbr}
+            </span>
+            <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:compact ? 9 : 11, color:T.txt3, whiteSpace:"nowrap" }}>
+              {prov.name}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── PRIMITIVES ───────────────────────────────────────────────────────────────
 function Btn({ children, accent, onClick, sm }) {
   return (
-    <button onClick={onClick} style={{ display:"inline-flex", alignItems:"center", gap:6, fontFamily:"'DM Sans',sans-serif", fontSize:sm?11:12, fontWeight:600, color:accent, background:`linear-gradient(135deg,${accent}22,${accent}0a)`, border:`1px solid ${accent}55`, borderRadius:8, padding:sm?"4px 10px":"7px 15px", cursor:"pointer", transition:"all .15s", whiteSpace:"nowrap" }}>
+    <button
+      onClick={onClick}
+      style={{ display:"inline-flex", alignItems:"center", gap:6, fontFamily:"'DM Sans',sans-serif", fontSize:sm?11:12, fontWeight:600, color:accent, background:`linear-gradient(135deg,${accent}22,${accent}0a)`, border:`1px solid ${accent}55`, borderRadius:8, padding:sm?"4px 10px":"7px 15px", cursor:"pointer", transition:"all .15s", whiteSpace:"nowrap" }}
+    >
       {children}
     </button>
   );
@@ -51,12 +302,569 @@ function Btn({ children, accent, onClick, sm }) {
 
 function EsiBadge({ esi }) {
   const c = esiColor(esi);
-  return <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:c, background:`${c}18`, border:`1px solid ${c}45`, borderRadius:5, padding:"2px 7px", whiteSpace:"nowrap" }}>ESI {esi}</span>;
+  return (
+    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:c, background:`${c}18`, border:`1px solid ${c}45`, borderRadius:5, padding:"2px 7px", whiteSpace:"nowrap" }}>
+      ESI {esi}
+    </span>
+  );
 }
 
 function TimeBadge({ mins }) {
   const c = mins>120?T.red:mins>60?T.gold:T.txt4;
-  return <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:c, minWidth:40, textAlign:"right" }}>{fmtTime(mins)}</span>;
+  return (
+    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:c, minWidth:40, textAlign:"right" }}>
+      {fmtTime(mins)}
+    </span>
+  );
+}
+
+// ─── ENCOUNTER TIMELINE ───────────────────────────────────────────────────────
+function deriveTimelineStages(patient) {
+  const h = idHash(String(patient.id || ""));
+
+  // Completion — real entity fields take priority over mock
+  const hasOrders  = patient.orders
+    ? patient.orders.length > 0
+    : (patient.mins || 0) > 10 && h % 7 !== 0;
+  const hasResults = patient.orders
+    ? patient.orders.some(o => o.status === "resulted" || o.status === "given")
+    : (patient.mins || 0) > 40 && h % 4 !== 0;
+  const disp     = deriveDispoStatus(patient);
+  const hasDispo = !!DISPO_MAP[disp];
+  const isOut    = ["dc_ready","admitted","transfer"].includes(disp);
+
+  // Mock timestamps from LOS
+  const now          = new Date();
+  const arrival      = new Date(now.getTime() - (patient.mins || 0) * 60000);
+  const dtd          = mockDtd(patient);
+  const ordersDelay  = dtd + 5 + (h % 10);
+  const resultsDelay = ordersDelay + 25 + (h % 20);
+  const fmtT = (d) =>
+    d.toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit", hour12:false });
+  const t = (addMins) =>
+    fmtT(new Date(arrival.getTime() + addMins * 60000));
+
+  const completions = [true, true, hasOrders, hasResults, hasDispo, isOut];
+  const activeIdx   = completions.findIndex(c => !c);   // first incomplete
+
+  return [
+    { key:"triage",   label:"Triage",   time: t(2)                                },
+    { key:"assessed", label:"Assessed", time: t(dtd)                              },
+    { key:"orders",   label:"Orders",   time: hasOrders  ? t(ordersDelay)  : null },
+    { key:"results",  label:"Results",  time: hasResults ? t(resultsDelay) : null },
+    { key:"dispo",    label:"Dispo",    time: hasDispo   ? "Set"           : null },
+    { key:"out",      label:"Out",      time: isOut      ? "Ready"         : null },
+  ].map((s, i) => ({ ...s, done:completions[i], active:i === activeIdx }));
+}
+
+// Dashed connector for pending stages
+const DASHED_CONN = `repeating-linear-gradient(90deg,rgba(90,130,168,0.28) 0,rgba(90,130,168,0.28) 5px,transparent 5px,transparent 10px)`;
+
+function EncounterTimeline({ patient }) {
+  const stages = deriveTimelineStages(patient);
+  const n      = stages.length;
+
+  // Color of the half-bar to the LEFT of node i
+  const leftBar = (i) => {
+    if (i === 0) return "transparent";
+    const s = stages[i];
+    if (s.done)   return T.teal;
+    if (s.active) return `linear-gradient(90deg,${T.teal},${T.gold})`;
+    return DASHED_CONN;
+  };
+
+  // Color of the half-bar to the RIGHT of node i
+  const rightBar = (i) => {
+    if (i === n - 1) return "transparent";
+    const next = stages[i + 1];
+    if (next.done)   return T.teal;
+    if (next.active) return `linear-gradient(90deg,${T.teal},${T.gold})`;
+    return DASHED_CONN;
+  };
+
+  return (
+    <div style={{ padding:"10px 24px 12px", borderBottom:"1px solid rgba(26,53,85,0.35)", background:"linear-gradient(180deg,rgba(5,15,30,0.45) 0%,transparent 100%)", flexShrink:0 }}>
+
+      {/* ── Nodes + connectors ── */}
+      <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+        {stages.map((s, i) => {
+          const nSz  = s.active ? 12 : 8;
+          const nBg  = s.done ? T.teal : s.active ? T.gold : "transparent";
+          const nBrd = s.done ? T.teal : s.active ? T.gold : "rgba(90,130,168,0.4)";
+          const glow = s.active
+            ? `0 0 10px ${T.gold}88`
+            : s.done ? `0 0 6px ${T.teal}55` : "none";
+          return (
+            <div key={s.key} style={{ flex:1, display:"flex", alignItems:"center" }}>
+              {/* Left half-connector */}
+              <div style={{ flex:1, height:1.5, background:leftBar(i) }} />
+              {/* Node circle */}
+              <div
+                className={s.active ? "pulse-red" : undefined}
+                style={{ width:nSz, height:nSz, borderRadius:"50%", background:nBg, border:`${s.done||s.active?2:1.5}px solid ${nBrd}`, flexShrink:0, transition:"all .25s", boxShadow:glow, animation:s.active?"none":undefined }}
+              />
+              {/* Right half-connector */}
+              <div style={{ flex:1, height:1.5, background:rightBar(i) }} />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Labels + timestamps ── */}
+      <div style={{ display:"flex" }}>
+        {stages.map((s) => (
+          <div key={s.key} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, fontWeight:700, color:s.done ? T.txt3 : s.active ? T.gold : T.txt4, textTransform:"uppercase", letterSpacing:"0.07em", lineHeight:1.3 }}>
+              {s.label}
+            </span>
+            <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:8, color:s.done ? T.txt4 : s.active ? T.gold : T.txt4, opacity:s.done||s.active ? 1 : 0.3 }}>
+              {s.time || "·"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── PATIENT SUMMARY PANEL ────────────────────────────────────────────────────
+function PatientSummaryPanel({ patient, summary }) {
+  // ── Fallback / mock data (replace with entity fields once schema is extended) ──
+  const vitals = patient.vitals || [
+    { type:"HR",   value:88,       unit:"bpm",  low:60,  high:100, ts:"14:32" },
+    { type:"BP",   value:"142/88", unit:"mmHg", low:null,high:null, ts:"14:32" },
+    { type:"SpO2", value:97,       unit:"%",    low:95,  high:100, ts:"14:32" },
+    { type:"RR",   value:18,       unit:"/min", low:12,  high:20,  ts:"14:32" },
+    { type:"Temp", value:98.6,     unit:"°F",   low:97,  high:99,  ts:"14:32" },
+    { type:"GCS",  value:15,       unit:"",     low:14,  high:15,  ts:"14:32" },
+  ];
+
+  const orders = patient.orders || [
+    { type:"lab",     name:"BMP / CBC / Troponin x1",      status:"pending",  ts:"14:20" },
+    { type:"imaging", name:"CT Head w/o contrast",          status:"pending",  ts:"14:25" },
+    { type:"med",     name:"Aspirin 325mg PO x1",           status:"given",    ts:"14:10" },
+    { type:"lab",     name:"Urinalysis w/ reflex culture",  status:"pending",  ts:"14:22" },
+    { type:"med",     name:"NS 1L IV bolus",                status:"running",  ts:"14:15" },
+  ];
+
+  const docStatus = patient.doc_status || {
+    hpi:false, ros:false, pe:false, mdm:false, signed:false,
+  };
+
+  const critAlerts = (patient.alerts || []).filter(a => a.t === "critical");
+  const pendingOrders = orders.filter(o => o.status === "pending");
+
+  // ── Vital color logic ──
+  const vitalColor = (v) => {
+    if (v.type === "GCS") {
+      return v.value === 15 ? T.green : v.value >= 13 ? T.gold : T.red;
+    }
+    if (v.low === null) return T.txt; // BP handled separately
+    const num = typeof v.value === "number" ? v.value : parseFloat(v.value);
+    if (isNaN(num)) return T.txt;
+    if (num < v.low || num > v.high) return T.red;
+    const band = (v.high - v.low) * 0.12;
+    if (num <= v.low + band || num >= v.high - band) return T.gold;
+    return T.green;
+  };
+
+  const bpColor = (val) => {
+    const sys = parseInt(val);
+    if (sys >= 180 || sys < 90) return T.red;
+    if (sys >= 160 || sys < 100) return T.gold;
+    return T.green;
+  };
+
+  // ── Order / doc styling maps ──
+  const orderTypeColor   = { lab:T.cyan, imaging:T.purple, med:T.gold };
+  const orderStatusColor = { pending:T.gold, given:T.green, running:T.teal, cancelled:T.txt4 };
+  const orderStatusLabel = { pending:"pending", given:"given", running:"running", cancelled:"cancelled" };
+
+  const docSections = [
+    { key:"hpi", label:"History of Present Illness", icon:"📝" },
+    { key:"ros", label:"Review of Systems",          icon:"📋" },
+    { key:"pe",  label:"Physical Exam",              icon:"🩺" },
+    { key:"mdm", label:"Medical Decision Making",    icon:"🧠" },
+  ];
+
+  const completedCount = docSections.filter(s => docStatus[s.key]).length;
+
+  return (
+    <div
+      className="cc-fade"
+      style={{ flex:1, display:"flex", flexDirection:"column", background:T.bg, overflowY:"auto", minWidth:0 }}
+    >
+
+      {/* ── PATIENT HEADER ── */}
+      <div style={{ padding:"16px 24px 14px", borderBottom:"1px solid rgba(26,53,85,0.5)", background:T.panel, flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:16 }}>
+          <div>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, background:"rgba(26,53,85,0.6)", border:"1px solid rgba(26,53,85,0.8)", borderRadius:5, padding:"2px 7px" }}>{patient.room}</span>
+              <EsiBadge esi={patient.esi} />
+              <TimeBadge mins={patient.mins} />
+            </div>
+            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:900, color:T.txt, lineHeight:1.15, marginBottom:4 }}>
+              {patient.name}
+            </div>
+            {/* AI clinical snapshot */}
+            {(summary?.text || summary?.loading) && (
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color: summary?.loading ? T.txt4 : T.txt2, fontStyle:"italic", lineHeight:1.55, marginBottom:6, paddingLeft:1 }}>
+                {summary?.loading
+                  ? <span style={{ display:"inline-flex", alignItems:"center", gap:6 }}>
+                      <span style={{ width:8, height:8, borderRadius:"50%", border:`2px solid rgba(0,229,192,0.3)`, borderTop:`2px solid ${T.teal}`, display:"inline-block", animation:"cc-spin 1s linear infinite" }} />
+                      Generating clinical summary...
+                    </span>
+                  : summary.text
+                }
+              </div>
+            )}
+            <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4 }}>{patient.age}{patient.sex}</span>
+              <span style={{ color:T.txt4, fontSize:10 }}>·</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.teal, fontWeight:500 }}>{patient.cc}</span>
+              <DispoBadge status={deriveDispoStatus(patient)} />
+            </div>
+            <div style={{ marginTop:6 }}>
+              <ProviderRow providers={deriveProviders(patient)} />
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:8, alignItems:"flex-start", flexShrink:0 }}>
+            <Btn accent={T.teal} onClick={() => nav("PatientEncounter", { patientId:patient.id })}>
+              Open Full Encounter →
+            </Btn>
+          </div>
+        </div>
+      </div>
+
+      {/* ── ENCOUNTER TIMELINE ── */}
+      <EncounterTimeline patient={patient} />
+
+      {/* ── CRITICAL ALERT BANNER ── */}
+      {critAlerts.length > 0 && (
+        <div style={{ margin:"14px 20px 0", flexShrink:0 }}>
+          {critAlerts.map((a, i) => (
+            <div
+              key={i}
+              className="pulse-red"
+              style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,68,68,0.08)", border:"1px solid rgba(255,68,68,0.4)", borderLeft:`4px solid ${T.red}`, borderRadius:10, padding:"10px 16px", marginBottom:6 }}
+            >
+              <span style={{ fontSize:15 }}>🚨</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:T.red, flex:1 }}>{a.m}</span>
+              <Btn accent={T.red} sm onClick={() => nav("PatientEncounter", { patientId:patient.id, tab:"alerts" })}>Act →</Btn>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── VITALS STRIP ── */}
+      <div style={{ margin:"14px 20px 0", flexShrink:0 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:8 }}>
+          Last Vitals
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:8 }}>
+          {vitals.map((v, i) => {
+            const c = v.type === "BP" ? bpColor(v.value) : vitalColor(v);
+            const isCrit = c === T.red;
+            return (
+              <div
+                key={i}
+                style={{ ...gc({ borderRadius:10, borderTop:`2px solid ${c}`, background: isCrit ? "rgba(255,68,68,0.05)" : T.card }), padding:"10px 8px 8px", textAlign:"center" }}
+              >
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:5 }}>
+                  {v.type}
+                </div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:v.type==="BP"?12:18, fontWeight:700, color:c, lineHeight:1 }}>
+                  {v.value}
+                </div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9, color:T.txt4, marginTop:3 }}>
+                  {v.unit}
+                </div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:T.txt4, marginTop:5, borderTop:"1px solid rgba(26,53,85,0.5)", paddingTop:4 }}>
+                  {v.ts}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── ORDERS + DOCUMENTATION ── */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, margin:"14px 20px", flex:1, minHeight:240 }}>
+
+        {/* ── Pending Orders ── */}
+        <div style={{ ...gc({ borderRadius:12 }), display:"flex", flexDirection:"column", overflow:"hidden" }}>
+          <div style={{ padding:"11px 14px 9px", borderBottom:"1px solid rgba(26,53,85,0.5)", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em" }}>
+              Orders
+            </span>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.gold, background:"rgba(245,200,66,0.1)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:10, padding:"1px 8px" }}>
+                {pendingOrders.length} pending
+              </span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.teal, background:"rgba(0,229,192,0.1)", border:"1px solid rgba(0,229,192,0.3)", borderRadius:10, padding:"1px 8px" }}>
+                {orders.length} total
+              </span>
+            </div>
+          </div>
+
+          <div style={{ flex:1, overflowY:"auto", padding:"6px 8px" }}>
+            {orders.length === 0 ? (
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4, textAlign:"center", padding:"24px 0" }}>
+                No orders placed
+              </div>
+            ) : (
+              orders.map((o, i) => {
+                const tc = orderTypeColor[o.type] || T.txt3;
+                const sc = orderStatusColor[o.status] || T.txt4;
+                return (
+                  <div
+                    key={i}
+                    style={{ display:"flex", alignItems:"flex-start", gap:0, padding:"8px 8px 8px 12px", borderBottom:"1px solid rgba(26,53,85,0.25)", borderLeft:`2px solid ${tc}`, marginBottom:2, background:"rgba(26,53,85,0.15)", borderRadius:"0 6px 6px 0" }}
+                  >
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, color:T.txt, marginBottom:4 }}>
+                        {o.name}
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:tc, background:`${tc}18`, border:`1px solid ${tc}33`, borderRadius:4, padding:"1px 5px", textTransform:"uppercase", letterSpacing:"0.06em" }}>
+                          {o.type}
+                        </span>
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:sc }}>
+                          {orderStatusLabel[o.status] || o.status}
+                        </span>
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4 }}>
+                          {o.ts}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div style={{ padding:"8px 12px", borderTop:"1px solid rgba(26,53,85,0.5)", display:"flex", gap:6, flexShrink:0 }}>
+            <Btn accent={T.teal} sm onClick={() => nav("PatientEncounter", { patientId:patient.id, tab:"orders" })}>+ New Order</Btn>
+            <Btn accent={T.cyan} sm onClick={() => nav("PatientEncounter", { patientId:patient.id, tab:"orders" })}>All Orders →</Btn>
+          </div>
+        </div>
+
+        {/* ── Documentation Status ── */}
+        <div style={{ ...gc({ borderRadius:12 }), display:"flex", flexDirection:"column", overflow:"hidden" }}>
+          <div style={{ padding:"11px 14px 9px", borderBottom:"1px solid rgba(26,53,85,0.5)", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em" }}>
+              Documentation
+            </span>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>
+                {completedCount}/{docSections.length}
+              </span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:docStatus.signed ? T.green : T.gold, background:docStatus.signed ? "rgba(61,255,160,0.1)" : "rgba(245,200,66,0.1)", border:`1px solid ${docStatus.signed ? T.green : T.gold}44`, borderRadius:6, padding:"2px 9px" }}>
+                {docStatus.signed ? "✓ SIGNED" : "UNSIGNED"}
+              </span>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ height:3, background:"rgba(26,53,85,0.5)", flexShrink:0 }}>
+            <div style={{ height:"100%", width:`${(completedCount/docSections.length)*100}%`, background:`linear-gradient(90deg,${T.teal},${T.green})`, transition:"width .4s ease" }} />
+          </div>
+
+          <div style={{ flex:1, padding:"10px 12px", display:"flex", flexDirection:"column", gap:6 }}>
+            {docSections.map(({ key, label, icon }) => {
+              const done = docStatus[key];
+              return (
+                <div
+                  key={key}
+                  style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, background:done ? "rgba(61,255,160,0.05)" : "rgba(26,53,85,0.2)", border:`1px solid ${done ? T.green+"30" : "rgba(26,53,85,0.4)"}`, transition:"all .2s" }}
+                >
+                  <span style={{ fontSize:13 }}>{icon}</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:done ? T.txt : T.txt3, flex:1 }}>
+                    {label}
+                  </span>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:done ? T.green : T.txt4 }}>
+                    {done ? "✓" : "—"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ padding:"8px 12px", borderTop:"1px solid rgba(26,53,85,0.5)", display:"flex", gap:6, flexShrink:0 }}>
+            <Btn accent={T.gold} sm onClick={() => nav("PatientEncounter", { patientId:patient.id, tab:"note" })}>📝 Open Note</Btn>
+            {!docStatus.signed && completedCount === docSections.length && (
+              <Btn accent={T.green} sm onClick={() => nav("PatientEncounter", { patientId:patient.id, tab:"sign" })}>✓ Sign Chart</Btn>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── QUICK ACTIONS FOOTER ── */}
+      <div style={{ padding:"10px 20px 14px", borderTop:"1px solid rgba(26,53,85,0.5)", display:"flex", alignItems:"center", gap:8, flexShrink:0, background:T.panel }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.14em", marginRight:6 }}>
+          Quick Actions
+        </span>
+        <Btn accent={T.teal}   sm onClick={() => nav("PatientEncounter", { patientId:patient.id, tab:"orders"  })}>+ Order</Btn>
+        <Btn accent={T.gold}   sm onClick={() => nav("PatientEncounter", { patientId:patient.id, tab:"note"    })}>📝 Note</Btn>
+        <Btn accent={T.purple} sm onClick={() => nav("PatientEncounter", { patientId:patient.id, tab:"dispo"   })}>🚪 Disposition</Btn>
+        <Btn accent={T.red}    sm onClick={() => nav("PatientEncounter", { patientId:patient.id, tab:"alerts"  })}>🚨 Alert</Btn>
+        <div style={{ flex:1 }} />
+        <Btn accent={T.blue}   sm onClick={() => nav("PatientEncounter", { patientId:patient.id })}>Full Encounter →</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ─── COMMAND PALETTE ──────────────────────────────────────────────────────────
+function CommandPalette({ open, onClose, patients, onNewPatient }) {
+  const [query,     setQuery]     = useState("");
+  const [activeIdx, setActiveIdx] = useState(0);
+  const inputRef = useRef(null);
+
+  // Reset + focus on open
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      setActiveIdx(0);
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [open]);
+
+  const { actions, pts, hubs } = paletteFilter(query, patients);
+
+  // Inject onNewPatient for the new-patient action
+  const resolvedActions = actions.map(a =>
+    a.execute === "__newPatient__" ? { ...a, execute:onNewPatient } : a
+  );
+
+  // Flat ordered list drives keyboard navigation
+  const flat = [
+    ...resolvedActions.map(a => ({ ...a, type:"action" })),
+    ...pts.map(p => ({
+      key:`pt-${p.id}`, type:"patient",
+      label:p.name,
+      sub:`${p.room} · ${p.cc} · ESI ${p.esi} · ${fmtTime(p.mins)}`,
+      icon:"👤", badge:`ESI ${p.esi}`, badgeColor:esiColor(p.esi),
+      execute:() => nav("PatientEncounter", { patientId:p.id }),
+    })),
+    ...hubs.map(h => ({
+      key:`hub-${h.key}`, type:"hub",
+      label:h.label, sub:h.cat, icon:h.icon,
+      badge:"Hub", badgeColor:T.purple,
+      execute:() => nav(h.key),
+    })),
+  ];
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape")    { onClose(); return; }
+      if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx(i => Math.min(i+1, flat.length-1)); }
+      if (e.key === "ArrowUp")   { e.preventDefault(); setActiveIdx(i => Math.max(i-1, 0)); }
+      if (e.key === "Enter" && flat[activeIdx]) { flat[activeIdx].execute?.(); onClose(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, activeIdx, flat, onClose]);
+
+  // Reset active index when query changes
+  useEffect(() => { setActiveIdx(0); }, [query]);
+
+  if (!open) return null;
+
+  // Pre-build rows with section headers
+  const LABELS = { action:"Actions", patient:"Patients", hub:"Clinical Hubs" };
+  const rows = [];
+  let lastType = null;
+  flat.forEach((item, idx) => {
+    if (item.type !== lastType) {
+      rows.push(
+        <div key={`hdr-${item.type}`} style={{ padding:"7px 16px 3px", fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", borderTop:lastType ? "1px solid rgba(26,53,85,0.4)" : "none", marginTop:lastType ? 4 : 0 }}>
+          {LABELS[item.type]}
+        </div>
+      );
+      lastType = item.type;
+    }
+    const active = activeIdx === idx;
+    rows.push(
+      <div
+        key={item.key}
+        onClick={() => { item.execute?.(); onClose(); }}
+        onMouseEnter={() => setActiveIdx(idx)}
+        style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 16px", background:active ? `${T.teal}14` : "transparent", borderLeft:`2px solid ${active ? T.teal : "transparent"}`, cursor:"pointer", transition:"background .08s, border-color .08s" }}
+      >
+        <span style={{ fontSize:15, flexShrink:0, lineHeight:1 }}>{item.icon}</span>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:active ? T.txt : T.txt2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+            {item.label}
+          </div>
+          {item.sub && (
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:1 }}>
+              {item.sub}
+            </div>
+          )}
+        </div>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:600, color:item.badgeColor||T.txt4, background:`${item.badgeColor||T.txt4}18`, border:`1px solid ${item.badgeColor||T.txt4}33`, borderRadius:4, padding:"2px 6px", flexShrink:0, whiteSpace:"nowrap" }}>
+          {item.badge}
+        </span>
+      </div>
+    );
+  });
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(5,15,30,0.82)", backdropFilter:"blur(14px)", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:100 }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className="modal-in"
+        style={{ width:"100%", maxWidth:600, borderRadius:14, overflow:"hidden", background:T.panel, border:`1px solid ${T.teal}44`, boxShadow:`0 32px 100px rgba(0,0,0,0.9), 0 0 0 1px ${T.teal}18 inset` }}
+      >
+        {/* ── Search input ── */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, padding:"0 18px", borderBottom:"1px solid rgba(26,53,85,0.6)" }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:T.txt4, flexShrink:0 }}>⌘</span>
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search patients, hubs, or actions..."
+            style={{ flex:1, background:"transparent", border:"none", outline:"none", fontFamily:"'DM Sans',sans-serif", fontSize:15, color:T.txt, padding:"16px 0" }}
+          />
+          {query
+            ? <button onClick={() => setQuery("")} style={{ background:"none", border:"none", color:T.txt4, cursor:"pointer", fontSize:13, padding:"2px 4px", flexShrink:0 }}>✕</button>
+            : <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, background:"rgba(26,53,85,0.5)", border:"1px solid rgba(26,53,85,0.7)", borderRadius:4, padding:"2px 7px", flexShrink:0 }}>ESC</span>
+          }
+        </div>
+
+        {/* ── Results ── */}
+        <div style={{ maxHeight:420, overflowY:"auto" }}>
+          {flat.length === 0 ? (
+            <div style={{ padding:"32px 20px", textAlign:"center" }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>🔍</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt4 }}>
+                No results for <span style={{ color:T.txt3, fontStyle:"italic" }}>"{query}"</span>
+              </div>
+            </div>
+          ) : rows}
+        </div>
+
+        {/* ── Keyboard hints ── */}
+        <div style={{ padding:"7px 16px", borderTop:"1px solid rgba(26,53,85,0.5)", display:"flex", alignItems:"center", gap:14 }}>
+          {[["↑↓","navigate"],["↵","open"],["esc","close"]].map(([key,label]) => (
+            <div key={key} style={{ display:"flex", alignItems:"center", gap:4 }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt3, background:"rgba(26,53,85,0.5)", border:"1px solid rgba(26,53,85,0.8)", borderRadius:4, padding:"1px 5px" }}>{key}</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4 }}>{label}</span>
+            </div>
+          ))}
+          <div style={{ flex:1 }} />
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, letterSpacing:"0.06em" }}>NOTRYA · ⌘K</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── NEW PATIENT CHOICE MODAL ─────────────────────────────────────────────────
@@ -71,7 +879,6 @@ function NewPatientModal({ onClose }) {
         className="modal-in"
         style={{ width:"100%", maxWidth:480, borderRadius:16, overflow:"hidden", border:"1px solid rgba(26,53,85,0.6)", background:T.panel, boxShadow:"0 24px 80px rgba(0,0,0,0.8)" }}
       >
-        {/* Header */}
         <div style={{ padding:"20px 24px 16px", borderBottom:"1px solid rgba(26,53,85,0.5)" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <div>
@@ -82,10 +889,7 @@ function NewPatientModal({ onClose }) {
           </div>
         </div>
 
-        {/* Two choices */}
         <div style={{ padding:"20px 24px 24px", display:"flex", flexDirection:"column", gap:12 }}>
-
-          {/* Quick Note */}
           <div
             onClick={() => { nav("QuickNote"); onClose(); }}
             style={{ ...gc({ borderRadius:12, borderLeft:`3px solid ${T.teal}`, background:`linear-gradient(135deg,${T.teal}0a,${T.card})` }), padding:"16px 18px", cursor:"pointer", transition:"box-shadow .15s" }}
@@ -109,7 +913,6 @@ function NewPatientModal({ onClose }) {
             </div>
           </div>
 
-          {/* Full Intake */}
           <div
             onClick={() => { nav("NewPatientInput"); onClose(); }}
             style={{ ...gc({ borderRadius:12, borderLeft:`3px solid ${T.gold}`, background:`linear-gradient(135deg,${T.gold}0a,${T.card})` }), padding:"16px 18px", cursor:"pointer", transition:"box-shadow .15s" }}
@@ -142,40 +945,108 @@ function NewPatientModal({ onClose }) {
 }
 
 // ─── CENSUS PANEL ─────────────────────────────────────────────────────────────
-function CensusPanel({ patients, search, onSearch }) {
+function CensusPanel({ patients, search, onSearch, selectedId, onSelect, summaries }) {
+  const [filterMode, setFilterMode] = useState("all"); // "all" | "mine"
+
   const filtered = patients.filter(p =>
     [p.name, p.cc, p.room].some(s => (s || "").toLowerCase().includes(search.toLowerCase()))
   );
   const sorted = [...filtered].sort((a, b) => a.esi !== b.esi ? a.esi - b.esi : b.mins - a.mins);
 
+  const myPatients = sorted.filter(p =>
+    deriveProviders(p).some(pr => pr.role === "MD" && pr.name === CURRENT_USER)
+  );
+  const displayed = filterMode === "mine" ? myPatients : sorted;
+  const isMine    = filterMode === "mine";
+
   return (
     <div style={{ width:292, minWidth:292, display:"flex", flexDirection:"column", borderRight:"1px solid rgba(26,53,85,0.5)", height:"100%", background:T.panel }}>
-      <div style={{ padding:"14px 16px 10px", borderBottom:"1px solid rgba(26,53,85,0.5)" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em" }}>Patient Census</span>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.teal, background:"rgba(0,229,192,0.1)", border:"1px solid rgba(0,229,192,0.3)", borderRadius:10, padding:"1px 8px" }}>{patients.length}</span>
+
+      {/* ── Header ── */}
+      <div style={{ padding:"14px 16px 10px", borderBottom:`1px solid ${isMine ? T.teal+"44" : "rgba(26,53,85,0.5)"}`, transition:"border-color .25s" }}>
+
+        {/* Label + count */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:9 }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:isMine ? T.teal : T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", transition:"color .2s" }}>
+            {isMine ? "My Patients" : "Patient Census"}
+          </span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.teal, background:"rgba(0,229,192,0.1)", border:"1px solid rgba(0,229,192,0.3)", borderRadius:10, padding:"1px 8px" }}>
+            {isMine ? `${displayed.length} / ${patients.length}` : patients.length}
+          </span>
         </div>
+
+        {/* My Patients / All toggle */}
+        <div style={{ display:"flex", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(26,53,85,0.5)", borderRadius:8, overflow:"hidden", marginBottom:9 }}>
+          {[
+            { mode:"mine", label:"My Patients", count:myPatients.length },
+            { mode:"all",  label:"All",          count:sorted.length     },
+          ].map(({ mode, label, count }, i) => {
+            const active = filterMode === mode;
+            return (
+              <button
+                key={mode}
+                onClick={() => setFilterMode(mode)}
+                style={{ flex: mode === "mine" ? 1 : "none", display:"flex", alignItems:"center", justifyContent: mode === "mine" ? "flex-start" : "center", gap:5, padding:"5px 10px", background: active ? `${T.teal}1a` : "transparent", border:"none", borderRight: i === 0 ? "1px solid rgba(26,53,85,0.5)" : "none", color: active ? T.teal : T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight: active ? 700 : 400, cursor:"pointer", transition:"all .15s", whiteSpace:"nowrap" }}
+              >
+                {label}
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color: active ? T.teal : T.txt4, background: active ? "rgba(0,229,192,0.15)" : "rgba(26,53,85,0.4)", borderRadius:8, padding:"0 5px", lineHeight:1.7 }}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search */}
         <div style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(26,53,85,0.5)", borderRadius:8, padding:"7px 10px" }}>
           <span style={{ fontSize:12, color:T.txt4 }}>🔍</span>
-          <input value={search} onChange={e => onSearch(e.target.value)} placeholder="Room, name, CC..." style={{ flex:1, background:"transparent", border:"none", outline:"none", fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt }} />
-          {search && <button onClick={() => onSearch("")} style={{ background:"none", border:"none", color:T.txt4, cursor:"pointer", fontSize:11, padding:0 }}>x</button>}
+          <input
+            value={search}
+            onChange={e => onSearch(e.target.value)}
+            placeholder="Room, name, CC..."
+            style={{ flex:1, background:"transparent", border:"none", outline:"none", fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt }}
+          />
+          {search && (
+            <button onClick={() => onSearch("")} style={{ background:"none", border:"none", color:T.txt4, cursor:"pointer", fontSize:11, padding:0 }}>x</button>
+          )}
         </div>
       </div>
 
+      {/* ── Patient List ── */}
       <div style={{ flex:1, overflowY:"auto", paddingBottom:8 }}>
-        {sorted.map(p => {
-          const hasCrit = p.alerts && p.alerts.some(a => a.t === "critical");
+
+        {/* Empty state */}
+        {displayed.length === 0 && (
+          <div style={{ padding:"32px 16px", textAlign:"center" }}>
+            <div style={{ fontSize:28, marginBottom:10 }}>👤</div>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4, lineHeight:1.6 }}>
+              {isMine ? `No patients assigned to Dr. ${CURRENT_USER}` : "No patients match your search"}
+            </div>
+            {isMine && (
+              <button
+                onClick={() => setFilterMode("all")}
+                style={{ marginTop:10, fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.teal, background:"rgba(0,229,192,0.08)", border:"1px solid rgba(0,229,192,0.3)", borderRadius:6, padding:"4px 12px", cursor:"pointer" }}
+              >
+                View All Patients →
+              </button>
+            )}
+          </div>
+        )}
+
+        {displayed.map(p => {
+          const isSelected = p.id === selectedId;
+          const hasCrit    = p.alerts && p.alerts.some(a => a.t === "critical");
           return (
             <div
               key={p.id}
-              onClick={() => nav("PatientEncounter", { patientId:p.id })}
-              style={{ padding:"10px 16px", background:"transparent", borderLeft:"3px solid transparent", borderBottom:"1px solid rgba(26,53,85,0.3)", cursor:"pointer", transition:"all .12s", display:"flex", flexDirection:"column", gap:4 }}
-              onMouseEnter={e => { e.currentTarget.style.background=`linear-gradient(135deg,${T.teal}07,transparent)`; e.currentTarget.style.borderLeftColor=T.teal+"55"; }}
-              onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderLeftColor="transparent"; }}
+              onClick={() => onSelect(p)}
+              style={{ padding:"10px 16px", background:isSelected ? `linear-gradient(135deg,${T.teal}12,${T.teal}06)` : "transparent", borderLeft:`3px solid ${isSelected ? T.teal : "transparent"}`, borderBottom:"1px solid rgba(26,53,85,0.3)", cursor:"pointer", transition:"all .12s", display:"flex", flexDirection:"column", gap:4 }}
+              onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.background=`linear-gradient(135deg,${T.teal}07,transparent)`; e.currentTarget.style.borderLeftColor=T.teal+"44"; } }}
+              onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderLeftColor="transparent"; } }}
             >
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>{p.room}</span>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:isSelected ? T.teal : T.txt4 }}>{p.room}</span>
                   {hasCrit && <span style={{ width:5, height:5, borderRadius:"50%", background:T.red, display:"inline-block" }} />}
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -184,11 +1055,22 @@ function CensusPanel({ patients, search, onSearch }) {
                 </div>
               </div>
               <div style={{ fontFamily:"'Playfair Display',serif", fontSize:13, fontWeight:700, color:T.txt, lineHeight:1.2 }}>{p.name}</div>
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>{p.age}{p.sex}</span>
-                <span style={{ color:T.txt4, fontSize:9 }}>·</span>
-                <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt3 }}>{p.cc}</span>
+              {/* AI one-liner — appears after patient is selected and summary generates */}
+              {(summaries[p.id]?.text || summaries[p.id]?.loading) && (
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color: summaries[p.id]?.loading ? T.txt4 : T.txt3, fontStyle:"italic", lineHeight:1.3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {summaries[p.id]?.loading ? "···" : summaries[p.id].text}
+                </div>
+              )}
+              <ProviderRow providers={deriveProviders(p)} compact />
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:4 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6, minWidth:0, overflow:"hidden" }}>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, flexShrink:0 }}>{p.age}{p.sex}</span>
+                  <span style={{ color:T.txt4, fontSize:9, flexShrink:0 }}>·</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.cc}</span>
+                </div>
+                <DispoBadge status={deriveDispoStatus(p)} />
               </div>
+              <ResultChipsRow chips={deriveResultChips(p)} />
             </div>
           );
         })}
@@ -217,27 +1099,107 @@ function SelectPatientPrompt({ patients }) {
   );
 }
 
+// ─── TIME-TO-EVENT HELPERS ────────────────────────────────────────────────────
+// ACEP / CMS benchmark targets (minutes)
+const DTD_TARGET   = 30;   // door-to-doc
+const EKG_TARGET   = 10;   // door-to-EKG for ACS
+const STALE_THRESH = 30;   // no new orders = stale workup
+
+const dtdColor   = (m) => m > 60 ? T.red : m > DTD_TARGET   ? T.gold : T.green;
+const ekgColor   = (m) => m > 20 ? T.red : m > EKG_TARGET   ? T.gold : T.green;
+const staleColor = (m) => m > 60 ? T.red : m > STALE_THRESH ? T.gold : T.txt4;
+
+// Seeded door-to-doc — scales loosely with LOS + hash variation
+const mockDtd = (p) => {
+  if (p.door_to_doc != null) return p.door_to_doc;
+  const h = idHash(String(p.id || ""));
+  return Math.max(5, Math.min(90, Math.floor((p.mins || 30) * 0.3) + (h % 25)));
+};
+
+// Cardiac / EKG candidates
+const isCardiac = (p) => {
+  const cc = (p.cc || "").toLowerCase();
+  return ["chest","stemi","cardiac","ekg","palpitat","syncope"].some(kw => cc.includes(kw));
+};
+
+// Seeded door-to-EKG for cardiac patients
+const mockDoorToEkg = (p) => {
+  if (p.door_to_ekg != null) return p.door_to_ekg;
+  const h = idHash(String(p.id || ""));
+  return Math.max(3, 5 + (h % 20));   // 3–24 mins
+};
+
+// Seeded time since last order placed (mins ago)
+const mockLastOrderMins = (p) => {
+  if (p.last_order_mins != null) return p.last_order_mins;
+  const h = idHash(String(p.id || ""));
+  return (h * 11 + 17) % 75;          // 0–74 mins ago
+};
+
 // ─── RIGHT RAIL — SHIFT OVERVIEW ──────────────────────────────────────────────
 function ShiftRail({ patients }) {
-  const critPts = patients.filter(p => p.alerts && p.alerts.some(a => a.t==="critical"));
-  const avgTime = patients.length ? Math.round(patients.reduce((s,p) => s+(p.mins||0), 0) / patients.length) : 0;
+  const critPts = patients.filter(p => p.alerts && p.alerts.some(a => a.t === "critical"));
+  const avgTime = patients.length
+    ? Math.round(patients.reduce((s, p) => s + (p.mins || 0), 0) / patients.length)
+    : 0;
+
+  // ── Time-to-event aggregates ──
+  const dtdValues  = patients.map(p => mockDtd(p));
+  const avgDtd     = dtdValues.length
+    ? Math.round(dtdValues.reduce((a, b) => a + b, 0) / dtdValues.length)
+    : 0;
+  const worstDtd   = dtdValues.length ? Math.max(...dtdValues) : 0;
+  const worstDtdPt = patients.find(p => mockDtd(p) === worstDtd);
+
+  const cardiacPts    = patients.filter(p => isCardiac(p));
+  const ekgOnTime     = cardiacPts.filter(p => mockDoorToEkg(p) <= EKG_TARGET);
+  const ekgLabel      = cardiacPts.length
+    ? `${ekgOnTime.length} / ${cardiacPts.length}`
+    : "—";
+  const ekgAllGood    = cardiacPts.length > 0 && ekgOnTime.length === cardiacPts.length;
+  const ekgSomemissed = cardiacPts.length > 0 && ekgOnTime.length < cardiacPts.length;
+
+  // Stale workup = patient LOS > 45m AND no new orders in > STALE_THRESH mins
+  const stalePts = patients.filter(p => (p.mins || 0) > 45 && mockLastOrderMins(p) > STALE_THRESH);
+
+  // Section label style
+  const sectionLabel = (txt, color = T.txt4) => (
+    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:8 }}>
+      {txt}
+    </div>
+  );
+
+  // Metric row: label left, colored value right
+  const metricRow = (label, value, valueColor, sub = null) => (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7 }}>
+      <div style={{ minWidth:0 }}>
+        <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt3, lineHeight:1.3 }}>{label}</div>
+        {sub && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, marginTop:1 }}>{sub}</div>}
+      </div>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:14, fontWeight:700, color:valueColor, flexShrink:0, marginLeft:8 }}>
+        {value}
+      </span>
+    </div>
+  );
 
   return (
     <div style={{ width:258, minWidth:258, height:"100%", borderLeft:"1px solid rgba(26,53,85,0.5)", background:T.panel, display:"flex", flexDirection:"column", overflowY:"auto" }}>
 
-      <div style={{ padding:"14px 14px 10px", borderBottom:"1px solid rgba(26,53,85,0.5)" }}>
+      {/* ── Header ── */}
+      <div style={{ padding:"14px 14px 10px", borderBottom:"1px solid rgba(26,53,85,0.5)", flexShrink:0 }}>
         <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em" }}>Shift Overview</div>
       </div>
 
-      <div style={{ padding:"12px 12px 0" }}>
-        {/* Stats grid */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:16 }}>
+      <div style={{ padding:"12px 12px 0", flex:1 }}>
+
+        {/* ── Stats grid ── */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:14 }}>
           {[
-            { label:"Total Pts",    value:patients.length,                                                                   color:T.teal  },
-            { label:"ESI 1–2",      value:patients.filter(p=>p.esi<=2).length,                                               color:T.coral },
-            { label:"Crit Alerts",  value:patients.filter(p=>p.alerts&&p.alerts.some(a=>a.t==="critical")).length,           color:T.red   },
-            { label:"Avg Time",     value:`${avgTime}m`,                                                                     color:T.gold  },
-          ].map((s,i) => (
+            { label:"Total Pts",   value:patients.length,                                                                        color:T.teal  },
+            { label:"ESI 1-2",     value:patients.filter(p => p.esi <= 2).length,                                                color:T.coral },
+            { label:"Crit Alerts", value:patients.filter(p => p.alerts && p.alerts.some(a => a.t === "critical")).length,        color:T.red   },
+            { label:"Avg LOS",     value:`${avgTime}m`,                                                                          color:T.gold  },
+          ].map((s, i) => (
             <div key={i} style={{ ...gc({ borderRadius:9 }), padding:"10px 11px", textAlign:"center" }}>
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:20, fontWeight:700, color:s.color, lineHeight:1 }}>{s.value}</div>
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:T.txt4, marginTop:4 }}>{s.label}</div>
@@ -245,12 +1207,75 @@ function ShiftRail({ patients }) {
           ))}
         </div>
 
-        {/* Critical patients callout */}
+        {/* ── Time-to-Event ── */}
+        <div style={{ ...gc({ borderRadius:10 }), padding:"11px 12px", marginBottom:14 }}>
+          {sectionLabel("Time-to-Event")}
+
+          {patients.length === 0 ? (
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.txt4, textAlign:"center", padding:"8px 0" }}>No patients</div>
+          ) : (
+            <>
+              {metricRow(
+                "Avg Door-to-Doc",
+                `${avgDtd}m`,
+                dtdColor(avgDtd),
+                `Target ≤${DTD_TARGET}m`
+              )}
+
+              {metricRow(
+                "Longest Door-to-Doc",
+                `${worstDtd}m`,
+                dtdColor(worstDtd),
+                worstDtdPt ? `${worstDtdPt.room} · ${(worstDtdPt.name||"").split(",")[0]}` : null
+              )}
+
+              {/* Divider */}
+              <div style={{ height:1, background:"rgba(26,53,85,0.5)", margin:"8px 0" }} />
+
+              {metricRow(
+                "EKG ≤10m (Cardiac)",
+                cardiacPts.length === 0 ? "—" : ekgLabel,
+                ekgAllGood ? T.green : ekgSomemissed ? T.red : T.txt4
+              )}
+
+              {metricRow(
+                "Stale Workups >30m",
+                stalePts.length === 0 ? "0" : String(stalePts.length),
+                stalePts.length === 0 ? T.green : stalePts.length > 2 ? T.red : T.gold,
+                `LOS >45m, no new orders`
+              )}
+            </>
+          )}
+        </div>
+
+        {/* ── At-Risk Patients ── */}
+        {stalePts.length > 0 && (
+          <div style={{ marginBottom:14 }}>
+            {sectionLabel("Stale Workups", T.gold)}
+            {stalePts.map(p => (
+              <div
+                key={p.id}
+                onClick={() => nav("PatientEncounter", { patientId:p.id })}
+                style={{ ...gc({ borderRadius:9, borderLeft:`3px solid ${staleColor(mockLastOrderMins(p))}`, background:"rgba(245,200,66,0.04)" }), padding:"8px 10px", marginBottom:6, cursor:"pointer" }}
+              >
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:2 }}>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, color:T.txt }}>{(p.name||"").split(",")[0]}</span>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:staleColor(mockLastOrderMins(p)) }}>
+                    {mockLastOrderMins(p)}m
+                  </span>
+                </div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4 }}>
+                  {p.room} · No new orders
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Critical — Needs Attention ── */}
         {critPts.length > 0 && (
-          <div style={{ marginBottom:16 }}>
-            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.red, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:8 }}>
-              Critical — Needs Attention
-            </div>
+          <div style={{ marginBottom:14 }}>
+            {sectionLabel("Critical — Needs Attention", T.red)}
             {critPts.map(p => (
               <div
                 key={p.id}
@@ -259,7 +1284,7 @@ function ShiftRail({ patients }) {
               >
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:T.txt, marginBottom:2 }}>{p.name}</div>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, marginBottom:4 }}>{p.room} · {p.cc}</div>
-                {p.alerts.filter(a=>a.t==="critical").map((a,i) => (
+                {p.alerts.filter(a => a.t === "critical").map((a, i) => (
                   <div key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.red, lineHeight:1.4 }}>🚨 {a.m}</div>
                 ))}
               </div>
@@ -267,15 +1292,13 @@ function ShiftRail({ patients }) {
           </div>
         )}
 
-        {/* ESI breakdown */}
+        {/* ── ESI Breakdown ── */}
         <div style={{ marginBottom:14 }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:8 }}>
-            ESI Breakdown
-          </div>
-          {[1,2,3,4,5].map(esi => {
-            const count = patients.filter(p=>p.esi===esi).length;
-            const c = esiColor(esi);
-            const pct = patients.length ? (count/patients.length)*100 : 0;
+          {sectionLabel("ESI Breakdown")}
+          {[1, 2, 3, 4, 5].map(esi => {
+            const count = patients.filter(p => p.esi === esi).length;
+            const c     = esiColor(esi);
+            const pct   = patients.length ? (count / patients.length) * 100 : 0;
             return (
               <div key={esi} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:c, minWidth:36 }}>ESI {esi}</span>
@@ -287,13 +1310,14 @@ function ShiftRail({ patients }) {
             );
           })}
         </div>
+
       </div>
     </div>
   );
 }
 
 // ─── TOP BAR ──────────────────────────────────────────────────────────────────
-function TopBar({ onQuickNote, onNewPatient }) {
+function TopBar({ onQuickNote, onNewPatient, onOpenPalette }) {
   const now  = new Date();
   const time = now.toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit" });
   const date = now.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
@@ -305,6 +1329,17 @@ function TopBar({ onQuickNote, onNewPatient }) {
         <div>
           <div style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:900, color:T.txt, letterSpacing:"0.03em" }}>NOTRYA</div>
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, letterSpacing:"0.16em", marginTop:-1 }}>COMMAND CENTER</div>
+        </div>
+        {/* ⌘K search trigger */}
+        <div
+          onClick={onOpenPalette}
+          style={{ display:"flex", alignItems:"center", gap:7, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(26,53,85,0.5)", borderRadius:8, padding:"5px 12px", cursor:"pointer", marginLeft:12 }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor="rgba(0,229,192,0.3)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(26,53,85,0.5)"; }}
+        >
+          <span style={{ fontSize:12, color:T.txt4 }}>🔍</span>
+          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:T.txt4 }}>Search</span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, background:"rgba(26,53,85,0.6)", border:"1px solid rgba(26,53,85,0.8)", borderRadius:4, padding:"1px 6px", marginLeft:2 }}>⌘K</span>
         </div>
       </div>
 
@@ -330,20 +1365,58 @@ function TopBar({ onQuickNote, onNewPatient }) {
 
 // ─── COMMAND CENTER — MAIN EXPORT ─────────────────────────────────────────────
 export default function CommandCenter() {
-  const [search,         setSearch]         = useState("");
-  const [showNewPatient, setShowNewPatient] = useState(false);
-  const [patients,       setPatients]       = useState([]);
-  const [loading,        setLoading]        = useState(true);
+  const [search,          setSearch]          = useState("");
+  const [showNewPatient,  setShowNewPatient]  = useState(false);
+  const [showPalette,     setShowPalette]     = useState(false);
+  const [patients,        setPatients]        = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [summaries,       setSummaries]       = useState({});
 
   useEffect(() => {
-    base44.entities.Patient.list().then(data => { setPatients(data); setLoading(false); });
+    base44.entities.Patient.list().then(data => {
+      setPatients(data);
+      setLoading(false);
+    });
   }, []);
+
+  // Global ⌘K / Ctrl+K shortcut
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowPalette(p => !p);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const generateSummary = async (patient) => {
+    if (!patient?.id || summaries[patient.id]) return;
+    setSummaries(prev => ({ ...prev, [patient.id]: { text: null, loading: true } }));
+    const ordersText = (patient.orders || []).slice(0, 4).map(o => `${o.name} (${o.status})`).join(", ") || "none placed yet";
+    const alertsText = (patient.alerts || []).map(a => a.m).join("; ") || "none";
+    try {
+      const result = await InvokeLLM({
+        prompt: `You are writing a one-line ED census summary for a physician scanning a trackboard.\n\nPatient: ${patient.age || ""}${patient.sex || ""}, ESI ${patient.esi || "?"}, LOS ${patient.mins || 0}min\nCC: ${patient.cc || "unknown"}\nOrders: ${ordersText}\nCritical alerts: ${alertsText}\n\nWrite exactly ONE sentence under 25 words. Lead with the key clinical finding or working diagnosis, then the most urgent pending action or current status. Be specific and clinical. No filler phrases like "patient presents with."`,
+        response_json_schema: { type:"object", properties:{ summary:{ type:"string" } }, required:["summary"] }
+      });
+      setSummaries(prev => ({ ...prev, [patient.id]: { text: result.summary, loading: false } }));
+    } catch {
+      setSummaries(prev => ({ ...prev, [patient.id]: { text: null, loading: false } }));
+    }
+  };
+
+  const handleSelectPatient = (p) => {
+    setSelectedPatient(p);
+    generateSummary(p);
+  };
 
   if (loading) {
     return (
       <div style={{ display:"flex", height:"100vh", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:14, background:T.bg, fontFamily:"'DM Sans',sans-serif" }}>
         <div style={{ width:32, height:32, borderRadius:"50%", border:`3px solid rgba(0,229,192,0.2)`, borderTop:`3px solid ${T.teal}`, animation:"cc-spin 1s linear infinite" }} />
-        <style>{`@keyframes cc-spin{to{transform:rotate(360deg)}}`}</style>
         <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:T.txt3 }}>Loading census...</div>
       </div>
     );
@@ -354,6 +1427,7 @@ export default function CommandCenter() {
       <TopBar
         onQuickNote={() => nav("QuickNote")}
         onNewPatient={() => setShowNewPatient(true)}
+        onOpenPalette={() => setShowPalette(true)}
       />
 
       <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
@@ -361,13 +1435,31 @@ export default function CommandCenter() {
           patients={patients}
           search={search}
           onSearch={setSearch}
+          selectedId={selectedPatient?.id}
+          onSelect={handleSelectPatient}
+          summaries={summaries}
         />
-        <SelectPatientPrompt patients={patients} />
+
+        {selectedPatient
+          ? <PatientSummaryPanel
+              key={selectedPatient.id}
+              patient={selectedPatient}
+              summary={summaries[selectedPatient.id]}
+            />
+          : <SelectPatientPrompt patients={patients} />
+        }
+
         <ShiftRail patients={patients} />
       </div>
 
-      {/* New Patient Choice Modal */}
       {showNewPatient && <NewPatientModal onClose={() => setShowNewPatient(false)} />}
+
+      <CommandPalette
+        open={showPalette}
+        onClose={() => setShowPalette(false)}
+        patients={patients}
+        onNewPatient={() => { setShowPalette(false); setShowNewPatient(true); }}
+      />
     </div>
   );
 }

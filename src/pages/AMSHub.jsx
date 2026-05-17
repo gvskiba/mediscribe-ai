@@ -15,6 +15,7 @@
 
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 (() => {
   if (document.getElementById("ams-fonts")) return;
@@ -556,6 +557,7 @@ export default function AMSHub({ embedded = false }) {
       minHeight:embedded ? "auto" : "100vh", color:T.txt }}>
       <div style={{ maxWidth:900, margin:"0 auto",
         padding:embedded ? "0" : "0 16px" }}>
+        {!embedded && <NotryaPatientBar />}
         {!embedded && (
           <div style={{ padding:"18px 0 14px" }}>
             <button onClick={() => navigate("/hub")}

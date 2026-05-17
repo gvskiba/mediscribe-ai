@@ -9,6 +9,7 @@
 import { useState, useCallback, useMemo } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 // ── Font injection ────────────────────────────────────────────────────────────
 (() => {
@@ -271,7 +272,8 @@ export default function PedsHub() {
     <div style={{ display:"flex", minHeight:"100vh", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
       <NotryaNav currentHub="TraumaHub" />
       <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
-      <NotryaHubHeader hubName="Trauma Hub" category="Trauma" homeUrl="/" />
+      <NotryaHubHeader hubName="Pediatric Dosing Hub" category="Critical Care" homeUrl="/" />
+      <NotryaPatientBar />
 
       {/* ── Header ── */}
       <div style={{ padding:"20px 24px 0" }}>

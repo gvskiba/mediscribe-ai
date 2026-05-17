@@ -11,6 +11,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 // ── Font injection ─────────────────────────────────────────────────────────────
 (() => {
@@ -781,6 +782,7 @@ export default function ScoreHub({
         {!embedded && (
           <NotryaHubHeader hubName="Score Hub" category="Imaging" homeUrl="/" />
         )}
+        {!embedded && <NotryaPatientBar />}
 
         {/* Embedded subheader */}
         {embedded && (

@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
+
 (() => {
   if (document.getElementById("cc-css")) return;
   const l = document.createElement("link"); l.id = "cc-f"; l.rel = "stylesheet";
@@ -188,6 +190,7 @@ export default function CriticalCareDripHub() {
 
   return(
     <div style={{background:T.bg,minHeight:"100vh",padding:"20px 18px 60px",fontFamily:"DM Sans,sans-serif",color:T.txt}}>
+      <NotryaPatientBar />
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:22}}>
         <div style={{width:44,height:44,borderRadius:11,background:T.oD,border:`1px solid ${T.oB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>💊</div>

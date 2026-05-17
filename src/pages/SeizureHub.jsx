@@ -22,6 +22,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 // ── Font injection ─────────────────────────────────────────────────────────────
 (() => {
@@ -731,6 +732,7 @@ export default function SeizureHub({
         padding:embedded ? "0" : "0 16px" }}>
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
+        {!embedded && <NotryaPatientBar />}
         {!embedded && (
           <div style={{ padding:"18px 0 14px" }}>
             <button onClick={() => navigate("/hub")}

@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 (() => {
   if (document.getElementById("id-fonts")) return;
@@ -737,6 +738,7 @@ export default function InfectiousDiseaseHub() {
   return (
     <div style={{fontFamily:"DM Sans, sans-serif",background:T.bg,minHeight:"100vh",position:"relative",overflow:"hidden",color:T.txt}} onKeyDown={handleKeyDown}>
       <AmbientBg/>
+      <NotryaPatientBar />
       <div style={{position:"relative",zIndex:1,maxWidth:1600,margin:"0 auto",padding:"0 16px"}}>
 
         {/* Header */}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 (() => {
   if (document.getElementById("antidote-fonts")) return;
@@ -363,6 +364,7 @@ export default function AntidoteHub() {
   return (
     <div style={{fontFamily:"DM Sans, sans-serif",background:T.bg,minHeight:"100vh",position:"relative",overflow:"hidden",color:T.txt}}>
       <AmbientBg/>
+      <NotryaPatientBar />
       <div style={{position:"relative",zIndex:1,maxWidth:1440,margin:"0 auto",padding:"0 16px"}}>
 
         {/* Header */}

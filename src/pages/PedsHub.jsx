@@ -9,6 +9,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 const T = {
   bg:"#050d1a",txt:"#ddeeff",txt2:"#7aafd4",txt3:"#4d82a8",txt4:"#3a6a9a",
@@ -1751,6 +1752,7 @@ export default function PediatricHub({ embedded = false }) {
       {!embedded && <NotryaNav currentHub="PedsHub" />}
       <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
         {!embedded && <NotryaHubHeader hubName="Peds Hub" category="Critical Care" homeUrl="/" />}
+        {!embedded && <NotryaPatientBar />}
       <div style={{ maxWidth:900,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%" }}>
         {globalWt&&embedded&&<div style={{ display:"inline-flex",alignItems:"center",gap:6,marginBottom:8,
           padding:"4px 12px",borderRadius:7,background:"rgba(61,255,160,0.08)",border:"1px solid rgba(61,255,160,0.3)" }}>

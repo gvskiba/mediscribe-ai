@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 // ── Font injection ─────────────────────────────────────────────────────────────
 (() => {
@@ -574,6 +575,7 @@ export default function ResusHub({ embedded = false, onBack, demo, vitals }) {
       {!embedded && <NotryaNav currentHub="ResusHub" />}
       <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
         {!embedded && <NotryaHubHeader hubName="Resus Hub" category="Critical Care" homeUrl="/" />}
+        {!embedded && <NotryaPatientBar />}
       <div style={{ maxWidth:1200, margin:"0 auto",
         padding: embedded ? "0" : "0 16px", width:"100%" }}>
 

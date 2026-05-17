@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
 
@@ -187,6 +188,7 @@ Recommend: 1) Narrowest appropriate agent, 2) Dose and duration, 3) Rationale fo
 
   return (
     <div style={{background:T.bg,minHeight:"100vh",padding:"20px 18px 60px",fontFamily:"DM Sans,sans-serif",color:T.txt}}>
+      <NotryaPatientBar />
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:22}}>
         <div style={{width:44,height:44,borderRadius:11,background:T.gD,border:`1px solid ${T.gB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🦠</div>
         <div>

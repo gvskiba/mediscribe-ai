@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 
 // ════════════════════════════════════════════════════════════
@@ -597,6 +598,7 @@ export default function OBGYNHub() {
       <NotryaNav currentHub="OBGYNHub" />
       <div style={{flex:1,overflow:"auto",minWidth:0}}>
         <NotryaHubHeader hubName="OB/GYN Hub" category="OB/GYN" homeUrl="/" />
+        <NotryaPatientBar />
         <GlassBg/>
         <div style={{position:"relative",zIndex:1,padding:"28px 36px 48px",maxWidth:1100,margin:"0 auto"}}>
           <ConditionPage emergency={selected} onBack={()=>setSelected(null)} contentMap={contentMap}/>
@@ -610,6 +612,7 @@ export default function OBGYNHub() {
       <NotryaNav currentHub="OBGYNHub" />
       <div style={{flex:1,overflow:"auto",minWidth:0}}>
       <NotryaHubHeader hubName="OB/GYN Hub" category="OB/GYN" homeUrl="/" />
+      <NotryaPatientBar />
       <GlassBg/>
       <div style={{position:"relative",zIndex:1,padding:"28px 36px 48px",maxWidth:1200,margin:"0 auto"}}>
         <GlassBox style={{padding:"26px 30px 22px",marginBottom:18,position:"relative",overflow:"hidden",boxShadow:`0 8px 40px rgba(0,0,0,0.55), 0 0 30px rgba(255,107,157,0.1), inset 0 1px 0 rgba(255,255,255,0.04)`}}>

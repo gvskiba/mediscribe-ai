@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
 (() => {
   if (document.getElementById("wound-fonts")) return;
@@ -608,6 +609,7 @@ export default function WoundCareHub({
       <div style={{ maxWidth:1100, margin:"0 auto",
         padding: embedded ? "0" : "0 16px" }}>
 
+        {!embedded && <NotryaPatientBar />}
         {!embedded && (
           <div style={{ padding:"18px 0 14px" }}>
             <button onClick={() => navigate("/hub")}

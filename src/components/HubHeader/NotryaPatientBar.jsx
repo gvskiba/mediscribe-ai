@@ -18,8 +18,11 @@ const T = {
 };
  
 // ─── NAVIGATION ───────────────────────────────────────────────────────────────
-// Replace with navigateTo() in Base44
-const nav = (page, params = {}) => { console.log("nav ->", page, params); };
+const nav = (page, params = {}) => {
+  const patientId = params.patientId || new URLSearchParams(window.location.search).get("patientId");
+  const qs = patientId ? `?patientId=${patientId}` : "";
+  window.location.href = `/${page}${qs}`;
+};
  
 // ─── MOCK PATIENT LOOKUP — replace with Patient.get(id) in Base44 ─────────────
 const MOCK_PATIENTS = [

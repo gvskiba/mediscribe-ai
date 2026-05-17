@@ -22,10 +22,11 @@ import NPIDemo from '@/pages/NPIDemo';
 import BaseTemplate from '@/pages/BaseTemplate';
 import PediatricDosingCalculator from '@/pages/PediatricDosingCalculator';
 import StrokeHub from '@/pages/StrokeAssessment';
-import EDOrders from '@/pages/EDOrders';
+import EDOrderHub from '@/pages/EDOrderHub';
 import NotryaApp from '@/pages/NotryaApp';
 import NotryaACS from '@/pages/NotryaACS';
 import OrderDashboard from '@/pages/OrderDashboard';
+// OrderGeneratorHub retired — replaced by EDOrderHub
 import CardiacHub from '@/pages/CardiacHub';
 import TraumaHub from '@/pages/TraumaHub';
 import HubSelectorPage from '@/pages/HubSelectorPage';
@@ -83,7 +84,7 @@ import AbdominalPainHub from '@/pages/AbdominalPainHub';
 import AMSHub from '@/pages/AMSHub';
 import DVTHub from '@/pages/DVTHub';
 import HuddleBoard from '@/pages/HuddleBoard';
-import OrderGeneratorHub from '@/pages/OrderGeneratorHub';
+// OrderGeneratorHub retired — replaced by EDOrderHub
 import DermatologyHub from '@/pages/DermatologyHub';
 import DermMorphologyRef from '@/pages/DermMorphologyRef';
 import QuickNote from '@/pages/QuickNote';
@@ -240,8 +241,11 @@ const AuthenticatedApp = () => {
         <Route path="/command-center"    element={<CommandCenterWrapper />} />
         <Route path="/landing"           element={<NotryaLanding />} />
         <Route path="/new-technology"    element={<NotryaNewTechnology />} />
-        <Route path="/huddle-board"      element={<HuddleBoard />} />
-        <Route path="/order-generator"   element={<OrderGeneratorHub />} />
+        <Route path="/huddle-board"        element={<HuddleBoard />} />
+        <Route path="/EDOrderHub"          element={<EDOrderHub />} />
+        <Route path="/order-generator"     element={<EDOrderHub />} />
+        <Route path="/OrderGeneratorHub"   element={<EDOrderHub />} />
+        <Route path="/EDOrders"            element={<EDOrderHub />} />
         <Route path="/patient-workspace" element={<LayoutWrapper currentPageName="PatientWorkspace"><PatientWorkspace /></LayoutWrapper>} />
 
         {/* Billing & coding */}
@@ -391,10 +395,9 @@ const AuthenticatedApp = () => {
         <Route path="/AbdominalPainHub" element={<LayoutWrapper currentPageName="AbdominalPainHub"><AbdominalPainHub /></LayoutWrapper>} />
 
         {/* Legacy / misc */}
-        <Route path="/EDOrders"   element={<LayoutWrapper currentPageName="EDOrders"><EDOrders /></LayoutWrapper>} />
         <Route path="/NotryaApp"  element={<NotryaApp />} />
         <Route path="/NotryaACS"  element={<NotryaACS />} />
-        <Route path="/OrderDashboard" element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
+        <Route path="/OrderDashboard"  element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
         <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
         <Route path="/specialty-note-hub" element={<SpecialtyNoteHub />} />
         <Route path="/SpecialtyNoteHubT2" element={<SpecialtyNoteHubT2 />} />

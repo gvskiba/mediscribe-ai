@@ -10,12 +10,12 @@ const T={bg:'#050f1e',bgP:'#081628',bgC:'#0b1e36',bgU:'#0e2544',bd:'#1a3555',bdH
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const CSS=`
-*{box-sizing:border-box;margin:0;padding:0;}
-button{font-family:'DM Sans',sans-serif;cursor:pointer;}
-input{font-family:'DM Sans',sans-serif;}
-::-webkit-scrollbar{width:4px;height:4px;}
-::-webkit-scrollbar-thumb{background:${T.bd};border-radius:2px;}
-::-webkit-scrollbar-track{background:transparent;}
+.edoh-wrap *{box-sizing:border-box;}
+.edoh-wrap button{font-family:'DM Sans',sans-serif;cursor:pointer;}
+.edoh-wrap input{font-family:'DM Sans',sans-serif;}
+.edoh-wrap ::-webkit-scrollbar{width:4px;height:4px;}
+.edoh-wrap ::-webkit-scrollbar-thumb{background:${T.bd};border-radius:2px;}
+.edoh-wrap ::-webkit-scrollbar-track{background:transparent;}
 .edoh-wrap{display:flex;flex-direction:column;background:${T.bg};color:${T.txt};font-family:'DM Sans',sans-serif;overflow:hidden;}
 .edoh-layout{flex:1;display:flex;overflow:hidden;min-height:0;}
 
@@ -393,7 +393,7 @@ Mark each order status as: done (already given), active (currently running), or 
   const hasAllergyInQueue=queue.some(qi=>qi.allergyWarn);
 
   return(
-    <div className="edoh-wrap" style={{height:embedded?'100%':'calc(100vh - 138px)'}}>
+    <div className="edoh-wrap" style={{height:embedded?'100%':'calc(100vh - 186px)'}}>
       <style>{CSS}</style>
       <NotryaPatientBar/>
       <div className="edoh-layout">

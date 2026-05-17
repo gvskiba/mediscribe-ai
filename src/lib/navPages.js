@@ -80,7 +80,7 @@ export const PAGES = [
   { id:"knowledge",     name:"Guidelines",           icon:"📚",  color:T.gold,   cat:"Reference",       desc:"Clinical guidelines & evidence",         route:"/KnowledgeBaseV2"      },
   { id:"hpi",           name:"HPI Builder",          icon:"✍️",  color:T.txt3,   cat:"Reference",       desc:"HPI documentation templates",            route:"/hpi"                  },
   { id:"billing",       name:"Provider Billing",     icon:"💵",  color:T.green,  cat:"Reference",       desc:"E&M coding & billing submissions",       route:"/provider-billing"     },
-  { id:"ordergenerator",name:"Order Generator",      icon:"📋",  color:T.blue,   cat:"Reference",       desc:"Condition-based order sets",             route:"/order-generator"      },
+  { id:"ordergenerator",name:"ED Order Hub",          icon:"📋",  color:T.blue,   cat:"Reference",       desc:"Labs, meds, imaging & AI order sets",    route:"/EDOrderHub"           },
   { id:"dermref",       name:"Derm Morphology Ref",  icon:"🔎",  color:T.orange, cat:"Reference",       desc:"Skin morphology visual reference",       route:"/derm-morphology"      },
   // Platform
   { id:"resustimer",    name:"Resus Timer",          icon:"⏱",   color:T.red,    cat:"Platform",        desc:"Live code — CPR cycles & drugs",        route:"/resus-hub"            },

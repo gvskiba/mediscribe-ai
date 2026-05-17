@@ -430,7 +430,7 @@ function EncounterTimeline({ patient }) {
 // ─── PATIENT SUMMARY PANEL ────────────────────────────────────────────────────
 function PatientSummaryPanel({ patient, summary }) {
   // ── Fallback / mock data (replace with entity fields once schema is extended) ──
-  const vitals = patient.vitals || [
+  const vitals = Array.isArray(patient.vitals) ? patient.vitals : [
     { type:"HR",   value:88,       unit:"bpm",  low:60,  high:100, ts:"14:32" },
     { type:"BP",   value:"142/88", unit:"mmHg", low:null,high:null, ts:"14:32" },
     { type:"SpO2", value:97,       unit:"%",    low:95,  high:100, ts:"14:32" },
@@ -439,7 +439,7 @@ function PatientSummaryPanel({ patient, summary }) {
     { type:"GCS",  value:15,       unit:"",     low:14,  high:15,  ts:"14:32" },
   ];
 
-  const orders = patient.orders || [
+  const orders = Array.isArray(patient.orders) ? patient.orders : [
     { type:"lab",     name:"BMP / CBC / Troponin x1",      status:"pending",  ts:"14:20" },
     { type:"imaging", name:"CT Head w/o contrast",          status:"pending",  ts:"14:25" },
     { type:"med",     name:"Aspirin 325mg PO x1",           status:"given",    ts:"14:10" },
@@ -447,11 +447,11 @@ function PatientSummaryPanel({ patient, summary }) {
     { type:"med",     name:"NS 1L IV bolus",                status:"running",  ts:"14:15" },
   ];
 
-  const docStatus = patient.doc_status || {
-    hpi:false, ros:false, pe:false, mdm:false, signed:false,
-  };
+  const docStatus = (patient.doc_status && typeof patient.doc_status === "object" && !Array.isArray(patient.doc_status))
+    ? patient.doc_status
+    : { hpi:false, ros:false, pe:false, mdm:false, signed:false };
 
-  const critAlerts = (patient.alerts || []).filter(a => a.t === "critical");
+  const critAlerts = (Array.isArray(patient.alerts) ? patient.alerts : []).filter(a => a.t === "critical");
   const pendingOrders = orders.filter(o => o.status === "pending");
 
   // ── Vital color logic ──
@@ -1284,7 +1284,7 @@ function ShiftRail({ patients }) {
               >
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:T.txt, marginBottom:2 }}>{p.name}</div>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, marginBottom:4 }}>{p.room} · {p.cc}</div>
-                {p.alerts.filter(a => a.t === "critical").map((a, i) => (
+                {(Array.isArray(p.alerts) ? p.alerts : []).filter(a => a.t === "critical").map((a, i) => (
                   <div key={i} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:T.red, lineHeight:1.4 }}>🚨 {a.m}</div>
                 ))}
               </div>
@@ -1395,8 +1395,8 @@ export default function CommandCenter() {
   const generateSummary = async (patient) => {
     if (!patient?.id || summaries[patient.id]) return;
     setSummaries(prev => ({ ...prev, [patient.id]: { text: null, loading: true } }));
-    const ordersText = (patient.orders || []).slice(0, 4).map(o => `${o.name} (${o.status})`).join(", ") || "none placed yet";
-    const alertsText = (patient.alerts || []).map(a => a.m).join("; ") || "none";
+    const ordersText = (Array.isArray(patient.orders) ? patient.orders : []).slice(0, 4).map(o => `${o.name} (${o.status})`).join(", ") || "none placed yet";
+    const alertsText = (Array.isArray(patient.alerts) ? patient.alerts : []).map(a => a.m).join("; ") || "none";
     try {
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `You are writing a one-line ED census summary for a physician scanning a trackboard.\n\nPatient: ${patient.age || ""}${patient.sex || ""}, ESI ${patient.esi || "?"}, LOS ${patient.mins || 0}min\nCC: ${patient.cc || "unknown"}\nOrders: ${ordersText}\nCritical alerts: ${alertsText}\n\nWrite exactly ONE sentence under 25 words. Lead with the key clinical finding or working diagnosis, then the most urgent pending action or current status. Be specific and clinical. No filler phrases like "patient presents with."`,

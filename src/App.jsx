@@ -24,7 +24,6 @@ import PediatricDosingCalculator from '@/pages/PediatricDosingCalculator';
 import StrokeHub from '@/pages/StrokeAssessment';
 import EDOrderHub from '@/pages/EDOrderHub';
 import NotryaApp from '@/pages/NotryaApp';
-import NotryaACS from '@/pages/NotryaACS';
 import OrderDashboard from '@/pages/OrderDashboard';
 // OrderGeneratorHub retired — replaced by EDOrderHub
 import CardiacHub from '@/pages/CardiacHub';
@@ -395,7 +394,6 @@ const AuthenticatedApp = () => {
 
         {/* Legacy / misc */}
         <Route path="/NotryaApp"  element={<NotryaApp />} />
-        <Route path="/NotryaACS"  element={<NotryaACS />} />
         <Route path="/OrderDashboard"  element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
         <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
         <Route path="/specialty-note-hub" element={<SpecialtyNoteHub />} />

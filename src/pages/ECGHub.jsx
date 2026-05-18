@@ -1,6 +1,7 @@
 // ECGHub.jsx — Notrya ECG Hub
 // Structured ECG input + AI interpretation + Clinical tools
 // No SVG wave library. Physician enters findings, AI analyzes.
+// Base44 compliant: no localStorage, no Router, no form/alert, response_json_schema on all InvokeLLM calls
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
@@ -40,17 +41,6 @@ const T = {
   blue:"#3b9eff", purple:"#9b6dff", teal:"#00e5c0", coral:"#ff6b6b",
 };
 const glass = {backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",background:"rgba(8,22,40,0.72)",border:"1px solid rgba(26,53,85,0.75)",borderRadius:14};
-
-function SendToChartBtn({content}){
-  const[sending,setSending]=useState(false);const[sent,setSent]=useState(false);
-  if(!content)return null;
-  const send=async()=>{setSending(true);try{await ClinicalNote.create({content,source:"QN-Handoff",status:"pending"});setSent(true);setTimeout(()=>setSent(false),3000);}catch(e){}finally{setSending(false);}};
-  return(
-    <button onClick={send} disabled={sending||sent} style={{width:"100%",padding:"10px 0",borderRadius:8,cursor:sending?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:`1px solid ${sent?"rgba(0,229,192,.4)":"rgba(59,158,255,.3)"}`,background:sent?"rgba(0,229,192,.1)":"rgba(59,158,255,.08)",color:sent?T.teal:T.blue,transition:"all .2s"}}>
-      {sent?"✓ Sent to Chart":sending?"Sending…":"📤 Send to Chart"}
-    </button>
-  );
-}
 
 const TAB_GROUPS = [
   {group:"Ischemia", color:"#ff6b6b", tabs:[
@@ -136,7 +126,7 @@ function STEMILocalizer() {
     {label:"Pericarditis",clue:"Diffuse saddle-shaped STE in ≥2 territories + PR depression. Pleuritic chest pain, friction rub. No reciprocal STD (except aVR)."},
     {label:"Takotsubo / Stress CMP",clue:"Post-emotional/physical stress. Anterior STE with apex ballooning on echo. Elderly female. Troponin positive but cath normal."},
     {label:"LBBB (chronic vs new)",clue:"Compare with ANY prior ECG. Chronic LBBB + stable pattern ≠ STEMI equivalent. New LBBB + chest pain = activate cath."},
-    {label:"Hyperkalemia",clue:"Wide QRS + peaked T waves without regional distribution. Check K⁺ immediately — treat before cath lab decision."},
+    {label:"Hyperkalemia",clue:"Wide QRS + peaked T waves without regional distribution. Check K+ immediately — treat before cath lab decision."},
     {label:"Brugada Type 1",clue:"Coved STE confined to V1-V2 only (not saddle-back). Especially during fever. Prior normal ECG may have shown it."},
   ];
   return (
@@ -171,12 +161,11 @@ function STEMILocalizer() {
             </div>
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,textAlign:"right"}}>{result.source}</div>
           </div>
-          {/* Before You Call — STEMI Mimics */}
           {result.color!==T.txt3&&(
             <div style={{marginTop:10}}>
               <button onClick={()=>setMimicsOpen(p=>!p)}
                 style={{width:"100%",padding:"9px 12px",borderRadius:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",border:`1px solid ${mimicsOpen?"rgba(245,200,66,.4)":"rgba(245,200,66,.2)"}`,background:mimicsOpen?"rgba(245,200,66,.07)":"rgba(14,37,68,.35)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:T.gold,transition:"all .15s"}}>
-                <span>⚠ Before You Activate — Rule Out Mimics</span>
+                <span>Before You Activate — Rule Out Mimics</span>
                 <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10}}>{mimicsOpen?"▲":"▼"}</span>
               </button>
               {mimicsOpen&&(
@@ -331,7 +320,7 @@ function QTcTab() {
     {id:"age68",label:"Age ≥ 68 years",pts:1},
     {id:"female",label:"Female sex",pts:1},
     {id:"loop",label:"Loop diuretic (furosemide, bumetanide, torsemide)",pts:1},
-    {id:"klow",label:"Serum K⁺ ≤ 3.5 mEq/L",pts:2},
+    {id:"klow",label:"Serum K+ ≤ 3.5 mEq/L",pts:2},
     {id:"qtc450",label:"Admission QTc 450–499 ms",pts:2},
     {id:"qtc500",label:"Admission QTc ≥ 500 ms",pts:3},
     {id:"ami",label:"Acute myocardial infarction",pts:2},
@@ -368,7 +357,7 @@ function QTcTab() {
       )}
       <div style={{...glass,padding:"14px 16px"}}>
         <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:1,marginBottom:10,fontWeight:700}}>QTc Risk Thresholds</div>
-        {[["< 440ms (♂) / < 460ms (♀)","Normal","#00e5c0"],["440–499ms","Borderline — review drugs, electrolytes",T.gold],["≥ 500ms","High TdP risk — hold offending drugs, Mg²⁺ 2g IV, monitor",T.coral],["≥ 600ms","Imminent TdP — Mg²⁺ IV, overdrive pacing, EP consult",T.red]].map(([r,d,c])=>(
+        {[["< 440ms (M) / < 460ms (F)","Normal","#00e5c0"],["440–499ms","Borderline — review drugs, electrolytes",T.gold],["≥ 500ms","High TdP risk — hold offending drugs, Mg2+ 2g IV, monitor",T.coral],["≥ 600ms","Imminent TdP — Mg2+ IV, overdrive pacing, EP consult",T.red]].map(([r,d,c])=>(
           <div key={r} style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:10,marginBottom:8,paddingBottom:8,borderBottom:"1px solid rgba(26,53,85,.4)"}}>
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:c}}>{r}</div>
             <div style={{fontSize:11,color:T.txt2}}>{d}</div>
@@ -376,7 +365,6 @@ function QTcTab() {
         ))}
         <div style={{fontSize:11,color:T.txt3,lineHeight:1.6,marginTop:4,fontStyle:"italic"}}>Always measure QTc manually — automated values are incorrect in ~30% of cases. Use the lead with the longest visible T wave. Measure in a long-cycle RR interval.</div>
       </div>
-      {/* Tisdale TdP Risk Score */}
       <div style={{...glass,padding:"14px 16px"}}>
         <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.purple,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:4}}>Tisdale TdP Risk Score</div>
         <div style={{fontSize:10,color:T.txt3,marginBottom:10,lineHeight:1.5}}>Validated tool for predicting in-hospital QTc prolongation &gt;500ms. Score ≤6 low risk, 7–10 moderate, ≥11 high risk.</div>
@@ -520,14 +508,14 @@ ${patientId?`<div class="patient"><span class="lbl">Patient</span><span class="v
 <div class="urgency">
   <div class="badges">
     <span class="badge b-urg">${esc(result.urgency)||"Unknown"}</span>
-    ${result.stemi_equivalent?'<span class="badge b-stemi">⚡ STEMI EQUIVALENT</span>':""}
+    ${result.stemi_equivalent?'<span class="badge b-stemi">STEMI EQUIVALENT</span>':""}
     ${result.dangerous_pattern&&result.dangerous_pattern!=="null"?`<span class="badge b-danger">${esc(result.dangerous_pattern)}</span>`:""}
     ${result.confidence?`<span class="badge b-conf">${esc(result.confidence)} confidence</span>`:""}
   </div>
   <div class="interp">${esc(result.interpretation)}</div>
   ${result.urgency_reason?`<div class="reason">${esc(result.urgency_reason)}</div>`:""}
 </div>
-${result.machine_concerns&&result.machine_concerns!=="null"?`<div class="mc"><div class="lbl pu">🔎 Machine Interpretation Concerns</div><div style="font-size:10pt;color:#444;margin-top:4px">${esc(result.machine_concerns)}</div></div>`:""}
+${result.machine_concerns&&result.machine_concerns!=="null"?`<div class="mc"><div class="lbl pu">Machine Interpretation Concerns</div><div style="font-size:10pt;color:#444;margin-top:4px">${esc(result.machine_concerns)}</div></div>`:""}
 ${chips?`<div class="box" style="margin-bottom:12px"><div class="lbl" style="color:#374151">Parsed ECG Measurements</div><div class="chips">${chips}</div></div>`:""}
 <div class="two">
   <div class="box"><div class="lbl tl">Key Findings</div><ul class="fl">${findings}</ul></div>
@@ -535,7 +523,7 @@ ${chips?`<div class="box" style="margin-bottom:12px"><div class="lbl" style="col
 </div>
 <div class="box" style="margin-bottom:12px"><div class="lbl or">Recommended Actions</div><ul class="ac">${actions}</ul></div>
 <div class="two">
-  ${result.do_not_miss?`<div class="box"><div class="lbl rd">⚠ Do Not Miss</div><div style="font-size:10pt;color:#555;font-style:italic;margin-top:4px">${esc(result.do_not_miss)}</div></div>`:"<div></div>"}
+  ${result.do_not_miss?`<div class="box"><div class="lbl rd">Do Not Miss</div><div style="font-size:10pt;color:#555;font-style:italic;margin-top:4px">${esc(result.do_not_miss)}</div></div>`:"<div></div>"}
   ${result.guideline_note?`<div class="box"><div class="lbl gr">Guideline Reference</div><div style="font-size:10pt;color:#555;margin-top:4px">${esc(result.guideline_note)}</div></div>`:"<div></div>"}
 </div>
 <div class="footer">
@@ -544,12 +532,6 @@ ${chips?`<div class="box" style="margin-bottom:12px"><div class="lbl" style="col
 <button class="pbtn no-print" onclick="window.print()">Print / Save as PDF</button>
 </body></html>`);
   w.document.close();
-}
-
-const LS_KEY = "ecghub_draft";
-
-function loadDraft() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; }
 }
 
 // ── AI Interpreter ───────────────────────────────────────────
@@ -561,46 +543,61 @@ const OTHER_OPTS   = ["New LBBB (STEMI equivalent)","De Winter T-wave pattern (p
 
 const URGENCY_COLOR = {Critical:T.red, High:T.coral, Moderate:T.gold, Low:T.teal};
 
+// Shared JSON schema for all ECG AI interpretation calls — required by Base44 InvokeLLM
+const ECG_INTERP_SCHEMA = {
+  type:"object",
+  properties:{
+    interpretation:      {type:"string"},
+    urgency:             {type:"string"},
+    urgency_reason:      {type:"string"},
+    confidence:          {type:"string"},
+    confidence_reason:   {type:"string"},
+    stemi_equivalent:    {type:"boolean"},
+    dangerous_pattern:   {type:"string"},
+    parsed_findings:     {type:"array", items:{type:"string"}},
+    machine_concerns:    {type:"string"},
+    key_findings:        {type:"array", items:{type:"string"}},
+    differentials:       {type:"array", items:{type:"string"}},
+    recommended_actions: {type:"array", items:{type:"string"}},
+    do_not_miss:         {type:"string"},
+    guideline_note:      {type:"string"},
+  }
+};
+
 function ECGAITab({ embedded=false }) {
-  const draft = loadDraft();
-  const [mode,       setMode]       = useState(draft.mode       || "paste");
-  // Patient identifier
-  const [patientId,  setPatientId]  = useState(draft.patientId  || "");
-  const [ptAge,      setPtAge]      = useState(draft.ptAge       || "");
-  const [ptSex,      setPtSex]      = useState(draft.ptSex       || "");
-  const [ptBP,       setPtBP]       = useState(draft.ptBP        || "");
-  const [ptHR,       setPtHR]       = useState(draft.ptHR        || "");
-  const [ptSpO2,     setPtSpO2]     = useState(draft.ptSpO2      || "");
-  const [ptCC,       setPtCC]       = useState(draft.ptCC        || "");
-  // Saved log
-  const [savedLog,   setSavedLog]   = useState([]);
-  const [logOpen,    setLogOpen]    = useState(false);
-  const [saving,     setSaving]     = useState(false);
-  const [savedOk,    setSavedOk]    = useState(false);
-  const [consultOpen,setConsultOpen]= useState(false);
-  // Manual state
-  const [rate,       setRate]       = useState(draft.rate       || "");
-  const [rhythm,     setRhythm]     = useState(draft.rhythm     || "");
-  const [pr,         setPr]         = useState(draft.pr         || "");
-  const [qrs,        setQrs]        = useState(draft.qrs        || "");
-  const [qt,         setQt]         = useState(draft.qt         || "");
-  const [axis,       setAxis]       = useState(draft.axis       || "");
-  const [morph,      setMorph]      = useState(new Set(draft.morph      || []));
-  const [stChanges,  setStChanges]  = useState(draft.stChanges  || {});
-  const [tWaves,     setTWaves]     = useState(new Set(draft.tWaves     || []));
-  const [other,      setOther]      = useState(new Set(draft.other      || []));
-  // Paste state
-  const [pasteText,  setPasteText]  = useState(draft.pasteText  || "");
-  // Image state
-  const [imgFile,    setImgFile]    = useState(null);
-  const [imgPreview, setImgPreview] = useState(null);
-  const [imgUrl,     setImgUrl]     = useState(null);
-  const [imgUploading,setImgUploading]=useState(false);
-  // Shared
-  const [context,    setContext]    = useState(draft.context  || "");
-  const [loading,    setLoading]    = useState(false);
-  const [result,     setResult]     = useState(draft.result   || null);
-  const [errMsg,     setErrMsg]     = useState(null);
+  // ── State — no localStorage, all in-memory ──────────────────
+  const [mode,        setMode]        = useState("paste");
+  const [patientId,   setPatientId]   = useState("");
+  const [ptAge,       setPtAge]       = useState("");
+  const [ptSex,       setPtSex]       = useState("");
+  const [ptBP,        setPtBP]        = useState("");
+  const [ptHR,        setPtHR]        = useState("");
+  const [ptSpO2,      setPtSpO2]      = useState("");
+  const [ptCC,        setPtCC]        = useState("");
+  const [savedLog,    setSavedLog]    = useState([]);
+  const [logOpen,     setLogOpen]     = useState(false);
+  const [saving,      setSaving]      = useState(false);
+  const [savedOk,     setSavedOk]     = useState(false);
+  const [consultOpen, setConsultOpen] = useState(false);
+  const [rate,        setRate]        = useState("");
+  const [rhythm,      setRhythm]      = useState("");
+  const [pr,          setPr]          = useState("");
+  const [qrs,         setQrs]         = useState("");
+  const [qt,          setQt]          = useState("");
+  const [axis,        setAxis]        = useState("");
+  const [morph,       setMorph]       = useState(new Set());
+  const [stChanges,   setStChanges]   = useState({});
+  const [tWaves,      setTWaves]      = useState(new Set());
+  const [other,       setOther]       = useState(new Set());
+  const [pasteText,   setPasteText]   = useState("");
+  const [imgFile,     setImgFile]     = useState(null);
+  const [imgPreview,  setImgPreview]  = useState(null);
+  const [imgUrl,      setImgUrl]      = useState(null);
+  const [imgUploading,setImgUploading]= useState(false);
+  const [context,     setContext]     = useState("");
+  const [loading,     setLoading]     = useState(false);
+  const [result,      setResult]      = useState(null);
+  const [errMsg,      setErrMsg]      = useState(null);
 
   const qtcMs = useMemo(()=>{const q=parseFloat(qt),h=parseFloat(rate);if(isNaN(q)||isNaN(h)||h<=0)return null;return Math.round(q/Math.sqrt(60/h));},[qt,rate]);
   const toggle = useCallback((setter,val)=>setter(prev=>{const n=new Set(prev);n.has(val)?n.delete(val):n.add(val);return n;}),[]);
@@ -611,7 +608,7 @@ function ECGAITab({ embedded=false }) {
     if(patientId) parts.push(`Patient: ${patientId}`);
     if(ptAge||ptSex) parts.push(`Demographics: ${ptAge?ptAge+"yo":""}${ptAge&&ptSex?" ":""}${ptSex}`);
     if(ptCC) parts.push(`Chief complaint: ${ptCC}`);
-    if(ptBP||ptHR||ptSpO2) parts.push(`Vitals: ${[ptBP&&`BP ${ptBP}`,ptHR&&`HR ${ptHR}`,ptSpO2&&`SpO₂ ${ptSpO2}%`].filter(Boolean).join(", ")}`);
+    if(ptBP||ptHR||ptSpO2) parts.push(`Vitals: ${[ptBP&&`BP ${ptBP}`,ptHR&&`HR ${ptHR}`,ptSpO2&&`SpO2 ${ptSpO2}%`].filter(Boolean).join(", ")}`);
     if(rate)parts.push(`Rate: ${rate} bpm`);
     if(rhythm)parts.push(`Rhythm: ${rhythm}`);
     if(pr)parts.push(`PR interval: ${pr} ms`);
@@ -628,7 +625,7 @@ function ECGAITab({ embedded=false }) {
     if(other.size>0)parts.push(`Other findings: ${[...other].join(", ")}`);
     if(context)parts.push(`Clinical context: ${context}`);
     return parts.join("\n");
-  },[rate,rhythm,pr,qrs,qt,qtcMs,axis,morph,stChanges,tWaves,other,context]);
+  },[rate,rhythm,pr,qrs,qt,qtcMs,axis,morph,stChanges,tWaves,other,context,patientId,ptAge,ptSex,ptBP,ptHR,ptSpO2,ptCC]);
 
   const JSON_SCHEMA = `{"interpretation":"primary interpretation 1-2 sentences","urgency":"Critical|High|Moderate|Low","urgency_reason":"brief reason","confidence":"High|Moderate|Low|Indeterminate","confidence_reason":"why this confidence level","stemi_equivalent":true,"dangerous_pattern":"name or null","parsed_findings":["finding1","finding2"],"machine_concerns":"what machine may have missed or null","key_findings":["f1","f2","f3"],"differentials":["dx1","dx2","dx3"],"recommended_actions":["a1","a2","a3"],"do_not_miss":"critical pitfall","guideline_note":"relevant guideline"}`;
 
@@ -643,7 +640,7 @@ function ECGAITab({ embedded=false }) {
     if(!findings.trim()){setErrMsg("Enter at least one ECG finding before analyzing.");return;}
     setLoading(true);setResult(null);setErrMsg(null);
     const PROMPT=`You are an expert emergency medicine ECG interpreter following 2025 ACC/AHA/ACEP guidelines. Analyze these structured ECG findings. Flag STEMI equivalents (Wellens, De Winter, posterior MI, Brugada type 1, new LBBB, aVR STE+diffuse STD), dangerous patterns (WPW+AF, TCA toxicity, hyperkalemia, long QT/TdP), and give actionable ED recommendations.\n\nECG FINDINGS:\n${findings}\n\nReturn ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
-    try{setResult(parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT})));}
+    try{setResult(parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT,response_json_schema:ECG_INTERP_SCHEMA})));}
     catch(e){setErrMsg("AI interpretation failed — check connection and try again.");}
     finally{setLoading(false);}
   },[buildFindings]);
@@ -664,7 +661,7 @@ ${pasteText}
 ${context?`\nCLINICAL CONTEXT: ${context}`:""}
 
 Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
-    try{setResult(parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT})));}
+    try{setResult(parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT,response_json_schema:ECG_INTERP_SCHEMA})));}
     catch(e){setErrMsg("AI interpretation failed — check connection and try again.");}
     finally{setLoading(false);}
   },[pasteText,context]);
@@ -703,18 +700,18 @@ SYSTEMATICALLY ANALYZE:
 8. Q waves, Osborn waves, electrical alternans, U waves
 
 CRITICAL PATTERNS TO ACTIVELY SEEK — DO NOT MISS:
-• Posterior MI: STD V1-V3 + tall R (mirrored STE) — most missed STEMI
-• Wellens: biphasic (Type A) or deep symmetric inversions (Type B) V2-V3 = proximal LAD critical stenosis
-• De Winter: upsloping STD + tall peaked T V1-V4, no STE = proximal LAD occlusion, activate cath
-• aVR STE + diffuse STD ≥ 3 leads = LMCA or 3-vessel disease
-• Brugada type 1: coved STE V1-V2 (not saddle-back)
-• New LBBB + chest pain = STEMI equivalent until proven otherwise
-• WPW: short PR + delta wave — never adenosine/verapamil/digoxin if AF
-• Hyperacute T waves: tall, broad, asymmetric — STEMI before STE develops
+- Posterior MI: STD V1-V3 + tall R (mirrored STE) — most missed STEMI
+- Wellens: biphasic (Type A) or deep symmetric inversions (Type B) V2-V3 = proximal LAD critical stenosis
+- De Winter: upsloping STD + tall peaked T V1-V4, no STE = proximal LAD occlusion, activate cath
+- aVR STE + diffuse STD ≥ 3 leads = LMCA or 3-vessel disease
+- Brugada type 1: coved STE V1-V2 (not saddle-back)
+- New LBBB + chest pain = STEMI equivalent until proven otherwise
+- WPW: short PR + delta wave — never adenosine/verapamil/digoxin if AF
+- Hyperacute T waves: tall, broad, asymmetric — STEMI before STE develops
 ${context?`\nCLINICAL CONTEXT: ${context}`:""}
 
 Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
-      setResult(parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT,image_url:url})));
+      setResult(parseReply(await base44.integrations.Core.InvokeLLM({prompt:PROMPT,image_url:url,response_json_schema:ECG_INTERP_SCHEMA})));
     }catch(e){
       setImgUploading(false);
       setErrMsg("Image analysis failed. Ensure the ECG is well-lit with the full tracing visible, then try again.");
@@ -722,15 +719,6 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
   },[imgFile,imgUrl,context]);
 
   const analyze = mode==="paste"?analyzePaste:mode==="image"?analyzeImage:analyzeManual;
-
-  // Auto-save draft to localStorage on input changes
-  useEffect(()=>{
-    try{localStorage.setItem(LS_KEY,JSON.stringify({
-      mode,patientId,ptAge,ptSex,ptBP,ptHR,ptSpO2,ptCC,rate,rhythm,pr,qrs,qt,axis,
-      morph:[...morph],stChanges,tWaves:[...tWaves],
-      other:[...other],pasteText,context,result,
-    }));}catch{}
-  },[mode,patientId,rate,rhythm,pr,qrs,qt,axis,morph,stChanges,tWaves,other,pasteText,context,result]);
 
   // Load saved interpretations on mount
   useEffect(()=>{
@@ -740,7 +728,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
     }).catch(()=>{});
   },[]);
 
-  // Read incoming context from QuickNote URL param on mount
+  // Read incoming context from URL param on mount
   useEffect(()=>{
     const p=new URLSearchParams(window.location.search);
     const ctx=p.get("ecg_context")||p.get("patient_context");
@@ -755,7 +743,6 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
       actions:result.recommended_actions, do_not_miss:result.do_not_miss,
     }));
     if(embedded){
-      // In embedded mode, copy to clipboard rather than navigating away
       try{navigator.clipboard.writeText(JSON.stringify({ecg_handoff:payload}));}catch(e){}
     } else {
       window.location.href=`/?ecg_handoff=${payload}`;
@@ -787,8 +774,9 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
     setRate("");setRhythm("");setPr("");setQrs("");setQt("");setAxis("");
     setMorph(new Set());setStChanges({});setTWaves(new Set());setOther(new Set());
     setPasteText("");setImgFile(null);setImgPreview(null);setImgUrl(null);
-    setContext("");setResult(null);setErrMsg(null);setMode("paste");setPatientId("");setPtAge("");setPtSex("");setPtBP("");setPtHR("");setPtSpO2("");setPtCC("");setConsultOpen(false);
-    try{localStorage.removeItem(LS_KEY);}catch{}
+    setContext("");setResult(null);setErrMsg(null);setMode("paste");
+    setPatientId("");setPtAge("");setPtSex("");setPtBP("");setPtHR("");setPtSpO2("");setPtCC("");
+    setConsultOpen(false);
   };
 
   const Chip=({label,active,color,onClick})=>(
@@ -829,12 +817,10 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             <div key={i} style={{display:"grid",gridTemplateColumns:"80px 80px 1fr auto",gap:8,alignItems:"center",padding:"6px 0",borderBottom:i<savedLog.length-1?"1px solid rgba(26,53,85,.4)":"none"}}>
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:log.urgency==="Critical"?T.red:log.urgency==="High"?T.coral:log.urgency==="Moderate"?T.gold:T.teal,fontWeight:700}}>{log.urgency||"—"}</div>
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4}}>{(log.patientId||"—").slice(0,14)}</div>
-              <div style={{fontSize:10,color:T.txt3,lineHeight:1.3}}>{(log.interpretation||"").slice(0,80)}{(log.interpretation||"").length>80?"…":""}</div>
+              <div style={{fontSize:10,color:T.txt3,lineHeight:1.3}}>{(log.interpretation||"").slice(0,80)}{(log.interpretation||"").length>80?"...":""}</div>
               <button onClick={()=>generateECGReport({
-                  urgency:log.urgency,
-                  interpretation:log.interpretation,
-                  stemi_equivalent:log.stemi_equivalent,
-                  dangerous_pattern:log.dangerous_pattern,
+                  urgency:log.urgency,interpretation:log.interpretation,
+                  stemi_equivalent:log.stemi_equivalent,dangerous_pattern:log.dangerous_pattern,
                   recommended_actions:log.actions||[],
                 },log.patientId)}
                 style={{padding:"3px 8px",borderRadius:5,cursor:"pointer",border:"1px solid rgba(245,200,66,.35)",background:"rgba(245,200,66,.07)",color:T.gold,fontSize:10,fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>
@@ -853,7 +839,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             <input type={f.type} value={f.val} onChange={e=>f.set(e.target.value)} placeholder={f.ph} style={{width:"100%",background:"rgba(14,37,68,.45)",border:"1px solid rgba(26,53,85,.7)",borderRadius:6,padding:"5px 6px",color:T.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:12,outline:"none",textAlign:"center"}}/>
           </div>
         ))}
-        {[{label:"BP",val:ptBP,set:setPtBP,ph:"120/80"},{label:"HR",val:ptHR,set:setPtHR,ph:"88"},{label:"SpO₂%",val:ptSpO2,set:setPtSpO2,ph:"98"}].map(f=>(
+        {[{label:"BP",val:ptBP,set:setPtBP,ph:"120/80"},{label:"HR",val:ptHR,set:setPtHR,ph:"88"},{label:"SpO2%",val:ptSpO2,set:setPtSpO2,ph:"98"}].map(f=>(
           <div key={f.label}>
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>{f.label}</div>
             <input type="text" value={f.val} onChange={e=>f.set(e.target.value)} placeholder={f.ph} style={{width:"100%",background:"rgba(14,37,68,.45)",border:"1px solid rgba(26,53,85,.7)",borderRadius:6,padding:"5px 6px",color:T.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:12,outline:"none",textAlign:"center"}}/>
@@ -861,7 +847,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
         ))}
         <div>
           <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>Chief Complaint</div>
-          <input type="text" value={ptCC} onChange={e=>setPtCC(e.target.value)} placeholder="Chest pain, SOB, syncope…" style={{width:"100%",background:"rgba(14,37,68,.45)",border:"1px solid rgba(26,53,85,.7)",borderRadius:6,padding:"5px 8px",color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:11,outline:"none"}}/>
+          <input type="text" value={ptCC} onChange={e=>setPtCC(e.target.value)} placeholder="Chest pain, SOB, syncope..." style={{width:"100%",background:"rgba(14,37,68,.45)",border:"1px solid rgba(26,53,85,.7)",borderRadius:6,padding:"5px 8px",color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:11,outline:"none"}}/>
         </div>
       </div>
 
@@ -884,7 +870,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
         <div style={{...glass,padding:"16px 18px"}}>
           <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,letterSpacing:1.2,textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Machine Output / ECG Text</div>
           <div style={{fontSize:11,color:T.txt3,marginBottom:10,lineHeight:1.55}}>
-            Paste the machine's printed interpretation, a transcribed report, or type key findings. AI will parse <em>and</em> independently re-interpret — catching what automated systems commonly miss.
+            Paste the machine's printed interpretation, a transcribed report, or type key findings. AI will parse and independently re-interpret — catching what automated systems commonly miss.
           </div>
           <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} rows={9}
             placeholder={"Paste machine output here — e.g.:\n\nVentricular Rate: 88 bpm\nPR Interval: 164 ms  QRS Duration: 88 ms  QT/QTc: 388/471 ms\nP Axis: 54   QRS Axis: -22   T Axis: 40\n\nNormal sinus rhythm\nLeft axis deviation\nNonspecific ST abnormality\n\n--- or type your own findings ---\n\n62M, acute chest pain 45 min. Rate 72, NSR, new LBBB, BP 88/60, diaphoretic."}
@@ -911,10 +897,10 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
               <div style={{position:"relative",borderRadius:10,overflow:"hidden",border:"1px solid rgba(0,229,192,.3)",marginBottom:10,background:"#000"}}>
                 <img src={imgPreview} alt="ECG" style={{width:"100%",display:"block",maxHeight:320,objectFit:"contain"}}/>
                 <button onClick={()=>{setImgFile(null);setImgPreview(null);setImgUrl(null);setResult(null);}}
-                  style={{position:"absolute",top:8,right:8,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(255,107,107,.5)",background:"rgba(10,18,36,.9)",color:T.coral,fontFamily:"'DM Sans',sans-serif",fontSize:11,cursor:"pointer",fontWeight:700}}>✕ Remove</button>
+                  style={{position:"absolute",top:8,right:8,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(255,107,107,.5)",background:"rgba(10,18,36,.9)",color:T.coral,fontFamily:"'DM Sans',sans-serif",fontSize:11,cursor:"pointer",fontWeight:700}}>X Remove</button>
               </div>
               <label htmlFor="ecg-img-replace" style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 14px",borderRadius:7,border:"1px solid rgba(26,53,85,.6)",background:"rgba(14,37,68,.4)",color:T.txt3,fontFamily:"'DM Sans',sans-serif",fontSize:11,cursor:"pointer"}}>
-                🔄 Replace image
+                Replace image
                 <input id="ecg-img-replace" type="file" accept="image/*" onChange={handleImageSelect} style={{display:"none"}}/>
               </label>
             </div>
@@ -962,7 +948,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,letterSpacing:1.2,textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Axis</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
               {AXES_LIST.map(a=>{const sel=axis===a;const c=a.includes("Left")?T.blue:a.includes("Right")?T.orange:a.includes("Extreme")?T.red:T.teal;return<button key={a} onClick={()=>setAxis(sel?"":a)} style={{padding:"6px 12px",borderRadius:20,fontSize:11,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:sel?700:500,border:`1px solid ${sel?c+"88":"rgba(26,53,85,.7)"}`,background:sel?`${c}18`:"rgba(14,37,68,.4)",color:sel?c:T.txt3}}>{a.split(" (")[0]}</button>;})}
-              <div style={{width:"100%",marginTop:6,fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,lineHeight:1.6}}>I↑ aVF↑ = Normal · I↑ aVF↓ = Left axis · I↓ aVF↑ = Right axis · I↓ aVF↓ = Extreme NW</div>
+              <div style={{width:"100%",marginTop:6,fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,lineHeight:1.6}}>I up aVF up = Normal · I up aVF down = Left axis · I down aVF up = Right axis · I down aVF down = Extreme NW</div>
             </div>
           </div>
           <div style={{...glass,padding:"14px 16px"}}>
@@ -997,14 +983,14 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
           Clinical Context <span style={{color:T.txt3,fontWeight:400,letterSpacing:0,textTransform:"none",fontSize:10}}>(optional — improves accuracy)</span>
         </div>
         <textarea value={context} onChange={e=>setContext(e.target.value)} rows={2}
-          placeholder="e.g. 58M, acute chest pain × 2h, diaphoretic, BP 90/60. Prior ECG normal 6 months ago. On metoprolol."
+          placeholder="e.g. 58M, acute chest pain x 2h, diaphoretic, BP 90/60. Prior ECG normal 6 months ago. On metoprolol."
           style={{width:"100%",background:"rgba(14,37,68,.4)",border:"1px solid rgba(26,53,85,.7)",borderRadius:8,padding:"9px 12px",color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:12,outline:"none",resize:"none",lineHeight:1.5}}/>
       </div>
 
       {/* Analyze button */}
       <button onClick={analyze} disabled={loading}
         style={{width:"100%",minHeight:52,borderRadius:12,cursor:loading?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,border:`1.5px solid ${loading?"rgba(0,229,192,.15)":"rgba(0,229,192,.4)"}`,background:loading?"rgba(0,229,192,.04)":"linear-gradient(135deg,rgba(0,229,192,.18),rgba(59,158,255,.12))",color:loading?T.txt3:T.teal,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-        {loading?<>{imgUploading?"📤 Uploading image…":"⏳ Analyzing ECG…"}</>:<>🤖 Analyze with AI</>}
+        {loading?<>{imgUploading?"📤 Uploading image...":"⏳ Analyzing ECG..."}</>:<>🤖 Analyze with AI</>}
       </button>
 
       {errMsg&&<div style={{padding:"10px 14px",borderRadius:8,background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.3)",fontSize:12,color:T.coral}}>{errMsg}</div>}
@@ -1017,7 +1003,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
           <div style={{padding:"16px 18px",borderRadius:12,background:`${URGENCY_COLOR[result.urgency]||T.teal}10`,border:`2px solid ${URGENCY_COLOR[result.urgency]||T.teal}44`,borderLeft:`5px solid ${URGENCY_COLOR[result.urgency]||T.teal}`}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
               <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:URGENCY_COLOR[result.urgency],background:`${URGENCY_COLOR[result.urgency]}22`,padding:"3px 12px",borderRadius:20,border:`1px solid ${URGENCY_COLOR[result.urgency]}44`}}>{result.urgency}</span>
-              {result.stemi_equivalent&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:T.red,background:"rgba(255,68,68,.15)",padding:"3px 12px",borderRadius:20,border:"1px solid rgba(255,68,68,.4)"}}>⚡ STEMI EQUIVALENT</span>}
+              {result.stemi_equivalent&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:T.red,background:"rgba(255,68,68,.15)",padding:"3px 12px",borderRadius:20,border:"1px solid rgba(255,68,68,.4)"}}>STEMI EQUIVALENT</span>}
               {result.dangerous_pattern&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.orange,background:"rgba(255,159,67,.1)",padding:"2px 10px",borderRadius:20,border:"1px solid rgba(255,159,67,.35)"}}>{result.dangerous_pattern}</span>}
               {result.confidence&&<span title={result.confidence_reason||""} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:result.confidence==="High"?T.teal:result.confidence==="Moderate"?T.gold:T.txt3,background:"rgba(14,37,68,.7)",padding:"2px 10px",borderRadius:20,border:`1px solid ${result.confidence==="High"?"rgba(0,229,192,.3)":result.confidence==="Moderate"?"rgba(245,200,66,.3)":"rgba(42,79,122,.4)"}`,cursor:"help"}}>{result.confidence} confidence</span>}
             </div>
@@ -1025,15 +1011,15 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             {result.urgency_reason&&<div style={{fontSize:11,color:T.txt3,lineHeight:1.55}}>{result.urgency_reason}</div>}
           </div>
 
-          {/* Machine concerns — paste/image only */}
+          {/* Machine concerns */}
           {result.machine_concerns&&result.machine_concerns!=="null"&&(
             <div style={{padding:"12px 14px",borderRadius:9,background:"rgba(155,109,255,.07)",border:"1px solid rgba(155,109,255,.35)"}}>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.purple,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:5}}>🔎 Machine Interpretation Concerns</div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.purple,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:5}}>Machine Interpretation Concerns</div>
               <div style={{fontSize:11,color:T.txt2,lineHeight:1.55}}>{result.machine_concerns}</div>
             </div>
           )}
 
-          {/* Parsed findings — paste/image only */}
+          {/* Parsed findings */}
           {result.parsed_findings?.length>0&&(
             <div style={{...glass,padding:"12px 14px"}}>
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.txt3,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:8}}>Parsed ECG Measurements</div>
@@ -1071,7 +1057,7 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
           {/* Do not miss + Guideline */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
             {result.do_not_miss&&<div style={{padding:"11px 13px",borderRadius:9,background:"rgba(255,107,107,.07)",border:"1px solid rgba(255,107,107,.25)"}}>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.coral,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:6}}>⚠ Do Not Miss</div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.coral,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:6}}>Do Not Miss</div>
               <div style={{fontSize:11,color:T.txt2,lineHeight:1.5,fontStyle:"italic"}}>{result.do_not_miss}</div>
             </div>}
             {result.guideline_note&&<div style={{padding:"11px 13px",borderRadius:9,background:"rgba(0,229,192,.05)",border:"1px solid rgba(0,229,192,.2)"}}>
@@ -1080,68 +1066,99 @@ Return ONLY valid JSON — no preamble, no markdown:\n${JSON_SCHEMA}`;
             </div>}
           </div>
 
-          <SendToChartBtn content={result?(()=>{
-            const lines=[`ECG INTERPRETATION — ${new Date().toLocaleString()}`,"=".repeat(44),"",`URGENCY: ${result.urgency}`,result.stemi_equivalent?"⚡ STEMI EQUIVALENT — Activate cath lab":"",result.dangerous_pattern?`DANGEROUS PATTERN: ${result.dangerous_pattern}`:"","","INTERPRETATION:",result.interpretation||"","","KEY FINDINGS:",
-              ...(result.key_findings||[]).map(f=>`  • ${f}`),"","DIFFERENTIAL:",
-              ...(result.differentials||[]).map((d,i)=>`  ${i+1}. ${d}`),"","RECOMMENDED ACTIONS:",
-              ...(result.recommended_actions||[]).map((a,i)=>`  ${i+1}. ${a}`),"",
-              result.do_not_miss?`⚠ DO NOT MISS: ${result.do_not_miss}`:"",
-              result.guideline_note?`Guideline: ${result.guideline_note}`:"","","Generated by Notrya ECG Hub AI · Clinical decision support only"];
-            return lines.filter(l=>l!==undefined&&l!=="").join("\n");
-          })():""}/>
-
-          <button onClick={()=>generateECGReport(result,patientId)} style={{width:"100%",padding:"10px 0",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:"1px solid rgba(245,200,66,.4)",background:"rgba(245,200,66,.08)",color:T.gold,transition:"all .2s"}}>
-            📄 Generate Report / Export PDF
+          {/* ── PRIMARY: Send to QuickNote MDM ── */}
+          <button onClick={sendToQuickNote}
+            style={{width:"100%",minHeight:50,borderRadius:12,cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,
+              border:"1.5px solid rgba(0,229,192,.5)",
+              background:"linear-gradient(135deg,rgba(0,229,192,.2),rgba(59,158,255,.14))",
+              color:T.teal,transition:"all .2s",
+              display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+            {embedded?"📋 Copy to QuickNote":"↗ Send to QuickNote MDM"}
           </button>
 
-          <button onClick={()=>setConsultOpen(p=>!p)} style={{width:"100%",padding:"10px 0",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:`1px solid ${consultOpen?"rgba(0,229,192,.4)":"rgba(0,229,192,.2)"}`,background:consultOpen?"rgba(0,229,192,.08)":"transparent",color:consultOpen?T.teal:T.txt3,transition:"all .2s"}}>
-            📞 {consultOpen?"Hide":"Generate"} Cardiology Phone Script
-          </button>
+          {/* ── SECONDARY: PDF + Save — compact 2-column row ── */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <button onClick={()=>generateECGReport(result,patientId)}
+              style={{padding:"9px 0",borderRadius:8,cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:12,
+                border:"1px solid rgba(245,200,66,.35)",background:"rgba(245,200,66,.07)",color:T.gold,
+                display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              📄 PDF Report
+            </button>
+            <button onClick={saveInterpretation} disabled={saving||savedOk}
+              style={{padding:"9px 0",borderRadius:8,cursor:saving?"not-allowed":"pointer",
+                fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:12,
+                border:`1px solid ${savedOk?"rgba(0,229,192,.4)":"rgba(0,229,192,.2)"}`,
+                background:savedOk?"rgba(0,229,192,.1)":"rgba(0,229,192,.04)",
+                color:savedOk?T.teal:T.txt3,
+                display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              {savedOk?"✓ Saved":"💾 Save to Log"}
+            </button>
+          </div>
 
-          {consultOpen&&(()=>{
-            const vitals = [ptBP&&("BP "+ptBP), ptHR&&("HR "+ptHR), ptSpO2&&("SpO2 "+ptSpO2+"%")].filter(Boolean).join(", ");
-            const actions = (result.recommended_actions||[]).slice(0,3).map((a,i)=>((i+1)+") "+a)).join(" ");
-            const dx = (result.differentials||["See ECG interpretation"])[0];
-            const script = [
-              patientId ? ("Patient: "+patientId+". ") : "",
-              ptAge ? (ptAge+"yo ") : "",
-              ptSex ? (ptSex+". ") : "",
-              ptCC ? ("Presenting with "+ptCC+". ") : "",
-              vitals ? ("Vitals: "+vitals+". ") : "",
-              context || "",
+          {/* ── PHONE SCRIPT: auto-show Critical/High, toggle Moderate/Low ── */}
+          {(()=>{
+            const autoShow=result.urgency==="Critical"||result.urgency==="High";
+            const vitals=[ptBP&&("BP "+ptBP),ptHR&&("HR "+ptHR),ptSpO2&&("SpO2 "+ptSpO2+"%")].filter(Boolean).join(", ");
+            const actions=(result.recommended_actions||[]).slice(0,3).map((a,i)=>((i+1)+") "+a)).join(" ");
+            const dx=(result.differentials||["See ECG interpretation"])[0];
+            const script=[
+              patientId?("Patient: "+patientId+". "):"",
+              ptAge?(ptAge+"yo "):"",
+              ptSex?(ptSex+". "):"",
+              ptCC?("Presenting with "+ptCC+". "):"",
+              vitals?("Vitals: "+vitals+". "):"",
+              context||"",
               "\n\nECG shows "+(result.interpretation||"significant findings")+". Urgency: "+(result.urgency||"High")+".",
-              result.stemi_equivalent ? " This is a STEMI equivalent — I am requesting immediate cath lab activation." : "",
-              (result.dangerous_pattern&&result.dangerous_pattern!=="null") ? ("\nDangerous pattern: "+result.dangerous_pattern+".") : "",
+              result.stemi_equivalent?" This is a STEMI equivalent — I am requesting immediate cath lab activation.":"",
+              (result.dangerous_pattern&&result.dangerous_pattern!=="null")?("\nDangerous pattern: "+result.dangerous_pattern+"."):""  ,
               "\n\nMy actions: "+actions,
               "\n\nWorking diagnosis: "+dx+".",
-              result.do_not_miss ? ("\n\nDo not miss: "+result.do_not_miss) : "",
+              result.do_not_miss?("\n\nDo not miss: "+result.do_not_miss):"",
               "\nRequesting: "+(result.stemi_equivalent?"emergent cath lab activation":"cardiology consultation and admission guidance")+".",
             ].join("");
-            return (
-            <div className="ecg-fade" style={{...glass,padding:"14px 16px"}}>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:8}}>Cardiology Consult Script — Read Aloud</div>
-              <div style={{fontSize:11,color:T.txt,lineHeight:1.9,background:"rgba(14,37,68,.5)",borderRadius:8,padding:"12px 14px",fontFamily:"'DM Sans',sans-serif",whiteSpace:"pre-line",userSelect:"all",marginBottom:8}}>
-                {script}
+            const panel=(
+              <div className="ecg-fade" style={{...glass,padding:"14px 16px"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Cardiology Consult Script — Read Aloud</div>
+                  {autoShow&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:URGENCY_COLOR[result.urgency],background:`${URGENCY_COLOR[result.urgency]}18`,padding:"2px 8px",borderRadius:10,border:`1px solid ${URGENCY_COLOR[result.urgency]}33`}}>{result.urgency}</span>}
+                </div>
+                <div style={{fontSize:11,color:T.txt,lineHeight:1.9,background:"rgba(14,37,68,.5)",borderRadius:8,padding:"12px 14px",fontFamily:"'DM Sans',sans-serif",whiteSpace:"pre-line",userSelect:"all",marginBottom:8}}>
+                  {script}
+                </div>
+                <button onClick={()=>navigator.clipboard?.writeText(script).catch(()=>{})}
+                  style={{padding:"5px 14px",borderRadius:7,border:"1px solid rgba(0,229,192,.3)",background:"rgba(0,229,192,.06)",color:T.teal,fontFamily:"'DM Sans',sans-serif",fontSize:11,cursor:"pointer",fontWeight:700}}>
+                  📋 Copy to Clipboard
+                </button>
               </div>
-              <button onClick={()=>navigator.clipboard?.writeText(script).catch(()=>{})}
-                style={{padding:"5px 14px",borderRadius:7,border:"1px solid rgba(0,229,192,.3)",background:"rgba(0,229,192,.06)",color:T.teal,fontFamily:"'DM Sans',sans-serif",fontSize:11,cursor:"pointer",fontWeight:700}}>
-                📋 Copy to Clipboard
-              </button>
-            </div>
+            );
+            if(autoShow) return panel;
+            return(
+              <div>
+                <button onClick={()=>setConsultOpen(p=>!p)}
+                  style={{width:"100%",padding:"8px 0",borderRadius:8,cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:12,
+                    border:`1px solid ${consultOpen?"rgba(155,109,255,.3)":"rgba(26,53,85,.5)"}`,
+                    background:consultOpen?"rgba(155,109,255,.07)":"transparent",
+                    color:consultOpen?T.purple:T.txt4,transition:"all .2s",
+                    display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                  📞 {consultOpen?"Hide Phone Script":"Phone Script"}
+                </button>
+                {consultOpen&&panel}
+              </div>
             );
           })()}
 
-          <button onClick={saveInterpretation} disabled={saving||savedOk}
-            style={{width:"100%",padding:"10px 0",borderRadius:8,cursor:saving?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:`1px solid ${savedOk?"rgba(0,229,192,.4)":"rgba(0,229,192,.25)"}`,background:savedOk?"rgba(0,229,192,.1)":"transparent",color:savedOk?T.teal:T.txt3,transition:"all .2s"}}>
-            {savedOk?"✓ Saved to Log":saving?"Saving…":"💾 Save to Interpretation Log"}
-          </button>
-
-          <button onClick={sendToQuickNote} style={{width:"100%",padding:"10px 0",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:"1px solid rgba(155,109,255,.35)",background:"rgba(155,109,255,.08)",color:T.purple,transition:"all .2s"}}>
-            {embedded?"📋 Copy Interpretation to QuickNote":"↗ Send Interpretation to QuickNote MDM"}
-          </button>
-          <button onClick={reset} style={{padding:"9px 0",borderRadius:8,background:"transparent",border:"1px solid rgba(26,53,85,.6)",color:T.txt3,fontFamily:"'DM Sans',sans-serif",fontSize:12,cursor:"pointer"}}>
-            Reset — New ECG
-          </button>
+          {/* ── RESET: de-emphasized text link ── */}
+          <div style={{textAlign:"center",paddingTop:4}}>
+            <button onClick={reset}
+              style={{background:"none",border:"none",color:T.txt4,fontFamily:"'DM Sans',sans-serif",
+                fontSize:11,cursor:"pointer",textDecoration:"underline",
+                textDecorationColor:"rgba(104,152,180,.25)",letterSpacing:".02em"}}>
+              reset — new ecg
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -1163,7 +1180,7 @@ const WCT_Q=[
     {label:"Yes — RS complex present in ≥1 precordial lead",next:"rsi"},
   ]},
   {id:"rsi",q:"Longest RS interval (onset of R → nadir of S) in any precordial lead?",options:[
-    {label:"> 100ms (> 2½ small squares) in any single lead",next:"vt"},
+    {label:"> 100ms (> 2.5 small squares) in any single lead",next:"vt"},
     {label:"≤ 100ms in all precordial leads",next:"morph"},
   ]},
   {id:"morph",q:"Dominant QRS morphology in the precordial leads?",options:[
@@ -1186,11 +1203,11 @@ const WCT_RES={
     note:"Hemodynamic instability does not confirm VT — but changes management. All unstable WCT is treated as VT regardless of morphology or algorithm.",
     source:"2019 AHA/ACC SVT Guideline · ACLS"},
   vt:{label:"Ventricular Tachycardia",color:T.red,urgency:"Critical",
-    action:"Stable: IV amiodarone 150mg over 10 min, then 1mg/min × 6h. Unstable: synchronized cardioversion. AVOID adenosine, verapamil, diltiazem — can precipitate hemodynamic collapse. 12-lead ECG. Cardiology consult.",
+    action:"Stable: IV amiodarone 150mg over 10 min, then 1mg/min x 6h. Unstable: synchronized cardioversion. AVOID adenosine, verapamil, diltiazem — can precipitate hemodynamic collapse. 12-lead ECG. Cardiology consult.",
     note:"Brugada criteria met. Clinical rule: WCT in any patient over 35 years with structural heart disease or prior MI = VT until proven otherwise, regardless of algorithm.",
     source:"Brugada et al. 1991 · 2019 AHA/ACC SVT Guideline"},
   svt:{label:"Likely SVT with Aberrancy",color:T.gold,urgency:"High",
-    action:"Vagal maneuvers first. Adenosine 6mg IV rapid push + saline flush; repeat 12mg × 2 if no conversion. If WPW possible: AVOID adenosine and verapamil — use procainamide or electrical cardioversion. 12-lead ECG. Cardiology consult.",
+    action:"Vagal maneuvers first. Adenosine 6mg IV rapid push + saline flush; repeat 12mg x 2 if no conversion. If WPW possible: AVOID adenosine and verapamil — use procainamide or electrical cardioversion. 12-lead ECG. Cardiology consult.",
     note:"No Brugada VT criteria met — but clinical context is critical. Structural heart disease, age > 35, or prior MI still favors VT. If any doubt, treat as VT.",
     source:"Brugada et al. 1991 · 2019 AHA/ACC SVT Guideline"},
   indet:{label:"Indeterminate — Default to VT Management",color:T.orange,urgency:"High",
@@ -1291,7 +1308,7 @@ function PERVTab() {
       })}
       <div style={{...glass,padding:"12px 14px"}}>
         <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.orange,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:8}}>If PE Suspected — Immediate Actions</div>
-        {["O₂ — target SpO₂ > 94%. Non-rebreather mask if hypoxic. Avoid intubation if possible (RV fails with positive pressure).","IV access × 2. CBC, BMP, troponin, BNP, ABG, coags, type & screen.","CT-PA — gold standard. Do not delay for ECG or serial troponin.","Bedside echo if too unstable for CT — RV dilation, D-sign (septal flattening), McConnell's sign (RV free wall hypokinesis with preserved apex).","Anticoagulation: heparin 80 U/kg IV bolus + 18 U/kg/h infusion unless contraindicated.","Massive PE with shock/arrest → systemic tPA 100mg over 2h or surgical embolectomy."].map((a,i)=>(
+        {["O2 — target SpO2 > 94%. Non-rebreather mask if hypoxic. Avoid intubation if possible (RV fails with positive pressure).","IV access x 2. CBC, BMP, troponin, BNP, ABG, coags, type & screen.","CT-PA — gold standard. Do not delay for ECG or serial troponin.","Bedside echo if too unstable for CT — RV dilation, D-sign (septal flattening), McConnell's sign (RV free wall hypokinesis with preserved apex).","Anticoagulation: heparin 80 U/kg IV bolus + 18 U/kg/h infusion unless contraindicated.","Massive PE with shock/arrest → systemic tPA 100mg over 2h or surgical embolectomy."].map((a,i)=>(
           <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:7,paddingBottom:7,borderBottom:i<5?"1px solid rgba(26,53,85,.3)":"none"}}>
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.orange,fontWeight:700,flexShrink:0,minWidth:14}}>{i+1}</span>
             <span style={{fontSize:11,color:T.txt,lineHeight:1.45}}>{a}</span>
@@ -1317,7 +1334,6 @@ function SerialECGTimer() {
   const [findB,      setFindB]      = useState("");
   const [cmpLoading, setCmpLoading] = useState(false);
   const [cmpResult,  setCmpResult]  = useState(null);
-  // Troponin log
   const [tropLog,    setTropLog]    = useState([]);
   const [tropVal,    setTropVal]    = useState("");
   const [tropUnit,   setTropUnit]   = useState("ng/L");
@@ -1349,7 +1365,7 @@ function SerialECGTimer() {
 
   const compareECGs=async()=>{
     const eA=ecgLog[selA],eB=ecgLog[selB];
-    if(!eA||!eB){return;}
+    if(!eA||!eB)return;
     setCmpLoading(true);setCmpResult(null);
     const PROMPT=`You are an expert emergency medicine ECG interpreter. Two serial ECGs have been obtained during a chest pain workup. Compare them and identify clinically significant interval changes.
 
@@ -1364,16 +1380,31 @@ Interval between ECGs: ${Math.abs(eB.mins-eA.mins)} minutes
 Analyze: (1) What changed? (2) Is this progression, improvement, or unchanged? (3) Does this change a diagnosis or urgency level? (4) What immediate action is indicated based on these interval changes?
 
 Return ONLY valid JSON — no preamble, no markdown:
-{"change_summary":"1-2 sentences on what changed","trajectory":"Progression|Improvement|Unchanged|Indeterminate","urgency_change":"Escalate|Deeescalate|Unchanged","key_interval_changes":["change1","change2"],"clinical_significance":"clinical meaning of these changes","recommended_action":"what to do now based on interval change","diagnosis_impact":"how this changes or confirms working diagnosis"}`;
+{"change_summary":"1-2 sentences on what changed","trajectory":"Progression|Improvement|Unchanged|Indeterminate","urgency_change":"Escalate|Deescalate|Unchanged","key_interval_changes":["change1","change2"],"clinical_significance":"clinical meaning of these changes","recommended_action":"what to do now based on interval change","diagnosis_impact":"how this changes or confirms working diagnosis"}`;
     try{
-      const r=await base44.integrations.Core.InvokeLLM({prompt:PROMPT});
+      const r=await base44.integrations.Core.InvokeLLM({
+        prompt:PROMPT,
+        response_json_schema:{
+          type:"object",
+          properties:{
+            change_summary:        {type:"string"},
+            trajectory:            {type:"string"},
+            urgency_change:        {type:"string"},
+            key_interval_changes:  {type:"array",items:{type:"string"}},
+            clinical_significance: {type:"string"},
+            recommended_action:    {type:"string"},
+            diagnosis_impact:      {type:"string"},
+          }
+        }
+      });
       let parsed;
       if(typeof r==="object"&&r!==null&&r.change_summary)parsed=r;
       else if(typeof r==="string")parsed=JSON.parse(r.replace(/```json|```/g,"").trim());
       else parsed=r;
       setCmpResult(parsed);
-    }catch(e){setCmpResult({change_summary:"Comparison failed — check connection.",trajectory:"Indeterminate",urgency_change:"Unchanged",key_interval_changes:[],clinical_significance:"Unable to analyze.",recommended_action:"Manual comparison required.",diagnosis_impact:""});}
-    finally{setCmpLoading(false);}
+    }catch(e){
+      setCmpResult({change_summary:"Comparison failed — check connection.",trajectory:"Indeterminate",urgency_change:"Unchanged",key_interval_changes:[],clinical_significance:"Unable to analyze.",recommended_action:"Manual comparison required.",diagnosis_impact:""});
+    }finally{setCmpLoading(false);}
   };
 
   const TrajColor={Progression:T.red,Improvement:T.teal,Unchanged:T.gold,Indeterminate:T.txt3};
@@ -1419,7 +1450,7 @@ Return ONLY valid JSON — no preamble, no markdown:
           <div style={{...glass,padding:"14px 16px"}}>
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:10}}>Log ECG #{ecgLog.length+1}</div>
             <textarea value={note} onChange={e=>setNote(e.target.value)} rows={2}
-              placeholder="Key findings: new STE V2-V3, rate change, Wellens pattern, clinical status…"
+              placeholder="Key findings: new STE V2-V3, rate change, Wellens pattern, clinical status..."
               style={{width:"100%",background:"rgba(14,37,68,.4)",border:"1px solid rgba(26,53,85,.7)",borderRadius:8,padding:"8px 11px",color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:12,outline:"none",resize:"vertical",lineHeight:1.5,marginBottom:10}}/>
             <button onClick={logECG} style={{width:"100%",padding:"9px 0",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:"1px solid rgba(0,229,192,.35)",background:"rgba(0,229,192,.1)",color:T.teal}}>
               📋 Log ECG #{ecgLog.length+1} at +{elMin} min
@@ -1441,12 +1472,12 @@ Return ONLY valid JSON — no preamble, no markdown:
               <div style={{display:"flex",gap:8,marginTop:12}}>
                 <button onClick={sendLog} disabled={sending||sent}
                   style={{flex:1,padding:"9px 0",borderRadius:8,cursor:sending?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:`1px solid ${sent?"rgba(0,229,192,.4)":"rgba(59,158,255,.3)"}`,background:sent?"rgba(0,229,192,.1)":"rgba(59,158,255,.1)",color:sent?T.teal:T.blue,transition:"all .2s"}}>
-                  {sent?"✓ Sent to Chart":sending?"Sending…":"📤 Send ECG Log to Chart"}
+                  {sent?"✓ Sent to Chart":sending?"Sending...":"📤 Send ECG Log to Chart"}
                 </button>
                 {ecgLog.length>=2&&(
                   <button onClick={()=>{setCmpOpen(p=>!p);setCmpResult(null);setSelA(0);setSelB(Math.min(1,ecgLog.length-1));}}
                     style={{padding:"9px 16px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:`1px solid ${cmpOpen?"rgba(0,229,192,.4)":"rgba(155,109,255,.35)"}`,background:cmpOpen?"rgba(0,229,192,.1)":"rgba(155,109,255,.08)",color:cmpOpen?T.teal:T.purple,transition:"all .2s"}}>
-                    🔄 Compare
+                    Compare
                   </button>
                 )}
               </div>
@@ -1460,7 +1491,7 @@ Return ONLY valid JSON — no preamble, no markdown:
               <input type="number" value={tropVal} onChange={e=>setTropVal(e.target.value)} placeholder="Enter value (e.g. 22)"
                 style={{background:"rgba(14,37,68,.5)",border:"1px solid rgba(26,53,85,.8)",borderRadius:6,padding:"7px 10px",color:T.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,outline:"none"}}/>
               <select value={tropUnit} onChange={e=>setTropUnit(e.target.value)} style={{background:"rgba(14,37,68,.5)",border:"1px solid rgba(26,53,85,.8)",borderRadius:6,padding:"7px 8px",color:T.txt3,fontFamily:"'JetBrains Mono',monospace",fontSize:11,outline:"none"}}>
-                <option>ng/L</option><option>pg/mL</option><option>ng/mL</option><option>×ULN</option>
+                <option>ng/L</option><option>pg/mL</option><option>ng/mL</option><option>xULN</option>
               </select>
               <button onClick={()=>{if(!tropVal.trim())return;setTropLog(p=>[...p,{n:p.length+1,val:parseFloat(tropVal),unit:tropUnit,time:fmt(Date.now()),mins:t0?Math.floor((Date.now()-t0)/60000):0}]);setTropVal("");}}
                 style={{padding:"7px 12px",borderRadius:6,cursor:"pointer",border:"1px solid rgba(245,200,66,.35)",background:"rgba(245,200,66,.08)",color:T.gold,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,whiteSpace:"nowrap"}}>
@@ -1468,17 +1499,17 @@ Return ONLY valid JSON — no preamble, no markdown:
               </button>
             </div>
             {tropLog.length>=2&&(()=>{
-              const first=tropLog[0].val, last=tropLog[tropLog.length-1].val;
+              const first=tropLog[0].val,last=tropLog[tropLog.length-1].val;
               const delta=last-first;
               const pct=Math.round((delta/first)*100);
               const rise=delta>=5||(tropUnit==="ng/L"&&delta>=3);
               return(
                 <div className="ecg-fade" style={{padding:"8px 10px",borderRadius:7,background:rise?"rgba(255,68,68,.08)":"rgba(0,229,192,.06)",border:`1px solid ${rise?"rgba(255,68,68,.3)":"rgba(0,229,192,.25)"}`,marginBottom:8}}>
                   <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:rise?T.coral:T.teal,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>
-                    {rise?"⚡ Significant Rise — ACS until proven otherwise":"Stable — No significant rise detected"}
+                    {rise?"Significant Rise — ACS until proven otherwise":"Stable — No significant rise detected"}
                   </div>
                   <div style={{fontSize:11,color:T.txt2}}>
-                    Δ {delta>=0?"+":""}{delta.toFixed(1)} {tropUnit} ({pct>=0?"+":""}{pct}%) · {tropLog[0].mins}→{tropLog[tropLog.length-1].mins} min
+                    D {delta>=0?"+":""}{delta.toFixed(1)} {tropUnit} ({pct>=0?"+":""}{pct}%) · {tropLog[0].mins}→{tropLog[tropLog.length-1].mins} min
                   </div>
                 </div>
               );
@@ -1510,21 +1541,21 @@ Return ONLY valid JSON — no preamble, no markdown:
                     <select value={sel} onChange={e=>setSel(Number(e.target.value))} style={{width:"100%",background:"rgba(14,37,68,.5)",border:"1px solid rgba(26,53,85,.8)",borderRadius:6,padding:"7px 8px",color:T.txt,fontFamily:"'JetBrains Mono',monospace",fontSize:12,outline:"none",marginBottom:5}}>
                       {ecgLog.map((e,i)=><option key={i} value={i}>ECG #{e.n} — +{e.mins} min</option>)}
                     </select>
-                    <textarea value={find} onChange={e=>setFind(e.target.value)} rows={2} placeholder={ecgLog[sel]?.note||"Enter key findings for this ECG…"}
+                    <textarea value={find} onChange={e=>setFind(e.target.value)} rows={2} placeholder={ecgLog[sel]?.note||"Enter key findings for this ECG..."}
                       style={{width:"100%",background:"rgba(14,37,68,.4)",border:"1px solid rgba(26,53,85,.7)",borderRadius:6,padding:"7px 9px",color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:11,outline:"none",resize:"none",lineHeight:1.4}}/>
                   </div>
                 ))}
               </div>
               <button onClick={compareECGs} disabled={cmpLoading||selA===selB}
                 style={{width:"100%",padding:"10px 0",borderRadius:8,cursor:cmpLoading||selA===selB?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,border:"1.5px solid rgba(155,109,255,.4)",background:"rgba(155,109,255,.1)",color:cmpLoading?T.txt3:T.purple,marginBottom:cmpResult?10:0}}>
-                {cmpLoading?"⏳ Analyzing interval changes…":"🔍 Compare ECGs"}
+                {cmpLoading?"⏳ Analyzing interval changes...":"Compare ECGs"}
               </button>
               {cmpResult&&(
                 <div className="ecg-fade" style={{display:"flex",flexDirection:"column",gap:8}}>
                   <div style={{padding:"12px 14px",borderRadius:9,background:`${TrajColor[cmpResult.trajectory]||T.txt3}0d`,border:`2px solid ${TrajColor[cmpResult.trajectory]||T.txt3}44`,borderLeft:`4px solid ${TrajColor[cmpResult.trajectory]||T.txt3}`}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                       <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:TrajColor[cmpResult.trajectory],padding:"2px 10px",borderRadius:20,background:`${TrajColor[cmpResult.trajectory]}22`,border:`1px solid ${TrajColor[cmpResult.trajectory]}44`}}>{cmpResult.trajectory}</span>
-                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:cmpResult.urgency_change==="Escalate"?T.red:cmpResult.urgency_change==="Deeescalate"?T.teal:T.txt4}}>Urgency: {cmpResult.urgency_change}</span>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:cmpResult.urgency_change==="Escalate"?T.red:cmpResult.urgency_change==="Deescalate"?T.teal:T.txt4}}>Urgency: {cmpResult.urgency_change}</span>
                     </div>
                     <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:T.txt,marginBottom:4}}>{cmpResult.change_summary}</div>
                   </div>
@@ -1598,9 +1629,9 @@ function HyperkalemiaTab() {
       <div style={{...glass,padding:"14px 16px"}}>
         <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.orange,letterSpacing:1.2,textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Treatment Hierarchy</div>
         {[
-          {step:"1",label:"Membrane stabilization",drug:"Calcium gluconate 1-2g IV over 10 min",note:"Works in 1-3 min. Repeat q5-10 min × 3 if ECG unchanged. Does NOT lower K+.",color:T.red},
+          {step:"1",label:"Membrane stabilization",drug:"Calcium gluconate 1-2g IV over 10 min",note:"Works in 1-3 min. Repeat q5-10 min x 3 if ECG unchanged. Does NOT lower K+.",color:T.red},
           {step:"2",label:"Shift K+ into cells",drug:"Insulin 10U IV + D50W 50mL + Albuterol 10-20mg neb",note:"Onset 15-30 min. Additive effect. Monitor glucose q30 min.",color:T.orange},
-          {step:"3",label:"Alkalinize (if acidemic pH <7.2)",drug:"NaHCO₃ 50-100 mEq IV",note:"Less effective in ESRD. Useful if concurrent metabolic acidosis.",color:T.gold},
+          {step:"3",label:"Alkalinize (if acidemic pH <7.2)",drug:"NaHCO3 50-100 mEq IV",note:"Less effective in ESRD. Useful if concurrent metabolic acidosis.",color:T.gold},
           {step:"4",label:"Remove potassium",drug:"Furosemide + Patiromer (preferred) or Kayexalate",note:"Hours to days. Emergent dialysis for refractory or severe ECG changes.",color:T.teal},
         ].map(t=>(
           <div key={t.step} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:10,paddingBottom:10,borderBottom:"1px solid rgba(26,53,85,.3)"}}>
@@ -1695,64 +1726,64 @@ export default function ECGHub({ embedded = false, onBack }) {
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
         {!embedded && <NotryaHubHeader hubName="ECG Hub" category="Cardiac" homeUrl="/" />}
         {!embedded && <NotryaPatientBar />}
-      <div style={{maxWidth:960,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%"}}>
+        <div style={{maxWidth:960,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%"}}>
 
-        {/* Grouped tab bar */}
-        <div style={{display:"flex",flexDirection:"column",gap:4,padding:4,marginBottom:16,background:"rgba(8,22,40,0.72)",border:"1px solid rgba(26,53,85,.75)",borderRadius:12,backdropFilter:"blur(16px)"}}>
-          {TAB_GROUPS.map(g=>(
-            <div key={g.group}>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:g.color,textTransform:"uppercase",letterSpacing:1.5,fontWeight:700,padding:"4px 8px 2px",opacity:.75}}>{g.group}</div>
-              <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
-                {g.tabs.map(t=>(
-                  <button key={t.id} onClick={()=>setTab(t.id)}
-                    style={{display:"flex",alignItems:"center",gap:5,padding:"6px 11px",borderRadius:7,fontSize:11,fontWeight:tab===t.id?700:500,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all .15s",background:tab===t.id?`${g.color}18`:"transparent",border:tab===t.id?`1px solid ${g.color}44`:"1px solid transparent",color:tab===t.id?g.color:T.txt3}}>
-                    <span style={{fontSize:12}}>{t.icon}</span>{t.label}
-                  </button>
-                ))}
+          {/* Grouped tab bar */}
+          <div style={{display:"flex",flexDirection:"column",gap:4,padding:4,marginBottom:16,background:"rgba(8,22,40,0.72)",border:"1px solid rgba(26,53,85,.75)",borderRadius:12,backdropFilter:"blur(16px)"}}>
+            {TAB_GROUPS.map(g=>(
+              <div key={g.group}>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:g.color,textTransform:"uppercase",letterSpacing:1.5,fontWeight:700,padding:"4px 8px 2px",opacity:.75}}>{g.group}</div>
+                <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+                  {g.tabs.map(t=>(
+                    <button key={t.id} onClick={()=>setTab(t.id)}
+                      style={{display:"flex",alignItems:"center",gap:5,padding:"6px 11px",borderRadius:7,fontSize:11,fontWeight:tab===t.id?700:500,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all .15s",background:tab===t.id?`${g.color}18`:"transparent",border:tab===t.id?`1px solid ${g.color}44`:"1px solid transparent",color:tab===t.id?g.color:T.txt3}}>
+                      <span style={{fontSize:12}}>{t.icon}</span>{t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Offline warning */}
+          {offline&&(
+            <div style={{marginBottom:12,padding:"10px 14px",borderRadius:10,background:"rgba(245,200,66,.08)",border:"1px solid rgba(245,200,66,.35)",display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:16}}>⚠</span>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:T.gold}}>No network connection — AI features unavailable</div>
+                <div style={{fontSize:11,color:T.txt3}}>Reference tabs work offline: STEMI Localizer, AV Block, QTc, Hyperkalemia, Peds ECG, Wide Complex, PE / RV Strain</div>
               </div>
             </div>
-          ))}
-        </div>
+          )}
 
-        {/* Offline warning */}
-        {offline&&(
-          <div style={{marginBottom:12,padding:"10px 14px",borderRadius:10,background:"rgba(245,200,66,.08)",border:"1px solid rgba(245,200,66,.35)",display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:16}}>⚠</span>
-            <div>
-              <div style={{fontSize:12,fontWeight:700,color:T.gold}}>No network connection — AI features unavailable</div>
-              <div style={{fontSize:11,color:T.txt3}}>Reference tabs work offline: STEMI Localizer, AV Block, QTc, Hyperkalemia, Peds ECG, Wide Complex, PE / RV Strain</div>
+          {/* Tab content */}
+          <div style={{...glass,padding:"18px 20px"}}>
+            {tab==="ai"       &&<ECGAITab embedded={embedded}/>}
+            {tab==="localizer"&&<STEMILocalizer/>}
+            {tab==="avblock"  &&<AVBlockTab/>}
+            {tab==="qtcalc"   &&<QTcTab/>}
+            {tab==="chads"    &&<CHADSTab/>}
+            {tab==="nstemi"   &&<ECGNSTEMIHub/>}
+            {tab==="af"       &&<ECGAFPathway/>}
+            {tab==="timer"    &&<SerialECGTimer/>}
+            {tab==="hyperkal" &&<HyperkalemiaTab/>}
+            {tab==="peds"     &&<PedsTab/>}
+            {tab==="wct"      &&<WCTTab/>}
+            {tab==="pe"       &&<PERVTab/>}
+            {tab==="dtb"      &&<ECGDTBTimer/>}
+            {tab==="tox"      &&<ECGToxTab/>}
+            {tab==="syncope"  &&<ECGSyncopeTab/>}
+            {tab==="electro"  &&<ECGElectrolyteTab/>}
+            {tab==="pea"      &&<ECGPEATab/>}
+            {tab==="heart"    &&<ECGHEARTScore/>}
+          </div>
+
+          {!embedded&&(
+            <div style={{textAlign:"center",padding:"20px 0 14px",fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,letterSpacing:1.5}}>
+              NOTRYA ECG HUB · CLINICAL DECISION SUPPORT ONLY · 2025 ACC/AHA/ACEP · AI-ASSISTED INTERPRETATION
             </div>
-          </div>
-        )}
-
-        {/* Tab content */}
-        <div style={{...glass,padding:"18px 20px"}}>
-          {tab==="ai"       &&<ECGAITab embedded={embedded}/>}
-          {tab==="localizer"&&<STEMILocalizer/>}
-          {tab==="avblock"  &&<AVBlockTab/>}
-          {tab==="qtcalc"   &&<QTcTab/>}
-          {tab==="chads"    &&<CHADSTab/>}
-          {tab==="nstemi"   &&<ECGNSTEMIHub/>}
-          {tab==="af"       &&<ECGAFPathway/>}
-          {tab==="timer"    &&<SerialECGTimer/>}
-          {tab==="hyperkal" &&<HyperkalemiaTab/>}
-          {tab==="peds"     &&<PedsTab/>}
-          {tab==="wct"      &&<WCTTab/>}
-          {tab==="pe"       &&<PERVTab/>}
-          {tab==="dtb"      &&<ECGDTBTimer/>}
-          {tab==="tox"      &&<ECGToxTab/>}
-          {tab==="syncope"  &&<ECGSyncopeTab/>}
-          {tab==="electro"  &&<ECGElectrolyteTab/>}
-          {tab==="pea"      &&<ECGPEATab/>}
-          {tab==="heart"    &&<ECGHEARTScore/>}
+          )}
         </div>
-
-        {!embedded&&(
-          <div style={{textAlign:"center",padding:"20px 0 14px",fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,letterSpacing:1.5}}>
-            NOTRYA ECG HUB · CLINICAL DECISION SUPPORT ONLY · 2025 ACC/AHA/ACEP · AI-ASSISTED INTERPRETATION
-          </div>
-        )}
-      </div>
       </div>
     </div>
   );

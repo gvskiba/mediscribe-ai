@@ -955,7 +955,7 @@ export default function CardiacHub(){
                     <div style={{fontSize:13,fontWeight:600,color:"var(--txt)"}}>{t.label}</div>
                     <div style={{fontSize:9,color:"var(--txt4)",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>{t.abbr}</div>
                   </div>
-                  <span style={{color:"var(--txt4)",fontSize:16}}>></span>
+                  <span style={{color:"var(--txt4)",fontSize:16}}>{">"}</span>
                 </div>
               ))}
             </div>

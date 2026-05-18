@@ -350,7 +350,6 @@ const AuthenticatedApp = () => {
         <Route path="/TriageHub"       element={<TriageHub />} />
         <Route path="/rapid-assessment-hub" element={<RapidAssessmentHub />} />
         <Route path="/ecg-hub"         element={<ECGHub />} />
-        <Route path="/ECGHub"          element={<ECGHub />} />
         <Route path="/psyche-hub"      element={<PsycheHub />} />
         <Route path="/PsychHub"        element={<PsycheHub />} />
         <Route path="/shock-hub"       element={<ShockHub />} />
@@ -377,7 +376,6 @@ const AuthenticatedApp = () => {
         <Route path="/VitalsHub"       element={<VitalsHub />} />
         <Route path="/pain-hub"        element={<PainHub />} />
         <Route path="/syncope-hub"     element={<SyncopeHub />} />
-        <Route path="/SyncopeHub"      element={<SyncopeHub />} />
         <Route path="/seizure-hub"     element={<SeizureHub />} />
         <Route path="/ams-hub"         element={<AMSHub />} />
         <Route path="/AMSHub"          element={<AMSHub />} />

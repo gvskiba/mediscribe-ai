@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import XRayViewer from "../components/ortho/XRayViewer";
+import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
@@ -119,7 +120,8 @@ const GUSTILO = [
     management:"IV antibiotics within 1 hour (cefazolin). Wound irrigation and debridement in OR. Primary closure usually feasible after debridement.",
     coverage:"Primary closure acceptable after thorough debridement.",
     antibiotic:"Cefazolin 2 g IV q8h × 24–72h. Add gentamicin if contaminated.",
-    prognosis:"Infection rate ~1–2%. Excellent healing expected." },
+    prognosis:"Infection rate ~1–2%. Excellent healing expected.",
+    qopSeed:{medication:"Cefazolin",dose:"2g IV",route:"IV",frequency:"q8h x24-72h",indication:"Gustilo Type I open fracture"} },
   { grade:"II", color:T.orange, label:"Type II — Moderate Energy",
     wound:"Wound 1–10 cm. Higher energy mechanism than type I.",
     contamination:"Moderate. Contamination present but not extensive.",
@@ -127,7 +129,8 @@ const GUSTILO = [
     management:"IV antibiotics within 1 hour. OR debridement mandatory. Assess for primary vs. delayed closure.",
     coverage:"Primary closure usually feasible after 48–72h delayed primary closure window.",
     antibiotic:"Cefazolin 2 g IV q8h. Add metronidazole if farm/soil contamination.",
-    prognosis:"Infection rate ~2–5%. Good prognosis with adequate debridement." },
+    prognosis:"Infection rate ~2–5%. Good prognosis with adequate debridement.",
+    qopSeed:{medication:"Cefazolin",dose:"2g IV",route:"IV",frequency:"q8h",indication:"Gustilo Type II open fracture"} },
   { grade:"IIIA", color:T.orange, label:"Type IIIA — Severe, Adequate Coverage",
     wound:"Wound > 10 cm OR high energy mechanism (gunshot, MVA). Extensive soft tissue injury.",
     contamination:"Heavy contamination common.",
@@ -778,6 +781,7 @@ function Bullet({ text, color }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function OrthoHub() {
   const navigate = useNavigate();
+  const { activeOrder, openOrder, closeOrder } = useQuickOrder();
   const [tab,        setTab]       = useState("splints");
   const [shGrade,    setShGrade]   = useState("I");
   const [gustGrade,  setGustGrade] = useState("I");
@@ -946,7 +950,10 @@ export default function OrthoHub() {
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                           <div style={{...glass,padding:"12px 14px",borderLeft:`3px solid ${T.teal}`}}>
                             <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:T.teal,fontWeight:600,letterSpacing:1,marginBottom:6}}>ANTIBIOTIC REGIMEN</div>
-                            <div style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.txt,lineHeight:1.6}}>{activeGust.antibiotic}</div>
+                            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                              <div style={{fontFamily:"JetBrains Mono",fontSize:11,color:T.txt,lineHeight:1.6,flex:1}}>{activeGust.antibiotic}</div>
+                              {activeGust.qopSeed && <QuickOrderButton seed={activeGust.qopSeed} onOpen={openOrder} size='sm' />}
+                            </div>
                           </div>
                           <div style={{...glass,padding:"12px 14px",borderLeft:`3px solid ${activeGust.color}`}}>
                             <div style={{fontFamily:"JetBrains Mono",fontSize:8,color:activeGust.color,fontWeight:600,letterSpacing:1,marginBottom:6}}>PROGNOSIS</div>
@@ -1042,6 +1049,9 @@ export default function OrthoHub() {
 
       </div>
       </div>
+      {activeOrder && (
+        <QuickOrderPanel orderSeed={activeOrder} patientContext={{}} hubName='OrthoHub' onClose={closeOrder} C='dark' />
+      )}
     </div>
   );
 }

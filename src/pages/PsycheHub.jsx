@@ -16,6 +16,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
@@ -108,7 +109,7 @@ function Check({ label, sub, checked, onToggle, color }) {
 // TAB 1 — AGITATION PROTOCOL
 // ACEP October 2023 Level B: droperidol + midazolam first-line
 // ═══════════════════════════════════════════════════════════════════════════
-function AgitationTab() {
+function AgitationTab({ onOpenOrder }) {
   const [stage, setStage] = useState("initial");
 
   return (
@@ -180,16 +181,19 @@ function AgitationTab() {
             Oral preferred over IM when safe.
           </div>
           {[
-            { drug:"Lorazepam", dose:"1–2 mg PO/SL", note:"Benzodiazepine — anxiety/withdrawal-driven agitation" },
-            { drug:"Olanzapine (Zyprexa)", dose:"5–10 mg PO (wafer preferred)", note:"Atypical antipsychotic — psychosis-driven agitation. Avoid IM if oral accepted." },
-            { drug:"Quetiapine (Seroquel)", dose:"25–100 mg PO", note:"Lower EPS risk — useful in elderly or dementia. Slower onset." },
-            { drug:"Haloperidol", dose:"2.5–5 mg PO", note:"Classic — effective, high EPS risk. Avoid in Parkinson's or Lewy body dementia." },
+            { drug:"Lorazepam", dose:"1–2 mg PO/SL", note:"Benzodiazepine — anxiety/withdrawal-driven agitation", qopSeed:{medication:"Lorazepam",dose:"1-2mg",route:"PO/SL",frequency:"once PRN",indication:"Mild agitation"} },
+            { drug:"Olanzapine (Zyprexa)", dose:"5–10 mg PO (wafer preferred)", note:"Atypical antipsychotic — psychosis-driven agitation. Avoid IM if oral accepted.", qopSeed:{medication:"Olanzapine",dose:"5-10mg",route:"PO",frequency:"once",indication:"Mild agitation — psychosis-driven"} },
+            { drug:"Quetiapine (Seroquel)", dose:"25–100 mg PO", note:"Lower EPS risk — useful in elderly or dementia. Slower onset.", qopSeed:{medication:"Quetiapine",dose:"25-100mg",route:"PO",frequency:"once",indication:"Mild agitation — elderly or dementia"} },
+            { drug:"Haloperidol", dose:"2.5–5 mg PO", note:"Classic — effective, high EPS risk. Avoid in Parkinson's or Lewy body dementia.", qopSeed:{medication:"Haloperidol",dose:"2.5-5mg",route:"PO",frequency:"once",indication:"Mild agitation"} },
           ].map((d, i) => (
             <div key={i} style={{ padding:"8px 10px", borderRadius:8, marginBottom:6,
               background:"rgba(245,200,66,0.06)",
               border:"1px solid rgba(245,200,66,0.22)" }}>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
-                fontSize:12, color:T.gold, marginBottom:2 }}>{d.drug} — {d.dose}</div>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:2 }}>
+                <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+                  fontSize:12, color:T.gold }}>{d.drug} — {d.dose}</div>
+                <QuickOrderButton seed={d.qopSeed} onOpen={onOpenOrder} size='sm' />
+              </div>
               <div style={{ fontFamily:"'DM Sans',sans-serif",
                 fontSize:10.5, color:T.txt4 }}>{d.note}</div>
             </div>
@@ -644,6 +648,7 @@ function SyndromesTab() {
 // ═══════════════════════════════════════════════════════════════════════════
 export default function PsychHub({ embedded = false }) {
   const navigate = useNavigate();
+  const { activeOrder, openOrder, closeOrder } = useQuickOrder();
   const [tab, setTab] = useState("agitation");
   return (
     <div style={{ display:"flex", minHeight:"100vh",
@@ -671,7 +676,7 @@ export default function PsychHub({ embedded = false }) {
             </button>
           ))}
         </div>
-        {tab === "agitation" && <AgitationTab />}
+        {tab === "agitation" && <AgitationTab onOpenOrder={openOrder} />}
         {tab === "sihi"      && <SIHITab />}
         {tab === "ciwa"      && <CIWATab />}
         {tab === "syndromes" && <SyndromesTab />}
@@ -685,6 +690,9 @@ export default function PsychHub({ embedded = false }) {
         )}
       </div>
       </div>
+      {activeOrder && (
+        <QuickOrderPanel orderSeed={activeOrder} patientContext={{}} hubName='PsychHub' onClose={closeOrder} C='dark' />
+      )}
     </div>
   );
 }

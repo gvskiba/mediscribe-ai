@@ -4,6 +4,7 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { InvokeLLM } from "@/integrations/Core";
+import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
@@ -1215,6 +1216,7 @@ function CalculateTab({ globalWeight, setGlobalWeight }) {
 
 // ─── MAIN EXPORT ──────────────────────────────────────────────────────────────
 export default function ToxicologyHub({ embedded = false, onBack }) {
+  const { activeOrder, openOrder, closeOrder } = useQuickOrder();
   const [tab,            setTab]           = useState("search");
   const [query,          setQuery]         = useState("");
   const [detail,         setDetail]        = useState(null);
@@ -1426,7 +1428,10 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
                           style={{ padding:"12px 14px",borderRadius:10,cursor:"pointer",border:"1px solid rgba(26,53,85,0.5)",borderLeft:`3px solid ${a.color}`,background:`linear-gradient(135deg,${a.color}0e,rgba(8,22,40,0.85))`,transition:"all .15s" }}
                           onMouseEnter={e => { e.currentTarget.style.borderColor=a.color+"55"; e.currentTarget.style.boxShadow=`0 0 16px ${a.color}22`; }}
                           onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(26,53,85,0.5)"; e.currentTarget.style.boxShadow="none"; }}>
-                          <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:13,color:a.color,marginBottom:3 }}>{a.antidote}</div>
+                          <div style={{ display:"flex",alignItems:"center",gap:7,marginBottom:3 }}>
+                            <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:13,color:a.color }}>{a.antidote}</div>
+                            <QuickOrderButton seed={{medication:a.antidote,dose:a.quickDose?.split('—')[0]?.trim()||'',route:a.route||'IV',indication:a.toxin}} onOpen={openOrder} size='sm' />
+                          </div>
                           {/* Condition treated — visible on every quick access card */}
                           <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2,fontWeight:500,marginBottom:6,lineHeight:1.35 }}>{a.toxin}</div>
                           {wStr ? (
@@ -1555,6 +1560,9 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
           notStocked={notStocked}
           toggleNotStocked={toggleNotStocked}
         />
+      )}
+      {activeOrder && (
+        <QuickOrderPanel orderSeed={activeOrder} patientContext={{weight:globalWeight}} hubName='ToxicologyHub' onClose={closeOrder} C='dark' />
       )}
     </div>
   );

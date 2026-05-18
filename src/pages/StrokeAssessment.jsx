@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 const StrokeQualityLog = base44.entities.StrokeQualityLog;
@@ -286,14 +287,14 @@ const EXCL_REL=[
 const TX_FLAT=[...INCL_ITEMS.map((text,i)=>({section:"incl",idx:i,text})),...EXCL_ABS.map((text,i)=>({section:"abs",idx:i,text})),...EXCL_REL.map((text,i)=>({section:"rel",idx:i,text}))];
 const SEC_META={incl:{label:"Inclusion — all must be met",color:"#4ade80"},abs:{label:"Absolute Exclusions — none present",color:"#f87171"},rel:{label:"Relative Exclusions — 3-4.5h window",color:"#fbbf24"}};
 const BP_TABLE=[
-  {condition:"Pre-tPA — BP > 185/110",target:"Labetalol 10-20 mg IV x1-2 or Nicardipine 5 mg/hr",goal:"< 185/110"},
-  {condition:"Post-tPA (first 24h)",target:"Labetalol or Nicardipine per protocol",goal:"< 180/105"},
-  {condition:"Ischemic — no tPA",target:"Permissive — treat only if > 220/120",goal:"< 220/120"},
-  {condition:"Hemorrhagic transform",target:"Aggressive reduction",goal:"SBP < 140"},
-  {condition:"Pre-thrombectomy",target:"Maintain, avoid hypotension",goal:"SBP >= 140"},
+  {condition:"Pre-tPA — BP > 185/110",target:"Labetalol 10-20 mg IV x1-2 or Nicardipine 5 mg/hr",goal:"< 185/110",qopSeed:{medication:"Labetalol",dose:"10-20mg IV x1-2",route:"IV",frequency:"PRN",indication:"Pre-tPA BP control — target < 185/110"}},
+  {condition:"Post-tPA (first 24h)",target:"Labetalol or Nicardipine per protocol",goal:"< 180/105",qopSeed:{medication:"Nicardipine",dose:"5 mg/hr",route:"IV infusion",frequency:"titrate",indication:"Post-tPA BP control — target < 180/105"}},
+  {condition:"Ischemic — no tPA",target:"Permissive — treat only if > 220/120",goal:"< 220/120",qopSeed:{medication:"Labetalol",dose:"10-20mg IV",route:"IV",frequency:"PRN",indication:"Ischemic stroke BP — treat only if >220/120"}},
+  {condition:"Hemorrhagic transform",target:"Aggressive reduction",goal:"SBP < 140",qopSeed:{medication:"Nicardipine",dose:"5 mg/hr",route:"IV infusion",frequency:"titrate to SBP <140",indication:"Hemorrhagic transformation"}},
+  {condition:"Pre-thrombectomy",target:"Maintain, avoid hypotension",goal:"SBP >= 140",qopSeed:null},
 ];
 
-function TreatmentTab({demo,vitals,nihss,txChecked,setTxChecked,weight,setWeight}){
+function TreatmentTab({demo,vitals,nihss,txChecked,setTxChecked,weight,setWeight,onOpenOrder}){
   const[focusIdx,setFocusIdx]=useState(0);
   const[inputActive,setInputActive]=useState(false);
   const checked=txChecked;const setChecked=setTxChecked;
@@ -383,7 +384,12 @@ function TreatmentTab({demo,vitals,nihss,txChecked,setTxChecked,weight,setWeight
           <thead><tr>{["Scenario","Agent","Target"].map(h=>(<th key={h} style={{color:C.dim,fontWeight:600,padding:"5px 10px",borderBottom:"1px solid rgba(255,255,255,0.07)",textAlign:"left"}}>{h}</th>))}</tr></thead>
           <tbody>{BP_TABLE.map((r,i)=>(<tr key={i}>
             <td style={{padding:"7px 10px",color:C.textSub,borderBottom:"1px solid rgba(255,255,255,0.04)"}}>{r.condition}</td>
-            <td style={{padding:"7px 10px",color:"#e2e8f0",fontFamily:"'JetBrains Mono',monospace",fontSize:11,borderBottom:"1px solid rgba(255,255,255,0.04)"}}>{r.target}</td>
+            <td style={{padding:"7px 10px",color:"#e2e8f0",fontFamily:"'JetBrains Mono',monospace",fontSize:11,borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span>{r.target}</span>
+                {r.qopSeed && onOpenOrder && <QuickOrderButton seed={r.qopSeed} onOpen={onOpenOrder} size='sm' />}
+              </div>
+            </td>
             <td style={{padding:"7px 10px",color:"#fbbf24",fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,borderBottom:"1px solid rgba(255,255,255,0.04)"}}>{r.goal}</td>
           </tr>))}</tbody>
         </table>
@@ -652,6 +658,7 @@ const TABS=[{label:"NIHSS"},{label:"Workup"},{label:"Treatment"},{label:"Neuro C
 
 export default function StrokeHub({embedded=false,onBack,demo={},vitals={},cc={},nihssInit={}}){
   const[tab,setTab]=useState(0);
+  const { activeOrder, openOrder, closeOrder } = useQuickOrder();
   const[nihss,setNihss]=useState(nihssInit);
   const[workupChecked,setWorkupChecked]=useState({});
   const[txChecked,setTxChecked]=useState({});
@@ -746,7 +753,7 @@ export default function StrokeHub({embedded=false,onBack,demo={},vitals={},cc={}
         {tab===0&&<NIHSSTab nihss={nihss} setNihss={setNihss}/>}
         {tab===1&&<WorkupTab checked={workupChecked} setChecked={setWorkupChecked}/>}
         {tab===2&&<TreatmentTab demo={demo} vitals={vitals} nihss={nihss}
-          txChecked={txChecked} setTxChecked={setTxChecked} weight={weight} setWeight={setWeight}/>}
+          txChecked={txChecked} setTxChecked={setTxChecked} weight={weight} setWeight={setWeight} onOpenOrder={openOrder}/>}
         {tab===3&&<NeuroConsultTab demo={demo} vitals={vitals} nihss={nihss}
           consultChecked={consultChecked} setConsultChecked={setConsultChecked}
           times={times} setTimes={setTimes} notes={notes} setNotes={setNotes}
@@ -754,6 +761,9 @@ export default function StrokeHub({embedded=false,onBack,demo={},vitals={},cc={}
         {tab===4&&<PrintCardsTab/>}
       </div>
     </div>
+    {activeOrder && (
+      <QuickOrderPanel orderSeed={activeOrder} patientContext={{}} hubName='StrokeHub' onClose={closeOrder} C='dark' />
+    )}
     </div>
   );
 }

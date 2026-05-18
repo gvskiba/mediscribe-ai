@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
+import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
 
 const P = {
   bg:"#0a1628",glass:"rgba(255,255,255,0.055)",gb:"rgba(0,188,212,0.18)",
@@ -376,15 +377,15 @@ function SodiumTab({ctx,onCritical,C=P}){
 
 // ── HYPERKALEMIA TAB ──────────────────────────────────────────────────────────
 const TX=[
-  {order:1,name:"Calcium Gluconate",mech:"Membrane stabilization",color:"#ff5252",thresh:5.5,when:"EKG changes or K ≥6.5",onset:"1–3 min",dur:"30–60 min",effect:"No K lowering — cardiac protection only",doseShort:"Ca gluconate 1g (10 mL of 10%) IV over 2–3 min. Repeat ×2 q5 min PRN.",note:"Digoxin: infuse over 20–30 min. CaCl2 = 3× elemental Ca — cardiac arrest only.",orderText:"Calcium gluconate 1 g (10 mL of 10%) IV over 2–3 min. May repeat ×2 q5 min. Indication: Hyperkalemia — cardiac membrane stabilization."},
-  {order:2,name:"Regular Insulin + D50W",mech:"Transcellular shift",color:"#ffab40",thresh:5.5,when:"K ≥5.5",onset:"15–30 min",dur:"4–6 hr",effect:"↓ K 0.5–1.5 mEq/L",doseShort:"Insulin 10u IV push + D50W 25g (1 amp). Omit D50 if glucose >250.",note:"Monitor glucose q1h ×4h. Peak hypoglycemia 1–4h. Consider D10W infusion after.",orderText:"Regular insulin 10 units IV push + D50W 25 g IV. Omit dextrose if glucose >250. Monitor glucose q1h ×4h. Indication: Hyperkalemia — transcellular shift."},
-  {order:3,name:"Albuterol 20mg Neb",mech:"Transcellular shift (β2)",color:"#ffab40",thresh:5.5,when:"K ≥5.5 — additive to insulin",onset:"20–30 min",dur:"2–4 hr",effect:"↓ K 0.5–1.0 mEq/L (additive)",doseShort:"Albuterol 20mg neb. (8× 2.5 mg vials — standard 2.5 mg is subtherapeutic.)",note:"Tachycardia expected. Caution in ischemic HD or ACS. Less effective on beta-blocker.",orderText:"Albuterol 20 mg (8× 2.5 mg vials) via nebulizer. Standard 2.5 mg dose is subtherapeutic for hyperkalemia. Indication: Hyperkalemia adjunct — transcellular shift."},
+  {order:1,name:"Calcium Gluconate",mech:"Membrane stabilization",color:"#ff5252",thresh:5.5,when:"EKG changes or K ≥6.5",onset:"1–3 min",dur:"30–60 min",effect:"No K lowering — cardiac protection only",doseShort:"Ca gluconate 1g (10 mL of 10%) IV over 2–3 min. Repeat ×2 q5 min PRN.",note:"Digoxin: infuse over 20–30 min. CaCl2 = 3× elemental Ca — cardiac arrest only.",orderText:"Calcium gluconate 1 g (10 mL of 10%) IV over 2–3 min. May repeat ×2 q5 min. Indication: Hyperkalemia — cardiac membrane stabilization.",qopSeed:{medication:"Calcium Gluconate",dose:"1g (10 mL 10%) IV",route:"IV",frequency:"over 2-3 min, repeat x2 q5min PRN",indication:"Hyperkalemia — membrane stabilization"}},
+  {order:2,name:"Regular Insulin + D50W",mech:"Transcellular shift",color:"#ffab40",thresh:5.5,when:"K ≥5.5",onset:"15–30 min",dur:"4–6 hr",effect:"↓ K 0.5–1.5 mEq/L",doseShort:"Insulin 10u IV push + D50W 25g (1 amp). Omit D50 if glucose >250.",note:"Monitor glucose q1h ×4h. Peak hypoglycemia 1–4h. Consider D10W infusion after.",orderText:"Regular insulin 10 units IV push + D50W 25 g IV. Omit dextrose if glucose >250. Monitor glucose q1h ×4h. Indication: Hyperkalemia — transcellular shift.",qopSeed:{medication:"Regular Insulin + D50W",dose:"Insulin 10 units IV + D50W 25g",route:"IV push",frequency:"once",indication:"Hyperkalemia — transcellular shift"}},
+  {order:3,name:"Albuterol 20mg Neb",mech:"Transcellular shift (β2)",color:"#ffab40",thresh:5.5,when:"K ≥5.5 — additive to insulin",onset:"20–30 min",dur:"2–4 hr",effect:"↓ K 0.5–1.0 mEq/L (additive)",doseShort:"Albuterol 20mg neb. (8× 2.5 mg vials — standard 2.5 mg is subtherapeutic.)",note:"Tachycardia expected. Caution in ischemic HD or ACS. Less effective on beta-blocker.",orderText:"Albuterol 20 mg (8× 2.5 mg vials) via nebulizer. Standard 2.5 mg dose is subtherapeutic for hyperkalemia. Indication: Hyperkalemia adjunct — transcellular shift.",qopSeed:{medication:"Albuterol",dose:"20mg (8x 2.5mg vials)",route:"nebulizer",frequency:"once",indication:"Hyperkalemia — transcellular shift adjunct"}},
   {order:4,name:"Sodium Bicarbonate",mech:"Transcellular shift (alkalosis)",color:"#00bcd4",thresh:5.5,when:"Concurrent metabolic acidosis",onset:"30–60 min",dur:"2 hr",effect:"Modest — most effective with MetAcid",doseShort:"NaHCO3 50–100 mEq (1–2 amps) IV over 5–10 min.",note:"Minimal effect at normal pH. Do NOT co-administer with Ca in same IV line.",orderText:"Sodium bicarbonate 50–100 mEq (1–2 amps) IV over 5–10 min. Indication: Hyperkalemia with concurrent metabolic acidosis. Do not co-administer with calcium."},
   {order:5,name:"Furosemide",mech:"Renal elimination",color:"#69f0ae",thresh:5.5,when:"Functioning kidneys, volume-replete",onset:"15–30 min",dur:"6 hr",effect:"↑ urinary K excretion",doseShort:"Furosemide 40–80 mg IV.",note:"Ineffective in oligo/anuria. Higher dose if on chronic loop diuretics.",orderText:"Furosemide 40–80 mg IV. Indication: Hyperkalemia — renal potassium elimination. Verify functioning kidneys before administering."},
   {order:6,name:"Patiromer / SZC (Lokelma)",mech:"GI cation exchange",color:"#69f0ae",thresh:5.0,when:"Subacute / discharge planning",onset:"2–6h",dur:"Ongoing",effect:"↓ K 0.5–1.0 mEq/L over hours–days",doseShort:"Patiromer 8.4g PO daily OR SZC 10g PO TID ×48h then 5–10g daily.",note:"Not for acute emergencies. Avoid Kayexalate — bowel necrosis risk.",orderText:"Patiromer (Veltassa) 8.4 g PO daily with food. OR SZC (Lokelma) 10 g PO TID ×48h then 5–10 g PO daily. Indication: Maintenance hyperkalemia."},
   {order:7,name:"Emergent Hemodialysis",mech:"Definitive elimination",color:"#ff5252",thresh:6.5,when:"Refractory / AKI / EKG instability",onset:"During treatment",dur:"Session-dependent",effect:"↓ K 1–2 mEq/L per hr HD",doseShort:"HD preferred; CRRT if hemodynamically unstable. Nephrology STAT.",note:"K ≥6.5 refractory to meds, AKI/CKD, life-threatening arrhythmia.",orderText:"Emergent hemodialysis. Nephrology STAT. Indication: Hyperkalemia refractory to medical management [K ≥6.5 / AKI / EKG instability]."},
 ];
-function HyperkalemiaTab({ctx,onCritical,C=P}){
+function HyperkalemiaTab({ctx,onCritical,C=P,onOpenOrder}){
   const[K,setK]=useState(""),[qt,setQt]=useState(""),[hr,setHr]=useState(""),[sexQT,setSexQT]=useState("m"),[ind,setInd]=useState("metAcid"),[wt,setWt]=useState(""),[hco3S,setHco3S]=useState("");
   const[kHist,setKHist]=useState([]);
   const kN=parseFloat(K)||0;const eWt=wt||ctx.weight;
@@ -405,6 +406,7 @@ function HyperkalemiaTab({ctx,onCritical,C=P}){
             <span style={{fontFamily:MO,fontSize:10,color:t.color,border:`1px solid ${t.color}`,borderRadius:"50%",width:20,height:20,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{t.order}</span>
             <span style={{fontFamily:PL,fontSize:15,color:C.txt,flex:1}}>{t.name}</span>
             <Pill text={t.mech} color={t.color} C={C}/>
+            {t.qopSeed && onOpenOrder && <QuickOrderButton seed={t.qopSeed} onOpen={onOpenOrder} size='sm' />}
             <CopyBtn text={t.orderText} C={C}/>
           </div>
           <div style={{fontFamily:MO,fontSize:13,color:t.color,padding:"8px 12px",background:`${t.color}10`,borderRadius:6,marginBottom:8,lineHeight:1.5}}>{t.doseShort}</div>
@@ -459,6 +461,7 @@ export default function ElectrolyteAcidBaseHub(){
   const[ctx,setCtx]=useState({weight:"",sex:"m",duration:"chronic"});
   const[criticals,setCriticals]=useState({K:null,pH:null,Na:null,Ca:null});
   const[print,setPrint]=useState(false);
+  const { activeOrder, openOrder, closeOrder } = useQuickOrder();
   const C=print?PR:P;
   const onCritical=useCallback(vals=>setCriticals(prev=>({...prev,...vals})),[]);
   const TABS=[{id:"abg",label:"ABG / VBG + Osm"},{id:"electrolytes",label:"Electrolytes"},{id:"sodium",label:"Sodium"},{id:"hyperkalemia",label:"HyperK + Tools"},{id:"tls",label:"Tumor Lysis"}];
@@ -490,9 +493,12 @@ export default function ElectrolyteAcidBaseHub(){
         {tab==="abg"&&<ABGTab onCritical={onCritical} C={C}/>}
         {tab==="electrolytes"&&<ElectrolytesTab ctx={ctx} onCritical={onCritical} C={C}/>}
         {tab==="sodium"&&<SodiumTab ctx={ctx} onCritical={onCritical} C={C}/>}
-        {tab==="hyperkalemia"&&<HyperkalemiaTab ctx={ctx} onCritical={onCritical} C={C}/>}
+        {tab==="hyperkalemia"&&<HyperkalemiaTab ctx={ctx} onCritical={onCritical} C={C} onOpenOrder={openOrder}/>}
         {tab==="tls"&&<TLSTab ctx={ctx} C={C}/>}
       </div>
+      {activeOrder && (
+        <QuickOrderPanel orderSeed={activeOrder} patientContext={{weight:ctx.weight}} hubName='ElectrolyteHub' onClose={closeOrder} C='dark' />
+      )}
     </div>
   );
 }

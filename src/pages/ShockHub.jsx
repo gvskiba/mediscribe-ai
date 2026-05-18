@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
+import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 
@@ -324,6 +325,7 @@ function PressureGauge({ val, max, color, label }) {
 
 // ── Main Component ────────────────────────────────────────────────
 export default function ShockHub() {
+  const { activeOrder, openOrder, closeOrder } = useQuickOrder();
   const [tab,         setTab]         = useState("profiles");
   const [expanded,    setExpanded]    = useState(null);
   const [shockType,   setShockType]   = useState("distributive");
@@ -562,6 +564,7 @@ export default function ShockHub() {
                         <div style={{flex:1}}>
                           <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:3}}>
                             <span style={{fontFamily:"Playfair Display",fontSize:15,fontWeight:700,color:drug.color}}>{drug.name}</span>
+                            <QuickOrderButton seed={{medication:drug.name,dose:drug.startDose,route:"IV infusion",frequency:"continuous titration",indication:"Shock — vasopressor/inotrope"}} onOpen={openOrder} size='sm' />
                             <span style={{fontFamily:"JetBrains Mono",fontSize:8,fontWeight:700,color:drug.badgeColor,background:`${drug.badgeColor}18`,border:`1px solid ${drug.badgeColor}44`,padding:"1px 6px",borderRadius:4,textTransform:"uppercase",letterSpacing:0.8}}>{drug.badge}</span>
                           </div>
                           <div style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4}}>{drug.class} · {drug.receptors}</div>
@@ -951,6 +954,9 @@ export default function ShockHub() {
         </div>
       </div>
       </div>
+      {activeOrder && (
+        <QuickOrderPanel orderSeed={activeOrder} patientContext={{weight}} hubName='ShockHub' onClose={closeOrder} C='dark' />
+      )}
     </div>
   );
 }

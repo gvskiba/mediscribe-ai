@@ -13,6 +13,7 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
@@ -370,7 +371,7 @@ function CharSelector({ selections, onToggle, freeText, onFreeText, fitzpatrick,
 }
 
 // ─── Rec 5 — LIFE-THREATENING ALERT (enhanced with NF protocol + RMSF) ────────
-function LifeThreatAlert({ conditions, rmsfTrigger }) {
+function LifeThreatAlert({ conditions, rmsfTrigger, onOpenOrder }) {
   if (!conditions?.length && !rmsfTrigger) return null;
   return (
     <div className="d2-fade" style={{ borderRadius:10, marginBottom:12,
@@ -401,11 +402,18 @@ function LifeThreatAlert({ conditions, rmsfTrigger }) {
           color:"var(--derm-gold)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:5 }}>
           NF Antibiotic Protocol — 2024 Canadian ED Guidelines (Triple Therapy)
         </div>
-        <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:5 }}>
-          {["Piperacillin-tazobactam","Clindamycin","Vancomycin"].map(drug => (
-            <span key={drug} style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700,
-              color:"var(--derm-gold)", background:"rgba(245,200,66,.1)",
-              border:"1px solid rgba(245,200,66,.3)", borderRadius:6, padding:"3px 10px" }}>{drug}</span>
+        <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:5, alignItems:"center" }}>
+          {[
+            {name:"Piperacillin-tazobactam",qop:{medication:"Piperacillin-tazobactam",dose:"4.5g IV",route:"IV",frequency:"q6h",indication:"NF — broad-spectrum coverage"}},
+            {name:"Clindamycin",qop:{medication:"Clindamycin",dose:"900mg IV",route:"IV",frequency:"q8h",indication:"NF — anti-toxin coverage"}},
+            {name:"Vancomycin",qop:{medication:"Vancomycin",dose:"25-30 mg/kg IV load",route:"IV",frequency:"per AUC dosing",indication:"NF — MRSA coverage"}},
+          ].map(d => (
+            <div key={d.name} style={{display:"flex",alignItems:"center",gap:5}}>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700,
+                color:"var(--derm-gold)", background:"rgba(245,200,66,.1)",
+                border:"1px solid rgba(245,200,66,.3)", borderRadius:6, padding:"3px 10px" }}>{d.name}</span>
+              {onOpenOrder && <QuickOrderButton seed={d.qop} onOpen={onOpenOrder} size='sm' />}
+            </div>
           ))}
         </div>
         <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--derm-txt4)",
@@ -818,6 +826,7 @@ export default function DermatologyHub({
   demo, vitals, cc, pmhSelected, medications,
 }) {
   const navigate = useNavigate();
+  const { activeOrder, openOrder, closeOrder } = useQuickOrder();
   const [selections,   setSelections]   = useState({});
   const [freeText,     setFreeText]     = useState("");
   const [fitzpatrick,  setFitzpatrick]  = useState(null);
@@ -1145,7 +1154,7 @@ export default function DermatologyHub({
           {result && (
             <div ref={resultsRef}>
               {showABCDE && <ABCDEPanel />}
-              <LifeThreatAlert conditions={result.life_threatening} rmsfTrigger={rmsfTrigger} />
+              <LifeThreatAlert conditions={result.life_threatening} rmsfTrigger={rmsfTrigger} onOpenOrder={openOrder} />
               {showBSA && (
                 <div style={{ marginBottom:12 }}>
                   <BSACalculator selected={bsaSelected} onToggle={setBsaSelected} />
@@ -1269,6 +1278,9 @@ export default function DermatologyHub({
         )}
       </div>
       </div>
+      {activeOrder && (
+        <QuickOrderPanel orderSeed={activeOrder} patientContext={{}} hubName='DermatologyHub' onClose={closeOrder} C='dark' />
+      )}
     </div>
   );
 }

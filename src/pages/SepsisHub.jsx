@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
@@ -211,11 +212,14 @@ const ABX_OPTS = [
 // ── Vasopressor Data ──────────────────────────────────────────────────────────
 const PRESSOR_STEPS = [
   {step:1,drug:"NOREPINEPHRINE",dose:"0.05 – 0.5 mcg/kg/min",color:"#ff6060",bg:"rgba(255,96,96,0.10)",
-   trigger:"1st line — MAP < 65 despite adequate fluids",titrate:"Titrate to MAP ≥ 65 mmHg"},
+   trigger:"1st line — MAP < 65 despite adequate fluids",titrate:"Titrate to MAP ≥ 65 mmHg",
+   qopSeed:{medication:"Norepinephrine",dose:"0.05-0.5 mcg/kg/min",route:"IV infusion",frequency:"continuous",indication:"Septic shock — vasopressor support"}},
   {step:2,drug:"+ VASOPRESSIN",dose:"0.03 – 0.04 U/min (fixed dose)",color:"#f5c842",bg:"rgba(245,200,66,0.10)",
-   trigger:"Add if NE > 0.25 mcg/kg/min",titrate:"Recheck MAP 15 – 30 min before adding step 3"},
+   trigger:"Add if NE > 0.25 mcg/kg/min",titrate:"Recheck MAP 15 – 30 min before adding step 3",
+   qopSeed:{medication:"Vasopressin",dose:"0.03 units/min fixed",route:"IV infusion",frequency:"continuous",indication:"Septic shock — adjunct vasopressor"}},
   {step:3,drug:"+ EPINEPHRINE",dose:"0.01 – 0.5 mcg/kg/min",color:"#ff9f43",bg:"rgba(255,159,67,0.10)",
-   trigger:"Add if MAP falling on dual-agent therapy",titrate:"Alt: Angiotensin II 20 – 200 ng/kg/min"},
+   trigger:"Add if MAP falling on dual-agent therapy",titrate:"Alt: Angiotensin II 20 – 200 ng/kg/min",
+   qopSeed:{medication:"Epinephrine",dose:"0.01-0.5 mcg/kg/min",route:"IV infusion",frequency:"continuous",indication:"Septic shock — refractory vasopressor"}},
 ];
 
 // ── Tracker Utilities ─────────────────────────────────────────────────────────
@@ -228,6 +232,7 @@ const Spin    = () => <span style={{display:"inline-block",width:11,height:11,bo
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function SepsisHub({allergies=[],medications=[],pmhSelected=[],vitals={},cc=""}) {
   const navigate = useNavigate();
+  const { activeOrder, openOrder, closeOrder } = useQuickOrder();
 
   // Tab & shared UI
   const [tab,      setTab]     = useState(0);
@@ -825,14 +830,17 @@ export default function SepsisHub({allergies=[],medications=[],pmhSelected=[],vi
         <div style={{fontSize:11.5,color:T.mut}}>MAP &lt; 65 despite adequate IVF resuscitation · Tap each step to mark active</div>
       </div>
       <div style={sL()}>Vasopressor Ladder</div>
-      {PRESSOR_STEPS.map(({step,drug,dose,color,bg,trigger,titrate})=>(
+      {PRESSOR_STEPS.map(({step,drug,dose,color,bg,trigger,titrate,qopSeed})=>(
         <div key={step}
           style={{...gl({padding:"13px 15px",marginBottom:9,border:`1.5px solid ${vasStep>=step?color+"66":T.bdr}`,background:vasStep>=step?bg:T.card,cursor:"pointer",transition:"all .2s"})}}
           onClick={()=>setVasStep(step)}>
           <div style={{display:"flex",gap:12,alignItems:"center"}}>
             <div style={{width:32,height:32,borderRadius:"50%",background:vasStep>=step?`${color}28`:T.card,border:`2.5px solid ${vasStep>=step?color:T.bdr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:vasStep>=step?color:T.dim,flexShrink:0,transition:"all .2s"}}>{step}</div>
             <div style={{flex:1}}>
-              <div style={{fontFamily:T.mono,fontSize:13,fontWeight:700,color:vasStep>=step?color:T.mut,letterSpacing:"0.05em",transition:"color .2s"}}>{drug}</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{fontFamily:T.mono,fontSize:13,fontWeight:700,color:vasStep>=step?color:T.mut,letterSpacing:"0.05em",transition:"color .2s"}}>{drug}</div>
+                {vasStep>=step && qopSeed && <QuickOrderButton seed={qopSeed} onOpen={openOrder} size='sm' />}
+              </div>
               <div style={{fontFamily:T.mono,fontSize:12,color:vasStep>=step?T.txt:T.dim,marginTop:2,transition:"color .2s"}}>{dose}</div>
             </div>
             {vasStep<step && <span style={{fontSize:10,color:T.dim}}>tap to activate</span>}
@@ -848,12 +856,18 @@ export default function SepsisHub({allergies=[],medications=[],pmhSelected=[],vi
       <div style={sL()}>Add-On Agents</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:14}}>
         <div style={{...gl({padding:"12px 14px",background:"rgba(245,200,66,0.07)",border:"1px solid rgba(245,200,66,0.3)"})}}>
-          <div style={{fontFamily:T.mono,fontSize:11,fontWeight:700,color:T.gold,marginBottom:4}}>HYDROCORTISONE</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+            <div style={{fontFamily:T.mono,fontSize:11,fontWeight:700,color:T.gold}}>HYDROCORTISONE</div>
+            <QuickOrderButton seed={{medication:"Hydrocortisone",dose:"50mg IV",route:"IV",frequency:"q6h",indication:"Septic shock — relative adrenal insufficiency"}} onOpen={openOrder} size='sm' />
+          </div>
           <div style={{fontFamily:T.mono,fontSize:13,color:T.txt,marginBottom:6}}>50 mg IV q 6h</div>
           <div style={{fontSize:11,color:T.mut,lineHeight:1.5}}>If ≥ 2 pressors &gt; 4h · Relative adrenal insufficiency</div>
         </div>
         <div style={{...gl({padding:"12px 14px",background:"rgba(59,158,255,0.07)",border:"1px solid rgba(59,158,255,0.3)"})}}>
-          <div style={{fontFamily:T.mono,fontSize:11,fontWeight:700,color:T.blue,marginBottom:4}}>DOBUTAMINE</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+            <div style={{fontFamily:T.mono,fontSize:11,fontWeight:700,color:T.blue}}>DOBUTAMINE</div>
+            <QuickOrderButton seed={{medication:"Dobutamine",dose:"2-20 mcg/kg/min",route:"IV infusion",frequency:"continuous",indication:"Septic shock with poor EF / cardiogenic component"}} onOpen={openOrder} size='sm' />
+          </div>
           <div style={{fontFamily:T.mono,fontSize:13,color:T.txt,marginBottom:6}}>2 – 20 mcg/kg/min</div>
           <div style={{fontSize:11,color:T.mut,lineHeight:1.5}}>Cardiogenic shock · Poor EF on POCUS</div>
         </div>
@@ -908,6 +922,9 @@ export default function SepsisHub({allergies=[],medications=[],pmhSelected=[],vi
           </span>
         </div>
       </div>
+      {activeOrder && (
+        <QuickOrderPanel orderSeed={activeOrder} patientContext={{}} hubName='SepsisHub' onClose={closeOrder} C='dark' />
+      )}
     </div>
   );
 }

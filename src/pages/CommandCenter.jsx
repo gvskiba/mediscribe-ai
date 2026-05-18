@@ -431,8 +431,18 @@ function EncounterTimeline({ patient }) {
 
 // ─── PATIENT SUMMARY PANEL ────────────────────────────────────────────────────
 function PatientSummaryPanel({ patient, summary }) {
-  // ── Fallback / mock data (replace with entity fields once schema is extended) ──
-  const vitals = Array.isArray(patient.vitals) ? patient.vitals : [
+  // ── Vitals: entity stores as object {hr, bp, spo2, rr, temp}; convert to display array ──
+  const rawVitals = patient.vitals && typeof patient.vitals === "object" && !Array.isArray(patient.vitals)
+    ? patient.vitals
+    : null;
+
+  const vitals = rawVitals ? [
+    rawVitals.hr   != null && { type:"HR",   value:rawVitals.hr,   unit:"bpm",  low:60,  high:100, ts:"" },
+    rawVitals.bp   != null && { type:"BP",   value:rawVitals.bp,   unit:"mmHg", low:null,high:null, ts:"" },
+    rawVitals.spo2 != null && { type:"SpO2", value:rawVitals.spo2, unit:"%",    low:95,  high:100, ts:"" },
+    rawVitals.rr   != null && { type:"RR",   value:rawVitals.rr,   unit:"/min", low:12,  high:20,  ts:"" },
+    rawVitals.temp != null && { type:"Temp", value:rawVitals.temp, unit:"°F",   low:97,  high:99,  ts:"" },
+  ].filter(Boolean) : [
     { type:"HR",   value:88,       unit:"bpm",  low:60,  high:100, ts:"14:32" },
     { type:"BP",   value:"142/88", unit:"mmHg", low:null,high:null, ts:"14:32" },
     { type:"SpO2", value:97,       unit:"%",    low:95,  high:100, ts:"14:32" },
@@ -564,7 +574,7 @@ function PatientSummaryPanel({ patient, summary }) {
         <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:T.txt4, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:8 }}>
           Last Vitals
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:8 }}>
+        <div style={{ display:"grid", gridTemplateColumns:`repeat(${vitals.length || 6},1fr)`, gap:8 }}>
           {vitals.map((v, i) => {
             const c = v.type === "BP" ? bpColor(v.value) : vitalColor(v);
             const isCrit = c === T.red;

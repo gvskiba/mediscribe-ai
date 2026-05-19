@@ -11,6 +11,7 @@
 //            Ctrl+Space  (while open) — jump focus to weight field
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useVoiceCommand } from "@/lib/useVoiceCommand";
 import {
   MEDICATION_DB, SCENARIOS, IMAGING_DB, LAB_PANELS,
   HUB_LINKS, DRUG_CATEGORIES, calcDose, formatMedOrder,
@@ -685,6 +686,19 @@ export default function CommandKit() {
   const searchRef = useRef(null);
   const weightRef = useRef(null);
 
+  const voice = useVoiceCommand({
+    onOpen:     () => setIsOpen(true),
+    onTab:      (t) => { setActiveTab(t); setSearchQuery(""); },
+    onSearch:   (q) => setSearchQuery(q),
+    onScenario: (id) => setActiveScenario(id),
+    onWeight:   (val) => {
+      setWeightInput(val);
+      setWeightSource("manual");
+      const n = parseFloat(val);
+      setWeightKg(!isNaN(n) && n > 0 ? (weightUnit === "lbs" ? lbsToKg(n) : n) : null);
+    },
+  });
+
   // Re-read patient context from URL every time modal opens
   useEffect(() => {
     if (!isOpen) return;
@@ -837,6 +851,34 @@ export default function CommandKit() {
             onChange={handleWeightChange} onToggle={handleUnitToggle}
             inputRef={weightRef}
           />
+
+          {voice.isSupported && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+              <button
+                onClick={() => voice.listening ? voice.stop() : voice.start()}
+                title={voice.listening ? "Listening… (click to stop)" : "Voice command (say: 'dose morphine', 'guideline HEART', 'sepsis')"}
+                style={{
+                  background: voice.listening ? "rgba(255,68,68,0.15)" : T.glass,
+                  border: "1px solid " + (voice.listening ? "rgba(255,68,68,0.55)" : T.border),
+                  borderRadius: 8, width: 34, height: 34,
+                  cursor: "pointer", display: "flex", alignItems: "center",
+                  justifyContent: "center", fontSize: 16, flexShrink: 0,
+                  boxShadow: voice.listening ? "0 0 10px rgba(255,68,68,0.35)" : "none",
+                  transition: "all 0.15s",
+                }}
+              >
+                {voice.listening ? "🔴" : "🎙️"}
+              </button>
+              {voice.lastCommand && !voice.listening && (
+                <span style={{ fontSize: 8, fontFamily: F.mono, color: T.dim, maxWidth: 80, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {voice.lastCommand}
+                </span>
+              )}
+              {voice.error && (
+                <span style={{ fontSize: 8, fontFamily: F.mono, color: T.panic }}>{voice.error}</span>
+              )}
+            </div>
+          )}
 
           <button onClick={() => setIsOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 18, lineHeight: 1, padding: "0 4px" }}>
             ✕

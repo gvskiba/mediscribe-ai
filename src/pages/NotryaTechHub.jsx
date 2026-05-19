@@ -358,6 +358,30 @@ function BrandSection() {
           </div>
         </div>
       </div>
+
+      {/* CommandKit */}
+      <div className="fr" style={{ background:P.navy2, border:"1px solid rgba(18,204,230,.22)", borderRadius:20, overflow:"hidden", marginTop:22 }}>
+        <div style={{ background:"linear-gradient(135deg,#060C19,#091426)", padding:"48px 32px", display:"flex", alignItems:"center", justifyContent:"center", minHeight:200, position:"relative", overflow:"hidden" }}>
+          <div className="slow-scan" style={{ position:"absolute", inset:0, background:"linear-gradient(90deg,transparent 0%,rgba(18,204,230,.05) 50%,transparent 100%)", width:"40%", pointerEvents:"none" }}/>
+          <img
+            src="https://media.base44.com/images/public/69876015478a19e360c5e3ea/7599c69aa_commandkit_logo_centered.svg"
+            alt="CommandKit logo"
+            style={{ maxHeight:140, maxWidth:"80%", objectFit:"contain", position:"relative", zIndex:1 }}
+          />
+        </div>
+        <div style={{ padding:"24px 28px 28px", borderTop:"1px solid rgba(18,204,230,.15)" }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:3, color:"#12CCE6", textTransform:"uppercase", marginBottom:10 }}>// command layer &middot; keyboard-first overlay</div>
+          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:700, marginBottom:10, letterSpacing:-.5 }}>CommandKit</div>
+          <p style={{ fontSize:14, color:P.t2, lineHeight:1.65, marginBottom:16 }}>
+            The global clinical command overlay for Notrya AI. Lightning-bolt icon with cyan ECG pulse — instantly surfaces drug doses, imaging orders, lab panels, and clinical reference tools via Ctrl+Space or voice command. Zero keyboard, zero mouse, zero delay.
+          </p>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            {["Navy #060C19","Cyan #12CCE6","ECG Gold #F0B429"].map(c => (
+              <span key={c} style={{ background:"rgba(18,204,230,.1)", border:"1px solid rgba(18,204,230,.25)", color:"#12CCE6", fontSize:11, letterSpacing:1, padding:"5px 14px", borderRadius:100 }}>{c}</span>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

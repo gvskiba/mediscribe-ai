@@ -150,6 +150,7 @@ import CommandCenter from '@/pages/CommandCenter';
 import FollowUpHub from '@/pages/FollowUpHub';
 import PatientEncounter from '@/pages/PatientEncounter';
 import NotryaSplash from '@/pages/NotryaSplash';
+import CommandKit from '@/pages/CommandKit';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
@@ -382,6 +383,7 @@ const AuthenticatedApp = () => {
         <Route path="/tech-hub" element={<NotryaTechHub />} />
         <Route path="/follow-up-hub" element={<FollowUpHub />} />
         <Route path="/EdNoteGenerator"  element={<QuickNote />} />
+        <Route path="/CommandKit"       element={<CommandKit />} />
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>

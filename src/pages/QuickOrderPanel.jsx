@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { MEDICATION_DB, calcDose, formatMedOrder, isPediatric } from '@/lib/commandkit_data';
 
 const T = {
   navyObsidian: '#060C19',
@@ -198,14 +199,44 @@ function LoadingDots() {
   );
 }
 
+// ─── COMMANDKIT LOOKUP ───────────────────────────────────────────────────────
+function findDrugInDB(medName) {
+  if (!medName) return null;
+  const q = medName.toLowerCase().trim();
+  return Object.values(MEDICATION_DB).find(d =>
+    d.name.toLowerCase().includes(q) ||
+    (d.genericName || '').toLowerCase().includes(q) ||
+    (d.brandName || '').toLowerCase().includes(q) ||
+    d.id.toLowerCase().includes(q)
+  ) || null;
+}
+
+function seedFromCommandKit(drug, weightKg, ageYears) {
+  if (!drug?.doses?.length) return {};
+  const peds = isPediatric(ageYears, weightKg);
+  const doses = calcDose(drug, weightKg, peds);
+  const d = doses[0];
+  const doseStr = d.calculatedDose != null
+    ? `${d.calculatedDose} ${d.calculatedUnit}${d.cappedAtMax ? ' [MAX]' : ''}`
+    : d.display || (d.flatDose ? `${d.flatDose} ${d.unit}` : '');
+  const route = d.route?.[0] || '';
+  const rate = d.rate ? `over ${d.rate}` : '';
+  const notes = [d.notes, rate].filter(Boolean).join(' | ');
+  return { dose: doseStr, route, notes };
+}
+
 export default function QuickOrderPanel({ orderSeed, patientContext = {}, hubName = '', onClose, onOrderToNote, C = 'dark' }) {
   useEffect(() => { injectKeyframes(); }, []);
 
+  // Auto-populate from CommandKit data
+  const ckDrug = findDrugInDB(orderSeed.medication || '');
+  const ckSeed = ckDrug ? seedFromCommandKit(ckDrug, patientContext.weight, patientContext.age) : {};
+
   const [med,   setMed]   = useState(orderSeed.medication || '');
-  const [dose,  setDose]  = useState(orderSeed.dose       || '');
-  const [route, setRoute] = useState(orderSeed.route      || '');
-  const [freq,  setFreq]  = useState(orderSeed.frequency  || '');
-  const [notes, setNotes] = useState(orderSeed.notes      || '');
+  const [dose,  setDose]  = useState(orderSeed.dose  || ckSeed.dose  || '');
+  const [route, setRoute] = useState(orderSeed.route || ckSeed.route || '');
+  const [freq,  setFreq]  = useState(orderSeed.frequency || '');
+  const [notes, setNotes] = useState(orderSeed.notes || ckSeed.notes || '');
   const [orderText, setOrderText] = useState('');
   const [warnings,  setWarnings]  = useState([]);
   const [status,    setStatus]    = useState('idle');
@@ -234,8 +265,12 @@ export default function QuickOrderPanel({ orderSeed, patientContext = {}, hubNam
       patientContext.allergies ? 'Allergies: ' + (Array.isArray(patientContext.allergies) ? patientContext.allergies.join(', ') : patientContext.allergies) : '',
     ].filter(Boolean).join(' | ');
     try {
+      const currentDrug = findDrugInDB(med);
+      const ckContext = currentDrug
+        ? `\nCOMMANDKIT REFERENCE:\n- Doses: ${currentDrug.doses?.map(d => d.label + ': ' + (d.display || (d.flatDose ? d.flatDose + ' ' + d.unit : (d.mgPerKg + ' ' + d.unit + '/kg'))) + (d.route ? ' ' + d.route.join('/') : '')).join('; ')}\n- Warnings: ${(currentDrug.warnings || []).join('; ') || 'none'}\n- Contraindications: ${(currentDrug.contraindications || []).join('; ') || 'none'}`
+        : '';
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: 'You are a clinical pharmacist in an ED CDSS. Generate a precise ED medication order.\nMEDICATION: ' + med + '\nDOSE: ' + (dose || 'standard ED dose') + '\nROUTE: ' + (route || 'IV') + '\nFREQUENCY: ' + (freq || 'once') + '\nINDICATION: ' + (orderSeed.indication || 'ED management') + '\nNOTES: ' + (notes || 'none') + '\nPATIENT CONTEXT: ' + (ptSummary || 'adult, no context provided') + '\n\nReturn JSON only. No preamble. No markdown.',
+        prompt: 'You are a clinical pharmacist in an ED CDSS. Generate a precise ED medication order.\nMEDICATION: ' + med + '\nDOSE: ' + (dose || 'standard ED dose') + '\nROUTE: ' + (route || 'IV') + '\nFREQUENCY: ' + (freq || 'once') + '\nINDICATION: ' + (orderSeed.indication || 'ED management') + '\nNOTES: ' + (notes || 'none') + '\nPATIENT CONTEXT: ' + (ptSummary || 'adult, no context provided') + ckContext + '\n\nReturn JSON only. No preamble. No markdown.',
         response_json_schema: {
           type: 'object',
           properties: {
@@ -292,6 +327,31 @@ export default function QuickOrderPanel({ orderSeed, patientContext = {}, hubNam
             <div style={S.allergyBanner}>
               <span style={{ fontSize: 14 }}>⚠️</span>
               <span style={S.allergyText}>ALLERGY FLAG: {flag}</span>
+            </div>
+          )}
+          {ckDrug && (
+            <div style={{ background: 'rgba(18,204,230,0.05)', border: '1px solid rgba(18,204,230,0.2)', borderRadius: 8, padding: '8px 12px' }}>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(18,204,230,0.6)', marginBottom: 5 }}>
+                CommandKit Reference
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {ckDrug.doses?.map((d, i) => (
+                  <div key={i} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.clinicalWhite, lineHeight: 1.5 }}>
+                    <span style={{ color: T.signalCyan }}>{d.label}: </span>
+                    {d.display || (d.flatDose ? `${d.flatDose} ${d.unit}` : `${d.mgPerKg} ${d.unit}/kg`)}
+                    {d.route ? ' · ' + d.route.join('/') : ''}
+                    {d.rate ? ' · ' + d.rate : ''}
+                  </div>
+                ))}
+                {ckDrug.warnings?.map((w, i) => (
+                  <div key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: T.warning }}>⚠ {w}</div>
+                ))}
+                {ckDrug.isPanic && (
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: T.danger, fontWeight: 600 }}>
+                    🚨 {ckDrug.panicReason}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <div>

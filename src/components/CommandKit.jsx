@@ -16,6 +16,7 @@ import {
   HUB_LINKS, DRUG_CATEGORIES, calcDose, formatMedOrder,
   lbsToKg, kgToLbs, isPediatric,
 } from "@/lib/commandkit_data";
+import { REFERENCE_DB, REF_CATEGORIES } from "@/lib/commandkit_reference";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const T = {
@@ -508,7 +509,7 @@ function ScenarioBar({ activeScenario, onSelect }) {
 function TabBar({ activeTab, onTab, searchQuery, onSearch, searchRef }) {
   return (
     <div style={{ display: "flex", alignItems: "center", padding: "0 14px", borderBottom: "1px solid " + T.border, background: "rgba(4,10,22,0.35)", flexShrink: 0 }}>
-      {[["meds", "Medications"], ["imaging", "Imaging"], ["labs", "Labs & Orders"]].map(([id, label]) => {
+      {[["meds", "Medications"], ["imaging", "Imaging"], ["labs", "Labs & Orders"], ["reference", "Reference 📖"]].map(([id, label]) => {
         const active = activeTab === id;
         return (
           <button key={id} onClick={() => onTab(id)} style={{ background: "none", border: "none", borderBottom: "2px solid " + (active ? T.cyan : "transparent"), color: active ? T.cyan : T.muted, fontSize: 11, fontFamily: F.mono, fontWeight: active ? 600 : 400, padding: "10px 13px", cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -543,6 +544,127 @@ function HubLinksBar() {
           {hub.icon} {hub.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+// ─── REF CARD ────────────────────────────────────────────────────────────────
+function RefCard({ item, copiedId, onCopy }) {
+  const [expanded, setExpanded] = useState(false);
+  const catDef = REF_CATEGORIES[item.category] || { label: item.category, color: T.muted };
+  const copyContent = [
+    item.name,
+    item.clinicalUse,
+    "",
+    ...(item.items || []).filter(i => !i.isHeader).map(i => i.points != null ? `${i.label} (+${i.points})` : `• ${i.label}`),
+    ...(item.interpretation ? ["\nInterpretation:", ...item.interpretation.map(i => `${i.range}: ${i.label} — ${i.action}`)] : []),
+    ...(item.pearl ? [`\nPearl: ${item.pearl}`] : []),
+    `Source: ${item.source}`,
+  ].join("\n");
+
+  return (
+    <div style={{ background: T.glass, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 12px", marginBottom: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 13, fontFamily: F.body, fontWeight: 600, color: T.text, flex: 1 }}>{item.name}</span>
+        <span style={{ fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: catDef.color, background: catDef.color + "1A", border: "1px solid " + catDef.color + "40", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          {catDef.label}
+        </span>
+      </div>
+      <div style={{ fontSize: 10, fontFamily: F.body, color: T.muted, marginBottom: 7, lineHeight: 1.5 }}>{item.clinicalUse}</div>
+
+      {expanded && (
+        <>
+          {item.items?.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              {item.items.map((it, i) => (
+                it.isHeader ? (
+                  <div key={i} style={{ fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: T.cyan, letterSpacing: "0.07em", textTransform: "uppercase", margin: "8px 0 4px" }}>{it.label}</div>
+                ) : (
+                  <div key={i} style={{ display: "flex", gap: 8, padding: "2px 0", alignItems: "flex-start" }}>
+                    <span style={{ color: T.cyan, fontSize: 8, flexShrink: 0, paddingTop: 3 }}>●</span>
+                    <span style={{ fontSize: 10, fontFamily: F.body, color: T.muted, flex: 1 }}>
+                      {it.label}
+                      {it.points != null && <span style={{ fontFamily: F.mono, color: T.cyan, marginLeft: 6 }}>+{it.points}</span>}
+                    </span>
+                  </div>
+                )
+              ))}
+            </div>
+          )}
+
+          {item.interpretation?.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: T.dim, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 5 }}>INTERPRETATION</div>
+              {item.interpretation.map((interp, i) => (
+                <div key={i} style={{ background: interp.color + "0D", border: "1px solid " + interp.color + "30", borderRadius: 6, padding: "5px 9px", marginBottom: 4 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
+                    <span style={{ fontSize: 10, fontFamily: F.mono, color: interp.color, fontWeight: 600 }}>{interp.range}</span>
+                    <span style={{ fontSize: 10, fontFamily: F.body, fontWeight: 600, color: T.text }}>{interp.label}</span>
+                  </div>
+                  <div style={{ fontSize: 10, fontFamily: F.body, color: T.muted }}>{interp.action}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {item.pearl && (
+            <div style={{ background: T.goldDim, border: "1px solid rgba(240,180,41,0.2)", borderRadius: 6, padding: "5px 9px", marginBottom: 7 }}>
+              <span style={{ fontSize: 9, fontFamily: F.mono, color: T.gold, fontWeight: 700, letterSpacing: "0.06em" }}>PEARL </span>
+              <span style={{ fontSize: 10, fontFamily: F.body, color: "#FDE68A" }}>{item.pearl}</span>
+            </div>
+          )}
+
+          <div style={{ fontSize: 9, fontFamily: F.mono, color: T.dim, marginBottom: 7 }}>📖 {item.source}</div>
+        </>
+      )}
+
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <CopyBtn text={copyContent} id={item.id} copiedId={copiedId} onCopy={onCopy} />
+        {item.hubLink && (
+          <button onClick={() => { window.location.href = "/" + item.hubLink; }} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 5, color: T.muted, fontSize: 9, fontFamily: F.mono, padding: "2px 8px", cursor: "pointer" }}>
+            {item.hubLink} →
+          </button>
+        )}
+        <button onClick={() => setExpanded(p => !p)} style={{ background: "none", border: "none", cursor: "pointer", color: T.dim, fontSize: 9, fontFamily: F.mono, marginLeft: "auto" }}>
+          {expanded ? "Collapse ▴" : "Expand ▾"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── REFERENCE TAB ───────────────────────────────────────────────────────────
+function ReferenceTab({ activeScenario, searchQuery, copiedId, onCopy }) {
+  let refs = Object.values(REFERENCE_DB);
+  if (activeScenario) refs = refs.filter(r => !r.scenarios?.length || r.scenarios.includes(activeScenario));
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    refs = refs.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      (r.shortName || "").toLowerCase().includes(q) ||
+      r.clinicalUse.toLowerCase().includes(q) ||
+      (r.tags || []).some(t => t.toLowerCase().includes(q))
+    );
+  }
+
+  const groups = {};
+  refs.forEach(r => { if (!groups[r.category]) groups[r.category] = []; groups[r.category].push(r); });
+
+  if (!refs.length) return <Empty msg="No references match." />;
+
+  return (
+    <div>
+      {Object.entries(groups).map(([cat, list]) => {
+        const def = REF_CATEGORIES[cat] || { label: cat, color: T.muted };
+        return (
+          <div key={cat} style={{ marginBottom: 18 }}>
+            <SectionHead label={def.label} count={list.length} color={def.color} />
+            {list.map(item => (
+              <RefCard key={item.id} item={item} copiedId={copiedId} onCopy={onCopy} />
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -864,6 +864,9 @@ export default function CommandKit() {
           {activeTab === "labs" && (
             <LabsTab activeScenario={activeScenario} searchQuery={searchQuery} copiedId={copiedId} onCopy={handleCopy} />
           )}
+          {activeTab === "reference" && (
+            <ReferenceTab activeScenario={activeScenario} searchQuery={searchQuery} copiedId={copiedId} onCopy={handleCopy} />
+          )}
         </div>
 
         {/* ── HUB LINKS ───────────────────────────────────────────────────── */}

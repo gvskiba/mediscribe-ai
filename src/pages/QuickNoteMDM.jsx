@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { CC_HUB_MAP } from "./QuickNoteData";
+import GuidelineSuggestionStrip from "@/components/notes/GuidelineSuggestionStrip";
 
 // ─── LOCAL HELPERS ───────────────────────────────────────────────────────────
 const s = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
@@ -314,6 +315,14 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) 
 
   return (
     <div className="qn-fade">
+
+      {/* CommandKit guideline suggestions */}
+      <GuidelineSuggestionStrip
+        diagnoses={result.differential?.map(d => d.diagnosis || d).filter(Boolean)}
+        assessment={result.working_diagnosis}
+        chiefComplaint={null}
+        rawNote={null}
+      />
 
       {/* Level badge */}
       <div style={{ marginBottom:12, padding:"11px 14px", borderRadius:10,

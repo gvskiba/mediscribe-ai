@@ -6,6 +6,8 @@
 //   <CommandKit /> anywhere inside your root return, outside <Routes>
 //
 // Patient context is read automatically from the current URL params.
+// Hubs already pass name, mrn, age, weight via window.location.href — no changes needed.
+//
 // Keyboard:  Ctrl+Space  — toggle open/close
 //            Escape      — close
 //            Ctrl+Space  (while open) — jump focus to weight field
@@ -16,29 +18,30 @@ import {
   HUB_LINKS, DRUG_CATEGORIES, calcDose, formatMedOrder,
   lbsToKg, kgToLbs, isPediatric,
 } from "@/lib/commandkit_data";
+import { REFERENCE_DB, REF_CATEGORIES } from "@/lib/commandkit_reference";
 
-// ─── THEME ───────────────────────────────────────────────────────────────────
+// ─── THEME ───────────────────────────────────────────────────
 const T = {
-  navy:      "#060C19",
-  surface:   "rgba(7,16,36,0.98)",
-  glass:     "rgba(18,204,230,0.05)",
-  border:    "rgba(18,204,230,0.14)",
-  borderHi:  "rgba(18,204,230,0.38)",
-  cyan:      "#12CCE6",
-  cyanDim:   "rgba(18,204,230,0.13)",
-  gold:      "#F0B429",
-  goldDim:   "rgba(240,180,41,0.12)",
-  text:      "#E8F3FF",
-  muted:     "rgba(232,243,255,0.54)",
-  dim:       "rgba(232,243,255,0.27)",
-  panic:     "#FF4444",
-  panicBg:   "rgba(255,68,68,0.09)",
-  panicBord: "rgba(255,68,68,0.30)",
-  amber:     "#F59E0B",
-  amberBg:   "rgba(245,158,11,0.10)",
-  green:     "#34D399",
-  greenBg:   "rgba(52,211,153,0.11)",
-  overlay:   "rgba(3,8,18,0.80)",
+  navy:       "#060C19",
+  surface:    "rgba(7,16,36,0.98)",
+  glass:      "rgba(18,204,230,0.05)",
+  border:     "rgba(18,204,230,0.14)",
+  borderHi:   "rgba(18,204,230,0.38)",
+  cyan:       "#12CCE6",
+  cyanDim:    "rgba(18,204,230,0.13)",
+  gold:       "#F0B429",
+  goldDim:    "rgba(240,180,41,0.12)",
+  text:       "#E8F3FF",
+  muted:      "rgba(232,243,255,0.54)",
+  dim:        "rgba(232,243,255,0.27)",
+  panic:      "#FF4444",
+  panicBg:    "rgba(255,68,68,0.09)",
+  panicBord:  "rgba(255,68,68,0.30)",
+  amber:      "#F59E0B",
+  amberBg:    "rgba(245,158,11,0.10)",
+  green:      "#34D399",
+  greenBg:    "rgba(52,211,153,0.11)",
+  overlay:    "rgba(3,8,18,0.80)",
 };
 
 const F = {
@@ -47,7 +50,7 @@ const F = {
   body:    "'DM Sans', system-ui, sans-serif",
 };
 
-// ─── READ PATIENT CONTEXT FROM URL ───────────────────────────────────────────
+// ─── READ PATIENT CONTEXT FROM CURRENT URL ───────────────────
 function readPatientFromURL() {
   try {
     const p = new URLSearchParams(window.location.search);
@@ -62,7 +65,7 @@ function readPatientFromURL() {
   }
 }
 
-// ─── COPY UTIL ───────────────────────────────────────────────────────────────
+// ─── COPY UTIL ───────────────────────────────────────────────
 function copyText(text) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -76,7 +79,7 @@ function copyText(text) {
   }
 }
 
-// ─── ATOMS ───────────────────────────────────────────────────────────────────
+// ─── ATOMS ───────────────────────────────────────────────────
 function CategoryBadge({ category }) {
   const cat = DRUG_CATEGORIES[category] || { label: category, color: T.muted };
   return (
@@ -113,7 +116,7 @@ function CopyBtn({ text, id, copiedId, onCopy }) {
       fontSize: 9, fontFamily: F.mono, padding: "2px 9px",
       cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
       transition: "all 0.14s",
-    }}>{done ? "✓ Copied" : "Copy"}</button>
+    }}>{done ? "\u2713 Copied" : "Copy"}</button>
   );
 }
 
@@ -128,7 +131,7 @@ function Empty({ msg }) {
 function SectionHead({ label, count, color }) {
   return (
     <div style={{
-      fontSize: 9, fontFamily: F.mono, fontWeight: 700, color,
+      fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: color,
       letterSpacing: "0.1em", textTransform: "uppercase",
       marginBottom: 10, paddingBottom: 5,
       borderBottom: "1px solid " + color + "26",
@@ -140,7 +143,7 @@ function SectionHead({ label, count, color }) {
   );
 }
 
-// ─── PANIC BANNER ────────────────────────────────────────────────────────────
+// ─── PANIC BANNER ────────────────────────────────────────────
 function PanicBanner({ reason }) {
   return (
     <div style={{
@@ -148,7 +151,7 @@ function PanicBanner({ reason }) {
       borderRadius: 8, padding: "7px 11px", marginBottom: 7,
       display: "flex", gap: 8, alignItems: "flex-start",
     }}>
-      <span style={{ flexShrink: 0, fontSize: 14 }}>⚠️</span>
+      <span style={{ flexShrink: 0, fontSize: 14 }}>\u26A0\uFE0F</span>
       <div>
         <div style={{ fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: T.panic, marginBottom: 2, letterSpacing: "0.08em" }}>
           CLINICAL CAUTION
@@ -161,7 +164,7 @@ function PanicBanner({ reason }) {
   );
 }
 
-// ─── DOSE ROW ────────────────────────────────────────────────────────────────
+// ─── DOSE ROW ────────────────────────────────────────────────
 function DoseRow({ dose, weightKg }) {
   const hasWt = weightKg != null;
   const doseStr = hasWt && dose.calculatedDose != null
@@ -190,7 +193,7 @@ function DoseRow({ dose, weightKg }) {
               </span>
             )}
             {!hasWt && dose.isWeightBased && (
-              <span style={{ fontSize: 9, fontFamily: F.mono, color: T.amber }}>enter weight ↑</span>
+              <span style={{ fontSize: 9, fontFamily: F.mono, color: T.amber }}>enter weight \u2191</span>
             )}
           </div>
           {dose.route && (
@@ -198,7 +201,7 @@ function DoseRow({ dose, weightKg }) {
               {dose.route.map(r => (
                 <span key={r} style={{ fontSize: 9, fontFamily: F.mono, color: T.dim, background: "rgba(232,243,255,0.06)", borderRadius: 3, padding: "1px 5px" }}>{r}</span>
               ))}
-              {dose.rate && <span style={{ fontSize: 9, fontFamily: F.mono, color: T.muted }}>— {dose.rate}</span>}
+              {dose.rate && <span style={{ fontSize: 9, fontFamily: F.mono, color: T.muted }}>\u2014 {dose.rate}</span>}
             </div>
           )}
           {dose.notes && (
@@ -210,7 +213,7 @@ function DoseRow({ dose, weightKg }) {
   );
 }
 
-// ─── MED CARD ────────────────────────────────────────────────────────────────
+// ─── MED CARD ────────────────────────────────────────────────
 function MedCard({ drug, weightKg, ageYears, copiedId, onCopy }) {
   const [expanded, setExpanded] = useState(false);
   const peds  = isPediatric(ageYears, weightKg);
@@ -234,7 +237,7 @@ function MedCard({ drug, weightKg, ageYears, copiedId, onCopy }) {
         <CategoryBadge category={drug.category} />
         {drug.isPanic && (
           <span style={{ fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: T.panic, background: T.panicBg, border: "1px solid " + T.panicBord, borderRadius: 4, padding: "1px 6px" }}>
-            ⚠ CAUTION
+            \u26A0 CAUTION
           </span>
         )}
         {peds && weightKg && (
@@ -246,7 +249,7 @@ function MedCard({ drug, weightKg, ageYears, copiedId, onCopy }) {
 
       {drug.preparation && (
         <div style={{ fontSize: 10, fontFamily: F.mono, color: T.gold, background: T.goldDim, border: "1px solid rgba(240,180,41,0.2)", borderRadius: 5, padding: "3px 8px", marginBottom: 7 }}>
-          🧪 Mix: {drug.preparation}
+          \u{1F9EA} Mix: {drug.preparation}
         </div>
       )}
 
@@ -267,7 +270,7 @@ function MedCard({ drug, weightKg, ageYears, copiedId, onCopy }) {
         <div style={{ marginBottom: 6 }}>
           {drug.warnings.map((w, i) => (
             <div key={i} style={{ fontSize: 10, fontFamily: F.body, color: T.amber, display: "flex", gap: 5, padding: "2px 0" }}>
-              <span>⚠</span><span>{w}</span>
+              <span>\u26A0</span><span>{w}</span>
             </div>
           ))}
         </div>
@@ -277,7 +280,7 @@ function MedCard({ drug, weightKg, ageYears, copiedId, onCopy }) {
         <div style={{ marginBottom: 6 }}>
           <div style={{ fontSize: 9, fontFamily: F.mono, color: T.panic, marginBottom: 3, letterSpacing: "0.07em" }}>CONTRAINDICATIONS</div>
           {drug.contraindications.map((c, i) => (
-            <div key={i} style={{ fontSize: 10, fontFamily: F.body, color: "#FFAAAA", padding: "1px 0" }}>• {c}</div>
+            <div key={i} style={{ fontSize: 10, fontFamily: F.body, color: "#FFAAAA", padding: "1px 0" }}>\u2022 {c}</div>
           ))}
         </div>
       )}
@@ -286,12 +289,12 @@ function MedCard({ drug, weightKg, ageYears, copiedId, onCopy }) {
         <CopyBtn text={orderText} id={drug.id} copiedId={copiedId} onCopy={onCopy} />
         {drug.hubLink && (
           <button onClick={() => { window.location.href = "/" + drug.hubLink; }} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 5, color: T.muted, fontSize: 9, fontFamily: F.mono, padding: "2px 8px", cursor: "pointer" }}>
-            {drug.hubLink} →
+            {drug.hubLink} \u2192
           </button>
         )}
         {hasDetails && (
           <button onClick={() => setExpanded(p => !p)} style={{ background: "none", border: "none", cursor: "pointer", color: T.dim, fontSize: 9, fontFamily: F.mono, padding: "2px 0", marginLeft: "auto" }}>
-            {expanded ? "Less ▴" : "Details ▾"}
+            {expanded ? "Less \u25B4" : "Details \u25BE"}
           </button>
         )}
       </div>
@@ -299,7 +302,7 @@ function MedCard({ drug, weightKg, ageYears, copiedId, onCopy }) {
   );
 }
 
-// ─── MEDS TAB ────────────────────────────────────────────────────────────────
+// ─── MEDS TAB ────────────────────────────────────────────────
 function MedsTab({ weightKg, ageYears, activeScenario, searchQuery, copiedId, onCopy }) {
   let drugs = Object.values(MEDICATION_DB);
   if (activeScenario) {
@@ -337,7 +340,7 @@ function MedsTab({ weightKg, ageYears, activeScenario, searchQuery, copiedId, on
   );
 }
 
-// ─── IMAGING CARD ────────────────────────────────────────────────────────────
+// ─── IMAGING CARD ────────────────────────────────────────────
 function ImagingCard({ img, copiedId, onCopy }) {
   const [show, setShow] = useState(false);
   const cc = { "with": T.gold, "without": T.green, "with and without": T.cyan, "N/A": T.dim }[img.contrast] || T.muted;
@@ -367,23 +370,23 @@ function ImagingCard({ img, copiedId, onCopy }) {
         <CopyBtn text={img.orderText} id={img.id} copiedId={copiedId} onCopy={onCopy} />
         {img.hubLink && (
           <button onClick={() => { window.location.href = "/" + img.hubLink; }} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 5, color: T.muted, fontSize: 9, fontFamily: F.mono, padding: "2px 8px", cursor: "pointer" }}>
-            {img.hubLink} →
+            {img.hubLink} \u2192
           </button>
         )}
         <button onClick={() => setShow(p => !p)} style={{ background: "none", border: "none", cursor: "pointer", color: T.dim, fontSize: 9, fontFamily: F.mono, marginLeft: "auto" }}>
-          {show ? "Hide order ▴" : "View order ▾"}
+          {show ? "Hide order \u25B4" : "View order \u25BE"}
         </button>
       </div>
     </div>
   );
 }
 
-// ─── IMAGING TAB ─────────────────────────────────────────────────────────────
+// ─── IMAGING TAB ─────────────────────────────────────────────
 function ImagingTab({ activeScenario, searchQuery, copiedId, onCopy }) {
   let images = Object.values(IMAGING_DB);
   if (activeScenario) {
     const sc = SCENARIOS[activeScenario];
-    if (sc) images = images.filter(i => (sc.imagingIds || []).includes(i.id));
+    if (sc) images = images.filter(i => sc.imagingIds.includes(i.id));
   }
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
@@ -414,7 +417,7 @@ function ImagingTab({ activeScenario, searchQuery, copiedId, onCopy }) {
   );
 }
 
-// ─── LABS TAB ────────────────────────────────────────────────────────────────
+// ─── LABS TAB ────────────────────────────────────────────────
 function PanelCard({ panel, copiedId, onCopy }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -429,7 +432,7 @@ function PanelCard({ panel, copiedId, onCopy }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 12px", marginBottom: 8 }}>
           {panel.items.map((item, i) => (
             <div key={i} style={{ fontSize: 10, fontFamily: F.body, color: T.muted, padding: "2px 0", display: "flex", gap: 5, alignItems: "center" }}>
-              <span style={{ color: T.cyan, fontSize: 8, flexShrink: 0 }}>●</span>{item}
+              <span style={{ color: T.cyan, fontSize: 8, flexShrink: 0 }}>\u25CF</span>{item}
             </div>
           ))}
         </div>
@@ -437,7 +440,7 @@ function PanelCard({ panel, copiedId, onCopy }) {
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <CopyBtn text={panel.orderText} id={panel.id} copiedId={copiedId} onCopy={onCopy} />
         <button onClick={() => setExpanded(p => !p)} style={{ background: "none", border: "none", cursor: "pointer", color: T.dim, fontSize: 9, fontFamily: F.mono, marginLeft: "auto" }}>
-          {expanded ? "Hide ▴" : "View tests ▾"}
+          {expanded ? "Hide \u25B4" : "View tests \u25BE"}
         </button>
       </div>
     </div>
@@ -460,7 +463,7 @@ function LabsTab({ activeScenario, searchQuery, copiedId, onCopy }) {
   );
 }
 
-// ─── WEIGHT INPUT ────────────────────────────────────────────────────────────
+// ─── WEIGHT INPUT ────────────────────────────────────────────
 function WeightInput({ weightKg, weightUnit, weightInput, weightSource, onChange, onToggle, inputRef }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 5, background: T.glass, border: "1px solid " + T.border, borderRadius: 8, padding: "3px 10px" }}>
@@ -475,7 +478,7 @@ function WeightInput({ weightKg, weightUnit, weightInput, weightSource, onChange
         {weightUnit}
       </button>
       {weightSource === "patient" && (
-        <span style={{ fontSize: 9, fontFamily: F.mono, color: T.green, flexShrink: 0 }}>✓ pt</span>
+        <span style={{ fontSize: 9, fontFamily: F.mono, color: T.green, flexShrink: 0 }}>\u2713 pt</span>
       )}
       {weightKg && (
         <span style={{ fontSize: 9, fontFamily: F.mono, color: T.dim, flexShrink: 0 }}>{weightKg} kg</span>
@@ -484,15 +487,7 @@ function WeightInput({ weightKg, weightUnit, weightInput, weightSource, onChange
   );
 }
 
-// ─── SCENARIO BAR ────────────────────────────────────────────────────────────
-function ScenChip({ label, icon, active, color, onClick }) {
-  return (
-    <button onClick={onClick} style={{ background: active ? color + "1E" : "none", border: "1px solid " + (active ? color : T.border), borderRadius: 20, padding: "3px 12px", color: active ? color : T.muted, fontSize: 10, fontFamily: F.mono, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 5 }}>
-      {icon && <span>{icon}</span>}{label}
-    </button>
-  );
-}
-
+// ─── SCENARIO BAR ────────────────────────────────────────────
 function ScenarioBar({ activeScenario, onSelect }) {
   return (
     <div style={{ display: "flex", gap: 5, padding: "7px 14px", overflowX: "auto", borderBottom: "1px solid " + T.border, background: "rgba(4,10,22,0.5)", scrollbarWidth: "none", flexShrink: 0 }}>
@@ -504,11 +499,19 @@ function ScenarioBar({ activeScenario, onSelect }) {
   );
 }
 
-// ─── TAB BAR ─────────────────────────────────────────────────────────────────
+function ScenChip({ label, icon, active, color, onClick }) {
+  return (
+    <button onClick={onClick} style={{ background: active ? color + "1E" : "none", border: "1px solid " + (active ? color : T.border), borderRadius: 20, padding: "3px 12px", color: active ? color : T.muted, fontSize: 10, fontFamily: F.mono, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 5 }}>
+      {icon && <span>{icon}</span>}{label}
+    </button>
+  );
+}
+
+// ─── TAB BAR ─────────────────────────────────────────────────
 function TabBar({ activeTab, onTab, searchQuery, onSearch, searchRef }) {
   return (
     <div style={{ display: "flex", alignItems: "center", padding: "0 14px", borderBottom: "1px solid " + T.border, background: "rgba(4,10,22,0.35)", flexShrink: 0 }}>
-      {[["meds", "Medications"], ["imaging", "Imaging"], ["labs", "Labs & Orders"]].map(([id, label]) => {
+      {[["meds", "Medications"], ["imaging", "Imaging"], ["labs", "Labs & Orders"], ["reference", "Reference \u{1F4D6}"]].map(([id, label]) => {
         const active = activeTab === id;
         return (
           <button key={id} onClick={() => onTab(id)} style={{ background: "none", border: "none", borderBottom: "2px solid " + (active ? T.cyan : "transparent"), color: active ? T.cyan : T.muted, fontSize: 11, fontFamily: F.mono, fontWeight: active ? 600 : 400, padding: "10px 13px", cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -526,17 +529,17 @@ function TabBar({ activeTab, onTab, searchQuery, onSearch, searchRef }) {
   );
 }
 
-// ─── HUB LINKS BAR ───────────────────────────────────────────────────────────
+// ─── HUB LINKS BAR ───────────────────────────────────────────
 function HubLinksBar() {
   return (
     <div style={{ display: "flex", gap: 4, padding: "8px 14px", borderTop: "1px solid " + T.border, background: "rgba(4,10,22,0.85)", flexWrap: "wrap", alignItems: "center", flexShrink: 0 }}>
       <span style={{ fontSize: 9, fontFamily: F.mono, color: T.dim, marginRight: 4, letterSpacing: "0.08em" }}>HUBS</span>
       {HUB_LINKS.map(hub => (
         <button key={hub.id} onClick={() => { if (hub.path) window.location.href = hub.path; }} style={{
-          background: hub.id === "EDOrderHub" ? T.cyanDim : T.glass,
-          border: "1px solid " + (hub.id === "EDOrderHub" ? T.borderHi : T.border),
+          background: hub.id === "OrderPage" ? T.cyanDim : T.glass,
+          border: "1px solid " + (hub.id === "OrderPage" ? T.borderHi : T.border),
           borderRadius: 6, padding: "3px 9px",
-          color: hub.id === "EDOrderHub" ? T.cyan : T.muted,
+          color: hub.id === "OrderPage" ? T.cyan : T.muted,
           fontSize: 10, fontFamily: F.mono, cursor: "pointer",
           display: "flex", alignItems: "center", gap: 4,
         }}>
@@ -547,18 +550,210 @@ function HubLinksBar() {
   );
 }
 
-// ─── ROOT COMPONENT ──────────────────────────────────────────────────────────
+// ─── AI SEARCH BAR ───────────────────────────────────────────
+function AISearchBar({ onResult, loading, setLoading }) {
+  const [query, setQuery] = useState("");
+
+  const handleSearch = useCallback(async () => {
+    if (!query.trim() || loading) return;
+    setLoading(true);
+    onResult(null);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 600,
+          system: "You are a clinical decision support assistant for emergency medicine. Answer concisely with key clinical points. Cite guideline sources (AHA, ACEP, ATLS, etc.) where relevant. Format: brief answer then bullet points. Plain text only — no markdown.",
+          messages: [{ role: "user", content: query }],
+        }),
+      });
+      const data = await res.json();
+      const text = (data.content || []).map(b => b.text || "").join("");
+      onResult(text || "No response received.");
+    } catch (_) {
+      onResult("Search unavailable. Check connection.");
+    }
+    setLoading(false);
+  }, [query, loading]);
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 9, fontFamily: F.mono, color: T.dim, marginBottom: 5, letterSpacing: "0.07em" }}>
+        AI CLINICAL SEARCH
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        <input
+          type="text" value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSearch()}
+          placeholder="e.g. tPA dose for 80kg patient, STEMI criteria V2..."
+          style={{ flex: 1, background: T.glass, border: "1px solid " + T.border, borderRadius: 8, padding: "7px 12px", color: T.text, fontFamily: F.body, fontSize: 11, outline: "none" }}
+        />
+        <button onClick={handleSearch} disabled={loading || !query.trim()} style={{ background: loading ? T.glass : T.cyanDim, border: "1px solid " + (loading ? T.border : T.borderHi), borderRadius: 8, padding: "7px 14px", color: loading ? T.muted : T.cyan, fontFamily: F.mono, fontSize: 10, cursor: loading ? "default" : "pointer", whiteSpace: "nowrap" }}>
+          {loading ? "Searching..." : "Ask \u2192"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── REF CARD ────────────────────────────────────────────────
+function RefCard({ ref: item, copiedId, onCopy }) {
+  const [expanded, setExpanded] = useState(false);
+  const catDef = REF_CATEGORIES[item.category] || { label: item.category, color: T.muted };
+  const copyContent = item.name + "\n" + item.clinicalUse + "\n\n" +
+    (item.items || []).filter(i => !i.isHeader).map(i => (i.points ? i.label + " (" + i.points + " pts)" : i.label)).join("\n") +
+    (item.interpretation ? "\n\nInterpretation:\n" + item.interpretation.map(i => i.range + ": " + i.label + " — " + i.action).join("\n") : "") +
+    (item.pearl ? "\n\nPearl: " + item.pearl : "") +
+    "\nSource: " + item.source;
+
+  return (
+    <div style={{ background: T.glass, border: "1px solid " + T.border, borderRadius: 10, padding: "10px 12px", marginBottom: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 13, fontFamily: F.body, fontWeight: 600, color: T.text, flex: 1 }}>{item.name}</span>
+        <span style={{ fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: catDef.color, background: catDef.color + "1A", border: "1px solid " + catDef.color + "40", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          {catDef.label}
+        </span>
+      </div>
+
+      <div style={{ fontSize: 10, fontFamily: F.body, color: T.muted, marginBottom: 7, lineHeight: 1.5 }}>
+        {item.clinicalUse}
+      </div>
+
+      {expanded && (
+        <>
+          {/* Items / criteria */}
+          {item.items?.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              {item.items.map((it, i) => (
+                it.isHeader ? (
+                  <div key={i} style={{ fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: T.cyan, letterSpacing: "0.07em", textTransform: "uppercase", margin: "8px 0 4px" }}>{it.label}</div>
+                ) : (
+                  <div key={i} style={{ display: "flex", gap: 8, padding: "2px 0", alignItems: "flex-start" }}>
+                    <span style={{ color: T.cyan, fontSize: 8, flexShrink: 0, paddingTop: 3 }}>\u25CF</span>
+                    <span style={{ fontSize: 10, fontFamily: F.body, color: T.muted, flex: 1 }}>
+                      {it.label}
+                      {it.points != null && <span style={{ fontFamily: F.mono, color: T.cyan, marginLeft: 6 }}>+{it.points}</span>}
+                    </span>
+                  </div>
+                )
+              ))}
+            </div>
+          )}
+
+          {/* Interpretation */}
+          {item.interpretation?.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: T.dim, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 5 }}>INTERPRETATION</div>
+              {item.interpretation.map((interp, i) => (
+                <div key={i} style={{ background: interp.color + "0D", border: "1px solid " + interp.color + "30", borderRadius: 6, padding: "5px 9px", marginBottom: 4 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
+                    <span style={{ fontSize: 10, fontFamily: F.mono, color: interp.color, fontWeight: 600 }}>{interp.range}</span>
+                    <span style={{ fontSize: 10, fontFamily: F.body, fontWeight: 600, color: T.text }}>{interp.label}</span>
+                  </div>
+                  <div style={{ fontSize: 10, fontFamily: F.body, color: T.muted }}>{interp.action}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pearl */}
+          {item.pearl && (
+            <div style={{ background: T.goldDim, border: "1px solid rgba(240,180,41,0.2)", borderRadius: 6, padding: "5px 9px", marginBottom: 7 }}>
+              <span style={{ fontSize: 9, fontFamily: F.mono, color: T.gold, fontWeight: 700, letterSpacing: "0.06em" }}>PEARL </span>
+              <span style={{ fontSize: 10, fontFamily: F.body, color: "#FDE68A" }}>{item.pearl}</span>
+            </div>
+          )}
+
+          {/* Source */}
+          <div style={{ fontSize: 9, fontFamily: F.mono, color: T.dim, marginBottom: 7 }}>
+            \u{1F4D6} {item.source}
+          </div>
+        </>
+      )}
+
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <CopyBtn text={copyContent} id={item.id} copiedId={copiedId} onCopy={onCopy} />
+        {item.hubLink && (
+          <button onClick={() => { window.location.href = "/" + item.hubLink; }} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 5, color: T.muted, fontSize: 9, fontFamily: F.mono, padding: "2px 8px", cursor: "pointer" }}>
+            {item.hubLink} \u2192
+          </button>
+        )}
+        <button onClick={() => setExpanded(p => !p)} style={{ background: "none", border: "none", cursor: "pointer", color: T.dim, fontSize: 9, fontFamily: F.mono, marginLeft: "auto" }}>
+          {expanded ? "Collapse \u25B4" : "Expand \u25BE"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── REFERENCE TAB ───────────────────────────────────────────
+function ReferenceTab({ activeScenario, searchQuery, copiedId, onCopy }) {
+  const [aiResult, setAiResult]   = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  let refs = Object.values(REFERENCE_DB);
+  if (activeScenario) refs = refs.filter(r => !r.scenarios?.length || r.scenarios.includes(activeScenario));
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    refs = refs.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      (r.shortName || "").toLowerCase().includes(q) ||
+      r.clinicalUse.toLowerCase().includes(q) ||
+      (r.tags || []).some(t => t.toLowerCase().includes(q))
+    );
+  }
+
+  const groups = {};
+  refs.forEach(r => { if (!groups[r.category]) groups[r.category] = []; groups[r.category].push(r); });
+
+  return (
+    <div>
+      <AISearchBar onResult={setAiResult} loading={aiLoading} setLoading={setAiLoading} />
+
+      {aiResult && (
+        <div style={{ background: T.cyanDim, border: "1px solid " + T.borderHi, borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
+          <div style={{ fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: T.cyan, marginBottom: 7, letterSpacing: "0.08em" }}>
+            AI RESPONSE
+            <button onClick={() => setAiResult(null)} style={{ background: "none", border: "none", cursor: "pointer", color: T.dim, fontSize: 10, marginLeft: 10, fontFamily: F.mono }}>
+              \u2715 clear
+            </button>
+          </div>
+          <div style={{ fontSize: 11, fontFamily: F.body, color: T.text, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{aiResult}</div>
+        </div>
+      )}
+
+      {refs.length === 0 && !aiLoading && <Empty msg="No references match." />}
+
+      {Object.entries(groups).map(([cat, list]) => {
+        const def = REF_CATEGORIES[cat] || { label: cat, color: T.muted };
+        return (
+          <div key={cat} style={{ marginBottom: 18 }}>
+            <SectionHead label={def.label} count={list.length} color={def.color} />
+            {list.map(item => (
+              <RefCard key={item.id} ref={item} copiedId={copiedId} onCopy={onCopy} />
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── ROOT COMPONENT ──────────────────────────────────────────
 export default function CommandKit() {
-  const [isOpen, setIsOpen]                 = useState(false);
-  const [activeTab, setActiveTab]           = useState("meds");
+  const [isOpen, setIsOpen]               = useState(false);
+  const [activeTab, setActiveTab]         = useState("meds");
   const [activeScenario, setActiveScenario] = useState(null);
-  const [patient, setPatient]               = useState({ name: "", mrn: "", age: null, weight: null });
-  const [weightKg, setWeightKg]             = useState(null);
-  const [weightUnit, setWeightUnit]         = useState("kg");
-  const [weightInput, setWeightInput]       = useState("");
-  const [weightSource, setWeightSource]     = useState("manual");
-  const [searchQuery, setSearchQuery]       = useState("");
-  const [copiedId, setCopiedId]             = useState(null);
+  const [patient, setPatient]             = useState({ name: "", mrn: "", age: null, weight: null });
+  const [weightKg, setWeightKg]           = useState(null);
+  const [weightUnit, setWeightUnit]       = useState("kg");
+  const [weightInput, setWeightInput]     = useState("");
+  const [weightSource, setWeightSource]   = useState("manual");
+  const [searchQuery, setSearchQuery]     = useState("");
+  const [copiedId, setCopiedId]           = useState(null);
 
   const searchRef = useRef(null);
   const weightRef = useRef(null);
@@ -576,7 +771,7 @@ export default function CommandKit() {
     setTimeout(() => searchRef.current?.focus(), 100);
   }, [isOpen]);
 
-  // Clear search on close
+  // Close and clear search on close
   useEffect(() => {
     if (!isOpen) setSearchQuery("");
   }, [isOpen]);
@@ -584,6 +779,7 @@ export default function CommandKit() {
   // Global keyboard handler
   useEffect(() => {
     const handler = (e) => {
+      // Ctrl+Space: toggle open, or if open focus weight field
       if (e.ctrlKey && e.code === "Space") {
         const tag = (document.activeElement?.tagName || "").toLowerCase();
         if (tag === "textarea") return;
@@ -595,6 +791,7 @@ export default function CommandKit() {
           weightRef.current?.select();
         }
       }
+      // Escape: close
       if (e.key === "Escape" && isOpen) {
         const tag = (document.activeElement?.tagName || "").toLowerCase();
         if (tag === "input" || tag === "textarea") return;
@@ -633,12 +830,12 @@ export default function CommandKit() {
 
   const peds = isPediatric(patient.age, weightKg);
 
-  // ── TRIGGER BUTTON ────────────────────────────────────────────────────────
+  // ── TRIGGER BUTTON ─────────────────────────────────────────
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        title="CommandKit — Ctrl+Space"
+        title="CommandKit \u2014 Ctrl+Space"
         style={{
           position: "fixed", bottom: 22, right: 22, zIndex: 8900,
           width: 50, height: 50, borderRadius: "50%",
@@ -649,12 +846,12 @@ export default function CommandKit() {
           justifyContent: "center", fontSize: 21,
         }}
       >
-        ⚡
+        \u26A1
       </button>
     );
   }
 
-  // ── OVERLAY ───────────────────────────────────────────────────────────────
+  // ── OVERLAY ────────────────────────────────────────────────
   return (
     <>
       {/* Backdrop */}
@@ -679,11 +876,12 @@ export default function CommandKit() {
         fontFamily: F.body,
       }}>
 
-        {/* ── HEADER ──────────────────────────────────────────────────────── */}
+        {/* ── HEADER ─────────────────────────────────────────── */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", borderBottom: "1px solid " + T.border, background: "rgba(4,10,22,0.70)", flexWrap: "wrap", flexShrink: 0 }}>
 
+          {/* Wordmark */}
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <span style={{ fontSize: 17 }}>⚡</span>
+            <span style={{ fontSize: 17 }}>\u26A1</span>
             <span style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, color: T.text, letterSpacing: "0.03em" }}>
               CommandKit
             </span>
@@ -692,15 +890,17 @@ export default function CommandKit() {
             </span>
           </div>
 
+          {/* Patient badge */}
           {patient.name && (
             <div style={{ fontSize: 10, fontFamily: F.mono, color: T.muted, background: T.glass, border: "1px solid " + T.border, borderRadius: 6, padding: "3px 9px", display: "flex", gap: 6, alignItems: "center" }}>
-              <span style={{ color: T.cyan }}>●</span>
+              <span style={{ color: T.cyan }}>\u25CF</span>
               {patient.name}
-              {patient.mrn && <span style={{ color: T.dim }}>• #{patient.mrn}</span>}
-              {patient.age && <span style={{ color: T.dim }}>• {patient.age}y</span>}
+              {patient.mrn && <span style={{ color: T.dim }}>\u2022 #{patient.mrn}</span>}
+              {patient.age && <span style={{ color: T.dim }}>\u2022 {patient.age}y</span>}
             </div>
           )}
 
+          {/* Peds alert */}
           {peds && (
             <span style={{ fontSize: 9, fontFamily: F.mono, fontWeight: 700, color: T.amber, background: T.amberBg, border: "1px solid " + T.amber + "40", borderRadius: 4, padding: "2px 7px" }}>
               PEDS DOSING ACTIVE
@@ -709,6 +909,7 @@ export default function CommandKit() {
 
           <div style={{ flex: 1 }} />
 
+          {/* Weight */}
           <WeightInput
             weightKg={weightKg} weightUnit={weightUnit}
             weightInput={weightInput} weightSource={weightSource}
@@ -716,22 +917,23 @@ export default function CommandKit() {
             inputRef={weightRef}
           />
 
+          {/* Close */}
           <button onClick={() => setIsOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 18, lineHeight: 1, padding: "0 4px" }}>
-            ✕
+            \u2715
           </button>
         </div>
 
-        {/* ── SCENARIO BAR ────────────────────────────────────────────────── */}
+        {/* ── SCENARIO BAR ───────────────────────────────────── */}
         <ScenarioBar activeScenario={activeScenario} onSelect={setActiveScenario} />
 
-        {/* ── TAB BAR ─────────────────────────────────────────────────────── */}
+        {/* ── TAB BAR ────────────────────────────────────────── */}
         <TabBar
           activeTab={activeTab} onTab={handleTabChange}
           searchQuery={searchQuery} onSearch={setSearchQuery}
           searchRef={searchRef}
         />
 
-        {/* ── CONTENT ─────────────────────────────────────────────────────── */}
+        {/* ── CONTENT ────────────────────────────────────────── */}
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px", scrollbarWidth: "thin", scrollbarColor: T.border + " transparent" }}>
           {activeTab === "meds" && (
             <MedsTab weightKg={weightKg} ageYears={patient.age} activeScenario={activeScenario} searchQuery={searchQuery} copiedId={copiedId} onCopy={handleCopy} />
@@ -742,9 +944,12 @@ export default function CommandKit() {
           {activeTab === "labs" && (
             <LabsTab activeScenario={activeScenario} searchQuery={searchQuery} copiedId={copiedId} onCopy={handleCopy} />
           )}
+          {activeTab === "reference" && (
+            <ReferenceTab activeScenario={activeScenario} searchQuery={searchQuery} copiedId={copiedId} onCopy={handleCopy} />
+          )}
         </div>
 
-        {/* ── HUB LINKS ───────────────────────────────────────────────────── */}
+        {/* ── HUB LINKS ──────────────────────────────────────── */}
         <HubLinksBar />
       </div>
     </>

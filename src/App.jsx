@@ -25,7 +25,6 @@ import StrokeHub from '@/pages/StrokeAssessment';
 import EDOrderHub from '@/pages/EDOrderHub';
 import NotryaApp from '@/pages/NotryaApp';
 import OrderDashboard from '@/pages/OrderDashboard';
-// OrderGeneratorHub retired — replaced by EDOrderHub
 import CardiacHub from '@/pages/CardiacHub';
 import TraumaHub from '@/pages/TraumaHub';
 import HubSelectorPage from '@/pages/HubSelectorPage';
@@ -52,7 +51,6 @@ import ConsultHub from '@/pages/ConsultHub';
 import ProcedureHub from '@/pages/ProcedureHub';
 import InfectiousDiseaseHub from '@/pages/InfectiousDiseaseHub';
 import DischargeHub from '@/pages/DischargeHub';
-import DischargeHubNew from '@/pages/DischargeHub.jsx';
 import BillingSubmissions from '@/pages/BillingSubmissions';
 import WoundHub from '@/pages/WoundHub';
 import DispositionBoard from '@/pages/DispositionBoard';
@@ -83,7 +81,6 @@ import AbdominalPainHub from '@/pages/AbdominalPainHub';
 import AMSHub from '@/pages/AMSHub';
 import DVTHub from '@/pages/DVTHub';
 import HuddleBoard from '@/pages/HuddleBoard';
-// OrderGeneratorHub retired — replaced by EDOrderHub
 import DermatologyHub from '@/pages/DermatologyHub';
 import DermMorphologyRef from '@/pages/DermMorphologyRef';
 import QuickNote from '@/pages/QuickNote';
@@ -243,9 +240,6 @@ const AuthenticatedApp = () => {
         <Route path="/new-technology"    element={<NotryaNewTechnology />} />
         <Route path="/huddle-board"        element={<HuddleBoard />} />
         <Route path="/EDOrderHub"          element={<EDOrderHub />} />
-        <Route path="/order-generator"     element={<EDOrderHub />} />
-        <Route path="/OrderGeneratorHub"   element={<EDOrderHub />} />
-        <Route path="/EDOrders"            element={<EDOrderHub />} />
         <Route path="/patient-workspace" element={<LayoutWrapper currentPageName="PatientWorkspace"><PatientWorkspace /></LayoutWrapper>} />
 
         {/* Billing & coding */}
@@ -313,13 +307,7 @@ const AuthenticatedApp = () => {
         <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />
 
         {/* Pharmacology */}
-        <Route path="/erx"            element={<UnifiedPharmacologyHub />} />
-        <Route path="/ERx"            element={<UnifiedPharmacologyHub />} />
-        <Route path="/smart-dosing"   element={<UnifiedPharmacologyHub />} />
-        <Route path="/weight-dose"    element={<UnifiedPharmacologyHub />} />
         <Route path="/unified-pharma" element={<UnifiedPharmacologyHub />} />
-        <Route path="/WeightDoseHub"  element={<UnifiedPharmacologyHub />} />
-        <Route path="/SmartDosingHub" element={<UnifiedPharmacologyHub />} />
         <Route path="/MedRecHub"               element={<MedRecHub />} />
         <Route path="/DrugFormularyAdmin"      element={<DrugFormularyAdmin />} />
         <Route path="/DrugComparisonHub"       element={<DrugComparisonHub />} />
@@ -341,8 +329,6 @@ const AuthenticatedApp = () => {
         <Route path="/ToxHub"          element={<ToxicologyHub />} />
         <Route path="/lab-interpreter" element={<LabHub />} />
         <Route path="/LabHub"          element={<LabHub />} />
-        <Route path="/LabInterpreter"  element={<LabHub />} />
-        <Route path="/LabTrendHub"     element={<LabHub />} />
         <Route path="/peds-hub"        element={<PedsHub />} />
         <Route path="/PediatricHub"    element={<PedsHub />} />
         <Route path="/triage-hub"      element={<TriageHub />} />
@@ -365,13 +351,9 @@ const AuthenticatedApp = () => {
         <Route path="/procedure-hub"   element={<ProcedureHub />} />
         <Route path="/id-hub"          element={<InfectiousDiseaseHub />} />
         <Route path="/discharge-hub"   element={<DischargeHub />} />
-        <Route path="/SmartDischargeHub" element={<DischargeHub />} />
-        <Route path="/DischargeHub"    element={<DischargeHubNew />} />
         <Route path="/wound-hub"       element={<LayoutWrapper currentPageName="WoundHub"><WoundHub /></LayoutWrapper>} />
         <Route path="/wound-care-hub"  element={<WoundCareHub />} />
-        <Route path="/WoundCareHub"    element={<WoundCareHub />} />
         <Route path="/score-hub"       element={<ScoreHub />} />
-        <Route path="/ScoreHub"        element={<ScoreHub />} />
         <Route path="/VitalsHub"       element={<VitalsHub />} />
         <Route path="/pain-hub"        element={<PainHub />} />
         <Route path="/syncope-hub"     element={<SyncopeHub />} />
@@ -383,7 +365,6 @@ const AuthenticatedApp = () => {
         <Route path="/derm-morphology" element={<DermMorphologyRef />} />
         <Route path="/stroke-hub"       element={<StrokeHub />} />
         <Route path="/StrokeHub"        element={<StrokeHub />} />
-        <Route path="/StrokeAssessment" element={<StrokeHub />} />
 
         {/* Presentation-based hubs */}
         <Route path="/ChestPainHub"     element={<LayoutWrapper currentPageName="ChestPainHub"><ChestPainHub /></LayoutWrapper>} />
@@ -400,9 +381,6 @@ const AuthenticatedApp = () => {
         <Route path="/SpecialtyNoteHubT2" element={<SpecialtyNoteHubT2 />} />
         <Route path="/tech-hub" element={<NotryaTechHub />} />
         <Route path="/follow-up-hub" element={<FollowUpHub />} />
-        <Route path="/NotryaTechHub" element={<NotryaTechHub />} />
-        <Route path="/Calendar" element={<HubIndex />} />
-        <Route path="/unified-pharma"   element={<UnifiedPharmacologyHub />} />
         <Route path="/EdNoteGenerator"  element={<QuickNote />} />
 
         <Route path="*" element={<PageNotFound />} />

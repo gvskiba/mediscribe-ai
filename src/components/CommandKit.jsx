@@ -1038,7 +1038,7 @@ export default function CommandKit() {
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <span style={{ fontSize: 17 }}>⚡</span>
             <span style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, color: T.text, letterSpacing: "0.03em" }}>
-              CommandKit
+              Pulse
             </span>
             <span style={{ fontSize: 8, fontFamily: F.mono, color: T.dim, background: T.glass, border: "1px solid " + T.border, borderRadius: 4, padding: "1px 5px" }}>
               Ctrl+Space

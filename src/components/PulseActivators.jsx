@@ -68,7 +68,7 @@ export function PulseFAB() {
   }
 
   return (
-    <div style={{ position:"fixed", top:22, right:22, zIndex:8900 }} aria-label="Open Pulse rapid orders">
+    <div style={{ position:"fixed", top:90, right:22, zIndex:8900 }} aria-label="Open Pulse rapid orders">
       <div style={{ position:"relative", width:52, height:52 }}>
         {ringing && (
           <div key={ringKey} aria-hidden="true">

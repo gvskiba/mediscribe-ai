@@ -18,6 +18,8 @@ import {
   lbsToKg, kgToLbs, isPediatric,
 } from "@/lib/commandkit_data";
 import { REFERENCE_DB, REF_CATEGORIES } from "@/lib/commandkit_reference";
+import { base44 } from "@/api/base44Client";
+const InvokeLLM = (params) => base44.integrations.Core.InvokeLLM(params);
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const T = {
@@ -510,7 +512,7 @@ function ScenarioBar({ activeScenario, onSelect }) {
 function TabBar({ activeTab, onTab, searchQuery, onSearch, searchRef }) {
   return (
     <div style={{ display: "flex", alignItems: "center", padding: "0 14px", borderBottom: "1px solid " + T.border, background: "rgba(4,10,22,0.35)", flexShrink: 0 }}>
-      {[["meds", "Medications"], ["imaging", "Imaging"], ["labs", "Labs & Orders"], ["reference", "Reference 📖"]].map(([id, label]) => {
+      {[["rapid", "Rapid Orders"], ["meds", "Medications"], ["imaging", "Imaging"], ["labs", "Labs & Orders"], ["reference", "Reference 📖"]].map(([id, label]) => {
         const active = activeTab === id;
         return (
           <button key={id} onClick={() => onTab(id)} style={{ background: "none", border: "none", borderBottom: "2px solid " + (active ? T.cyan : "transparent"), color: active ? T.cyan : T.muted, fontSize: 11, fontFamily: F.mono, fontWeight: active ? 600 : 400, padding: "10px 13px", cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -670,6 +672,158 @@ function ReferenceTab({ activeScenario, searchQuery, copiedId, onCopy }) {
   );
 }
 
+// ─── RAPID ORDERS DATA ───────────────────────────────────────────────────────
+const RAPID_CATS = [
+  {id:"all",label:"All"},{id:"cardiac",label:"Cardiac"},{id:"airway",label:"Airway/RSI"},
+  {id:"sepsis",label:"Sepsis"},{id:"trauma",label:"Trauma"},{id:"anaphylaxis",label:"Allergy"},
+  {id:"neuro",label:"Neuro"},{id:"pain",label:"Pain & Sedation"},
+];
+
+const RAPID_ORDERS = [
+  {id:"epi1",cat:"cardiac",name:"Epinephrine 1mg IV",dose:"1mg IV push",route:"IV",freq:"q3-5min",tag:"ACLS",info:"VF / pVT / PEA / Asystole"},
+  {id:"amio300",cat:"cardiac",name:"Amiodarone 300mg IV",dose:"300mg IV push",route:"IV",freq:"once",tag:"ACLS",info:"VF / pVT shock-refractory — 1st dose"},
+  {id:"amio150",cat:"cardiac",name:"Amiodarone 150mg IV",dose:"150mg over 10min",route:"IV",freq:"once",tag:"RHYTHM",info:"Stable VT / 2nd ACLS dose"},
+  {id:"bicarb",cat:"cardiac",name:"Sodium Bicarb 1mEq/kg",dose:"1mEq/kg IV push",route:"IV",freq:"q10min prn",tag:"CARDIAC",info:"HyperK / TCA OD / met acidosis"},
+  {id:"calcium",cat:"cardiac",name:"Calcium Gluconate 1g IV",dose:"1g over 2-3min",route:"IV",freq:"once",tag:"CARDIAC",info:"HyperK / CCB OD / hypocalcemia"},
+  {id:"aden6",cat:"cardiac",name:"Adenosine 6mg IV",dose:"6mg rapid IV push + flush",route:"IV",freq:"once",tag:"RHYTHM",info:"SVT 1st dose — flush immediately"},
+  {id:"aden12",cat:"cardiac",name:"Adenosine 12mg IV",dose:"12mg rapid IV push",route:"IV",freq:"once",tag:"RHYTHM",info:"SVT 2nd / 3rd dose"},
+  {id:"defib",cat:"cardiac",name:"Defibrillation 200J",dose:"200J biphasic",route:"—",freq:"q2min CPR",tag:"SHOCK",info:"VF / pulseless VT — clear all"},
+  {id:"mag",cat:"cardiac",name:"Magnesium 2g IV",dose:"2g over 5-20min",route:"IV",freq:"once",tag:"RHYTHM",info:"Torsades / refractory VF"},
+  {id:"atrop",cat:"cardiac",name:"Atropine 1mg IV",dose:"1mg IV push",route:"IV",freq:"q3-5min",tag:"CARDIAC",info:"Symptomatic bradycardia — max 3mg"},
+  {id:"etom",cat:"airway",name:"Etomidate 0.3mg/kg IV",dose:"0.3mg/kg (~20mg) IV",route:"IV",freq:"once",tag:"RSI",info:"Induction — hemodynamically stable"},
+  {id:"ket15",cat:"airway",name:"Ketamine 1.5mg/kg IV",dose:"1.5mg/kg (~100mg) IV",route:"IV",freq:"once",tag:"RSI",info:"Induction — hypotension / bronchospasm"},
+  {id:"succ",cat:"airway",name:"Succinylcholine 1.5mg/kg IV",dose:"1.5mg/kg (~100mg) IV",route:"IV",freq:"once",tag:"RSI",info:"Paralytic — avoid hyperK / burn / NMD / crush"},
+  {id:"roc12",cat:"airway",name:"Rocuronium 1.2mg/kg IV",dose:"1.2mg/kg (~80mg) IV",route:"IV",freq:"once",tag:"RSI",info:"Paralytic — standard RSI dose"},
+  {id:"roc16",cat:"airway",name:"Rocuronium 1.6mg/kg IV",dose:"1.6mg/kg (~100mg) IV",route:"IV",freq:"once",tag:"RSI",info:"High-dose — succinylcholine contraindicated"},
+  {id:"suga",cat:"airway",name:"Sugammadex 16mg/kg IV",dose:"16mg/kg IV push",route:"IV",freq:"once",tag:"REVERSAL",info:"Full roc reversal — CICV emergency"},
+  {id:"lido",cat:"airway",name:"Lidocaine 1.5mg/kg IV",dose:"1.5mg/kg IV pre-RSI",route:"IV",freq:"once",tag:"PRE-RSI",info:"3min pre-RSI — elevated ICP / reactive airway"},
+  {id:"piptz",cat:"sepsis",name:"Pip-Tazo 3.375g IV",dose:"3.375g IV",route:"IV",freq:"q6h",tag:"ABX",info:"Broad gram-neg / anaerobe coverage"},
+  {id:"vanc",cat:"sepsis",name:"Vancomycin 25mg/kg IV",dose:"25mg/kg AUC-based",route:"IV",freq:"q8-12h",tag:"ABX",info:"MRSA / gram-positive coverage"},
+  {id:"mero",cat:"sepsis",name:"Meropenem 1g IV",dose:"1g IV",route:"IV",freq:"q8h",tag:"ABX",info:"ESBL / carbapenem-susceptible"},
+  {id:"ns1l",cat:"sepsis",name:"Normal Saline 1L Bolus",dose:"1L wide open",route:"IV",freq:"q30min prn",tag:"FLUID",info:"Sepsis resus — target 30mL/kg total"},
+  {id:"norep",cat:"sepsis",name:"Norepinephrine Infusion",dose:"0.01-3 mcg/kg/min",route:"IV",freq:"titrate",tag:"PRESSOR",info:"1st-line vasopressor — septic shock"},
+  {id:"hydro",cat:"sepsis",name:"Hydrocortisone 100mg IV",dose:"100mg IV",route:"IV",freq:"q8h",tag:"STEROID",info:"Refractory septic shock"},
+  {id:"txa",cat:"trauma",name:"TXA 1g IV",dose:"1g over 10min",route:"IV",freq:"once",tag:"TXA",info:"Hemorrhagic shock — within 3hrs of injury"},
+  {id:"mtp",cat:"trauma",name:"Activate MTP",dose:"1:1:1 pRBC:FFP:Plts",route:"—",freq:"—",tag:"MTP",info:"Massive hemorrhage — activate blood bank"},
+  {id:"prbc",cat:"trauma",name:"pRBC 2 units IV",dose:"2u uncrossmatched",route:"IV",freq:"once",tag:"BLOOD",info:"Hemorrhagic shock — O-neg for females < 50"},
+  {id:"ffp",cat:"trauma",name:"FFP 2 units IV",dose:"2 units IV",route:"IV",freq:"once",tag:"BLOOD",info:"Coagulopathy / massive hemorrhage"},
+  {id:"epi03",cat:"anaphylaxis",name:"Epinephrine 0.3mg IM",dose:"0.3mg IM",route:"IM",freq:"q5-15min",tag:"1ST LINE",info:"Lateral thigh — anaphylaxis"},
+  {id:"diph",cat:"anaphylaxis",name:"Diphenhydramine 50mg IV",dose:"50mg IV push",route:"IV",freq:"once",tag:"H1",info:"H1 antihistamine — anaphylaxis adjunct"},
+  {id:"famot",cat:"anaphylaxis",name:"Famotidine 20mg IV",dose:"20mg IV",route:"IV",freq:"once",tag:"H2",info:"H2 antihistamine — anaphylaxis adjunct"},
+  {id:"solumed",cat:"anaphylaxis",name:"Methylprednisolone 125mg IV",dose:"125mg IV",route:"IV",freq:"once",tag:"STEROID",info:"Biphasic anaphylaxis prevention"},
+  {id:"lorz",cat:"neuro",name:"Lorazepam 4mg IV",dose:"4mg IV",route:"IV",freq:"q5min x2",tag:"SEIZURE",info:"Status epilepticus — 1st-line benzo"},
+  {id:"lev",cat:"neuro",name:"Levetiracetam 60mg/kg IV",dose:"60mg/kg (max 4.5g)",route:"IV",freq:"once",tag:"SEIZURE",info:"Status epilepticus — 2nd line"},
+  {id:"mant",cat:"neuro",name:"Mannitol 1g/kg IV",dose:"1g/kg over 15-20min",route:"IV",freq:"once",tag:"ICP",info:"Herniation / acute ICP elevation"},
+  {id:"hts",cat:"neuro",name:"3% NaCl 250mL IV",dose:"250mL over 15-20min",route:"IV",freq:"once",tag:"ICP",info:"Herniation — alternative to mannitol"},
+  {id:"tpa",cat:"neuro",name:"Alteplase 0.9mg/kg IV",dose:"0.9mg/kg (max 90mg)",route:"IV",freq:"once",tag:"STROKE",info:"Ischemic stroke — within 3-4.5hr window"},
+  {id:"fent",cat:"pain",name:"Fentanyl 1mcg/kg IV",dose:"1mcg/kg (~75mcg) IV",route:"IV",freq:"q30min prn",tag:"OPIOID",info:"Acute pain — titratable, short-acting"},
+  {id:"ket03",cat:"pain",name:"Ketamine 0.3mg/kg IV",dose:"0.3mg/kg (~20mg) IV",route:"IV",freq:"q15min prn",tag:"SUB-DISS",info:"Sub-dissociative analgesia"},
+  {id:"prop",cat:"pain",name:"Propofol Infusion",dose:"5-50 mcg/kg/min",route:"IV",freq:"titrate",tag:"SEDATION",info:"Procedural / ventilator sedation"},
+  {id:"midaz",cat:"pain",name:"Midazolam 2mg IV",dose:"2mg IV",route:"IV",freq:"q5min prn",tag:"BENZO",info:"Procedural sedation / anxiolysis"},
+];
+
+// ─── RIPPLE MARK ─────────────────────────────────────────────────────────────
+function RippleMark({ size = 32 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display:"block", flexShrink:0 }}>
+      <circle cx="50" cy="50" r="9"  fill={T.cyan} />
+      <circle cx="50" cy="50" r="22" stroke={T.cyan} strokeWidth="3"   fill="none" opacity="0.88" />
+      <circle cx="50" cy="50" r="37" stroke={T.cyan} strokeWidth="2"   fill="none" opacity="0.52" />
+      <circle cx="50" cy="50" r="49" stroke={T.cyan} strokeWidth="1.2" fill="none" opacity="0.24" />
+    </svg>
+  );
+}
+
+// ─── RAPID ORDER CARD ────────────────────────────────────────────────────────
+function RapidCard({ order, copiedId, onCopy }) {
+  const critTags = ["ACLS","1ST LINE","STROKE","MTP","TXA","SHOCK"];
+  const urgTags  = ["RSI","RHYTHM","SEIZURE","ICP","PRESSOR","REVERSAL"];
+  const tagColor = critTags.includes(order.tag) ? T.cyan
+    : urgTags.includes(order.tag) ? T.gold : T.muted;
+  const orderStr = [order.name, "—", order.dose, order.route, order.freq && order.freq !== "—" ? order.freq : ""].filter(Boolean).join(" ");
+  const isCopied = copiedId === order.id;
+  return (
+    <div style={{ background:"rgba(18,204,230,0.05)", border:"1px solid " + (isCopied ? T.cyan : T.border), borderRadius:9, padding:"9px 11px", marginBottom:5, transition:"border-color 0.2s" }}>
+      <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2, flexWrap:"wrap" }}>
+            <span style={{ fontFamily:F.body, fontSize:12, fontWeight:600, color:T.text }}>{order.name}</span>
+            <span style={{ fontFamily:F.mono, fontSize:7.5, color:tagColor, background:tagColor+"1A", border:"1px solid "+tagColor+"40", borderRadius:3, padding:"1px 5px", letterSpacing:"0.06em" }}>{order.tag}</span>
+          </div>
+          <div style={{ fontFamily:F.mono, fontSize:10.5, color:T.cyan }}>
+            {order.dose}
+            <span style={{ color:T.muted }}>{order.route !== "—" ? " · " + order.route : ""}{order.freq && order.freq !== "—" ? " · " + order.freq : ""}</span>
+          </div>
+          {order.info && <div style={{ fontFamily:F.body, fontSize:10, color:T.dim, marginTop:3, lineHeight:1.4 }}>{order.info}</div>}
+        </div>
+        <CopyBtn text={orderStr} id={order.id} copiedId={copiedId} onCopy={onCopy} />
+      </div>
+    </div>
+  );
+}
+
+// ─── RAPID ORDERS TAB ────────────────────────────────────────────────────────
+function RapidOrdersTab({ rapidCat, onCatChange, rapidCtx, onCtxChange, aiOrders, loadingAI, onAIGenerate, rapidLog, onPlace, copiedId, onCopy }) {
+  const filtered = RAPID_ORDERS.filter(o => rapidCat === "all" || o.cat === rapidCat);
+  function placeAndCopy(order) {
+    const str = [order.name, "—", order.dose, order.route].join(" ");
+    onCopy(str, order.id);
+    onPlace(order);
+  }
+  return (
+    <div>
+      <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"wrap" }}>
+        <input
+          value={rapidCtx}
+          onChange={e => onCtxChange(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && onAIGenerate()}
+          placeholder="Clinical context for AI orders — e.g. cardiac arrest, RSI, septic shock..."
+          style={{ flex:1, minWidth:200, background:"rgba(18,204,230,0.06)", border:"1px solid " + T.border, borderRadius:7, padding:"7px 12px", fontFamily:F.body, fontSize:11, color:T.text, outline:"none" }}
+        />
+        <button
+          onClick={onAIGenerate}
+          disabled={loadingAI}
+          style={{ padding:"7px 14px", background:"rgba(18,204,230,0.12)", border:"1px solid " + T.borderHi, borderRadius:7, color:T.cyan, fontFamily:F.mono, fontSize:9, cursor:loadingAI ? "not-allowed" : "pointer", letterSpacing:"0.08em", flexShrink:0, opacity:loadingAI ? 0.6 : 1 }}
+        >{loadingAI ? "GENERATING..." : "✦ AI ORDERS"}</button>
+      </div>
+
+      <div style={{ display:"flex", gap:4, marginBottom:12, overflowX:"auto", paddingBottom:2 }}>
+        {RAPID_CATS.map(c => (
+          <button key={c.id} onClick={() => onCatChange(c.id)} style={{ padding:"3px 10px", background:rapidCat === c.id ? "rgba(18,204,230,0.14)" : "none", border:"1px solid " + (rapidCat === c.id ? T.borderHi : T.border), borderRadius:20, color:rapidCat === c.id ? T.cyan : T.muted, fontFamily:F.mono, fontSize:9, cursor:"pointer", whiteSpace:"nowrap", letterSpacing:"0.04em", transition:"all 0.12s" }}>{c.label}</button>
+        ))}
+      </div>
+
+      {aiOrders.length > 0 && (
+        <div style={{ marginBottom:12 }}>
+          <div style={{ fontFamily:F.mono, fontSize:8, letterSpacing:"0.1em", color:T.cyan, marginBottom:6 }}>✦ AI ORDERS — {rapidCtx}</div>
+          {aiOrders.map(o => <RapidCard key={o.id} order={o} copiedId={copiedId} onCopy={onCopy} />)}
+          <div style={{ height:1, background:T.border, margin:"10px 0" }} />
+        </div>
+      )}
+
+      <div style={{ fontFamily:F.mono, fontSize:8, letterSpacing:"0.08em", color:T.dim, marginBottom:8 }}>
+        {rapidCat === "all" ? "ALL PRESETS · " + filtered.length : (RAPID_CATS.find(c => c.id === rapidCat)?.label || "").toUpperCase() + " · " + filtered.length}
+      </div>
+      {filtered.map(o => <RapidCard key={o.id} order={o} copiedId={copiedId} onCopy={(text, id) => { onCopy(text, id); onPlace(o); }} />)}
+
+      {rapidLog.length > 0 && (
+        <div style={{ marginTop:16, borderTop:"1px solid " + T.border, paddingTop:12 }}>
+          <div style={{ fontFamily:F.mono, fontSize:8, letterSpacing:"0.1em", color:T.dim, marginBottom:8 }}>SESSION LOG · {rapidLog.length} PLACED</div>
+          {rapidLog.map(e => (
+            <div key={e.id} style={{ display:"flex", justifyContent:"space-between", padding:"5px 9px", background:"rgba(18,204,230,0.04)", border:"1px solid " + T.border, borderRadius:6, marginBottom:3 }}>
+              <div>
+                <div style={{ fontFamily:F.body, fontSize:11, fontWeight:600, color:T.text }}>{e.name}</div>
+                <div style={{ fontFamily:F.mono, fontSize:9, color:T.cyan }}>{e.dose}</div>
+              </div>
+              <div style={{ fontFamily:F.mono, fontSize:9, color:T.dim, alignSelf:"center" }}>{e.time}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── ROOT COMPONENT ──────────────────────────────────────────────────────────
 export default function CommandKit() {
   const [isOpen, setIsOpen]                 = useState(false);
@@ -682,6 +836,13 @@ export default function CommandKit() {
   const [weightSource, setWeightSource]     = useState("manual");
   const [searchQuery, setSearchQuery]       = useState("");
   const [copiedId, setCopiedId]             = useState(null);
+  const [ringing,       setRinging]       = useState(false);
+  const [ringKey,       setRingKey]       = useState(0);
+  const [rapidCat,      setRapidCat]      = useState("all");
+  const [rapidCtx,      setRapidCtx]      = useState("");
+  const [aiRapidOrders, setAiRapidOrders] = useState([]);
+  const [loadingAI,     setLoadingAI]     = useState(false);
+  const [rapidLog,      setRapidLog]      = useState([]);
 
   const searchRef = useRef(null);
   const weightRef = useRef(null);
@@ -767,26 +928,82 @@ export default function CommandKit() {
     setSearchQuery("");
   }, []);
 
+  function fireFab() {
+    setRingKey(k => k + 1);
+    setRinging(false);
+    setTimeout(() => setRinging(true), 10);
+    setTimeout(() => setRinging(false), 760);
+  }
+
+  function rapidTs() {
+    return new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+  }
+
+  const handleRapidPlace = useCallback((order) => {
+    setRapidLog(prev => [{
+      id: Date.now() + Math.random(),
+      name: order.name, dose: order.dose,
+      route: order.route, time: rapidTs(),
+    }, ...prev]);
+  }, []);
+
+  async function handleAIRapid() {
+    if (!rapidCtx.trim()) return;
+    setLoadingAI(true);
+    setAiRapidOrders([]);
+    try {
+      const res = await InvokeLLM({
+        prompt: "You are an ED physician. Clinical scenario: \"" + rapidCtx + "\". Generate 5 critical rapid orders. Be specific with doses and routes.",
+        response_json_schema: {
+          type:"object",
+          properties:{orders:{type:"array",items:{type:"object",properties:{name:{type:"string"},dose:{type:"string"},route:{type:"string"},freq:{type:"string"},tag:{type:"string"},info:{type:"string"}},required:["name","dose","route","freq","tag","info"]}}},
+          required:["orders"],
+        },
+      });
+      setAiRapidOrders((res.orders || []).map((o, i) => ({ ...o, id:"ai_"+i, cat:"ai" })));
+    } catch (_) {}
+    finally { setLoadingAI(false); }
+  }
+
   const peds = isPediatric(patient.age, weightKg);
 
   // ── TRIGGER BUTTON ────────────────────────────────────────────────────────
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        title="CommandKit — Ctrl+Space"
-        style={{
-          position: "fixed", bottom: 22, right: 22, zIndex: 8900,
-          width: 50, height: 50, borderRadius: "50%",
-          background: "linear-gradient(140deg, #0B1A30 0%, #060C19 100%)",
-          border: "1px solid " + T.borderHi,
-          boxShadow: "0 0 22px rgba(18,204,230,0.28), 0 4px 18px rgba(0,0,0,0.65)",
-          cursor: "pointer", display: "flex", alignItems: "center",
-          justifyContent: "center", fontSize: 21,
-        }}
-      >
-        ⚡
-      </button>
+      <>
+        <style>{`
+          @keyframes ckRipOut{0%{transform:scale(.75);opacity:.8}100%{transform:scale(2.8);opacity:0}}
+          .ck-rp{position:absolute;inset:-5px;border-radius:50%;pointer-events:none}
+          .ck-rp1{border:2px solid rgba(18,204,230,.75);animation:ckRipOut .72s ease-out forwards}
+          .ck-rp2{border:1.5px solid rgba(18,204,230,.5);animation:ckRipOut .72s ease-out .14s forwards}
+          .ck-rp3{border:1px solid rgba(18,204,230,.3);animation:ckRipOut .72s ease-out .28s forwards}
+        `}</style>
+        <div style={{ position:"fixed", bottom:22, right:22, zIndex:8900 }}>
+          <div style={{ position:"relative", width:50, height:50 }}>
+            {ringing && (
+              <div key={ringKey}>
+                <div className="ck-rp ck-rp1" />
+                <div className="ck-rp ck-rp2" />
+                <div className="ck-rp ck-rp3" />
+              </div>
+            )}
+            <button
+              onClick={() => { fireFab(); setIsOpen(true); }}
+              title="Pulse — Ctrl+Space"
+              style={{
+                position:"relative", zIndex:1,
+                width:50, height:50, borderRadius:"50%",
+                background:"linear-gradient(140deg, #0B1A30 0%, #060C19 100%)",
+                border:"1px solid " + T.borderHi,
+                boxShadow:"0 0 22px rgba(18,204,230,0.28), 0 4px 18px rgba(0,0,0,0.65)",
+                cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+              }}
+            >
+              <RippleMark size={30} />
+            </button>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -897,6 +1114,21 @@ export default function CommandKit() {
 
         {/* ── CONTENT ─────────────────────────────────────────────────────── */}
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px", scrollbarWidth: "thin", scrollbarColor: T.border + " transparent" }}>
+          {activeTab === "rapid" && (
+            <RapidOrdersTab
+              rapidCat={rapidCat}
+              onCatChange={setRapidCat}
+              rapidCtx={rapidCtx}
+              onCtxChange={setRapidCtx}
+              aiOrders={aiRapidOrders}
+              loadingAI={loadingAI}
+              onAIGenerate={handleAIRapid}
+              rapidLog={rapidLog}
+              onPlace={handleRapidPlace}
+              copiedId={copiedId}
+              onCopy={handleCopy}
+            />
+          )}
           {activeTab === "meds" && (
             <MedsTab weightKg={weightKg} ageYears={patient.age} activeScenario={activeScenario} searchQuery={searchQuery} copiedId={copiedId} onCopy={handleCopy} />
           )}

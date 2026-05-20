@@ -13,6 +13,7 @@ body{background:#060E2B;color:#F0F4FF;font-family:'DM Sans',system-ui,sans-serif
 @keyframes slowScan{0%{transform:translateX(-120%);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateX(300%);opacity:0}}
 @keyframes gridScroll{from{background-position:0 0}to{background-position:60px 60px}}
 @keyframes sepPulse{0%{left:-6px;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:calc(100% + 6px);opacity:0}}
+@keyframes carouselProgress{from{width:0%}to{width:100%}}
 @keyframes a1{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
 .fr{opacity:0;transform:translateY(22px);transition:opacity .55s ease,transform .55s ease}
 .fr.vis{opacity:1;transform:translateY(0)}
@@ -218,6 +219,208 @@ function StackCard({ item }) {
         fontStyle:"italic"
       }}>
         {item.benefit}
+      </div>
+    </div>
+  );
+}
+
+// ─── CAROUSEL DATA ──────────────────────────────────────────────────────────
+const SELLING_POINTS = [
+  {
+    tag:"// keyboard-first",
+    headline:"Press Ctrl+Space. Get Everything.",
+    sub:"CommandKit launches a full clinical overlay — drug doses, imaging orders, lab panels, reference tools — in under 200ms. No mouse. No menu hunting. No wasted seconds.",
+    stat:"< 200ms", statLabel:"Time to Clinical Data",
+    color:"#12CCE6",
+    visual:(
+      <svg viewBox="0 0 380 220" width="100%" height="220">
+        <rect width="380" height="220" fill="#060C19" rx="16"/>
+        {/* Grid */}
+        {[40,80,120,160].map(y=><line key={y} x1="0" y1={y} x2="380" y2={y} stroke="rgba(18,204,230,.06)" strokeWidth="1"/>)}
+        {[60,120,180,240,300,360].map(x=><line key={x} x1={x} y1="0" x2={x} y2="220" stroke="rgba(18,204,230,.06)" strokeWidth="1"/>)}
+        {/* Keyboard keys */}
+        {[["Ctrl",20,160,52,34],["Space",82,160,156,34],["⌘",248,160,40,34]].map(([l,x,y,w,h])=>(
+          <g key={l}>
+            <rect x={x} y={y} width={w} height={h} rx="7" fill="#0B1640" stroke="rgba(18,204,230,.4)" strokeWidth="1.5"/>
+            <text x={x+w/2} y={y+h/2+4} textAnchor="middle" fontFamily="'JetBrains Mono',monospace" fontSize="11" fill="#12CCE6">{l}</text>
+          </g>
+        ))}
+        {/* CommandKit overlay box */}
+        <rect x="20" y="20" width="340" height="120" rx="12" fill="rgba(11,22,64,.95)" stroke="rgba(18,204,230,.5)" strokeWidth="1.5"/>
+        <rect x="20" y="20" width="340" height="36" rx="12" fill="rgba(18,204,230,.08)"/>
+        <rect x="20" y="44" width="340" height="12" rx="0" fill="rgba(18,204,230,.08)"/>
+        <text x="36" y="43" fontFamily="'JetBrains Mono',monospace" fontSize="11" fill="#12CCE6" opacity=".7">⚡ CommandKit</text>
+        <text x="36" y="70" fontFamily="'DM Sans',sans-serif" fontSize="13" fill="rgba(240,244,255,.85)">morphine 0.1 mg/kg IV</text>
+        <text x="36" y="90" fontFamily="'DM Sans',sans-serif" fontSize="13" fill="rgba(240,244,255,.5)">fentanyl 1 mcg/kg IV push</text>
+        <text x="36" y="110" fontFamily="'DM Sans',sans-serif" fontSize="13" fill="rgba(240,244,255,.5)">ketorolac 15-30 mg IV</text>
+        <text x="36" y="130" fontFamily="'DM Sans',sans-serif" fontSize="13" fill="rgba(240,244,255,.5)">ketamine 0.3 mg/kg IV</text>
+        {/* Pulse line */}
+        <path d="M290 80 L305 80 L310 60 L315 100 L320 80 L360 80" fill="none" stroke="#12CCE6" strokeWidth="2" strokeLinecap="round" opacity=".7"/>
+      </svg>
+    )
+  },
+  {
+    tag:"// voice command",
+    headline:"Say It. Done.",
+    sub:"Speak any clinical intent — \"dose morphine\", \"guideline HEART\", \"weight 82 kg\", \"switch to imaging\" — and Notrya responds instantly. Hands-free. Gloves on. Eyes on the patient.",
+    stat:"100%", statLabel:"Hands-Free Operation",
+    color:"#1D9E75",
+    visual:(
+      <svg viewBox="0 0 380 220" width="100%" height="220">
+        <rect width="380" height="220" fill="#060E2B" rx="16"/>
+        {/* Waveform bars */}
+        {[1,3,5,7,9,7,5,8,4,6,9,5,3,7,5].map((h,i)=>(
+          <rect key={i} x={60+i*18} y={110-h*7} width="10" height={h*14} rx="5"
+            fill="rgba(29,158,117,.6)" opacity={0.4+h*0.06}/>
+        ))}
+        {/* Mic icon */}
+        <rect x="168" y="60" width="44" height="64" rx="22" fill="none" stroke="#1D9E75" strokeWidth="3"/>
+        <line x1="190" y1="124" x2="190" y2="148" stroke="#1D9E75" strokeWidth="3" strokeLinecap="round"/>
+        <path d="M170 130 Q190 155 210 130" fill="none" stroke="#1D9E75" strokeWidth="3" strokeLinecap="round"/>
+        <line x1="178" y1="148" x2="202" y2="148" stroke="#1D9E75" strokeWidth="3" strokeLinecap="round"/>
+        {/* Command bubbles */}
+        <rect x="20" y="20" width="140" height="30" rx="15" fill="rgba(29,158,117,.12)" stroke="rgba(29,158,117,.3)" strokeWidth="1"/>
+        <text x="90" y="39" textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="12" fill="#7EC9AA">"dose morphine"</text>
+        <rect x="220" y="20" width="140" height="30" rx="15" fill="rgba(29,158,117,.12)" stroke="rgba(29,158,117,.3)" strokeWidth="1"/>
+        <text x="290" y="39" textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="12" fill="#7EC9AA">"guideline HEART"</text>
+        <rect x="20" y="170" width="150" height="30" rx="15" fill="rgba(29,158,117,.08)" stroke="rgba(29,158,117,.2)" strokeWidth="1"/>
+        <text x="95" y="189" textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="12" fill="#7EC9AA">"weight 82 kg"</text>
+        <rect x="210" y="170" width="150" height="30" rx="15" fill="rgba(29,158,117,.08)" stroke="rgba(29,158,117,.2)" strokeWidth="1"/>
+        <text x="285" y="189" textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="12" fill="#7EC9AA">"switch to imaging"</text>
+      </svg>
+    )
+  },
+  {
+    tag:"// ai documentation",
+    headline:"Disposition in 60 Seconds.",
+    sub:"QuickNote AI generates a full MDM narrative, ICD-10 codes, HPI summary, and E&M level from a single voice dictation or paste. Clinical documentation that bills correctly, every time.",
+    stat:"60s", statLabel:"Full Note to Disposition",
+    color:"#EF9F27",
+    visual:(
+      <svg viewBox="0 0 380 220" width="100%" height="220">
+        <rect width="380" height="220" fill="#070D1E" rx="16"/>
+        {/* Note lines */}
+        {[0,1,2,3,4,5].map(i=>(
+          <rect key={i} x="20" y={28+i*26} width={i===5?120:i===2?260:300-i*10} height="10" rx="5" fill="rgba(239,159,39,.12)" opacity={1-i*0.1}/>
+        ))}
+        {/* AI badge */}
+        <rect x="20" y="190" width="60" height="20" rx="10" fill="rgba(239,159,39,.2)" stroke="rgba(239,159,39,.4)" strokeWidth="1"/>
+        <text x="50" y="204" textAnchor="middle" fontFamily="'JetBrains Mono',monospace" fontSize="10" fill="#EF9F27">AI</text>
+        {/* Progress bar */}
+        <rect x="100" y="192" width="220" height="16" rx="8" fill="rgba(239,159,39,.08)" stroke="rgba(239,159,39,.2)" strokeWidth="1"/>
+        <rect x="100" y="192" width="176" height="16" rx="8" fill="rgba(239,159,39,.3)"/>
+        <text x="300" y="204" fontFamily="'DM Sans',sans-serif" fontSize="10" fill="#EF9F27" textAnchor="middle">80%</text>
+        {/* ICD badge */}
+        <rect x="240" y="28" width="120" height="64" rx="10" fill="#0B1640" stroke="rgba(239,159,39,.3)" strokeWidth="1"/>
+        <text x="300" y="50" textAnchor="middle" fontFamily="'JetBrains Mono',monospace" fontSize="9" fill="rgba(239,159,39,.6)">ICD-10</text>
+        <text x="300" y="68" textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="13" fontWeight="700" fill="#EF9F27">R07.9</text>
+        <text x="300" y="84" textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="9" fill="rgba(239,159,39,.5)">Chest pain, NOS</text>
+        {/* ECG sparkline */}
+        <path d="M20 160 L80 160 L92 135 L100 185 L108 160 L200 160" fill="none" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" opacity=".5"/>
+        <text x="210" y="164" fontFamily="'DM Sans',sans-serif" fontSize="11" fill="rgba(239,159,39,.5)">MDM: Moderate</text>
+      </svg>
+    )
+  },
+  {
+    tag:"// peer-reviewed evidence",
+    headline:"Every Protocol. Sourced. Graded.",
+    sub:"50+ embedded scoring tools — HEART, PERC, Wells, qSOFA, NIHSS, CURB-65. Every recommendation traces to a peer-reviewed source. Your clinical decisions are always defensible.",
+    stat:"50+", statLabel:"Evidence-Based Protocols",
+    color:"#7F77DD",
+    visual:(
+      <svg viewBox="0 0 380 220" width="100%" height="220">
+        <rect width="380" height="220" fill="#060E2B" rx="16"/>
+        {/* Protocol cards */}
+        {[["HEART","Cardiac","#E24B4A",20,20],["PERC","PE Rule-out","#7F77DD",20,100],["Wells PE","DVT/PE","#378ADD",140,60],["qSOFA","Sepsis","#1D9E75",260,20],["CURB-65","Pneumonia","#EF9F27",260,100]].map(([name,cat,col,x,y])=>(
+          <g key={name}>
+            <rect x={x} y={y} width="110" height="70" rx="10" fill="#0B1640" stroke={col+"40"} strokeWidth="1.5"/>
+            <rect x={x} y={y} width="110" height="22" rx="10" fill={col+"20"}/>
+            <rect x={x+0} y={y+12} width="110" height="10" rx="0" fill={col+"20"}/>
+            <text x={x+55} y={y+15} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="12" fontWeight="700" fill={col}>{name}</text>
+            <text x={x+55} y={y+35} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="10" fill="rgba(240,244,255,.5)">{cat}</text>
+            <rect x={x+12} y={y+45} width="86" height="7" rx="3" fill={col+"25"}/>
+            <rect x={x+12} y={y+45} width={40+Math.random()*30} height="7" rx="3" fill={col+"80"}/>
+          </g>
+        ))}
+        {/* Source badge */}
+        <rect x="140" y="170" width="100" height="28" rx="14" fill="rgba(127,119,221,.15)" stroke="rgba(127,119,221,.35)" strokeWidth="1"/>
+        <text x="190" y="188" textAnchor="middle" fontFamily="'JetBrains Mono',monospace" fontSize="10" fill="#7F77DD">✓ sourced</text>
+      </svg>
+    )
+  },
+];
+
+// ─── SELLING POINTS CAROUSEL ─────────────────────────────────────────────────
+function SellingPointsCarousel() {
+  const [active, setActive] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const intervalRef = useRef(null);
+
+  const go = useCallback((idx) => {
+    if (animating) return;
+    setAnimating(true);
+    setTimeout(() => {
+      setActive(idx);
+      setAnimating(false);
+    }, 280);
+  }, [animating]);
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setActive(prev => (prev + 1) % SELLING_POINTS.length);
+    }, 5500);
+    return () => clearInterval(intervalRef.current);
+  }, []);
+
+  const pt = SELLING_POINTS[active];
+
+  return (
+    <div style={{ maxWidth:1400, margin:"0 auto", padding:"80px 64px" }} id="selling-points">
+      <SLabel>// top selling points</SLabel>
+      <STitle>Why Clinicians Choose Notrya</STitle>
+      <SSub>The four capabilities that set Notrya AI apart from every other clinical tool.</SSub>
+
+      {/* Tabs */}
+      <div style={{ display:"flex", gap:10, marginBottom:36, flexWrap:"wrap" }}>
+        {SELLING_POINTS.map((p, i) => (
+          <button key={i} onClick={() => { clearInterval(intervalRef.current); go(i); }}
+            style={{ padding:"10px 22px", borderRadius:100, border:`1.5px solid ${i===active?p.color+"80":"rgba(120,148,192,.2)"}`, background:i===active?p.color+"15":"transparent", color:i===active?p.color:P.t2, fontSize:12, letterSpacing:"1.2px", textTransform:"uppercase", fontWeight:600, cursor:"pointer", transition:"all .25s", fontFamily:"'DM Sans',sans-serif" }}>
+            {p.tag.replace("// ","")}
+          </button>
+        ))}
+      </div>
+
+      {/* Card */}
+      <div className="fr vis" style={{ background:P.navy2, border:`1px solid ${pt.color}28`, borderRadius:24, overflow:"hidden", boxShadow:`0 20px 64px ${pt.color}12`, opacity:animating?0:1, transition:"opacity .28s ease" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:0 }}>
+          {/* Left: copy */}
+          <div style={{ padding:"56px 52px", display:"flex", flexDirection:"column", justifyContent:"center", borderRight:`1px solid ${pt.color}18` }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:4, color:pt.color, textTransform:"uppercase", marginBottom:20 }}>{pt.tag}</div>
+            <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(28px,3vw,44px)", fontWeight:900, lineHeight:1.1, letterSpacing:-1.5, marginBottom:22 }}>{pt.headline}</h3>
+            <p style={{ fontSize:15, color:P.t2, lineHeight:1.8, marginBottom:36 }}>{pt.sub}</p>
+            {/* Stat */}
+            <div style={{ display:"flex", alignItems:"baseline", gap:12 }}>
+              <span style={{ fontFamily:"'Playfair Display',serif", fontSize:56, fontWeight:900, lineHeight:1, color:pt.color }}>{pt.stat}</span>
+              <span style={{ fontSize:12, color:P.t2, letterSpacing:"1.5px", textTransform:"uppercase", maxWidth:100, lineHeight:1.4 }}>{pt.statLabel}</span>
+            </div>
+          </div>
+          {/* Right: visual */}
+          <div style={{ padding:"40px 40px", background:"linear-gradient(135deg,#060C19,#0A1528)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ width:"100%", maxWidth:380 }}>{pt.visual}</div>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div style={{ height:3, background:`${pt.color}15` }}>
+          <div key={active} style={{ height:"100%", background:pt.color, animation:"carouselProgress 5.5s linear forwards" }}/>
+        </div>
+      </div>
+
+      {/* Dot nav */}
+      <div style={{ display:"flex", gap:10, justifyContent:"center", marginTop:28 }}>
+        {SELLING_POINTS.map((_,i) => (
+          <button key={i} onClick={() => { clearInterval(intervalRef.current); go(i); }}
+            style={{ width:i===active?28:8, height:8, borderRadius:4, background:i===active?pt.color:"rgba(120,148,192,.25)", border:"none", cursor:"pointer", transition:"all .3s", padding:0 }}/>
+        ))}
       </div>
     </div>
   );
@@ -637,6 +840,8 @@ export default function TechnologyPage() {
       <style>{CSS}</style>
       <Nav scrolled={scrolled}/>
       <Hero/>
+      <Divider/>
+      <SellingPointsCarousel/>
       <Divider/>
       <BrandSection/>
       <Divider/>

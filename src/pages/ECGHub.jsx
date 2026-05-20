@@ -17,6 +17,7 @@ import ECGSyncopeTab   from "@/components/ecg/ECGSyncopeTab";
 import ECGElectrolyteTab from "@/components/ecg/EcgElectrolyteTab";
 import ECGPEATab       from "@/components/ecg/ECGPEATab";
 import ECGHEARTScore   from "@/components/ecg/ECGHEARTScore";
+import { PulseNavBadge } from "@/components/PulseActivators";
 
 (() => {
   if (typeof document === "undefined") return;
@@ -1724,7 +1725,7 @@ export default function ECGHub({ embedded = false, onBack }) {
     <div style={{display:"flex",minHeight:"100vh",background:embedded?"transparent":T.bg,color:T.txt}}>
       {!embedded && <NotryaNav currentHub="ECGHub" />}
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
-        {!embedded && <NotryaHubHeader hubName="ECG Hub" category="Cardiac" homeUrl="/" />}
+        {!embedded && <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingRight:16}}><NotryaHubHeader hubName="ECG Hub" category="Cardiac" homeUrl="/" /><PulseNavBadge /></div>}
         {!embedded && <NotryaPatientBar />}
         <div style={{maxWidth:960,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%"}}>
 

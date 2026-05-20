@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
+import { PulseNavBadge } from "@/components/PulseActivators";
 import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
 
 const P = {
@@ -474,6 +475,7 @@ export default function ElectrolyteAcidBaseHub(){
             <div>
               <div style={{fontFamily:PL,fontSize:26,fontWeight:700,color:C.teal,marginBottom:3}}>Electrolyte & Acid-Base Hub</div>
               <div style={{fontFamily:DM,fontSize:13,color:C.dim,marginBottom:18}}>ABG/VBG · Osmolar gaps · Electrolyte replacement · Sodium disorders · SIADH vs CSW · Hyperkalemia · QTc · Bicarb drip · Tumor lysis</div>
+              <PulseNavBadge />
             </div>
             <div style={{display:"flex",gap:8,flexShrink:0,paddingTop:4}}>
               <button onClick={()=>setPrint(p=>!p)} style={{background:print?`${C.teal}20`:"rgba(255,255,255,0.07)",border:`1px solid ${print?C.teal:"rgba(255,255,255,0.2)"}`,borderRadius:8,color:print?C.teal:P.dim,cursor:"pointer",fontFamily:DM,fontSize:12,fontWeight:600,padding:"7px 14px"}}>{print?"● Print mode":"⎙ Print mode"}</button>

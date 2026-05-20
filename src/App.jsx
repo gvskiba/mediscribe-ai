@@ -14,6 +14,7 @@ import GlobalNav from '@/components/GlobalNav';
 import CommandPalette from '@/components/CommandPalette';
 import NotryaFloatingAI from '@/components/ai/NotryaFloatingAI';
 import CommandKit from '@/components/CommandKit';
+import PulseActivators from "@/components/PulseActivators";
 
 // Pages
 import PatientChart from '@/pages/PatientChart';
@@ -206,6 +207,7 @@ const AuthenticatedApp = () => {
       <PatientSidebar />
       <GlobalFloatingAI />
       <CommandKit />
+      <PulseActivators />
       <Routes>
         <Route path="/" element={<NotryaSplash />} />
         <Route path="/command-center-home" element={<CommandCenter />} />

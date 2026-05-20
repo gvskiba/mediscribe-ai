@@ -20,6 +20,7 @@ import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPa
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
+import { PulseNavBadge } from "@/components/PulseActivators";
 
 (() => {
   if (document.getElementById("psych-fonts")) return;
@@ -655,7 +656,7 @@ export default function PsychHub({ embedded = false }) {
       background:embedded ? "transparent" : T.bg, color:T.txt }}>
       {!embedded && <NotryaNav currentHub="PsychHub" />}
       <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", minWidth:0 }}>
-        {!embedded && <NotryaHubHeader hubName="Psych Hub" category="Neurology" homeUrl="/" />}
+        {!embedded && <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingRight:16}}><NotryaHubHeader hubName="Psych Hub" category="Neurology" homeUrl="/" /><PulseNavBadge /></div>}
         {!embedded && <NotryaPatientBar />}
       <div style={{ maxWidth:900, margin:"0 auto",
         padding:embedded ? "0" : "0 16px", width:"100%" }}>

@@ -902,6 +902,15 @@ export default function CommandKit() {
     return () => window.removeEventListener("keydown", handler);
   }, [isOpen]);
 
+  useEffect(() => {
+    const handler = () => {
+      setIsOpen(true);
+      setActiveTab("rapid");
+    };
+    window.addEventListener("notrya:pulse:open", handler);
+    return () => window.removeEventListener("notrya:pulse:open", handler);
+  }, []);
+
   const handleWeightChange = useCallback((val) => {
     setWeightInput(val);
     setWeightSource("manual");
@@ -967,45 +976,7 @@ export default function CommandKit() {
 
   const peds = isPediatric(patient.age, weightKg);
 
-  // ── TRIGGER BUTTON ────────────────────────────────────────────────────────
-  if (!isOpen) {
-    return (
-      <>
-        <style>{`
-          @keyframes ckRipOut{0%{transform:scale(.75);opacity:.8}100%{transform:scale(2.8);opacity:0}}
-          .ck-rp{position:absolute;inset:-5px;border-radius:50%;pointer-events:none}
-          .ck-rp1{border:2px solid rgba(18,204,230,.75);animation:ckRipOut .72s ease-out forwards}
-          .ck-rp2{border:1.5px solid rgba(18,204,230,.5);animation:ckRipOut .72s ease-out .14s forwards}
-          .ck-rp3{border:1px solid rgba(18,204,230,.3);animation:ckRipOut .72s ease-out .28s forwards}
-        `}</style>
-        <div style={{ position:"fixed", bottom:22, right:22, zIndex:8900 }}>
-          <div style={{ position:"relative", width:50, height:50 }}>
-            {ringing && (
-              <div key={ringKey}>
-                <div className="ck-rp ck-rp1" />
-                <div className="ck-rp ck-rp2" />
-                <div className="ck-rp ck-rp3" />
-              </div>
-            )}
-            <button
-              onClick={() => { fireFab(); setIsOpen(true); }}
-              title="Pulse — Ctrl+Space"
-              style={{
-                position:"relative", zIndex:1,
-                width:50, height:50, borderRadius:"50%",
-                background:"linear-gradient(140deg, #0B1A30 0%, #060C19 100%)",
-                border:"1px solid " + T.borderHi,
-                boxShadow:"0 0 22px rgba(18,204,230,0.28), 0 4px 18px rgba(0,0,0,0.65)",
-                cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
-              }}
-            >
-              <RippleMark size={30} />
-            </button>
-          </div>
-        </div>
-      </>
-    );
-  }
+  if (!isOpen) return null;
 
   // ── OVERLAY ───────────────────────────────────────────────────────────────
   return (

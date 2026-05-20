@@ -9,6 +9,7 @@ import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 import LabResultsUploader from "@/components/toxicology/LabResultsUploader";
+import { PulseNavBadge } from "@/components/PulseActivators";
 
 (() => {
   if (document.getElementById("tox-fonts")) return;
@@ -1322,7 +1323,7 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
     <div style={{ display:"flex",minHeight:"100vh",background:embedded?"transparent":T.bg,color:T.txt }}>
       {!embedded && <NotryaNav currentHub="ToxicologyHub" />}
       <div style={{ flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0 }}>
-        {!embedded && <NotryaHubHeader hubName="Toxicology Hub" category="Tox" homeUrl="/" />}
+        {!embedded && <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingRight:16}}><NotryaHubHeader hubName="Toxicology Hub" category="Tox" homeUrl="/" /><PulseNavBadge /></div>}
         {!embedded && <NotryaPatientBar />}
         <div style={{ maxWidth:1100,margin:"0 auto",padding:embedded?"0":"0 16px",width:"100%" }}>
 

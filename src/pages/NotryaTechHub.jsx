@@ -85,12 +85,12 @@ const HUBS = [
 
 // ─── TECH STACK DATA ────────────────────────────────────────────────────────
 const STACK = [
-  { name:"Anthropic Claude API", desc:"Claude Sonnet powers all AI inference \u2014 HPI generation, ECG interpretation, imaging analysis, and clinical reasoning across every hub in real time.", icon:<path d="M12 2L22 12L12 22L2 12Z" stroke="#1D9E75" strokeWidth="1.5" fill="none"/>,icon2:<path d="M12 8L16 12L12 16L8 12Z" fill="#1D9E75" opacity="0.4"/>},
-  { name:"Base44 Platform", desc:"All Notrya hubs are single-file JSX components on Base44 \u2014 rapid iteration, live deployment, and entity-level persistent data storage.", icon:<rect x="3" y="3" width="18" height="18" rx="4" stroke="#1D9E75" strokeWidth="1.5" fill="none"/>,icon2:<path d="M8 12L11 15L16 9" stroke="#EF9F27" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>},
-  { name:"FHIR Integration Layer", desc:"Smart Sync connects to EMR systems via FHIR R4 \u2014 real-time vitals polling, patient context propagation, and bidirectional lab data flow.", icon:<circle cx="12" cy="12" r="9" stroke="#1D9E75" strokeWidth="1.5" fill="none"/>,icon2:<g><path d="M8 12L12 8L16 12L12 16Z" fill="#1D9E75" opacity="0.35"/><circle cx="12" cy="12" r="2.5" fill="#1D9E75"/></g>},
-  { name:"ICD-10 & CPT Engine", desc:"Real-time ICD-10 search, CPT code stepping, E&M level estimation, and comorbidity linkage built directly into the documentation flow.", icon:<path d="M4 6H20M4 12H20M4 18H14" stroke="#EF9F27" strokeWidth="1.5" strokeLinecap="round" fill="none"/>,icon2:null},
-  { name:"Glassmorphism Design System", desc:"Navy-dark UI with teal, gold, and coral token accents. Playfair Display, DM Sans, JetBrains Mono. Keyboard-first, zero-mouse-click navigation.", icon:<path d="M12 3L21 8L21 16L12 21L3 16L3 8Z" stroke="#1D9E75" strokeWidth="1.5" fill="none"/>,icon2:<circle cx="12" cy="12" r="3" fill="#1D9E75" opacity="0.5"/>},
-  { name:"Evidence-Based Protocols", desc:"Every recommendation is graded and sourced. LRINEC, CHA\u2082DS\u2082-VASc, GRACE, TIMI, HEART \u2014 peer-reviewed protocols, not hallucinated guidance.", icon:<g><circle cx="5" cy="12" r="2" fill="#1D9E75"/><circle cx="12" cy="5" r="2" fill="#1D9E75"/><circle cx="19" cy="12" r="2" fill="#1D9E75"/><circle cx="12" cy="19" r="2" fill="#1D9E75"/></g>,icon2:<g><line x1="7" y1="12" x2="10" y2="12" stroke="#1D9E75" strokeWidth="1.5"/><line x1="12" y1="7" x2="12" y2="10" stroke="#1D9E75" strokeWidth="1.5"/><line x1="14" y1="12" x2="17" y2="12" stroke="#1D9E75" strokeWidth="1.5"/><line x1="12" y1="14" x2="12" y2="17" stroke="#1D9E75" strokeWidth="1.5"/></g>},
+  { name:"AI Clinical Reasoning", sub:"Claude Sonnet at the Core", desc:"Every decision is powered by enterprise AI reasoning. HPI generation, ECG interpretation, imaging analysis \u2014 real-time clinical intelligence without hallucinations.", benefit:"Faster diagnoses. Better outcomes.", color:"#1D9E75", icon:<path d="M12 2L22 12L12 22L2 12Z" stroke="currentColor" strokeWidth="1.5" fill="none"/>,icon2:<path d="M12 8L16 12L12 16L8 12Z" fill="currentColor" opacity="0.4"/>},
+  { name:"Zero-Friction Integration", sub:"Live EMR Data Sync", desc:"Smart Sync pulls vitals, labs, imaging, and patient context directly into Notrya. No chart switching. No copy-paste. Real-time bidirectional data flow via FHIR R4.", benefit:"Physicians focus on patients, not paperwork.", color:"#EF9F27", icon:<circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" fill="none"/>,icon2:<g><path d="M8 12L12 8L16 12L12 16Z" fill="currentColor" opacity="0.35"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></g>},
+  { name:"One-Tap Billing Accuracy", sub:"CPT & ICD-10 Native", desc:"Real-time E&M level estimation, CPT code stepping, ICD-10 search, comorbidity linkage. Documentation flows straight into billing. No denials. No revenue leakage.", benefit:"Automate coding. Maximize reimbursement.", color:"#E24B4A", icon:<path d="M4 6H20M4 12H20M4 18H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>,icon2:null},
+  { name:"Clinician-First Design", sub:"Keyboard-Driven, No Mouse", desc:"Glassmorphism UI with navy-dark aesthetic. Playfair Display, DM Sans, JetBrains Mono. Ctrl+Space to CommandKit. Voice commands. Instant access to meds, imaging, labs, references.", benefit:"From patient arrival to disposition in 60 seconds.", color:"#12CCE6", icon:<path d="M12 3L21 8L21 16L12 21L3 16L3 8Z" stroke="currentColor" strokeWidth="1.5" fill="none"/>,icon2:<circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.5"/>},
+  { name:"Peer-Reviewed Evidence", sub:"No Hallucinations. Just Facts.", desc:"Every recommendation is graded and sourced. LRINEC, CHA\u2082DS\u2082-VASc, GRACE, TIMI, HEART, SEP-1. Protocols from peer-reviewed literature, not AI fantasy.", benefit:"Your liability is protected. Your decisions are backed.", color:"#7F77DD", icon:<g><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></g>,icon2:<g><line x1="7" y1="12" x2="10" y2="12" stroke="currentColor" strokeWidth="1.5"/><line x1="12" y1="7" x2="12" y2="10" stroke="currentColor" strokeWidth="1.5"/><line x1="14" y1="12" x2="17" y2="12" stroke="currentColor" strokeWidth="1.5"/><line x1="12" y1="14" x2="12" y2="17" stroke="currentColor" strokeWidth="1.5"/></g>},
+  { name:"Enterprise Infrastructure", sub:"Built on Base44 Platform", desc:"Single-file JSX components. Live deployment. Entity-level data persistence. Multi-tenant, HIPAA-ready, zero technical debt. Rapid iteration for hospitals and health systems.", benefit:"Deploy faster. Scale reliably.", color:"#1D9E75", icon:<rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="1.5" fill="none"/>,icon2:<path d="M8 12L11 15L16 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>},
 ];
 
 // ─── HOOKS ──────────────────────────────────────────────────────────────────
@@ -175,16 +175,50 @@ function HubCard({ hub }) {
 
 function StackCard({ item }) {
   const [hovered, setHovered] = useState(false);
+  const iconColor = item.color || P.teal;
   return (
     <div className="fr"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ background:P.navy2, border:`1px solid ${hovered?"rgba(29,158,117,.45)":"rgba(29,158,117,.15)"}`, borderRadius:16, padding:28, transition:"border-color .2s,transform .2s", transform:hovered?"translateY(-3px)":"translateY(0)" }}>
-      <div style={{ width:46, height:46, borderRadius:12, background:"rgba(29,158,117,.12)", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:16 }}>
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none">{item.icon}{item.icon2}</svg>
+      style={{ 
+        background:P.navy2, 
+        border:`1px solid ${hovered?item.color+"40":item.color+"20"}`, 
+        borderRadius:20, 
+        padding:"36px 32px", 
+        transition:"all .25s", 
+        transform:hovered?"translateY(-6px)":"translateY(0)",
+        boxShadow:hovered?`0 16px 48px ${item.color}18`:"none",
+        display:"flex",
+        flexDirection:"column"
+      }}>
+      {/* Icon Badge */}
+      <div style={{ width:56, height:56, borderRadius:14, background:`${iconColor}15`, border:`1.5px solid ${iconColor}35`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24 }}>
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" style={{ color:iconColor }}>
+          {item.icon}{item.icon2}
+        </svg>
       </div>
-      <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>{item.name}</div>
-      <div style={{ fontSize:13, color:P.t2, lineHeight:1.65 }}>{item.desc}</div>
+
+      {/* Title */}
+      <div style={{ fontSize:18, fontWeight:700, marginBottom:4, color:P.t1 }}>{item.name}</div>
+      <div style={{ fontSize:12, letterSpacing:"1.5px", color:iconColor, textTransform:"uppercase", fontWeight:600, marginBottom:16 }}>{item.sub}</div>
+
+      {/* Description */}
+      <div style={{ fontSize:14, color:P.t2, lineHeight:1.7, marginBottom:24, flex:1 }}>{item.desc}</div>
+
+      {/* Benefit Badge */}
+      <div style={{ 
+        padding:"12px 16px", 
+        background:`${iconColor}12`, 
+        border:`1px solid ${iconColor}28`, 
+        borderRadius:10,
+        fontSize:13,
+        fontWeight:600,
+        color:iconColor,
+        textAlign:"center",
+        fontStyle:"italic"
+      }}>
+        {item.benefit}
+      </div>
     </div>
   );
 }
@@ -540,11 +574,11 @@ function StatsSection() {
 // ─── TECH STACK ──────────────────────────────────────────────────────────────
 function TechSection() {
   return (
-    <div style={{ maxWidth:1400, margin:"0 auto", padding:"100px 64px" }}>
-      <SLabel>// under the hood</SLabel>
-      <STitle>What Powers Notrya AI</STitle>
-      <SSub>A modern, AI-native architecture built for the unique demands of emergency medicine.</SSub>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:20 }}>
+    <div style={{ maxWidth:1400, margin:"0 auto", padding:"100px 64px" }} id="technology">
+      <SLabel>// platform strengths</SLabel>
+      <STitle>Built for Hospitals. Built to Win.</STitle>
+      <SSub>Six core strengths that position Notrya AI as the clinical intelligence layer every emergency department needs.</SSub>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(320px, 1fr))", gap:28 }}>
         {STACK.map(item => <StackCard key={item.name} item={item}/>)}
       </div>
     </div>

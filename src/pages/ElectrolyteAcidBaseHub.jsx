@@ -490,7 +490,7 @@ export default function ElectrolyteAcidBaseHub(){
       <NotryaPatientBar />
       <PatientBar ctx={ctx} setCtx={setCtx} C={C}/>
       <PanicBanner criticals={criticals} print={print}/>
-      {print&&<div style={{maxWidth:960,margin:"0 auto",padding:"10px 24px 4px",borderBottom:`1px solid ${C.gb}`}}><div style={{fontFamily:DM,fontSize:11,color:C.dim}}>Notrya — Electrolyte & Acid-Base Hub · Printed {new Date().toLocaleDateString()} · For clinical reference only. Verify all doses.{ctx.weight&&` · ${ctx.weight} kg · ${ctx.sex==="m"?"Male":"Female"} · ${ctx.duration==="acute"?"Acute":"Chronic"}`}</div></div>}
+      {print&&<div style={{maxWidth:960,margin:"0 auto",padding:"10px 24px 4px",borderBottom:`1px solid ${C.gb}`}}><div style={{fontFamily:DM,fontSize:11,color:C.dim}}>Lakonyx — Electrolyte & Acid-Base Hub · Printed {new Date().toLocaleDateString()} · For clinical reference only. Verify all doses.{ctx.weight&&` · ${ctx.weight} kg · ${ctx.sex==="m"?"Male":"Female"} · ${ctx.duration==="acute"?"Acute":"Chronic"}`}</div></div>}
       <div style={{maxWidth:960,margin:"0 auto",padding:"24px 24px 48px"}}>
         {tab==="abg"&&<ABGTab onCritical={onCritical} C={C}/>}
         {tab==="electrolytes"&&<ElectrolytesTab ctx={ctx} onCritical={onCritical} C={C}/>}

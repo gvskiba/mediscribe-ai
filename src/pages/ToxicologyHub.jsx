@@ -1,4 +1,4 @@
-// ToxicologyHub.jsx — Notrya
+// ToxicologyHub.jsx — Lakonyx
 // Modal overlay detail · contraindication-first · condition-treated on all cards · weight-dose callout
 // No router · no localStorage · no form/alert · straight quotes · <1600 lines
 
@@ -394,7 +394,7 @@ function printCard(item, w) {
   if (!win) return;
   const wdose = w > 0 && item.cardCalc ? item.cardCalc(w) : null;
   const row = (lbl, content) => `<div class="sec"><div class="lbl">${lbl}</div>${content}</div>`;
-  win.document.write(`<!DOCTYPE html><html><head><title>${item.antidote} — Notrya Tox</title>
+  win.document.write(`<!DOCTYPE html><html><head><title>${item.antidote} — Lakonyx Tox</title>
 <style>
   body { font-family: 'Courier New', monospace; padding: 28px; background: #fff; color: #000; max-width: 620px; margin: 0 auto; }
   h1 { font-size: 22px; margin: 0 0 3px; font-family: Georgia, serif; }
@@ -422,7 +422,7 @@ function printCard(item, w) {
   if (item.timing) win.document.write(row("Timing", `<p>${item.timing}</p>`));
   win.document.write(row("Pearl", `<p>${item.pearls || ""}</p>`));
   if (item.peds) win.document.write(row("Peds", `<p>${item.peds}</p>`));
-  win.document.write(`<div class="foot">NOTRYA TOX HUB · CLINICAL DECISION SUPPORT ONLY · Verify with Poison Control 1-800-222-1222 · ${new Date().toLocaleDateString()}</div>`);
+  win.document.write(`<div class="foot">LAKONYX TOX HUB · CLINICAL DECISION SUPPORT ONLY · Verify with Poison Control 1-800-222-1222 · ${new Date().toLocaleDateString()}</div>`);
   win.document.write(`</body></html>`);
   win.document.close();
   setTimeout(() => win.print(), 450);
@@ -1542,7 +1542,7 @@ export default function ToxicologyHub({ embedded = false, onBack }) {
 
           {!embedded && (
             <div style={{ textAlign:"center",padding:"24px 0 16px",fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5 }}>
-              NOTRYA TOX HUB · FOR CLINICAL DECISION SUPPORT ONLY · VERIFY WITH POISON CONTROL AND TOXICOLOGY
+              LAKONYX TOX HUB · FOR CLINICAL DECISION SUPPORT ONLY · VERIFY WITH POISON CONTROL AND TOXICOLOGY
             </div>
           )}
         </div>

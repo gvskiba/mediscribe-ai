@@ -676,7 +676,7 @@ export default function DermMorphologyRef({ embedded = false, onBack }) {
             <div style={{ background:"rgba(5,15,30,.9)", border:"1px solid rgba(42,79,122,.6)",
               borderRadius:10, padding:"5px 12px", display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
-                color:"var(--dmr-teal)", letterSpacing:3 }}>NOTRYA</span>
+                color:"var(--dmr-teal)", letterSpacing:3 }}>LAKONYX</span>
               <span style={{ color:"var(--dmr-txt4)", fontFamily:"'JetBrains Mono',monospace", fontSize:10 }}>/</span>
               <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10,
                 color:"var(--dmr-txt3)", letterSpacing:2 }}>MORPHOLOGY</span>
@@ -745,7 +745,7 @@ export default function DermMorphologyRef({ embedded = false, onBack }) {
           <div style={{ textAlign:"center", padding:"16px 0 24px",
             fontFamily:"'JetBrains Mono',monospace", fontSize:10,
             color:"var(--dmr-txt4)", letterSpacing:1.5 }}>
-            NOTRYA MORPHOLOGY REFERENCE · {MORPHOLOGIES.filter(m=>m.urgency==="emergent").length} EMERGENT ·
+            LAKONYX MORPHOLOGY REFERENCE · {MORPHOLOGIES.filter(m=>m.urgency==="emergent").length} EMERGENT ·
             {" "}{MORPHOLOGIES.filter(m=>m.urgency==="urgent").length} URGENT ·
             {" "}IMAGES VIA WIKIPEDIA CC · NOT A SUBSTITUTE FOR CLINICAL EVALUATION
           </div>

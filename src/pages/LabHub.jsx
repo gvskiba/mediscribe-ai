@@ -1102,7 +1102,7 @@ export default function LabHub({
 
         {!embedded&&(
           <div style={{textAlign:"center",padding:"24px 0 16px",fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:1.5}}>
-            NOTRYA LAB HUB · AI CLINICAL DECISION SUPPORT · VERIFY ALL RESULTS WITH CLINICAL CONTEXT · NOT A SUBSTITUTE FOR PHYSICIAN JUDGMENT
+            LAKONYX LAB HUB · AI CLINICAL DECISION SUPPORT · VERIFY ALL RESULTS WITH CLINICAL CONTEXT · NOT A SUBSTITUTE FOR PHYSICIAN JUDGMENT
           </div>
         )}
       </div>

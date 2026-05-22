@@ -1183,7 +1183,7 @@ export default function ImagingInterpreter({
           <div style={{ textAlign:"center", padding:"24px 0 16px",
             fontFamily:"'JetBrains Mono',monospace", fontSize:10,
             color:"var(--img-txt4)", letterSpacing:1.5 }} className="no-print">
-            NOTRYA IMAGING INTERPRETER v3 · EVIDENCE-BASED AI DECISION SUPPORT ·
+            LAKONYX IMAGING INTERPRETER v3 · EVIDENCE-BASED AI DECISION SUPPORT ·
             ALWAYS CONFIRM WITH FORMAL RADIOLOGY READ · NOT A SUBSTITUTE FOR RADIOLOGIST INTERPRETATION
           </div>
         )}

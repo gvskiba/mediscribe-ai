@@ -685,7 +685,7 @@ export default function PsychHub({ embedded = false }) {
           <div style={{ textAlign:"center", padding:"24px 0 16px",
             fontFamily:"'JetBrains Mono',monospace", fontSize:8,
             color:T.txt4, letterSpacing:1.5 }}>
-            NOTRYA PSYCH HUB · ACEP OCTOBER 2023 LEVEL B · DOMINO TRIAL (ISBISTER 2023)
+            LAKONYX PSYCH HUB · ACEP OCTOBER 2023 LEVEL B · DOMINO TRIAL (ISBISTER 2023)
             · C-SSRS · CIWA-AR (SULLIVAN 1989) · CLINICAL DECISION SUPPORT ONLY
           </div>
         )}

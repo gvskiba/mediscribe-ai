@@ -1273,7 +1273,7 @@ export default function DermatologyHub({
           <div style={{ textAlign:"center", padding:"24px 0 16px",
             fontFamily:"'JetBrains Mono',monospace", fontSize:10,
             color:"var(--derm-txt4)", letterSpacing:1.5 }} className="no-print">
-            NOTRYA DERMATOLOGY HUB v2 · AAD / ACEP / 2024 CANADIAN ED GUIDELINES ·
+            LAKONYX DERMATOLOGY HUB v2 · AAD / ACEP / 2024 CANADIAN ED GUIDELINES ·
             AI CLINICAL DECISION SUPPORT · NOT A SUBSTITUTE FOR DERMATOLOGIST EVALUATION
           </div>
         )}

@@ -1252,7 +1252,7 @@ export default function POCUSHub() {
         {/* Footer */}
         <div style={{textAlign:"center",paddingBottom:24,paddingTop:14}}>
           <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,letterSpacing:1.5}}>
-            NOTRYA POCUS HUB · RUSH (WEINGART 2012) · BLUE PROTOCOL (LICHTENSTEIN 2008) · eFAST (ATLS 11TH ED) · VERIFY ALL FINDINGS WITH CLINICAL CONTEXT
+            LAKONYX POCUS HUB · RUSH (WEINGART 2012) · BLUE PROTOCOL (LICHTENSTEIN 2008) · eFAST (ATLS 11TH ED) · VERIFY ALL FINDINGS WITH CLINICAL CONTEXT
           </span>
         </div>
       </div>

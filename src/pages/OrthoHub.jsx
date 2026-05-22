@@ -1044,7 +1044,7 @@ export default function OrthoHub() {
         {/* Footer */}
         <div style={{textAlign:"center",paddingBottom:24,paddingTop:16}}>
           <span style={{fontFamily:"JetBrains Mono",fontSize:9,color:T.txt4,letterSpacing:1.5}}>
-            NOTRYA ORTHO HUB · SALTER-HARRIS · GUSTILO-ANDERSON · MASON · VERIFY ALL CLINICAL DECISIONS WITH SPECIALIST CONSULTATION
+            LAKONYX ORTHO HUB · SALTER-HARRIS · GUSTILO-ANDERSON · MASON · VERIFY ALL CLINICAL DECISIONS WITH SPECIALIST CONSULTATION
           </span>
         </div>
 

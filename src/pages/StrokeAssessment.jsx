@@ -1,4 +1,4 @@
-// StrokeHub.jsx — Notrya Stroke Protocol Hub
+// StrokeHub.jsx — Lakonyx Stroke Protocol Hub
 // Left-rail nav · keyboard-first · no router · no localStorage · no form/alert · straight quotes
 
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -647,7 +647,7 @@ function PrintCardsTab(){
         </div>
 
         <div style={{textAlign:"center",fontSize:10,color:C.dim,fontFamily:"'JetBrains Mono',monospace",paddingTop:4}}>
-          Notrya · StrokeHub · NIHSS Stimulus Reference · Not a substitute for certified NIHSS training
+          Lakonyx · StrokeHub · NIHSS Stimulus Reference · Not a substitute for certified NIHSS training
         </div>
       </div>
     </div>

@@ -9,15 +9,18 @@ import { useNavigate } from "react-router-dom";
   document.head.appendChild(l);
   const s = document.createElement("style"); s.id = "splash-css";
   s.textContent = `
-    @keyframes ecg{0%{stroke-dashoffset:400}100%{stroke-dashoffset:0}}
     @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:0.35}}
+    @keyframes sp-f1{0%,100%{transform:translate(0,0)}50%{transform:translate(55px,38px)}}
+    @keyframes sp-f2{0%,100%{transform:translate(0,0)}50%{transform:translate(-48px,55px)}}
+    @keyframes sp-f3{0%,100%{transform:translate(0,0)}50%{transform:translate(38px,-48px)}}
+    @keyframes sp-ring{0%,100%{box-shadow:0 0 0 0 rgba(0,229,192,0.18)}65%{box-shadow:0 0 0 18px rgba(0,229,192,0)}}
+    @keyframes sp-glow{0%,100%{opacity:.7}50%{opacity:1}}
     .su1{animation:fadeUp .5s .05s ease both}
-    .su2{animation:fadeUp .5s .2s ease both}
-    .su3{animation:fadeUp .5s .38s ease both}
-    .su4{animation:fadeUp .5s .56s ease both}
-    .su5{animation:fadeUp .5s .72s ease both}
-    .ecg-line{animation:ecg 2.4s ease-in-out infinite alternate;stroke-dasharray:400}
+    .su2{animation:fadeUp .5s .22s ease both}
+    .su3{animation:fadeUp .5s .40s ease both}
+    .su4{animation:fadeUp .5s .58s ease both}
+    .su5{animation:fadeUp .5s .74s ease both}
     .blink{animation:blink 2s ease-in-out infinite}
   `;
   document.head.appendChild(s);
@@ -30,12 +33,86 @@ const T = {
   orange:"#ff9f43", purple:"#9b6dff", green:"#3dffa0", red:"#ff4444",
 };
 
+// Official brand colors for the LX mark
+const BRAND = { gold:"#C9A84C", teal:"#0ABFBF" };
+
 const STATS = [
   { label:"Documentation Hubs",   value:"18+", color:T.teal   },
   { label:"Clinical Calculators", value:"40+", color:T.gold   },
   { label:"AI-Powered Tools",     value:"12+", color:T.purple },
 ];
 
+// ── Mesh orb background (matches LakonyxHome) ─────────────────────────────────
+function BgMesh() {
+  return (
+    <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
+      {[
+        { sz:600, s:{top:"-120px",left:"-80px"},  c:"rgba(0,229,192,0.045)", a:"sp-f1 18s ease-in-out infinite" },
+        { sz:480, s:{top:"42%",right:"-110px"},   c:"rgba(59,158,255,0.032)", a:"sp-f2 22s ease-in-out infinite" },
+        { sz:400, s:{bottom:"-70px",left:"38%"},  c:"rgba(155,109,255,0.032)",a:"sp-f3 26s ease-in-out infinite" },
+      ].map((b,i) => (
+        <div key={i} style={{
+          position:"absolute", width:b.sz, height:b.sz, borderRadius:"50%",
+          ...b.s,
+          background:`radial-gradient(circle,${b.c} 0%,transparent 70%)`,
+          animation:b.a,
+        }}/>
+      ))}
+    </div>
+  );
+}
+
+// ── LX Monogram Mark ──────────────────────────────────────────────────────────
+function LXMark({ size = 96 }) {
+  return (
+    <div style={{
+      width:size, height:size, borderRadius:Math.round(size * 0.2),
+      background:"#0A1628",
+      border:`1px solid rgba(201,168,76,0.35)`,
+      display:"flex", alignItems:"center", justifyContent:"center",
+      position:"relative",
+      boxShadow:`0 0 0 1px rgba(11,191,191,0.12), 0 8px 40px rgba(0,0,0,0.55)`,
+      animation:"sp-ring 3.2s ease-out infinite",
+      flexShrink:0,
+    }}>
+      {/* Subtle inner glow */}
+      <div style={{
+        position:"absolute", inset:0, borderRadius:"inherit",
+        background:`radial-gradient(circle at 38% 42%, rgba(201,168,76,0.08) 0%, transparent 65%)`,
+        pointerEvents:"none",
+      }}/>
+      <svg
+        viewBox="0 0 500 500"
+        width={Math.round(size * 0.72)}
+        height={Math.round(size * 0.72)}
+        xmlns="http://www.w3.org/2000/svg"
+        style={{position:"relative",zIndex:1}}
+      >
+        <text
+          x="62" y="348"
+          fontFamily="'Playfair Display', Georgia, serif"
+          fontSize="310" fontWeight="700"
+          fill={BRAND.gold}
+        >L</text>
+        <text
+          x="218" y="348"
+          fontFamily="'Playfair Display', Georgia, serif"
+          fontSize="310" fontWeight="700"
+          fill={BRAND.teal}
+        >X</text>
+      </svg>
+      {/* Blinking status dot */}
+      <div className="blink" style={{
+        position:"absolute", top:10, right:10,
+        width:7, height:7, borderRadius:"50%",
+        background:BRAND.teal,
+        boxShadow:`0 0 6px ${BRAND.teal}`,
+      }}/>
+    </div>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function LakonyxSplash() {
   const [hov, setHov] = useState(false);
   const navigate = useNavigate();
@@ -49,65 +126,42 @@ export default function LakonyxSplash() {
       overflow:"hidden", position:"relative",
     }}>
 
+      <BgMesh />
+
       {/* Grid overlay */}
       <div style={{
-        position:"absolute", inset:0, pointerEvents:"none", opacity:0.025,
+        position:"absolute", inset:0, pointerEvents:"none", opacity:0.018,
         backgroundImage:"linear-gradient(rgba(0,229,192,1) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,192,1) 1px,transparent 1px)",
         backgroundSize:"48px 48px",
-      }} />
-
-      {/* Radial glow */}
-      <div style={{
-        position:"absolute", top:"50%", left:"50%",
-        transform:"translate(-50%,-60%)",
-        width:700, height:700, borderRadius:"50%",
-        background:`radial-gradient(circle,${T.teal}0a 0%,transparent 68%)`,
-        pointerEvents:"none",
-      }} />
+      }}/>
 
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", zIndex:1 }}>
 
-        {/* Logo block */}
-        <div className="su1" style={{
-          width:80, height:80, borderRadius:20,
-          background:`linear-gradient(135deg,${T.teal}28,${T.purple}28)`,
-          border:`1px solid ${T.teal}40`,
-          display:"flex", alignItems:"center", justifyContent:"center",
-          marginBottom:28, position:"relative",
-        }}>
-          <svg width="52" height="30" viewBox="0 0 130 60" fill="none">
-            <polyline
-              className="ecg-line"
-              points="0,30 25,30 32,30 38,6 44,54 50,30 62,30 68,16 74,44 80,30 130,30"
-              stroke={T.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-              fill="none"
-            />
-          </svg>
-          <div className="blink" style={{
-            position:"absolute", top:10, right:10,
-            width:7, height:7, borderRadius:"50%", background:T.teal,
-          }} />
+        {/* LX Mark */}
+        <div className="su1" style={{ marginBottom:30 }}>
+          <LXMark size={100} />
         </div>
 
-        {/* Brand */}
+        {/* Brand wordmark */}
         <div className="su2" style={{
           fontFamily:"'Playfair Display',serif",
           fontSize:52, fontWeight:900, color:T.txt,
-          letterSpacing:"0.10em", lineHeight:1, marginBottom:6,
+          letterSpacing:"0.10em", lineHeight:1, marginBottom:8,
         }}>
           LAKONYX
         </div>
 
+        {/* Official tagline */}
         <div className="su2" style={{
           fontFamily:"'JetBrains Mono',monospace",
-          fontSize:10, color:T.teal,
+          fontSize:10, color:BRAND.teal,
           letterSpacing:"0.24em", textTransform:"uppercase",
           marginBottom:28,
         }}>
-          AI · Emergency Medicine
+          Clinical Decision Intelligence
         </div>
 
-        {/* Tagline */}
+        {/* Descriptor */}
         <div className="su3" style={{
           fontFamily:"'DM Sans',sans-serif",
           fontSize:17, color:T.txt3, lineHeight:1.65,
@@ -119,14 +173,16 @@ export default function LakonyxSplash() {
           </span>
         </div>
 
-        {/* Stat row */}
+        {/* Stat tiles */}
         <div className="su3" style={{
-          display:"flex", gap:20, marginBottom:52, flexWrap:"wrap", justifyContent:"center",
+          display:"flex", gap:20, marginBottom:52,
+          flexWrap:"wrap", justifyContent:"center",
         }}>
           {STATS.map((s, i) => (
             <div key={i} style={{
               textAlign:"center", padding:"10px 18px",
-              background:T.card, border:"1px solid rgba(26,53,85,0.5)",
+              background:T.card,
+              border:"1px solid rgba(26,53,85,0.5)",
               borderRadius:10,
             }}>
               <div style={{
@@ -148,7 +204,7 @@ export default function LakonyxSplash() {
         {/* CTA */}
         <div
           className="su4"
-          onClick={() => navigate("/CommandCenter")}
+          onClick={() => navigate("/LakonyxHome")}
           onMouseEnter={() => setHov(true)}
           onMouseLeave={() => setHov(false)}
           style={{

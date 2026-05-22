@@ -213,7 +213,6 @@ const AuthenticatedApp = () => {
         <Route path="/CommandCenter" element={<CommandCenter />} />
         <Route path="/PatientEncounter" element={<PatientEncounter />} />
         <Route path="/splash" element={<LakonyxSplash />} />
-        <Route path="/LakonyxHome" element={<CommandCenter />} />
 
         {Object.entries(Pages).map(([path, Page]) => (
           <Route key={path} path={`/${path}`} element={

@@ -153,7 +153,7 @@ import PatientEncounter from '@/pages/PatientEncounter';
 import LakonyxSplash from '@/pages/LakonyxSplash';
 
 // Pages that have their own built-in AI floating button
-const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/LakonyxApp", "/patientchart"]);
+const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/patientchart"]);
 // Pages that mount their own encounter-aware CommandPalette
 const PAGES_WITH_OWN_PALETTE = new Set(["/NewPatientInput"]);
 

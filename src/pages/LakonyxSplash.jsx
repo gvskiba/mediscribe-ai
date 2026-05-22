@@ -118,7 +118,7 @@ export default function LakonyxSplash() {
   // Auto-advance countdown
   useEffect(() => {
     if (!auto) return;
-    if (countdown <= 0) { navigate("/LakonyxHome"); return; }
+    if (countdown <= 0) { navigate("/CommandCenter"); return; }
     timerRef.current = setTimeout(() => setCountdown(c => c - 1), 1000);
     return () => clearTimeout(timerRef.current);
   }, [countdown, auto]);
@@ -126,14 +126,14 @@ export default function LakonyxSplash() {
   // Keyboard: Enter → go now, any other key → cancel auto-advance
   useEffect(() => {
     const h = (e) => {
-      if (e.key === "Enter") { navigate("/LakonyxHome"); return; }
+      if (e.key === "Enter") { navigate("/CommandCenter"); return; }
       if (e.key !== "Tab") setAuto(false);
     };
     document.addEventListener("keydown", h);
     return () => document.removeEventListener("keydown", h);
   }, []);
 
-  const go = () => navigate("/LakonyxHome");
+  const go = () => navigate("/CommandCenter");
 
   return (
     <div style={{

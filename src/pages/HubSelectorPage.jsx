@@ -1488,14 +1488,14 @@ export default function HubSelectorPage() {
   // DEFAULT: Essential-only. "Browse all" button or ⌘K expands to full catalog.
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState(() => {
-    try { return localStorage.getItem("notrya_hub_sort") || "priority"; } catch { return "priority"; }
+    try { return localStorage.getItem("lakonyx_hub_sort") || "priority"; } catch { return "priority"; }
   });
   const [userEssentials, setUserEssentials] = useState(new Set(HUBS.filter(h => h.essential).map(h => h.id)));
   // Command palette
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
-    try { localStorage.setItem("notrya_hub_sort", sortBy); } catch {}
+    try { localStorage.setItem("lakonyx_hub_sort", sortBy); } catch {}
   }, [sortBy]);
 
 
@@ -1517,7 +1517,7 @@ export default function HubSelectorPage() {
     return () => window.removeEventListener("keydown", h);
   }, []);
   const [recents, setRecents] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("notrya_recent_hubs") || "[]").slice(0, 4).map(id => HUBS.find(h => h.id === id)).filter(Boolean); }
+    try { return JSON.parse(localStorage.getItem("lakonyx_recent_hubs") || "[]").slice(0, 4).map(id => HUBS.find(h => h.id === id)).filter(Boolean); }
     catch { return []; }
   });
 
@@ -1526,7 +1526,7 @@ export default function HubSelectorPage() {
     const hub = HUBS.find(h => h.route === route);
     if (hub) {
       const updated = [hub.id, ...recents.map(r => r.id).filter(id => id !== hub.id)].slice(0, 4);
-      try { localStorage.setItem("notrya_recent_hubs", JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem("lakonyx_recent_hubs", JSON.stringify(updated)); } catch {}
       setRecents(updated.map(id => HUBS.find(h => h.id === id)).filter(Boolean));
     }
     setPaletteOpen(false);

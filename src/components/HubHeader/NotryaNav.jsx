@@ -1,6 +1,6 @@
 import React from "react";
 
-// NotryaNav — collapsible sidebar navigation for all Notrya hubs
+// NotryaNav — collapsible sidebar navigation for all Lakonyx hubs
 // No React Router · no localStorage · React.useState only · window.location.href navigation
 
 const NAV_HUBS = [
@@ -84,7 +84,7 @@ export default function NotryaNav({ currentHub }) {
         flexShrink: 0,
       }}>
         {collapsed
-          ? <span style={{ fontFamily: '"Playfair Display",Georgia,serif', fontSize: "17px", fontWeight: "700", color: "#00BFA5" }}>N</span>
+          ? <span style={{ fontFamily: '"Playfair Display",Georgia,serif', fontSize: "17px", fontWeight: "700", color: "#00BFA5" }}>L</span>
           : <span style={{ fontFamily: '"Playfair Display",Georgia,serif', fontSize: "17px", fontWeight: "700", color: "#E8EDF5", letterSpacing: "-0.3px" }}>Lakonyx</span>
         }
       </div>

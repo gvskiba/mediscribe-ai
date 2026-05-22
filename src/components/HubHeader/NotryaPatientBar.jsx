@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
   document.head.appendChild(l);
 })();
  
-// ─── TOKENS — exact Notrya palette ───────────────────────────────────────────
+// ─── TOKENS — Lakonyx palette ────────────────────────────────────────────────
 const T = {
   bg:"#050f1e", panel:"#081628", card:"#0b1e36",
   txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
@@ -64,7 +64,7 @@ function SmBtn({ children, accent, onClick }) {
   );
 }
  
-// ─── NOTRYA PATIENT BAR ───────────────────────────────────────────────────────
+// ─── LAKONYX PATIENT BAR ─────────────────────────────────────────────────────
 // Drop this component directly below <NotryaHubHeader> in every hub page.
 // It reads patientId from the URL automatically — no props needed.
 // If no patientId is present, it renders a minimal "← Census" bar only.

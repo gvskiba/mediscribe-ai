@@ -1,6 +1,6 @@
 import React from "react";
 
-// NotryaHubHeader v2 — shared across all Notrya hubs
+// NotryaHubHeader v2 — shared across all Lakonyx hubs
 // No React Router · no localStorage · React.useState only · window.location.href navigation
 
 const HUB_CATEGORY_COLORS = {

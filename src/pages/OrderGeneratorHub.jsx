@@ -26,7 +26,7 @@ const pad=(s,n=12)=>s.padEnd(n," ");
 function line(k,v){return`${pad(k+":")} ${v}`;}
 function buildBlock(name,rows,note){
   const body=rows.map(([k,v])=>line(k,v)).join("\n");
-  return`${BAR}\n${body}${note?`\n${BAR}\n⚠  ${note}`:""}\n${BAR}\n[Notrya Order Generator · ${ts()}]`;
+  return`${BAR}\n${body}${note?`\n${BAR}\n⚠  ${note}`:""}\n${BAR}\n[Lakonyx Order Generator · ${ts()}]`;
 }
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch{const e=document.createElement("textarea");e.value=t;document.body.appendChild(e);e.select();document.execCommand("copy");document.body.removeChild(e);return true;}}
 
@@ -83,14 +83,14 @@ const DRUGS=[
   ]},
   // ── VASOPRESSORS ───────────────────────────────────────
   {id:"norepi",name:"Norepinephrine",sub:"Levophed — first-line sepsis",cat:"pressors",cor:"I",icon:"💉",wtBased:true,scenarios:[
-    {label:"Septic Shock",build:(wt)=>`${BAR}\nDRUG:        Norepinephrine (Levophed)\nMIX:         4 mg in 250 mL D5W = 16 mcg/mL  OR  8 mg/250 mL = 32 mcg/mL\nSTART DOSE:  ${(wt*0.1).toFixed(1)} mcg/min  [0.1 mcg/kg/min × ${wt} kg]\nTITRATE:     Increase by 0.05–0.1 mcg/kg/min q5–10 min\nRANGE:       0.01–3 mcg/kg/min  (typical 0.1–0.5)\nROUTE:       Central line preferred (peripheral acceptable acutely)\nINDICATION:  Septic shock — first-line vasopressor  [COR I-B  SSC 2021]\n${BAR}\n⚠  Central line/arterial line ASAP · Target MAP ≥ 65 mmHg\n${BAR}\n[Notrya Order Generator · ${ts()}]`},
+    {label:"Septic Shock",build:(wt)=>`${BAR}\nDRUG:        Norepinephrine (Levophed)\nMIX:         4 mg in 250 mL D5W = 16 mcg/mL  OR  8 mg/250 mL = 32 mcg/mL\nSTART DOSE:  ${(wt*0.1).toFixed(1)} mcg/min  [0.1 mcg/kg/min × ${wt} kg]\nTITRATE:     Increase by 0.05–0.1 mcg/kg/min q5–10 min\nRANGE:       0.01–3 mcg/kg/min  (typical 0.1–0.5)\nROUTE:       Central line preferred (peripheral acceptable acutely)\nINDICATION:  Septic shock — first-line vasopressor  [COR I-B  SSC 2021]\n${BAR}\n⚠  Central line/arterial line ASAP · Target MAP ≥ 65 mmHg\n${BAR}\n[Lakonyx Order Generator · ${ts()}]`},
   ]},
   {id:"epi_inf",name:"Epinephrine",sub:"Infusion",cat:"pressors",cor:"IIa",icon:"💉",wtBased:true,scenarios:[
     {label:"Anaphylaxis — IM",build:()=>buildBlock("Epinephrine",[["DRUG","Epinephrine 1:1,000"],["DOSE","0.3 mg IM (0.3 mL of 1 mg/mL)"],["ROUTE","Intramuscular — anterolateral thigh"],["FREQUENCY","Repeat q5–15 min prn if no improvement"],["INDICATION","Anaphylaxis  [COR I-A  WAO 2020]"]],"Preferred over IV for anaphylaxis · Prepare IV drip if biphasic reaction · Epinephrine auto-injector = 0.3 mg IM")},
-    {label:"Bradycardia — Infusion",build:(wt)=>`${BAR}\nDRUG:        Epinephrine Infusion\nMIX:         1 mg in 250 mL NS = 4 mcg/mL\nSTART DOSE:  2 mcg/min  (titrate 2–10 mcg/min)\nROUTE:       Central IV preferred\nINDICATION:  Refractory symptomatic bradycardia after atropine/TCP  [COR IIa-B]\n${BAR}\n[Notrya Order Generator · ${ts()}]`},
+    {label:"Bradycardia — Infusion",build:(wt)=>`${BAR}\nDRUG:        Epinephrine Infusion\nMIX:         1 mg in 250 mL NS = 4 mcg/mL\nSTART DOSE:  2 mcg/min  (titrate 2–10 mcg/min)\nROUTE:       Central IV preferred\nINDICATION:  Refractory symptomatic bradycardia after atropine/TCP  [COR IIa-B]\n${BAR}\n[Lakonyx Order Generator · ${ts()}]`},
   ]},
   {id:"dopa",name:"Dopamine",sub:"Infusion",cat:"pressors",cor:"IIb",icon:"💉",wtBased:true,scenarios:[
-    {label:"Cardiogenic Shock",build:(wt)=>`${BAR}\nDRUG:        Dopamine Hydrochloride\nMIX:         400 mg in 250 mL D5W = 1,600 mcg/mL\nSTART DOSE:  ${fmt(wt*5)} mcg/min  [5 mcg/kg/min × ${wt} kg]\nTITRATE:     5–20 mcg/kg/min to desired BP/HR response\nROUTE:       Central line preferred\nINDICATION:  Cardiogenic/distributive shock  [COR IIb]\n${BAR}\n⚠  Norepinephrine preferred in septic shock (less arrhythmia) · High doses (>10 mcg/kg/min) = alpha-dominant vasoconstriction\n${BAR}\n[Notrya Order Generator · ${ts()}]`},
+    {label:"Cardiogenic Shock",build:(wt)=>`${BAR}\nDRUG:        Dopamine Hydrochloride\nMIX:         400 mg in 250 mL D5W = 1,600 mcg/mL\nSTART DOSE:  ${fmt(wt*5)} mcg/min  [5 mcg/kg/min × ${wt} kg]\nTITRATE:     5–20 mcg/kg/min to desired BP/HR response\nROUTE:       Central line preferred\nINDICATION:  Cardiogenic/distributive shock  [COR IIb]\n${BAR}\n⚠  Norepinephrine preferred in septic shock (less arrhythmia) · High doses (>10 mcg/kg/min) = alpha-dominant vasoconstriction\n${BAR}\n[Lakonyx Order Generator · ${ts()}]`},
   ]},
   // ── ANTIBIOTICS ────────────────────────────────────────
   {id:"vanc",name:"Vancomycin",sub:"Gram+ / MRSA",cat:"abx",cor:null,icon:"🦠",wtBased:true,scenarios:[

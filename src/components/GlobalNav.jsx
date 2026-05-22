@@ -5,6 +5,14 @@ import FavoritesBar from "./FavoritesBar";
 import BreadcrumbBar from "./BreadcrumbBar";
 import { PAGES, CATS, CAT_COLOR } from "@/lib/navPages";
 
+// Load Playfair Display font
+if (typeof document !== 'undefined') {
+  const link = document.createElement('link');
+  link.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap';
+  link.rel = 'stylesheet';
+  document.head.appendChild(link);
+}
+
 const PREFIX = "gnv";
 
 (() => {
@@ -376,10 +384,25 @@ export default function GlobalNav({ alerts = 0 }) {
         display:"flex", alignItems:"center",
         padding:"0 12px", gap:6,
       }}>
-        {/* Wordmark */}
-        <div style={{ fontFamily:"JetBrains Mono", fontWeight:700, fontSize:11, letterSpacing:3, color:T.gold, flexShrink:0 }}>
-          LAKONYX
-        </div>
+        {/* Logo SVG + Wordmark */}
+          <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+            <svg viewBox="0 0 500 500" width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+              <rect width="500" height="500" rx="80" fill="#0A1628"/>
+              <text x="106" y="305"
+                fontFamily="'Playfair Display', Georgia, serif"
+                fontSize="280" fontWeight="700" fill="#C9A84C">L</text>
+              <text x="193" y="305"
+                fontFamily="'Playfair Display', Georgia, serif"
+                fontSize="280" fontWeight="700" fill="#0ABFBF">X</text>
+            </svg>
+            <span style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: '22px',
+              fontWeight: '700',
+              color: '#C9A84C',
+              letterSpacing: '4px'
+            }}>LAKONYX</span>
+          </div>
 
         {/* Separator */}
         <div style={{ width:1, height:18, background:"rgba(42,79,122,0.45)", flexShrink:0 }}/>

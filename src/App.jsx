@@ -25,7 +25,6 @@ import BaseTemplate from '@/pages/BaseTemplate';
 import PediatricDosingCalculator from '@/pages/PediatricDosingCalculator';
 import StrokeHub from '@/pages/StrokeAssessment';
 import EDOrderHub from '@/pages/EDOrderHub';
-import LakonyxApp from '@/pages/LakonyxApp';
 import OrderDashboard from '@/pages/OrderDashboard';
 import CardiacHub from '@/pages/CardiacHub';
 import TraumaHub from '@/pages/TraumaHub';
@@ -378,7 +377,6 @@ const AuthenticatedApp = () => {
         <Route path="/AbdominalPainHub" element={<LayoutWrapper currentPageName="AbdominalPainHub"><AbdominalPainHub /></LayoutWrapper>} />
 
         {/* Legacy / misc */}
-        <Route path="/LakonyxApp"  element={<LakonyxApp />} />
         <Route path="/OrderDashboard"  element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
         <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
         <Route path="/specialty-note-hub" element={<SpecialtyNoteHub />} />

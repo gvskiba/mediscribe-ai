@@ -25,7 +25,7 @@ import BaseTemplate from '@/pages/BaseTemplate';
 import PediatricDosingCalculator from '@/pages/PediatricDosingCalculator';
 import StrokeHub from '@/pages/StrokeAssessment';
 import EDOrderHub from '@/pages/EDOrderHub';
-import LakonyxApp from '@/pages/NotryaApp';
+import LakonyxApp from '@/pages/LakonyxApp';
 import OrderDashboard from '@/pages/OrderDashboard';
 import CardiacHub from '@/pages/CardiacHub';
 import TraumaHub from '@/pages/TraumaHub';
@@ -59,13 +59,13 @@ import DispositionBoard from '@/pages/DispositionBoard';
 import DDxEngine from '@/pages/DDxEngine';
 import CriticalResultsInbox from '@/pages/CriticalResultsInbox';
 import ClinicalNarrativeEngine from '@/pages/ClinicalNarrativeEngine';
-import LakonyxLanding from '@/pages/NotryaLanding';
+import LakonyxLanding from '@/pages/LakonyxLanding';
 import CommandCenterWrapper from '@/pages/CommandCenterWrapper';
 import PatientWorkspace from '@/pages/PatientWorkspace';
 import ShiftSignout from '@/pages/ShiftSignout';
 import AddendumManager from '@/pages/AddendumManager';
 import ClinicalNoteV2 from '@/pages/ClinicalNoteV2';
-import LakonyxNewTechnology from '@/pages/NotryaNewTechnology';
+import LakonyxNewTechnology from '@/pages/LakonyxNewTechnology';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 import DischargeDisposition from '@/pages/DischargeDisposition';
 import ScoreHub from '@/pages/ScoreHub';
@@ -147,14 +147,14 @@ import OpioidOverdoseHub from '@/pages/OpioidOverdoseHub';
 import EMTALAHub from '@/pages/EMTALAHub';
 import SpecialtyNoteHub from '@/pages/SpecialtyNoteHub';
 import SpecialtyNoteHubT2 from '@/pages/SpecialtyNoteHubT2';
-import NotryaTechHub from '@/pages/NotryaTechHub';
+import LakonyxTechHub from '@/pages/LakonyxTechHub';
 import CommandCenter from '@/pages/CommandCenter';
 import FollowUpHub from '@/pages/FollowUpHub';
 import PatientEncounter from '@/pages/PatientEncounter';
-import NotryaSplash from '@/pages/NotryaSplash';
+import LakonyxSplash from '@/pages/LakonyxSplash';
 
 // Pages that have their own built-in AI floating button
-const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/NotryaApp", "/patientchart"]);
+const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/LakonyxApp", "/patientchart"]);
 // Pages that mount their own encounter-aware CommandPalette
 const PAGES_WITH_OWN_PALETTE = new Set(["/NewPatientInput"]);
 
@@ -209,11 +209,11 @@ const AuthenticatedApp = () => {
       <CommandKit />
       <PulseActivators />
       <Routes>
-        <Route path="/" element={<NotryaSplash />} />
+        <Route path="/" element={<LakonyxSplash />} />
         <Route path="/command-center-home" element={<CommandCenter />} />
         <Route path="/CommandCenter" element={<CommandCenter />} />
         <Route path="/PatientEncounter" element={<PatientEncounter />} />
-        <Route path="/splash" element={<NotryaSplash />} />
+        <Route path="/splash" element={<LakonyxSplash />} />
 
         {Object.entries(Pages).map(([path, Page]) => (
           <Route key={path} path={`/${path}`} element={
@@ -378,12 +378,12 @@ const AuthenticatedApp = () => {
         <Route path="/AbdominalPainHub" element={<LayoutWrapper currentPageName="AbdominalPainHub"><AbdominalPainHub /></LayoutWrapper>} />
 
         {/* Legacy / misc */}
-        <Route path="/NotryaApp"  element={<LakonyxApp />} />
+        <Route path="/LakonyxApp"  element={<LakonyxApp />} />
         <Route path="/OrderDashboard"  element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
         <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
         <Route path="/specialty-note-hub" element={<SpecialtyNoteHub />} />
         <Route path="/SpecialtyNoteHubT2" element={<SpecialtyNoteHubT2 />} />
-        <Route path="/tech-hub" element={<NotryaTechHub />} />
+        <Route path="/tech-hub" element={<LakonyxTechHub />} />
         <Route path="/follow-up-hub" element={<FollowUpHub />} />
         <Route path="/EdNoteGenerator"  element={<QuickNote />} />
 

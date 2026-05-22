@@ -815,7 +815,7 @@ export default function NewPatientInput() {
                 </span>
               )}
             </button>
-            <button className={`npi-ai-btn${aiOpen?" open":""}`} onClick={toggleAI} title="Notrya AI">
+            <button className={`npi-ai-btn${aiOpen?" open":""}`} onClick={toggleAI} title="Lakonyx AI">
               <div className="npi-ai-dot" /> AI
               {unread > 0 && <span className="npi-ai-badge">{unread > 9 ? "9+" : unread}</span>}
             </button>
@@ -927,7 +927,7 @@ export default function NewPatientInput() {
           <div className="npi-n-hdr-top">
             <div className="npi-n-avatar">&#x1F916;</div>
             <div className="npi-n-hdr-info">
-              <div className="npi-n-hdr-name">Notrya AI</div>
+              <div className="npi-n-hdr-name">Lakonyx AI</div>
               <div className="npi-n-hdr-sub"><span className="dot" /> Clinical assistant &middot; online</div>
             </div>
             <button className="npi-n-close" onClick={toggleAI}>&#x2715;</button>
@@ -1264,7 +1264,7 @@ export default function NewPatientInput() {
           style={{ position:"fixed", inset:0, zIndex:99999, background:"rgba(3,8,16,0.82)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background:"#081628", border:"1px solid rgba(26,53,85,0.7)", borderRadius:18, padding:"28px 32px", width:500, maxWidth:"92vw", boxShadow:"0 32px 96px rgba(0,0,0,0.7)" }}>
-            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, color:"#e8f0fe", marginBottom:4 }}>Welcome to Notrya</div>
+            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, color:"#e8f0fe", marginBottom:4 }}>Welcome to Lakonyx</div>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"#4a6a8a", marginBottom:22 }}>Three features that cut documentation time in half</div>
             {[
               {

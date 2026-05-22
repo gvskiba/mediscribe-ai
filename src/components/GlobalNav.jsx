@@ -190,7 +190,7 @@ const ROUTE_TO_ID = {};
 PAGES.forEach(p => { if (p.route && !ROUTE_TO_ID[p.route]) ROUTE_TO_ID[p.route] = p.id; });
 
 // Pages with their own full navigation — GlobalNav should not render
-const EXCLUDED_ROUTES = new Set(["/NewPatientInput", "/ClinicalNoteStudio", "/NotryaApp"]);
+const EXCLUDED_ROUTES = new Set(["/NewPatientInput", "/ClinicalNoteStudio", "/LakonyxApp"]);
 
 // ── Sub-components ───────────────────────────────────────────────────
 
@@ -378,7 +378,7 @@ export default function GlobalNav({ alerts = 0 }) {
       }}>
         {/* Wordmark */}
         <div style={{ fontFamily:"JetBrains Mono", fontWeight:700, fontSize:11, letterSpacing:3, color:T.gold, flexShrink:0 }}>
-          NOTRYA
+          LAKONYX
         </div>
 
         {/* Separator */}

@@ -377,8 +377,8 @@ function SellingPointsCarousel() {
   return (
     <div style={{ maxWidth:1400, margin:"0 auto", padding:"80px 64px" }} id="selling-points">
       <SLabel>// top selling points</SLabel>
-      <STitle>Why Clinicians Choose Notrya</STitle>
-      <SSub>The four capabilities that set Notrya AI apart from every other clinical tool.</SSub>
+      <STitle>Why Clinicians Choose Lakonyx</STitle>
+      <SSub>The four capabilities that set Lakonyx AI apart from every other clinical tool.</SSub>
 
       {/* Tabs */}
       <div style={{ display:"flex", gap:10, marginBottom:36, flexWrap:"wrap" }}>
@@ -437,7 +437,7 @@ function Nav({ scrolled }) {
           <circle cx="5" cy="18" r="1.8" fill="#1D9E75" opacity="0.7"/>
           <circle cx="31" cy="18" r="1.8" fill="#1D9E75" opacity="0.7"/>
         </svg>
-        <span style={{ fontSize:17, fontWeight:700, letterSpacing:-.3 }}>NOTRYA <span style={{ color:P.teal, fontWeight:300 }}>AI</span></span>
+        <span style={{ fontSize:17, fontWeight:700, letterSpacing:-.3 }}>LAKONYX <span style={{ color:P.teal, fontWeight:300 }}>AI</span></span>
       </div>
       <div style={{ display:"flex", gap:32, listStyle:"none" }}>
         {["Brand","Products","Portfolio","Technology"].map(l => (
@@ -472,7 +472,7 @@ function Hero() {
           The <em style={{ fontStyle:"normal", color:P.teal }}>Intelligence</em><br/>Emergency Medicine<br/>Has Been Waiting For
         </h1>
         <p className="ha3" style={{ fontSize:18, fontWeight:300, lineHeight:1.75, color:P.t2, maxWidth:620, margin:"0 auto 52px" }}>
-          Notrya AI unifies clinical decision support, AI documentation, and real-time protocol guidance into a single keyboard-first platform purpose-built for emergency physicians.
+          Lakonyx AI unifies clinical decision support, AI documentation, and real-time protocol guidance into a single keyboard-first platform purpose-built for emergency physicians.
         </p>
         <div className="ha4" style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap" }}>
           <a href="#brand" style={{ background:P.teal, color:P.navy, fontWeight:700, fontSize:13, letterSpacing:"1.5px", padding:"14px 36px", borderRadius:10, textDecoration:"none", textTransform:"uppercase", display:"inline-block" }}>View the Brand</a>
@@ -494,9 +494,9 @@ function Hero() {
 function BrandSection() {
   return (
     <div style={{ maxWidth:1400, margin:"0 auto", padding:"100px 64px" }} id="brand">
-      <SLabel>// notrya ai brand family</SLabel>
+      <SLabel>// lakonyx ai brand family</SLabel>
       <STitle>The Flagship. Three Marks.</STitle>
-      <SSub>Each logo expresses a different dimension of the Notrya AI platform — sync, interaction philosophy, and clinical identity.</SSub>
+      <SSub>Each logo expresses a different dimension of the Lakonyx AI platform — sync, interaction philosophy, and clinical identity.</SSub>
       {/* Featured Smart Sync */}
       <div className="fr" style={{ background:P.navy2, border:"1px solid rgba(29,158,117,.25)", borderRadius:24, padding:56, display:"grid", gridTemplateColumns:"1fr 1fr", gap:56, alignItems:"center", marginBottom:24, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, right:0, width:"55%", height:"100%", background:"radial-gradient(ellipse at 80% 50%,rgba(29,158,117,.07) 0%,transparent 70%)", pointerEvents:"none" }}/>
@@ -610,7 +610,7 @@ function BrandSection() {
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:3, color:"#12CCE6", textTransform:"uppercase", marginBottom:10 }}>// command layer &middot; keyboard-first overlay</div>
           <div style={{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:700, marginBottom:10, letterSpacing:-.5 }}>CommandKit</div>
           <p style={{ fontSize:14, color:P.t2, lineHeight:1.65, marginBottom:16 }}>
-            The global clinical command overlay for Notrya AI. Lightning-bolt icon with cyan ECG pulse — instantly surfaces drug doses, imaging orders, lab panels, and clinical reference tools via Ctrl+Space or voice command. Zero keyboard, zero mouse, zero delay.
+            The global clinical command overlay for Lakonyx AI. Lightning-bolt icon with cyan ECG pulse — instantly surfaces drug doses, imaging orders, lab panels, and clinical reference tools via Ctrl+Space or voice command. Zero keyboard, zero mouse, zero delay.
           </p>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
             {["Navy #060C19","Cyan #12CCE6","ECG Gold #F0B429"].map(c => (
@@ -780,7 +780,7 @@ function TechSection() {
     <div style={{ maxWidth:1400, margin:"0 auto", padding:"100px 64px" }} id="technology">
       <SLabel>// platform strengths</SLabel>
       <STitle>Built for Hospitals. Built to Win.</STitle>
-      <SSub>Six core strengths that position Notrya AI as the clinical intelligence layer every emergency department needs.</SSub>
+      <SSub>Six core strengths that position Lakonyx AI as the clinical intelligence layer every emergency department needs.</SSub>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(320px, 1fr))", gap:28 }}>
         {STACK.map(item => <StackCard key={item.name} item={item}/>)}
       </div>
@@ -803,10 +803,10 @@ function CTASection() {
         The Future of<br/><em style={{ fontStyle:"normal", color:P.teal }}>Emergency Medicine</em><br/>Is Already Built.
       </h2>
       <p style={{ fontSize:17, color:P.t2, lineHeight:1.75, marginBottom:52, position:"relative" }}>
-        Notrya AI is actively developed and positioned for strategic acquisition by a leading EHR company. If you are an investor, health system executive, or strategic partner &mdash; let&rsquo;s talk.
+        Lakonyx AI is actively developed and positioned for strategic acquisition by a leading EHR company. If you are an investor, health system executive, or strategic partner &mdash; let&rsquo;s talk.
       </p>
       <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", position:"relative" }}>
-        <a href="mailto:contact@notrya.ai" style={{ background:P.teal, color:P.navy, fontWeight:700, fontSize:13, letterSpacing:"1.5px", padding:"14px 36px", borderRadius:10, textDecoration:"none", textTransform:"uppercase", display:"inline-block" }}>Contact the Team</a>
+        <a href="mailto:contact@lakonyx.com" style={{ background:P.teal, color:P.navy, fontWeight:700, fontSize:13, letterSpacing:"1.5px", padding:"14px 36px", borderRadius:10, textDecoration:"none", textTransform:"uppercase", display:"inline-block" }}>Contact the Team</a>
         <a href="#brand" style={{ background:"transparent", color:P.t2, border:"1px solid rgba(120,148,192,.3)", fontSize:13, letterSpacing:"1.5px", padding:"14px 36px", borderRadius:10, textDecoration:"none", textTransform:"uppercase", display:"inline-block" }}>Explore All Products</a>
       </div>
     </div>
@@ -817,7 +817,7 @@ function CTASection() {
 function Footer() {
   return (
     <footer style={{ borderTop:"1px solid rgba(29,158,117,.15)", padding:"40px 64px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-      <div style={{ fontWeight:700, fontSize:15 }}>NOTRYA <span style={{ color:P.teal }}>AI</span></div>
+      <div style={{ fontWeight:700, fontSize:15 }}>LAKONYX <span style={{ color:P.teal }}>AI</span></div>
       <div style={{ fontSize:12, color:P.t3, letterSpacing:.5 }}>&#169; 2025 Skiba Enterprises &middot; All rights reserved</div>
       <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:P.t3 }}>v1.0.0 &middot; Smart Sync</div>
     </footer>

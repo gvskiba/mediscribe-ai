@@ -234,7 +234,7 @@ function Divider() {
 //  MAIN EXPORT
 // ══════════════════════════════════════════════════════════════════════
 
-export default function NotryaLanding({ onBack }) {
+export default function LakonyxLanding({ onBack }) {
   const [navScrolled, setNavScrolled] = useState(false);
 
   useEffect(() => {
@@ -263,7 +263,7 @@ export default function NotryaLanding({ onBack }) {
         transition:"all .2s",
       }}>
         <div style={{ fontFamily:"JetBrains Mono", fontWeight:700, fontSize:14, letterSpacing:4, color:T.gold }}>
-          NOTRYA
+          LAKONYX
         </div>
         <div style={{ display:"flex", gap:24, alignItems:"center" }}>
           {[["hubs","Hubs"],["narrative","Narrative"],["compare","vs. EHR"]].map(([id, label]) => (
@@ -315,7 +315,7 @@ export default function NotryaLanding({ onBack }) {
           </div>
 
           <p style={{ fontFamily:"DM Sans", fontSize:17, color:T.txt2, lineHeight:1.7, maxWidth:560, marginBottom:40, fontWeight:400 }}>
-            Notrya synthesizes every data stream in your ED into a living clinical story for every patient, in real time. Not alerts. Not documentation. <em>Intelligence.</em>
+            Lakonyx synthesizes every data stream in your ED into a living clinical story for every patient, in real time. Not alerts. Not documentation. <em>Intelligence.</em>
           </p>
 
           <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
@@ -578,9 +578,9 @@ export default function NotryaLanding({ onBack }) {
         <div style={{ maxWidth:1260, margin:"0 auto", padding:"96px 48px" }}>
           <FadeSection>
             <Eyebrow>vs. The Competition</Eyebrow>
-            <SectionTitle>What EHRs do.<br/>What Notrya does instead.</SectionTitle>
+            <SectionTitle>What EHRs do.<br/>What Lakonyx does instead.</SectionTitle>
             <p style={{ fontSize:15, color:T.txt2, lineHeight:1.7, maxWidth:520, marginBottom:52 }}>
-              Epic, Oracle Health, and Cerner are documentation platforms. Notrya is a clinical intelligence platform. The difference is the AI.
+              Epic, Oracle Health, and Cerner are documentation platforms. Lakonyx is a clinical intelligence platform. The difference is the AI.
             </p>
           </FadeSection>
 
@@ -600,7 +600,7 @@ export default function NotryaLanding({ onBack }) {
                   }}>{h}</div>
                 ))}
               </div>
-              {COMPARE.map(([cap, ehr, notrya], i) => (
+              {COMPARE.map(([cap, ehr, lakonyx], i) => (
                 <div key={cap} style={{
                   display:"grid", gridTemplateColumns:"1.4fr 1.2fr 1fr",
                   padding:"12px 20px",
@@ -613,7 +613,7 @@ export default function NotryaLanding({ onBack }) {
                     fontFamily:"DM Sans", fontWeight:600, fontSize:11, color:T.teal,
                     display:"flex", alignItems:"center", gap:5,
                   }}>
-                    <span style={{ color:T.teal, fontSize:10 }}>✓</span> {notrya}
+                    <span style={{ color:T.teal, fontSize:10 }}>✓</span> {lakonyx}
                   </div>
                 </div>
               ))}
@@ -643,7 +643,7 @@ export default function NotryaLanding({ onBack }) {
             Intelligence,<br/>not documentation.
           </div>
           <p style={{ fontFamily:"DM Sans", fontSize:15, color:T.txt2, maxWidth:460, margin:"0 auto 40px", lineHeight:1.7 }}>
-            Notrya is the platform Epic cannot build — because it requires understanding emergency medicine from the inside.
+            Lakonyx is the platform Epic cannot build — because it requires understanding emergency medicine from the inside.
           </p>
           <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
             <button onClick={() => scrollTo("hubs")} style={{
@@ -668,9 +668,9 @@ export default function NotryaLanding({ onBack }) {
         justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:10,
       }}>
         {[
-          "NOTRYA · CLINICAL INTELLIGENCE PLATFORM",
+          "LAKONYX · CLINICAL INTELLIGENCE PLATFORM",
           "CLINICAL DECISION SUPPORT ONLY · NOT A SUBSTITUTE FOR PHYSICIAN JUDGMENT",
-          "2026 NOTRYA",
+          "2026 LAKONYX",
         ].map(t => (
           <span key={t} style={{ fontFamily:"JetBrains Mono", fontSize:8, color:T.txt4, letterSpacing:1.5, textTransform:"uppercase" }}>{t}</span>
         ))}

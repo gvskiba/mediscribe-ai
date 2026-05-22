@@ -79,7 +79,7 @@ export default function NotryaHubHeader({
             cursor: "pointer", userSelect: "none",
             transition: "color 0.15s", letterSpacing: "-0.3px", flexShrink: 0,
           }
-        }, "Notrya"),
+        }, "Lakonyx"),
         React.createElement(Slash, null),
         React.createElement("span", {
           style: {
@@ -176,7 +176,7 @@ export default function NotryaHubHeader({
           onClick: goHome,
           onMouseEnter: function() { setHomeHov(true); },
           onMouseLeave: function() { setHomeHov(false); },
-          "aria-label": "Go to Notrya home",
+          "aria-label": "Go to Lakonyx home",
           style: {
             display: "flex", alignItems: "center", gap: "6px",
             padding: "5px 13px", borderRadius: "8px",

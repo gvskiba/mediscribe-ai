@@ -12,7 +12,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import PatientSidebar from '@/components/patient/PatientSidebar';
 import GlobalNav from '@/components/GlobalNav';
 import CommandPalette from '@/components/CommandPalette';
-import NotryaFloatingAI from '@/components/ai/NotryaFloatingAI';
+import LakonyxFloatingAI from '@/components/ai/NotryaFloatingAI';
 import CommandKit from '@/components/CommandKit';
 import PulseActivators from "@/components/PulseActivators";
 
@@ -25,7 +25,7 @@ import BaseTemplate from '@/pages/BaseTemplate';
 import PediatricDosingCalculator from '@/pages/PediatricDosingCalculator';
 import StrokeHub from '@/pages/StrokeAssessment';
 import EDOrderHub from '@/pages/EDOrderHub';
-import NotryaApp from '@/pages/NotryaApp';
+import LakonyxApp from '@/pages/NotryaApp';
 import OrderDashboard from '@/pages/OrderDashboard';
 import CardiacHub from '@/pages/CardiacHub';
 import TraumaHub from '@/pages/TraumaHub';
@@ -59,13 +59,13 @@ import DispositionBoard from '@/pages/DispositionBoard';
 import DDxEngine from '@/pages/DDxEngine';
 import CriticalResultsInbox from '@/pages/CriticalResultsInbox';
 import ClinicalNarrativeEngine from '@/pages/ClinicalNarrativeEngine';
-import NotryaLanding from '@/pages/NotryaLanding';
+import LakonyxLanding from '@/pages/NotryaLanding';
 import CommandCenterWrapper from '@/pages/CommandCenterWrapper';
 import PatientWorkspace from '@/pages/PatientWorkspace';
 import ShiftSignout from '@/pages/ShiftSignout';
 import AddendumManager from '@/pages/AddendumManager';
 import ClinicalNoteV2 from '@/pages/ClinicalNoteV2';
-import NotryaNewTechnology from '@/pages/NotryaNewTechnology';
+import LakonyxNewTechnology from '@/pages/NotryaNewTechnology';
 import EDTrackingBoard from '@/pages/EDTrackingBoard';
 import DischargeDisposition from '@/pages/DischargeDisposition';
 import ScoreHub from '@/pages/ScoreHub';
@@ -161,7 +161,7 @@ const PAGES_WITH_OWN_PALETTE = new Set(["/NewPatientInput"]);
 function GlobalFloatingAI() {
   const location = useLocation();
   if (PAGES_WITH_OWN_AI.has(location.pathname)) return null;
-  return <NotryaFloatingAI />;
+  return <LakonyxFloatingAI />;
 }
 
 function GlobalCommandPalette({ navigate }) {
@@ -240,8 +240,8 @@ const AuthenticatedApp = () => {
         <Route path="/DispositionBoard"  element={<DispositionBoard />} />
         <Route path="/shift-signout"     element={<ShiftSignout />} />
         <Route path="/command-center"    element={<CommandCenterWrapper />} />
-        <Route path="/landing"           element={<NotryaLanding />} />
-        <Route path="/new-technology"    element={<NotryaNewTechnology />} />
+        <Route path="/landing"           element={<LakonyxLanding />} />
+        <Route path="/new-technology"    element={<LakonyxNewTechnology />} />
         <Route path="/huddle-board"        element={<HuddleBoard />} />
         <Route path="/EDOrderHub"          element={<EDOrderHub />} />
         <Route path="/patient-workspace" element={<LayoutWrapper currentPageName="PatientWorkspace"><PatientWorkspace /></LayoutWrapper>} />
@@ -378,7 +378,7 @@ const AuthenticatedApp = () => {
         <Route path="/AbdominalPainHub" element={<LayoutWrapper currentPageName="AbdominalPainHub"><AbdominalPainHub /></LayoutWrapper>} />
 
         {/* Legacy / misc */}
-        <Route path="/NotryaApp"  element={<NotryaApp />} />
+        <Route path="/NotryaApp"  element={<LakonyxApp />} />
         <Route path="/OrderDashboard"  element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
         <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
         <Route path="/specialty-note-hub" element={<SpecialtyNoteHub />} />

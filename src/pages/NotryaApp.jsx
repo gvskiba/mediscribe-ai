@@ -128,8 +128,8 @@ const CSS = `
   --r:8px; --rl:12px;
   --w-icon:56px; --w-csb:170px; --h-top:88px; --h-bot:50px;
 }
-.notrya *, .notrya *::before, .notrya *::after { box-sizing:border-box; margin:0; padding:0; }
-.notrya { font-family:'DM Sans',sans-serif; font-size:14px; color:var(--txt); background:var(--bg); }
+.lakonyx *, .lakonyx *::before, .lakonyx *::after { box-sizing:border-box; margin:0; padding:0; }
+.lakonyx { font-family:'DM Sans',sans-serif; font-size:14px; color:var(--txt); background:var(--bg); }
 
 /* ── ICON SIDEBAR (Layout) ── */
 .isb {
@@ -501,7 +501,7 @@ const CSS = `
 /* ═══════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════ */
-export default function NotryaApp({ embedded = false, patientName = null, demo = null, vitals = null, medications = null, allergies = null, pmhSelected = null }) {
+export default function LakonyxApp({ embedded = false, patientName = null, demo = null, vitals = null, medications = null, allergies = null, pmhSelected = null }) {
   const navigate = useNavigate();
   
   // Merge passed data with DEMO fallback
@@ -597,7 +597,7 @@ export default function NotryaApp({ embedded = false, patientName = null, demo =
     try {
       const { base44 } = await import("@/api/base44Client");
       const text = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Notrya AI, a concise ED clinical assistant. Patient: ${P.firstName} ${P.lastName}, ${calcAge(P.dob)}y/o ${P.sex}, CC: ${P.cc}. Diagnoses: NSTEMI, HTN, T2DM, CAD. Critical labs: Troponin-I 0.84 (ref <0.04), BNP 812, K+ 5.4, Glucose 218. Meds given: Aspirin 325mg, Heparin drip, Ticagrelor 180mg. Allergies: Penicillin (anaphylaxis), Iodinated Contrast (urticaria), Codeine (nausea). Vitals: BP ${V.bp}, HR ${V.hr}, SpO2 ${V.spo2}%. Respond in 2-4 concise clinical sentences.\n\nQuestion: ${question}`,
+        prompt: `You are Lakonyx AI, a concise ED clinical assistant. Patient: ${P.firstName} ${P.lastName}, ${calcAge(P.dob)}y/o ${P.sex}, CC: ${P.cc}. Diagnoses: NSTEMI, HTN, T2DM, CAD. Critical labs: Troponin-I 0.84 (ref <0.04), BNP 812, K+ 5.4, Glucose 218. Meds given: Aspirin 325mg, Heparin drip, Ticagrelor 180mg. Allergies: Penicillin (anaphylaxis), Iodinated Contrast (urticaria), Codeine (nausea). Vitals: BP ${V.bp}, HR ${V.hr}, SpO2 ${V.spo2}%. Respond in 2-4 concise clinical sentences.\n\nQuestion: ${question}`,
       });
       setAiMsgs(prev => [...prev, { role: "bot", text: typeof text === "string" ? text : JSON.stringify(text) }]);
       if (!aiOpen) setUnread(n => n + 1);
@@ -610,7 +610,7 @@ export default function NotryaApp({ embedded = false, patientName = null, demo =
   const openAI = () => { setAiOpen(true); setUnread(0); };
 
   return (
-    <div className="notrya" style={{ minHeight: "100vh", position: "relative", '--w-icon': embedded ? '0px' : '56px' }}>
+    <div className="lakonyx" style={{ minHeight: "100vh", position: "relative", '--w-icon': embedded ? '0px' : '56px' }}>
       <style>{CSS}</style>
 
       {banner && (
@@ -757,7 +757,7 @@ export default function NotryaApp({ embedded = false, patientName = null, demo =
             <div className="ai-float-hdr-top">
               <div className="ai-float-avatar">🤖</div>
               <div>
-                <div className="ai-float-name">Notrya AI</div>
+                <div className="ai-float-name">Lakonyx AI</div>
                 <div className="ai-float-status"><div className="ai-dot" /> Live · Powered by AI</div>
               </div>
               <div className="ai-float-close" onClick={() => setAiOpen(false)}>✕</div>
@@ -798,7 +798,7 @@ export default function NotryaApp({ embedded = false, patientName = null, demo =
             <button className="ai-float-send" onClick={() => sendAI()} disabled={aiLoading || !aiInput.trim()}>↑</button>
           </div>
           <div className="ai-float-footer">
-            <span className="ai-model-badge">Powered by Notrya AI</span>
+            <span className="ai-model-badge">Powered by Lakonyx AI</span>
           </div>
         </div>
       )}

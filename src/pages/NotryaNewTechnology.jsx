@@ -54,7 +54,7 @@ const FEATURES = [
     title: "Structured AMA 2023 MDM",
     tagline: "Bill accurately. Document defensibly.",
     description:
-      "Notrya's MDM section maps directly to the AMA 2023 E/M guidelines — three separate domains (Problems, Data, Risk), a 4-level complexity selector, and a real-time indicator showing which domains are documented. AI generates domain-specific text on demand.",
+      "Lakonyx's MDM section maps directly to the AMA 2023 E/M guidelines — three separate domains (Problems, Data, Risk), a 4-level complexity selector, and a real-time indicator showing which domains are documented. AI generates domain-specific text on demand.",
     bullets: [
       "Three-domain structure mirrors the AMA 2023 table exactly",
       "\"2 of 3 domains\" billing rule enforced visually",
@@ -72,7 +72,7 @@ const FEATURES = [
     title: "Live Clinical Decision Support",
     tagline: "Alerts that matter, silenced when they don't.",
     description:
-      "Notrya's CDS sidebar runs continuously as you document — checking allergies against ordered medications, flagging SIRS criteria, identifying Beers Criteria violations, and surfacing QT-prolonging drug combinations. Alerts are tiered (Critical → High → Info) so you see what matters first.",
+      "Lakonyx's CDS sidebar runs continuously as you document — checking allergies against ordered medications, flagging SIRS criteria, identifying Beers Criteria violations, and surfacing QT-prolonging drug combinations. Alerts are tiered (Critical → High → Info) so you see what matters first.",
     bullets: [
       "Allergy-to-medication cross-check on every order",
       "SIRS and sepsis detection from vitals + chief complaint",
@@ -90,7 +90,7 @@ const FEATURES = [
     title: "Context-Aware AI at Every Step",
     tagline: "AI that knows the patient, not just the prompt.",
     description:
-      "Notrya's AI is woven into the workflow — not bolted on as a chatbot. It knows the patient's demographics, vitals, medications, allergies, and chief complaint at every moment. From HPI generation to ICD-10 lookup to DDx suggestion to MDM drafting, AI acts as your real-time second reader.",
+      "Lakonyx's AI is woven into the workflow — not bolted on as a chatbot. It knows the patient's demographics, vitals, medications, allergies, and chief complaint at every moment. From HPI generation to ICD-10 lookup to DDx suggestion to MDM drafting, AI acts as your real-time second reader.",
     bullets: [
       "HPI symptom checklist generated from chief complaint in seconds",
       "ICD-10-CM code suggestion with differential on Enter key",
@@ -103,19 +103,19 @@ const FEATURES = [
 ];
 
 const VS = [
-  { feature: "Keyboard-first navigation",          notrya: true,  epic: false, cerner: false },
-  { feature: "Interruption recovery chip",         notrya: true,  epic: false, cerner: false },
-  { feature: "AMA 2023 three-domain MDM",          notrya: true,  epic: false, cerner: false },
-  { feature: "Live allergy/drug CDS sidebar",      notrya: true,  epic: true,  cerner: true  },
-  { feature: "Embedded contextual AI",             notrya: true,  epic: false, cerner: false },
-  { feature: "Inline HPI symptom wizard",          notrya: true,  epic: false, cerner: false },
-  { feature: "AI-generated MDM per AMA domains",   notrya: true,  epic: false, cerner: false },
-  { feature: "Results AI synthesis (labs+EKG+img)",notrya: true,  epic: false, cerner: false },
-  { feature: "Real-time door-to-chart timer",      notrya: true,  epic: false, cerner: false },
-  { feature: "5-stage clinical workflow rail",     notrya: true,  epic: false, cerner: false },
+  { feature: "Keyboard-first navigation",          lakonyx: true,  epic: false, cerner: false },
+  { feature: "Interruption recovery chip",         lakonyx: true,  epic: false, cerner: false },
+  { feature: "AMA 2023 three-domain MDM",          lakonyx: true,  epic: false, cerner: false },
+  { feature: "Live allergy/drug CDS sidebar",      lakonyx: true,  epic: true,  cerner: true  },
+  { feature: "Embedded contextual AI",             lakonyx: true,  epic: false, cerner: false },
+  { feature: "Inline HPI symptom wizard",          lakonyx: true,  epic: false, cerner: false },
+  { feature: "AI-generated MDM per AMA domains",   lakonyx: true,  epic: false, cerner: false },
+  { feature: "Results AI synthesis (labs+EKG+img)",lakonyx: true,  epic: false, cerner: false },
+  { feature: "Real-time door-to-chart timer",      lakonyx: true,  epic: false, cerner: false },
+  { feature: "5-stage clinical workflow rail",     lakonyx: true,  epic: false, cerner: false },
 ];
 
-export default function NotryaNewTechnology() {
+export default function LakonyxNewTechnology() {
   const [activeFeature, setActiveFeature] = useState("keyboard");
   const active = FEATURES.find(f => f.id === activeFeature);
 
@@ -144,13 +144,13 @@ export default function NotryaNewTechnology() {
         {/* ── HERO ── */}
         <div style={{ textAlign: "center", padding: "80px 0 56px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 16px", borderRadius: 20, background: "rgba(0,229,192,.08)", border: "1px solid rgba(0,229,192,.25)", marginBottom: 24 }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: T.teal, letterSpacing: 3, textTransform: "uppercase" }}>Notrya Platform</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: T.teal, letterSpacing: 3, textTransform: "uppercase" }}>Lakonyx Platform</span>
           </div>
           <h1 className="shimmer-txt" style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(36px,6vw,68px)", fontWeight: 900, lineHeight: 1.05, letterSpacing: -1, marginBottom: 20 }}>
             Documentation built<br />for how medicine works.
           </h1>
           <p style={{ fontSize: 17, color: T.txt3, maxWidth: 580, margin: "0 auto 36px", lineHeight: 1.75 }}>
-            Most EHRs were built for billing departments. Notrya was built for the provider at the bedside — every design decision optimized for speed, safety, and clinical accuracy.
+            Most EHRs were built for billing departments. Lakonyx was built for the provider at the bedside — every design decision optimized for speed, safety, and clinical accuracy.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {[
@@ -221,20 +221,20 @@ export default function NotryaNewTechnology() {
         <div style={{ marginBottom: 56 }}>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
             <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.txt4, textTransform: "uppercase", letterSpacing: 3, marginBottom: 8 }}>Comparison</div>
-            <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 700, color: T.txt }}>How Notrya compares</h2>
+            <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 700, color: T.txt }}>How Lakonyx compares</h2>
           </div>
           <div style={{ background: T.panel, border: `1px solid ${T.bd}`, borderRadius: 14, overflow: "hidden" }}>
             {/* Header */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 120px 120px", background: T.up, padding: "12px 20px" }}>
               <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.txt4, textTransform: "uppercase", letterSpacing: 2 }}>Capability</div>
-              {["Notrya", "Epic", "Cerner"].map(h => (
-                <div key={h} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, color: h === "Notrya" ? T.teal : T.txt4, textAlign: "center", letterSpacing: 1 }}>{h}</div>
+              {["Lakonyx", "Epic", "Cerner"].map(h => (
+                <div key={h} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, color: h === "Lakonyx" ? T.teal : T.txt4, textAlign: "center", letterSpacing: 1 }}>{h}</div>
               ))}
             </div>
             {VS.map((row, i) => (
               <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 120px 120px 120px", padding: "11px 20px", borderTop: `1px solid ${T.bd}`, background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,.015)" }}>
                 <span style={{ fontSize: 13, color: T.txt2 }}>{row.feature}</span>
-                {[row.notrya, row.epic, row.cerner].map((v, j) => (
+                {[row.lakonyx, row.epic, row.cerner].map((v, j) => (
                   <div key={j} style={{ textAlign: "center" }}>
                     <span style={{ fontSize: 15, color: v ? T.teal : "#2a4f7a" }}>{v ? "✓" : "✕"}</span>
                   </div>
@@ -276,7 +276,7 @@ export default function NotryaNewTechnology() {
             The future of clinical documentation is here.
           </h2>
           <p style={{ fontSize: 14, color: T.txt3, maxWidth: 500, margin: "0 auto 28px", lineHeight: 1.75 }}>
-            Notrya is in active development. Features ship weekly. Every design decision is made with one question: does this help the provider take better care of patients faster?
+            Lakonyx is in active development. Features ship weekly. Every design decision is made with one question: does this help the provider take better care of patients faster?
           </p>
           <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
             <a href="/NewPatientInput?tab=demo" style={{ padding: "12px 28px", borderRadius: 10, background: T.teal, color: "#050f1e", fontWeight: 700, fontSize: 14, textDecoration: "none", display: "inline-block" }}>

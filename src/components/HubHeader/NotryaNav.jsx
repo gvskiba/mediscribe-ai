@@ -59,7 +59,7 @@ export default function NotryaNav({ currentHub }) {
 
   return (
     <nav
-      aria-label="Notrya hub navigation"
+      aria-label="Lakonyx hub navigation"
       style={{
         width: W, minWidth: W,
         height: "100vh",
@@ -85,7 +85,7 @@ export default function NotryaNav({ currentHub }) {
       }}>
         {collapsed
           ? <span style={{ fontFamily: '"Playfair Display",Georgia,serif', fontSize: "17px", fontWeight: "700", color: "#00BFA5" }}>N</span>
-          : <span style={{ fontFamily: '"Playfair Display",Georgia,serif', fontSize: "17px", fontWeight: "700", color: "#E8EDF5", letterSpacing: "-0.3px" }}>Notrya</span>
+          : <span style={{ fontFamily: '"Playfair Display",Georgia,serif', fontSize: "17px", fontWeight: "700", color: "#E8EDF5", letterSpacing: "-0.3px" }}>Lakonyx</span>
         }
       </div>
 

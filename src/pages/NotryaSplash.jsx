@@ -36,7 +36,7 @@ const STATS = [
   { label:"AI-Powered Tools",     value:"12+", color:T.purple },
 ];
 
-export default function NotryaSplash() {
+export default function LakonyxSplash() {
   const [hov, setHov] = useState(false);
   const navigate = useNavigate();
 
@@ -95,7 +95,7 @@ export default function NotryaSplash() {
           fontSize:52, fontWeight:900, color:T.txt,
           letterSpacing:"0.10em", lineHeight:1, marginBottom:6,
         }}>
-          NOTRYA
+          LAKONYX
         </div>
 
         <div className="su2" style={{
@@ -173,7 +173,7 @@ export default function NotryaSplash() {
           fontFamily:"'JetBrains Mono',monospace",
           fontSize:9, color:T.txt4, letterSpacing:"0.14em",
         }}>
-          NOTRYA AI · FOR CLINICAL DECISION SUPPORT ONLY
+          LAKONYX AI · FOR CLINICAL DECISION SUPPORT ONLY
         </div>
 
       </div>

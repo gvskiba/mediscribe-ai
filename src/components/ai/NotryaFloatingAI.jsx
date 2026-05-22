@@ -383,12 +383,12 @@ const AI_CSS = `
 }
 `;
 
-export default function NotryaFloatingAI() {
+export default function LakonyxFloatingAI() {
   const location = useLocation();
   const { patientData } = usePatientData();
   const [aiOpen, setAiOpen] = useState(false);
   const [aiMsgs, setAiMsgs] = useState([
-    { role: "sys", text: "👋 Hi! I'm Notrya AI. Ask me about what you're viewing or anything clinical." }
+    { role: "sys", text: "👋 Hi! I'm Lakonyx AI. Ask me about what you're viewing or anything clinical." }
   ]);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -439,7 +439,7 @@ export default function NotryaFloatingAI() {
 
     try {
       const context = getContextString();
-      const systemPrompt = `You are Notrya AI, a helpful clinical assistant embedded in an emergency medicine documentation app. You provide concise, actionable advice. Context: ${context}. Respond in 2–4 sentences. Never fabricate data. If information is missing, ask for clarification.`;
+      const systemPrompt = `You are Lakonyx AI, a helpful clinical assistant embedded in an emergency medicine documentation app. You provide concise, actionable advice. Context: ${context}. Respond in 2–4 sentences. Never fabricate data. If information is missing, ask for clarification.`;
 
       const fullPrompt = newHistory.map(m =>
         m.role === "user" ? `User: ${m.content}` : `Assistant: ${m.content}`
@@ -476,7 +476,7 @@ export default function NotryaFloatingAI() {
       <button
         className={`ai-fab${aiOpen ? " open" : ""}`}
         onClick={() => (aiOpen ? setAiOpen(false) : openAI())}
-        title="Notrya AI"
+        title="Lakonyx AI"
       >
         🤖
         {!aiOpen && unread > 0 && <span className="ai-fab-badge">{unread}</span>}
@@ -488,7 +488,7 @@ export default function NotryaFloatingAI() {
             <div className="ai-float-hdr-top">
               <div className="ai-float-avatar">🤖</div>
               <div>
-                <div className="ai-float-name">Notrya AI</div>
+                <div className="ai-float-name">Lakonyx AI</div>
                 <div className="ai-float-status">
                   <div style={{width: 6, height: 6, borderRadius: "50%", background: T.teal}} /> Live
                 </div>
@@ -542,7 +542,7 @@ export default function NotryaFloatingAI() {
           </div>
 
           <div className="ai-float-footer">
-            <span className="ai-model-badge">Notrya AI</span>
+            <span className="ai-model-badge">Lakonyx AI</span>
           </div>
         </div>
       )}

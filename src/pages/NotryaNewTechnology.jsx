@@ -17,7 +17,7 @@ const FEATURES = [
     title: "Keyboard-First Technology",
     tagline: "Document at the speed of thought — no mouse required.",
     description:
-      "Most EHRs were designed for clerks, not clinicians. Notrya flips that: every workflow is navigable entirely by keyboard. Navigate between chart sections, answer symptom checklists, set E/M complexity, approve orders — all without touching a mouse.",
+      "Most EHRs were designed for clerks, not clinicians. Lakonyx flips that: every workflow is navigable entirely by keyboard. Navigate between chart sections, answer symptom checklists, set E/M complexity, approve orders — all without touching a mouse.",
     bullets: [
       "⌘1–0 to jump to any section instantly",
       "Y/N/Space to answer ROS and HPI symptom prompts",
@@ -36,7 +36,7 @@ const FEATURES = [
     title: "Interruption Recovery",
     tagline: "Get pulled away. Come back exactly where you left off.",
     description:
-      "ER providers are interrupted every 9 minutes on average. Traditional EHRs lose your place when you switch screens. Notrya tracks exactly where you were in the assessment workflow and surfaces a one-click chip the moment you return — no hunting for where you left off.",
+      "ER providers are interrupted every 9 minutes on average. Traditional EHRs lose your place when you switch screens. Lakonyx tracks exactly where you were in the assessment workflow and surfaces a one-click chip the moment you return — no hunting for where you left off.",
     bullets: [
       "Automatic detection when you leave mid-assessment",
       "Resume chip appears in the patient header instantly",

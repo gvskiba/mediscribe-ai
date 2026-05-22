@@ -592,7 +592,7 @@ export default function LakonyxLanding({ onBack }) {
                 background:"rgba(5,10,20,0.9)", padding:"13px 20px",
                 borderBottom:"1px solid rgba(42,79,122,0.3)",
               }}>
-                {["Capability","Epic / Cerner / Oracle","Notrya"].map((h, i) => (
+                {["Capability","Epic / Cerner / Oracle","Lakonyx"].map((h, i) => (
                   <div key={h} style={{
                     fontFamily:"JetBrains Mono", fontSize:9, fontWeight:700,
                     letterSpacing:2, textTransform:"uppercase",

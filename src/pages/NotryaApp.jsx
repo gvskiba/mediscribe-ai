@@ -746,7 +746,7 @@ export default function LakonyxApp({ embedded = false, patientName = null, demo 
 
       {/* FLOATING AI CHATBOT */}
       {!aiOpen && <div className="ai-fab-ring" />}
-      <button className={`ai-fab${aiOpen ? " open" : ""}`} onClick={() => aiOpen ? setAiOpen(false) : openAI()} title="Notrya AI">
+      <button className={`ai-fab${aiOpen ? " open" : ""}`} onClick={() => aiOpen ? setAiOpen(false) : openAI()} title="Lakonyx AI">
         {aiOpen ? "✕" : "🤖"}
         {!aiOpen && unread > 0 && <span className="ai-fab-badge">{unread}</span>}
       </button>

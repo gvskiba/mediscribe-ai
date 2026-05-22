@@ -17,7 +17,7 @@
   font-size: 10px !important;
 }
 
-/* ── Fix 4: Respect prefers-reduced-motion for all Notrya animations ─────────
+/* ── Fix 4: Respect prefers-reduced-motion for all Lakonyx animations ─────────
  * Covers all shimmer variants (img3shim, d2shim, dmrshim, npi shimmer)
  * Covers all pulse variants (d2-pulse, dmr-pulse, npi-bounce, img3fade)
  * Covers the tab/panel fade-in animations

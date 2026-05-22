@@ -87,7 +87,7 @@ const HUBS = [
 // ─── TECH STACK DATA ────────────────────────────────────────────────────────
 const STACK = [
   { name:"AI Clinical Reasoning", sub:"Claude Sonnet at the Core", desc:"Every decision is powered by enterprise AI reasoning. HPI generation, ECG interpretation, imaging analysis \u2014 real-time clinical intelligence without hallucinations.", benefit:"Faster diagnoses. Better outcomes.", color:"#1D9E75", icon:<path d="M12 2L22 12L12 22L2 12Z" stroke="currentColor" strokeWidth="1.5" fill="none"/>,icon2:<path d="M12 8L16 12L12 16L8 12Z" fill="currentColor" opacity="0.4"/>},
-  { name:"Zero-Friction Integration", sub:"Live EMR Data Sync", desc:"Smart Sync pulls vitals, labs, imaging, and patient context directly into Notrya. No chart switching. No copy-paste. Real-time bidirectional data flow via FHIR R4.", benefit:"Physicians focus on patients, not paperwork.", color:"#EF9F27", icon:<circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" fill="none"/>,icon2:<g><path d="M8 12L12 8L16 12L12 16Z" fill="currentColor" opacity="0.35"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></g>},
+  { name:"Zero-Friction Integration", sub:"Live EMR Data Sync", desc:"Smart Sync pulls vitals, labs, imaging, and patient context directly into Lakonyx. No chart switching. No copy-paste. Real-time bidirectional data flow via FHIR R4.", benefit:"Physicians focus on patients, not paperwork.", color:"#EF9F27", icon:<circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" fill="none"/>,icon2:<g><path d="M8 12L12 8L16 12L12 16Z" fill="currentColor" opacity="0.35"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></g>},
   { name:"One-Tap Billing Accuracy", sub:"CPT & ICD-10 Native", desc:"Real-time E&M level estimation, CPT code stepping, ICD-10 search, comorbidity linkage. Documentation flows straight into billing. No denials. No revenue leakage.", benefit:"Automate coding. Maximize reimbursement.", color:"#E24B4A", icon:<path d="M4 6H20M4 12H20M4 18H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>,icon2:null},
   { name:"Clinician-First Design", sub:"Keyboard-Driven, No Mouse", desc:"Glassmorphism UI with navy-dark aesthetic. Playfair Display, DM Sans, JetBrains Mono. Ctrl+Space to CommandKit. Voice commands. Instant access to meds, imaging, labs, references.", benefit:"From patient arrival to disposition in 60 seconds.", color:"#12CCE6", icon:<path d="M12 3L21 8L21 16L12 21L3 16L3 8Z" stroke="currentColor" strokeWidth="1.5" fill="none"/>,icon2:<circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.5"/>},
   { name:"Peer-Reviewed Evidence", sub:"No Hallucinations. Just Facts.", desc:"Every recommendation is graded and sourced. LRINEC, CHA\u2082DS\u2082-VASc, GRACE, TIMI, HEART, SEP-1. Protocols from peer-reviewed literature, not AI fantasy.", benefit:"Your liability is protected. Your decisions are backed.", color:"#7F77DD", icon:<g><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></g>,icon2:<g><line x1="7" y1="12" x2="10" y2="12" stroke="currentColor" strokeWidth="1.5"/><line x1="12" y1="7" x2="12" y2="10" stroke="currentColor" strokeWidth="1.5"/><line x1="14" y1="12" x2="17" y2="12" stroke="currentColor" strokeWidth="1.5"/><line x1="12" y1="14" x2="12" y2="17" stroke="currentColor" strokeWidth="1.5"/></g>},
@@ -262,7 +262,7 @@ const SELLING_POINTS = [
   {
     tag:"// voice command",
     headline:"Say It. Done.",
-    sub:"Speak any clinical intent — \"dose morphine\", \"guideline HEART\", \"weight 82 kg\", \"switch to imaging\" — and Notrya responds instantly. Hands-free. Gloves on. Eyes on the patient.",
+    sub:"Speak any clinical intent — \"dose morphine\", \"guideline HEART\", \"weight 82 kg\", \"switch to imaging\" — and Lakonyx responds instantly. Hands-free. Gloves on. Eyes on the patient.",
     stat:"100%", statLabel:"Hands-Free Operation",
     color:"#1D9E75",
     visual:(
@@ -461,7 +461,7 @@ function Hero() {
       <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 90% 70% at 50% -10%,rgba(29,158,117,.1) 0%,transparent 65%),radial-gradient(ellipse 50% 40% at 85% 85%,rgba(239,159,39,.06) 0%,transparent 60%)" }}/>
       <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(29,158,117,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(29,158,117,.06) 1px,transparent 1px)", backgroundSize:"60px 60px", animation:"gridScroll 10s linear infinite" }}/>
       {/* Watermark */}
-      <div style={{ position:"absolute", fontSize:"clamp(120px,22vw,280px)", fontFamily:"'Playfair Display',serif", fontWeight:900, color:"rgba(29,158,117,.04)", letterSpacing:-8, userSelect:"none", whiteSpace:"nowrap", pointerEvents:"none", zIndex:0 }}>NOTRYA</div>
+      <div style={{ position:"absolute", fontSize:"clamp(120px,22vw,280px)", fontFamily:"'Playfair Display',serif", fontWeight:900, color:"rgba(29,158,117,.04)", letterSpacing:-8, userSelect:"none", whiteSpace:"nowrap", pointerEvents:"none", zIndex:0 }}>LAKONYX</div>
       {/* Content */}
       <div style={{ position:"relative", zIndex:2, maxWidth:920 }}>
         <div className="ha1" style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(29,158,117,.1)", border:"1px solid rgba(29,158,117,.3)", borderRadius:100, padding:"6px 18px", marginBottom:36, fontSize:11, letterSpacing:3, color:P.tealL, textTransform:"uppercase" }}>
@@ -515,15 +515,15 @@ function BrandSection() {
             <path d="M 24 93 L 56 93 L 64 62 L 72 124 L 79 93 L 162 93" fill="none" stroke="#EF9F27" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
             <circle cx="93" cy="33" r="5" fill="#EF9F27" opacity="0.7"/>
             <circle cx="93" cy="153" r="5" fill="#EF9F27" opacity="0.7"/>
-            <text x="198" y="90" fontFamily="'DM Sans','Helvetica Neue',Arial,sans-serif" fontSize="56" fontWeight="700" letterSpacing="-2" fill="#F0F4FF">NOTRYA</text>
-            <text x="199" y="90" fontFamily="'DM Sans','Helvetica Neue',Arial,sans-serif" fontSize="56" fontWeight="300"><tspan fill="none">NOTRYA </tspan><tspan fill="#1D9E75"> AI</tspan></text>
+            <text x="198" y="90" fontFamily="'DM Sans','Helvetica Neue',Arial,sans-serif" fontSize="46" fontWeight="700" letterSpacing="-2" fill="#F0F4FF">LAKONYX</text>
+            <text x="199" y="90" fontFamily="'DM Sans','Helvetica Neue',Arial,sans-serif" fontSize="46" fontWeight="300"><tspan fill="none">LAKONYX </tspan><tspan fill="#1D9E75"> AI</tspan></text>
             <line x1="198" y1="106" x2="548" y2="106" stroke="#1D9E75" strokeWidth="0.8" opacity="0.4"/>
             <text x="201" y="136" fontFamily="'DM Sans','Helvetica Neue',Arial,sans-serif" fontSize="18" fontWeight="400" letterSpacing="8" fill="#7EC9AA" opacity="0.9">SMART SYNC</text>
           </svg>
         </div>
         <div style={{ position:"relative", zIndex:1 }}>
           <span style={{ display:"inline-block", background:"rgba(239,159,39,.1)", border:"1px solid rgba(239,159,39,.3)", color:P.goldL, fontSize:10, letterSpacing:3, padding:"4px 12px", borderRadius:4, marginBottom:20, textTransform:"uppercase" }}>Flagship Mark &middot; v1.0</span>
-          <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, fontWeight:700, letterSpacing:-.5, marginBottom:14 }}>Notrya AI Smart Sync</h3>
+          <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, fontWeight:700, letterSpacing:-.5, marginBottom:14 }}>Lakonyx AI Smart Sync</h3>
           <p style={{ fontSize:15, color:P.t2, lineHeight:1.75, marginBottom:32 }}>Circular sync arrows + gold ECG pulse. The platform&rsquo;s primary identity &mdash; communicating continuous intelligence, clinical rhythm, and real-time AI synchronization.</p>
           <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
             {["Navy #0D1B4B","Teal #1D9E75","Gold #EF9F27"].map(p => (
@@ -553,7 +553,7 @@ function BrandSection() {
               <circle cx="126" cy="104" r="5" fill="#2B7FE0"/>
               <line x1="126" y1="99" x2="126" y2="79" stroke="#2B7FE0" strokeWidth="0.75" strokeDasharray="2,3"/>
               <line x1="121" y1="104" x2="97" y2="104" stroke="#2B7FE0" strokeWidth="0.75" strokeDasharray="2,3"/>
-              <text x="228" y="120" fontFamily="system-ui,sans-serif" fontSize="66" fontWeight="700" fill="#DEE9F7" letterSpacing="-1">Notrya</text>
+              <text x="228" y="120" fontFamily="system-ui,sans-serif" fontSize="52" fontWeight="700" fill="#DEE9F7" letterSpacing="-1">Lakonyx</text>
               <line x1="228" y1="134" x2="624" y2="134" stroke="#132240" strokeWidth="1"/>
               <text x="228" y="158" fontFamily="system-ui,sans-serif" fontSize="17" fontWeight="600" fill="#00BFA5" letterSpacing="3">AI</text>
               <text x="263" y="158" fontFamily="system-ui,sans-serif" fontSize="17" fontWeight="300" fill="#2B7FE0"> &times; </text>

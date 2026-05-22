@@ -85,7 +85,7 @@ export const PAGES = [
   // Platform
   { id:"resustimer",    name:"Resus Timer",          icon:"⏱",   color:T.red,    cat:"Platform",        desc:"Live code — CPR cycles & drugs",        route:"/resus-hub"            },
   { id:"calendar",      name:"Shift Calendar",       icon:"📅",  color:T.txt4,   cat:"Platform",        desc:"Provider schedule & shifts",             route:"/Calendar"             },
-  { id:"landing",       name:"Platform Overview",    icon:"🏠",  color:T.txt4,   cat:"Platform",        desc:"About Notrya",                           route:"/landing"              },
+  { id:"landing",       name:"Platform Overview",    icon:"🏠",  color:T.txt4,   cat:"Platform",        desc:"About Lakonyx",                           route:"/landing"              },
 ];
 
 export const CATS = ["Workflow", "AI Tools", "Hubs", "Reference", "Platform"];

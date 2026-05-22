@@ -688,7 +688,7 @@ function CommandPalette({ open, onClose, patients, onNewPatient }) {
             </div>
           ))}
           <div style={{ flex:1 }} />
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, letterSpacing:"0.06em" }}>NOTRYA · ⌘K</span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, letterSpacing:"0.06em" }}>LAKONYX · ⌘K</span>
         </div>
       </div>
     </div>

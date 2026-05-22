@@ -274,7 +274,7 @@ function DashboardPanel({patients}){
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:28,height:28,borderRadius:8,background:"linear-gradient(135deg,#3b9eff,#00e5c0)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#050f1e"}}>N</div>
           <div>
-            <div style={{fontSize:12,fontWeight:700,color:T.txt,fontFamily:"'Playfair Display',serif",lineHeight:1.1}}>{_s.providerName?`Dr. ${_s.providerName.replace(/^dr\.?\s*/i,"").trim()}`:"Notrya"}</div>
+            <div style={{fontSize:12,fontWeight:700,color:T.txt,fontFamily:"'Playfair Display',serif",lineHeight:1.1}}>{_s.providerName?`Dr. ${_s.providerName.replace(/^dr\.?\s*/i,"").trim()}`:"Lakonyx"}</div>
             <div style={{fontSize:8,color:T.txt4,fontFamily:"'JetBrains Mono',monospace"}}>Emergency Medicine</div>
           </div>
         </div>
@@ -576,7 +576,7 @@ function GroupSection({group,query,viewMode="launcher",defaultCollapsed=false}){
 const TAB_LABELS={"Top Hubs":"★ Top Hubs","Critical Care":"Critical Care","Chief Complaint":"Chief CC","Diagnostics":"Diagnostics","Pharmacology":"Pharma","Subspecialty":"Subspecialty","Procedures":"Procedures","Workflow":"Workflow","Critical Protocols":"Protocols","Documentation & Tools":"Docs"};
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-export default function NotryaHome({patients=[]}){
+export default function LakonyxHome({patients=[]}){
   useSession(); // reactive updates for dynamic Top Hubs reordering
   const [query,setQuery]=useState("");
   const [activeTab,setActiveTab]=useState("Top Hubs");
@@ -691,7 +691,7 @@ export default function NotryaHome({patients=[]}){
             ))}
 
             <div style={{borderTop:"1px solid rgba(26,53,85,0.4)",paddingTop:14,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-              <span style={{fontSize:10,fontWeight:700,color:T.txt4,fontFamily:"'Playfair Display',serif"}}>Notrya</span>
+              <span style={{fontSize:10,fontWeight:700,color:T.txt4,fontFamily:"'Playfair Display',serif"}}>Lakonyx</span>
               <span style={{fontSize:9,color:T.txt4}}>Clinical decision support only — not a substitute for clinical judgment. Powered by Claude (Anthropic).</span>
             </div>
           </div>

@@ -209,11 +209,9 @@ const AuthenticatedApp = () => {
       <PulseActivators />
       <Routes>
         <Route path="/" element={<LakonyxSplash />} />
-        <Route path="/command-center-home" element={<CommandCenter />} />
         <Route path="/CommandCenter" element={<CommandCenter />} />
         <Route path="/PatientEncounter" element={<PatientEncounter />} />
         <Route path="/splash" element={<LakonyxSplash />} />
-        <Route path="/LakonyxHome" element={<CommandCenter />} />
 
         {Object.entries(Pages).map(([path, Page]) => (
           <Route key={path} path={`/${path}`} element={

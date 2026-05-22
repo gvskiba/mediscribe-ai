@@ -151,8 +151,8 @@ export default function HubIndex() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#3b9eff,#00e5c0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "#050f1e" }}>N</div>
-              <h1 style={{ margin: 0, fontFamily: "'Playfair Display', serif", fontSize: 22, color: "#ffffff", lineHeight: 1 }}>Notrya Hub Index</h1>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#3b9eff,#00e5c0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "#050f1e" }}>L</div>
+              <h1 style={{ margin: 0, fontFamily: "'Playfair Display', serif", fontSize: 22, color: "#ffffff", lineHeight: 1 }}>Lakonyx Hub Index</h1>
               <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "rgba(0,229,192,0.1)", color: "#00e5c0", border: "1px solid rgba(0,229,192,0.3)" }}>{HUBS.length} HUBS</span>
             </div>
             <p style={{ margin: 0, fontSize: 12, color: "#82aece" }}>Every clinical hub in one place — search, filter, and navigate instantly</p>

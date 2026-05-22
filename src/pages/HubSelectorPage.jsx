@@ -1637,7 +1637,7 @@ export default function HubSelectorPage() {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 700, color: "#e8f0fe", letterSpacing: "-0.01em", lineHeight: 1 }}>Notrya Clinical Suite</span>
+                <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 700, color: "#e8f0fe", letterSpacing: "-0.01em", lineHeight: 1 }}>Lakonyx Clinical Suite</span>
                 <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: "rgba(0,229,192,0.1)", color: "#00e5c0", border: "1px solid rgba(0,229,192,0.3)", letterSpacing: ".06em" }}>{HUBS.length} HUBS</span>
               </div>
               <p style={{ fontSize: 13, color: "#c8d8ee", margin: 0, lineHeight: 1.6, maxWidth: 560 }}>

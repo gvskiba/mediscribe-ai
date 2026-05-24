@@ -2,8 +2,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { InvokeLLM } from "@/integrations/Core";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// LAKONYX — FHIR Records Connector  (standalone hub page)
-// File: src/pages/FHIRConnectorPage.jsx
+// LAKONYX — Anamnesis  (Clinical Record Intelligence)
+// File: src/pages/AnamnesisPage.jsx
 // Base44 app ID: 69e2b07447a94ce494a296b7
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -401,7 +401,7 @@ function SessionItem({ session, active, onClick }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MAIN PAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export default function FHIRConnectorPage() {
+export default function AnamnesisPage() {
   // ── Mode & credentials ──────────────────────────────────────────────────────
   const [mode,      setMode]      = useState("paste"); // "paste" | "query"
   const [hgId,      setHgId]      = useState("");
@@ -694,7 +694,7 @@ export default function FHIRConnectorPage() {
         <span style={{ fontFamily:FONTS.display, fontSize:15, fontWeight:700, color:T.txt,
           letterSpacing:"0.06em" }}>LAKONYX</span>
         <span style={{ fontSize:12, color:T.txt4 }}>/</span>
-        <span style={{ fontSize:13, color:T.teal, fontWeight:500 }}>FHIR Records Connector</span>
+        <span style={{ fontSize:13, color:T.teal, fontWeight:500 }}>Anamnesis</span>
         <span style={{ fontSize:9, background:`${T.teal}20`, color:T.teal, padding:"2px 7px",
           borderRadius:4, fontWeight:700, letterSpacing:"0.08em" }}>BETA</span>
         <div style={{ flex:1 }}/>

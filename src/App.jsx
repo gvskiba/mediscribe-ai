@@ -148,7 +148,7 @@ import SpecialtyNoteHub from '@/pages/SpecialtyNoteHub';
 import SpecialtyNoteHubT2 from '@/pages/SpecialtyNoteHubT2';
 import LakonyxTechHub from '@/pages/LakonyxTechHub';
 import CommandCenter from '@/pages/CommandCenter';
-import FHIRConnectorHub from '@/pages/FHIRConnectorHub';
+import AnamnesisPage from '@/pages/AnamnesisPage';
 import FollowUpHub from '@/pages/FollowUpHub';
 import PatientEncounter from '@/pages/PatientEncounter';
 import LakonyxSplash from '@/pages/LakonyxSplash';
@@ -384,7 +384,7 @@ const AuthenticatedApp = () => {
         <Route path="/tech-hub" element={<LakonyxTechHub />} />
         <Route path="/follow-up-hub" element={<FollowUpHub />} />
         <Route path="/EdNoteGenerator"  element={<QuickNote />} />
-        <Route path="/fhir-connector"    element={<FHIRConnectorHub />} />
+        <Route path="/anamnesis"         element={<AnamnesisPage />} />
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>

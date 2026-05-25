@@ -1751,6 +1751,20 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
 
         {phase1Ready&&<TimelineCard timestamps={timestamps} setTimestamps={setTimestamps} />}
 
+        {/* ── Anamnesis Hub shortcut ── */}
+        <div style={{marginBottom:10,display:"flex",alignItems:"center",gap:8}} className="no-print">
+          <button onClick={()=>{window.location.href="/anamnesis";}}
+            style={{padding:"6px 14px",borderRadius:8,cursor:"pointer",
+              fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:.5,
+              border:"1px solid rgba(0,229,192,.35)",background:"rgba(0,229,192,.07)",
+              color:"var(--qn-teal)",display:"flex",alignItems:"center",gap:6}}>
+            ⬡ Open Anamnesis Hub
+          </button>
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:.3}}>
+            Retrieve full patient history via Carequality · CommonWell · TEFCA
+          </span>
+        </div>
+
         {hasAnyResult&&(
           <ActionBar
             mdmResult={mdmResult} dispResult={dispResult}

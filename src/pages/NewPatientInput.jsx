@@ -888,6 +888,7 @@ export default function NewPatientInput() {
           )}
 
           <div className="npi-top-acts">
+            <button className="npi-btn-ghost" onClick={() => navigate("/anamnesis")} title="Lakonyx Anamnesis — full patient history retrieval">⬡ Anamnesis</button>
             <button className="npi-btn-ghost" onClick={() => setShowCCDA(true)} title="Import C-CDA or clinical document">📋 Import</button>
             <button className="npi-btn-ghost" onClick={() => setShowFhirSync(true)} title="Sync from FHIR R4 endpoint">&#x21BA; FHIR</button>
             <button className="npi-btn-ghost" onClick={() => selectSection("orders")}>+ Order</button>

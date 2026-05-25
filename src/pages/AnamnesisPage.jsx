@@ -24,7 +24,10 @@ import {
   SessionItem, PollingPanel,
   IdentityMatchPanel, DDIPanel, MDMNotePanel, ProvenancePanel,
   VisitList, MedList, AllergyList, ProblemList, LabList, DocumentsTab,
+  ClinicalSnapshotStrip, SummaryTab,
+  LabTrendList, MedDeltaPanel,
 } from "@/components/anamnesis/AnamnesisComponents";
+import { HubBridgePanel, detectHubRelevance } from "@/utils/AnamnesisHubBridge";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MAIN PAGE
@@ -107,7 +110,7 @@ export default function AnamnesisPage({ patientSeed=null, autoToken=null, onReco
       const parsed = parseFHIRBundle(job.bundle);
       setData(parsed);
       setSources(["Health Gorilla · Carequality / CommonWell"]);
-      setTab("visits");
+      setTab("summary");
       saveSession(parsed, ["Health Gorilla · Carequality"]);
       if (autoPhase === "querying") setAutoPhase("done");
       setProvRecord(prev => prev ? provAttachResources(prev, parsed) : prev);
@@ -158,7 +161,7 @@ export default function AnamnesisPage({ patientSeed=null, autoToken=null, onReco
     if (autoPhase !== "cached" || !cacheHit) return;
     setData(cacheHit.data); setSources(cacheHit.sources);
     if (cacheHit.matchResult) setMatchResult(cacheHit.matchResult);
-    setTab("visits");
+    setTab("summary");
     saveSession(cacheHit.data, cacheHit.sources);
     showToast(`⬡ Records from session cache — ${cacheHit.resourceCount} resources`, "success");
   }, [autoPhase, cacheHit]);
@@ -186,6 +189,21 @@ export default function AnamnesisPage({ patientSeed=null, autoToken=null, onReco
       summary:{ visits:parsed.visits?.length??0, meds:parsed.medications?.length??0, labs:parsed.labs?.length??0 } };
     setSessions(prev => [session, ...prev.slice(0,9)]);
     setActiveSession(session.id);
+    // ── Base44 session persistence (uncomment after creating AnamnesisSession entity) ──
+    // Stores only de-identified summary — no patient PII.
+    // try {
+    //   const { AnamnesisSession } = await import("@/api/entities");
+    //   await AnamnesisSession.create({
+    //     patientHash:   _dHash?.(parsed.patient?.lastName, parsed.patient?.dob) ?? "—",
+    //     sourceSystem:  srcs.join(", "),
+    //     resourceCount: (parsed.visits?.length??0)+(parsed.medications?.length??0)+(parsed.labs?.length??0)+(parsed.problems?.length??0)+(parsed.allergies?.length??0),
+    //     visitCount:    parsed.visits?.length     ?? 0,
+    //     medCount:      parsed.medications?.length?? 0,
+    //     labCount:      parsed.labs?.length       ?? 0,
+    //     queryDate:     new Date().toISOString(),
+    //     retrievalMethod: "async-fhir",
+    //   });
+    // } catch(e) { console.warn("Anamnesis session persistence failed:", e.message); }
   }, []);
 
   // ── resetJob ─────────────────────────────────────────────────────────────────
@@ -329,7 +347,7 @@ export default function AnamnesisPage({ patientSeed=null, autoToken=null, onReco
       const result = await InvokeLLM({ prompt:`You are a clinical data extraction engine. Extract ALL clinical data from the following document — CCD, C-CDA, discharge summary, or plain text. Return ONLY the structured JSON.\n\nDOCUMENT:\n${paste}`, response_json_schema:PARSE_SCHEMA });
       if (!result?.patient) throw new Error("AI returned an unexpected format.");
       const parsed = { patient:result.patient, visits:(result.visits??[]).map(v=>({date:v.date,cc:v.cc,dx:v.diagnosis,dispo:v.dispo,src:v.source})), medications:(result.medications??[]).map(m=>({name:m.name,dose:m.dose,freq:m.frequency,src:m.source})), allergies:(result.allergies??[]).map(a=>({name:a.name,sev:a.severity,rxn:a.reaction,src:a.source})), problems:(result.problems??[]).map(p=>({name:p.name,icd:p.icd10,src:p.source})), labs:(result.labs??[]).map(l=>({name:l.name,val:l.value,ref:l.refRange,flag:l.flag,date:l.date})), documents:[] };
-      setData(parsed); setSources(["Pasted document · AI parsed"]); setTab("visits");
+      setData(parsed); setSources(["Pasted document · AI parsed"]); setTab("summary");
       saveSession(parsed, ["Pasted document"]);
       const pasteProv = createProvRecord({ retrievalMethod:"paste-ai", networkSources:["Document paste"], fhirEndpoint:"N/A" });
       setProvRecord(provAttachResources(pasteProv, parsed)); setSavedToBase44(false);
@@ -355,6 +373,7 @@ export default function AnamnesisPage({ patientSeed=null, autoToken=null, onReco
   const jobVisible = job.phase !== "idle";
 
   const TABS = [
+    { id:"summary",    label:"Summary",       count:null                         },
     { id:"visits",     label:"Prior Visits",  count:data?.visits?.length??0      },
     { id:"meds",       label:"Medications",   count:data?.medications?.length??0 },
     { id:"allergies",  label:"Allergies",     count:data?.allergies?.length??0   },
@@ -363,10 +382,17 @@ export default function AnamnesisPage({ patientSeed=null, autoToken=null, onReco
     { id:"documents",  label:"Documents",     count:data?.documents?.length??0   },
     { id:"mdm",        label:"MDM Note",      count:null                         },
     { id:"provenance", label:"Provenance",    count:null                         },
-  ].filter(t => !data || ["mdm","provenance"].includes(t.id) || (t.count??0)>0 || tab===t.id);
+  ].filter(t => !data || ["mdm","provenance","summary"].includes(t.id) || (t.count??0)>0 || tab===t.id);
 
-  const tabColor  = id => id==="mdm"?T.gold:id==="provenance"?T.violet:id==="documents"?T.blue:T.teal;
-  const tabBorder = id => id==="mdm"?(tab==="mdm"?T.gold:"transparent"):id==="provenance"?(tab==="provenance"?T.violet:"transparent"):id==="documents"?(tab==="documents"?T.blue:"transparent"):tab===id?T.teal:"transparent";
+  const tabColor  = id => id==="summary"?"#a78bfa":id==="mdm"?T.gold:id==="provenance"?T.violet:id==="documents"?T.blue:T.teal;
+  const tabBorder = id => {
+    const active = tab===id;
+    if (id==="summary")    return active?"#a78bfa":"transparent";
+    if (id==="mdm")        return active?T.gold:"transparent";
+    if (id==="provenance") return active?T.violet:"transparent";
+    if (id==="documents")  return active?T.blue:"transparent";
+    return active?T.teal:"transparent";
+  };
   const ddiCritCount = ddiState?.interactions?.filter(i=>i.severity==="critical").length??0;
   const ddiMajCount  = ddiState?.interactions?.filter(i=>i.severity==="major").length??0;
   const normDupCount = (() => { const seen=new Map();let d=0;(medNorm??[]).forEach(m=>{const k=m.ingredientRxcui?`rxcui:${m.ingredientRxcui}`:m.ingredientName?`ing:${m.ingredientName}`:`name:${m.cleanedName}`;if(seen.has(k))d++;else seen.set(k,true);});return d; })();
@@ -520,6 +546,12 @@ export default function AnamnesisPage({ patientSeed=null, autoToken=null, onReco
                 </div>
               </div>
 
+              {/* Clinical Snapshot Strip — always visible, zero API calls */}
+              <ClinicalSnapshotStrip
+                data={data} ddiState={ddiState} medNorm={medNorm}
+                onNavigate={id => setTab(id)}
+              />
+
               {/* Stats row */}
               <div style={{ display:"flex", borderBottom:`1px solid ${T.border}` }}>
                 {[{label:"Visits",val:data.visits?.length??0},{label:"Medications",val:data.medications?.length??0},{label:"Allergies",val:data.allergies?.length??0},{label:"Problems",val:data.problems?.length??0},{label:"Labs",val:data.labs?.length??0},{label:"Documents",val:data.documents?.length??0,color:T.blue}].map((s,i,arr)=>(
@@ -531,39 +563,46 @@ export default function AnamnesisPage({ patientSeed=null, autoToken=null, onReco
               </div>
 
               {/* Tab bar */}
-              <div style={{ display:"flex", borderBottom:`1px solid ${T.border}`, padding:"0 16px" }}>
+              <div style={{ display:"flex", borderBottom:`1px solid ${T.border}`, padding:"0 16px", overflowX:"auto" }}>
                 {TABS.map(t=>(
-                  <div key={t.id} onClick={()=>setTab(t.id)} style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px", cursor:"pointer", fontSize:12, fontWeight:tab===t.id?600:400, color:tab===t.id?tabColor(t.id):T.txt3, borderBottom:`2px solid ${tabBorder(t.id)}`, whiteSpace:"nowrap", borderLeft:(t.id==="mdm"||t.id==="provenance")?`1px solid ${T.border}`:"none", marginLeft:t.id==="mdm"?"auto":"0", transition:"all .12s" }}>
+                  <div key={t.id} onClick={()=>setTab(t.id)} style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px", cursor:"pointer", fontSize:12, fontWeight:tab===t.id?600:400, color:tab===t.id?tabColor(t.id):T.txt3, borderBottom:`2px solid ${tabBorder(t.id)}`, whiteSpace:"nowrap",
+                    borderLeft:(t.id==="mdm"||t.id==="provenance")?`1px solid ${T.border}`:"none",
+                    marginLeft:t.id==="mdm"?"auto":"0", transition:"all .12s" }}>
                     {t.label}
                     {(t.count??0)>0&&<span style={{ fontSize:10, fontWeight:700, minWidth:16, height:16, borderRadius:8, background:tab===t.id?tabColor(t.id):T.txt4, color:"#000", display:"inline-flex", alignItems:"center", justifyContent:"center", padding:"0 4px" }}>{t.count}</span>}
+                    {t.id==="summary"    && <span style={{ fontSize:10, color:tab==="summary"?"#a78bfa":T.txt4 }}>✦</span>}
                     {t.id==="meds"&&(ddiChecking||(ddiState&&ddiState.status!=="ok"))&&<span style={{ fontSize:9, fontWeight:700, padding:"1px 5px", borderRadius:10, background:ddiChecking?"rgba(255,255,255,0.08)":ddiState?.status==="critical"?"rgba(240,96,96,0.2)":ddiState?.status==="major"?"rgba(232,168,56,0.2)":`${T.teal}20`, color:ddiChecking?T.txt4:ddiState?.status==="critical"?T.coral:ddiState?.status==="major"?T.warn:T.teal }}>{ddiChecking?"…":ddiState?.status==="clean"?"✓ DDI":ddiState?.status==="critical"?`⊘ ${ddiCritCount} critical`:ddiState?.status==="major"?`⚠ ${ddiMajCount} major`:`! ${ddiState?.interactions?.length} DDI`}</span>}
                     {t.id==="meds"&&(normChecking||medNorm)&&<span style={{ fontSize:9, fontWeight:700, padding:"1px 5px", borderRadius:10, background:normChecking?"rgba(255,255,255,0.06)":normDupCount>0?"rgba(232,184,75,0.15)":`${T.teal}12`, color:normChecking?T.txt4:normDupCount>0?T.gold:T.teal }}>{normChecking?"⬡…":normDupCount>0?`⬡ ${normDupCount} dup`:"⬡ RxNorm ✓"}</span>}
-                    {t.id==="mdm"&&<span style={{ fontSize:10, color:tab==="mdm"?T.gold:T.txt4 }}>⬡</span>}
-                    {t.id==="provenance"&&<span style={{ fontSize:10, color:tab==="provenance"?T.violet:T.txt4 }}>{provRecord?(savedToBase44?"✓":"○"):"○"}</span>}
-                    {t.id==="documents"&&tab==="documents"&&<span style={{ fontSize:10, color:T.blue }}>📄</span>}
+                    {t.id==="mdm"       && <span style={{ fontSize:10, color:tab==="mdm"?T.gold:T.txt4 }}>⬡</span>}
+                    {t.id==="provenance"&& <span style={{ fontSize:10, color:tab==="provenance"?T.violet:T.txt4 }}>{provRecord?(savedToBase44?"✓":"○"):"○"}</span>}
+                    {t.id==="documents" && tab==="documents"&&<span style={{ fontSize:10, color:T.blue }}>📄</span>}
                   </div>
                 ))}
               </div>
 
               {/* Tab content */}
               <div style={{ padding:"16px", flex:1, overflowY:"auto", minHeight:240 }}>
+                {tab==="summary"   && <SummaryTab data={data} ddiState={ddiState} medNorm={medNorm} sources={sources} matchResult={matchResult}/>}
                 {tab==="visits"    && <VisitList    data={data.visits}/>}
-                {tab==="meds"      && <><DDIPanel ddiState={ddiState} checking={ddiChecking} acknowledged={ddiAcked} onAcknowledge={handleDDIAcknowledge}/><MedList data={data.medications} normData={medNorm}/></>}
+                {tab==="meds"      && <><DDIPanel ddiState={ddiState} checking={ddiChecking} acknowledged={ddiAcked} onAcknowledge={handleDDIAcknowledge}/><MedDeltaPanel medications={data.medications} medNorm={medNorm} visits={data.visits}/><MedList data={data.medications} normData={medNorm}/></>}
                 {tab==="allergies" && <AllergyList  data={data.allergies}/>}
                 {tab==="problems"  && <ProblemList  data={data.problems}/>}
-                {tab==="labs"      && <LabList      data={data.labs}/>}
+                {tab==="labs"      && <LabTrendList  data={data.labs}/>}
                 {tab==="documents" && <DocumentsTab documents={data.documents??[]} hgToken={hgToken} onParseCCDA={txt=>{setPaste(txt);setMode("paste");setTab("visits");showToast("⬡ C-CDA loaded — click Extract with Anamnesis","info");}}/>}
                 {tab==="mdm"       && <MDMNotePanel data={data} sources={sources} ddiState={ddiState} medNorm={medNorm}/>}
                 {tab==="provenance" && <ProvenancePanel provRecord={provRecord} attested={attested} onSaveToBase44={handleSaveProvenance} savedToBase44={savedToBase44}/>}
               </div>
 
               {/* Footer */}
-              <div style={{ padding:"10px 16px", borderTop:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:10 }}>
-                <span style={{ fontSize:10, color:T.txt4 }}>Lakonyx Anamnesis · {new Date().toLocaleString()} · FHIR R4 · {sources.join(" · ")}</span>
-                <div style={{ flex:1 }}/>
-                <span style={{ fontSize:10, color:matchResult?.canImport||(matchResult?.requiresAttestation&&attested)?T.teal:T.txt4, fontWeight:600, padding:"3px 9px", borderRadius:5, background:matchResult?.canImport||(matchResult?.requiresAttestation&&attested)?`${T.teal}10`:"rgba(255,255,255,0.04)", border:`1px solid ${matchResult?.canImport||(matchResult?.requiresAttestation&&attested)?T.borderHi:T.border}` }}>
-                  {matchResult?.level==="BLOCKED"?"⊘ Import blocked":matchResult?.requiresAttestation&&!attested?"! Attest identity to import":"⬡ Anamnesis → NPI import coming soon"}
-                </span>
+              <div style={{ padding:"12px 16px", borderTop:`1px solid ${T.border}` }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:data?8:0 }}>
+                  <span style={{ fontSize:10, color:T.txt4 }}>Lakonyx Anamnesis · {new Date().toLocaleString()} · FHIR R4 · {sources.join(" · ")}</span>
+                  <div style={{ flex:1 }}/>
+                  <span style={{ fontSize:10, color:matchResult?.canImport||(matchResult?.requiresAttestation&&attested)?T.teal:T.txt4, fontWeight:600, padding:"3px 9px", borderRadius:5, background:matchResult?.canImport||(matchResult?.requiresAttestation&&attested)?`${T.teal}10`:"rgba(255,255,255,0.04)", border:`1px solid ${matchResult?.canImport||(matchResult?.requiresAttestation&&attested)?T.borderHi:T.border}` }}>
+                    {matchResult?.level==="BLOCKED"?"⊘ Import blocked":matchResult?.requiresAttestation&&!attested?"! Attest identity to import":"⬡ Anamnesis → NPI import coming soon"}
+                  </span>
+                </div>
+                {data && <HubBridgePanel data={data} medNorm={medNorm} ddiState={ddiState}/>}
               </div>
             </div>
           ) : (

@@ -1,4 +1,4 @@
-// AnamnesisComponents.jsx
+// AnamnesisComponents.jsx — v2
 // All Anamnesis UI panels and tab components.
 // Imports from anamnesisEngines.js for pure logic.
 // Place at: @/components/anamnesis/AnamnesisComponents.jsx

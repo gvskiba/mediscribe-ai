@@ -569,6 +569,162 @@ export const DOC_CAT_CFG = {
   other:     { icon:"📄", color:"#5e88b0", label:"Document"  },
 };
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CLINICAL SNAPSHOT STRIP
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export function ClinicalSnapshotStrip({ data, ddiState, medNorm, onNavigate }) {
+  if (!data) return null;
+  const critDDI = (ddiState?.interactions??[]).filter(i=>i.severity==="critical").length;
+  const majorDDI = (ddiState?.interactions??[]).filter(i=>i.severity==="major").length;
+  const seen = new Map(); let dups = 0;
+  (medNorm??[]).forEach(m=>{const k=m.ingredientRxcui?`rxcui:${m.ingredientRxcui}`:m.ingredientName?`ing:${m.ingredientName}`:`name:${m.cleanedName}`;if(seen.has(k))dups++;else seen.set(k,true);});
+  const sevAllergy = (data.allergies??[]).some(a=>a.sev==="severe");
+  const critLabs = (data.labs??[]).filter(l=>["HH","LL"].includes(l.flag)).length;
+  const chips = [
+    critDDI > 0 && { label:`${critDDI} Critical DDI`, color:T.coral, tab:"meds" },
+    majorDDI > 0 && { label:`${majorDDI} Major DDI`, color:T.warn, tab:"meds" },
+    dups > 0 && { label:`${dups} Duplicate Med`, color:T.gold, tab:"meds" },
+    sevAllergy && { label:"Severe Allergy on File", color:T.coral, tab:"allergies" },
+    critLabs > 0 && { label:`${critLabs} Critical Lab(s)`, color:T.coral, tab:"labs" },
+  ].filter(Boolean);
+  if (!chips.length) return null;
+  return (
+    <div style={{display:"flex",gap:6,flexWrap:"wrap",padding:"8px 16px",borderBottom:`1px solid ${T.border}`,background:"rgba(240,96,96,0.04)"}}>
+      <span style={{fontSize:9,fontWeight:700,color:T.txt4,letterSpacing:"0.08em",textTransform:"uppercase",alignSelf:"center",flexShrink:0}}>Alerts</span>
+      {chips.map((c,i)=>(
+        <span key={i} onClick={()=>onNavigate?.(c.tab)} style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:20,background:`${c.color}18`,color:c.color,border:`1px solid ${c.color}40`,cursor:"pointer",letterSpacing:"0.04em"}}>{c.label}</span>
+      ))}
+    </div>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SUMMARY TAB
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export function SummaryTab({ data, ddiState, medNorm, sources, matchResult }) {
+  if (!data) return null;
+  const lastVisit = (data.visits??[]).slice().sort((a,b)=>(b.date??"").localeCompare(a.date??""))[0];
+  const critMeds = (data.medications??[]).filter(m=>/(warfarin|insulin|heparin|lithium|digoxin|methotrexate|chemotherapy|immunosuppressant)/i.test(m.name));
+  const critDDI = (ddiState?.interactions??[]).filter(i=>i.severity==="critical");
+  const seen = new Map(); let dups = 0;
+  (medNorm??[]).forEach(m=>{const k=m.ingredientRxcui?`rxcui:${m.ingredientRxcui}`:m.ingredientName?`ing:${m.ingredientName}`:`name:${m.cleanedName}`;if(seen.has(k))dups++;else seen.set(k,true);});
+  return (
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      {/* Identity */}
+      {matchResult && (
+        <div style={{gridColumn:"1/-1",padding:"10px 14px",borderRadius:8,background:matchResult.level==="CONFIRMED"?`${T.teal}08`:`${T.gold}08`,border:`1px solid ${matchResult.level==="CONFIRMED"?T.borderHi:"rgba(232,184,75,0.25)"}`}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:11,fontWeight:700,color:matchResult.level==="CONFIRMED"?T.teal:T.gold}}>Identity: {matchResult.level}</span><span style={{fontFamily:FONTS.mono,fontSize:11,color:matchResult.level==="CONFIRMED"?T.teal:T.gold}}>{matchResult.score}%</span><span style={{fontSize:10,color:T.txt4,marginLeft:"auto"}}>Fellegi-Sunter probabilistic match · Lakonyx Anamnesis</span></div>
+        </div>
+      )}
+      {/* Last visit */}
+      <div style={{padding:"12px 14px",borderRadius:8,background:"rgba(0,0,0,0.25)",border:`1px solid ${T.border}`}}>
+        <div style={{fontSize:9,fontWeight:700,color:T.txt4,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>Last Encounter</div>
+        {lastVisit ? <>
+          <div style={{fontFamily:FONTS.mono,fontSize:12,color:T.txt,marginBottom:3}}>{lastVisit.date}</div>
+          <div style={{fontSize:12,color:T.txt2,marginBottom:2}}>{lastVisit.cc}</div>
+          {lastVisit.dx&&<div style={{fontSize:11,color:T.txt3}}>{lastVisit.dx}</div>}
+          {lastVisit.dispo&&<Pill color={T.teal}>{lastVisit.dispo}</Pill>}
+        </> : <div style={{fontSize:11,color:T.txt4}}>No prior visits on record</div>}
+      </div>
+      {/* High-risk meds */}
+      <div style={{padding:"12px 14px",borderRadius:8,background:critMeds.length?"rgba(240,96,96,0.06)":"rgba(0,0,0,0.25)",border:`1px solid ${critMeds.length?"rgba(240,96,96,0.2)":T.border}`}}>
+        <div style={{fontSize:9,fontWeight:700,color:T.txt4,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>High-Risk Medications</div>
+        {critMeds.length ? critMeds.map((m,i)=><div key={i} style={{fontSize:11,color:T.coral,marginBottom:2}}>⊘ {m.name} {m.dose&&<span style={{color:T.txt3}}>{m.dose}</span>}</div>) : <div style={{fontSize:11,color:T.teal}}>✓ None identified</div>}
+      </div>
+      {/* DDI summary */}
+      <div style={{padding:"12px 14px",borderRadius:8,background:critDDI.length?"rgba(240,96,96,0.06)":"rgba(0,0,0,0.25)",border:`1px solid ${critDDI.length?"rgba(240,96,96,0.2)":T.border}`}}>
+        <div style={{fontSize:9,fontWeight:700,color:T.txt4,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>Drug Interactions</div>
+        {!ddiState&&<div style={{fontSize:11,color:T.txt4}}>Checking…</div>}
+        {ddiState?.status==="clean"&&<div style={{fontSize:11,color:T.teal}}>✓ No interactions detected</div>}
+        {critDDI.length>0&&critDDI.slice(0,3).map((ix,i)=><div key={i} style={{fontSize:11,color:T.coral,marginBottom:2}}>⊘ {ix.drugA} + {ix.drugB}</div>)}
+        {(ddiState?.interactions??[]).filter(i=>i.severity==="major").slice(0,2).map((ix,i)=><div key={i} style={{fontSize:11,color:T.warn,marginBottom:2}}>⚠ {ix.drugA} + {ix.drugB}</div>)}
+      </div>
+      {/* RxNorm */}
+      <div style={{padding:"12px 14px",borderRadius:8,background:dups?"rgba(232,184,75,0.06)":"rgba(0,0,0,0.25)",border:`1px solid ${dups?"rgba(232,184,75,0.2)":T.border}`}}>
+        <div style={{fontSize:9,fontWeight:700,color:T.txt4,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>RxNorm / Duplicates</div>
+        {!medNorm&&<div style={{fontSize:11,color:T.txt4}}>Normalizing…</div>}
+        {medNorm&&dups===0&&<div style={{fontSize:11,color:T.teal}}>✓ No cross-system duplicates</div>}
+        {dups>0&&<div style={{fontSize:11,color:T.gold}}>⬡ {dups} duplicate med{dups!==1?"s":""} detected by RxNorm</div>}
+      </div>
+      {/* Allergies */}
+      <div style={{padding:"12px 14px",borderRadius:8,background:"rgba(0,0,0,0.25)",border:`1px solid ${T.border}`}}>
+        <div style={{fontSize:9,fontWeight:700,color:T.txt4,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>Allergies</div>
+        {!(data.allergies?.length)&&<div style={{fontSize:11,color:T.txt4}}>NKDA on record</div>}
+        {(data.allergies??[]).slice(0,4).map((a,i)=><div key={i} style={{fontSize:11,color:a.sev==="severe"?T.coral:T.txt2,marginBottom:2}}>{a.name}{a.rxn&&<span style={{color:T.txt4}}> — {a.rxn}</span>}</div>)}
+        {(data.allergies??[]).length>4&&<div style={{fontSize:10,color:T.txt4}}>+{(data.allergies??[]).length-4} more</div>}
+      </div>
+      {/* Data sources */}
+      <div style={{gridColumn:"1/-1",padding:"10px 14px",borderRadius:8,background:"rgba(0,0,0,0.2)",border:`1px solid ${T.border}`}}>
+        <div style={{fontSize:9,fontWeight:700,color:T.txt4,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>Data Sources</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{(sources??[]).map((s,i)=><Pill key={i} color={T.teal}>{s}</Pill>)}</div>
+      </div>
+    </div>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// LAB TREND LIST
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export function LabTrendList({ data }) {
+  if (!data?.length) return <div style={{textAlign:"center",padding:24,color:T.txt4,fontSize:12}}><div style={{fontSize:28,marginBottom:8,opacity:0.3}}>○</div>No recent labs found</div>;
+  // Group by test name to show trends
+  const grouped = {};
+  data.forEach(l => {
+    const key = l.name;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(l);
+  });
+  const flagColor = f => ["H","HH"].includes(f) ? T.coral : ["L","LL"].includes(f) ? T.blue : T.teal;
+  const copy = data.map(l=>`${l.name}: ${l.val} (ref ${l.ref||"—"}) [${l.flag||"—"}] ${l.date||""}`).join("\n");
+  return <>
+    <SectionHeader title="Laboratory Results" count={data.length} copyText={copy}/>
+    {Object.entries(grouped).map(([name, results]) => (
+      <div key={name} style={{marginBottom:8,padding:"8px 10px",borderRadius:8,background:"rgba(0,0,0,0.2)",border:`1px solid ${T.border}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:results.length>1?6:0}}>
+          <span style={{fontSize:12,color:T.txt,fontWeight:500,flex:1}}>{name}</span>
+          {results.slice(0,1).map((l,i)=>(
+            <span key={i} style={{fontFamily:FONTS.mono,fontSize:12,color:flagColor(l.flag),fontWeight:["H","L","HH","LL"].includes(l.flag)?700:400}}>{l.val}</span>
+          ))}
+          {results[0]?.ref&&<span style={{fontSize:10,color:T.txt4}}>ref {results[0].ref}</span>}
+          {results[0]?.date&&<span style={{fontFamily:FONTS.mono,fontSize:10,color:T.txt3}}>{results[0].date}</span>}
+        </div>
+        {results.length > 1 && (
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:4}}>
+            {results.slice(1).map((l,i)=>(
+              <span key={i} style={{fontSize:10,color:flagColor(l.flag),fontFamily:FONTS.mono}}>{l.val} <span style={{color:T.txt4,fontSize:9}}>{l.date}</span></span>
+            ))}
+          </div>
+        )}
+      </div>
+    ))}
+  </>;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MED DELTA PANEL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export function MedDeltaPanel({ medications=[], medNorm=[], visits=[] }) {
+  if (!medications.length) return null;
+  // Identify meds introduced in recent visits vs older ones
+  const recentVisit = visits.slice().sort((a,b)=>(b.date??"").localeCompare(a.date??""))[0];
+  const newMeds = medications.filter(m => m.src && recentVisit && m.src.includes(recentVisit.src??"__NONE__"));
+  if (!newMeds.length) return null;
+  return (
+    <div style={{marginBottom:10,padding:"10px 12px",borderRadius:8,background:`${T.blue}08`,border:`1px solid rgba(74,158,255,0.2)`}}>
+      <div style={{fontSize:9,fontWeight:700,color:T.blue,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>Recent Medication Changes</div>
+      {newMeds.map((m,i)=>(
+        <div key={i} style={{fontSize:11,color:T.txt2,marginBottom:3}}>
+          <span style={{color:T.blue}}>+</span> {m.name} {m.dose&&<span style={{color:T.txt3}}>{m.dose}</span>} {m.freq&&<span style={{color:T.txt4}}>{m.freq}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function DocumentsTab({ documents=[], hgToken="", onParseCCDA=null }) {
   const [selId,  setSelId]  = useState(null);
   const [conts,  setConts]  = useState({});

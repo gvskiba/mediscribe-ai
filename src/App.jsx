@@ -149,6 +149,7 @@ import SpecialtyNoteHubT2 from '@/pages/SpecialtyNoteHubT2';
 import LakonyxTechHub from '@/pages/LakonyxTechHub';
 import CommandCenter from '@/pages/CommandCenter';
 import AnamnesisPage from '@/pages/AnamnesisPage';
+import AnamnesisAnalyticsDashboard from '@/pages/AnamnesisAnalyticsDashboard';
 import FollowUpHub from '@/pages/FollowUpHub';
 import PatientEncounter from '@/pages/PatientEncounter';
 import LakonyxSplash from '@/pages/LakonyxSplash';
@@ -385,6 +386,7 @@ const AuthenticatedApp = () => {
         <Route path="/follow-up-hub" element={<FollowUpHub />} />
         <Route path="/EdNoteGenerator"  element={<QuickNote />} />
         <Route path="/anamnesis"         element={<AnamnesisPage />} />
+        <Route path="/anamnesis/analytics" element={<AnamnesisAnalyticsDashboard />} />
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>

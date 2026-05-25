@@ -27,7 +27,7 @@ import {
   ClinicalSnapshotStrip, SummaryTab,
   LabTrendList, MedDeltaPanel,
 } from "@/components/anamnesis/AnamnesisComponents";
-import { HubBridgePanel, detectHubRelevance } from "@/utils/AnamnesisHubBridge";
+import { HubBridgePanel, detectHubRelevance } from "@/utils/AnamnesisHubBridge.jsx";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MAIN PAGE

@@ -59,15 +59,15 @@ function buildECGContext(data, medNorm, ddiState) {
     priorAFib, priorHF, priorMI, priorCAD, pacerICD, longQT,
     antiarrhythmics, betablockers, qtMeds, qtRisk:qtDDI||longQT||qtMeds.length>1,
     lastCardiacVisit: priorCardiacVisit?.date??null,
-    summary: [priorAFib&&"Prior AFib",priorMI&&"Prior MI/STEMI",priorHF&&"Heart failure",pacerICD&&"Pacemaker/ICD",qtDDI&&"QT-prolonging DDI",antiarrhythmics.length&&`On antiarrhythmics: ${antiarrhythmics.slice(0,2).join(", ")}`].filter(Boolean).join(" · ")||"Cardiac history present",
+    summary: [priorAFib&&"Prior AFib", priorMI&&"Prior MI/STEMI", priorHF&&"Heart failure", pacerICD&&"Pacemaker/ICD", qtDDI&&"QT-prolonging DDI", antiarrhythmics.length&&`On antiarrhythmics: ${antiarrhythmics.slice(0,2).join(", ")}`].filter(Boolean).join(" · ") || "Cardiac history present",
   };
 }
 
 function buildStrokeContext(data, medNorm) {
   const meds  = medNorm.length ? medNorm : (data.medications??[]);
   const normN = m => (m.ingredientName??m.cleanedName??m.name??"").toLowerCase();
-  const anticoag    = meds.filter(m=>["warfarin","apixaban","rivaroxaban","dabigatran","edoxaban","heparin","enoxaparin"].some(d=>normN(m).includes(d))).map(m=>m.name);
-  const antiplatelet= meds.filter(m=>["aspirin","clopidogrel","ticagrelor","prasugrel"].some(d=>normN(m).includes(d))).map(m=>m.name);
+  const anticoag = meds.filter(m=>["warfarin","apixaban","rivaroxaban","dabigatran","edoxaban","heparin","enoxaparin"].some(d=>normN(m).includes(d))).map(m=>m.name);
+  const antiplatelet = meds.filter(m=>["aspirin","clopidogrel","ticagrelor","prasugrel"].some(d=>normN(m).includes(d))).map(m=>m.name);
   const priorStroke = (data.problems??[]).some(p=>/stroke|cva|cerebrovascular/i.test(p.name));
   const priorTIA    = (data.problems??[]).some(p=>/tia|transient ischemic/i.test(p.name));
   const afib        = (data.problems??[]).some(p=>/afib|atrial fib/i.test(p.name));
@@ -80,26 +80,26 @@ function buildStrokeContext(data, medNorm) {
     priorStroke, priorTIA, afib, htn, dm, carotid, onAnticoag, anticoag, antiplatelet,
     cha2ds2Score: [afib,priorStroke||priorTIA,htn,dm,(data.patient?.dob&&new Date().getFullYear()-parseInt(data.patient.dob)>=75)].filter(Boolean).length,
     lastStrokeVisit: priorStrokeVisit?.date??null,
-    summary: [priorStroke&&"Prior stroke/CVA",priorTIA&&"Prior TIA",afib&&"Known AFib",onAnticoag&&`Anticoagulated: ${anticoag.slice(0,2).join(", ")}`,carotid&&"Carotid disease"].filter(Boolean).join(" · ")||"Stroke risk factors present",
+    summary: [priorStroke&&"Prior stroke/CVA", priorTIA&&"Prior TIA", afib&&"Known AFib", onAnticoag&&`Anticoagulated: ${anticoag.slice(0,2).join(", ")}`, carotid&&"Carotid disease"].filter(Boolean).join(" · ") || "Stroke risk factors present",
   };
 }
 
 function buildToxContext(data, medNorm, visits=[]) {
   const meds  = medNorm.length ? medNorm : (data.medications??[]);
   const normN = m => (m.ingredientName??m.cleanedName??m.name??"").toLowerCase();
-  const matp    = meds.filter(m=>["methadone","buprenorphine","naltrexone","suboxone"].some(d=>normN(m).includes(d))).map(m=>m.name);
-  const naloxone= meds.some(m=>normN(m).includes("naloxone"));
-  const opioids = meds.filter(m=>["morphine","oxycodone","hydrocodone","fentanyl","hydromorphone","tramadol","codeine","meperidine"].some(d=>normN(m).includes(d))).map(m=>m.name);
-  const benzos  = meds.filter(m=>["lorazepam","diazepam","alprazolam","clonazepam","midazolam","temazepam"].some(d=>normN(m).includes(d))).map(m=>m.name);
-  const odVisits  = visits.filter(v=>/overdose|ingestion|intoxication|ods|intentional|toxic/i.test(v.cc??"")||/overdose|toxic|ingestion/i.test(v.dx??""));
-  const sudProb   = (data.problems??[]).some(p=>/substance use|alcohol use|opioid use|abuse|addiction/i.test(p.name));
+  const matp     = meds.filter(m=>["methadone","buprenorphine","naltrexone","suboxone"].some(d=>normN(m).includes(d))).map(m=>m.name);
+  const naloxone = meds.some(m=>normN(m).includes("naloxone"));
+  const opioids  = meds.filter(m=>["morphine","oxycodone","hydrocodone","fentanyl","hydromorphone","tramadol","codeine","meperidine"].some(d=>normN(m).includes(d))).map(m=>m.name);
+  const benzos   = meds.filter(m=>["lorazepam","diazepam","alprazolam","clonazepam","midazolam","temazepam"].some(d=>normN(m).includes(d))).map(m=>m.name);
+  const odVisits   = visits.filter(v=>/overdose|ingestion|intoxication|ods|intentional|toxic/i.test(v.cc??"")||/overdose|toxic|ingestion/i.test(v.dx??""));
+  const etohVisits = visits.filter(v=>/alcohol|etoh|intoxicat|withdrawal/i.test(v.cc??"")||/alcohol|etoh/i.test(v.dx??""));
+  const sudProb    = (data.problems??[]).some(p=>/substance use|alcohol use|opioid use|abuse|addiction/i.test(p.name));
   return {
     matMeds:matp, naloxone, opioids, benzos,
-    odHistory: odVisits.length>0, odCount: odVisits.length,
-    etohHistory: visits.some(v=>/alcohol|etoh|intoxicat|withdrawal/i.test(v.cc??"")),
-    sudDiagnosis: sudProb, matTreatment: matp.length>0,
-    opioidBenzoCombination: opioids.length>0&&benzos.length>0,
-    summary: [odVisits.length>0&&`${odVisits.length} prior OD visit${odVisits.length>1?"s":""}`,matp.length>0&&`MAT: ${matp.slice(0,2).join(", ")}`,naloxone&&"On naloxone",opioids.length>0&&benzos.length>0&&"⚠ Opioid + benzo combo"].filter(Boolean).join(" · ")||"Substance-related history present",
+    odHistory: odVisits.length > 0, odCount: odVisits.length,
+    etohHistory: etohVisits.length > 0, sudDiagnosis: sudProb, matTreatment: matp.length > 0,
+    opioidBenzoCombination: opioids.length>0 && benzos.length>0,
+    summary: [odVisits.length>0&&`${odVisits.length} prior OD visit${odVisits.length>1?"s":""}`, matp.length>0&&`MAT: ${matp.slice(0,2).join(", ")}`, naloxone&&"On naloxone", opioids.length>0&&benzos.length>0&&"⚠ Opioid + benzo combo"].filter(Boolean).join(" · ") || "Substance-related history present",
   };
 }
 
@@ -118,9 +118,9 @@ function buildCardiacRiskContext(data, medNorm) {
   const ckd      = probs.some(p=>/kidney disease|ckd|renal/i.test(p));
   return {
     dm, htn, hld, smoking, obesity, priorMI, priorCAD, ckd, statins,
-    timi: [dm,htn,hld,smoking,priorMI||priorCAD].filter(Boolean).length,
+    timi: [dm,htn,hld,smoking,priorMI||priorCAD,dm].filter(Boolean).length,
     riskFactorCount: [dm,htn,hld,smoking,obesity,priorMI,priorCAD].filter(Boolean).length,
-    summary: [dm&&"DM",htn&&"HTN",hld&&"Hyperlipidemia",smoking&&"Tobacco",priorMI&&"Prior MI",priorCAD&&"CAD",ckd&&"CKD",statins.length>0&&`On statin: ${statins[0]}`].filter(Boolean).join(" · ")||"Cardiac risk factors present",
+    summary: [dm&&"DM", htn&&"HTN", hld&&"Hyperlipidemia", smoking&&"Tobacco", priorMI&&"Prior MI", priorCAD&&"CAD", ckd&&"CKD", statins.length>0&&`On statin: ${statins[0]}`].filter(Boolean).join(" · ") || "Cardiac risk factors present",
   };
 }
 
@@ -135,7 +135,10 @@ export function detectHubRelevance(data={}, medNorm=[], ddiState=null) {
   };
 }
 
-const HUB_PATHS = { ecg:"/ecg", stroke:"/stroke", tox:"/toxicology", cardiac:"/cardiac", sepsis:"/sepsis", mdm:"/mdm", orders:"/orders" };
+const HUB_PATHS = {
+  ecg:"/ecg", stroke:"/stroke", tox:"/toxicology",
+  cardiac:"/cardiac", sepsis:"/sepsis", mdm:"/mdm", orders:"/orders",
+};
 
 export function buildHubParams(patient={}, context={}) {
   const p = new URLSearchParams();
@@ -157,9 +160,9 @@ export function navigateToHub(hubId, context={}, patient={}) {
 }
 
 const HUB_META = {
-  ecg:     { label:"ECG Hub",      icon:"♥",  color:"#f06060" },
+  ecg:     { label:"ECG Hub",      icon:"♥", color:"#f06060" },
   stroke:  { label:"Stroke Hub",   icon:"🧠", color:"#9b7de8" },
-  tox:     { label:"Tox Hub",      icon:"☣",  color:"#e8a838" },
+  tox:     { label:"Tox Hub",      icon:"☣", color:"#e8a838" },
   cardiac: { label:"Cardiac Risk", icon:"📊", color:"#e8b84b" },
   sepsis:  { label:"Sepsis Hub",   icon:"🦠", color:"#4a9eff" },
 };
@@ -183,11 +186,7 @@ export function HubBridgePanel({ data, medNorm, ddiState }) {
               onMouseEnter={() => setHovered(hubId)}
               onMouseLeave={() => setHovered(null)}
               title={info.context?.summary ?? meta.label}
-              style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 12px",
-                borderRadius:7, cursor:"pointer", fontSize:11, fontWeight:600, transition:"all .15s",
-                background: hovered===hubId ? `${meta.color}20` : "rgba(255,255,255,0.04)",
-                border: `1px solid ${hovered===hubId ? meta.color+"50" : "rgba(255,255,255,0.08)"}`,
-                color: hovered===hubId ? meta.color : "#5e88b0" }}>
+              style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:7, cursor:"pointer", fontSize:11, fontWeight:600, transition:"all .15s", background:hovered===hubId?`${meta.color}20`:"rgba(255,255,255,0.04)", border:`1px solid ${hovered===hubId?meta.color+"50":"rgba(255,255,255,0.08)"}`, color:hovered===hubId?meta.color:"#5e88b0" }}>
               <span style={{ fontSize:12 }}>{meta.icon}</span>
               {meta.label}
             </div>

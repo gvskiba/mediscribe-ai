@@ -152,7 +152,7 @@ import AnamnesisPage from '@/pages/AnamnesisPage';
 import AnamnesisAnalyticsDashboard from '@/pages/AnamnesisAnalyticsDashboard';
 import FollowUpHub from '@/pages/FollowUpHub';
 import PatientEncounter from '@/pages/PatientEncounter';
-import LakonyxSplash from '@/pages/LakonyxSplash';
+import LakonyxInvestorPitch from '@/pages/LakonyxInvestorPitch';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/patientchart"]);
@@ -210,10 +210,10 @@ const AuthenticatedApp = () => {
       <CommandKit />
       <PulseActivators />
       <Routes>
-        <Route path="/" element={<LakonyxSplash />} />
+        <Route path="/" element={<LakonyxInvestorPitch />} />
         <Route path="/CommandCenter" element={<CommandCenter />} />
         <Route path="/PatientEncounter" element={<PatientEncounter />} />
-        <Route path="/splash" element={<LakonyxSplash />} />
+        <Route path="/splash" element={<LakonyxInvestorPitch />} />
 
         {Object.entries(Pages).map(([path, Page]) => (
           <Route key={path} path={`/${path}`} element={

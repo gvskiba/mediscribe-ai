@@ -1348,6 +1348,22 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
               <div style={{display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 2px"}}>
                 <div style={{width:1,height:40,background:"rgba(42,79,122,.35)"}} />
               </div>
+              {/* Orders toggle button */}
+              {(()=>{
+                const activeOrderCount = orderPhases.filter(p=>p.status==="active").reduce((n,p)=>n+p.orders.length,0);
+                const stagedOrderCount = orderPhases.filter(p=>p.status==="staged").reduce((n,p)=>n+p.orders.length,0);
+                const hasOrders = activeOrderCount > 0 || stagedOrderCount > 0;
+                return (
+                  <button onClick={()=>setShowOrderQueue(v=>!v)}
+                    style={{alignSelf:"center",padding:"5px 10px",borderRadius:7,cursor:"pointer",
+                      fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,flexShrink:0,
+                      border:`1px solid ${showOrderQueue?"rgba(245,158,11,.5)":hasOrders?"rgba(245,158,11,.35)":"rgba(42,79,122,.4)"}`,
+                      background:showOrderQueue?"rgba(245,158,11,.12)":hasOrders?"rgba(245,158,11,.06)":"transparent",
+                      color:showOrderQueue||hasOrders?"#f59e0b":"var(--qn-txt4)"}}>
+                    Orders{activeOrderCount>0?` · ${activeOrderCount} active`:""}{stagedOrderCount>0?` · ${stagedOrderCount} staged`:""}
+                  </button>
+                );
+              })()}
               <button onClick={()=>setShowKbHelp(h=>!h)} title="Keyboard shortcuts (Shift+?)"
                 style={{alignSelf:"center",padding:"6px 10px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)",flexShrink:0}}>?</button>
             </div>
@@ -1768,10 +1784,24 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           />
         )}
 
-        <StagedOrderQueue
-          embedded={true}
-          onPhasesChange={(updatedPhases) => setOrderPhases(updatedPhases)}
-        />
+        {/* Persistent collapsible Order Queue panel */}
+        {showOrderQueue&&(
+          <div style={{marginBottom:14,background:"rgba(8,22,40,.5)",border:"1px solid rgba(245,158,11,.25)",borderRadius:14,overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderBottom:"1px solid rgba(245,158,11,.12)",cursor:"pointer",background:"rgba(245,158,11,.04)"}}
+              onClick={()=>setShowOrderQueue(false)}>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}}>Order Queue</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"rgba(245,158,11,.5)"}}>— click to collapse</span>
+              <div style={{flex:1}}/>
+              <span style={{color:"#f59e0b",fontSize:10}}>▲</span>
+            </div>
+            <div style={{padding:"12px 14px"}}>
+              <StagedOrderQueue
+                embedded={true}
+                onPhasesChange={(updatedPhases) => setOrderPhases(updatedPhases)}
+              />
+            </div>
+          </div>
+        )}
 
         {phase1Ready&&<TimelineCard timestamps={timestamps} setTimestamps={setTimestamps} />}
 

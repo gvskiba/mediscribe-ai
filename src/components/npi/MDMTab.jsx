@@ -355,6 +355,7 @@ export default function MDMTab({
   cc, vitals, patientAge, patientSex, pmhSelected,
   medications, allergies, ddx,
   onAdvance, showToast,
+  onConsultsChange,
 }) {
   const [open, setOpen] = useState({ orders: true, course: true, impressions: true, complexity: false, consults: false, note: false });
   const tog = useCallback(k => setOpen(p => ({ ...p, [k]: !p[k] })), []);
@@ -733,7 +734,7 @@ export default function MDMTab({
         </div>
         {open.consults && (
           <div className="mdm-section-body" style={{ padding: 0 }}>
-            <ConsultLogger embedded={true} />
+            <ConsultLogger embedded={true} onConsultsChange={onConsultsChange} />
           </div>
         )}
       </div>

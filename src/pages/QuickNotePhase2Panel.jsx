@@ -198,6 +198,7 @@ export function Phase2Panel({
   runDisposition,
   // Consults
   consults, setConsults,
+  onConsultsChange,
   // Critical flags (from parent sync detector)
   criticalFlags,
   // EKG AI interpret
@@ -228,12 +229,16 @@ export function Phase2Panel({
   };
 
   const addConsult = () => {
-    setConsults(prev => [...prev, { service:"", provider:"", time:"", recommendation:"" }]);
+    const next = [...(consults||[]), { service:"", provider:"", time:"", recommendation:"" }];
+    setConsults(next);
+    if (onConsultsChange) onConsultsChange(next);
     setShowConsults(true);
   };
 
   const updateConsult = (idx, field, val) => {
-    setConsults(prev => prev.map((c,i) => i===idx ? {...c,[field]:val} : c));
+    const next = (consults||[]).map((c,i) => i===idx ? {...c,[field]:val} : c);
+    setConsults(next);
+    if (onConsultsChange) onConsultsChange(next);
   };
 
   return (
@@ -478,7 +483,11 @@ export function Phase2Panel({
                 key={i}
                 consult={c}
                 onChange={(field, val) => updateConsult(i, field, val)}
-                onRemove={() => setConsults(prev => prev.filter((_,idx) => idx !== i))}
+                onRemove={() => {
+                  const next = (consults||[]).filter((_,idx) => idx !== i);
+                  setConsults(next);
+                  if (onConsultsChange) onConsultsChange(next);
+                }}
               />
             ))}
           </div>

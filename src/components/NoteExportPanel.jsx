@@ -48,14 +48,20 @@ export default function NoteExportPanel({
 
   const genConsultsBlock = () => {
     if (!consults.length) return "";
-    return consults.map((c, i) =>
-      `Consult ${i + 1}: ${c.specialty}${c.physician ? " — Dr. " + c.physician : ""} @ ${c.time}\n` +
-      `  Reason: ${c.reason}\n` +
-      (c.findings       ? `  Findings communicated: ${c.findings}\n`   : "") +
-      (c.recommendation ? `  Recommendation: ${c.recommendation}\n`    : "") +
-      (c.orders         ? `  Orders placed per consult: ${c.orders}\n` : "") +
-      (c.disposition    ? `  Disposition plan: ${c.disposition}`        : "")
-    ).join("\n\n");
+    return consults.map((c, i) => {
+      // Support both ConsultLogger shape (specialty/physician/reason) and Phase2Panel shape (service/provider)
+      const service = c.specialty || c.service || "Unknown";
+      const doctor  = c.physician || c.provider || "";
+      const reason  = c.reason || "";
+      return (
+        `Consult ${i + 1}: ${service}${doctor ? " — Dr. " + doctor : ""}${c.time ? " @ " + c.time : ""}\n` +
+        (reason           ? `  Reason: ${reason}\n`                              : "") +
+        (c.findings       ? `  Findings communicated: ${c.findings}\n`           : "") +
+        (c.recommendation ? `  Recommendation: ${c.recommendation}\n`            : "") +
+        (c.orders         ? `  Orders placed per consult: ${c.orders}\n`         : "") +
+        (c.disposition    ? `  Disposition plan: ${c.disposition}`               : "")
+      );
+    }).join("\n\n");
   };
 
   const genOrdersBlock = (includeStaged = true) => {
@@ -98,7 +104,7 @@ export default function NoteExportPanel({
     if (consults.length) {
       const recs = consults
         .filter(c => c.recommendation)
-        .map(c => `${c.specialty}: ${c.recommendation}`)
+        .map(c => `${c.specialty || c.service || "Consult"}: ${c.recommendation}`)
         .join("\n");
       if (recs) parts.push("\nConsult Recommendations:\n" + recs);
     }

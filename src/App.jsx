@@ -153,6 +153,7 @@ import AnamnesisAnalyticsDashboard from '@/pages/AnamnesisAnalyticsDashboard';
 import FollowUpHub from '@/pages/FollowUpHub';
 import PatientEncounter from '@/pages/PatientEncounter';
 import LakonyxInvestorPitch from '@/pages/LakonyxInvestorPitch';
+import LakonyxLandingPage from '@/pages/LakonyxLandingPage';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/patientchart"]);
@@ -241,6 +242,7 @@ const AuthenticatedApp = () => {
         <Route path="/shift-signout"     element={<ShiftSignout />} />
         <Route path="/command-center"    element={<CommandCenterWrapper />} />
         <Route path="/landing"           element={<LakonyxLanding />} />
+        <Route path="/LakonyxLandingPage" element={<LakonyxLandingPage />} />
         <Route path="/new-technology"    element={<LakonyxNewTechnology />} />
         <Route path="/huddle-board"        element={<HuddleBoard />} />
         <Route path="/EDOrderHub"          element={<EDOrderHub />} />

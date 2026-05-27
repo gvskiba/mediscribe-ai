@@ -102,7 +102,7 @@ export default function StagedOrderQueue({ embedded = false, onPhasesChange }) {
   const addPhase = () => {
     if (!phaseForm.label) return;
     const id = Date.now();
-    setPhases(prev => [...prev, {
+    updatePhases(prev => [...prev, {
       id,
       label: phaseForm.label,
       trigger: phaseForm.trigger,
@@ -117,7 +117,7 @@ export default function StagedOrderQueue({ embedded = false, onPhasesChange }) {
 
   const firePhase = (id) => {
     const t = nowTime();
-    setPhases(prev => prev.map(p =>
+    updatePhases(prev => prev.map(p =>
       p.id === id ? { ...p, status: "active", firedAt: t } : p
     ));
     setFiredId(id);
@@ -125,12 +125,12 @@ export default function StagedOrderQueue({ embedded = false, onPhasesChange }) {
   };
 
   const removePhase = (id) => {
-    setPhases(prev => prev.filter(p => p.id !== id));
+    updatePhases(prev => prev.filter(p => p.id !== id));
   };
 
   const addOrder = (phaseId) => {
     if (!orderForm.text.trim()) return;
-    setPhases(prev => prev.map(p =>
+    updatePhases(prev => prev.map(p =>
       p.id === phaseId
         ? { ...p, orders: [...p.orders, { id: Date.now(), ...orderForm, text: orderForm.text.trim(), addedAt: nowTime() }] }
         : p
@@ -140,7 +140,7 @@ export default function StagedOrderQueue({ embedded = false, onPhasesChange }) {
   };
 
   const removeOrder = (phaseId, orderId) => {
-    setPhases(prev => prev.map(p =>
+    updatePhases(prev => prev.map(p =>
       p.id === phaseId
         ? { ...p, orders: p.orders.filter(o => o.id !== orderId) }
         : p

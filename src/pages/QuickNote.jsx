@@ -45,6 +45,7 @@ import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
 import { EncounterPicker } from "./QuickNoteEncounterPicker";
 import { EMLevel, PatientResponsePanel } from "@/components/QuickNote/QuickNoteMDMEnhancer";
 import { MDMHandoffBridge } from "@/components/quicknote/MDMHandoffBridge";
+import StagedOrderQueue from "@/components/StagedOrderQueue";
 import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
 import NotryaNav from "@/components/HubHeader/NotryaNav";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
@@ -79,6 +80,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
 
   // Consult Logger state — lifted so NoteExportPanel can read it
   const [consultList, setConsultList] = useState([]);
+  const [showOrderQueue, setShowOrderQueue] = useState(false);
 
   // Staged Order Queue state — lifted so NoteExportPanel can read it
   const [orderPhases, setOrderPhases] = useState([
@@ -1765,6 +1767,11 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             onRemove={id=>setInterventions(prev=>prev.filter(i=>i.id!==id))}
           />
         )}
+
+        <StagedOrderQueue
+          embedded={true}
+          onPhasesChange={(updatedPhases) => setOrderPhases(updatedPhases)}
+        />
 
         {phase1Ready&&<TimelineCard timestamps={timestamps} setTimestamps={setTimestamps} />}
 

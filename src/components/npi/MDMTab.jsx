@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import ConsultLogger from "@/components/ConsultLogger";
 
 // ─── MDM TAB ──────────────────────────────────────────────────────────────────
 // AI-powered Medical Decision Making documentation for Emergency Medicine.
@@ -355,7 +356,7 @@ export default function MDMTab({
   medications, allergies, ddx,
   onAdvance, showToast,
 }) {
-  const [open, setOpen] = useState({ orders: true, course: true, impressions: true, complexity: false, note: false });
+  const [open, setOpen] = useState({ orders: true, course: true, impressions: true, complexity: false, consults: false, note: false });
   const tog = useCallback(k => setOpen(p => ({ ...p, [k]: !p[k] })), []);
 
   // orders
@@ -723,7 +724,21 @@ export default function MDMTab({
         )}
       </div>
 
-      {/* ── 5. MDM NOTE ────────────────────────────────────────────────── */}
+      {/* ── 5. CONSULTATIONS ───────────────────────────────────────────── */}
+      <div className="mdm-section">
+        <div className="mdm-section-hdr" onClick={() => tog("consults")}>
+          <span className="mdm-section-icon">👥</span>
+          <span className="mdm-section-title">Consultations</span>
+          <span className={"mdm-section-chevron" + (open.consults ? " open" : "")}>▶</span>
+        </div>
+        {open.consults && (
+          <div className="mdm-section-body" style={{ padding: 0 }}>
+            <ConsultLogger embedded={true} />
+          </div>
+        )}
+      </div>
+
+      {/* ── 6. MDM NOTE ────────────────────────────────────────────────── */}
       <div className="mdm-section">
         <div className="mdm-section-hdr" onClick={() => tog("note")}>
           <span className="mdm-section-icon">📝</span>

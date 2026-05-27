@@ -77,6 +77,19 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [bouncebackDate, setBouncebackDate] = useState("");
   const [consults, setConsults] = useState([]);
 
+  // Staged Order Queue state — lifted so NoteExportPanel can read it
+  const [orderPhases, setOrderPhases] = useState([
+    {
+      id: 1,
+      label: "Phase 1 — Initial Orders",
+      trigger: "On arrival",
+      status: "active",
+      firedAt: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+      orders: [],
+      note: "",
+    }
+  ]);
+
   const DEFAULT_EVENTS = [
     { id:"triage",       label:"Triage",                   time:"", notes:"" },
     { id:"physician",    label:"Physician Evaluation",      time:"", notes:"" },

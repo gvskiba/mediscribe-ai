@@ -13,13 +13,13 @@ const SECTION_LABELS = {
 };
 
 const FORMATS = [
-  { id: "apso",         label: "APSO Note" },
-  { id: "soapMDM",      label: "SOAP + MDM" },
-  { id: "mdmOnly",      label: "MDM Only" },
-  { id: "consultsOnly", label: "Consults Only" },
-  { id: "ordersOnly",   label: "Orders Summary" },
-  { id: "handoff",      label: "SBAR Handoff" },
-  { id: "full",         label: "Full Encounter" },
+  { id: "apso",        label: "APSO Note" },
+  { id: "soapMDM",     label: "SOAP + MDM" },
+  { id: "mdmOnly",     label: "MDM Only" },
+  { id: "consultsOnly",label: "Consults Only" },
+  { id: "ordersOnly",  label: "Orders Summary" },
+  { id: "handoff",     label: "SBAR Handoff" },
+  { id: "full",        label: "Full Encounter" },
 ];
 
 export default function NoteExportPanel({
@@ -54,7 +54,7 @@ export default function NoteExportPanel({
       (c.findings       ? `  Findings communicated: ${c.findings}\n`   : "") +
       (c.recommendation ? `  Recommendation: ${c.recommendation}\n`    : "") +
       (c.orders         ? `  Orders placed per consult: ${c.orders}\n` : "") +
-      (c.disposition    ? `  Disposition plan: ${c.disposition}`       : "")
+      (c.disposition    ? `  Disposition plan: ${c.disposition}`        : "")
     ).join("\n\n");
   };
 
@@ -96,7 +96,10 @@ export default function NoteExportPanel({
     const parts = [];
     if (plan) parts.push(plan);
     if (consults.length) {
-      const recs = consults.filter(c => c.recommendation).map(c => `${c.specialty}: ${c.recommendation}`).join("\n");
+      const recs = consults
+        .filter(c => c.recommendation)
+        .map(c => `${c.specialty}: ${c.recommendation}`)
+        .join("\n");
       if (recs) parts.push("\nConsult Recommendations:\n" + recs);
     }
     const ordersBlock = genOrdersBlock(true);
@@ -105,29 +108,32 @@ export default function NoteExportPanel({
   };
 
   const genFormat = (id) => {
-    const sec   = sections;
+    const sec = sections;
     const parts = [];
-    const add   = (header, body) => { if (body && body.trim()) parts.push(`${header}\n${body.trim()}`); };
+
+    const add = (header, body) => {
+      if (body && body.trim()) parts.push(`${header}\n${body.trim()}`);
+    };
 
     if (id === "apso") {
-      if (sec.assessment) add("ASSESSMENT:",                   assessment);
-      if (sec.consults)   add("CONSULTATIONS:",                genConsultsBlock());
-      if (sec.plan)       add("PLAN / MANAGEMENT:",            plan);
-      if (sec.orders)     add("ORDERS:",                       genOrdersBlock());
-      if (sec.cc)         add("CHIEF COMPLAINT:",              chiefComplaint);
-      if (sec.hpi)        add("HISTORY OF PRESENT ILLNESS:",   hpi);
-      if (sec.ros)        add("REVIEW OF SYSTEMS:",            ros);
-      if (sec.pe)         add("PHYSICAL EXAMINATION:",         physicalExam);
+      if (sec.assessment)  add("ASSESSMENT:",                  assessment);
+      if (sec.consults)    add("CONSULTATIONS:",               genConsultsBlock());
+      if (sec.plan)        add("PLAN / MANAGEMENT:",           plan);
+      if (sec.orders)      add("ORDERS:",                      genOrdersBlock());
+      if (sec.cc)          add("CHIEF COMPLAINT:",             chiefComplaint);
+      if (sec.hpi)         add("HISTORY OF PRESENT ILLNESS:",  hpi);
+      if (sec.ros)         add("REVIEW OF SYSTEMS:",           ros);
+      if (sec.pe)          add("PHYSICAL EXAMINATION:",        physicalExam);
     } else if (id === "soapMDM") {
-      if (sec.cc)         add("CHIEF COMPLAINT:",              chiefComplaint);
-      if (sec.hpi)        add("HISTORY OF PRESENT ILLNESS:",   hpi);
-      if (sec.ros)        add("REVIEW OF SYSTEMS:",            ros);
-      if (sec.pe)         add("PHYSICAL EXAMINATION:",         physicalExam);
-      if (sec.assessment) add("ASSESSMENT:",                   assessment);
-      if (sec.mdm)        add("MEDICAL DECISION MAKING:",      mdmText);
-      if (sec.consults)   add("CONSULTATIONS:",                genConsultsBlock());
-      if (sec.plan)       add("PLAN:",                         plan);
-      if (sec.orders)     add("ORDERS:",                       genOrdersBlock());
+      if (sec.cc)          add("CHIEF COMPLAINT:",              chiefComplaint);
+      if (sec.hpi)         add("HISTORY OF PRESENT ILLNESS:",   hpi);
+      if (sec.ros)         add("REVIEW OF SYSTEMS:",            ros);
+      if (sec.pe)          add("PHYSICAL EXAMINATION:",         physicalExam);
+      if (sec.assessment)  add("ASSESSMENT:",                   assessment);
+      if (sec.mdm)         add("MEDICAL DECISION MAKING:",      mdmText);
+      if (sec.consults)    add("CONSULTATIONS:",                genConsultsBlock());
+      if (sec.plan)        add("PLAN:",                         plan);
+      if (sec.orders)      add("ORDERS:",                       genOrdersBlock());
     } else if (id === "mdmOnly") {
       add("MEDICAL DECISION MAKING:", mdmText);
       if (consults.length) add("CONSULTATIONS:", genConsultsBlock());
@@ -137,18 +143,29 @@ export default function NoteExportPanel({
       if (!consults.length) return "No consultations logged.";
       return genConsultsBlock();
     } else if (id === "ordersOnly") {
-      return genOrdersBlock(true) || "No orders entered.";
+      const block = genOrdersBlock(true);
+      return block || "No orders entered.";
     } else if (id === "handoff") {
-      const activeOrds = phases.filter(p => p.status === "active").flatMap(p => p.orders.map(o => `• [${o.category}] ${o.text}`)).join("\n");
-      const pendingOrds = phases.filter(p => p.status === "staged").flatMap(p => p.orders.map(o => `• [${o.category}] ${o.text} (trigger: ${p.trigger || "manual"})`)).join("\n");
-      const consultRecs = consults.filter(c => c.recommendation).map(c => `• ${c.specialty}: ${c.recommendation}`).join("\n");
+      const activeOrds = phases
+        .filter(p => p.status === "active")
+        .flatMap(p => p.orders.map(o => `• [${o.category}] ${o.text}`))
+        .join("\n");
+      const pendingOrds = phases
+        .filter(p => p.status === "staged")
+        .flatMap(p => p.orders.map(o => `• [${o.category}] ${o.text} (trigger: ${p.trigger || "manual"})`))
+        .join("\n");
+      const consultRecs = consults
+        .filter(c => c.recommendation)
+        .map(c => `• ${c.specialty}: ${c.recommendation}`)
+        .join("\n");
+
       return [
         `SITUATION:\n${chiefComplaint || assessment || "(no chief complaint entered)"}`,
         `BACKGROUND:\n${hpi || "(no HPI entered)"}`,
         `ASSESSMENT:\n${assessment || "(no assessment entered)"}`,
         `RECOMMENDATIONS / PLAN:\n${plan || "(no plan entered)"}`,
         consultRecs ? `SPECIALIST INPUT:\n${consultRecs}` : "",
-        activeOrds  ? `ACTIVE ORDERS:\n${activeOrds}`    : "",
+        activeOrds  ? `ACTIVE ORDERS:\n${activeOrds}` : "",
         pendingOrds ? `PENDING / STAGED ORDERS:\n${pendingOrds}` : "",
       ].filter(Boolean).join("\n\n");
     } else if (id === "full") {
@@ -186,7 +203,8 @@ export default function NoteExportPanel({
     setTimeout(() => setPopulated(null), 2200);
   };
 
-  const toggleSection = (key) => setSections(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleSection = (key) =>
+    setSections(prev => ({ ...prev, [key]: !prev[key] }));
 
   const previewText  = genFormat(format);
   const hasConsults  = consults.length > 0;
@@ -211,22 +229,22 @@ export default function NoteExportPanel({
 
   const btn = (v, active = false) => ({
     background:
-      active          ? (v === "teal" ? "rgba(20,184,166,0.22)" : v === "gold" ? "rgba(245,158,11,0.22)" : "rgba(255,255,255,0.12)")
-      : v === "teal"  ? "rgba(20,184,166,0.1)"
-      : v === "gold"  ? "rgba(245,158,11,0.1)"
-      : v === "green" ? "rgba(16,185,129,0.12)"
+      active            ? (v === "teal" ? "rgba(20,184,166,0.22)"  : v === "gold" ? "rgba(245,158,11,0.22)" : "rgba(255,255,255,0.12)")
+      : v === "teal"    ? "rgba(20,184,166,0.1)"
+      : v === "gold"    ? "rgba(245,158,11,0.1)"
+      : v === "green"   ? "rgba(16,185,129,0.12)"
       : "rgba(255,255,255,0.05)",
     border:
-      active          ? (v === "teal" ? "1px solid rgba(20,184,166,0.55)" : v === "gold" ? "1px solid rgba(245,158,11,0.5)" : "1px solid rgba(255,255,255,0.22)")
-      : v === "teal"  ? "1px solid rgba(20,184,166,0.3)"
-      : v === "gold"  ? "1px solid rgba(245,158,11,0.3)"
-      : v === "green" ? "1px solid rgba(16,185,129,0.35)"
+      active            ? (v === "teal" ? "1px solid rgba(20,184,166,0.55)" : v === "gold" ? "1px solid rgba(245,158,11,0.5)" : "1px solid rgba(255,255,255,0.22)")
+      : v === "teal"    ? "1px solid rgba(20,184,166,0.3)"
+      : v === "gold"    ? "1px solid rgba(245,158,11,0.3)"
+      : v === "green"   ? "1px solid rgba(16,185,129,0.35)"
       : "1px solid rgba(255,255,255,0.09)",
     color:
-      active          ? (v === "teal" ? "#14b8a6" : v === "gold" ? "#f59e0b" : "#e2e8f0")
-      : v === "teal"  ? "#14b8a6"
-      : v === "gold"  ? "#f59e0b"
-      : v === "green" ? "#10b981"
+      active            ? (v === "teal" ? "#14b8a6" : v === "gold" ? "#f59e0b" : "#e2e8f0")
+      : v === "teal"    ? "#14b8a6"
+      : v === "gold"    ? "#f59e0b"
+      : v === "green"   ? "#10b981"
       : "#64748b",
     borderRadius: "7px", padding: "5px 12px",
     fontSize: "12px", fontWeight: active ? "700" : "500",
@@ -338,7 +356,10 @@ export default function NoteExportPanel({
 
       {/* Copy actions */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginBottom: "0.75rem" }}>
-        <button style={{ ...btn("gold"), fontWeight: "700", padding: "7px 16px" }} onClick={() => copy(previewText, "format")}>
+        <button
+          style={{ ...btn("gold"), fontWeight: "700", padding: "7px 16px" }}
+          onClick={() => copy(previewText, "format")}
+        >
           {copied === "format" ? "✓ Copied" : `⎘ Copy ${FORMATS.find(f => f.id === format)?.label || "Note"}`}
         </button>
         <button style={btn("default")} onClick={() => copy([chiefComplaint, hpi].filter(Boolean).join("\n\nHPI:\n"), "hpi")}>

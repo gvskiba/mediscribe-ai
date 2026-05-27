@@ -51,6 +51,8 @@ import CCDASmartParse         from "@/components/npi/CCDASmartParse";
 import ConnectivityIndicator  from "@/components/npi/ConnectivityIndicator";
 import LabInterpreter         from "@/components/npi/LabInterpreter";
 
+import AnamnesisContextPanel from "@/components/AnamnesisContextPanel";
+
 // ── Embedded page components ──────────────────────────────────────────────────
 import EDProcedureNotes        from "@/pages/EDProcedureNotes";
 import MedicationReferencePage from "@/pages/MedicationReference";
@@ -192,6 +194,52 @@ export default function NewPatientInput() {
     _introDismissed = true;
     setShowOnboarding(false);
   }, []);
+
+  // ── Anamnesis → MDM callback ───────────────────────────────────────────────
+  const handleAnamnesisToMdm = useCallback(({ domain, data }) => {
+    switch (domain) {
+      case "problems":
+        setMdmState(prev => ({
+          ...prev,
+          problemList: data.map(p => `${p.label} (${p.icd})`).join(", "),
+        }));
+        break;
+      case "medications":
+        setMdmState(prev => ({
+          ...prev,
+          medicationNote: `${data.total} active meds. High-risk: ${(data.highRisk || []).join(", ")}.`,
+        }));
+        break;
+      case "allergies":
+        setMdmState(prev => ({
+          ...prev,
+          allergyNote: data.map(a => `${a.drug} (${a.reaction})`).join("; "),
+        }));
+        break;
+      case "recentVisits":
+        setMdmState(prev => ({
+          ...prev,
+          visitHistory: data.map(v => `${v.date} — ${v.facility}: ${v.cc}, ${v.dispo}`).join("\n"),
+        }));
+        break;
+      case "surgicalHx":
+        setMdmState(prev => ({
+          ...prev,
+          surgicalHistory: data.map(s => `${s.procedure} (${s.year})`).join(", "),
+        }));
+        break;
+      default:
+        break;
+    }
+  }, [setMdmState]);
+
+  // ── Anamnesis → HPI callback ───────────────────────────────────────────────
+  const handleAnamnesisToHpi = useCallback(({ text }) => {
+    setCC(prev => {
+      const current = prev?.text || "";
+      return { ...prev, text: (current ? current + " " + text : text).trim() };
+    });
+  }, [setCC]);
 
   // ── Sign & Close checklist ──────────────────────────────────────────────────
   const [showSignChecklist,    setShowSignChecklist]    = useState(false);
@@ -898,6 +946,21 @@ export default function NewPatientInput() {
           </div>
         </div>
       </header>
+
+      {/* ── Anamnesis History Context ── */}
+      <div style={{ padding: "0 16px" }}>
+        <AnamnesisContextPanel
+          embedded={true}
+          patientContext={
+            demo?.name || registration?.mrn
+              ? { name: demo?.name || patientName, dob: demo?.dob, mrn: registration?.mrn }
+              : null
+          }
+          onPullToMdm={handleAnamnesisToMdm}
+          onCopyToHpi={handleAnamnesisToHpi}
+          onViewFull={() => navigate("/anamnesis")}
+        />
+      </div>
 
       {/* ── Main content ── */}
       <div className="npi-main-wrap">

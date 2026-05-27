@@ -35,9 +35,17 @@ function specColor(s) {
   return SPEC_COLORS[s] || "#64748b";
 }
 
-export default function ConsultLogger({ embedded = false }) {
+export default function ConsultLogger({ embedded = false, onConsultsChange }) {
   const [consults, setConsults] = useState([]);
   const [showForm, setShowForm] = useState(false);
+
+  const updateConsults = (updater) => {
+    setConsults(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (onConsultsChange) onConsultsChange(next);
+      return next;
+    });
+  };
   const [form, setForm] = useState({ ...BLANK });
   const [editId, setEditId] = useState(null);
   const [expanded, setExpanded] = useState({});
@@ -65,18 +73,18 @@ export default function ConsultLogger({ embedded = false }) {
   const submitForm = () => {
     if (!form.specialty || !form.reason) return;
     if (editId !== null) {
-      setConsults(prev => prev.map(c => c.id === editId ? { ...c, ...form } : c));
+      updateConsults(prev => prev.map(c => c.id === editId ? { ...c, ...form } : c));
       setEditId(null);
     } else {
       const id = Date.now();
-      setConsults(prev => [...prev, { id, time: nowTime(), ...form }]);
+      updateConsults(prev => [...prev, { id, time: nowTime(), ...form }]);
       setExpanded(prev => ({ ...prev, [id]: true }));
     }
     setForm({ ...BLANK });
     setShowForm(false);
   };
 
-  const remove = (id) => setConsults(prev => prev.filter(c => c.id !== id));
+  const remove = (id) => updateConsults(prev => prev.filter(c => c.id !== id));
 
   const toggle = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
 

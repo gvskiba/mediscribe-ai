@@ -70,7 +70,15 @@ function OrderChip({ order, onRemove, showTime = false }) {
   );
 }
 
-export default function StagedOrderQueue({ embedded = false }) {
+export default function StagedOrderQueue({ embedded = false, onPhasesChange }) {
+  const updatePhases = (updater) => {
+    setPhases(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (onPhasesChange) onPhasesChange(next);
+      return next;
+    });
+  };
+
   const [phases, setPhases] = useState([
     {
       id: 1,

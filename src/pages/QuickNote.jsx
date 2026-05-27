@@ -77,6 +77,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [bouncebackDate, setBouncebackDate] = useState("");
   const [consults, setConsults] = useState([]);
 
+  // Consult Logger state — lifted so NoteExportPanel can read it
+  const [consultList, setConsultList] = useState([]);
+
   // Staged Order Queue state — lifted so NoteExportPanel can read it
   const [orderPhases, setOrderPhases] = useState([
     {
@@ -1639,6 +1642,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             phase2Ready={phase2Ready} mdmResult={mdmResult} dispResult={dispResult}
             dispColor={dispColor} setRef={setRef} makeKeyDown={makeKeyDown}
             runDisposition={runDisposition} consults={consults} setConsults={setConsults}
+            onConsultsChange={(next) => setConsultList(next)}
             criticalFlags={criticalFlags} ekgBusy={ekgBusy} onEkgInterpret={interpretEKG}
             labRecs={labRecs} labRecsBusy={labRecsBusy} generateLabRecs={generateLabRecs}
             imagingRecs={imagingRecs} imagingRecsBusy={imagingRecsBusy} generateImagingRecs={generateImagingRecs}

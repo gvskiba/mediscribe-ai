@@ -266,6 +266,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [patientRecord,    setPatientRecord]    = useState(null);
   const [patientIdParam,   setPatientIdParam]   = useState(null);
 
+  const activeOrderCount = orderPhases.filter(p => p.status === "active").reduce((n, p) => n + p.orders.length, 0);
+  const stagedOrderCount = orderPhases.filter(p => p.status === "staged").reduce((n, p) => n + p.orders.length, 0);
+
   const effectiveHpi = hpiMode === "summary" && hpiSummary ? hpiSummary : hpi;
   const phase1Ready  = Boolean(cc.trim() || hpi.trim() || exam.trim());
   const phase2Ready  = Boolean(mdmResult && (labs.trim() || imaging.trim() || newVitals.trim()));
@@ -1364,6 +1367,14 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                   </button>
                 );
               })()}
+              <button onClick={()=>setShowOrderQueue(v=>!v)}
+                style={{alignSelf:"center",padding:"6px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,flexShrink:0,
+                  border:`1px solid ${showOrderQueue?"rgba(245,158,11,.5)":activeOrderCount>0?"rgba(245,158,11,.3)":"rgba(42,79,122,.4)"}`,
+                  background:showOrderQueue?"rgba(245,158,11,.1)":activeOrderCount>0?"rgba(245,158,11,.06)":"transparent",
+                  color:showOrderQueue||activeOrderCount>0?"var(--qn-gold)":"var(--qn-txt4)"}}>
+                Orders{activeOrderCount>0?` · ${activeOrderCount} active`:""}
+                {stagedOrderCount>0?` · ${stagedOrderCount} staged`:""}
+              </button>
               <button onClick={()=>setShowKbHelp(h=>!h)} title="Keyboard shortcuts (Shift+?)"
                 style={{alignSelf:"center",padding:"6px 10px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)",flexShrink:0}}>?</button>
             </div>
@@ -1795,10 +1806,12 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
               <span style={{color:"#f59e0b",fontSize:10}}>▲</span>
             </div>
             <div style={{padding:"12px 14px"}}>
-              <StagedOrderQueue
-                embedded={true}
-                onPhasesChange={(updatedPhases) => setOrderPhases(updatedPhases)}
-              />
+              {showOrderQueue && (
+                <StagedOrderQueue
+                  embedded={true}
+                  onPhasesChange={(updatedPhases) => setOrderPhases(updatedPhases)}
+                />
+              )}
             </div>
           </div>
         )}

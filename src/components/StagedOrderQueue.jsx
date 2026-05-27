@@ -189,46 +189,33 @@ export default function StagedOrderQueue({ embedded = false }) {
       : v === "gold" || v === "fire" ? "#f59e0b"
       : v === "red" ? "#f87171"
       : "#94a3b8",
-    borderRadius: "8px",
-    padding: "6px 13px",
-    fontSize: "12px",
-    fontWeight: "600",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
+    borderRadius: "8px", padding: "6px 13px",
+    fontSize: "12px", fontWeight: "600",
+    cursor: "pointer", whiteSpace: "nowrap",
   });
 
   const statCard = (color) => ({
     background: `rgba(${color},0.07)`,
     border: `1px solid rgba(${color},0.18)`,
-    borderRadius: "10px",
-    padding: "0.75rem 1rem",
-    flex: 1,
-    minWidth: 0,
+    borderRadius: "10px", padding: "0.75rem 1rem",
+    flex: 1, minWidth: 0,
   });
 
   const inputStyle = {
     width: "100%",
     background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "8px",
-    padding: "7px 12px",
-    color: "#e2e8f0",
-    fontSize: "13px",
-    boxSizing: "border-box",
-    outline: "none",
-    fontFamily: "inherit",
+    borderRadius: "8px", padding: "7px 12px",
+    color: "#e2e8f0", fontSize: "13px",
+    boxSizing: "border-box", outline: "none", fontFamily: "inherit",
   };
 
   const selectStyle = { ...inputStyle, background: "#0b1a2f", cursor: "pointer" };
 
   const labelStyle = {
-    display: "block",
-    fontSize: "10px",
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-    color: "#4b5e78",
-    marginBottom: "4px",
+    display: "block", fontSize: "10px", fontWeight: "700",
+    textTransform: "uppercase", letterSpacing: "0.08em",
+    color: "#4b5e78", marginBottom: "4px",
   };
 
   return (
@@ -252,10 +239,7 @@ export default function StagedOrderQueue({ embedded = false }) {
             </svg>
           </div>
           <div>
-            <h2 style={{
-              fontFamily: "'Playfair Display', Georgia, serif",
-              fontSize: "1.35rem", fontWeight: "700", color: "#f1f5f9", margin: 0, lineHeight: 1.2
-            }}>
+            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "1.35rem", fontWeight: "700", color: "#f1f5f9", margin: 0, lineHeight: 1.2 }}>
               Staged Order Queue
             </h2>
             <div style={{ fontSize: "11px", color: "#4b5e78", marginTop: "2px" }}>
@@ -342,11 +326,7 @@ export default function StagedOrderQueue({ embedded = false }) {
           </div>
           <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
             <button style={btn("default")} onClick={() => setShowAddPhase(false)}>Cancel</button>
-            <button
-              style={{ ...btn("gold"), opacity: !phaseForm.label ? 0.4 : 1 }}
-              onClick={addPhase}
-              disabled={!phaseForm.label}
-            >
+            <button style={{ ...btn("gold"), opacity: !phaseForm.label ? 0.4 : 1 }} onClick={addPhase} disabled={!phaseForm.label}>
               Add Phase
             </button>
           </div>
@@ -358,24 +338,15 @@ export default function StagedOrderQueue({ embedded = false }) {
         <div key={phase.id} style={pCard(phase.status)}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginBottom: "0.65rem", flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              <span style={pBadge(phase.status)}>
-                {phase.status === "active" ? "● Active" : "○ Staged"}
-              </span>
+              <span style={pBadge(phase.status)}>{phase.status === "active" ? "● Active" : "○ Staged"}</span>
               <span style={{ fontSize: "13px", fontWeight: "600", color: "#e2e8f0" }}>{phase.label}</span>
               {phase.trigger && (
-                <span style={{
-                  fontSize: "10px", color: "#64748b",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: "5px", padding: "2px 7px"
-                }}>
+                <span style={{ fontSize: "10px", color: "#64748b", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "5px", padding: "2px 7px" }}>
                   ⚡ {phase.trigger}
                 </span>
               )}
               {phase.firedAt && (
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "#f59e0b" }}>
-                  {phase.firedAt}
-                </span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "#f59e0b" }}>{phase.firedAt}</span>
               )}
             </div>
             <div style={{ display: "flex", gap: "5px" }}>
@@ -410,12 +381,7 @@ export default function StagedOrderQueue({ embedded = false }) {
           </div>
 
           {addOrderFor === phase.id && (
-            <div style={{
-              marginTop: "0.65rem",
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: "8px", padding: "0.75rem"
-            }}>
+            <div style={{ marginTop: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "8px", padding: "0.75rem" }}>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end", flexWrap: "wrap" }}>
                 <div style={{ flex: 1, minWidth: "180px" }}>
                   <label style={labelStyle}>Order Text</label>
@@ -430,11 +396,7 @@ export default function StagedOrderQueue({ embedded = false }) {
                 </div>
                 <div>
                   <label style={labelStyle}>Category</label>
-                  <select
-                    style={selectStyle}
-                    value={orderForm.category}
-                    onChange={e => setOrderForm(f => ({ ...f, category: e.target.value }))}
-                  >
+                  <select style={selectStyle} value={orderForm.category} onChange={e => setOrderForm(f => ({ ...f, category: e.target.value }))}>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
@@ -449,11 +411,7 @@ export default function StagedOrderQueue({ embedded = false }) {
 
       {/* Nurse Summary Panel */}
       {showNurse && (
-        <div style={{
-          background: "rgba(20,184,166,0.04)",
-          border: "1px solid rgba(20,184,166,0.18)",
-          borderRadius: "12px", padding: "1.1rem 1.25rem", marginTop: "0.5rem"
-        }}>
+        <div style={{ background: "rgba(20,184,166,0.04)", border: "1px solid rgba(20,184,166,0.18)", borderRadius: "12px", padding: "1.1rem 1.25rem", marginTop: "0.5rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.85rem" }}>
             <svg width="14" height="14" fill="none" stroke="#14b8a6" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -466,15 +424,11 @@ export default function StagedOrderQueue({ embedded = false }) {
 
           {allActive.length > 0 && (
             <div style={{ marginBottom: "0.85rem" }}>
-              <div style={{ fontSize: "10px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.07em", color: "#4b5e78", marginBottom: "6px" }}>
-                ✓ Currently Active
-              </div>
+              <div style={{ fontSize: "10px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.07em", color: "#4b5e78", marginBottom: "6px" }}>✓ Currently Active</div>
               {allActive.map(o => (
                 <div key={o.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "4px 0", fontSize: "13px" }}>
                   <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#14b8a6", flexShrink: 0 }} />
-                  <span style={{ color: CAT[o.category]?.tx || "#94a3b8", fontSize: "10px", fontWeight: "700", minWidth: "72px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    {o.category}
-                  </span>
+                  <span style={{ color: CAT[o.category]?.tx || "#94a3b8", fontSize: "10px", fontWeight: "700", minWidth: "72px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{o.category}</span>
                   <span style={{ color: "#cbd5e1" }}>{o.text}</span>
                 </div>
               ))}
@@ -483,23 +437,14 @@ export default function StagedOrderQueue({ embedded = false }) {
 
           {allStaged.length > 0 && (
             <div>
-              <div style={{ fontSize: "10px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.07em", color: "#4b5e78", marginBottom: "6px" }}>
-                ⏳ Anticipated (Staged — Not Yet Ordered)
-              </div>
+              <div style={{ fontSize: "10px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.07em", color: "#4b5e78", marginBottom: "6px" }}>⏳ Anticipated (Staged — Not Yet Ordered)</div>
               {allStaged.map(o => (
                 <div key={o.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "4px 0", fontSize: "13px" }}>
                   <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#f59e0b", flexShrink: 0 }} />
-                  <span style={{ color: CAT[o.category]?.tx || "#94a3b8", fontSize: "10px", fontWeight: "700", minWidth: "72px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    {o.category}
-                  </span>
+                  <span style={{ color: CAT[o.category]?.tx || "#94a3b8", fontSize: "10px", fontWeight: "700", minWidth: "72px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{o.category}</span>
                   <span style={{ color: "#94a3b8" }}>{o.text}</span>
                   {o.trigger && (
-                    <span style={{
-                      fontSize: "10px", color: "#4b5e78",
-                      background: "rgba(245,158,11,0.07)",
-                      border: "1px solid rgba(245,158,11,0.2)",
-                      borderRadius: "4px", padding: "1px 6px", whiteSpace: "nowrap"
-                    }}>
+                    <span style={{ fontSize: "10px", color: "#4b5e78", background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "4px", padding: "1px 6px", whiteSpace: "nowrap" }}>
                       awaiting: {o.trigger}
                     </span>
                   )}
@@ -509,46 +454,28 @@ export default function StagedOrderQueue({ embedded = false }) {
           )}
 
           {allActive.length === 0 && allStaged.length === 0 && (
-            <div style={{ fontSize: "13px", color: "#334155" }}>
-              No orders entered yet. Add orders to each phase above.
-            </div>
+            <div style={{ fontSize: "13px", color: "#334155" }}>No orders entered yet. Add orders to each phase above.</div>
           )}
         </div>
       )}
 
       {/* Order Timeline */}
       {showTimeline && (
-        <div style={{
-          background: "rgba(255,255,255,0.02)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          borderRadius: "12px", padding: "1.1rem 1.25rem", marginTop: "0.5rem"
-        }}>
-          <div style={{ fontSize: "12px", fontWeight: "800", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "0.85rem" }}>
-            Order Timeline
-          </div>
+        <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px", padding: "1.1rem 1.25rem", marginTop: "0.5rem" }}>
+          <div style={{ fontSize: "12px", fontWeight: "800", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "0.85rem" }}>Order Timeline</div>
           {phases.map((phase, idx) => (
             <div key={phase.id} style={{ display: "flex", gap: "12px", marginBottom: "0.65rem" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-                <div style={{
-                  width: "10px", height: "10px", borderRadius: "50%",
-                  background: phase.status === "active" ? "#14b8a6" : "#f59e0b",
-                  flexShrink: 0, marginTop: "3px"
-                }} />
+                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: phase.status === "active" ? "#14b8a6" : "#f59e0b", flexShrink: 0, marginTop: "3px" }} />
                 {idx < phases.length - 1 && (
                   <div style={{ width: "1px", flex: 1, minHeight: "20px", background: "rgba(255,255,255,0.08)", marginTop: "2px" }} />
                 )}
               </div>
               <div style={{ flex: 1, paddingBottom: "0.5rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "600", color: phase.status === "active" ? "#e2e8f0" : "#94a3b8" }}>
-                    {phase.label}
-                  </span>
-                  {phase.firedAt && (
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "#f59e0b" }}>{phase.firedAt}</span>
-                  )}
-                  {phase.status === "staged" && (
-                    <span style={{ fontSize: "10px", color: "#64748b" }}>— awaiting: {phase.trigger || "manual fire"}</span>
-                  )}
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: phase.status === "active" ? "#e2e8f0" : "#94a3b8" }}>{phase.label}</span>
+                  {phase.firedAt && <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "#f59e0b" }}>{phase.firedAt}</span>}
+                  {phase.status === "staged" && <span style={{ fontSize: "10px", color: "#64748b" }}>— awaiting: {phase.trigger || "manual fire"}</span>}
                 </div>
                 {phase.orders.length > 0 ? (
                   <div style={{ display: "flex", flexWrap: "wrap" }}>

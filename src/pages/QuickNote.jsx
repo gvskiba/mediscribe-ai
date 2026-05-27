@@ -1846,6 +1846,21 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         {showKbHelp&&<KbHelpModal onClose={()=>setShowKbHelp(false)} />}
         {showProcedureModal&&<ProcedureNoteModal onInsert={()=>{}} onClose={()=>setShowProcedureModal(false)} />}
 
+        {/* NoteExportPanel — always visible at bottom */}
+        <NoteExportPanel
+          chiefComplaint={cc}
+          hpi={effectiveHpi}
+          ros={ros}
+          physicalExam={exam}
+          assessment={mdmResult?.working_diagnosis||""}
+          plan={dispResult?.disposition||""}
+          mdmText={mdmResult?.mdm_narrative||""}
+          consults={consultList}
+          phases={orderPhases}
+          onPopulateMDM={(text) => setMdmResult(prev => prev ? {...prev, mdm_narrative: text} : prev)}
+          onPopulatePlan={(text) => setDispResult(prev => prev ? {...prev, disposition: text} : prev)}
+        />
+
         {!embedded&&(
           <div style={{textAlign:"center",padding:"24px 0 8px",
             fontFamily:"'JetBrains Mono',monospace",fontSize:8,

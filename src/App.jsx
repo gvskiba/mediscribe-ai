@@ -211,7 +211,7 @@ const AuthenticatedApp = () => {
       <CommandKit />
       <PulseActivators />
       <Routes>
-        <Route path="/" element={<LakonyxInvestorPitch />} />
+        <Route path="/" element={<LakonyxLandingPage />} />
         <Route path="/CommandCenter" element={<CommandCenter />} />
         <Route path="/PatientEncounter" element={<PatientEncounter />} />
         <Route path="/splash" element={<LakonyxInvestorPitch />} />

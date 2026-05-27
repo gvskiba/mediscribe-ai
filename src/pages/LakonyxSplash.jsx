@@ -601,7 +601,7 @@ function BottomCTA({onShift,onExplore}) {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-export default function LakonyxSplash() {
+export default function LakonyxInvestorPitch() {
   const navigate = useNavigate();
   const [hovShift,setHovShift]=useState(false);
   const [hovExplore,setHovExplore]=useState(false);

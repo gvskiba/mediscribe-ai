@@ -20,6 +20,8 @@ import { useNavigate } from "react-router-dom";
     @keyframes lxl-f3{0%,100%{transform:translate(0,0)}50%{transform:translate(38px,-48px)}}
     @keyframes lxl-inv-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
     @keyframes lxl-scan{0%{background-position:0 -100%}100%{background-position:0 200%}}
+    @keyframes lxl-resume-in{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
+    @keyframes lxl-amber-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,159,67,0.35)}60%{box-shadow:0 0 0 10px rgba(255,159,67,0)}}
 
     .lxl-s1{animation:lxl-fadeUp .55s .04s ease both}
     .lxl-s2{animation:lxl-fadeUp .55s .16s ease both}
@@ -29,28 +31,28 @@ import { useNavigate } from "react-router-dom";
     .lxl-s6{animation:lxl-fadeUp .55s .64s ease both}
     .lxl-s7{animation:lxl-fadeUp .55s .76s ease both}
     .lxl-s8{animation:lxl-fadeUp .55s .88s ease both}
+    .lxl-s9{animation:lxl-fadeUp .55s 1.00s ease both}
 
     .lxl-blink{animation:lxl-blink 2.2s ease-in-out infinite}
     .lxl-dot{animation:lxl-pulse-dot 2.2s ease-in-out infinite}
     .lxl-begin{animation:lxl-glow 2.8s ease-in-out infinite;transition:all .2s;cursor:pointer;user-select:none}
     .lxl-begin:hover{transform:translateY(-2px);filter:brightness(1.08)}
     .lxl-begin:active{transform:translateY(0);filter:brightness(.94)}
-
-    .lxl-dept{transition:all .17s;cursor:pointer;user-select:none}
-    .lxl-dept:hover{transform:translateY(-1px)}
-    .lxl-dept:active{transform:scale(.97)}
-
+    .lxl-resume{animation:lxl-resume-in .32s ease both,lxl-amber-pulse 2.6s 1s ease-in-out infinite;cursor:pointer;transition:filter .18s,transform .18s}
+    .lxl-resume:hover{filter:brightness(1.1);transform:translateY(-1px)}
+    .lxl-resume:active{transform:scale(.98)}
+    .lxl-pill{transition:all .17s;cursor:pointer;user-select:none}
+    .lxl-pill:hover{filter:brightness(1.08)}
+    .lxl-pill:active{transform:scale(.96)}
     .lxl-inv{animation:lxl-inv-in .28s ease both}
     .lxl-inv-row{transition:background .15s,border-color .15s;cursor:pointer}
     .lxl-inv-row:hover{background:rgba(11,30,54,0.95)!important}
-
     .lxl-link{transition:color .15s,opacity .15s;cursor:pointer;user-select:none}
     .lxl-link:hover{opacity:1!important}
-
     .lxl-input:focus{border-color:rgba(0,229,192,0.5)!important;box-shadow:0 0 0 3px rgba(0,229,192,0.07)!important}
 
     @media(max-width:580px){
-      .lxl-depts{flex-wrap:wrap!important}
+      .lxl-pills{flex-wrap:wrap!important}
       .lxl-clock-num{font-size:32px!important}
     }
     @media(prefers-reduced-motion:reduce){
@@ -65,21 +67,26 @@ const T = {
   bg:"#050f1e", panel:"#070d1a", card:"#0b1e36",
   txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
   teal:"#00e5c0", gold:"#f5c842", blue:"#3b9eff", purple:"#9b6dff",
-  orange:"#ff9f43", coral:"#ff6b6b",
+  orange:"#ff9f43", coral:"#ff6b6b", green:"#3dffa0",
 };
 const BRAND = { gold:"#C9A84C", teal:"#0ABFBF" };
 
-const DEPTS = ["ED","ICU","Urgent Care","Peds ED","Trauma","Other"];
+const FACILITIES = ["Spencer","Avera","HCA","Other"];
+const DEPTS      = ["ED","ICU","Urgent Care","Peds ED","Trauma","Other"];
+const LENGTHS    = ["8h","10h","12h"];
 
 const INV_DOCS = [
-  { icon:"📊", label:"Platform Overview",        sub:"Full investor pitch · in-app",  color:T.teal,   route:"LakonyxInvestorPitch", live:true  },
-  { icon:"📈", label:"Investor Pitch Deck",       sub:"10-slide PPTX · download",      color:T.gold,   route:null,                   live:false },
-  { icon:"📄", label:"Executive One-Pager",       sub:"Problem · Solution · Team",     color:T.purple, route:null,                   live:false },
-  { icon:"💰", label:"Financial Model",           sub:"5-yr P&L + valuation · XLSX",   color:T.orange, route:null,                   live:false },
-  { icon:"🔒", label:"HIPAA Risk Analysis",       sub:"Risk matrix + remediation",     color:T.coral,  route:null,                   live:false },
-  { icon:"⚖️", label:"BAA Vendor Checklist",      sub:"Base44 · Anthropic · FHIR",    color:T.blue,   route:null,                   live:false },
-  { icon:"🗺️", label:"Vercel Migration Guide",    sub:"Next.js roadmap · PDF",         color:"#3dffa0",route:null,                   live:false },
+  { icon:"📊", label:"Platform Overview",      sub:"Full investor pitch · in-app",  color:T.teal,   route:"LakonyxInvestorPitch", live:true  },
+  { icon:"📈", label:"Investor Pitch Deck",     sub:"10-slide PPTX · download",      color:T.gold,   route:null,                   live:false },
+  { icon:"📄", label:"Executive One-Pager",     sub:"Problem · Solution · Team",     color:T.purple, route:null,                   live:false },
+  { icon:"💰", label:"Financial Model",         sub:"5-yr P&L + valuation · XLSX",   color:T.orange, route:null,                   live:false },
+  { icon:"🔒", label:"HIPAA Risk Analysis",     sub:"Risk matrix + remediation",     color:T.coral,  route:null,                   live:false },
+  { icon:"⚖️", label:"BAA Vendor Checklist",    sub:"Base44 · Anthropic · FHIR",    color:T.blue,   route:null,                   live:false },
+  { icon:"🗺️", label:"Vercel Migration Guide",  sub:"Next.js roadmap · PDF",         color:T.green,  route:null,                   live:false },
 ];
+
+// Keys to probe for an active encounter in window.storage
+const ENCOUNTER_KEYS = ["activeEncounter","currentEncounter","npi_encounter","lastEncounter"];
 
 // ── Ambient background ────────────────────────────────────────────────────────
 function BgMesh() {
@@ -93,7 +100,6 @@ function BgMesh() {
         <div key={i} style={{position:"absolute",width:b.sz,height:b.sz,borderRadius:"50%",...b.s,
           background:`radial-gradient(circle,${b.c} 0%,transparent 70%)`,animation:b.a}}/>
       ))}
-      {/* Subtle grid */}
       <div style={{position:"absolute",inset:0,opacity:.012,
         backgroundImage:"linear-gradient(rgba(0,229,192,1) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,192,1) 1px,transparent 1px)",
         backgroundSize:"52px 52px"}}/>
@@ -111,7 +117,6 @@ function LXMark({size=108}) {
       <div style={{position:"absolute",inset:0,borderRadius:"inherit",
         background:"radial-gradient(circle at 38% 40%,rgba(201,168,76,0.09) 0%,transparent 65%)",
         pointerEvents:"none"}}/>
-      {/* Scan line */}
       <div style={{position:"absolute",inset:0,borderRadius:"inherit",overflow:"hidden",pointerEvents:"none"}}>
         <div style={{position:"absolute",left:0,right:0,height:"30%",
           background:"linear-gradient(180deg,transparent 0%,rgba(0,229,192,0.04) 50%,transparent 100%)",
@@ -136,14 +141,14 @@ function LiveClock() {
   useEffect(() => {
     const tick = () => {
       const n = new Date();
-      const pad = (v) => String(v).padStart(2,"0");
+      const pad = v => String(v).padStart(2,"0");
       setT({
-        h: pad(n.getHours()), m: pad(n.getMinutes()), s: pad(n.getSeconds()),
-        date: n.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}),
+        h:pad(n.getHours()), m:pad(n.getMinutes()), s:pad(n.getSeconds()),
+        date:n.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}),
       });
     };
     tick();
-    const id = setInterval(tick, 1000);
+    const id = setInterval(tick,1000);
     return () => clearInterval(id);
   },[]);
   return (
@@ -151,12 +156,14 @@ function LiveClock() {
       background:"rgba(7,13,26,0.85)",border:"1px solid rgba(26,53,85,0.65)",
       backdropFilter:"blur(10px)",textAlign:"center"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4,marginBottom:5}}>
-        <span className="lxl-clock-num" style={{fontFamily:"'JetBrains Mono',monospace",
-          fontSize:38,fontWeight:700,color:T.txt,letterSpacing:".04em",lineHeight:1}}>{t.h}</span>
-        <span className="lxl-blink" style={{fontFamily:"'JetBrains Mono',monospace",
-          fontSize:32,fontWeight:700,color:T.teal,lineHeight:1,margin:"0 1px"}}>:</span>
-        <span className="lxl-clock-num" style={{fontFamily:"'JetBrains Mono',monospace",
-          fontSize:38,fontWeight:700,color:T.txt,letterSpacing:".04em",lineHeight:1}}>{t.m}</span>
+        {[t.h, t.m].map((seg,i) => (
+          <span key={i} style={{display:"flex",alignItems:"center",gap:4}}>
+            <span className="lxl-clock-num" style={{fontFamily:"'JetBrains Mono',monospace",
+              fontSize:38,fontWeight:700,color:T.txt,letterSpacing:".04em",lineHeight:1}}>{seg}</span>
+            {i===0 && <span className="lxl-blink" style={{fontFamily:"'JetBrains Mono',monospace",
+              fontSize:32,fontWeight:700,color:T.teal,lineHeight:1,margin:"0 1px"}}>:</span>}
+          </span>
+        ))}
         <span className="lxl-blink" style={{fontFamily:"'JetBrains Mono',monospace",
           fontSize:32,fontWeight:700,color:T.teal,lineHeight:1,margin:"0 1px"}}>:</span>
         <span className="lxl-clock-num" style={{fontFamily:"'JetBrains Mono',monospace",
@@ -168,7 +175,60 @@ function LiveClock() {
   );
 }
 
-// ── Investor Resources Panel ──────────────────────────────────────────────────
+// ── Pill row (shared for Facility, Dept, Shift Length) ────────────────────────
+function PillRow({options, value, onChange, activeColor, activeTextColor="#050f1e", small=false}) {
+  return (
+    <div className="lxl-pills" style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
+      {options.map(opt => {
+        const on = opt === value;
+        return (
+          <div key={opt} className="lxl-pill"
+            onClick={() => onChange(opt)}
+            style={{padding:small?"5px 11px":"7px 14px",borderRadius:8,
+              fontFamily:"'DM Sans',sans-serif",
+              fontSize:small?11:12,fontWeight:on?700:500,
+              color:on?activeTextColor:T.txt3,
+              background:on?`linear-gradient(135deg,${activeColor},${activeColor}cc)`:"rgba(11,30,54,0.7)",
+              border:`1px solid ${on?"transparent":"rgba(42,79,122,0.45)"}`,
+              boxShadow:on?`0 2px 14px ${activeColor}40`:"none"}}>
+            {opt}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Resume Encounter chip ─────────────────────────────────────────────────────
+function ResumeChip({encounter, onResume}) {
+  const age  = encounter.age  || "—";
+  const sex  = encounter.sex  || "";
+  const cc   = encounter.chiefComplaint || encounter.cc || "Active encounter";
+  const dept = encounter.dept || "";
+  const label = [age && sex ? `${age}${sex}` : age, cc, dept].filter(Boolean).join(" · ");
+  return (
+    <div className="lxl-resume"
+      onClick={onResume}
+      style={{width:"100%",display:"flex",alignItems:"center",gap:12,
+        padding:"12px 16px",borderRadius:12,
+        background:"rgba(255,159,67,0.07)",
+        border:"1px solid rgba(255,159,67,0.32)"}}>
+      <div style={{width:36,height:36,borderRadius:9,flexShrink:0,
+        background:"rgba(255,159,67,0.14)",border:"1px solid rgba(255,159,67,0.3)",
+        display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>⚡</div>
+      <div style={{flex:1,textAlign:"left",minWidth:0}}>
+        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,
+          color:T.orange,marginBottom:2,letterSpacing:".03em"}}>Resume Active Encounter</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt3,
+          whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{label}</div>
+      </div>
+      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,
+        color:T.orange,flexShrink:0}}>→</span>
+    </div>
+  );
+}
+
+// ── Investor Resources panel ──────────────────────────────────────────────────
 function InvPanel({onNavigate}) {
   return (
     <div className="lxl-inv" style={{width:"100%",marginTop:10,display:"flex",
@@ -205,20 +265,57 @@ function InvPanel({onNavigate}) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function LakonyxLanding() {
   const navigate = useNavigate();
-  const [dept, setDept] = useState("ED");
-  const [attending, setAttending] = useState("");
-  const [showInv, setShowInv] = useState(false);
 
-  // Enter key → Begin Shift
+  // Shift context state
+  const [facility,  setFacility]  = useState("Spencer");
+  const [dept,      setDept]      = useState("ED");
+  const [shiftLen,  setShiftLen]  = useState("12h");
+  const [attending, setAttending] = useState("");
+  const [showInv,   setShowInv]   = useState(false);
+
+  // Resume encounter
+  const [resumeEnc, setResumeEnc] = useState(null);
+
+  // Probe window.storage for an active encounter on mount
   useEffect(() => {
-    const h = (e) => { if (e.key === "Enter" && !showInv) navigate("/CommandCenter"); };
+    (async () => {
+      if (typeof window === "undefined" || !window.storage) return;
+      for (const key of ENCOUNTER_KEYS) {
+        try {
+          const res = await window.storage.get(key);
+          if (res && res.value) {
+            const parsed = typeof res.value === "string"
+              ? JSON.parse(res.value) : res.value;
+            if (parsed && (parsed.chiefComplaint || parsed.cc || parsed.age)) {
+              setResumeEnc(parsed);
+              break;
+            }
+          }
+        } catch (_) { /* key not found — continue */ }
+      }
+    })();
+  },[]);
+
+  // Save shift context to storage when Begin Shift is clicked
+  const beginShift = async () => {
+    const ctx = { facility, dept, shiftLen, attending, startedAt: new Date().toISOString() };
+    try {
+      if (window.storage) await window.storage.set("shiftContext", JSON.stringify(ctx));
+    } catch (_) {}
+    navigate("/CommandCenter");
+  };
+
+  const resumeEncounter = () => navigate("/NewPatientInput");
+
+  // Enter key → Begin Shift (unless investor panel open or typing in input)
+  useEffect(() => {
+    const h = e => { if (e.key === "Enter" && !showInv) beginShift(); };
     document.addEventListener("keydown", h);
     return () => document.removeEventListener("keydown", h);
-  },[showInv]);
+  },[showInv, facility, dept, shiftLen, attending]);
 
-  const goShift   = () => navigate("/CommandCenter");
   const goExplore = () => navigate("/LakonyxHome");
-  const goRoute   = (r) => navigate(`/${r}`);
+  const goRoute   = r  => navigate(`/${r}`);
 
   return (
     <div style={{minHeight:"100vh",background:T.bg,color:T.txt,
@@ -269,49 +366,80 @@ export default function LakonyxLanding() {
           <LiveClock/>
         </div>
 
-        {/* Shift configuration */}
-        <div className="lxl-s5" style={{width:"100%",marginBottom:26}}>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,
-            letterSpacing:".16em",textTransform:"uppercase",marginBottom:12}}>Starting shift in</div>
+        {/* ── Shift configuration ───────────────────────────────────────── */}
+        <div className="lxl-s5" style={{width:"100%",marginBottom:20,
+          padding:"22px 20px",borderRadius:14,
+          background:"rgba(7,13,26,0.7)",border:"1px solid rgba(26,53,85,0.55)",
+          backdropFilter:"blur(8px)",display:"flex",flexDirection:"column",gap:14}}>
 
-          {/* Department selector */}
-          <div className="lxl-depts" style={{display:"flex",gap:6,justifyContent:"center",
-            flexWrap:"wrap",marginBottom:12}}>
-            {DEPTS.map(d => {
-              const on = d === dept;
-              return (
-                <div key={d} className="lxl-dept"
-                  onClick={() => setDept(d)}
-                  style={{padding:"7px 14px",borderRadius:8,
-                    fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:on?700:500,
-                    color:on?"#050f1e":T.txt3,
-                    background:on?`linear-gradient(135deg,${T.teal},#00b4d8)`:"rgba(11,30,54,0.7)",
-                    border:`1px solid ${on?"transparent":"rgba(42,79,122,0.45)"}`,
-                    boxShadow:on?`0 2px 14px ${T.teal}38`:"none"}}>
-                  {d}
-                </div>
-              );
-            })}
+          {/* Section label */}
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,
+            letterSpacing:".16em",textTransform:"uppercase"}}>Configure shift</div>
+
+          {/* Facility row */}
+          <div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,
+              color:T.txt4,letterSpacing:".12em",textTransform:"uppercase",
+              marginBottom:8,textAlign:"left"}}>Facility</div>
+            <PillRow options={FACILITIES} value={facility} onChange={setFacility}
+              activeColor={BRAND.gold} activeTextColor="#050f1e"/>
           </div>
 
-          {/* Attending input */}
-          <input className="lxl-input"
-            type="text"
-            placeholder="Attending physician (optional)"
-            value={attending}
-            onChange={e => setAttending(e.target.value)}
-            style={{width:"100%",padding:"11px 16px",borderRadius:10,
-              background:"rgba(11,30,54,0.65)",border:"1px solid rgba(42,79,122,0.48)",
-              color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:13,
-              outline:"none",boxSizing:"border-box",caretColor:T.teal,
-              transition:"border-color .15s,box-shadow .15s"}}
-          />
+          {/* Divider */}
+          <div style={{height:1,background:"rgba(26,53,85,0.5)"}}/>
+
+          {/* Department row */}
+          <div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,
+              color:T.txt4,letterSpacing:".12em",textTransform:"uppercase",
+              marginBottom:8,textAlign:"left"}}>Department</div>
+            <PillRow options={DEPTS} value={dept} onChange={setDept}
+              activeColor={T.teal} activeTextColor="#050f1e"/>
+          </div>
+
+          {/* Divider */}
+          <div style={{height:1,background:"rgba(26,53,85,0.5)"}}/>
+
+          {/* Shift length + attending in one row */}
+          <div style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:16,alignItems:"end"}}>
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,
+                color:T.txt4,letterSpacing:".12em",textTransform:"uppercase",
+                marginBottom:8,textAlign:"left"}}>Shift length</div>
+              <PillRow options={LENGTHS} value={shiftLen} onChange={setShiftLen}
+                activeColor={T.purple} activeTextColor={T.txt} small={true}/>
+            </div>
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,
+                color:T.txt4,letterSpacing:".12em",textTransform:"uppercase",
+                marginBottom:8,textAlign:"left"}}>Attending (optional)</div>
+              <input className="lxl-input"
+                type="text"
+                placeholder="Dr. ..."
+                value={attending}
+                onChange={e => setAttending(e.target.value)}
+                style={{width:"100%",padding:"7px 12px",borderRadius:8,
+                  background:"rgba(11,30,54,0.65)",border:"1px solid rgba(42,79,122,0.48)",
+                  color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:12,
+                  outline:"none",boxSizing:"border-box",caretColor:T.teal,
+                  transition:"border-color .15s,box-shadow .15s"}}
+              />
+            </div>
+          </div>
         </div>
 
+        {/* ── Resume Active Encounter chip ──────────────────────────────── */}
+        {resumeEnc && (
+          <div className="lxl-s6" style={{width:"100%",marginBottom:14}}>
+            <ResumeChip encounter={resumeEnc} onResume={resumeEncounter}/>
+          </div>
+        )}
+
         {/* Begin Shift button */}
-        <div className="lxl-s6" style={{width:"100%",marginBottom:12}}>
+        <div className={resumeEnc ? "lxl-s7" : "lxl-s6"}
+          style={{width:"100%",marginBottom:12}}>
           <div className="lxl-begin"
-            onClick={goShift}
+            onClick={beginShift}
             style={{width:"100%",padding:"16px",borderRadius:12,
               fontFamily:"'DM Sans',sans-serif",fontSize:16,fontWeight:700,
               color:"#050f1e",letterSpacing:".04em",textAlign:"center",
@@ -321,12 +449,12 @@ export default function LakonyxLanding() {
           </div>
           <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,
             color:T.txt4,marginTop:7,letterSpacing:".09em"}}>
-            Press Enter to begin
+            {facility} · {dept} · {shiftLen} · Press Enter to begin
           </div>
         </div>
 
         {/* Explore link */}
-        <div className="lxl-s7" style={{marginBottom:48}}>
+        <div className={resumeEnc ? "lxl-s8" : "lxl-s7"} style={{marginBottom:48}}>
           <span className="lxl-link"
             onClick={goExplore}
             style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,
@@ -337,13 +465,13 @@ export default function LakonyxLanding() {
           </span>
         </div>
 
-        {/* ── Investor Resources collapsible ─────────────────────────────── */}
-        <div className="lxl-s8" style={{width:"100%"}}>
+        {/* ── Investor Resources collapsible ────────────────────────────── */}
+        <div className={resumeEnc ? "lxl-s9" : "lxl-s8"} style={{width:"100%"}}>
           <div onClick={() => setShowInv(v => !v)}
             style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
-              opacity:.48,transition:"opacity .18s",userSelect:"none"}}
-            onMouseEnter={e => e.currentTarget.style.opacity = ".75"}
-            onMouseLeave={e => e.currentTarget.style.opacity = ".48"}>
+              opacity:.44,transition:"opacity .18s",userSelect:"none"}}
+            onMouseEnter={e => e.currentTarget.style.opacity = ".72"}
+            onMouseLeave={e => e.currentTarget.style.opacity = ".44"}>
             <div style={{flex:1,height:1,background:"rgba(26,53,85,0.55)"}}/>
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,
               color:T.txt4,letterSpacing:".14em",whiteSpace:"nowrap"}}>
@@ -351,12 +479,11 @@ export default function LakonyxLanding() {
             </span>
             <div style={{flex:1,height:1,background:"rgba(26,53,85,0.55)"}}/>
           </div>
-
           {showInv && <InvPanel onNavigate={goRoute}/>}
         </div>
       </div>
 
-      {/* ── Fixed footer ──────────────────────────────────────────────────── */}
+      {/* Fixed footer */}
       <div style={{position:"fixed",bottom:14,left:0,right:0,
         textAlign:"center",zIndex:1,pointerEvents:"none"}}>
         <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,

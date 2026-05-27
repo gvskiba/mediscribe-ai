@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
     @keyframes lxl-scan{0%{background-position:0 -100%}100%{background-position:0 200%}}
     @keyframes lxl-resume-in{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
     @keyframes lxl-amber-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,159,67,0.35)}60%{box-shadow:0 0 0 10px rgba(255,159,67,0)}}
+    @keyframes lxl-editor-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 
     .lxl-s1{animation:lxl-fadeUp .55s .04s ease both}
     .lxl-s2{animation:lxl-fadeUp .55s .16s ease both}
@@ -50,6 +51,16 @@ import { useNavigate } from "react-router-dom";
     .lxl-link{transition:color .15s,opacity .15s;cursor:pointer;user-select:none}
     .lxl-link:hover{opacity:1!important}
     .lxl-input:focus{border-color:rgba(0,229,192,0.5)!important;box-shadow:0 0 0 3px rgba(0,229,192,0.07)!important}
+    .lxl-editor{animation:lxl-editor-in .22s ease both}
+    .lxl-pencil{opacity:.38;transition:opacity .15s,transform .15s;cursor:pointer;user-select:none;line-height:1}
+    .lxl-pencil:hover{opacity:.85;transform:scale(1.15)}
+    .lxl-fac-input{transition:border-color .15s,box-shadow .15s}
+    .lxl-fac-input:focus{border-color:rgba(201,168,76,0.55)!important;box-shadow:0 0 0 3px rgba(201,168,76,0.07)!important;outline:none}
+    .lxl-rm{opacity:.35;transition:opacity .15s,transform .15s;cursor:pointer;flex-shrink:0;line-height:1}
+    .lxl-rm:hover{opacity:.9;transform:scale(1.2)}
+    .lxl-save-btn{transition:all .17s;cursor:pointer;user-select:none}
+    .lxl-save-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+    .lxl-save-btn:active{transform:scale(.97)}
 
     @media(max-width:580px){
       .lxl-pills{flex-wrap:wrap!important}
@@ -71,7 +82,8 @@ const T = {
 };
 const BRAND = { gold:"#C9A84C", teal:"#0ABFBF" };
 
-const FACILITIES = ["Spencer","Avera","HCA","Other"];
+const DEFAULT_FACILITIES = ["Spencer","Avera","HCA","Other"];
+const FACILITY_STORAGE_KEY = "lxl_facilities";
 const DEPTS      = ["ED","ICU","Urgent Care","Peds ED","Trauma","Other"];
 const LENGTHS    = ["8h","10h","12h"];
 
@@ -228,7 +240,67 @@ function ResumeChip({encounter, onResume}) {
   );
 }
 
-// ── Investor Resources panel ──────────────────────────────────────────────────
+// ── Facility inline editor ────────────────────────────────────────────────────
+function FacilityEditor({ drafts, onChange, onAdd, onRemove, onSave, onCancel }) {
+  return (
+    <div className="lxl-editor" style={{marginTop:10,display:"flex",
+      flexDirection:"column",gap:8}}>
+      {drafts.map((name, i) => (
+        <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
+          <input
+            className="lxl-fac-input"
+            value={name}
+            maxLength={20}
+            onChange={e => onChange(i, e.target.value)}
+            style={{flex:1,padding:"7px 11px",borderRadius:8,
+              background:"rgba(11,30,54,0.8)",border:"1px solid rgba(201,168,76,0.28)",
+              color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:12,
+              boxSizing:"border-box",caretColor:BRAND.gold}}
+          />
+          <span className="lxl-rm"
+            onClick={() => onRemove(i)}
+            style={{fontSize:14,color:T.coral}}>✕</span>
+        </div>
+      ))}
+
+      {/* Add row */}
+      {drafts.length < 6 && (
+        <div onClick={onAdd}
+          style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",
+            borderRadius:8,border:"1px dashed rgba(201,168,76,0.22)",
+            cursor:"pointer",transition:"border-color .15s"}}
+          onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(201,168,76,0.5)"}
+          onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(201,168,76,0.22)"}>
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+            color:BRAND.gold,opacity:.6}}>+</span>
+          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,
+            color:T.txt4}}>Add facility</span>
+        </div>
+      )}
+
+      {/* Save / Cancel */}
+      <div style={{display:"flex",gap:8,marginTop:2}}>
+        <div className="lxl-save-btn"
+          onClick={onSave}
+          style={{flex:1,padding:"8px",borderRadius:8,textAlign:"center",
+            fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,
+            color:"#050f1e",background:`linear-gradient(135deg,${BRAND.gold},#e8b84b)`}}>
+          Save
+        </div>
+        <div className="lxl-save-btn"
+          onClick={onCancel}
+          style={{flex:1,padding:"8px",borderRadius:8,textAlign:"center",
+            fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,
+            color:T.txt3,background:"rgba(11,30,54,0.7)",
+            border:"1px solid rgba(42,79,122,0.45)"}}>
+          Cancel
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function InvPanel({onNavigate}) {
   return (
     <div className="lxl-inv" style={{width:"100%",marginTop:10,display:"flex",
@@ -272,6 +344,45 @@ export default function LakonyxLanding() {
   const [shiftLen,  setShiftLen]  = useState("12h");
   const [attending, setAttending] = useState("");
   const [showInv,   setShowInv]   = useState(false);
+
+  // Facility editor state
+  const [facilities,    setFacilities]    = useState(DEFAULT_FACILITIES);
+  const [editingFac,    setEditingFac]    = useState(false);
+  const [draftFacilities, setDraftFacilities] = useState(DEFAULT_FACILITIES);
+
+  // Load saved facilities from storage on mount
+  useEffect(() => {
+    (async () => {
+      if (!window.storage) return;
+      try {
+        const res = await window.storage.get(FACILITY_STORAGE_KEY);
+        if (res && res.value) {
+          const saved = JSON.parse(res.value);
+          if (Array.isArray(saved) && saved.length > 0) {
+            setFacilities(saved);
+            setFacility(saved[0]);
+          }
+        }
+      } catch (_) {}
+    })();
+  }, []);
+
+  // Editor handlers
+  const openEditor  = () => { setDraftFacilities([...facilities]); setEditingFac(true); };
+  const cancelEditor = () => setEditingFac(false);
+  const changeDraft  = (i, val) => setDraftFacilities(d => d.map((v,idx) => idx===i ? val : v));
+  const addDraft     = () => setDraftFacilities(d => [...d, ""]);
+  const removeDraft  = (i) => setDraftFacilities(d => d.filter((_,idx) => idx !== i));
+  const saveFacilities = async () => {
+    const cleaned = draftFacilities.map(f => f.trim()).filter(Boolean);
+    if (cleaned.length === 0) return;
+    setFacilities(cleaned);
+    if (!cleaned.includes(facility)) setFacility(cleaned[0]);
+    setEditingFac(false);
+    try {
+      if (window.storage) await window.storage.set(FACILITY_STORAGE_KEY, JSON.stringify(cleaned));
+    } catch (_) {}
+  };
 
   // Resume encounter
   const [resumeEnc, setResumeEnc] = useState(null);
@@ -378,11 +489,35 @@ export default function LakonyxLanding() {
 
           {/* Facility row */}
           <div>
-            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,
-              color:T.txt4,letterSpacing:".12em",textTransform:"uppercase",
-              marginBottom:8,textAlign:"left"}}>Facility</div>
-            <PillRow options={FACILITIES} value={facility} onChange={setFacility}
-              activeColor={BRAND.gold} activeTextColor="#050f1e"/>
+            {/* Label row with pencil */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+              marginBottom:8}}>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,
+                color:T.txt4,letterSpacing:".12em",textTransform:"uppercase"}}>Facility</div>
+              <span className="lxl-pencil"
+                onClick={editingFac ? cancelEditor : openEditor}
+                title="Edit facility names">
+                {editingFac ? "✕" : "✎"}
+              </span>
+            </div>
+
+            {/* Pills (normal mode) */}
+            {!editingFac && (
+              <PillRow options={facilities} value={facility} onChange={setFacility}
+                activeColor={BRAND.gold} activeTextColor="#050f1e"/>
+            )}
+
+            {/* Inline editor (edit mode) */}
+            {editingFac && (
+              <FacilityEditor
+                drafts={draftFacilities}
+                onChange={changeDraft}
+                onAdd={addDraft}
+                onRemove={removeDraft}
+                onSave={saveFacilities}
+                onCancel={cancelEditor}
+              />
+            )}
           </div>
 
           {/* Divider */}

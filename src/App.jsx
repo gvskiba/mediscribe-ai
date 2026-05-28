@@ -244,6 +244,7 @@ const AuthenticatedApp = () => {
         <Route path="/command-center"    element={<CommandCenterWrapper />} />
         <Route path="/landing"           element={<LakonyxLanding />} />
         <Route path="/LakonyxLandingPage" element={<LakonyxLandingPage />} />
+        <Route path="/LakonyxNavBar" element={<LakonyxNavBar />} />
         <Route path="/new-technology"    element={<LakonyxNewTechnology />} />
         <Route path="/huddle-board"        element={<HuddleBoard />} />
         <Route path="/EDOrderHub"          element={<EDOrderHub />} />

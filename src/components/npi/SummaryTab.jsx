@@ -71,11 +71,11 @@ export default function SummaryTab({ demo, cc, vitals, medications, allergies, p
           <div className="npi-sum-block-title"><span>🔍</span> Review of Systems</div>
           {rosAbn.length > 0 && <div style={{ marginBottom: 8 }}>
             <div style={{ fontSize: 10, color: 'var(--coral)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Positive Findings</div>
-            {rosAbn.map(s => <div key={s.id} style={{ marginBottom: 5 }}><span className="npi-ros-item abn">✗ {s.name}</span>{rosSymptoms[s.id]?.length ? ' — ' + rosSymptoms[s.id].join(', ') : ''}</div>)}
+            {rosAbn.map(s => <div key={s.id} style={{ marginBottom: 5 }}><span className="npi-ros-item abn">{'\u2717'} {s.name}</span>{rosSymptoms[s.id]?.length ? ' \u2014 ' + rosSymptoms[s.id].join(', ') : ''}</div>)}
           </div>}
           {rosNorm.length > 0 && <div>
             <div style={{ fontSize: 10, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Negative Systems</div>
-            <div>{rosNorm.map(s => <span key={s.id} className="npi-ros-item norm">✓ {s.name}</span>)}</div>
+            <div>{rosNorm.map(s => <span key={s.id} className="npi-ros-item norm">{'\u2713'} {s.name}</span>)}</div>
           </div>}
         </div>
       )}
@@ -85,11 +85,11 @@ export default function SummaryTab({ demo, cc, vitals, medications, allergies, p
           <div className="npi-sum-block-title"><span>🩺</span> Physical Examination</div>
           {peAbn.length > 0 && <div style={{ marginBottom: 8 }}>
             <div style={{ fontSize: 10, color: 'var(--coral)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Abnormal Findings</div>
-            {peAbn.map(s => <div key={s.id} style={{ marginBottom: 5 }}><span className="npi-ros-item abn">✗ {s.name}</span> — <span style={{ fontSize: 11, color: 'var(--txt2)' }}>{peFindings[s.id]}</span></div>)}
+            {peAbn.map(s => <div key={s.id} style={{ marginBottom: 5 }}><span className="npi-ros-item abn">{'\u2717'} {s.name}</span> {'\u2014'} <span style={{ fontSize: 11, color: 'var(--txt2)' }}>{peFindings[s.id]}</span></div>)}
           </div>}
           {peNorm.length > 0 && <div>
             <div style={{ fontSize: 10, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Normal Systems</div>
-            <div>{peNorm.map(s => <span key={s.id} className="npi-ros-item norm">✓ {s.name}</span>)}</div>
+            <div>{peNorm.map(s => <span key={s.id} className="npi-ros-item norm">{'\u2713'} {s.name}</span>)}</div>
           </div>}
         </div>
       )}

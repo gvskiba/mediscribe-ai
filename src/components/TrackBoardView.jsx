@@ -21,6 +21,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 
+// ── SI PHASE 1: Trajectory Colors ────────────────────────────────────────────
+const TRAJECTORY_COLORS = {
+  stable:    { bg: "#0A2F1E", border: "#10B981", text: "#34D399", label: "STABLE" },
+  worsening: { bg: "#2D1F00", border: "#F59E0B", text: "#FBB954", label: "WORSENING" },
+  critical:  { bg: "#2D0A0A", border: "#EF4444", text: "#F87171", label: "CRITICAL" }
+};
+// ── END SI PHASE 1 ────────────────────────────────────────────────────────────
+
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
   bg:"#050f1e", txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
@@ -132,11 +140,12 @@ function PatientCard({ patient, onCardClick, onNote, onOrders, onResults, compac
   const st   = STATUS[patient.status] || STATUS.waiting;
   const pend = patient.orders.filter(o => o.status === "pending");
   const crit = patient.results.filter(r => r.flag === "critical" && !r.acknowledged);
+  const rowTc = TRAJECTORY_COLORS[patient.si_trajectory?.level || "stable"];
 
   return (
     <div className="tbv-fade tbv-card"
       style={{ ...glass, padding:0, overflow:"hidden",
-        borderLeft:`3px solid ${st.color}`, cursor:"pointer",
+        borderLeft:`3px solid ${rowTc.border}`, cursor:"pointer",
         transition:"border-color .15s, box-shadow .15s",
         boxShadow: hasAlert
           ? `0 0 0 1px ${T.red}50, 0 4px 18px ${T.red}14` : undefined }}>
@@ -170,6 +179,13 @@ function PatientCard({ patient, onCardClick, onNote, onOrders, onResults, compac
             fontWeight:700, padding:"2px 7px", borderRadius:20,
             background:`${st.color}16`, border:`1px solid ${st.color}38`,
             color:st.color, letterSpacing:.5 }}>{st.label}</span>
+          <span style={{
+            fontSize: 8, fontWeight: 700, color: rowTc.text,
+            background: rowTc.border + "20", padding: "1px 6px",
+            borderRadius: 4, letterSpacing: "0.06em", fontFamily: "monospace"
+          }}>
+            {patient.si_trajectory?.score != null ? patient.si_trajectory.score : "--"}
+          </span>
           {patient.noteDraft && (
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:6,
               fontWeight:700, padding:"1px 6px", borderRadius:20,
@@ -513,11 +529,15 @@ export default function TrackBoardView({
     return patients;
   }, [boardView, myProvider, patients]);
 
-  const sorted = useMemo(() =>
-    [...visible].sort((a, b) =>
+  const sorted = useMemo(() => {
+    const statusSorted = [...visible].sort((a, b) =>
       (STATUS_RANK[a.status] ?? 4) - (STATUS_RANK[b.status] ?? 4)
-    )
-  , [visible]);
+    );
+    const sortedPatients = [...statusSorted].sort((a, b) =>
+      (b.si_trajectory?.score || 0) - (a.si_trajectory?.score || 0)
+    );
+    return sortedPatients;
+  }, [visible]);
 
   const stats = useMemo(() => ({
     total:    patients.length,

@@ -139,7 +139,7 @@ const BRAND = { gold:"#C9A84C", teal:"#0ABFBF" };
 const DEFAULT_FACILITIES  = ["Spencer","Avera","HCA","Other"];
 const FACILITY_STORAGE_KEY = "lxl_facilities";
 const RECENT_HUBS_KEY      = "lxl_recent_hubs";
-const VISITED_KEY          = "lxl_visited";
+
 const DEPTS   = ["ED","ICU","Urgent Care","Peds ED","Trauma","Other"];
 const LENGTHS = ["8h","10h","12h"];
 const ENCOUNTER_KEYS = ["activeEncounter","currentEncounter","npi_encounter","lastEncounter"];
@@ -193,10 +193,16 @@ const HUB_INDEX = [
   { icon:"🧮", name:"Ottawa Rules",            cat:"Calculator",   badge:"TRAUMA",       color:T.gold,   route:"OrthoHub",           keys:["ottawa","ankle","knee","foot","xray","fracture","rules","clinical decision"] },
   { icon:"🧮", name:"CHA₂DS₂-VASc",           cat:"Calculator",   badge:"AFib",         color:T.cyan,   route:"ECGHub",             keys:["cha2ds2","chads","afib","anticoagulation","stroke risk","atrial fibrillation","warfarin","apixaban","score"] },
   { icon:"🧮", name:"GCS Score",              cat:"Calculator",   badge:"NEURO",        color:T.purple, route:"TraumaHub",           keys:["gcs","glasgow coma","altered","trauma","neuro","eye opening","verbal","motor"] },
+  // ── Workflow shortcuts ────────────────────────────────────────────────────
+  { icon:"🏥", name:"New Patient Input",       cat:"Workflow",     badge:"NPI",          color:T.teal,   route:"NewPatientInput",     keys:["new patient","encounter","npi","start","admit","chief complaint","hpi","vitals"] },
+  { icon:"📝", name:"Quick Note",              cat:"Workflow",     badge:"APSO",         color:T.purple, route:"ClinicalNoteStudio",  keys:["quick note","note","soap","apso","documentation","sign","chart","clinical note studio"] },
+  { icon:"📦", name:"Orders",                  cat:"Workflow",     badge:"CPOE",         color:T.blue,   route:"OrderGeneratorHub",   keys:["orders","order set","cpoe","medications","labs","imaging","admit orders","bundle"] },
+  { icon:"⊞",  name:"Hub Page",               cat:"Workflow",     badge:"HOME",         color:T.gold,   route:"LakonyxHome",         keys:["hub","home","menu","hubs","all hubs","command","navigate","dashboard"] },
+  { icon:"⚡", name:"Command Center",          cat:"Workflow",     badge:"SHIFT",        color:T.teal,   route:"CommandCenter",       keys:["command center","shift","active","dashboard","patients","tracking","trackboard"] },
 ];
 
-// Default quick-launch hubs (shown when no recents exist)
-const DEFAULT_QL = ["ECGHub","SepsisHub","ToxicologyHub","AirwayHub","StrokeHub"];
+// Default quick-launch — workflow-first, shown before any recents exist
+const DEFAULT_QL = ["NewPatientInput","ClinicalNoteStudio","OrderGeneratorHub","LakonyxHome","CommandCenter"];
 
 // Investor documents
 const INV_DOCS = [
@@ -413,7 +419,7 @@ function QuickLaunch({ recentRoutes, onNavigate }) {
     <div style={{width:"100%"}}>
       <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,color:T.txt4,
         letterSpacing:".14em",textTransform:"uppercase",marginBottom:9,textAlign:"left"}}>
-        {recentRoutes.length > 0 ? "Recent hubs" : "Quick launch"}
+        {recentRoutes.length > 0 ? "Recent" : "Quick access"}
       </div>
       <div className="lxl-ql-scroll" style={{display:"flex",gap:7}}>
         {hubs.map(h => (
@@ -551,118 +557,6 @@ function InvPanel({onNavigate}) {
   );
 }
 
-// ── First-Visit Orientation Banner ───────────────────────────────────────────
-const BANNER_FEATURES = [
-  { icon:"🏥", label:"65+ Clinical Hubs",    sub:"Sepsis · ECG · Stroke · Tox · Airway",  color:"#00e5c0" },
-  { icon:"🤖", label:"AI Documentation",     sub:"CMS 2024 MDM · HPI · Discharge notes",  color:"#9b6dff" },
-  { icon:"⚡", label:"Zero Setup Required",  sub:"Browser-based · No install · HIPAA-conscious", color:"#f5c842" },
-];
-
-function FirstVisitBanner({ onDismiss, onExplore }) {
-  const [leaving, setLeaving] = useState(false);
-
-  const dismiss = () => {
-    setLeaving(true);
-    setTimeout(onDismiss, 300);
-  };
-
-  return (
-    <div style={{
-      width:"100%", marginBottom:22, overflow:"hidden",
-      animation: leaving
-        ? "lxl-banner-out .3s ease forwards"
-        : "lxl-banner-in .5s .2s ease both",
-    }}>
-      <div style={{
-        padding:"20px 20px 16px", borderRadius:14,
-        background:"linear-gradient(135deg,rgba(10,191,191,0.07) 0%,rgba(11,30,54,0.85) 60%)",
-        border:"1px solid rgba(0,229,192,0.22)",
-        backdropFilter:"blur(10px)", position:"relative", overflow:"hidden",
-      }}>
-        {/* Top accent line */}
-        <div style={{position:"absolute",top:0,left:0,right:0,height:2,
-          background:`linear-gradient(90deg,${BRAND.teal},${BRAND.gold},transparent)`}}/>
-
-        {/* Dismiss button */}
-        <button onClick={dismiss}
-          style={{position:"absolute",top:10,right:12,background:"none",border:"none",
-            cursor:"pointer",fontSize:14,color:"rgba(90,130,168,0.5)",lineHeight:1,
-            padding:"4px 6px",borderRadius:6,transition:"color .15s",fontFamily:"inherit"}}
-          onMouseEnter={e=>e.currentTarget.style.color="rgba(242,247,255,0.7)"}
-          onMouseLeave={e=>e.currentTarget.style.color="rgba(90,130,168,0.5)"}>
-          ✕
-        </button>
-
-        {/* Header */}
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,paddingRight:24}}>
-          <div style={{width:7,height:7,borderRadius:"50%",background:BRAND.teal,
-            boxShadow:`0 0 8px ${BRAND.teal}`,flexShrink:0}}/>
-          <div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,
-              color:"#f2f7ff",lineHeight:1.2}}>Welcome to Lakonyx</div>
-            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-              color:"rgba(0,229,192,0.7)",letterSpacing:".12em",marginTop:3}}>
-              CLINICAL DECISION INTELLIGENCE
-            </div>
-          </div>
-        </div>
-
-        {/* Feature chips */}
-        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
-          {BANNER_FEATURES.map((f,i) => (
-            <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
-              <div style={{width:30,height:30,borderRadius:8,flexShrink:0,
-                background:f.color+"14",border:`1px solid ${f.color}28`,
-                display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>
-                {f.icon}
-              </div>
-              <div style={{minWidth:0}}>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,
-                  color:"#f2f7ff",lineHeight:1.2}}>{f.label}</div>
-                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-                  color:"rgba(130,174,206,0.6)",marginTop:1,whiteSpace:"nowrap",
-                  overflow:"hidden",textOverflow:"ellipsis"}}>{f.sub}</div>
-              </div>
-              <div style={{marginLeft:"auto",flexShrink:0,width:7,height:7,
-                borderRadius:"50%",background:f.color,opacity:.6}}/>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA row */}
-        <div style={{display:"flex",gap:10,alignItems:"center"}}>
-          <div onClick={dismiss}
-            style={{flex:1,padding:"10px",borderRadius:9,textAlign:"center",
-              fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,
-              color:"#050f1e",background:`linear-gradient(135deg,${BRAND.teal},#00b4d8)`,
-              cursor:"pointer",transition:"filter .15s",userSelect:"none"}}
-            onMouseEnter={e=>e.currentTarget.style.filter="brightness(1.1)"}
-            onMouseLeave={e=>e.currentTarget.style.filter="none"}>
-            Got it, let's go →
-          </div>
-          <div onClick={onExplore}
-            style={{flex:1,padding:"10px",borderRadius:9,textAlign:"center",
-              fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,
-              color:"rgba(130,174,206,0.8)",background:"rgba(11,30,54,0.7)",
-              border:"1px solid rgba(42,79,122,0.45)",
-              cursor:"pointer",transition:"all .15s",userSelect:"none"}}
-            onMouseEnter={e=>{e.currentTarget.style.background="rgba(11,30,54,0.95)";e.currentTarget.style.borderColor="rgba(59,158,255,0.4)";}}
-            onMouseLeave={e=>{e.currentTarget.style.background="rgba(11,30,54,0.7)";e.currentTarget.style.borderColor="rgba(42,79,122,0.45)";}}>
-            Explore Platform →
-          </div>
-        </div>
-
-        {/* Footnote */}
-        <div style={{marginTop:10,textAlign:"center",
-          fontFamily:"'JetBrains Mono',monospace",fontSize:7,
-          color:"rgba(90,130,168,0.4)",letterSpacing:".07em"}}>
-          This message appears once · Configure your shift below to begin
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── System Status Indicator ───────────────────────────────────────────────────
 const STATUS_SERVICES = [
   { key:"ai",      label:"AI",      check: async () => { try { const r = await fetch("https://api.anthropic.com",{method:"HEAD",signal:AbortSignal.timeout(3000)}); return r.status < 500; } catch(_){ return false; } } },
@@ -736,18 +630,10 @@ export default function LakonyxLanding() {
   const [resumeEnc,     setResumeEnc]     = useState(null);
   const [recentHubs,    setRecentHubs]    = useState([]);
 
-  // First-visit orientation
-  const [isFirstVisit,  setIsFirstVisit]  = useState(false);
-
   // Load persisted data on mount
   useEffect(() => {
     (async () => {
-      if (!window.storage) { setIsFirstVisit(true); return; }
-      // First-visit check
-      try {
-        const res = await window.storage.get(VISITED_KEY);
-        if (!res?.value) setIsFirstVisit(true);
-      } catch(_) { setIsFirstVisit(true); }
+      if (!window.storage) return;
       // Facilities
       try {
         const res = await window.storage.get(FACILITY_STORAGE_KEY);
@@ -834,16 +720,6 @@ export default function LakonyxLanding() {
   const goExplore = () => navigate("/LakonyxHome");
   const goRoute   = r  => navigate(`/${r}`);
 
-  const dismissBanner = async () => {
-    setIsFirstVisit(false);
-    try { if (window.storage) await window.storage.set(VISITED_KEY, "true"); } catch(_) {}
-  };
-
-  const explorePlatform = async () => {
-    await dismissBanner();
-    navigate("/LakonyxHome");
-  };
-
   return (
     <div style={{minHeight:"100vh",background:T.bg,color:T.txt,
       fontFamily:"'DM Sans',sans-serif",overflowX:"hidden",
@@ -890,14 +766,6 @@ export default function LakonyxLanding() {
         <div className="lxl-s4" style={{width:"100%",marginBottom:22}}>
           <QuickLaunch recentRoutes={recentHubs} onNavigate={goHub}/>
         </div>
-
-        {/* ── PRIORITY 4 · First-visit orientation ─────────────────────── */}
-        {isFirstVisit && (
-          <FirstVisitBanner
-            onDismiss={dismissBanner}
-            onExplore={explorePlatform}
-          />
-        )}
 
         {/* ── Clock ─────────────────────────────────────────────────────── */}
         <div className="lxl-s5" style={{width:"100%",marginBottom:20}}>

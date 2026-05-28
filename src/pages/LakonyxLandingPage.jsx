@@ -1,607 +1,318 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
 
-// ── Font + CSS injection ──────────────────────────────────────────────────────
-(() => {
-  if (document.getElementById("lxl-fonts")) return;
-  const l = document.createElement("link");
-  l.id = "lxl-fonts"; l.rel = "stylesheet";
-  l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
-  document.head.appendChild(l);
-  const s = document.createElement("style"); s.id = "lxl-css";
-  s.textContent = `
-    @keyframes lxl-fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-    @keyframes lxl-blink{0%,100%{opacity:1}50%{opacity:0.3}}
-    @keyframes lxl-ring{0%,100%{box-shadow:0 0 0 0 rgba(10,191,191,0.28)}65%{box-shadow:0 0 0 26px rgba(10,191,191,0)}}
-    @keyframes lxl-glow{0%,100%{box-shadow:0 4px 22px rgba(0,229,192,0.28),inset 0 1px 0 rgba(255,255,255,0.08)}50%{box-shadow:0 4px 48px rgba(0,229,192,0.52),inset 0 1px 0 rgba(255,255,255,0.12)}}
-    @keyframes lxl-pulse-dot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.7}}
-    @keyframes lxl-f1{0%,100%{transform:translate(0,0)}50%{transform:translate(55px,38px)}}
-    @keyframes lxl-f2{0%,100%{transform:translate(0,0)}50%{transform:translate(-48px,55px)}}
-    @keyframes lxl-f3{0%,100%{transform:translate(0,0)}50%{transform:translate(38px,-48px)}}
-    @keyframes lxl-scan{0%{background-position:0 -100%}100%{background-position:0 200%}}
-    @keyframes lxl-resume-in{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
-    @keyframes lxl-amber-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,159,67,0.35)}60%{box-shadow:0 0 0 10px rgba(255,159,67,0)}}
-    @keyframes lxl-editor-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
-    @keyframes lxl-drop-in{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
-    @keyframes lxl-inv-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-    @keyframes lxl-banner-in{from{opacity:0;transform:translateY(-10px) scale(.99)}to{opacity:1;transform:none}}
-    @keyframes lxl-banner-out{from{opacity:1;transform:none;max-height:300px;margin-bottom:22px}to{opacity:0;transform:translateY(-8px) scale(.99);max-height:0;margin-bottom:0}}
+const FONTS = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap";
+const AUTO_SECONDS = 12;
+const SHIFT_WINDOW_MS = 14 * 3600 * 1000;
 
-    .lxl-s1{animation:lxl-fadeUp .55s .04s ease both}
-    .lxl-s2{animation:lxl-fadeUp .55s .16s ease both}
-    .lxl-s3{animation:lxl-fadeUp .55s .28s ease both}
-    .lxl-s4{animation:lxl-fadeUp .55s .40s ease both}
-    .lxl-s5{animation:lxl-fadeUp .55s .52s ease both}
-    .lxl-s6{animation:lxl-fadeUp .55s .64s ease both}
-    .lxl-s7{animation:lxl-fadeUp .55s .76s ease both}
-    .lxl-s8{animation:lxl-fadeUp .55s .88s ease both}
-    .lxl-s9{animation:lxl-fadeUp .55s 1.00s ease both}
-    .lxl-s10{animation:lxl-fadeUp .55s 1.12s ease both}
-
-    .lxl-blink{animation:lxl-blink 2.2s ease-in-out infinite}
-    .lxl-dot{animation:lxl-pulse-dot 2.2s ease-in-out infinite}
-    .lxl-begin{animation:lxl-glow 2.8s ease-in-out infinite;transition:all .2s;cursor:pointer;user-select:none}
-    .lxl-begin:hover{transform:translateY(-2px);filter:brightness(1.08)}
-    .lxl-begin:active{transform:translateY(0);filter:brightness(.94)}
-    .lxl-resume{animation:lxl-resume-in .32s ease both,lxl-amber-pulse 2.6s 1s ease-in-out infinite;cursor:pointer;transition:filter .18s,transform .18s}
-    .lxl-resume:hover{filter:brightness(1.1);transform:translateY(-1px)}
-    .lxl-resume:active{transform:scale(.98)}
-    .lxl-pill{transition:all .17s;cursor:pointer;user-select:none}
-    .lxl-pill:hover{filter:brightness(1.08)}
-    .lxl-pill:active{transform:scale(.96)}
-    .lxl-inv{animation:lxl-inv-in .28s ease both}
-    .lxl-inv-row{transition:background .15s,border-color .15s;cursor:pointer}
-    .lxl-inv-row:hover{background:rgba(11,30,54,0.95)!important}
-    .lxl-link{transition:color .15s,opacity .15s;cursor:pointer;user-select:none}
-    .lxl-link:hover{opacity:1!important}
-    .lxl-input:focus{border-color:rgba(0,229,192,0.5)!important;box-shadow:0 0 0 3px rgba(0,229,192,0.07)!important}
-    .lxl-editor{animation:lxl-editor-in .22s ease both}
-    .lxl-pencil{opacity:.38;transition:opacity .15s,transform .15s;cursor:pointer;user-select:none;line-height:1}
-    .lxl-pencil:hover{opacity:.85;transform:scale(1.15)}
-    .lxl-fac-input{transition:border-color .15s,box-shadow .15s}
-    .lxl-fac-input:focus{border-color:rgba(201,168,76,0.55)!important;box-shadow:0 0 0 3px rgba(201,168,76,0.07)!important;outline:none}
-    .lxl-rm{opacity:.35;transition:opacity .15s,transform .15s;cursor:pointer;flex-shrink:0;line-height:1}
-    .lxl-rm:hover{opacity:.9;transform:scale(1.2)}
-    .lxl-save-btn{transition:all .17s;cursor:pointer;user-select:none}
-    .lxl-save-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
-    .lxl-save-btn:active{transform:scale(.97)}
-
-    /* ── Search ── */
-    .lxl-search-wrap{position:relative;width:100%}
-    .lxl-search-input{width:100%;padding:13px 16px 13px 44px;border-radius:12px;
-      background:rgba(11,30,54,0.9);border:1.5px solid rgba(0,229,192,0.22);
-      color:#f2f7ff;font-family:'DM Sans',sans-serif;font-size:14px;
-      outline:none;box-sizing:border-box;caret-color:#00e5c0;
-      transition:border-color .18s,box-shadow .18s;backdrop-filter:blur(8px)}
-    .lxl-search-input::placeholder{color:rgba(90,130,168,0.6)}
-    .lxl-search-input:focus{border-color:rgba(0,229,192,0.55)!important;box-shadow:0 0 0 3px rgba(0,229,192,0.09),0 4px 24px rgba(0,229,192,0.1)!important}
-    .lxl-search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);
-      font-size:15px;pointer-events:none;opacity:.5}
-    .lxl-search-kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);
-      font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(90,130,168,0.55);
-      background:rgba(26,53,85,0.5);border:1px solid rgba(42,79,122,0.4);
-      padding:2px 7px;border-radius:4px;pointer-events:none;
-      transition:opacity .18s}
-    .lxl-dropdown{position:absolute;top:calc(100% + 6px);left:0;right:0;
-      background:rgba(7,13,26,0.98);border:1px solid rgba(0,229,192,0.18);
-      border-radius:12px;z-index:100;overflow:hidden;
-      box-shadow:0 16px 48px rgba(0,0,0,0.65);
-      animation:lxl-drop-in .18s ease both;backdrop-filter:blur(16px)}
-    .lxl-dr{display:flex;align-items:center;gap:11px;padding:11px 14px;
-      cursor:pointer;transition:background .12s;border-bottom:1px solid rgba(26,53,85,0.35)}
-    .lxl-dr:last-child{border-bottom:none}
-    .lxl-dr:hover,.lxl-dr.active{background:rgba(0,229,192,0.07)}
-    .lxl-dr.active{background:rgba(0,229,192,0.09)!important}
-    .lxl-dr-icon{width:32px;height:32px;border-radius:8px;display:flex;
-      align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
-    .lxl-dr-name{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
-      color:#f2f7ff;line-height:1.2;margin-bottom:2px}
-    .lxl-dr-sub{font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(130,174,206,0.7)}
-    .lxl-dr-badge{font-family:'JetBrains Mono',monospace;font-size:7px;font-weight:700;
-      padding:2px 7px;border-radius:10px;flex-shrink:0;margin-left:auto;letter-spacing:.04em}
-    .lxl-dr-cat{font-family:'JetBrains Mono',monospace;font-size:7.5px;
-      color:rgba(90,130,168,0.55);letter-spacing:.08em;text-transform:uppercase}
-    .lxl-search-empty{padding:18px 16px;text-align:center;
-      font-family:'JetBrains Mono',monospace;font-size:10px;
-      color:rgba(90,130,168,0.5);letter-spacing:.08em}
-
-    /* ── Quick-launch strip ── */
-    .lxl-ql-scroll{overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-    .lxl-ql-scroll::-webkit-scrollbar{display:none}
-    .lxl-ql-chip{flex-shrink:0;display:flex;align-items:center;gap:8px;
-      padding:9px 14px;border-radius:10px;cursor:pointer;
-      transition:all .17s;user-select:none;white-space:nowrap}
-    .lxl-ql-chip:hover{transform:translateY(-1px);filter:brightness(1.1)}
-    .lxl-ql-chip:active{transform:scale(.96)}
-
-    @media(max-width:580px){
-      .lxl-pills{flex-wrap:wrap!important}
-      .lxl-clock-num{font-size:28px!important}
-      .lxl-search-input{font-size:13px}
-    }
-    @media(prefers-reduced-motion:reduce){
-      *,*::before,*::after{animation:none!important;transition:none!important}
-    }
-  `;
-  document.head.appendChild(s);
-})();
-
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const T = {
-  bg:"#050f1e", panel:"#070d1a", card:"#0b1e36",
-  txt:"#f2f7ff", txt2:"#b8d4f0", txt3:"#82aece", txt4:"#5a82a8",
-  teal:"#00e5c0", gold:"#f5c842", blue:"#3b9eff", purple:"#9b6dff",
-  orange:"#ff9f43", coral:"#ff6b6b", green:"#3dffa0", cyan:"#00d4ff",
+const PROVIDER  = { name: "Dr. Gabriel Skiba, DO", role: "Emergency Medicine", shiftStart: "19:00", shiftEnd: "07:00" };
+const CENSUS    = { total: 28, capacity: 34, waiting: 6, inProgress: 18, pendingDispo: 4, longestWait: "1h 42m" };
+const ESI = [
+  { level: 1, count: 1,  label: "Immediate",  color: "#ef4444" },
+  { level: 2, count: 4,  label: "Emergent",   color: "#f97316" },
+  { level: 3, count: 11, label: "Urgent",     color: "#eab308" },
+  { level: 4, count: 9,  label: "Less Urgent",color: "#22c55e" },
+  { level: 5, count: 3,  label: "Non-Urgent", color: "#60a5fa" },
+];
+const CRITICAL = [
+  { id: "c1", type: "Troponin \u0394", patient: "Bed 4",  note: "T+3h \u2014 result pending" },
+  { id: "c2", type: "CT Head",         patient: "Bed 11", note: "Prelim read outstanding" },
+  { id: "c3", type: "Lactate",         patient: "Bed 2",  note: "Critical 4.2 mmol/L" },
+];
+const HANDOFF = {
+  provider: "Dr. M. Torres, DO",
+  overlapWindow: "19:00 \u2013 19:30",
+  notes: [
+    "Bed 2 \u2014 Sepsis protocol active, 2L in, repeat lactate pending",
+    "Bed 4 \u2014 NSTEMI rule-out, cardiology notified, troponin \u0394 at 2200",
+    "Bed 11 \u2014 New focal neuro deficit, CT ordered, stroke team on standby",
+    "Hallway board full \u2014 4-hr hold advisory in effect",
+  ],
+  forecast: "High volume expected \u2014 14 in waiting room",
 };
-const BRAND = { gold:"#C9A84C", teal:"#0ABFBF" };
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-const DEFAULT_FACILITIES  = ["Spencer","Avera","HCA","Other"];
-const FACILITY_STORAGE_KEY = "lxl_facilities";
-const RECENT_HUBS_KEY      = "lxl_recent_hubs";
-
-const DEPTS   = ["ED","ICU","Urgent Care","Peds ED","Trauma","Other"];
-const LENGTHS = ["8h","10h","12h"];
-const ENCOUNTER_KEYS = ["activeEncounter","currentEncounter","npi_encounter","lastEncounter"];
-
-// ── Hub search index — 65+ hubs + embedded calculators ───────────────────────
-const HUB_INDEX = [
-  // ── Cardiac ──────────────────────────────────────────────────────────────
-  { icon:"💓", name:"Chest Pain Hub",         cat:"Cardiac",      badge:"HEART·EDACS",  color:T.coral,  route:"CardiacRiskPage",    keys:["chest pain","acs","heart score","troponin","edacs","nstemi","stemi","mi"] },
-  { icon:"📈", name:"ECG Hub",                cat:"Cardiac",      badge:"ACC/AHA",      color:T.cyan,   route:"ECGHub",             keys:["ecg","ekg","stemi","afib","atrial fibrillation","wide complex","av block","qtc","sgarbossa","wellens","brugada","lbbb"] },
-  { icon:"💊", name:"Cardiac Risk Page",       cat:"Cardiac",      badge:"HEART·GRACE",  color:T.coral,  route:"CardiacRiskPage",    keys:["grace","timi","heart score","cardiac risk","troponin delta","disposition"] },
-  { icon:"⚡", name:"Resuscitation Hub",       cat:"Cardiac",      badge:"AHA 2020",     color:T.coral,  route:"ResuscitationHub",   keys:["cpr","acls","cardiac arrest","vfib","pulseless","rosc","post-arrest","epinephrine","amiodarone"] },
-  // ── Airway & Pulmonary ────────────────────────────────────────────────────
-  { icon:"🌬️", name:"Airway Hub",             cat:"Airway",       badge:"DAS 2022",     color:T.blue,   route:"AirwayHub",          keys:["airway","rsi","intubation","crash","cric","bvm","sgga","hfnc","bipap","cpap","ards","difficult airway","das","cico"] },
-  { icon:"🫁", name:"Ventilator Hub",          cat:"Pulmonary",    badge:"ARDSNet",      color:T.blue,   route:"AirwayHub",          keys:["vent","ventilator","tidal volume","peep","ardsnet","plateau pressure","fio2","driving pressure"] },
-  // ── Critical Care & Sepsis ────────────────────────────────────────────────
-  { icon:"🦠", name:"Sepsis Hub",             cat:"Critical Care", badge:"SSC 2021",    color:T.orange, route:"SepsisHub",          keys:["sepsis","septic shock","hour-1","bundle","antibiotics","norepinephrine","vasopressor","sofa","qsofa","lactate","cultures","sep-1"] },
-  { icon:"💉", name:"Shock Hub",              cat:"Critical Care", badge:"UNIFIED",     color:T.orange, route:"ShockHub",           keys:["shock","hypotension","vasopressor","fluid resuscitation","distributive","obstructive","cardiogenic","hypovolemic","map","levophed"] },
-  // ── Neurology ─────────────────────────────────────────────────────────────
-  { icon:"🧠", name:"Stroke Hub",             cat:"Neurology",    badge:"AHA 2019",     color:T.purple, route:"StrokeHub",          keys:["stroke","tpa","alteplase","tnk","nihss","lvo","thrombectomy","door-to-needle","wake-up stroke","tia","dti"] },
-  { icon:"⚡", name:"Seizure Hub",            cat:"Neurology",    badge:"AES 2022",     color:T.purple, route:"SeizureHub",         keys:["seizure","status epilepticus","lorazepam","levetiracetam","phenytoin","keppra","benzodiazepine","eclampsia"] },
-  // ── Trauma ────────────────────────────────────────────────────────────────
-  { icon:"🚑", name:"Trauma Hub",             cat:"Trauma",       badge:"ATLS 10e",     color:T.orange, route:"TraumaHub",          keys:["trauma","atls","massive transfusion","mtp","txa","tranexamic acid","abcde","primary survey","hemorrhage","penetrating"] },
-  { icon:"🦴", name:"Ortho Hub",              cat:"Trauma",       badge:"ORTHO",        color:T.gold,   route:"OrthoHub",           keys:["fracture","splint","dislocation","reduction","nerve block","hematoma block","ortho","compartment","ottawa","nexus"] },
-  // ── Toxicology ────────────────────────────────────────────────────────────
-  { icon:"☠️", name:"Toxicology Hub",         cat:"Toxicology",   badge:"ACMT 2024",    color:T.green,  route:"ToxicologyHub",      keys:["tox","overdose","antidote","nac","acetaminophen","tylenol","fomepizole","naloxone","narcan","digoxin","buprenorphine","xylazine","tranq","co","carbon monoxide"] },
-  { icon:"💊", name:"Dose Calculator",         cat:"Toxicology",   badge:"WEIGHT",       color:T.green,  route:"ToxicologyHub",      keys:["dose calc","weight based","pediatric dose","mg/kg","drip rate","infusion"] },
-  // ── Documentation & Orders ────────────────────────────────────────────────
-  { icon:"📋", name:"New Patient Input",       cat:"Documentation", badge:"NPI",         color:T.teal,   route:"NewPatientInput",    keys:["npi","new patient","hpi","encounter","chief complaint","vitals","smartfill","mdm","documentation"] },
-  { icon:"🤖", name:"AI MDM Builder",          cat:"Documentation", badge:"CMS 2024",    color:T.purple, route:"NewPatientInput",    keys:["mdm","medical decision making","cms","e&m","billing","cpt","complexity","data reviewed","risk","attestation","split shared"] },
-  { icon:"📝", name:"Order Generator Hub",     cat:"Documentation", badge:"CPOE",        color:T.blue,   route:"OrderGeneratorHub",  keys:["orders","cpoe","order set","bundle","medications","labs","imaging","admit orders","discharge"] },
-  { icon:"🏥", name:"Clinical Note Studio",    cat:"Documentation", badge:"APSO",        color:T.teal,   route:"NewPatientInput",    keys:["note","soap","apso","discharge","instructions","sbar","handoff","pdqi","quality score"] },
-  // ── Imaging & Diagnostics ─────────────────────────────────────────────────
-  { icon:"🖼️", name:"Imaging Interpreter",    cat:"Diagnostics",  badge:"AI·VISION",    color:T.cyan,   route:"ImagingInterpreter", keys:["imaging","radiology","ct","xray","mri","ultrasound","pe","pulmonary embolism","wells","pesi","pioped","critical findings"] },
-  { icon:"🫀", name:"POCUS Hub",              cat:"Diagnostics",  badge:"ACEP",         color:T.cyan,   route:"POCUSHub",           keys:["pocus","point of care","ultrasound","fast","efast","rush","cardiac","lung","effusion","pneumothorax","aorta","ivc"] },
-  { icon:"🔬", name:"Lab Interpreter",         cat:"Diagnostics",  badge:"AI·PASTE",     color:T.green,  route:"LabInterpreter",     keys:["labs","bmp","cmp","cbc","lft","lactic","anion gap","critical values","abnormal","troponin","bnp","d-dimer"] },
-  // ── Electrolytes & Metabolic ──────────────────────────────────────────────
-  { icon:"⚗️", name:"Electrolyte Hub",         cat:"Metabolic",    badge:"ACID-BASE",    color:T.teal,   route:"ElectrolyteHub",     keys:["electrolytes","sodium","potassium","calcium","magnesium","hyponatremia","hyperkalemia","acidosis","alkalosis","anion gap","bicarb","ph","vbg"] },
-  // ── Specialty ─────────────────────────────────────────────────────────────
-  { icon:"🧪", name:"Triage Hub",             cat:"Nursing",      badge:"ESI",          color:T.gold,   route:"TriageHub",          keys:["triage","esi","acuity","chief complaint","arrival","ems","priority"] },
-  { icon:"🧬", name:"Derm Hub",               cat:"Dermatology",  badge:"LRINEC",       color:T.orange, route:"DermatologyHub",     keys:["derm","skin","rash","necrotizing fasciitis","cellulitis","lrinec","sts","sjs","ten","bsa","erythema","abscess"] },
-  { icon:"🩺", name:"Rapid Assessment Hub",   cat:"Workflow",     badge:"RAPID",        color:T.teal,   route:"RapidAssessmentHub", keys:["rapid","quick look","assessment","vitals","chief complaint","sick","not sick"] },
-  { icon:"🧠", name:"Psych Hub",              cat:"Psychiatry",   badge:"UNIFIED",      color:T.purple, route:"PsychHub",           keys:["psych","psychiatric","suicidal","agitation","phq","columbia","haldol","ketamine","restraint","hold","baker act"] },
-  { icon:"💊", name:"ERx Hub",               cat:"Pharmacology", badge:"UNIFIED",      color:T.green,  route:"ERxHub",             keys:["prescription","medications","discharge rx","opioid","controlled","drug interactions","pharmacy","dispense"] },
-  { icon:"📊", name:"Autocoder Hub",          cat:"Billing",      badge:"ICD-10",       color:T.gold,   route:"AutocoderHub",       keys:["icd","billing","coding","diagnosis code","cpt","autocoder","revenue","charge capture"] },
-  { icon:"🌐", name:"Lakonyx Anamnesis",       cat:"FHIR",         badge:"TEFCA",        color:T.cyan,   route:"AnamnesisPage",      keys:["fhir","carequality","commonwell","tefca","patient history","records","outside records","hie","interoperability"] },
-  // ── Calculators (standalone) ──────────────────────────────────────────────
-  { icon:"🧮", name:"HEART Score",            cat:"Calculator",   badge:"CARDIAC",      color:T.coral,  route:"CardiacRiskPage",    keys:["heart score","chest pain","low risk","acs","ecg changes","troponin","risk stratification"] },
-  { icon:"🧮", name:"NIHSS Calculator",        cat:"Calculator",   badge:"STROKE",       color:T.purple, route:"StrokeHub",          keys:["nihss","stroke scale","neuro exam","consciousness","gaze","facial palsy","motor","sensory","language","neglect"] },
-  { icon:"🧮", name:"qSOFA / SOFA Score",      cat:"Calculator",   badge:"SEPSIS",       color:T.orange, route:"SepsisHub",          keys:["qsofa","sofa","sepsis","organ dysfunction","altered","tachypnea","hypotension"] },
-  { icon:"🧮", name:"Wells PE Score",          cat:"Calculator",   badge:"PE",           color:T.cyan,   route:"ImagingInterpreter", keys:["wells","pe","pulmonary embolism","dvt","pretest","ctpa","probability"] },
-  { icon:"🧮", name:"Ottawa Rules",            cat:"Calculator",   badge:"TRAUMA",       color:T.gold,   route:"OrthoHub",           keys:["ottawa","ankle","knee","foot","xray","fracture","rules","clinical decision"] },
-  { icon:"🧮", name:"CHA₂DS₂-VASc",           cat:"Calculator",   badge:"AFib",         color:T.cyan,   route:"ECGHub",             keys:["cha2ds2","chads","afib","anticoagulation","stroke risk","atrial fibrillation","warfarin","apixaban","score"] },
-  { icon:"🧮", name:"GCS Score",              cat:"Calculator",   badge:"NEURO",        color:T.purple, route:"TraumaHub",           keys:["gcs","glasgow coma","altered","trauma","neuro","eye opening","verbal","motor"] },
-  // ── Workflow shortcuts ────────────────────────────────────────────────────
-  { icon:"🏥", name:"New Patient Input",       cat:"Workflow",     badge:"NPI",          color:T.teal,   route:"NewPatientInput",     keys:["new patient","encounter","npi","start","admit","chief complaint","hpi","vitals"] },
-  { icon:"📝", name:"Quick Note",              cat:"Workflow",     badge:"APSO",         color:T.purple, route:"ClinicalNoteStudio",  keys:["quick note","note","soap","apso","documentation","sign","chart","clinical note studio"] },
-  { icon:"📦", name:"Orders",                  cat:"Workflow",     badge:"CPOE",         color:T.blue,   route:"OrderGeneratorHub",   keys:["orders","order set","cpoe","medications","labs","imaging","admit orders","bundle"] },
-  { icon:"⊞",  name:"Hub Page",               cat:"Workflow",     badge:"HOME",         color:T.gold,   route:"LakonyxHome",         keys:["hub","home","menu","hubs","all hubs","command","navigate","dashboard"] },
-  { icon:"⚡", name:"Command Center",          cat:"Workflow",     badge:"SHIFT",        color:T.teal,   route:"CommandCenter",       keys:["command center","shift","active","dashboard","patients","tracking","trackboard"] },
+const DELTA = [
+  { id: "d1", type: "critical", text: "New critical K\u207a 6.1 \u2014 Bed 7" },
+  { id: "d2", type: "info",     text: "3 new arrivals while away" },
+  { id: "d3", type: "success",  text: "Bed 12 admitted \u2014 room open" },
 ];
+const HUBS = ["NewPatientInput", "ECGHub", "StrokeHub", "ToxicologyHub", "TrackBoardView"];
 
-// Default quick-launch — workflow-first, shown before any recents exist
-const DEFAULT_QL = ["NewPatientInput","ClinicalNoteStudio","OrderGeneratorHub","LakonyxHome","CommandCenter"];
+const store = {
+  async get(k, s = false) { try { return await window.storage.get(k, s); } catch { return null; } },
+  async set(k, v, s = false) { try { return await window.storage.set(k, v, s); } catch { return null; } },
+};
 
-// Investor documents
-const INV_DOCS = [
-  { icon:"📊", label:"Platform Overview",      sub:"Full investor pitch · in-app",  color:T.teal,   route:"LakonyxInvestorPitch", live:true  },
-  { icon:"📈", label:"Investor Pitch Deck",     sub:"10-slide PPTX · download",      color:T.gold,   route:null,                   live:false },
-  { icon:"📄", label:"Executive One-Pager",     sub:"Problem · Solution · Team",     color:T.purple, route:null,                   live:false },
-  { icon:"💰", label:"Financial Model",         sub:"5-yr P&L + valuation · XLSX",   color:T.orange, route:null,                   live:false },
-  { icon:"🔒", label:"HIPAA Risk Analysis",     sub:"Risk matrix + remediation",     color:T.coral,  route:null,                   live:false },
-  { icon:"⚖️", label:"BAA Vendor Checklist",    sub:"Base44 · Anthropic · FHIR",    color:T.blue,   route:null,                   live:false },
-  { icon:"🗺️", label:"Vercel Migration Guide",  sub:"Next.js roadmap · PDF",         color:T.green,  route:null,                   live:false },
-];
+const css = `
+@import url('${FONTS}');
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#070d1a;overflow:hidden;}
+.sb{
+  height:100dvh;overflow:hidden;
+  background:radial-gradient(ellipse 80% 55% at 50% -5%,#0d2040 0%,#070d1a 68%);
+  font-family:'DM Sans',sans-serif;color:#e2e8f0;
+  display:flex;flex-direction:column;position:relative;
+}
+.bg-grid{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(13,148,136,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(13,148,136,.035) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+.hdr{
+  flex-shrink:0;
+  padding:.9rem 2rem .5rem;
+  display:flex;justify-content:space-between;align-items:center;
+  position:relative;z-index:2;
+}
+.brand{font-family:'Playfair Display',serif;font-size:.88rem;letter-spacing:.14em;color:rgba(13,200,170,.55);text-transform:uppercase;}
+.clock{font-family:'JetBrains Mono',monospace;font-size:.88rem;color:rgba(226,232,240,.38);}
+.body{
+  flex:1;min-height:0;
+  display:grid;grid-template-columns:1fr 1.18fr 1fr;
+  gap:.85rem;padding:.35rem 1.75rem .5rem;
+  position:relative;z-index:2;
+  overflow:hidden;
+}
+.col{
+  display:flex;flex-direction:column;
+  min-height:0;overflow:hidden;
+  background:rgba(13,25,50,.56);
+  border:0.5px solid rgba(13,200,170,.14);
+  border-radius:11px;backdrop-filter:blur(12px);
+  padding:.85rem 1.1rem;gap:.7rem;
+}
+.col-mid{
+  display:flex;flex-direction:column;
+  min-height:0;overflow:hidden;
+  background:rgba(13,30,60,.66);
+  border:0.5px solid rgba(13,200,170,.26);
+  border-radius:12px;backdrop-filter:blur(14px);
+  padding:.9rem 1.2rem;gap:.65rem;
+  box-shadow:0 0 36px rgba(13,148,136,.07);
+}
+.sec{display:flex;flex-direction:column;gap:.28rem;flex-shrink:0;}
+.sec-inline{display:flex;align-items:center;gap:.5rem;margin-bottom:.1rem;}
+.sec-label{
+  font-size:.58rem;letter-spacing:.18em;color:rgba(13,200,170,.48);
+  text-transform:uppercase;font-weight:500;white-space:nowrap;
+}
+.div{border:none;border-top:0.5px solid rgba(13,200,170,.09);flex-shrink:0;}
 
-// ── Search helpers ────────────────────────────────────────────────────────────
-function searchHubs(query) {
-  const q = query.toLowerCase().trim();
-  if (!q) return [];
-  return HUB_INDEX.filter(h =>
-    h.name.toLowerCase().includes(q) ||
-    h.cat.toLowerCase().includes(q) ||
-    h.badge.toLowerCase().includes(q) ||
-    h.keys.some(k => k.includes(q))
-  ).slice(0, 7);
+.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.cg-cell{
+  background:rgba(13,200,170,.05);border:0.5px solid rgba(13,200,170,.1);
+  border-radius:7px;padding:.42rem .35rem .38rem;text-align:center;
+}
+.cg-num{font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:500;line-height:1;}
+.cg-lbl{font-size:.58rem;color:rgba(226,232,240,.38);margin-top:3px;line-height:1;}
+.teal{color:#0dc8aa;}.warn{color:#f97316;}
+
+.esi-wrap{position:relative;}
+.esi-bar{display:flex;gap:3px;height:10px;border-radius:5px;overflow:visible;}
+.esi-seg{border-radius:4px;cursor:pointer;position:relative;transition:filter .15s;flex-shrink:0;}
+.esi-seg:hover{filter:brightness(1.3);}
+.esi-tip{
+  display:none;position:absolute;bottom:calc(100% + 6px);left:50%;
+  transform:translateX(-50%);
+  background:rgba(10,20,40,.95);border:0.5px solid rgba(13,200,170,.25);
+  border-radius:6px;padding:4px 8px;white-space:nowrap;z-index:10;
+  font-size:.65rem;color:#e2e8f0;pointer-events:none;
+}
+.esi-seg:hover .esi-tip{display:block;}
+.esi-counts{display:flex;gap:3px;margin-top:4px;}
+.esi-count{flex-shrink:0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:rgba(226,232,240,.38);}
+
+.crit-item{
+  display:flex;align-items:center;gap:.55rem;
+  padding:.3rem .4rem;border-radius:7px;cursor:pointer;transition:all .15s;
+}
+.crit-item.pending{background:rgba(239,68,68,.07);border:0.5px solid rgba(239,68,68,.2);}
+.crit-item.acked{background:rgba(13,200,170,.05);border:0.5px solid rgba(13,200,170,.15);opacity:.65;}
+.crit-chk{
+  width:16px;height:16px;border-radius:3px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.62rem;font-weight:600;transition:all .15s;
+}
+.crit-item.pending .crit-chk{background:rgba(239,68,68,.12);border:0.5px solid rgba(239,68,68,.3);color:transparent;}
+.crit-item.acked .crit-chk{background:rgba(13,200,170,.18);border:0.5px solid rgba(13,200,170,.35);color:#0dc8aa;}
+.crit-body{flex:1;min-width:0;}
+.crit-top{display:flex;align-items:baseline;gap:.35rem;}
+.crit-type{font-family:'JetBrains Mono',monospace;font-size:.67rem;font-weight:500;}
+.crit-item.pending .crit-type{color:#fca5a5;}
+.crit-item.acked .crit-type{color:rgba(13,200,170,.6);}
+.crit-sep{font-size:.6rem;color:rgba(226,232,240,.2);}
+.crit-patient{font-size:.67rem;color:rgba(226,232,240,.5);}
+.crit-note{font-size:.63rem;color:rgba(226,232,240,.32);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.crit-gate{
+  font-size:.64rem;color:rgba(239,68,68,.5);text-align:center;
+  padding:.28rem .5rem;background:rgba(239,68,68,.04);
+  border:0.5px solid rgba(239,68,68,.1);border-radius:6px;flex-shrink:0;
+}
+.crit-gate.ok{color:rgba(13,200,170,.5);background:rgba(13,200,170,.04);border-color:rgba(13,200,170,.1);}
+.pulse-ring{animation:pring 1.9s ease-in-out infinite;}
+@keyframes pring{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.28);}55%{box-shadow:0 0 0 4px rgba(239,68,68,0);}}
+
+.h-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:#e2e8f0;line-height:1.2;}
+.h-sub{font-size:.68rem;color:rgba(13,200,170,.55);}
+.hn{display:flex;gap:.45rem;align-items:flex-start;}
+.hn-dot{width:4px;height:4px;border-radius:50%;background:rgba(13,200,170,.45);margin-top:5px;flex-shrink:0;}
+.hn-txt{font-size:.75rem;color:rgba(226,232,240,.68);line-height:1.45;}
+.forecast{
+  display:flex;align-items:center;gap:.45rem;
+  background:rgba(249,115,22,.07);border:0.5px solid rgba(249,115,22,.18);
+  border-radius:7px;padding:.35rem .65rem;flex-shrink:0;
+}
+.forecast-dot{width:5px;height:5px;border-radius:50%;background:#f97316;flex-shrink:0;}
+.forecast-txt{font-size:.69rem;color:rgba(249,115,22,.8);}
+.ack-badge{
+  background:rgba(13,200,170,.07);border:0.5px solid rgba(13,200,170,.18);
+  border-radius:6px;padding:.25rem .6rem;
+  font-size:.63rem;color:rgba(13,200,170,.6);text-align:center;flex-shrink:0;
+}
+.begin-btn{
+  flex-shrink:0;width:100%;
+  background:rgba(13,200,170,.12);border:0.5px solid rgba(13,200,170,.35);
+  border-radius:8px;color:#0dc8aa;font-size:.75rem;
+  font-family:'DM Sans',sans-serif;font-weight:500;letter-spacing:.08em;
+  padding:.55rem 1.2rem;cursor:pointer;text-transform:uppercase;transition:all .18s;
+}
+.begin-btn:hover:not(:disabled){background:rgba(13,200,170,.2);}
+.begin-btn:disabled{opacity:.28;cursor:not-allowed;}
+
+.p-name{font-family:'Playfair Display',serif;font-size:.98rem;color:#e2e8f0;}
+.p-role{font-size:.63rem;color:rgba(13,200,170,.48);text-transform:uppercase;letter-spacing:.09em;}
+.sblock{
+  background:rgba(13,200,170,.06);border:0.5px solid rgba(13,200,170,.15);
+  border-radius:8px;padding:.5rem .75rem;
+}
+.sblock-lbl{font-size:.58rem;color:rgba(13,200,170,.45);letter-spacing:.1em;text-transform:uppercase;}
+.sblock-val{font-family:'JetBrains Mono',monospace;font-size:.88rem;color:#e2e8f0;font-weight:500;margin-top:2px;}
+.hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.hub-pill{
+  background:rgba(13,200,170,.05);border:0.5px solid rgba(13,200,170,.11);
+  border-radius:6px;padding:.32rem .5rem;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;font-size:.61rem;
+  color:rgba(226,232,240,.5);transition:all .14s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;
+}
+.hub-pill:hover{background:rgba(13,200,170,.1);color:#0dc8aa;border-color:rgba(13,200,170,.25);}
+.tog-row{display:flex;justify-content:space-between;align-items:center;}
+.tog-lbl{font-size:.7rem;color:rgba(226,232,240,.45);}
+.tog{width:32px;height:17px;border-radius:9px;border:none;cursor:pointer;position:relative;padding:0;transition:background .18s;}
+.tog.on{background:rgba(13,200,170,.45);}.tog.off{background:rgba(226,232,240,.12);}
+.tog-knob{position:absolute;top:2px;width:13px;height:13px;border-radius:50%;background:#e2e8f0;transition:left .18s;}
+.tog.on .tog-knob{left:17px;}.tog.off .tog-knob{left:2px;}
+.tog-hint{font-size:.6rem;color:rgba(226,232,240,.2);margin-top:3px;}
+
+.ftr{flex-shrink:0;padding:0 1.75rem .75rem;position:relative;z-index:2;}
+.prog-track{height:1.5px;background:rgba(13,200,170,.09);border-radius:2px;overflow:hidden;margin-bottom:.6rem;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#0dc8aa,#7dd3fc);border-radius:2px;transition:width .5s linear;}
+.cta{text-align:center;font-size:.65rem;color:rgba(226,232,240,.2);letter-spacing:.11em;text-transform:uppercase;}
+kbd{
+  background:rgba(13,200,170,.09);border:0.5px solid rgba(13,200,170,.22);
+  border-radius:3px;padding:1px 5px;font-family:'JetBrains Mono',monospace;
+  font-size:.62rem;color:rgba(13,200,170,.6);
 }
 
-// ── Ambient background ────────────────────────────────────────────────────────
-function BgMesh() {
-  return (
-    <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
-      {[
-        {sz:680,s:{top:"-120px",left:"-80px"},  c:"rgba(0,229,192,0.032)", a:"lxl-f1 22s ease-in-out infinite"},
-        {sz:520,s:{top:"38%",right:"-120px"},   c:"rgba(59,158,255,0.024)",a:"lxl-f2 27s ease-in-out infinite"},
-        {sz:420,s:{bottom:"-60px",left:"38%"},  c:"rgba(155,109,255,0.022)",a:"lxl-f3 31s ease-in-out infinite"},
-      ].map((b,i) => (
-        <div key={i} style={{position:"absolute",width:b.sz,height:b.sz,borderRadius:"50%",...b.s,
-          background:`radial-gradient(circle,${b.c} 0%,transparent 70%)`,animation:b.a}}/>
-      ))}
-      <div style={{position:"absolute",inset:0,opacity:.012,
-        backgroundImage:"linear-gradient(rgba(0,229,192,1) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,192,1) 1px,transparent 1px)",
-        backgroundSize:"52px 52px"}}/>
-    </div>
-  );
+.fade-in{animation:fup .5s ease both;}
+@keyframes fup{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.s1{animation-delay:.07s;}.s2{animation-delay:.16s;}.s3{animation-delay:.25s;}.s4{animation-delay:.34s;}
+.flash-out{animation:fout .42s ease forwards;}
+@keyframes fout{0%{opacity:1;filter:brightness(1);}55%{opacity:1;filter:brightness(5);}100%{opacity:0;}}
+
+.full-center{height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;background:#070d1a;font-family:'DM Sans',sans-serif;}
+.ldot{width:8px;height:8px;border-radius:50%;background:#0dc8aa;animation:ldot 1.1s ease-in-out infinite;}
+@keyframes ldot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.6);}}
+.full-title{font-family:'Playfair Display',serif;color:#0dc8aa;}
+.full-sub{font-size:.8rem;color:rgba(226,232,240,.32);}
+.re-card{
+  width:100%;max-width:520px;background:rgba(13,30,60,.72);
+  border:0.5px solid rgba(13,200,170,.24);border-radius:14px;
+  backdrop-filter:blur(14px);padding:1.6rem 1.8rem;
+}
+.re-title{font-family:'Playfair Display',serif;font-size:1.25rem;color:#e2e8f0;margin-bottom:.18rem;}
+.re-sub{font-size:.71rem;color:rgba(13,200,170,.5);margin-bottom:1rem;}
+.delta-item{display:flex;align-items:flex-start;gap:.55rem;padding:.45rem .6rem;border-radius:7px;margin-bottom:.42rem;}
+.delta-item.critical{background:rgba(239,68,68,.06);border:0.5px solid rgba(239,68,68,.16);}
+.delta-item.info{background:rgba(13,200,170,.05);border:0.5px solid rgba(13,200,170,.12);}
+.delta-item.success{background:rgba(34,197,94,.05);border:0.5px solid rgba(34,197,94,.12);}
+.delta-icon{font-size:.72rem;margin-top:1px;flex-shrink:0;}
+.delta-item.critical .delta-icon{color:#fca5a5;}
+.delta-item.info .delta-icon{color:rgba(13,200,170,.65);}
+.delta-item.success .delta-icon{color:rgba(34,197,94,.65);}
+.delta-txt{font-size:.76rem;color:rgba(226,232,240,.65);line-height:1.4;}
+.resume-btn{
+  width:100%;background:rgba(13,200,170,.11);border:0.5px solid rgba(13,200,170,.32);
+  border-radius:8px;color:#0dc8aa;font-size:.76rem;font-family:'DM Sans',sans-serif;
+  font-weight:500;letter-spacing:.08em;padding:.58rem 1.2rem;cursor:pointer;
+  text-transform:uppercase;transition:all .18s;margin-top:.9rem;
+}
+.resume-btn:hover{background:rgba(13,200,170,.2);}
+
+@media(max-width:860px){
+  .body{grid-template-columns:1fr;overflow-y:auto;}
+  .hdr,.body,.ftr{padding-left:1rem;padding-right:1rem;}
+}
+`;
+
+function Clock() {
+  const [t, setT] = useState(new Date());
+  useEffect(() => { const id = setInterval(() => setT(new Date()), 1000); return () => clearInterval(id); }, []);
+  const p = n => n.toString().padStart(2, "0");
+  return <span>{t.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} &nbsp; {p(t.getHours())}:{p(t.getMinutes())}:{p(t.getSeconds())}</span>;
 }
 
-// ── LX Monogram ───────────────────────────────────────────────────────────────
-function LXMark({size=96}) {
-  return (
-    <div style={{width:size,height:size,borderRadius:Math.round(size*.2),background:"#0A1628",
-      border:"1px solid rgba(201,168,76,0.4)",display:"flex",alignItems:"center",
-      justifyContent:"center",position:"relative",animation:"lxl-ring 3.4s ease-out infinite",
-      flexShrink:0,boxShadow:"0 0 0 1px rgba(11,191,191,0.1),0 14px 52px rgba(0,0,0,0.7)"}}>
-      <div style={{position:"absolute",inset:0,borderRadius:"inherit",
-        background:"radial-gradient(circle at 38% 40%,rgba(201,168,76,0.09) 0%,transparent 65%)",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",inset:0,borderRadius:"inherit",overflow:"hidden",pointerEvents:"none"}}>
-        <div style={{position:"absolute",left:0,right:0,height:"30%",
-          background:"linear-gradient(180deg,transparent 0%,rgba(0,229,192,0.04) 50%,transparent 100%)",
-          animation:"lxl-scan 4s linear infinite"}}/>
-      </div>
-      <svg viewBox="0 0 500 500" width={Math.round(size*.74)} height={Math.round(size*.74)}
-        xmlns="http://www.w3.org/2000/svg" style={{position:"relative",zIndex:1}}>
-        <text x="106" y="305" fontFamily="'Playfair Display',Georgia,serif" fontSize="280" fontWeight="700" fill={BRAND.gold}>L</text>
-        <text x="193" y="305" fontFamily="'Playfair Display',Georgia,serif" fontSize="280" fontWeight="700" fill={BRAND.teal}>X</text>
-      </svg>
-      <div className="lxl-dot" style={{position:"absolute",top:9,right:9,width:7,height:7,
-        borderRadius:"50%",background:BRAND.teal,boxShadow:`0 0 7px ${BRAND.teal}`}}/>
-    </div>
-  );
-}
-
-// ── Live Clock ────────────────────────────────────────────────────────────────
-function LiveClock() {
-  const [t, setT] = useState({ h:"--", m:"--", s:"--", date:"" });
+function ShiftRemaining() {
+  const [h, setH] = useState(11);
+  const [m, setM] = useState(57);
   useEffect(() => {
-    const tick = () => {
-      const n = new Date();
-      const pad = v => String(v).padStart(2,"0");
-      setT({ h:pad(n.getHours()), m:pad(n.getMinutes()), s:pad(n.getSeconds()),
-        date:n.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}) });
-    };
-    tick();
-    const id = setInterval(tick, 1000);
+    const id = setInterval(() => setM(v => { if (v === 0) { setH(x => Math.max(0, x - 1)); return 59; } return v - 1; }), 60000);
     return () => clearInterval(id);
-  },[]);
-  return (
-    <div style={{padding:"14px 24px",borderRadius:12,
-      background:"rgba(7,13,26,0.75)",border:"1px solid rgba(26,53,85,0.6)",
-      backdropFilter:"blur(10px)",textAlign:"center"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:3,marginBottom:4}}>
-        {[t.h, t.m].map((seg,i) => (
-          <span key={i} style={{display:"flex",alignItems:"center",gap:3}}>
-            <span className="lxl-clock-num" style={{fontFamily:"'JetBrains Mono',monospace",
-              fontSize:34,fontWeight:700,color:T.txt,letterSpacing:".04em",lineHeight:1}}>{seg}</span>
-            {i===0 && <span className="lxl-blink" style={{fontFamily:"'JetBrains Mono',monospace",
-              fontSize:28,fontWeight:700,color:T.teal,lineHeight:1,margin:"0 1px"}}>:</span>}
-          </span>
-        ))}
-        <span className="lxl-blink" style={{fontFamily:"'JetBrains Mono',monospace",
-          fontSize:28,fontWeight:700,color:T.teal,lineHeight:1,margin:"0 1px"}}>:</span>
-        <span className="lxl-clock-num" style={{fontFamily:"'JetBrains Mono',monospace",
-          fontSize:34,fontWeight:700,color:T.txt4,letterSpacing:".04em",lineHeight:1}}>{t.s}</span>
-      </div>
-      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8.5,color:T.txt4,letterSpacing:".13em"}}>{t.date}</div>
-    </div>
-  );
-}
-
-// ── Global Search Bar ─────────────────────────────────────────────────────────
-function GlobalSearch({ inputRef, onNavigate }) {
-  const [query,   setQuery]   = useState("");
-  const [results, setResults] = useState([]);
-  const [cursor,  setCursor]  = useState(-1);
-  const [focused, setFocused] = useState(false);
-  const dropRef = useRef(null);
-
-  useEffect(() => {
-    const r = searchHubs(query);
-    setResults(r);
-    setCursor(-1);
-  }, [query]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const h = e => {
-      if (dropRef.current && !dropRef.current.contains(e.target) &&
-          inputRef.current && !inputRef.current.contains(e.target)) {
-        setFocused(false);
-      }
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
   }, []);
-
-  const open = focused && (results.length > 0 || query.length > 0);
-
-  const handleKey = e => {
-    if (!open) return;
-    if (e.key === "ArrowDown") { e.preventDefault(); setCursor(c => Math.min(c+1, results.length-1)); }
-    if (e.key === "ArrowUp")   { e.preventDefault(); setCursor(c => Math.max(c-1, -1)); }
-    if (e.key === "Enter" && cursor >= 0 && results[cursor]) {
-      e.stopPropagation();
-      onNavigate(results[cursor].route, results[cursor]);
-    }
-    if (e.key === "Escape") { setFocused(false); setQuery(""); }
-  };
-
-  const pick = (hub) => {
-    onNavigate(hub.route, hub);
-    setQuery("");
-    setFocused(false);
-  };
-
-  return (
-    <div className="lxl-search-wrap" ref={dropRef}>
-      <span className="lxl-search-icon">🔍</span>
-      <input
-        ref={inputRef}
-        className="lxl-search-input"
-        type="text"
-        autoComplete="off"
-        spellCheck={false}
-        placeholder="Search hubs, calculators, protocols..."
-        value={query}
-        onChange={e => setQuery(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onKeyDown={handleKey}
-      />
-      {!focused && !query && (
-        <span className="lxl-search-kbd">/ to search</span>
-      )}
-
-      {/* ── Dropdown ── */}
-      {open && (
-        <div className="lxl-dropdown">
-          {results.length === 0 && (
-            <div className="lxl-search-empty">No hubs matched "{query}"</div>
-          )}
-          {results.map((h, i) => (
-            <div key={h.route + h.name} className={`lxl-dr${cursor===i?" active":""}`}
-              onMouseEnter={() => setCursor(i)}
-              onMouseDown={e => { e.preventDefault(); pick(h); }}>
-              <div className="lxl-dr-icon"
-                style={{background:h.color+"18", border:`1px solid ${h.color}28`}}>
-                {h.icon}
-              </div>
-              <div style={{flex:1,minWidth:0}}>
-                <div className="lxl-dr-name">{h.name}</div>
-                <div className="lxl-dr-cat">{h.cat}</div>
-              </div>
-              <span className="lxl-dr-badge"
-                style={{background:h.color+"18",border:`1px solid ${h.color}28`,color:h.color}}>
-                {h.badge}
-              </span>
-            </div>
-          ))}
-          {results.length > 0 && (
-            <div style={{padding:"6px 14px",display:"flex",gap:12,
-              borderTop:"1px solid rgba(26,53,85,0.4)"}}>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,color:T.txt4}}>↑↓ navigate</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,color:T.txt4}}>↵ open hub</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,color:T.txt4}}>Esc close</span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  return <span>{h}h {m.toString().padStart(2, "0")}m</span>;
 }
 
-// ── Quick-Launch Strip ────────────────────────────────────────────────────────
-function QuickLaunch({ recentRoutes, onNavigate }) {
-  const routes = recentRoutes.length > 0 ? recentRoutes : DEFAULT_QL;
-  const hubs   = routes.map(r => HUB_INDEX.find(h => h.route === r)).filter(Boolean).slice(0,5);
-  if (hubs.length === 0) return null;
+function CensusGrid() {
+  const occ = Math.round((CENSUS.total / CENSUS.capacity) * 100);
+  const cells = [
+    { num: `${CENSUS.total}/${CENSUS.capacity}`, lbl: "Census",       cls: "teal" },
+    { num: `${occ}%`,                             lbl: "Occupancy",    cls: occ > 85 ? "warn" : "" },
+    { num: CENSUS.waiting,                         lbl: "Waiting",      cls: "warn" },
+    { num: CENSUS.inProgress,                      lbl: "In progress",  cls: "" },
+    { num: CENSUS.pendingDispo,                    lbl: "Pend dispo",   cls: "" },
+    { num: CENSUS.longestWait,                     lbl: "Longest wait", cls: "warn" },
+  ];
   return (
-    <div style={{width:"100%"}}>
-      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,color:T.txt4,
-        letterSpacing:".14em",textTransform:"uppercase",marginBottom:9,textAlign:"left"}}>
-        {recentRoutes.length > 0 ? "Recent" : "Quick access"}
-      </div>
-      <div className="lxl-ql-scroll" style={{display:"flex",gap:7}}>
-        {hubs.map(h => (
-          <div key={h.route} className="lxl-ql-chip"
-            onClick={() => onNavigate(h.route, h)}
-            style={{background:`${h.color}10`,border:`1px solid ${h.color}28`}}>
-            <span style={{fontSize:16}}>{h.icon}</span>
-            <div>
-              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,
-                color:T.txt2,lineHeight:1.2}}>{h.name.replace(" Hub","").replace(" Page","")}</div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:h.color,marginTop:1}}>{h.badge}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Pill Row ──────────────────────────────────────────────────────────────────
-function PillRow({options, value, onChange, activeColor, activeTextColor="#050f1e", small=false}) {
-  return (
-    <div className="lxl-pills" style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
-      {options.map(opt => {
-        const on = opt === value;
-        return (
-          <div key={opt} className="lxl-pill" onClick={() => onChange(opt)}
-            style={{padding:small?"10px 16px":"10px 18px",borderRadius:8,minHeight:48,
-              display:"flex",alignItems:"center",
-              fontFamily:"'DM Sans',sans-serif",fontSize:small?11:12,fontWeight:on?700:500,
-              color:on?activeTextColor:T.txt3,
-              background:on?`linear-gradient(135deg,${activeColor},${activeColor}cc)`:"rgba(11,30,54,0.7)",
-              border:`1px solid ${on?"transparent":"rgba(42,79,122,0.45)"}`,
-              boxShadow:on?`0 2px 14px ${activeColor}40`:"none"}}>
-            {opt}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Resume Encounter Chip ─────────────────────────────────────────────────────
-function ResumeChip({encounter, onResume}) {
-  const age   = encounter.age || "—";
-  const sex   = encounter.sex || "";
-  const cc    = encounter.chiefComplaint || encounter.cc || "Active encounter";
-  const dept  = encounter.dept || "";
-  const label = [age && sex ? `${age}${sex}` : age, cc, dept].filter(Boolean).join(" · ");
-  return (
-    <div className="lxl-resume" onClick={onResume}
-      style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"12px 16px",
-        borderRadius:12,background:"rgba(255,159,67,0.07)",border:"1px solid rgba(255,159,67,0.32)"}}>
-      <div style={{width:36,height:36,borderRadius:9,flexShrink:0,
-        background:"rgba(255,159,67,0.14)",border:"1px solid rgba(255,159,67,0.3)",
-        display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>⚡</div>
-      <div style={{flex:1,textAlign:"left",minWidth:0}}>
-        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,
-          color:T.orange,marginBottom:2}}>Resume Active Encounter</div>
-        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt3,
-          whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{label}</div>
-      </div>
-      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:T.orange,flexShrink:0}}>→</span>
-    </div>
-  );
-}
-
-// ── Facility Inline Editor ────────────────────────────────────────────────────
-function FacilityEditor({ drafts, onChange, onAdd, onRemove, onSave, onCancel }) {
-  return (
-    <div className="lxl-editor" style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
-      {drafts.map((name, i) => (
-        <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
-          <input className="lxl-fac-input" value={name} maxLength={20}
-            onChange={e => onChange(i, e.target.value)}
-            style={{flex:1,padding:"8px 11px",borderRadius:8,
-              background:"rgba(11,30,54,0.8)",border:"1px solid rgba(201,168,76,0.28)",
-              color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:12,
-              boxSizing:"border-box",caretColor:BRAND.gold}}/>
-          <span className="lxl-rm" onClick={() => onRemove(i)} style={{fontSize:14,color:T.coral}}>✕</span>
+    <div className="cg">
+      {cells.map((c, i) => (
+        <div className="cg-cell" key={i}>
+          <div className={`cg-num ${c.cls}`}>{c.num}</div>
+          <div className="cg-lbl">{c.lbl}</div>
         </div>
       ))}
-      {drafts.length < 6 && (
-        <div onClick={onAdd}
-          style={{display:"flex",alignItems:"center",gap:6,padding:"7px 10px",borderRadius:8,
-            border:"1px dashed rgba(201,168,76,0.22)",cursor:"pointer",transition:"border-color .15s"}}
-          onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(201,168,76,0.5)"}
-          onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(201,168,76,0.22)"}>
-          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:BRAND.gold,opacity:.6}}>+</span>
-          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4}}>Add facility</span>
-        </div>
-      )}
-      <div style={{display:"flex",gap:8,marginTop:2}}>
-        <div className="lxl-save-btn" onClick={onSave}
-          style={{flex:1,padding:"9px",borderRadius:8,textAlign:"center",
-            fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,
-            color:"#050f1e",background:`linear-gradient(135deg,${BRAND.gold},#e8b84b)`}}>Save</div>
-        <div className="lxl-save-btn" onClick={onCancel}
-          style={{flex:1,padding:"9px",borderRadius:8,textAlign:"center",
-            fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,
-            color:T.txt3,background:"rgba(11,30,54,0.7)",border:"1px solid rgba(42,79,122,0.45)"}}>Cancel</div>
-      </div>
     </div>
   );
 }
 
-// ── Investor Panel ────────────────────────────────────────────────────────────
-function InvPanel({onNavigate}) {
+function ESIBar() {
+  const total = ESI.reduce((s, e) => s + e.count, 0);
   return (
-    <div className="lxl-inv" style={{width:"100%",marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
-      {INV_DOCS.map((doc,i) => (
-        <div key={i} className="lxl-inv-row"
-          onClick={() => doc.live && onNavigate(doc.route)}
-          style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",
-            borderRadius:10,background:"rgba(11,30,54,0.55)",
-            border:`1px solid ${doc.color}20`,cursor:doc.live?"pointer":"default"}}>
-          <div style={{width:32,height:32,borderRadius:8,background:doc.color+"14",
-            border:`1px solid ${doc.color}26`,display:"flex",alignItems:"center",
-            justifyContent:"center",fontSize:15,flexShrink:0}}>{doc.icon}</div>
-          <div style={{flex:1,textAlign:"left",minWidth:0}}>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:T.txt2,marginBottom:2}}>{doc.label}</div>
-            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:doc.color}}>{doc.sub}</div>
+    <div className="esi-wrap">
+      <div className="esi-bar">
+        {ESI.map(e => (
+          <div
+            key={e.level}
+            className="esi-seg"
+            style={{ background: e.color, width: `${(e.count / total) * 100}%` }}
+          >
+            <div className="esi-tip">ESI {e.level} &middot; {e.label} &middot; {e.count}</div>
           </div>
-          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
-            color:doc.live?doc.color:"rgba(90,130,168,0.25)",flexShrink:0}}>
-            {doc.live?"→":"↓"}
-          </span>
-        </div>
-      ))}
-      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,
-        color:"rgba(90,130,168,0.3)",letterSpacing:".07em",textAlign:"center",paddingTop:4}}>
-        For institutional &amp; investor use · Not for clinical distribution
+        ))}
       </div>
-    </div>
-  );
-}
-
-// ── System Status Indicator ───────────────────────────────────────────────────
-const STATUS_SERVICES = [
-  { key:"ai",      label:"AI",      check: async () => { try { const r = await fetch("https://api.anthropic.com",{method:"HEAD",signal:AbortSignal.timeout(3000)}); return r.status < 500; } catch(_){ return false; } } },
-  { key:"storage", label:"Storage", check: async () => typeof window !== "undefined" && !!window.storage },
-  { key:"fhir",    label:"FHIR",    check: async () => true }, // static until Anamnesis endpoint is live
-];
-
-function SystemStatus() {
-  const [svcs,   setSvcs]   = useState([]);
-  const [overall,setOverall] = useState("checking");
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const results = await Promise.all(
-        STATUS_SERVICES.map(async s => ({ ...s, ok: await s.check() }))
-      );
-      if (cancelled) return;
-      setSvcs(results);
-      setOverall(results.every(r => r.ok) ? "ok" : results.some(r => r.ok) ? "degraded" : "down");
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const dot  = overall === "ok" ? "#3dffa0" : overall === "degraded" ? "#f5c842" : overall === "down" ? "#ff6b6b" : "#5a82a8";
-  const label = overall === "ok" ? "All systems operational" : overall === "degraded" ? "Partial degradation" : overall === "down" ? "Service disruption" : "Checking...";
-
-  return (
-    <div style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
-      padding:"8px 14px",borderRadius:9,
-      background:"rgba(7,13,26,0.6)",border:"1px solid rgba(26,53,85,0.45)"}}>
-      <div style={{display:"flex",alignItems:"center",gap:7}}>
-        <div style={{width:7,height:7,borderRadius:"50%",background:dot,
-          boxShadow:`0 0 6px ${dot}`,flexShrink:0,
-          animation:overall==="ok"?"lxl-pulse-dot 3s ease-in-out infinite":"none"}}/>
-        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8.5,
-          color:dot,letterSpacing:".05em"}}>{label}</span>
-      </div>
-      <div style={{display:"flex",gap:10}}>
-        {svcs.map(s => (
-          <div key={s.key} style={{display:"flex",alignItems:"center",gap:4}}>
-            <div style={{width:5,height:5,borderRadius:"50%",
-              background:s.ok?"#3dffa0":"#ff6b6b",flexShrink:0}}/>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,
-              color:"rgba(90,130,168,0.7)",letterSpacing:".06em"}}>{s.label}</span>
+      <div className="esi-counts">
+        {ESI.map(e => (
+          <div key={e.level} className="esi-count" style={{ width: `${(e.count / total) * 100}%`, color: e.color }}>
+            {e.count}
           </div>
         ))}
       </div>
@@ -609,289 +320,317 @@ function SystemStatus() {
   );
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────────
-export default function LakonyxLanding() {
-  const navigate   = useNavigate();
-  const searchRef  = useRef(null);
+export default function ShiftBriefPage() {
+  const [phase, setPhase]         = useState("loading");
+  const [acked, setAcked]         = useState(new Set());
+  const [autoAdv, setAutoAdv]     = useState(true);
+  const [progress, setProgress]   = useState(0);
+  const [handoff, setHandoff]     = useState(HANDOFF);
+  const [ackRecord, setAckRecord] = useState(null);
+  const timerRef = useRef(null);
+  const startRef = useRef(null);
 
-  // Shift context
-  const [facility,  setFacility]  = useState("Spencer");
-  const [dept,      setDept]      = useState("ED");
-  const [shiftLen,  setShiftLen]  = useState("12h");
-  const [attending, setAttending] = useState("");
-  const [showInv,   setShowInv]   = useState(false);
-
-  // Facility editor
-  const [facilities,      setFacilities]      = useState(DEFAULT_FACILITIES);
-  const [editingFac,      setEditingFac]      = useState(false);
-  const [draftFacilities, setDraftFacilities] = useState(DEFAULT_FACILITIES);
-
-  // Resume encounter + recent hubs
-  const [resumeEnc,     setResumeEnc]     = useState(null);
-  const [recentHubs,    setRecentHubs]    = useState([]);
-
-  // Load persisted data on mount
   useEffect(() => {
-    (async () => {
-      if (!window.storage) return;
-      // Facilities
-      try {
-        const res = await window.storage.get(FACILITY_STORAGE_KEY);
-        if (res?.value) {
-          const saved = JSON.parse(res.value);
-          if (Array.isArray(saved) && saved.length) { setFacilities(saved); setFacility(saved[0]); }
-        }
-      } catch(_) {}
-      // Recent hubs
-      try {
-        const res = await window.storage.get(RECENT_HUBS_KEY);
-        if (res?.value) {
-          const saved = JSON.parse(res.value);
-          if (Array.isArray(saved)) setRecentHubs(saved);
-        }
-      } catch(_) {}
-      // Active encounter
-      for (const key of ENCOUNTER_KEYS) {
+    async function init() {
+      const last = await store.get("shift:lastStart");
+      if (last) {
         try {
-          const res = await window.storage.get(key);
-          if (res?.value) {
-            const parsed = JSON.parse(res.value);
-            if (parsed && (parsed.chiefComplaint || parsed.cc || parsed.age)) {
-              setResumeEnc(parsed); break;
-            }
+          if (Date.now() - JSON.parse(last.value).timestamp < SHIFT_WINDOW_MS) {
+            setPhase("reentry"); return;
           }
-        } catch(_) {}
+        } catch {}
       }
-    })();
+      const hd = await store.get("shift:handoff", true);
+      if (hd) { try { setHandoff(JSON.parse(hd.value)); } catch {} }
+      const pref = await store.get("provider:autoAdvance");
+      if (pref) { try { setAutoAdv(JSON.parse(pref.value)); } catch {} }
+      const ar = await store.get("shift:acknowledgment", true);
+      if (ar) { try { setAckRecord(JSON.parse(ar.value)); } catch {} }
+      setPhase("brief");
+    }
+    init();
   }, []);
 
-  // Navigation — records recent hubs
-  const goHub = useCallback(async (route, hub) => {
-    if (hub) {
-      const updated = [route, ...recentHubs.filter(r => r !== route)].slice(0, 5);
-      setRecentHubs(updated);
-      try { if (window.storage) await window.storage.set(RECENT_HUBS_KEY, JSON.stringify(updated)); } catch(_) {}
-    }
-    navigate(`/${route}`);
-  }, [recentHubs, navigate]);
+  const allAcked  = CRITICAL.every(c => acked.has(c.id));
+  const canBegin  = allAcked;
+  const tmrPaused = !canBegin;
 
-  // Begin shift — saves context, then navigates
-  const beginShift = useCallback(async () => {
-    const ctx = { facility, dept, shiftLen, attending, startedAt: new Date().toISOString() };
-    try { if (window.storage) await window.storage.set("shiftContext", JSON.stringify(ctx)); } catch(_) {}
-    navigate("/CommandCenter");
-  }, [facility, dept, shiftLen, attending, navigate]);
+  const doAdvance = useCallback(async () => {
+    if (phase !== "brief" || !canBegin) return;
+    const rec = {
+      provider: PROVIDER.name,
+      timestamp: Date.now(),
+      isoTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+    };
+    await store.set("shift:lastStart", JSON.stringify({ timestamp: Date.now() }));
+    await store.set("shift:acknowledgment", JSON.stringify(rec), true);
+    setPhase("exiting");
+    setTimeout(() => setPhase("active"), 460);
+  }, [phase, canBegin]);
 
-  // Keyboard shortcuts
+  useEffect(() => {
+    if (phase !== "brief" || !autoAdv || tmrPaused) { clearInterval(timerRef.current); return; }
+    startRef.current = startRef.current || Date.now();
+    timerRef.current = setInterval(() => {
+      const el = (Date.now() - startRef.current) / 1000;
+      setProgress(Math.min((el / AUTO_SECONDS) * 100, 100));
+      if (el >= AUTO_SECONDS) { clearInterval(timerRef.current); doAdvance(); }
+    }, 100);
+    return () => clearInterval(timerRef.current);
+  }, [phase, autoAdv, tmrPaused, doAdvance]);
+
+  useEffect(() => { if (tmrPaused) { startRef.current = null; setProgress(0); } }, [tmrPaused]);
+
   useEffect(() => {
     const h = e => {
-      // '/' focuses search
-      if (e.key === "/" && document.activeElement !== searchRef.current) {
-        e.preventDefault();
-        searchRef.current?.focus();
-        return;
-      }
-      // Enter → Begin Shift when not in search/input/editor
-      if (e.key === "Enter" && !showInv && !editingFac &&
-          document.activeElement !== searchRef.current &&
-          document.activeElement?.tagName !== "INPUT") {
-        beginShift();
-      }
+      if ((e.code === "Space" || e.code === "Enter") && phase === "brief") { e.preventDefault(); doAdvance(); }
     };
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
-  }, [showInv, editingFac, beginShift]);
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [phase, doAdvance]);
 
-  // Facility editor handlers
-  const openEditor    = () => { setDraftFacilities([...facilities]); setEditingFac(true); };
-  const cancelEditor  = () => setEditingFac(false);
-  const changeDraft   = (i, val) => setDraftFacilities(d => d.map((v,idx) => idx===i ? val : v));
-  const addDraft      = () => setDraftFacilities(d => [...d, ""]);
-  const removeDraft   = (i) => setDraftFacilities(d => d.filter((_,idx) => idx!==i));
-  const saveFacilities = async () => {
-    const cleaned = draftFacilities.map(f => f.trim()).filter(Boolean);
-    if (!cleaned.length) return;
-    setFacilities(cleaned);
-    if (!cleaned.includes(facility)) setFacility(cleaned[0]);
-    setEditingFac(false);
-    try { if (window.storage) await window.storage.set(FACILITY_STORAGE_KEY, JSON.stringify(cleaned)); } catch(_) {}
-  };
+  const toggleAck = useCallback(id => {
+    setAcked(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }, []);
 
-  const goExplore = () => navigate("/LakonyxHome");
-  const goRoute   = r  => navigate(`/${r}`);
+  const toggleAutoAdv = useCallback(async () => {
+    const next = !autoAdv;
+    setAutoAdv(next);
+    if (!next) { startRef.current = null; setProgress(0); }
+    await store.set("provider:autoAdvance", JSON.stringify(next));
+  }, [autoAdv]);
 
-  return (
-    <div style={{minHeight:"100vh",background:T.bg,color:T.txt,
-      fontFamily:"'DM Sans',sans-serif",overflowX:"hidden",
-      display:"flex",flexDirection:"column",alignItems:"center",
-      justifyContent:"center",padding:"48px 24px 80px",position:"relative"}}>
+  const secsLeft  = Math.max(0, Math.ceil(AUTO_SECONDS - (progress / 100) * AUTO_SECONDS));
+  const remaining = CRITICAL.length - acked.size;
 
-      <BgMesh/>
+  if (phase === "loading") return (
+    <>
+      <style>{css}</style>
+      <div className="full-center">
+        <div className="full-title" style={{ fontSize: "1.3rem", letterSpacing: ".15em", textTransform: "uppercase" }}>Lakonyx</div>
+        <div className="ldot" />
+      </div>
+    </>
+  );
 
-      <div style={{position:"relative",zIndex:1,width:"100%",maxWidth:500,
-        display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center"}}>
+  if (phase === "active") return (
+    <>
+      <style>{css}</style>
+      <div className="full-center fade-in">
+        <div className="ldot" />
+        <div className="full-title" style={{ fontSize: "1.8rem" }}>Shift active</div>
+        <div className="full-sub">Command Center loading&hellip;</div>
+      </div>
+    </>
+  );
 
-        {/* ── Version badge ─────────────────────────────────────────────── */}
-        <div className="lxl-s1" style={{marginBottom:22}}>
-          <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"5px 16px",
-            borderRadius:20,background:"rgba(245,200,66,0.07)",border:"1px solid rgba(245,200,66,0.24)"}}>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:T.gold}}>✦ v2.0</span>
-            <div style={{width:1,height:10,background:"rgba(245,200,66,0.28)"}}/>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4}}>
-              20 new hubs · AI MDM · CMS 2024
-            </span>
-          </div>
+  if (phase === "reentry") return (
+    <>
+      <style>{css}</style>
+      <div className="sb">
+        <div className="bg-grid" />
+        <div className="hdr fade-in">
+          <div className="brand">Lakonyx &mdash; Welcome Back</div>
+          <div className="clock"><Clock /></div>
         </div>
-
-        {/* ── LX Mark + Wordmark ────────────────────────────────────────── */}
-        <div className="lxl-s2" style={{marginBottom:16}}><LXMark size={96}/></div>
-        <div className="lxl-s3" style={{fontFamily:"'Playfair Display',serif",
-          fontSize:40,fontWeight:900,color:T.txt,letterSpacing:".10em",lineHeight:1,marginBottom:8}}>
-          LAKONYX
-        </div>
-        <div className="lxl-s3" style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
-          <div style={{width:26,height:1,background:`${BRAND.teal}38`}}/>
-          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:BRAND.teal,letterSpacing:".22em",textTransform:"uppercase"}}>
-            Clinical Decision Intelligence
-          </span>
-          <div style={{width:26,height:1,background:`${BRAND.teal}38`}}/>
-        </div>
-
-        {/* ── PRIORITY 2 · Quick-launch strip ──────────────────────────── */}
-        <div className="lxl-s4" style={{width:"100%",marginBottom:14}}>
-          <QuickLaunch recentRoutes={recentHubs} onNavigate={goHub}/>
-        </div>
-
-        {/* ── PRIORITY 1 · Global Search ────────────────────────────────── */}
-        <div className="lxl-s4" style={{width:"100%",marginBottom:22}}>
-          <GlobalSearch inputRef={searchRef} onNavigate={goHub}/>
-        </div>
-
-        {/* ── Clock ─────────────────────────────────────────────────────── */}
-        <div className="lxl-s5" style={{width:"100%",marginBottom:20}}>
-          <LiveClock/>
-        </div>
-
-        {/* ── Shift configuration card ──────────────────────────────────── */}
-        <div className="lxl-s6" style={{width:"100%",marginBottom:20,
-          padding:"20px 18px",borderRadius:14,
-          background:"rgba(7,13,26,0.7)",border:"1px solid rgba(26,53,85,0.55)",
-          backdropFilter:"blur(8px)",display:"flex",flexDirection:"column",gap:14}}>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:".16em",textTransform:"uppercase"}}>
-            Configure shift
-          </div>
-
-          {/* Facility */}
-          <div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,color:T.txt4,letterSpacing:".12em",textTransform:"uppercase"}}>Facility</div>
-              <span className="lxl-pencil" onClick={editingFac ? cancelEditor : openEditor} title="Edit facility names">
-                {editingFac ? "✕" : "✎"}
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", position: "relative", zIndex: 2 }}>
+          <div className="re-card fade-in">
+            <div className="re-title">While you were away&hellip;</div>
+            <div className="re-sub">Last check-in approx. 47 min ago &mdash; here&rsquo;s what changed</div>
+            {DELTA.map(d => (
+              <div key={d.id} className={`delta-item ${d.type}`}>
+                <span className="delta-icon">{d.type === "critical" ? "\u26a0" : d.type === "success" ? "\u2191" : "\u2193"}</span>
+                <span className="delta-txt">{d.text}</span>
+              </div>
+            ))}
+            <div className="div" style={{ margin: ".75rem 0" }} />
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ fontSize: ".72rem", color: "rgba(226,232,240,.4)" }}>Census</span>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".8rem", color: "#0dc8aa" }}>
+                {CENSUS.total} / {CENSUS.capacity}
               </span>
             </div>
-            {!editingFac && <PillRow options={facilities} value={facility} onChange={setFacility} activeColor={BRAND.gold} activeTextColor="#050f1e"/>}
-            {editingFac && <FacilityEditor drafts={draftFacilities} onChange={changeDraft} onAdd={addDraft} onRemove={removeDraft} onSave={saveFacilities} onCancel={cancelEditor}/>}
+            <button className="resume-btn" onClick={() => { setPhase("exiting"); setTimeout(() => setPhase("active"), 460); }}>
+              Resume Shift &rarr;
+            </button>
           </div>
-
-          <div style={{height:1,background:"rgba(26,53,85,0.5)"}}/>
-
-          {/* Department */}
-          <div>
-            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,color:T.txt4,letterSpacing:".12em",textTransform:"uppercase",marginBottom:8,textAlign:"left"}}>Department</div>
-            <PillRow options={DEPTS} value={dept} onChange={setDept} activeColor={T.teal} activeTextColor="#050f1e"/>
-          </div>
-
-          <div style={{height:1,background:"rgba(26,53,85,0.5)"}}/>
-
-          {/* Length + Attending */}
-          <div style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:16,alignItems:"end"}}>
-            <div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,color:T.txt4,letterSpacing:".12em",textTransform:"uppercase",marginBottom:8,textAlign:"left"}}>Shift length</div>
-              <PillRow options={LENGTHS} value={shiftLen} onChange={setShiftLen} activeColor={T.purple} activeTextColor={T.txt} small={true}/>
-            </div>
-            <div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,color:T.txt4,letterSpacing:".12em",textTransform:"uppercase",marginBottom:8,textAlign:"left"}}>Attending (optional)</div>
-              <input className="lxl-input" type="text" placeholder="Dr. ..." value={attending}
-                onChange={e => setAttending(e.target.value)}
-                style={{width:"100%",padding:"11px 12px",borderRadius:8,minHeight:48,
-                  background:"rgba(11,30,54,0.65)",border:"1px solid rgba(42,79,122,0.48)",
-                  color:T.txt,fontFamily:"'DM Sans',sans-serif",fontSize:12,
-                  outline:"none",boxSizing:"border-box",caretColor:T.teal,transition:"border-color .15s,box-shadow .15s"}}/>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Resume encounter ──────────────────────────────────────────── */}
-        {resumeEnc && (
-          <div className="lxl-s7" style={{width:"100%",marginBottom:14}}>
-            <ResumeChip encounter={resumeEnc} onResume={() => navigate("/NewPatientInput")}/>
-          </div>
-        )}
-
-        {/* ── Begin Shift ───────────────────────────────────────────────── */}
-        <div className={resumeEnc?"lxl-s8":"lxl-s7"} style={{width:"100%",marginBottom:8}}>
-          <div className="lxl-begin" onClick={beginShift}
-            style={{width:"100%",padding:"16px",borderRadius:12,minHeight:52,
-              fontFamily:"'DM Sans',sans-serif",fontSize:16,fontWeight:700,
-              color:"#050f1e",letterSpacing:".04em",textAlign:"center",
-              background:`linear-gradient(135deg,${T.teal} 0%,#00b4d8 100%)`,
-              border:"none",userSelect:"none"}}>
-            Begin Shift →
-          </div>
-        </div>
-
-        {/* ── PRIORITY 3 · Skip setup ───────────────────────────────────── */}
-        <div className={resumeEnc?"lxl-s8":"lxl-s7"} style={{marginBottom:10}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:18}}>
-            <span className="lxl-link" onClick={() => navigate("/CommandCenter")}
-              style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,
-                letterSpacing:".09em",opacity:.6}}>
-              Skip setup →
-            </span>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"rgba(42,79,122,0.4)"}}>|</span>
-            <span className="lxl-link" onClick={goExplore}
-              style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,
-                letterSpacing:".09em",opacity:.6}}>
-              Explore Platform →
-            </span>
-          </div>
-        </div>
-
-        {/* Keyboard hint */}
-        <div className={resumeEnc?"lxl-s9":"lxl-s8"} style={{width:"100%",marginBottom:10}}>
-          <SystemStatus/>
-        </div>
-
-        <div className={resumeEnc?"lxl-s9":"lxl-s8"} style={{marginBottom:42}}>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,
-            color:"rgba(90,130,168,0.38)",letterSpacing:".10em"}}>
-            {facility} · {dept} · {shiftLen} &nbsp;|&nbsp; <span style={{color:"rgba(0,229,192,0.4)"}}>Enter</span> begin &nbsp;·&nbsp; <span style={{color:"rgba(0,229,192,0.4)"}}>/</span> search &nbsp;·&nbsp; <span style={{color:"rgba(0,229,192,0.4)"}}>↑↓</span> results
-          </div>
-        </div>
-
-        {/* ── Investor resources ────────────────────────────────────────── */}
-        <div className={resumeEnc?"lxl-s10":"lxl-s9"} style={{width:"100%"}}>
-          <div onClick={() => setShowInv(v => !v)}
-            style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",opacity:.44,transition:"opacity .18s",userSelect:"none"}}
-            onMouseEnter={e=>e.currentTarget.style.opacity=".72"}
-            onMouseLeave={e=>e.currentTarget.style.opacity=".44"}>
-            <div style={{flex:1,height:1,background:"rgba(26,53,85,0.55)"}}/>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7.5,color:T.txt4,letterSpacing:".14em",whiteSpace:"nowrap"}}>
-              {showInv?"▲  INVESTOR RESOURCES":"▼  INVESTOR RESOURCES"}
-            </span>
-            <div style={{flex:1,height:1,background:"rgba(26,53,85,0.55)"}}/>
-          </div>
-          {showInv && <InvPanel onNavigate={goRoute}/>}
         </div>
       </div>
+    </>
+  );
 
-      {/* Fixed footer */}
-      <div style={{position:"fixed",bottom:14,left:0,right:0,textAlign:"center",zIndex:1,pointerEvents:"none"}}>
-        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,
-          color:"rgba(90,130,168,0.28)",letterSpacing:".07em"}}>
-          Clinical decision support only · Not a substitute for clinical judgment · Lakonyx v2.0
-        </span>
+  return (
+    <>
+      <style>{css}</style>
+      <div className={`sb${phase === "exiting" ? " flash-out" : ""}`}>
+        <div className="bg-grid" />
+
+        <header className="hdr fade-in">
+          <div className="brand">Lakonyx &mdash; Shift Brief</div>
+          <div className="clock"><Clock /></div>
+        </header>
+
+        <main className="body">
+
+          {/* LEFT */}
+          <div className="col fade-in s1">
+            <div className="sec">
+              <div className="sec-label">Situational awareness</div>
+              <CensusGrid />
+            </div>
+
+            <div className="div" />
+
+            <div className="sec">
+              <div className="sec-inline">
+                <div className="sec-label">Acuity distribution</div>
+                <span style={{ fontSize: ".55rem", color: "rgba(226,232,240,.2)" }}>hover for detail</span>
+              </div>
+              <ESIBar />
+            </div>
+
+            <div className="div" />
+
+            <div className="sec" style={{ flex: 1, minHeight: 0 }}>
+              <div className="sec-inline">
+                <div className="sec-label">Critical pending</div>
+                <span style={{ fontSize: ".55rem", color: "rgba(226,232,240,.2)" }}>click to acknowledge</span>
+              </div>
+              {CRITICAL.map(c => {
+                const isAcked = acked.has(c.id);
+                return (
+                  <div
+                    key={c.id}
+                    className={`crit-item ${isAcked ? "acked" : "pending pulse-ring"}`}
+                    onClick={() => toggleAck(c.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => e.key === "Enter" && toggleAck(c.id)}
+                  >
+                    <div className="crit-chk">{isAcked ? "\u2713" : ""}</div>
+                    <div className="crit-body">
+                      <div className="crit-top">
+                        <span className="crit-type">{c.type}</span>
+                        <span className="crit-sep">&middot;</span>
+                        <span className="crit-patient">{c.patient}</span>
+                      </div>
+                      <div className="crit-note">{c.note}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className={`crit-gate${allAcked ? " ok" : ""}`}>
+                {allAcked
+                  ? "\u2713 All acknowledged \u2014 shift unlock ready"
+                  : `${remaining} unacknowledged \u2014 auto-advance paused`}
+              </div>
+            </div>
+          </div>
+
+          {/* CENTER */}
+          <div className="col-mid fade-in s2">
+            <div className="sec">
+              <div className="sec-label">Incoming handoff</div>
+              <div className="h-title">State of the Department</div>
+              <div className="h-sub">From {handoff.provider} &nbsp;&bull;&nbsp; Overlap {handoff.overlapWindow}</div>
+            </div>
+
+            <div className="div" />
+
+            <div className="sec" style={{ flex: 1, minHeight: 0, gap: ".5rem" }}>
+              {handoff.notes.map((n, i) => (
+                <div className="hn" key={i}>
+                  <div className="hn-dot" />
+                  <span className="hn-txt">{n}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="div" />
+
+            <div className="forecast">
+              <div className="forecast-dot" />
+              <span className="forecast-txt">{handoff.forecast}</span>
+            </div>
+
+            {ackRecord && (
+              <div className="ack-badge">
+                Previously reviewed by {ackRecord.provider} at {ackRecord.isoTime}
+              </div>
+            )}
+
+            <button className="begin-btn" onClick={doAdvance} disabled={!canBegin}>
+              {canBegin
+                ? "Begin Shift \u2192"
+                : `Acknowledge ${remaining} critical result${remaining !== 1 ? "s" : ""} to continue`}
+            </button>
+          </div>
+
+          {/* RIGHT */}
+          <div className="col fade-in s3">
+            <div className="sec">
+              <div className="sec-label">Your shift</div>
+              <div className="p-name">{PROVIDER.name}</div>
+              <div className="p-role">{PROVIDER.role}</div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+              <div className="sblock">
+                <div className="sblock-lbl">Hours</div>
+                <div className="sblock-val" style={{ fontSize: ".78rem" }}>{PROVIDER.shiftStart} &mdash; {PROVIDER.shiftEnd}</div>
+              </div>
+              <div className="sblock">
+                <div className="sblock-lbl">Remaining</div>
+                <div className="sblock-val"><ShiftRemaining /></div>
+              </div>
+            </div>
+
+            <div className="div" />
+
+            <div className="sec">
+              <div className="sec-label">Quick access</div>
+              <div className="hub-grid">
+                {HUBS.map(hub => (
+                  <div className="hub-pill" key={hub} title={hub}>{hub}</div>
+                ))}
+              </div>
+            </div>
+
+            <div className="div" />
+
+            <div className="sec">
+              <div className="tog-row">
+                <span className="tog-lbl">Auto-advance</span>
+                <button className={`tog ${autoAdv ? "on" : "off"}`} onClick={toggleAutoAdv} aria-label="Toggle auto-advance">
+                  <div className="tog-knob" />
+                </button>
+              </div>
+              <div className="tog-hint">
+                {autoAdv
+                  ? tmrPaused
+                    ? "Paused \u2014 acknowledge criticals first"
+                    : `Advancing in ${secsLeft}s`
+                  : "Manual advance only"}
+              </div>
+            </div>
+          </div>
+
+        </main>
+
+        <footer className="ftr fade-in s4">
+          <div className="prog-track">
+            <div className="prog-fill" style={{ width: `${progress}%` }} />
+          </div>
+          <div className="cta">
+            {canBegin
+              ? autoAdv
+                ? <>Auto-advancing in {secsLeft}s &nbsp;&bull;&nbsp; <kbd>Space</kbd> or <kbd>Enter</kbd> to begin now</>
+                : <><kbd>Space</kbd> or <kbd>Enter</kbd> to begin your shift</>
+              : <>Acknowledge all {CRITICAL.length} critical results to unlock</>}
+          </div>
+        </footer>
+
       </div>
-    </div>
+    </>
   );
 }

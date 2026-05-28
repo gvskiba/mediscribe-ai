@@ -38,6 +38,7 @@ import HandoffTab               from "@/components/npi/HandoffTab";
 import SmartDischargeHub         from "@/components/npi/SmartDischargeHub";
 import MDMBuilderTab            from "@/components/npi/MDMBuilderTab";
 import CapacityAMAModule        from "@/components/npi/CapacityAMAModule";
+import NoteAuditLock           from "@/components/npi/NoteAuditLock";
 
 // ── Utility / overlay components ─────────────────────────────────────────────
 import ParseFab               from "@/components/npi/ParseFab";
@@ -945,6 +946,27 @@ export default function NewPatientInput() {
           providerName={providerName}
           onToast={_showToast}
         />
+      );
+
+      case "audit": return (
+        <NoteAuditLock
+          demo={demo} cc={cc} vitals={vitals} vitalsHistory={vitalsHistory}
+          medications={medications} allergies={allergies}
+          pmhSelected={pmhSelected} pmhExtra={pmhExtra}
+          surgHx={surgHx} famHx={famHx} socHx={socHx}
+          rosState={rosState} rosSymptoms={rosSymptoms}
+          peState={peState} peFindings={peFindings}
+          mdmState={mdmState} consults={consults}
+          disposition={disposition} dispReason={dispReason} dispTime={dispTime}
+          esiLevel={esiLevel} registration={registration}
+          sdoh={sdoh} sepsisBundle={sepsisBundle}
+          providerName={providerName} doorTime={doorTime}
+          onToast={_showToast}
+        />
+      );
+
+      case "weightdose": return (
+        <UnifiedPharmacologyHub />
       );
 
       default: return null;

@@ -44,9 +44,9 @@ const store = {
 const css = `
 @import url('${FONTS}');
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#070d1a;overflow:hidden;}
+html,body{background:#070d1a;}
 .sb{
-  height:100dvh;overflow:hidden;
+  min-height:100vh;
   background:radial-gradient(ellipse 80% 55% at 50% -5%,#0d2040 0%,#070d1a 68%);
   font-family:'DM Sans',sans-serif;color:#e2e8f0;
   display:flex;flex-direction:column;position:relative;
@@ -67,15 +67,13 @@ html,body{height:100%;background:#070d1a;overflow:hidden;}
 .brand{font-family:'Playfair Display',serif;font-size:.88rem;letter-spacing:.14em;color:rgba(13,200,170,.55);text-transform:uppercase;}
 .clock{font-family:'JetBrains Mono',monospace;font-size:.88rem;color:rgba(226,232,240,.38);}
 .body{
-  flex:1;min-height:0;
+  flex:1;
   display:grid;grid-template-columns:1fr 1.18fr 1fr;
   gap:.85rem;padding:.35rem 1.75rem .5rem;
   position:relative;z-index:2;
-  overflow:hidden;
 }
 .col{
   display:flex;flex-direction:column;
-  min-height:0;overflow:hidden;
   background:rgba(13,25,50,.56);
   border:0.5px solid rgba(13,200,170,.14);
   border-radius:11px;backdrop-filter:blur(12px);
@@ -83,7 +81,6 @@ html,body{height:100%;background:#070d1a;overflow:hidden;}
 }
 .col-mid{
   display:flex;flex-direction:column;
-  min-height:0;overflow:hidden;
   background:rgba(13,30,60,.66);
   border:0.5px solid rgba(13,200,170,.26);
   border-radius:12px;backdrop-filter:blur(14px);
@@ -220,7 +217,7 @@ kbd{
 .flash-out{animation:fout .42s ease forwards;}
 @keyframes fout{0%{opacity:1;filter:brightness(1);}55%{opacity:1;filter:brightness(5);}100%{opacity:0;}}
 
-.full-center{height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;background:#070d1a;font-family:'DM Sans',sans-serif;}
+.full-center{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;background:#070d1a;font-family:'DM Sans',sans-serif;}
 .ldot{width:8px;height:8px;border-radius:50%;background:#0dc8aa;animation:ldot 1.1s ease-in-out infinite;}
 @keyframes ldot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.6);}}
 .full-title{font-family:'Playfair Display',serif;color:#0dc8aa;}
@@ -491,7 +488,7 @@ export default function ShiftBriefPage() {
 
             <div className="div" />
 
-            <div className="sec" style={{ flex: 1, minHeight: 0 }}>
+            <div className="sec" style={{ flex: 1 }}>
               <div className="sec-inline">
                 <div className="sec-label">Critical pending</div>
                 <span style={{ fontSize: ".55rem", color: "rgba(226,232,240,.2)" }}>click to acknowledge</span>
@@ -537,7 +534,7 @@ export default function ShiftBriefPage() {
 
             <div className="div" />
 
-            <div className="sec" style={{ flex: 1, minHeight: 0, gap: ".5rem" }}>
+            <div className="sec" style={{ flex: 1, gap: ".5rem" }}>
               {handoff.notes.map((n, i) => (
                 <div className="hn" key={i}>
                   <div className="hn-dot" />

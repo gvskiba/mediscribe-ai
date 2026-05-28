@@ -45,6 +45,42 @@
 //   single react import, border before borderTop/etc.
 
 import { useState, useMemo } from "react";
+import * as React from "react";
+
+// ── SI PHASE 1: PERCEPTION LAYER ─────────────────────────────────────────────
+if (typeof window !== "undefined" && !window.lakonyx_context) {
+  window.lakonyx_context = {
+    vitals: {}, silences: [], trajectories: {}, resources: {}, deptState: "normal",
+    _listeners: [],
+    emit(key, data) { this[key] = data; this._listeners.forEach(fn => fn(key, data)); },
+    subscribe(fn) { this._listeners.push(fn); return () => { this._listeners = this._listeners.filter(l => l !== fn); }; }
+  };
+}
+const VITAL_THRESHOLDS = {
+  HR:   { warn:[50,100],  crit:[40,120],  unit:"bpm",  label:"Heart Rate" },
+  SBP:  { warn:[90,160],  crit:[80,180],  unit:"mmHg", label:"Systolic BP" },
+  DBP:  { warn:[50,100],  crit:[40,110],  unit:"mmHg", label:"Diastolic BP" },
+  SpO2: { warn:[94,100],  crit:[90,100],  unit:"%",    label:"SpO2" },
+  RR:   { warn:[12,20],   crit:[8,28],    unit:"/min", label:"Resp Rate" },
+  Temp: { warn:[36.0,38.3],crit:[35.0,39.5],unit:"C", label:"Temperature" }
+};
+function useElapsed(ts) {
+  const [elapsed, setElapsed] = React.useState(0);
+  React.useEffect(() => { const tick = () => setElapsed(Math.floor((Date.now()-ts)/1000)); tick(); const id=setInterval(tick,10000); return ()=>clearInterval(id); }, [ts]);
+  return elapsed;
+}
+function formatElapsed(s) { if(s<60) return s+"s ago"; if(s<3600) return Math.floor(s/60)+" min ago"; const h=Math.floor(s/3600),m=Math.floor((s%3600)/60); return m>0?h+"h "+m+"m ago":h+"h ago"; }
+function getElapsedColor(s,w=1800,c=3600) { return s>=c?"#EF4444":s>=w?"#F59E0B":"#10B981"; }
+function ElapsedBadge({ ts, warnSec=1800, critSec=3600, style={} }) {
+  const elapsed=useElapsed(ts); const color=getElapsedColor(elapsed,warnSec,critSec);
+  return <span style={{fontSize:10,fontFamily:"monospace",color,background:color+"18",padding:"1px 6px",borderRadius:4,...style}}>{formatElapsed(elapsed)}</span>;
+}
+const TRAJECTORY_COLORS = {
+  stable:    { bg:"#0A2F1E", border:"#10B981", text:"#34D399", label:"STABLE" },
+  worsening: { bg:"#2D1F00", border:"#F59E0B", text:"#FBB954", label:"WORSENING" },
+  critical:  { bg:"#2D0A0A", border:"#EF4444", text:"#F87171", label:"CRITICAL" }
+};
+// ── END SI PHASE 1 ────────────────────────────────────────────────────────────
 
 const T = {
   bg:"#050f1e", panel:"#081628",
@@ -400,6 +436,29 @@ export default function CDSSidebar(props) {
   // Force re-render on dismiss
   const [dismissCount, setDismissCount] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState("cds_flags");
+
+  // ── SI state & subscription ────────────────────────────────────────────────
+  const [siData, setSiData] = React.useState({
+    vitals: {},
+    silences: [],
+    trajectories: { score: 0, level: "stable" }
+  });
+  const [dismissedSI, setDismissedSI] = React.useState([]);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && window.lakonyx_context) {
+      setSiData({
+        vitals:       window.lakonyx_context.vitals       || {},
+        silences:     window.lakonyx_context.silences     || [],
+        trajectories: window.lakonyx_context.trajectories || { score: 0, level: "stable" }
+      });
+      const unsub = window.lakonyx_context.subscribe((key, data) => {
+        setSiData(prev => ({ ...prev, [key]: data }));
+      });
+      return () => unsub?.();
+    }
+  }, []);
 
   const flags = useMemo(() => computeFlags({
     vitals, cc, demo, pmhSelected, medications,
@@ -443,6 +502,8 @@ export default function CDSSidebar(props) {
     );
   }
 
+  const siCritCount = siData.silences.filter(s => s.severity === "critical" && !dismissedSI.includes(s.id)).length;
+
   // Expanded panel
   return (
     <div style={{ marginBottom:12, borderRadius:10,
@@ -458,54 +519,185 @@ export default function CDSSidebar(props) {
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
             color:T.coral, letterSpacing:1.5, textTransform:"uppercase" }}>
-            \uD83D\uDEA8 CDS Flags
-          </span>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            padding:"1px 7px", borderRadius:10,
-            background:"rgba(255,107,107,0.1)",
-            border:"1px solid rgba(255,107,107,0.3)",
-            color:T.coral }}>
-            {flags.length}
+            🚨 CDS
           </span>
           <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:9,
-            color:T.txt4 }}>Non-interruptive \u00b7 advisory only</span>
+            color:T.txt4 }}>Non-interruptive · advisory only</span>
         </div>
         <div style={{ display:"flex", gap:5 }}>
-          <button onClick={handleDismissAll}
-            style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-              letterSpacing:1, padding:"2px 8px", borderRadius:4,
-              cursor:"pointer",
-              border:"1px solid rgba(42,79,122,0.35)",
-              background:"transparent", color:T.txt4 }}>
-            Dismiss All
-          </button>
+          {activeTab === "cds_flags" && (
+            <button onClick={handleDismissAll}
+              style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                letterSpacing:1, padding:"2px 8px", borderRadius:4,
+                cursor:"pointer",
+                border:"1px solid rgba(42,79,122,0.35)",
+                background:"transparent", color:T.txt4 }}>
+              Dismiss All
+            </button>
+          )}
           <button onClick={() => setCollapsed(true)}
             style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
               letterSpacing:1, padding:"2px 8px", borderRadius:4,
               cursor:"pointer",
               border:"1px solid rgba(42,79,122,0.35)",
               background:"transparent", color:T.txt4 }}>
-            \u25b2 Collapse
+            ▲ Collapse
           </button>
         </div>
       </div>
 
-      {/* Flag list */}
-      <div style={{ display:"flex", flexDirection:"column", gap:5,
-        padding:"8px 10px" }}>
-        {flags.map(flag => (
-          <FlagCard key={flag.id} flag={flag}
-            onDismiss={() => handleDismiss(flag.id)}
-            onAct={() => flag.onAct({ onSelectSection, onNavigate })} />
+      {/* Tab bar */}
+      <div style={{ display:"flex", borderBottom:"1px solid rgba(26,53,85,0.4)" }}>
+        {[
+          { id:"cds_flags", label: <span style={{ display:"flex", alignItems:"center", gap:5 }}>
+              CDS Flags
+              {flags.length > 0 && <span style={{ background:T.coral, color:"#fff", fontSize:9, fontWeight:700, borderRadius:10, padding:"0 5px", lineHeight:"14px" }}>{flags.length}</span>}
+            </span>
+          },
+          { id:"si_alerts", label: <span style={{ display:"flex", alignItems:"center", gap:5 }}>
+              SI Alerts
+              {siCritCount > 0 && <span style={{ background:"#EF4444", color:"#fff", fontSize:9, fontWeight:700, borderRadius:10, padding:"0 5px", lineHeight:"14px" }}>{siCritCount}</span>}
+            </span>
+          },
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            style={{ flex:1, padding:"6px 10px", cursor:"pointer",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:8, letterSpacing:0.8,
+              background: activeTab === tab.id ? "rgba(42,79,122,0.25)" : "transparent",
+              border:"none",
+              borderBottom: activeTab === tab.id ? `2px solid ${T.teal}` : "2px solid transparent",
+              color: activeTab === tab.id ? T.teal : T.txt4,
+              transition:"all .12s" }}>
+            {tab.label}
+          </button>
         ))}
       </div>
 
-      {/* Footer hint */}
-      <div style={{ padding:"4px 11px 7px",
-        fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-        color:T.txt4, letterSpacing:1 }}>
-        Flags auto-clear when dismissed. Physician judgment always prevails.
-      </div>
+      {/* CDS Flags tab */}
+      {activeTab === "cds_flags" && (
+        <>
+          <div style={{ display:"flex", flexDirection:"column", gap:5, padding:"8px 10px" }}>
+            {flags.map(flag => (
+              <FlagCard key={flag.id} flag={flag}
+                onDismiss={() => handleDismiss(flag.id)}
+                onAct={() => flag.onAct({ onSelectSection, onNavigate })} />
+            ))}
+          </div>
+          <div style={{ padding:"4px 11px 7px",
+            fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            color:T.txt4, letterSpacing:1 }}>
+            Flags auto-clear when dismissed. Physician judgment always prevails.
+          </div>
+        </>
+      )}
+
+      {/* SI Alerts tab */}
+      {activeTab === "si_alerts" && (() => {
+        const { vitals, silences, trajectories } = siData;
+        const tc = TRAJECTORY_COLORS[trajectories.level] || TRAJECTORY_COLORS.stable;
+        const activeSilences = silences.filter(s => !dismissedSI.includes(s.id));
+        return (
+          <div style={{ display:"flex", flexDirection:"column", gap:12, padding:"12px 10px" }}>
+
+            {/* Trajectory Summary */}
+            <div style={{
+              background: tc.bg, border:"1px solid " + tc.border,
+              borderRadius:8, padding:"10px 14px",
+              display:"flex", alignItems:"center", gap:14
+            }}>
+              <div>
+                <div style={{ fontSize:9, color:"#475569", letterSpacing:"0.08em", marginBottom:2 }}>TRAJECTORY SCORE</div>
+                <div style={{ fontSize:28, fontWeight:700, color:tc.text, fontFamily:"monospace", lineHeight:1 }}>
+                  {trajectories.score}
+                </div>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:tc.text, marginBottom:3 }}>{tc.label}</div>
+                <div style={{ fontSize:9, color:"#64748B", lineHeight:1.5 }}>
+                  {trajectories.level === "critical" ? "Immediate physician reassessment indicated"
+                    : trajectories.level === "worsening" ? "Monitor closely — trending toward instability"
+                    : "Patient trajectory within expected parameters"}
+                </div>
+              </div>
+            </div>
+
+            {/* Vital Status Strip */}
+            {Object.keys(vitals).length > 0 && (
+              <div>
+                <div style={{ fontSize:9, color:"#475569", letterSpacing:"0.08em", marginBottom:6 }}>VITAL STATUS</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {Object.values(vitals).map(v => {
+                    const uc = { normal:"#10B981", warning:"#F59E0B", critical:"#EF4444" }[v.urgency];
+                    const ts = { rising:"↑", falling:"↓", stable:"→" }[v.trend];
+                    return (
+                      <div key={v.type} style={{
+                        display:"flex", justifyContent:"space-between", alignItems:"center",
+                        padding:"5px 10px", background:"#0B1F3A", borderRadius:6,
+                        border:"1px solid " + (v.urgency !== "normal" ? uc + "40" : "#1E3A5F")
+                      }}>
+                        <span style={{ fontSize:10, color:"#64748B" }}>
+                          {VITAL_THRESHOLDS[v.type]?.label || v.type}
+                        </span>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <span style={{ fontSize:12, fontWeight:700, color:uc, fontFamily:"monospace" }}>{v.current}</span>
+                          <span style={{ fontSize:12, color:uc }}>{ts}</span>
+                          <ElapsedBadge ts={v.lastTs} warnSec={900} critSec={1800} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Clinical Silences */}
+            <div>
+              <div style={{ fontSize:9, color:"#475569", letterSpacing:"0.08em", marginBottom:6 }}>CLINICAL SILENCES</div>
+              {activeSilences.length === 0 ? (
+                <div style={{ background:"#0A2F1E", border:"1px solid #065F46", borderRadius:8, padding:"10px 14px", fontSize:11, color:"#34D399" }}>
+                  ✓  No active clinical silences
+                </div>
+              ) : (
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {activeSilences.map(s => {
+                    const isCrit = s.severity === "critical";
+                    return (
+                      <div key={s.id} style={{
+                        background: isCrit ? "#1A0808" : "#1C1400",
+                        border:"1px solid " + (isCrit ? "#7F1D1D" : "#78350F"),
+                        borderLeft:"3px solid " + (isCrit ? "#EF4444" : "#F59E0B"),
+                        borderRadius:6, padding:"8px 10px",
+                        display:"flex", gap:8, alignItems:"flex-start"
+                      }}>
+                        <span style={{ fontSize:14 }}>{s.icon}</span>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:10, fontWeight:700, color:isCrit ? "#F87171" : "#FBB954", marginBottom:2 }}>
+                            {s.label}
+                            <span style={{
+                              marginLeft:6, fontSize:9, fontFamily:"monospace",
+                              color:isCrit ? "#F87171" : "#FBB954",
+                              background:(isCrit ? "#EF4444" : "#F59E0B") + "20",
+                              padding:"1px 5px", borderRadius:3
+                            }}>{s.elapsedMin}m</span>
+                          </div>
+                          <div style={{ fontSize:9, color:"#94A3B8" }}>{s.action}</div>
+                        </div>
+                        <button
+                          onClick={() => setDismissedSI(prev => [...prev, s.id])}
+                          style={{ background:"none", border:"none", color:"#475569", cursor:"pointer", fontSize:13, padding:0, lineHeight:1 }}>
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+          </div>
+        );
+      })()}
+
     </div>
   );
 }

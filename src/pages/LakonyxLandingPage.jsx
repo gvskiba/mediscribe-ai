@@ -589,7 +589,7 @@ export default function ShiftBriefPage() {
               <div className="sec-label">Quick access</div>
               <div className="hub-grid">
                 {HUBS.map(hub => (
-                  <div className="hub-pill" key={hub} title={hub}>{hub}</div>
+                  <div className="hub-pill" key={hub} title={hub} onClick={() => { window.location.href = `/${hub}`; }} style={{ cursor: "pointer" }}>{hub}</div>
                 ))}
               </div>
             </div>

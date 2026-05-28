@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const FONTS = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap";
-const AUTO_SECONDS = 12;
 const SHIFT_WINDOW_MS = 14 * 3600 * 1000;
 
 const PROVIDER  = { name: "Dr. Gabriel Skiba, DO", role: "Emergency Medicine", shiftStart: "19:00", shiftEnd: "07:00" };
@@ -213,17 +212,8 @@ html,body{background:#070d1a;}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;
 }
 .hub-pill:hover{background:rgba(13,200,170,.1);color:#0dc8aa;border-color:rgba(13,200,170,.25);}
-.tog-row{display:flex;justify-content:space-between;align-items:center;}
-.tog-lbl{font-size:.7rem;color:rgba(226,232,240,.45);}
-.tog{width:32px;height:17px;border-radius:9px;border:none;cursor:pointer;position:relative;padding:0;transition:background .18s;}
-.tog.on{background:rgba(13,200,170,.45);}.tog.off{background:rgba(226,232,240,.12);}
-.tog-knob{position:absolute;top:2px;width:13px;height:13px;border-radius:50%;background:#e2e8f0;transition:left .18s;}
-.tog.on .tog-knob{left:17px;}.tog.off .tog-knob{left:2px;}
-.tog-hint{font-size:.6rem;color:rgba(226,232,240,.2);margin-top:3px;}
 
 .ftr{flex-shrink:0;padding:0 1.75rem .75rem;position:relative;z-index:2;}
-.prog-track{height:1.5px;background:rgba(13,200,170,.09);border-radius:2px;overflow:hidden;margin-bottom:.6rem;}
-.prog-fill{height:100%;background:linear-gradient(90deg,#0dc8aa,#7dd3fc);border-radius:2px;transition:width .5s linear;}
 .cta{text-align:center;font-size:.65rem;color:rgba(226,232,240,.2);letter-spacing:.11em;text-transform:uppercase;}
 kbd{
   background:rgba(13,200,170,.09);border:0.5px solid rgba(13,200,170,.22);
@@ -340,12 +330,8 @@ function ESIBar() {
 export default function ShiftBriefPage() {
   const [phase, setPhase]         = useState("loading");
   const [acked, setAcked]         = useState(new Set());
-  const [autoAdv, setAutoAdv]     = useState(true);
-  const [progress, setProgress]   = useState(0);
   const [handoff, setHandoff]     = useState(HANDOFF);
   const [ackRecord, setAckRecord] = useState(null);
-  const timerRef = useRef(null);
-  const startRef = useRef(null);
 
   useEffect(() => {
     async function init() {
@@ -359,8 +345,6 @@ export default function ShiftBriefPage() {
       }
       const hd = await store.get("shift:handoff", true);
       if (hd) { try { setHandoff(JSON.parse(hd.value)); } catch {} }
-      const pref = await store.get("provider:autoAdvance");
-      if (pref) { try { setAutoAdv(JSON.parse(pref.value)); } catch {} }
       const ar = await store.get("shift:acknowledgment", true);
       if (ar) { try { setAckRecord(JSON.parse(ar.value)); } catch {} }
       setPhase("brief");
@@ -380,19 +364,8 @@ export default function ShiftBriefPage() {
     await store.set("shift:lastStart", JSON.stringify({ timestamp: Date.now() }));
     await store.set("shift:acknowledgment", JSON.stringify(rec), true);
     setPhase("exiting");
-    setTimeout(() => setPhase("active"), 460);
+    setTimeout(() => { window.location.href = "/new-patient-input"; }, 460);
   }, [phase]);
-
-  useEffect(() => {
-    if (phase !== "brief" || !autoAdv) { clearInterval(timerRef.current); return; }
-    startRef.current = startRef.current || Date.now();
-    timerRef.current = setInterval(() => {
-      const el = (Date.now() - startRef.current) / 1000;
-      setProgress(Math.min((el / AUTO_SECONDS) * 100, 100));
-      if (el >= AUTO_SECONDS) { clearInterval(timerRef.current); doAdvance(); }
-    }, 100);
-    return () => clearInterval(timerRef.current);
-  }, [phase, autoAdv, doAdvance]);
 
 
   useEffect(() => {
@@ -407,32 +380,12 @@ export default function ShiftBriefPage() {
     setAcked(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }, []);
 
-  const toggleAutoAdv = useCallback(async () => {
-    const next = !autoAdv;
-    setAutoAdv(next);
-    if (!next) { startRef.current = null; setProgress(0); }
-    await store.set("provider:autoAdvance", JSON.stringify(next));
-  }, [autoAdv]);
-
-  const secsLeft = Math.max(0, Math.ceil(AUTO_SECONDS - (progress / 100) * AUTO_SECONDS));
-
   if (phase === "loading") return (
     <>
       <style>{css}</style>
       <div className="full-center">
         <div className="full-title" style={{ fontSize: "1.3rem", letterSpacing: ".15em", textTransform: "uppercase" }}>Lakonyx</div>
         <div className="ldot" />
-      </div>
-    </>
-  );
-
-  if (phase === "active") return (
-    <>
-      <style>{css}</style>
-      <div className="full-center fade-in">
-        <div className="ldot" />
-        <div className="full-title" style={{ fontSize: "1.8rem" }}>Shift active</div>
-        <div className="full-sub">Command Center loading&hellip;</div>
       </div>
     </>
   );
@@ -463,7 +416,7 @@ export default function ShiftBriefPage() {
                 {CENSUS.total} / {CENSUS.capacity}
               </span>
             </div>
-            <button className="resume-btn" onClick={() => { setPhase("exiting"); setTimeout(() => setPhase("active"), 460); }}>
+            <button className="resume-btn" onClick={() => { setPhase("exiting"); setTimeout(() => { window.location.href = "/new-patient-input"; }, 460); }}>
               Resume Shift &rarr;
             </button>
           </div>
@@ -641,32 +594,12 @@ export default function ShiftBriefPage() {
               </div>
             </div>
 
-            <div className="div" />
-
-            <div className="sec">
-              <div className="tog-row">
-                <span className="tog-lbl">Auto-advance</span>
-                <button className={`tog ${autoAdv ? "on" : "off"}`} onClick={toggleAutoAdv} aria-label="Toggle auto-advance">
-                  <div className="tog-knob" />
-                </button>
-              </div>
-              <div className="tog-hint">
-                {autoAdv ? `Advancing in ${secsLeft}s` : "Manual advance only"}
-              </div>
-            </div>
           </div>
 
         </main>
 
         <footer className="ftr fade-in s4">
-          <div className="prog-track">
-            <div className="prog-fill" style={{ width: `${progress}%` }} />
-          </div>
-          <div className="cta">
-            {autoAdv
-              ? <>Auto-advancing in {secsLeft}s &nbsp;&bull;&nbsp; <kbd>Space</kbd> or <kbd>Enter</kbd> to begin now</>
-              : <><kbd>Space</kbd> or <kbd>Enter</kbd> to begin your shift</>}
-          </div>
+          <div className="cta"><kbd>Space</kbd> or <kbd>Enter</kbd> to begin your shift</div>
         </footer>
 
       </div>

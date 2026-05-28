@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 const FONTS = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap";
 const AUTO_SECONDS = 12;
@@ -318,6 +319,7 @@ function ESIBar() {
 }
 
 export default function ShiftBriefPage() {
+  const navigate = useNavigate();
   const [phase, setPhase]         = useState("loading");
   const [acked, setAcked]         = useState(new Set());
   const [autoAdv, setAutoAdv]     = useState(true);
@@ -399,6 +401,10 @@ export default function ShiftBriefPage() {
 
   const secsLeft  = Math.max(0, Math.ceil(AUTO_SECONDS - (progress / 100) * AUTO_SECONDS));
   const remaining = CRITICAL.length - acked.size;
+
+  useEffect(() => {
+    if (phase === "active") navigate("/CommandCenter");
+  }, [phase, navigate]);
 
   if (phase === "loading") return (
     <>

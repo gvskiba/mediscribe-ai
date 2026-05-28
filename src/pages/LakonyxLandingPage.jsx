@@ -757,14 +757,14 @@ export default function LakonyxLanding() {
           <div style={{width:26,height:1,background:`${BRAND.teal}38`}}/>
         </div>
 
-        {/* ── PRIORITY 1 · Global Search ────────────────────────────────── */}
-        <div className="lxl-s4" style={{width:"100%",marginBottom:10}}>
-          <GlobalSearch inputRef={searchRef} onNavigate={goHub}/>
+        {/* ── PRIORITY 2 · Quick-launch strip ──────────────────────────── */}
+        <div className="lxl-s4" style={{width:"100%",marginBottom:14}}>
+          <QuickLaunch recentRoutes={recentHubs} onNavigate={goHub}/>
         </div>
 
-        {/* ── PRIORITY 2 · Quick-launch strip ──────────────────────────── */}
+        {/* ── PRIORITY 1 · Global Search ────────────────────────────────── */}
         <div className="lxl-s4" style={{width:"100%",marginBottom:22}}>
-          <QuickLaunch recentRoutes={recentHubs} onNavigate={goHub}/>
+          <GlobalSearch inputRef={searchRef} onNavigate={goHub}/>
         </div>
 
         {/* ── Clock ─────────────────────────────────────────────────────── */}

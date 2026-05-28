@@ -154,6 +154,7 @@ import FollowUpHub from '@/pages/FollowUpHub';
 import PatientEncounter from '@/pages/PatientEncounter';
 import LakonyxInvestorPitch from '@/pages/LakonyxInvestorPitch';
 import LakonyxLandingPage from '@/pages/LakonyxLandingPage';
+import LakonyxNavBar from '@/pages/LakonyxNavBar';
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/patientchart"]);

@@ -117,7 +117,16 @@ const COMMANDS = [
   { id:"d_morph",   type:"drug",     label:"Morphine",             desc:"IV opioid analgesia, MME reference",                          icon:"💉", path:"/pain-hub",            tags:["morphine","opioid","analgesia","mme","pain"] },
   { id:"d_mag",     type:"drug",     label:"Magnesium Sulfate",    desc:"Eclampsia, torsades, asthma, pre-eclampsia dosing",           icon:"💉", path:"/weight-dose",         tags:["magnesium","eclampsia","torsades","asthma","sulfate"] },
 
-  // ── Protocols ─────────────────────────────────────────────────────────────
+  // ── Perception ────────────────────────────────────────────────────────────
+  { id:"si_alerts", type:"perception", label:"SI Alerts", desc:"Open Situational Intelligence perception panel", icon:"🎯",
+    shortcut:"S I", category:"Perception",
+    action: (ctx) => {
+      if (typeof ctx?.setActiveSidebarTab === "function") ctx.setActiveSidebarTab("si_alerts");
+      if (typeof ctx?.setCommandPaletteOpen === "function") ctx.setCommandPaletteOpen(false);
+    },
+    tags:["si","situational","intelligence","perception","alerts","panel"] },
+
+  // ── Protocols ────────────────────────────────────────────────────────────
   { id:"p_rsi",     type:"protocol", label:"RSI Protocol",         desc:"Rapid sequence intubation — prep, drugs, sequence",           icon:"😮", path:"/airway-hub",          tags:["rsi","rapid","sequence","intubation","preox","drugs"] },
   { id:"p_acls",    type:"protocol", label:"ACLS / Cardiac Arrest",desc:"VF, PEA, asystole — real-time checklist with timer",          icon:"❤️", path:"/resus-hub",           tags:["acls","arrest","vf","pea","asystole","cpr","epinephrine"] },
   { id:"p_se",      type:"protocol", label:"Status Epilepticus",   desc:"Stepped SE management, BZD → second-line → refractory",       icon:"⚡", path:"/seizure-hub",         tags:["status","epilepticus","seizure","benzo","lorazepam","keppra"] },
@@ -137,7 +146,8 @@ const TYPE_META = {
   score:    { label:"Score",    color:T.purple, bg:"rgba(155,109,255,0.12)" },
   drug:     { label:"Drug",     color:T.orange, bg:"rgba(255,159,67,0.12)" },
   protocol: { label:"Protocol", color:T.coral,  bg:"rgba(255,107,107,0.12)" },
-  tool:     { label:"Tool",     color:T.gold,   bg:"rgba(245,200,66,0.12)" },
+  tool:       { label:"Tool",       color:T.gold,   bg:"rgba(245,200,66,0.12)" },
+  perception: { label:"Perception", color:"#a78bfa", bg:"rgba(167,139,250,0.12)" },
 };
 
 // ── Fuzzy score ────────────────────────────────────────────────────────────────
@@ -312,7 +322,9 @@ export default function CommandPalette({
   const handleSelect = useCallback((cmd) => {
     addRecent(cmd.id);
     handleClose();
-    if (cmd.section && onSelectSection) {
+    if (typeof cmd.action === "function") {
+      cmd.action({ setActiveSidebarTab: undefined, setCommandPaletteOpen: undefined });
+    } else if (cmd.section && onSelectSection) {
       onSelectSection(cmd.section);
     } else if (cmd.path && onNavigate) {
       onNavigate(cmd.path);
@@ -415,7 +427,7 @@ export default function CommandPalette({
             borderBottom:"1px solid rgba(26,53,85,0.3)" }}>
             <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
               color:T.txt4 }}>Filter: </span>
-            {["hub:","drug:","score:","section:","protocol:"].map(prefix => (
+            {["hub:","drug:","score:","section:","protocol:","perception:"].map(prefix => (
               <button key={prefix}
                 onClick={() => { setQuery(prefix); inputRef.current?.focus(); }}
                 style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,

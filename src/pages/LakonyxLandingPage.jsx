@@ -33,7 +33,14 @@ const DELTA = [
   { id: "d2", type: "info",     text: "3 new arrivals while away" },
   { id: "d3", type: "success",  text: "Bed 12 admitted \u2014 room open" },
 ];
-const HUBS = ["NewPatientInput", "ECGHub", "StrokeHub", "ToxicologyHub", "TrackBoardView"];
+const HUBS = [
+  { label: "Quick Note",       route: "/QuickNote" },
+  { label: "Track Board",      route: "/EDTrackingBoard" },
+  { label: "New Patient",      route: "/NewPatientInput" },
+  { label: "All Hubs",         route: "/hub-index" },
+  { label: "Command Center",   route: "/CommandCenter" },
+  { label: "Shift Dashboard",  route: "/ShiftDashboard" },
+];
 const UNSIGNED_NOTES = [
   { id: "un1", patient: "Bed 4",  type: "Progress note" },
   { id: "un2", patient: "Bed 11", type: "H&P" },
@@ -589,7 +596,7 @@ export default function ShiftBriefPage() {
               <div className="sec-label">Quick access</div>
               <div className="hub-grid">
                 {HUBS.map(hub => (
-                  <div className="hub-pill" key={hub} title={hub}>{hub}</div>
+                  <div className="hub-pill" key={hub.route} title={hub.label} onClick={() => { window.location.href = hub.route; }} style={{ cursor: "pointer" }}>{hub.label}</div>
                 ))}
               </div>
             </div>

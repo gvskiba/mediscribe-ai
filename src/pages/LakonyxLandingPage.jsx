@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const FONTS = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap";
 const AUTO_SECONDS = 12;
@@ -36,6 +35,15 @@ const DELTA = [
   { id: "d3", type: "success",  text: "Bed 12 admitted \u2014 room open" },
 ];
 const HUBS = ["NewPatientInput", "ECGHub", "StrokeHub", "ToxicologyHub", "TrackBoardView"];
+const UNSIGNED_NOTES = [
+  { id: "un1", patient: "Bed 4",  type: "Progress note" },
+  { id: "un2", patient: "Bed 11", type: "H&P" },
+];
+const UNSIGNED_ORDERS = [
+  { id: "uo1", patient: "Bed 2", type: "Lactate repeat" },
+  { id: "uo2", patient: "Bed 7", type: "K⁺ replacement" },
+  { id: "uo3", patient: "Bed 9", type: "Discharge order" },
+];
 
 const store = {
   async get(k, s = false) { try { return await window.storage.get(k, s); } catch { return null; } },
@@ -185,6 +193,17 @@ html,body{background:#070d1a;}
 }
 .sblock-lbl{font-size:.58rem;color:rgba(13,200,170,.45);letter-spacing:.1em;text-transform:uppercase;}
 .sblock-val{font-family:'JetBrains Mono',monospace;font-size:.88rem;color:#e2e8f0;font-weight:500;margin-top:2px;}
+.uns-item{display:flex;align-items:center;gap:.45rem;padding:.28rem .4rem;border-radius:6px;}
+.uns-note{background:rgba(234,179,8,.06);border:0.5px solid rgba(234,179,8,.18);}
+.uns-order{background:rgba(96,165,250,.06);border:0.5px solid rgba(96,165,250,.18);}
+.uns-badge{
+  font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:500;
+  padding:1px 5px;border-radius:3px;flex-shrink:0;
+}
+.uns-note .uns-badge{color:rgba(234,179,8,.8);background:rgba(234,179,8,.1);}
+.uns-order .uns-badge{color:rgba(96,165,250,.75);background:rgba(96,165,250,.1);}
+.uns-type{font-size:.68rem;color:rgba(226,232,240,.6);flex:1;}
+.uns-patient{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:rgba(226,232,240,.32);}
 .hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
 .hub-pill{
   background:rgba(13,200,170,.05);border:0.5px solid rgba(13,200,170,.11);
@@ -319,7 +338,6 @@ function ESIBar() {
 }
 
 export default function ShiftBriefPage() {
-  const navigate = useNavigate();
   const [phase, setPhase]         = useState("loading");
   const [acked, setAcked]         = useState(new Set());
   const [autoAdv, setAutoAdv]     = useState(true);
@@ -350,12 +368,10 @@ export default function ShiftBriefPage() {
     init();
   }, []);
 
-  const allAcked  = CRITICAL.every(c => acked.has(c.id));
-  const canBegin  = allAcked;
-  const tmrPaused = !canBegin;
+  const allAcked = CRITICAL.every(c => acked.has(c.id));
 
   const doAdvance = useCallback(async () => {
-    if (phase !== "brief" || !canBegin) return;
+    if (phase !== "brief") return;
     const rec = {
       provider: PROVIDER.name,
       timestamp: Date.now(),
@@ -365,10 +381,10 @@ export default function ShiftBriefPage() {
     await store.set("shift:acknowledgment", JSON.stringify(rec), true);
     setPhase("exiting");
     setTimeout(() => setPhase("active"), 460);
-  }, [phase, canBegin]);
+  }, [phase]);
 
   useEffect(() => {
-    if (phase !== "brief" || !autoAdv || tmrPaused) { clearInterval(timerRef.current); return; }
+    if (phase !== "brief" || !autoAdv) { clearInterval(timerRef.current); return; }
     startRef.current = startRef.current || Date.now();
     timerRef.current = setInterval(() => {
       const el = (Date.now() - startRef.current) / 1000;
@@ -376,9 +392,8 @@ export default function ShiftBriefPage() {
       if (el >= AUTO_SECONDS) { clearInterval(timerRef.current); doAdvance(); }
     }, 100);
     return () => clearInterval(timerRef.current);
-  }, [phase, autoAdv, tmrPaused, doAdvance]);
+  }, [phase, autoAdv, doAdvance]);
 
-  useEffect(() => { if (tmrPaused) { startRef.current = null; setProgress(0); } }, [tmrPaused]);
 
   useEffect(() => {
     const h = e => {
@@ -399,12 +414,7 @@ export default function ShiftBriefPage() {
     await store.set("provider:autoAdvance", JSON.stringify(next));
   }, [autoAdv]);
 
-  const secsLeft  = Math.max(0, Math.ceil(AUTO_SECONDS - (progress / 100) * AUTO_SECONDS));
-  const remaining = CRITICAL.length - acked.size;
-
-  useEffect(() => {
-    if (phase === "active") navigate("/CommandCenter");
-  }, [phase, navigate]);
+  const secsLeft = Math.max(0, Math.ceil(AUTO_SECONDS - (progress / 100) * AUTO_SECONDS));
 
   if (phase === "loading") return (
     <>
@@ -523,9 +533,7 @@ export default function ShiftBriefPage() {
                 );
               })}
               <div className={`crit-gate${allAcked ? " ok" : ""}`}>
-                {allAcked
-                  ? "\u2713 All acknowledged \u2014 shift unlock ready"
-                  : `${remaining} unacknowledged \u2014 auto-advance paused`}
+                {allAcked ? "\u2713 All critical results acknowledged" : `${CRITICAL.filter(c => !acked.has(c.id)).length} of ${CRITICAL.length} pending acknowledgment`}
               </div>
             </div>
           </div>
@@ -562,10 +570,8 @@ export default function ShiftBriefPage() {
               </div>
             )}
 
-            <button className="begin-btn" onClick={doAdvance} disabled={!canBegin}>
-              {canBegin
-                ? "Begin Shift \u2192"
-                : `Acknowledge ${remaining} critical result${remaining !== 1 ? "s" : ""} to continue`}
+            <button className="begin-btn" onClick={doAdvance}>
+              Begin Shift →
             </button>
           </div>
 
@@ -591,6 +597,42 @@ export default function ShiftBriefPage() {
             <div className="div" />
 
             <div className="sec">
+              <div className="sec-inline">
+                <div className="sec-label">Unsigned notes</div>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".62rem", color: "rgba(234,179,8,.65)", marginLeft: "auto" }}>
+                  {UNSIGNED_NOTES.length}
+                </span>
+              </div>
+              {UNSIGNED_NOTES.map(n => (
+                <div className="uns-item uns-note" key={n.id}>
+                  <span className="uns-badge">NOTE</span>
+                  <span className="uns-type">{n.type}</span>
+                  <span className="uns-patient">{n.patient}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="div" />
+
+            <div className="sec">
+              <div className="sec-inline">
+                <div className="sec-label">Unsigned orders</div>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".62rem", color: "rgba(96,165,250,.65)", marginLeft: "auto" }}>
+                  {UNSIGNED_ORDERS.length}
+                </span>
+              </div>
+              {UNSIGNED_ORDERS.map(o => (
+                <div className="uns-item uns-order" key={o.id}>
+                  <span className="uns-badge">ORDER</span>
+                  <span className="uns-type">{o.type}</span>
+                  <span className="uns-patient">{o.patient}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="div" />
+
+            <div className="sec">
               <div className="sec-label">Quick access</div>
               <div className="hub-grid">
                 {HUBS.map(hub => (
@@ -609,11 +651,7 @@ export default function ShiftBriefPage() {
                 </button>
               </div>
               <div className="tog-hint">
-                {autoAdv
-                  ? tmrPaused
-                    ? "Paused \u2014 acknowledge criticals first"
-                    : `Advancing in ${secsLeft}s`
-                  : "Manual advance only"}
+                {autoAdv ? `Advancing in ${secsLeft}s` : "Manual advance only"}
               </div>
             </div>
           </div>
@@ -625,11 +663,9 @@ export default function ShiftBriefPage() {
             <div className="prog-fill" style={{ width: `${progress}%` }} />
           </div>
           <div className="cta">
-            {canBegin
-              ? autoAdv
-                ? <>Auto-advancing in {secsLeft}s &nbsp;&bull;&nbsp; <kbd>Space</kbd> or <kbd>Enter</kbd> to begin now</>
-                : <><kbd>Space</kbd> or <kbd>Enter</kbd> to begin your shift</>
-              : <>Acknowledge all {CRITICAL.length} critical results to unlock</>}
+            {autoAdv
+              ? <>Auto-advancing in {secsLeft}s &nbsp;&bull;&nbsp; <kbd>Space</kbd> or <kbd>Enter</kbd> to begin now</>
+              : <><kbd>Space</kbd> or <kbd>Enter</kbd> to begin your shift</>}
           </div>
         </footer>
 

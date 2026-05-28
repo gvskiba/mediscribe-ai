@@ -479,11 +479,13 @@ export default function CDSSidebar(props) {
     setDismissCount(p => p + 1);
   };
 
-  // Nothing to show
-  if (flags.length === 0) return null;
+  // Nothing to show (no CDS flags AND no SI silences)
+  const siActiveSilences = siData.silences.filter(s => !dismissedSI.includes(s.id));
+  if (flags.length === 0 && siActiveSilences.length === 0) return null;
 
   // Collapsed pill
   if (collapsed) {
+    const totalCount = flags.length + siActiveSilences.filter(s => s.severity === "critical").length;
     return (
       <button onClick={() => setCollapsed(false)}
         style={{ display:"inline-flex", alignItems:"center", gap:6,
@@ -494,7 +496,7 @@ export default function CDSSidebar(props) {
         <span style={{ fontSize:12 }}>\uD83D\uDEA8</span>
         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
           letterSpacing:1.5, textTransform:"uppercase" }}>
-          {flags.length} CDS flag{flags.length !== 1 ? "s" : ""}
+          {totalCount} alert{totalCount !== 1 ? "s" : ""}
         </span>
         <span style={{ fontFamily:"'JetBrains Mono',monospace",
           fontSize:8, color:T.txt4 }}>\u25bc</span>
@@ -593,9 +595,9 @@ export default function CDSSidebar(props) {
 
       {/* SI Alerts tab */}
       {activeTab === "si_alerts" && (() => {
-        const { vitals, silences, trajectories } = siData;
+        const { vitals, trajectories } = siData;
         const tc = TRAJECTORY_COLORS[trajectories.level] || TRAJECTORY_COLORS.stable;
-        const activeSilences = silences.filter(s => !dismissedSI.includes(s.id));
+        const activeSilences = siActiveSilences;
         return (
           <div style={{ display:"flex", flexDirection:"column", gap:12, padding:"12px 10px" }}>
 

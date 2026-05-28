@@ -404,19 +404,29 @@ export default function NewPatientInput() {
   const [showFhirSync,         setShowFhirSync]         = useState(false);
   const [showCCDA,             setShowCCDA]             = useState(false);
 
-  // ── SI PHASE 1: Derived state ────────────────────────────────────────────────
+  // ── SI PHASE 1: Accumulating vital readings (append-on-change, not overwrite)
+  const vitalReadingsRef = React.useRef({ HR:[], SBP:[], DBP:[], SpO2:[], RR:[], Temp:[] });
+
+  React.useEffect(() => {
+    const ts = Date.now();
+    const r = vitalReadingsRef.current;
+    if (vitals.hr)   r.HR   = appendVitalReading(r.HR,   parseFloat(vitals.hr), ts);
+    if (vitals.bp) {
+      const parts = (vitals.bp || "").split("/");
+      r.SBP = appendVitalReading(r.SBP, parseFloat(parts[0]), ts);
+      r.DBP = appendVitalReading(r.DBP, parseFloat(parts[1] || "0"), ts);
+    }
+    if (vitals.spo2) r.SpO2 = appendVitalReading(r.SpO2, parseFloat(vitals.spo2), ts);
+    if (vitals.rr)   r.RR   = appendVitalReading(r.RR,   parseFloat(vitals.rr), ts);
+    if (vitals.temp) r.Temp = appendVitalReading(r.Temp, parseFloat(vitals.temp), ts);
+  }, [vitals]);
+
   const siPatient = React.useMemo(() => ({
-    vitalReadings: {
-      HR:   vitals.hr   ? [{ value: parseFloat(vitals.hr),                                ts: Date.now() }] : [],
-      SBP:  vitals.bp   ? [{ value: parseFloat((vitals.bp||"").split("/")[0]),             ts: Date.now() }] : [],
-      DBP:  vitals.bp   ? [{ value: parseFloat((vitals.bp||"").split("/")[1] || "0"),      ts: Date.now() }] : [],
-      SpO2: vitals.spo2 ? [{ value: parseFloat(vitals.spo2),                               ts: Date.now() }] : [],
-      RR:   vitals.rr   ? [{ value: parseFloat(vitals.rr),                                ts: Date.now() }] : [],
-      Temp: vitals.temp ? [{ value: parseFloat(vitals.temp),                              ts: Date.now() }] : [],
-    },
+    vitalReadings: { ...vitalReadingsRef.current },
     silenceTimestamps: {},
     arrivalTs: arrivalTimeRef.current || Date.now(),
     esi: esiLevel,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [vitals, esiLevel, arrivalTimeRef]);
 
   const siVitals = React.useMemo(() => {

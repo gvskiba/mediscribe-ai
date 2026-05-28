@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import * as React from "react";
 import { Link } from "react-router-dom";
 import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
 import { toast } from "sonner";
@@ -64,6 +65,158 @@ import ResusHub                from "@/pages/ResusHub";
 import StrokeHub               from "@/pages/StrokeHub";
 import ToxicologyHub           from "@/pages/ToxicologyHub";
 import DDxEngine               from "@/pages/DDxEngine";
+
+// ── SI PHASE 1: PERCEPTION LAYER ─────────────────────────────────────────────
+if (typeof window !== "undefined" && !window.lakonyx_context) {
+  window.lakonyx_context = {
+    vitals: {},
+    silences: [],
+    trajectories: {},
+    resources: {},
+    deptState: "normal",
+    _listeners: [],
+    emit(key, data) {
+      this[key] = data;
+      this._listeners.forEach(fn => fn(key, data));
+    },
+    subscribe(fn) {
+      this._listeners.push(fn);
+      return () => { this._listeners = this._listeners.filter(l => l !== fn); };
+    }
+  };
+}
+
+const VITAL_THRESHOLDS = {
+  HR:   { warn: [50, 100],   crit: [40, 120],   unit: "bpm",  label: "Heart Rate" },
+  SBP:  { warn: [90, 160],   crit: [80, 180],   unit: "mmHg", label: "Systolic BP" },
+  DBP:  { warn: [50, 100],   crit: [40, 110],   unit: "mmHg", label: "Diastolic BP" },
+  SpO2: { warn: [94, 100],   crit: [90, 100],   unit: "%",    label: "SpO2" },
+  RR:   { warn: [12, 20],    crit: [8, 28],     unit: "/min", label: "Resp Rate" },
+  Temp: { warn: [36.0, 38.3],crit: [35.0, 39.5],unit: "C",   label: "Temperature" }
+};
+
+function calcTrend(readings) {
+  if (!readings || readings.length < 2) return "stable";
+  const vals = readings.slice(-3).map(r => r.value);
+  const delta = vals[vals.length - 1] - vals[0];
+  const threshold = vals[0] * 0.05;
+  if (delta > threshold) return "rising";
+  if (delta < -threshold) return "falling";
+  return "stable";
+}
+
+function calcUrgency(vital, value) {
+  const t = VITAL_THRESHOLDS[vital];
+  if (!t) return "normal";
+  if (value < t.crit[0] || value > t.crit[1]) return "critical";
+  if (value < t.warn[0] || value > t.warn[1]) return "warning";
+  return "normal";
+}
+
+function buildVitalObject(vital, readings) {
+  const latest = readings[readings.length - 1];
+  return {
+    type: vital,
+    readings,
+    trend: calcTrend(readings),
+    urgency: calcUrgency(vital, latest.value),
+    current: latest.value,
+    lastTs: latest.ts
+  };
+}
+
+function useElapsed(ts) {
+  const [elapsed, setElapsed] = React.useState(0);
+  React.useEffect(() => {
+    const tick = () => setElapsed(Math.floor((Date.now() - ts) / 1000));
+    tick();
+    const id = setInterval(tick, 10000);
+    return () => clearInterval(id);
+  }, [ts]);
+  return elapsed;
+}
+
+function formatElapsed(seconds) {
+  if (seconds < 60) return seconds + "s ago";
+  if (seconds < 3600) return Math.floor(seconds / 60) + " min ago";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return m > 0 ? h + "h " + m + "m ago" : h + "h ago";
+}
+
+function getElapsedColor(seconds, warnSec = 1800, critSec = 3600) {
+  if (seconds >= critSec) return "#EF4444";
+  if (seconds >= warnSec) return "#F59E0B";
+  return "#10B981";
+}
+
+function ElapsedBadge({ ts, warnSec = 1800, critSec = 3600, style = {} }) {
+  const elapsed = useElapsed(ts);
+  const color = getElapsedColor(elapsed, warnSec, critSec);
+  return (
+    <span style={{
+      fontSize: 10, fontFamily: "monospace",
+      color, background: color + "18",
+      padding: "1px 6px", borderRadius: 4, ...style
+    }}>
+      {formatElapsed(elapsed)}
+    </span>
+  );
+}
+
+const SILENCE_RULES = [
+  { id: "reassessment",   label: "No Reassessment Documented",    warnMin: 30,  critMin: 60,  icon: "⚕",  action: "Document reassessment or update clinical status" },
+  { id: "lab_result",     label: "Pending Lab Result — No Action", warnMin: 30,  critMin: 60,  icon: "🧪", action: "Review result and update management plan" },
+  { id: "imaging_result", label: "Pending Imaging — No Action",    warnMin: 20,  critMin: 45,  icon: "🩻", action: "Review imaging and document interpretation" },
+  { id: "antibiotic",     label: "Antibiotic Not Administered",    warnMin: 30,  critMin: 60,  icon: "💊", action: "Confirm administration or escalate to pharmacy" },
+  { id: "sepsis_lactate", label: "Sepsis Criteria — No Lactate",   warnMin: 0,   critMin: 30,  icon: "🔴", action: "Order lactate immediately per Sepsis-3 bundle" },
+  { id: "disposition",    label: "Disposition Not Documented",     warnMin: 180, critMin: 240, icon: "🏥", action: "Document disposition intent in MDM" }
+];
+
+function evaluateSilences(patient) {
+  const now = Date.now();
+  const silences = [];
+  SILENCE_RULES.forEach(rule => {
+    const eventTs = patient?.silenceTimestamps?.[rule.id];
+    if (!eventTs) return;
+    const elapsedMin = Math.floor((now - eventTs) / 60000);
+    if (elapsedMin < rule.warnMin) return;
+    silences.push({ ...rule, elapsedMin, severity: elapsedMin >= rule.critMin ? "critical" : "warning" });
+  });
+  return silences.sort((a, b) => a.severity === b.severity ? b.elapsedMin - a.elapsedMin : a.severity === "critical" ? -1 : 1);
+}
+
+function calcTrajectoryScore(vitals, silences, arrivalTs, esiLevel) {
+  let score = 0;
+  Object.values(vitals).forEach(v => {
+    if (v.urgency === "critical") score += 12;
+    else if (v.urgency === "warning") score += 5;
+    if (v.trend === "rising"  && ["HR", "RR"].includes(v.type))   score += 4;
+    if (v.trend === "falling" && ["SBP","SpO2"].includes(v.type)) score += 6;
+  });
+  score = Math.min(score, 40);
+  const silenceScore = silences.reduce((acc, s) => acc + (s.severity === "critical" ? 10 : 5), 0);
+  score += Math.min(silenceScore, 30);
+  const losHours = (Date.now() - arrivalTs) / 3600000;
+  const expectedHours = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 }[esiLevel] || 3;
+  if (losHours > expectedHours * 1.5) score += 15;
+  else if (losHours > expectedHours)  score += 8;
+  score = Math.min(score, 100);
+  const level = score >= 67 ? "critical" : score >= 34 ? "worsening" : "stable";
+  return { score, level };
+}
+
+const TRAJECTORY_COLORS = {
+  stable:    { bg: "#0A2F1E", border: "#10B981", text: "#34D399", label: "STABLE" },
+  worsening: { bg: "#2D1F00", border: "#F59E0B", text: "#FBB954", label: "WORSENING" },
+  critical:  { bg: "#2D0A0A", border: "#EF4444", text: "#F87171", label: "CRITICAL" }
+};
+
+function appendVitalReading(prevReadings = [], newValue, ts = Date.now()) {
+  if (newValue == null || isNaN(newValue)) return prevReadings;
+  return [...prevReadings, { value: Number(newValue), ts }].slice(-10);
+}
+// ── END SI PHASE 1 ────────────────────────────────────────────────────────────
 
 // ── FIX #6: Toast helper at module scope — passed into useNPIState so the
 // hook can emit toasts without importing sonner directly (Base44 constraint).
@@ -250,6 +403,48 @@ export default function NewPatientInput() {
   // ── Interoperability panels ─────────────────────────────────────────────────
   const [showFhirSync,         setShowFhirSync]         = useState(false);
   const [showCCDA,             setShowCCDA]             = useState(false);
+
+  // ── SI PHASE 1: Derived state ────────────────────────────────────────────────
+  const siPatient = React.useMemo(() => ({
+    vitalReadings: {
+      HR:   vitals.hr   ? [{ value: parseFloat(vitals.hr),                                ts: Date.now() }] : [],
+      SBP:  vitals.bp   ? [{ value: parseFloat((vitals.bp||"").split("/")[0]),             ts: Date.now() }] : [],
+      DBP:  vitals.bp   ? [{ value: parseFloat((vitals.bp||"").split("/")[1] || "0"),      ts: Date.now() }] : [],
+      SpO2: vitals.spo2 ? [{ value: parseFloat(vitals.spo2),                               ts: Date.now() }] : [],
+      RR:   vitals.rr   ? [{ value: parseFloat(vitals.rr),                                ts: Date.now() }] : [],
+      Temp: vitals.temp ? [{ value: parseFloat(vitals.temp),                              ts: Date.now() }] : [],
+    },
+    silenceTimestamps: {},
+    arrivalTs: arrivalTimeRef.current || Date.now(),
+    esi: esiLevel,
+  }), [vitals, esiLevel, arrivalTimeRef]);
+
+  const siVitals = React.useMemo(() => {
+    if (!siPatient?.vitalReadings) return {};
+    return Object.fromEntries(
+      Object.entries(siPatient.vitalReadings)
+        .filter(([, r]) => r?.length > 0)
+        .map(([k, r]) => [k, buildVitalObject(k, r)])
+    );
+  }, [siPatient?.vitalReadings]);
+
+  const siSilences = React.useMemo(() =>
+    evaluateSilences(siPatient), [siPatient?.silenceTimestamps]);
+
+  const siTrajectory = React.useMemo(() =>
+    calcTrajectoryScore(siVitals, siSilences, siPatient?.arrivalTs, siPatient?.esi),
+    [siVitals, siSilences, siPatient?.arrivalTs, siPatient?.esi]);
+
+  const siTc = TRAJECTORY_COLORS[siTrajectory.level] || TRAJECTORY_COLORS.stable;
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && window.lakonyx_context) {
+      window.lakonyx_context.emit("vitals",       siVitals);
+      window.lakonyx_context.emit("silences",     siSilences);
+      window.lakonyx_context.emit("trajectories", siTrajectory);
+    }
+  }, [siVitals, siSilences, siTrajectory]);
+  // ── END SI PHASE 1 ───────────────────────────────────────────────────────────
 
   // ── renderContent ──────────────────────────────────────────────────────────
   const renderContent = () => {
@@ -889,6 +1084,33 @@ export default function NewPatientInput() {
 
           {/* Connectivity / sync status — always visible */}
           <ConnectivityIndicator />
+
+          {/* SI Trajectory Pill */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: siTc.bg, border: "1px solid " + siTc.border,
+            borderRadius: 6, padding: "3px 10px"
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: siTc.text, fontFamily: "monospace" }}>
+              {siTrajectory.score}
+            </span>
+            <span style={{ fontSize: 9, color: siTc.text, letterSpacing: "0.08em" }}>
+              {siTc.label}
+            </span>
+          </div>
+
+          {/* Critical Silence Badge */}
+          {siSilences.filter(s => s.severity === "critical").length > 0 && (
+            <div style={{
+              background: "#EF444420", border: "1px solid #7F1D1D",
+              borderRadius: 6, padding: "3px 10px", cursor: "pointer"
+            }}>
+              <span style={{ fontSize: 10, color: "#F87171", fontWeight: 700 }}>
+                {"⚠ " + siSilences.filter(s => s.severity === "critical").length + " gap" +
+                  (siSilences.filter(s => s.severity === "critical").length > 1 ? "s" : "")}
+              </span>
+            </div>
+          )}
 
           {/* Visit mode selector */}
           <div style={{ display:"flex", gap:2, background:"rgba(8,22,46,0.8)", border:"1px solid rgba(26,53,85,0.5)", borderRadius:7, overflow:"hidden", flexShrink:0 }}>

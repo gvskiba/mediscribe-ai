@@ -1082,7 +1082,7 @@ export default function NewPatientInput() {
               )}
             </button>
             <button className="npi-new-pt" onClick={() => navigate("/NewPatientInput?tab=demo")}>+ New Patient</button>
-            <Link to="/AppSettings" className="npi-tb-settings" title="Settings">&#x2699;&#xFE0F;</Link>
+            <Link to="/UserPreferences" className="npi-tb-settings" title="Settings">&#x2699;&#xFE0F;</Link>
           </div>
         </div>
 

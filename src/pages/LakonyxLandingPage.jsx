@@ -364,7 +364,7 @@ export default function ShiftBriefPage() {
     await store.set("shift:lastStart", JSON.stringify({ timestamp: Date.now() }));
     await store.set("shift:acknowledgment", JSON.stringify(rec), true);
     setPhase("exiting");
-    setTimeout(() => { window.location.href = "/new-patient-input"; }, 460);
+    setTimeout(() => { window.location.href = "/CommandCenter"; }, 460);
   }, [phase]);
 
 
@@ -416,7 +416,7 @@ export default function ShiftBriefPage() {
                 {CENSUS.total} / {CENSUS.capacity}
               </span>
             </div>
-            <button className="resume-btn" onClick={() => { setPhase("exiting"); setTimeout(() => { window.location.href = "/new-patient-input"; }, 460); }}>
+            <button className="resume-btn" onClick={() => { setPhase("exiting"); setTimeout(() => { window.location.href = "/CommandCenter"; }, 460); }}>
               Resume Shift &rarr;
             </button>
           </div>
@@ -589,7 +589,7 @@ export default function ShiftBriefPage() {
               <div className="sec-label">Quick access</div>
               <div className="hub-grid">
                 {HUBS.map(hub => (
-                  <div className="hub-pill" key={hub} title={hub} onClick={() => { window.location.href = `/${hub}`; }} style={{ cursor: "pointer" }}>{hub}</div>
+                  <div className="hub-pill" key={hub} title={hub}>{hub}</div>
                 ))}
               </div>
             </div>

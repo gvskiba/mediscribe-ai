@@ -323,7 +323,7 @@ function deriveVitalsTrend(p) {
     const f=improving?i/3:0, hr=Math.round(hr0-(hr0-(sv&&raw.hr||72))*f);
     const sys=Math.round(bp0[0]+(((sv&&raw.bp?parseInt(raw.bp):120)-bp0[0])*f));
     const dia=Math.round(bp0[1]+(((sv&&raw.bp?parseInt(raw.bp.split("/")[1]||70):70)-bp0[1])*f));
-    return { ts:t(off), HR:hr, BP:`${sys}/${dia}`, SpO2:Math.round(sp0+((99-sp0)*f)), RR:Math.round(rr0+((16-rr0)*f)), Temp:(parseFloat((sv&&raw.temp)||98.4)||98.4).toFixed(1), GCS:Math.min(15,Math.round(gc0+((15-gc0)*f))) };
+    return { ts:t(off), HR:hr, BP:`${sys}/${dia}`, SpO2:Math.round(sp0+((99-sp0)*f)), RR:Math.round(rr0+((16-rr0)*f)), Temp:((sv&&raw.temp)||98.4).toFixed(1), GCS:Math.min(15,Math.round(gc0+((15-gc0)*f))) };
   });
 }
 
@@ -699,7 +699,7 @@ function EncounterWorkspace({ patient, summary, onRapidOrder, embedded=false }) 
   useEffect(()=>{ const onKey=(e)=>{ const tag=(e.target?.tagName||""); if(tag==="INPUT"||tag==="TEXTAREA")return; const n=parseInt(e.key); if(n>=1&&n<=5){e.preventDefault();changeTab(WORKSPACE_TABS[n-1].key);} }; window.addEventListener("keydown",onKey); return()=>window.removeEventListener("keydown",onKey); },[changeTab]);
   if(!patient)return null;
   return (
-    <div style={{ display:"flex",flexDirection:"column",height:"100%",overflow:"hidden",background:embedded?"transparent":T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif" }}>
+    <div style={{ display:"flex",flexDirection:"column",flex:1,minWidth:0,height:"100%",overflow:"hidden",background:embedded?"transparent":T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif" }}>
       <WorkspaceHeader patient={patient} summary={summary}/>
       <WorkspaceTimeline patient={patient}/>
       <WorkspaceTabBar active={activeTab} onChange={changeTab}/>
@@ -841,7 +841,7 @@ function CensusPanel({ patients, search, onSearch, selectedId, onSelect, summari
   const myPatients=sorted.filter(p=>deriveProviders(p).some(pr=>pr.role==="MD"&&pr.name===CURRENT_USER));
   const displayed=filterMode==="mine"?myPatients:sorted, isMine=filterMode==="mine";
   return (
-    <div style={{ width:292,minWidth:292,display:"flex",flexDirection:"column",borderRight:"1px solid rgba(26,53,85,0.5)",height:"100%",background:T.panel }}>
+    <div style={{ width:292,minWidth:292,flexShrink:0,display:"flex",flexDirection:"column",borderRight:"1px solid rgba(26,53,85,0.5)",height:"100%",overflow:"hidden",background:T.panel }}>
       <div style={{ padding:"14px 16px 10px",borderBottom:`1px solid ${isMine?T.teal+"44":"rgba(26,53,85,0.5)"}`,transition:"border-color .25s" }}>
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9 }}>
           <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:isMine?T.teal:T.txt4,textTransform:"uppercase",letterSpacing:"0.12em",transition:"color .2s" }}>{isMine?"My Patients":"Patient Census"}</span>
@@ -956,11 +956,11 @@ function ShiftRail({ patients }) {
   const secLabel=(txt,color=T.txt4)=><div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8 }}>{txt}</div>;
   const metricRow=(label,value,valueColor,sub=null)=><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}><div style={{ minWidth:0 }}><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt3,lineHeight:1.3 }}>{label}</div>{sub&&<div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,marginTop:1 }}>{sub}</div>}</div><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,color:valueColor,flexShrink:0,marginLeft:8 }}>{value}</span></div>;
   return (
-    <div style={{ width:258,minWidth:258,height:"100%",borderLeft:"1px solid rgba(26,53,85,0.5)",background:T.panel,display:"flex",flexDirection:"column",overflowY:"auto" }}>
+    <div style={{ width:258,minWidth:258,flexShrink:0,height:"100%",borderLeft:"1px solid rgba(26,53,85,0.5)",background:T.panel,display:"flex",flexDirection:"column",overflow:"hidden" }}>
       <div style={{ padding:"14px 14px 10px",borderBottom:"1px solid rgba(26,53,85,0.5)",flexShrink:0 }}>
         <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:T.txt4,textTransform:"uppercase",letterSpacing:"0.12em" }}>Shift Overview</div>
       </div>
-      <div style={{ padding:"12px 12px 0",flex:1 }}>
+      <div style={{ padding:"12px 12px 12px",flex:1,overflowY:"auto" }}>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:14 }}>
           {[
             { label:"Total Pts",    value:patients.length,                                                                                              color:T.teal    },
@@ -1214,7 +1214,7 @@ function RapidOrderDrawer({ open, onClose, patients, selectedPatient }) {
   );
 }
 
-// ─── COMMAND CENTER — DEFAULT EXPORT (v2) ─────────────────────────────────────
+// ─── COMMAND CENTER — DEFAULT EXPORT ──────────────────────────────────────────
 export default function CommandCenter() {
   const [search,         setSearch]         = useState("");
   const [showNewPatient, setShowNewPatient] = useState(false);
@@ -1280,7 +1280,7 @@ export default function CommandCenter() {
   );
 
   return (
-    <div style={{ display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif" }}>
+    <div style={{ display:"flex",flexDirection:"column",height:"100%",minHeight:"100vh",overflow:"hidden",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif" }}>
       <TopBar
         onQuickNote={()=>nav("QuickNote")}
         onNewPatient={()=>setShowNewPatient(true)}
@@ -1293,7 +1293,7 @@ export default function CommandCenter() {
         onPatientSelect={handleSelectPatient}
         patients={patients}
       />
-      <div style={{ display:"flex",flex:1,overflow:"hidden" }}>
+      <div style={{ display:"flex",flex:1,overflow:"hidden",minHeight:0 }}>
         <CensusPanel
           patients={patients}
           search={search}

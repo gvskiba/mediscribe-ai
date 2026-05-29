@@ -323,7 +323,7 @@ function deriveVitalsTrend(p) {
     const f=improving?i/3:0, hr=Math.round(hr0-(hr0-(sv&&raw.hr||72))*f);
     const sys=Math.round(bp0[0]+(((sv&&raw.bp?parseInt(raw.bp):120)-bp0[0])*f));
     const dia=Math.round(bp0[1]+(((sv&&raw.bp?parseInt(raw.bp.split("/")[1]||70):70)-bp0[1])*f));
-    return { ts:t(off), HR:hr, BP:`${sys}/${dia}`, SpO2:Math.round(sp0+((99-sp0)*f)), RR:Math.round(rr0+((16-rr0)*f)), Temp:((sv&&raw.temp)||98.4).toFixed(1), GCS:Math.min(15,Math.round(gc0+((15-gc0)*f))) };
+    return { ts:t(off), HR:hr, BP:`${sys}/${dia}`, SpO2:Math.round(sp0+((99-sp0)*f)), RR:Math.round(rr0+((16-rr0)*f)), Temp:(parseFloat((sv&&raw.temp)||98.4)||98.4).toFixed(1), GCS:Math.min(15,Math.round(gc0+((15-gc0)*f))) };
   });
 }
 

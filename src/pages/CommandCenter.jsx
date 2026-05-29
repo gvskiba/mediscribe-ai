@@ -1214,7 +1214,7 @@ function RapidOrderDrawer({ open, onClose, patients, selectedPatient }) {
   );
 }
 
-// ─── COMMAND CENTER — DEFAULT EXPORT ──────────────────────────────────────────
+// ─── COMMAND CENTER — DEFAULT EXPORT (v2) ─────────────────────────────────────
 export default function CommandCenter() {
   const [search,         setSearch]         = useState("");
   const [showNewPatient, setShowNewPatient] = useState(false);

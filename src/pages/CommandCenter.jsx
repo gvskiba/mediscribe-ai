@@ -47,7 +47,8 @@ const nav = (page, params = {}) => {
 const CURRENT_USER = "Skiba";
 
 // ─── GLOBAL HELPERS ───────────────────────────────────────────────────────────
-const esiColor  = (n) => ({1:T.red,2:T.orange,3:T.gold,4:T.green,5:T.txt4}[n]||T.txt4);
+const esiColor     = (n) => ({1:T.red,2:T.orange,3:T.gold,4:T.green,5:T.txt4}[n]||T.txt4);
+const emsEsiColor  = esiColor;
 const fmtTime   = (m) => m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`;
 const gc        = (x={}) => ({ background:T.card, border:"1px solid rgba(26,53,85,0.5)", borderRadius:10, ...x });
 const idHash    = (id="") => id.split("").reduce((a,c)=>(a*31+c.charCodeAt(0))&0xffff, 0);
@@ -1509,7 +1510,6 @@ function ShiftRail({ patients, emsQueue=[], transferRecords=[], onCallProviders=
         <div style={{ marginBottom:14 }}>
           {secLabel("ESI Breakdown")}
           {[1,2,3,4,5].map(esi=>{ const count=patients.filter(p=>p.esi===esi).length, c=esiColor(esi), pct=patients.length?(count/patients.length)*100:0; return <div key={esi} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:5 }}><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:c,minWidth:36 }}>ESI {esi}</span><div style={{ flex:1,height:5,background:"rgba(26,53,85,0.5)",borderRadius:3,overflow:"hidden" }}><div style={{ width:`${pct}%`,height:"100%",background:c,borderRadius:3,transition:"width .4s" }}/></div><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,minWidth:12,textAlign:"right" }}>{count}</span></div>; })}
-        </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import UniversalSearchBar from "./UniversalSearchBar";
+import FavoritesBar from "./FavoritesBar";
 import BreadcrumbBar from "./BreadcrumbBar";
 import { PAGES, CATS, CAT_COLOR } from "@/lib/navPages";
 
@@ -486,6 +487,11 @@ export default function GlobalNav({ alerts = 0 }) {
 
       {/* Breadcrumb Bar */}
       <BreadcrumbBar history={recentChips} />
+
+      {/* Favorites Bar */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <FavoritesBar />
+      </div>
 
       {/* ══════════════ HUB PICKER OVERLAY ══════════════ */}
       {hubOpen && (

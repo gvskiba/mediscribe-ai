@@ -468,7 +468,7 @@ function deriveVitalsTrend(p) {
     const f=imp?i/3:0,hr=Math.round(hr0-(hr0-(p.vitals?.hr||72))*f);
     const sys=Math.round(bp0[0]+((((p.vitals?.bp?parseInt(p.vitals.bp):120))-bp0[0])*f));
     const dia=Math.round(bp0[1]+((((p.vitals?.bp?parseInt(p.vitals.bp.split("/")[1]||70):70))-bp0[1])*f));
-    return {ts:t(off),HR:hr,BP:`${sys}/${dia}`,SpO2:Math.round((imp?93:98)+((99-(imp?93:98))*f)),RR:Math.round((imp?24:16)+((16-(imp?24:16))*f)),Temp:((p.vitals?.temp)||98.4).toFixed(1),GCS:Math.min(15,Math.round((imp?13:15)+((15-(imp?13:15))*f)))};
+    return {ts:t(off),HR:hr,BP:`${sys}/${dia}`,SpO2:Math.round((imp?93:98)+((99-(imp?93:98))*f)),RR:Math.round((imp?24:16)+((16-(imp?24:16))*f)),Temp:(parseFloat(p.vitals?.temp)||98.4).toFixed(1),GCS:Math.min(15,Math.round((imp?13:15)+((15-(imp?13:15))*f)))};
   });
 }
 const HOME_MED_POOLS={

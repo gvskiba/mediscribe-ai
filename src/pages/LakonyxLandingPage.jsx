@@ -438,10 +438,9 @@ export default function ShiftBriefPage() {
       <div className={`sb${phase === "exiting" ? " flash-out" : ""}`}>
         <div className="bg-grid" />
 
-        <header className="hdr fade-in">
-          <div className="brand">Lakonyx &mdash; Shift Brief</div>
-          <div className="clock"><Clock /></div>
-        </header>
+        <div style={{ flex: 0, padding: "1.75rem 1.75rem 0.5rem", color: "#0dc8aa", fontFamily: "'Playfair Display',serif", fontSize: "1.1rem", fontWeight: 600, letterSpacing: ".08em" }} className="fade-in">
+          Shift Brief
+        </div>
 
         <main className="body">
 

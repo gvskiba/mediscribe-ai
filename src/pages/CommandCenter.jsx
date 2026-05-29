@@ -87,6 +87,68 @@ const gc        = (x={}) => ({ background:T.card, border:"1px solid rgba(26,53,8
 const idHash    = (id="") => id.split("").reduce((a,c)=>(a*31+c.charCodeAt(0))&0xffff, 0);
 const TAB_ACCENT = { labs:T.cyan, imaging:T.purple, meds:T.gold, consults:T.blue, sets:T.teal };
 
+// ─── SITUATIONAL AWARENESS HELPERS ───────────────────────────────────────────
+// Protocol timer: time-critical countdowns for STEMI / Stroke / Sepsis flags
+function getProtocolTimer(patient) {
+  const flags = Array.isArray(patient.flags) ? patient.flags : [];
+  const mins  = patient.mins || 0;
+  if (flags.includes("STEMI")) {
+    // Door-to-balloon target: 90 min
+    const c = mins>=90?T.red:mins>=60?T.gold:T.green;
+    return { label:`D2B ${mins}m`, sublabel:"/ 90m", color:c, urgent:mins>=90, protocol:"STEMI" };
+  }
+  if (flags.includes("Stroke")) {
+    // tPA window: 4.5h (270 min) from last known well
+    const lkw = patient.lkw_mins||mins;
+    const rem  = Math.max(0, 270-lkw);
+    if (rem===0) return { label:"tPA CLOSED", sublabel:"window gone", color:T.red, urgent:true, protocol:"Stroke" };
+    const c = rem<=60?T.red:rem<=120?T.gold:T.teal;
+    return { label:`tPA ${rem}m`, sublabel:"remaining", color:c, urgent:rem<=60, protocol:"Stroke" };
+  }
+  if (flags.includes("Sepsis")) {
+    // Antibiotic target: 60 min
+    const c = mins>=60?T.red:mins>=45?T.gold:T.green;
+    return { label:`ABX ${mins}m`, sublabel:"/ 60m", color:c, urgent:mins>=60, protocol:"Sepsis" };
+  }
+  return null;
+}
+
+// Clinical trajectory: ↑ ↓ → from last 2 vital sets — shows direction, not just value
+function deriveTrajectory(patient) {
+  const sets = deriveVitalsTrend(patient);
+  if (sets.length < 2) return null;
+  const first=sets[0], last=sets[sets.length-1];
+  let score=0;
+  const hrDiff=last.HR-first.HR;           // lower HR = better
+  const spDiff=last.SpO2-first.SpO2;       // higher SpO2 = better
+  const rrDiff=last.RR-first.RR;           // lower RR = better
+  const bpF=parseInt(first.BP||"120"), bpL=parseInt(last.BP||"120");
+  if (hrDiff < -5) score++; else if (hrDiff > 5) score--;
+  if (spDiff >  1) score++; else if (spDiff < -1) score--;
+  if (rrDiff < -2) score++; else if (rrDiff >  2) score--;
+  if (!isNaN(bpF)&&!isNaN(bpL)) {
+    if (bpF<90&&bpL>bpF+5)    score++;   // BP recovering from hypotension
+    else if (bpF>=90&&bpL<bpF-10) score--; // BP falling from normal
+  }
+  if (score >= 2)  return { icon:"↑", color:T.green, label:"Improving"    };
+  if (score <= -2) return { icon:"↓", color:T.red,   label:"Deteriorating" };
+  return                 { icon:"→", color:T.txt4,  label:"Stable"        };
+}
+
+// q-SOFA early warning score (0–3): uses derived vitals for demo
+// Wire: when real-time vitals land in entity, swap deriveVitalsTrend for patient.vitals directly
+function qSOFA(patient) {
+  const sets = deriveVitalsTrend(patient);
+  const v    = sets[sets.length-1];
+  if (!v) return null;
+  let score = 0;
+  if ((v.RR||0) >= 22)                  score++; // tachypnea
+  if (parseInt(v.BP||"120") <= 100)     score++; // hypotension
+  if ((v.GCS||15) < 15)                 score++; // altered mentation
+  const color = score>=2?T.red:score===1?T.gold:T.txt4;
+  return { score, color };
+}
+
 // ─── STORAGE (window.storage + in-memory fallback) ────────────────────────────
 const _ewMem = {};
 async function ewGet(k, fb) {
@@ -653,6 +715,42 @@ function EncounterWorkspace({ patient, summary, onRapidOrder, embedded=false }) 
   );
 }
 
+// ─── RESULTS BANNER ──────────────────────────────────────────────────────────
+// Interrupt-driven notification strip for new results across all patients.
+// Sits between TopBar and the main three-column area. Each notif is dismissible
+// and navigates directly to that patient on click.
+function ResultsBanner({ notifs, onDismiss, onPatientSelect, patients }) {
+  if (!notifs?.length) return null;
+  const TYPE_ICON   = { critical:"🚨", result:"🧪", imaging:"🩻", consult:"📞" };
+  const TYPE_COLOR  = { critical:T.red, result:T.teal, imaging:T.purple, consult:T.blue };
+  return (
+    <div style={{ display:"flex",alignItems:"center",gap:0,background:"rgba(5,15,30,0.96)",borderBottom:`1px solid ${T.teal}33`,flexShrink:0,overflowX:"auto",minHeight:34 }}>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,color:T.txt4,textTransform:"uppercase",letterSpacing:"0.14em",padding:"0 10px",flexShrink:0 }}>New</div>
+      <div style={{ display:"flex",alignItems:"center",gap:0,flex:1,overflowX:"auto" }}>
+        {notifs.map((n,i)=>{
+          const color=TYPE_COLOR[n.type]||T.teal;
+          const pt=patients.find(p=>p.id===n.patientId);
+          const isCrit=n.type==="critical";
+          return (
+            <div key={i} className={isCrit?"ew-pulse":undefined} style={{ display:"inline-flex",alignItems:"center",gap:7,padding:"6px 12px",borderRight:"1px solid rgba(26,53,85,0.4)",flexShrink:0,cursor:"pointer",transition:"background .12s" }}
+              onClick={()=>{ if(pt)onPatientSelect(pt); }}
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.04)"}
+              onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              <span style={{ fontSize:12,flexShrink:0,lineHeight:1 }}>{TYPE_ICON[n.type]||"🔔"}</span>
+              <div style={{ minWidth:0 }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color }}>{n.room}</span>
+                <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2,marginLeft:6 }}>{n.text}</span>
+              </div>
+              <button onClick={e=>{ e.stopPropagation(); onDismiss(i); }} style={{ background:"none",border:"none",color:T.txt4,cursor:"pointer",fontSize:11,padding:"0 2px",flexShrink:0,lineHeight:1 }}>✕</button>
+            </div>
+          );
+        })}
+      </div>
+      <button onClick={()=>notifs.forEach((_,i)=>onDismiss(0))} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,background:"none",border:"none",cursor:"pointer",padding:"0 10px",flexShrink:0,whiteSpace:"nowrap" }}>Clear all</button>
+    </div>
+  );
+}
+
 // ─── COMMAND PALETTE ──────────────────────────────────────────────────────────
 function CommandPalette({ open, onClose, patients, onNewPatient }) {
   const [query,setQuery]=useState(""), [activeIdx,setActiveIdx]=useState(0);
@@ -760,18 +858,41 @@ function CensusPanel({ patients, search, onSearch, selectedId, onSelect, summari
       </div>
       <div style={{ flex:1,overflowY:"auto",paddingBottom:8 }}>
         {displayed.length===0&&<div style={{ padding:"32px 16px",textAlign:"center" }}><div style={{ fontSize:28,marginBottom:10 }}>👤</div><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt4,lineHeight:1.6 }}>{isMine?`No patients assigned to Dr. ${CURRENT_USER}`:"No patients match your search"}</div>{isMine&&<button onClick={()=>setFilterMode("all")} style={{ marginTop:10,fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.teal,background:"rgba(0,229,192,0.08)",border:"1px solid rgba(0,229,192,0.3)",borderRadius:6,padding:"4px 12px",cursor:"pointer" }}>View All Patients →</button>}</div>}
-        {displayed.map(p=>{ const isSelected=p.id===selectedId, hasCrit=Array.isArray(p.alerts)&&p.alerts.some(a=>a.t==="critical"); return (
+        {displayed.map(p=>{
+          const isSelected=p.id===selectedId;
+          const hasCrit=Array.isArray(p.alerts)&&p.alerts.some(a=>a.t==="critical");
+          const timer=getProtocolTimer(p);
+          const traj=deriveTrajectory(p);
+          const sofa=qSOFA(p);
+          return (
           <div key={p.id} onClick={()=>onSelect(p)} style={{ padding:"10px 16px",background:isSelected?`linear-gradient(135deg,${T.teal}12,${T.teal}06)`:"transparent",borderLeft:`3px solid ${isSelected?T.teal:"transparent"}`,borderBottom:"1px solid rgba(26,53,85,0.3)",cursor:"pointer",transition:"all .12s",display:"flex",flexDirection:"column",gap:4 }} onMouseEnter={e=>{ if(!isSelected){e.currentTarget.style.background=`linear-gradient(135deg,${T.teal}07,transparent)`;e.currentTarget.style.borderLeftColor=T.teal+"44";} }} onMouseLeave={e=>{ if(!isSelected){e.currentTarget.style.background="transparent";e.currentTarget.style.borderLeftColor="transparent";} }}>
+            {/* Row 1: room · badges row */}
             <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
               <div style={{ display:"flex",alignItems:"center",gap:5 }}>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:isSelected?T.teal:T.txt4 }}>{p.room}</span>
-                {hasCrit&&<span style={{ width:5,height:5,borderRadius:"50%",background:T.red,display:"inline-block" }}/>}
+                {hasCrit&&<span className="ew-pulse" style={{ width:5,height:5,borderRadius:"50%",background:T.red,display:"inline-block" }}/>}
               </div>
-              <div style={{ display:"flex",alignItems:"center",gap:6 }}><EsiBadge esi={p.esi}/><TimeBadge mins={p.mins}/></div>
+              <div style={{ display:"flex",alignItems:"center",gap:5,flexWrap:"nowrap" }}>
+                {/* q-SOFA badge — only show score ≥ 1 */}
+                {sofa&&sofa.score>=1&&<span title={`q-SOFA ${sofa.score}/3`} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:sofa.color,background:`${sofa.color}18`,border:`1px solid ${sofa.color}44`,borderRadius:4,padding:"1px 5px",flexShrink:0 }}>qS{sofa.score}</span>}
+                {/* Trajectory arrow */}
+                {traj&&<span title={traj.label} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:traj.color,lineHeight:1,flexShrink:0 }}>{traj.icon}</span>}
+                <EsiBadge esi={p.esi}/><TimeBadge mins={p.mins}/>
+              </div>
             </div>
+            {/* Row 2: patient name */}
             <div style={{ fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:T.txt,lineHeight:1.2 }}>{p.name}</div>
+            {/* Row 3: protocol timer — only rendered when time-critical flag is present */}
+            {timer&&<div className={timer.urgent?"ew-pulse":undefined} style={{ display:"inline-flex",alignItems:"center",gap:5,background:`${timer.color}0f`,border:`1px solid ${timer.color}44`,borderRadius:6,padding:"3px 8px",alignSelf:"flex-start" }}>
+              <span style={{ width:5,height:5,borderRadius:"50%",background:timer.color,display:"inline-block",flexShrink:0 }}/>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:timer.color }}>{timer.label}</span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:`${timer.color}bb` }}>{timer.sublabel}</span>
+            </div>}
+            {/* Row 4: AI summary */}
             {(summaries[p.id]?.text||summaries[p.id]?.loading)&&<div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:summaries[p.id]?.loading?T.txt4:T.txt3,fontStyle:"italic",lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{summaries[p.id]?.loading?"···":summaries[p.id].text}</div>}
+            {/* Row 5: providers */}
             <ProviderRow providers={deriveProviders(p)} compact/>
+            {/* Row 6: age/sex · CC · dispo */}
             <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:4 }}>
               <div style={{ display:"flex",alignItems:"center",gap:6,minWidth:0,overflow:"hidden" }}>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,flexShrink:0 }}>{p.age}{p.sex}</span>
@@ -780,6 +901,7 @@ function CensusPanel({ patients, search, onSearch, selectedId, onSelect, summari
               </div>
               <DispoBadge status={deriveDispoStatus(p)}/>
             </div>
+            {/* Row 7: result chips */}
             <ResultChipsRow chips={deriveResultChips(p)}/>
           </div>
         ); })}
@@ -825,6 +947,12 @@ function ShiftRail({ patients }) {
   const ekgAllGood=cardiacPts.length>0&&ekgOnTime.length===cardiacPts.length;
   const ekgSomemissed=cardiacPts.length>0&&ekgOnTime.length<cardiacPts.length;
   const stalePts=patients.filter(p=>(p.mins||0)>45&&mockLastOrderMins(p)>STALE_THRESH);
+  // Projected on-board at shift end: patients with no near-term dispo and LOS still building
+  const projectedOnBoard=patients.filter(p=>{
+    const d=p.dispo_status||deriveDispoStatus(p);
+    return !["dc_ready","admitted","transfer"].includes(d);
+  }).length;
+  const pob_color=projectedOnBoard>4?T.red:projectedOnBoard>2?T.orange:T.gold;
   const secLabel=(txt,color=T.txt4)=><div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8 }}>{txt}</div>;
   const metricRow=(label,value,valueColor,sub=null)=><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}><div style={{ minWidth:0 }}><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt3,lineHeight:1.3 }}>{label}</div>{sub&&<div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,marginTop:1 }}>{sub}</div>}</div><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,color:valueColor,flexShrink:0,marginLeft:8 }}>{value}</span></div>;
   return (
@@ -835,10 +963,12 @@ function ShiftRail({ patients }) {
       <div style={{ padding:"12px 12px 0",flex:1 }}>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:14 }}>
           {[
-            { label:"Total Pts",   value:patients.length,                                                                                             color:T.teal  },
-            { label:"ESI 1–2",     value:patients.filter(p=>p.esi<=2).length,                                                                        color:T.coral },
-            { label:"Crit Alerts", value:patients.filter(p=>Array.isArray(p.alerts)&&p.alerts.some(a=>a.t==="critical")).length,                     color:T.red   },
-            { label:"Avg LOS",     value:`${avgTime}m`,                                                                                              color:T.gold  },
+            { label:"Total Pts",    value:patients.length,                                                                                              color:T.teal    },
+            { label:"ESI 1–2",      value:patients.filter(p=>p.esi<=2).length,                                                                         color:T.coral   },
+            { label:"Crit Alerts",  value:patients.filter(p=>Array.isArray(p.alerts)&&p.alerts.some(a=>a.t==="critical")).length,                      color:T.red     },
+            { label:"Avg LOS",      value:`${avgTime}m`,                                                                                               color:T.gold    },
+            { label:"No Dispo Yet", value:projectedOnBoard,                                                                                             color:pob_color },
+            { label:"Stale W/U",    value:stalePts.length,                                                                                             color:stalePts.length>2?T.red:stalePts.length>0?T.gold:T.green },
           ].map((s,i)=><div key={i} style={{ ...gc({ borderRadius:9 }),padding:"10px 11px",textAlign:"center" }}><div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:20,fontWeight:700,color:s.color,lineHeight:1 }}>{s.value}</div><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4,marginTop:4 }}>{s.label}</div></div>)}
         </div>
         <div style={{ ...gc({ borderRadius:10 }),padding:"11px 12px",marginBottom:14 }}>
@@ -1094,10 +1224,26 @@ export default function CommandCenter() {
   const [loading,        setLoading]        = useState(true);
   const [selectedPatient,setSelectedPatient]= useState(null);
   const [summaries,      setSummaries]      = useState({});
+  const [notifs,         setNotifs]         = useState([]);
 
   useEffect(()=>{
     base44.entities.Patient.list().then(data=>{ setPatients(data); setLoading(false); });
   },[]);
+
+  // Seed demo notifications at staggered intervals to simulate live result returns.
+  // Wire: replace with a real-time subscription (FHIR, Base44 entity subscription,
+  // or polling base44.entities.Result) when live data is available.
+  useEffect(()=>{
+    const seeds=[
+      { delay:6000,  notif:{ type:"critical",  room:"A7", text:"Lactate CRITICAL 4.2 — sepsis panel",    patientId:null }},
+      { delay:12000, notif:{ type:"imaging",    room:"A4", text:"CT Head read: no acute intracranial process", patientId:null }},
+      { delay:22000, notif:{ type:"result",     room:"A2", text:"Troponin I pending → 0.04 ng/mL (borderline)", patientId:null }},
+    ];
+    const timers=seeds.map(({delay,notif})=>setTimeout(()=>setNotifs(prev=>[...prev,notif]),delay));
+    return()=>timers.forEach(clearTimeout);
+  },[]);
+
+  const dismissNotif=(idx)=>setNotifs(prev=>prev.filter((_,i)=>i!==idx));
 
   useEffect(()=>{
     const onKey=(e)=>{
@@ -1140,6 +1286,12 @@ export default function CommandCenter() {
         onNewPatient={()=>setShowNewPatient(true)}
         onOpenPalette={()=>setShowPalette(true)}
         onRapidOrder={()=>setShowRapidOrder(true)}
+      />
+      <ResultsBanner
+        notifs={notifs}
+        onDismiss={dismissNotif}
+        onPatientSelect={handleSelectPatient}
+        patients={patients}
       />
       <div style={{ display:"flex",flex:1,overflow:"hidden" }}>
         <CensusPanel

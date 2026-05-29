@@ -1148,14 +1148,7 @@ function SelectPatientPrompt({ patients }) {
 
 // Boarding helpers → Module 3
 
-// ─── TIME-TO-EVENT HELPERS ────────────────────────────────────────────────────
-const DTD_TARGET=30, EKG_TARGET=10, STALE_THRESH=30;
-const dtdColor   =(m)=>m>60?T.red:m>DTD_TARGET?T.gold:T.green;
-const staleColor =(m)=>m>60?T.red:m>STALE_THRESH?T.gold:T.txt4;
-const mockDtd    =(p)=>p.door_to_doc!=null?p.door_to_doc:Math.max(5,Math.min(90,Math.floor((p.mins||30)*0.3)+(idHash(String(p.id||""))%25)));
-const isCardiac  =(p)=>["chest","stemi","cardiac","ekg","palpitat","syncope"].some(kw=>(p.cc||"").toLowerCase().includes(kw));
-const mockDoorToEkg    =(p)=>p.door_to_ekg!=null?p.door_to_ekg:Math.max(3,5+(idHash(String(p.id||""))%20));
-const mockLastOrderMins=(p)=>p.last_order_mins!=null?p.last_order_mins:(idHash(String(p.id||""))*11+17)%75;
+// (Time-to-event helpers defined in Module 3 above)
 
 // ─── SHIFT RAIL SECTION COMPONENTS ──────────────────────────────────────────
 // Extracted from inline JSX to keep ShiftRail render readable.
@@ -1513,7 +1506,10 @@ function ShiftRail({ patients, emsQueue=[], transferRecords=[], onCallProviders=
         </div>
 
         {/* ── ESI BREAKDOWN ─────────────────────────────────────────── */}
+        <div style={{ marginBottom:14 }}>
+          {secLabel("ESI Breakdown")}
           {[1,2,3,4,5].map(esi=>{ const count=patients.filter(p=>p.esi===esi).length, c=esiColor(esi), pct=patients.length?(count/patients.length)*100:0; return <div key={esi} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:5 }}><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:c,minWidth:36 }}>ESI {esi}</span><div style={{ flex:1,height:5,background:"rgba(26,53,85,0.5)",borderRadius:3,overflow:"hidden" }}><div style={{ width:`${pct}%`,height:"100%",background:c,borderRadius:3,transition:"width .4s" }}/></div><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,minWidth:12,textAlign:"right" }}>{count}</span></div>; })}
+        </div>
         </div>
       </div>
     </div>

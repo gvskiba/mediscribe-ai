@@ -6,21 +6,26 @@ import '@/index.css'
 // Unregister any stale service workers and clear caches to prevent duplicate
 // React copies being served from cache (causes "Cannot read properties of null
 // (reading 'useState')" errors).
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    let unregistered = 0;
-    registrations.forEach(reg => { reg.unregister(); unregistered++; });
-    if (unregistered > 0 && window.caches) {
-      // Stale SW found — clear all caches then force a hard reload so the
-      // browser fetches fresh JS bundles instead of serving cached stale ones.
-      caches.keys().then(keys =>
-        Promise.all(keys.map(key => caches.delete(key)))
-      ).then(() => window.location.reload());
+async function clearSWAndRender() {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      let unregistered = 0;
+      await Promise.all(registrations.map(reg => { unregistered++; return reg.unregister(); }));
+      if (window.caches) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(key => caches.delete(key)));
+        if (unregistered > 0) {
+          // Stale SW was present — force reload with fresh bundles
+          window.location.reload();
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('SW cleanup failed:', e);
     }
-  });
-  if (window.caches) {
-    caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
   }
+  mount();
 }
 
 class ErrorBoundary extends React.Component {
@@ -40,8 +45,12 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
-)
+function mount() {
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
+
+clearSWAndRender();

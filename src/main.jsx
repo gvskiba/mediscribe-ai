@@ -3,14 +3,21 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 
-// Unregister any stale service workers that may cache-serve broken JS chunks.
-// This prevents the "Cannot read properties of null (reading 'useState')" error
-// caused by a service worker serving an outdated React bundle.
+// Unregister any stale service workers and clear caches to prevent duplicate
+// React copies being served from cache (causes "Cannot read properties of null
+// (reading 'useState')" errors).
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(registrations => {
-    registrations.forEach(reg => reg.unregister());
+    let unregistered = 0;
+    registrations.forEach(reg => { reg.unregister(); unregistered++; });
+    if (unregistered > 0 && window.caches) {
+      // Stale SW found — clear all caches then force a hard reload so the
+      // browser fetches fresh JS bundles instead of serving cached stale ones.
+      caches.keys().then(keys =>
+        Promise.all(keys.map(key => caches.delete(key)))
+      ).then(() => window.location.reload());
+    }
   });
-  // Also clear all caches to ensure fresh assets are loaded
   if (window.caches) {
     caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
   }

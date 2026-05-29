@@ -286,34 +286,18 @@ export default function GlobalNav({ alerts = 0 }) {
       fontFamily: "'DM Sans', sans-serif",
     }}>
       {/* Lakonyx brand */}
-      <div
+      <span
         onClick={() => routerNavigate("/")}
         style={{
-          display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+          fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 900,
+          letterSpacing: ".12em", color: "#C9A84C", cursor: "pointer",
           flexShrink: 0, userSelect: "none", transition: "opacity .15s",
         }}
         onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
         onMouseLeave={e => e.currentTarget.style.opacity = "1"}
       >
-        <div
-          style={{
-            width: 28, height: 28, borderRadius: 7,
-            background: "#0A1628", border: "1px solid rgba(201, 168, 76, 0.45)",
-            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-          }}
-        >
-          <svg viewBox="0 0 500 500" width={18} height={18} xmlns="http://www.w3.org/2000/svg">
-            <text x="106" y="305" fontFamily="'Playfair Display', Georgia, serif" fontSize="280" fontWeight="700" fill="#C9A84C">L</text>
-            <text x="193" y="305" fontFamily="'Playfair Display', Georgia, serif" fontSize="280" fontWeight="700" fill="#0ABFBF">X</text>
-          </svg>
-        </div>
-        <span style={{
-          fontFamily: "'Playfair Display', serif", fontSize: 13, fontWeight: 900,
-          letterSpacing: ".12em", color: "#f2f7ff",
-        }}>
-          LAKONYX
-        </span>
-      </div>
+        LAKONYX
+      </span>
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />

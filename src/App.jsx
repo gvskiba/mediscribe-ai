@@ -157,9 +157,11 @@ import LakonyxLandingPage from '@/pages/LakonyxLandingPage';
 import LakonyxNavBar from '@/pages/LakonyxNavBar';
 
 // Pages that have their own built-in AI floating button
-const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/patientchart"]);
+const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/patientchart", "/CommandCenter"]);
 // Pages that mount their own encounter-aware CommandPalette
-const PAGES_WITH_OWN_PALETTE = new Set(["/NewPatientInput"]);
+const PAGES_WITH_OWN_PALETTE = new Set(["/NewPatientInput", "/CommandCenter"]);
+// Pages that hide the global nav entirely
+const PAGES_WITHOUT_NAV = new Set(["/CommandCenter"]);
 
 function GlobalFloatingAI() {
   const location = useLocation();
@@ -185,6 +187,8 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const routerNavigate = useNavigate();
+  const location = useLocation();
+  const hideNav = PAGES_WITHOUT_NAV.has(location.pathname);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -205,12 +209,12 @@ const AuthenticatedApp = () => {
 
   return (
     <>
-      <GlobalNav />
+      {!hideNav && <GlobalNav />}
       <GlobalCommandPalette navigate={routerNavigate} />
-      <PatientSidebar />
+      {!hideNav && <PatientSidebar />}
       <GlobalFloatingAI />
-      <CommandKit />
-      <PulseActivators />
+      {!hideNav && <CommandKit />}
+      {!hideNav && <PulseActivators />}
       <Routes>
         <Route path="/" element={<LakonyxLandingPage />} />
         <Route path="/CommandCenter" element={<CommandCenter />} />

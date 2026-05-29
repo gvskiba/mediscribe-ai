@@ -1273,14 +1273,14 @@ export default function CommandCenter() {
   const handleSelectPatient=(p)=>{ setSelectedPatient(p); generateSummary(p); };
 
   if(loading) return (
-    <div style={{ display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,background:T.bg }}>
+    <div style={{ position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,background:T.bg,zIndex:100 }}>
       <div style={{ width:32,height:32,borderRadius:"50%",border:`3px solid rgba(0,229,192,0.2)`,borderTop:`3px solid ${T.teal}`,animation:"cc-spin 1s linear infinite" }}/>
       <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:13,color:T.txt3 }}>Loading census...</div>
     </div>
   );
 
   return (
-    <div style={{ display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif" }}>
+    <div style={{ position:"fixed",inset:0,display:"flex",flexDirection:"column",overflow:"hidden",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif",zIndex:100 }}>
       <TopBar
         onQuickNote={()=>nav("QuickNote")}
         onNewPatient={()=>setShowNewPatient(true)}

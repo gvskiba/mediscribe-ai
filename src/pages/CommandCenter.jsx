@@ -1610,7 +1610,7 @@ function TopBar({ onQuickNote, onNewPatient, onOpenPalette, onRapidOrder, patien
       <div style={{ display:"flex",alignItems:"center",gap:10 }}>
         <div style={{ width:32,height:32,borderRadius:8,background:`linear-gradient(135deg,${T.teal},${T.purple})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16 }}>⚡</div>
         <div>
-          <div style={{ fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:900,color:T.txt,letterSpacing:"0.03em" }}>LAKONYX</div>
+          <div style={{ fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:900,color:T.gold,letterSpacing:"0.03em" }}>LAKONYX</div>
           <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,letterSpacing:"0.16em",marginTop:-1 }}>COMMAND CENTER</div>
         </div>
         <div onClick={onOpenPalette} style={{ display:"flex",alignItems:"center",gap:7,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(26,53,85,0.5)",borderRadius:8,padding:"5px 12px",cursor:"pointer",marginLeft:12 }} onMouseEnter={e=>{ e.currentTarget.style.borderColor="rgba(0,229,192,0.3)"; }} onMouseLeave={e=>{ e.currentTarget.style.borderColor="rgba(26,53,85,0.5)"; }}>

@@ -269,362 +269,54 @@ function PaletteItem({ page, current, idx, sel, navigate }) {
 // ════════════════════════════════════════════════════════════════════
 export default function GlobalNav({ alerts = 0 }) {
   const routerNavigate = useNavigate();
-  const location       = useLocation();
+  const location = useLocation();
 
-  const [hubOpen, setHubOpen] = useState(false);
-  const [cmdOpen, setCmdOpen] = useState(false);
-  const [search,  setSearch]  = useState("");
-  const [cmdQ,    setCmdQ]    = useState("");
-  const [sel,     setSel]     = useState(0);
-  const [recent,  setRecent]  = useState([]);
-
-  const cmdRef  = useRef(null);
-  const listRef = useRef(null);
-
-  const currentId   = ROUTE_TO_ID[location.pathname] || null;
-  const currentPage = PAGES.find(p => p.id === currentId);
-
-  // ── Navigation ──────────────────────────────────────────────────
-  const navigate = useCallback((id) => {
-    const page = PAGES.find(p => p.id === id);
-    if (!page) return;
-    setRecent(prev => [id, ...prev.filter(r => r !== id)].slice(0, MAX_RECENTS + 1));
-    setHubOpen(false); setCmdOpen(false);
-    setSearch(""); setCmdQ(""); setSel(0);
-    routerNavigate(page.route);
-  }, [routerNavigate]);
-
-  const recentChips = recent
-    .map(id => PAGES.find(p => p.id === id))
-    .filter(Boolean)
-    .filter(p => p.id !== currentId)
-    .slice(0, MAX_RECENTS);
-
-  // ── Hub search filter ───────────────────────────────────────────
-  const hubFiltered = search.trim()
-    ? PAGES.filter(p =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.desc.toLowerCase().includes(search.toLowerCase()) ||
-        p.cat.toLowerCase().includes(search.toLowerCase())
-      )
-    : null;
-
-  // ── ⌘K palette ─────────────────────────────────────────────────
-  const cmdFiltered = cmdQ.trim()
-    ? PAGES.filter(p =>
-        p.name.toLowerCase().includes(cmdQ.toLowerCase()) ||
-        p.desc.toLowerCase().includes(cmdQ.toLowerCase()) ||
-        p.cat.toLowerCase().includes(cmdQ.toLowerCase())
-      )
-    : PAGES;
-
-  const openPalette = useCallback(() => {
-    setCmdOpen(true); setCmdQ(""); setSel(0);
-    setTimeout(() => cmdRef.current?.focus(), 30);
-  }, []);
-
-  const closePalette = useCallback(() => {
-    setCmdOpen(false); setCmdQ(""); setSel(0);
-  }, []);
-
-  // ── Keyboard shortcuts ──────────────────────────────────────────
-  useEffect(() => {
-    const handler = (e) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key === "k") { e.preventDefault(); cmdOpen ? closePalette() : openPalette(); return; }
-      if (!cmdOpen) return;
-      if (e.key === "Escape")    { closePalette(); return; }
-      if (e.key === "ArrowDown") { e.preventDefault(); setSel(s => Math.min(s + 1, cmdFiltered.length - 1)); return; }
-      if (e.key === "ArrowUp")   { e.preventDefault(); setSel(s => Math.max(s - 1, 0)); return; }
-      if (e.key === "Enter")     { e.preventDefault(); if (cmdFiltered[sel]) navigate(cmdFiltered[sel].id); return; }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [cmdOpen, cmdFiltered, sel, navigate, openPalette, closePalette]);
-
-  useEffect(() => { setSel(0); }, [cmdQ]);
-
-  useEffect(() => {
-    if (!cmdOpen || !listRef.current) return;
-    const item = listRef.current.querySelector(`[data-idx="${sel}"]`);
-    item?.scrollIntoView({ block:"nearest" });
-  }, [sel, cmdOpen]);
-
-  useEffect(() => {
-    if (!hubOpen) return;
-    const h = (e) => {
-      if (!e.target.closest(`.${PREFIX}-hub-overlay`) && !e.target.closest(`.${PREFIX}-hub-trigger`))
-        setHubOpen(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [hubOpen]);
-
-  // ── Palette grouping ────────────────────────────────────────────
+  // Pages with their own full navigation — GlobalNav should not render
   if (EXCLUDED_ROUTES.has(location.pathname)) return null;
 
-  const paletteGroups = cmdQ.trim()
-    ? null
-    : CATS.map(cat => ({ cat, pages: cmdFiltered.filter(p => p.cat === cat) })).filter(g => g.pages.length > 0);
-
-  const flatList = cmdQ.trim()
-    ? cmdFiltered
-    : CATS.flatMap(cat => cmdFiltered.filter(p => p.cat === cat));
-
   return (
-    <>
-      {/* ══════════════ NAVIGATION BAR ══════════════ */}
-      <div style={{
-        position:"sticky", top:0, zIndex:200,
-        height:48, flexShrink:0,
-        backdropFilter:"blur(24px) saturate(180%)",
-        WebkitBackdropFilter:"blur(24px) saturate(180%)",
-        background:"rgba(5,10,20,0.92)",
-        borderBottom:"1px solid rgba(42,79,122,0.4)",
-        display:"flex", alignItems:"center",
-        padding:"0 12px", gap:6,
-      }}>
-        {/* Wordmark */}
-          <span style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: '22px',
-            fontWeight: '700',
-            color: '#C9A84C',
-            letterSpacing: '4px',
-            flexShrink:0
-          }}>LAKONYX</span>
-
-        {/* Separator */}
-        <div style={{ width:1, height:18, background:"rgba(42,79,122,0.45)", flexShrink:0 }}/>
-
-        {/* Current page */}
-        {currentPage && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0, minWidth:0 }}>
-            <span style={{ fontSize:14 }}>{currentPage.icon}</span>
-            <span style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:13, color:currentPage.color, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {currentPage.name}
-            </span>
-          </div>
-        )}
-
-        {/* Recent chips */}
-        {recentChips.length > 0 && (
-          <>
-            <div style={{ width:1, height:14, background:"rgba(42,79,122,0.4)", flexShrink:0, marginLeft:2 }}/>
-            {recentChips.map(p => (
-              <button key={p.id} className={`${PREFIX}-chip`} onClick={() => navigate(p.id)} title={p.desc}>
-                <span className={`${PREFIX}-chip-dot`} style={{ background:p.color }}/>
-                <span className={`${PREFIX}-chip-icon`}>{p.icon}</span>
-                <span>{p.name}</span>
-              </button>
-            ))}
-          </>
-        )}
-
-        {/* Universal Search Bar */}
-        <div style={{ maxWidth: 350, flex: "0 1 auto" }}>
-          <UniversalSearchBar />
-        </div>
-
-        {/* Spacer */}
-        <div style={{ flex:1 }}/>
-
-        {/* Favorites Bar - shown in sidebar below search */}
-
-        {/* Alert dot */}
-        {alerts > 0 && (
-          <button onClick={() => navigate("critical")} style={{
-            fontFamily:"JetBrains Mono", fontWeight:700, fontSize:9,
-            padding:"3px 9px", borderRadius:20, cursor:"pointer",
-            border:`1px solid ${T.red}45`, background:`${T.red}14`, color:T.red,
-            display:"flex", alignItems:"center", gap:5, flexShrink:0,
-          }}>
-            <span className={`${PREFIX}-pulse`} style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:T.red }}/>
-            {alerts}
-          </button>
-        )}
-
-        {/* ⌘K badge */}
-        <button className={`${PREFIX}-kbd-badge`} onClick={openPalette} title="Command palette (⌘K)">
-          <span>Jump to</span>
-          <span className={`${PREFIX}-kbd-key`}>⌘K</span>
-        </button>
-
-        {/* Critical Protocols Button */}
-        <button
-          onClick={() => routerNavigate("/CriticalProtocolsPage")}
+    <div style={{
+      position: "sticky", top: 0, zIndex: 200,
+      height: 52, flexShrink: 0,
+      backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
+      background: "rgba(5, 15, 30, 0.97)",
+      borderBottom: "1px solid rgba(26, 53, 85, 0.7)",
+      display: "flex", alignItems: "center",
+      padding: "0 14px", gap: 10,
+      fontFamily: "'DM Sans', sans-serif",
+    }}>
+      {/* Lakonyx brand */}
+      <div
+        onClick={() => routerNavigate("/")}
+        style={{
+          display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+          flexShrink: 0, userSelect: "none", transition: "opacity .15s",
+        }}
+        onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+        onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+      >
+        <div
           style={{
-            display:"flex", alignItems:"center", gap:5,
-            fontFamily:"DM Sans", fontWeight:700, fontSize:11,
-            padding:"5px 11px", borderRadius:8, cursor:"pointer",
-            border:"1px solid rgba(239,68,68,.5)",
-            background:"rgba(239,68,68,.1)",
-            color:"#ef4444",
-            transition:"all .15s", flexShrink:0,
+            width: 28, height: 28, borderRadius: 7,
+            background: "#0A1628", border: "1px solid rgba(201, 168, 76, 0.45)",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}
-          title="Access critical emergency protocols">
-          <span style={{ fontSize:13 }}>🚨</span>
-          <span>Critical</span>
-        </button>
-
-        {/* Hub picker toggle */}
-        <button
-          className={`${PREFIX}-hub-trigger`}
-          onClick={() => { setHubOpen(o => !o); setSearch(""); }}
-          style={{
-            display:"flex", alignItems:"center", gap:5,
-            fontFamily:"DM Sans", fontWeight:700, fontSize:11,
-            padding:"5px 11px", borderRadius:8, cursor:"pointer",
-            border:`1px solid ${hubOpen ? T.teal+"55" : "rgba(42,79,122,.4)"}`,
-            background: hubOpen ? `${T.teal}14` : "rgba(14,37,68,.5)",
-            color: hubOpen ? T.teal : T.txt3,
-            transition:"all .15s", flexShrink:0,
-          }}>
-          <span style={{ fontSize:13 }}>⊞</span>
-          <span>All Hubs</span>
-        </button>
+        >
+          <svg viewBox="0 0 500 500" width={18} height={18} xmlns="http://www.w3.org/2000/svg">
+            <text x="106" y="305" fontFamily="'Playfair Display', Georgia, serif" fontSize="280" fontWeight="700" fill="#C9A84C">L</text>
+            <text x="193" y="305" fontFamily="'Playfair Display', Georgia, serif" fontSize="280" fontWeight="700" fill="#0ABFBF">X</text>
+          </svg>
+        </div>
+        <span style={{
+          fontFamily: "'Playfair Display', serif", fontSize: 13, fontWeight: 900,
+          letterSpacing: ".12em", color: "#f2f7ff",
+        }}>
+          LAKONYX
+        </span>
       </div>
 
-      {/* Breadcrumb Bar */}
-      <BreadcrumbBar history={recentChips} />
-
-      {/* Favorites Bar */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <FavoritesBar />
-      </div>
-
-      {/* ══════════════ HUB PICKER OVERLAY ══════════════ */}
-      {hubOpen && (
-        <div
-          className={`${PREFIX}-hub-overlay ${PREFIX}-overlay`}
-          style={{
-            position:"fixed", inset:0, zIndex:199,
-            background:"rgba(3,8,18,.88)",
-            backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)",
-            overflowY:"auto", paddingTop:48,
-          }}
-          onClick={() => { setHubOpen(false); setSearch(""); }}
-        >
-          <div onClick={e => e.stopPropagation()} style={{ maxWidth:860, margin:"0 auto", padding:"16px 16px 40px" }}>
-
-            {/* Search */}
-            <div style={{ position:"relative", marginBottom:16 }}>
-              <input
-                type="text" value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search hubs…"
-                autoFocus
-                style={{
-                  width:"100%", background:"rgba(14,37,68,.9)",
-                  border:`1px solid ${search ? T.teal+"50" : "rgba(42,79,122,.45)"}`,
-                  borderRadius:10, padding:"11px 16px 11px 42px",
-                  fontFamily:"DM Sans", fontSize:14, color:T.txt,
-                  outline:"none", transition:"border-color .12s",
-                }}
-              />
-              <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:16, opacity:.5 }}>🔍</span>
-            </div>
-
-            {hubFiltered && (
-              <div>
-                <div style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.txt4, letterSpacing:2, textTransform:"uppercase", marginBottom:8 }}>
-                  Results ({hubFiltered.length})
-                </div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:8 }}>
-                  {hubFiltered.map(p => <HubCard key={p.id} page={p} current={currentId} navigate={navigate}/>)}
-                </div>
-              </div>
-            )}
-
-            {!hubFiltered && recentChips.length > 0 && (
-              <div style={{ marginBottom:20 }}>
-                <div style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:T.txt4, letterSpacing:2, textTransform:"uppercase", marginBottom:8 }}>
-                  Recent
-                </div>
-                <div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>
-                  {recentChips.map(p => (
-                    <button key={p.id} onClick={() => navigate(p.id)} style={{
-                      fontFamily:"DM Sans", fontWeight:600, fontSize:12,
-                      padding:"6px 13px", borderRadius:20, cursor:"pointer",
-                      border:`1px solid ${p.color}35`, background:`${p.color}0e`, color:p.color,
-                      display:"flex", alignItems:"center", gap:6, transition:"all .12s",
-                    }}>
-                      <span>{p.icon}</span>{p.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {!hubFiltered && CATS.map(cat => {
-              const catPages = PAGES.filter(p => p.cat === cat);
-              const cc = CAT_COLOR[cat];
-              return (
-                <div key={cat} style={{ marginBottom:22 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-                    <div style={{ fontFamily:"JetBrains Mono", fontSize:8, fontWeight:700, color:cc, letterSpacing:2, textTransform:"uppercase" }}>{cat}</div>
-                    <div style={{ flex:1, height:1, background:`linear-gradient(90deg,${cc}30,transparent)` }}/>
-                  </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:8 }}>
-                    {catPages.map((p, i) => <HubCard key={p.id} page={p} current={currentId} navigate={navigate} delay={i * 0.04}/>)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════ ⌘K COMMAND PALETTE ══════════════ */}
-      {cmdOpen && (
-        <div
-          className={`${PREFIX}-palette-scrim`}
-          onMouseDown={e => { if (e.target === e.currentTarget) closePalette(); }}
-        >
-          <div className={`${PREFIX}-palette ${PREFIX}-kpop`}>
-            <div className={`${PREFIX}-p-search-wrap`}>
-              <span className={`${PREFIX}-p-search-icon`}>🔍</span>
-              <input
-                ref={cmdRef}
-                className={`${PREFIX}-p-input`}
-                placeholder="Jump to any hub or page…"
-                value={cmdQ}
-                onChange={e => setCmdQ(e.target.value)}
-                autoComplete="off"
-                spellCheck={false}
-              />
-              <span className={`${PREFIX}-p-esc`}>ESC</span>
-            </div>
-
-            <div className={`${PREFIX}-p-list`} ref={listRef}>
-              {flatList.length === 0 ? (
-                <div className={`${PREFIX}-p-empty`}>No pages match "{cmdQ}"</div>
-              ) : cmdQ.trim() ? (
-                flatList.map((p, i) => (
-                  <PaletteItem key={p.id} page={p} current={currentId} idx={i} sel={sel} navigate={navigate}/>
-                ))
-              ) : (
-                paletteGroups?.map(({ cat, pages }) => (
-                  <div key={cat}>
-                    <div className={`${PREFIX}-p-section`} style={{ color:CAT_COLOR[cat] }}>{cat}</div>
-                    {pages.map(p => {
-                      const globalIdx = flatList.findIndex(x => x.id === p.id);
-                      return <PaletteItem key={p.id} page={p} current={currentId} idx={globalIdx} sel={sel} navigate={navigate}/>;
-                    })}
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className={`${PREFIX}-p-footer`}>
-              <span><span className={`${PREFIX}-p-footer-key`}>↑↓</span> navigate</span>
-              <span><span className={`${PREFIX}-p-footer-key`}>↵</span> open</span>
-              <span><span className={`${PREFIX}-p-footer-key`}>ESC</span> close</span>
-              <span style={{ marginLeft:"auto", opacity:.5 }}>{flatList.length} pages</span>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+    </div>
   );
 }

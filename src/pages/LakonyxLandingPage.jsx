@@ -61,7 +61,7 @@ const css = `
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#070d1a;}
 .sb{
-  min-height:100vh;
+  min-height:100%;
   background:radial-gradient(ellipse 80% 55% at 50% -5%,#0d2040 0%,#070d1a 68%);
   font-family:'DM Sans',sans-serif;color:#e2e8f0;
   display:flex;flex-direction:column;position:relative;
@@ -234,7 +234,7 @@ kbd{
 .flash-out{animation:fout .42s ease forwards;}
 @keyframes fout{0%{opacity:1;filter:brightness(1);}55%{opacity:1;filter:brightness(5);}100%{opacity:0;}}
 
-.full-center{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;background:#070d1a;font-family:'DM Sans',sans-serif;}
+.full-center{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;background:#070d1a;font-family:'DM Sans',sans-serif;}
 .ldot{width:8px;height:8px;border-radius:50%;background:#0dc8aa;animation:ldot 1.1s ease-in-out infinite;}
 @keyframes ldot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.6);}}
 .full-title{font-family:'Playfair Display',serif;color:#0dc8aa;}

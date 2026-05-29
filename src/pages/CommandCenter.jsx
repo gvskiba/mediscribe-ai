@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 
+// ════════════════════════════════════════════════════════════════════════════
+// MODULE 1 — DESIGN TOKENS, STYLE, NAVIGATION, GLOBAL HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+
 // ─── STYLE INJECTION ──────────────────────────────────────────────────────────
 (() => {
   if (document.getElementById("cc-fonts")) return;
@@ -40,8 +44,25 @@ const nav = (page, params = {}) => {
   const query = Object.keys(params).length ? "?" + new URLSearchParams(params).toString() : "";
   window.location.href = `/${page}${query}`;
 };
-
 const CURRENT_USER = "Skiba";
+
+// ─── GLOBAL HELPERS ───────────────────────────────────────────────────────────
+const esiColor  = (n) => ({1:T.red,2:T.orange,3:T.gold,4:T.green,5:T.txt4}[n]||T.txt4);
+const fmtTime   = (m) => m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`;
+const gc        = (x={}) => ({ background:T.card, border:"1px solid rgba(26,53,85,0.5)", borderRadius:10, ...x });
+const idHash    = (id="") => id.split("").reduce((a,c)=>(a*31+c.charCodeAt(0))&0xffff, 0);
+const TAB_ACCENT = { labs:T.cyan, imaging:T.purple, meds:T.gold, consults:T.blue, sets:T.teal };
+
+// ─── STORAGE (window.storage + in-memory fallback) ────────────────────────────
+const _ewMem = {};
+async function ewGet(k, fb) {
+  try { if (window?.storage?.get) { const r = await window.storage.get(k); if (r?.value !== undefined) return r.value; } } catch(e) {}
+  return k in _ewMem ? _ewMem[k] : fb;
+}
+async function ewSet(k, v) {
+  _ewMem[k] = v;
+  try { if (window?.storage?.set) await window.storage.set(k, v); } catch(e) {}
+}
 
 // ─── COMMAND PALETTE DATA ─────────────────────────────────────────────────────
 const HUBS = [
@@ -66,7 +87,6 @@ const HUBS = [
   { key:"NewPatientInput",        label:"Full Intake (NPI)",         icon:"📝", cat:"Documentation" },
   { key:"QuickNote",              label:"Quick Note",                icon:"✏️", cat:"Documentation" },
 ];
-
 const paletteFilter = (query, patients) => {
   const q = query.toLowerCase().trim();
   const match = (strs) => !q || strs.some(s => (s||"").toLowerCase().includes(q));
@@ -80,155 +100,251 @@ const paletteFilter = (query, patients) => {
   return { actions, pts, hubs };
 };
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-const esiColor  = (n) => ({1:T.red,2:T.orange,3:T.gold,4:T.green,5:T.txt4}[n]||T.txt4);
-const fmtTime   = (m) => m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`;
-const gc        = (x={}) => ({ background:T.card, border:"1px solid rgba(26,53,85,0.5)", borderRadius:10, ...x });
-const idHash    = (id="") => id.split("").reduce((a,c)=>(a*31+c.charCodeAt(0))&0xffff, 0);
-const TAB_ACCENT = { labs:T.cyan, imaging:T.purple, meds:T.gold, consults:T.blue, sets:T.teal };
+// ════════════════════════════════════════════════════════════════════════════
+// MODULE 2 — MOCK DATA  (replace each const with entity query when wiring)
+// ════════════════════════════════════════════════════════════════════════════
 
-// ─── SITUATIONAL AWARENESS HELPERS ───────────────────────────────────────────
-// Protocol timer: time-critical countdowns for STEMI / Stroke / Sepsis flags
+// ─── SA THRESHOLDS & CONFIG ───────────────────────────────────────────────────
+// Wire: surface as base44.entities.DeptConfig fields
+const REASSESS_THRESHOLDS  = { 1:30, 2:60, 3:120, 4:180, 5:180 }; // mins per ESI
+const PAIN_REASSESS_WINDOW = 30;   // mins post-analgesic
+const BOARDING_THRESHOLDS  = { warn:120, crit:240 }; // mins
+const ED_CAPACITY          = 16;   // total licensed ED beds
+const SURGE_KEY            = "lakonyx.surge.history";
+const SURGE_MAX_PTS        = 8;
+
+// ─── ANALGESIC DETECTION KEYWORDS ────────────────────────────────────────────
+// Wire: replace with order.category === "analgesic"
+const ANALGESIC_KEYWORDS = [
+  "morphine","hydromorphone","dilaudid","oxycodone","fentanyl",
+  "ketorolac","toradol","ibuprofen","acetaminophen","tylenol",
+  "tramadol","methadone","buprenorphine","ketamine","ondansetron",
+];
+
+// ─── MOCK: EMS INCOMING RUNS ──────────────────────────────────────────────────
+// Wire: base44.entities.EmsRun.list({ status:"incoming" })
+const MOCK_EMS_RUNS = [
+  { id:"ems1", unit:"Medic 3",    cc:"Chest pain, diaphoretic, ST changes on 12-lead", esi_pretriage:2, eta_mins:4,  transport:"ground", age:67, sex:"M", notes:"ASA given prehospital · IV access x2" },
+  { id:"ems2", unit:"Air Care 1", cc:"MVC, unrestrained driver, GCS 13, BP 88/60",      esi_pretriage:1, eta_mins:11, transport:"air",    age:34, sex:"M", notes:"2L NS en route · C-collar placed" },
+  { id:"ems3", unit:"Medic 7",    cc:"Altered mental status, blood glucose 28",         esi_pretriage:2, eta_mins:18, transport:"ground", age:71, sex:"F", notes:"D50 given · still altered" },
+  { id:"ems4", unit:"Walk-in",    cc:"Laceration, right hand, power tool injury",       esi_pretriage:3, eta_mins:2,  transport:"walk-in",age:28, sex:"M", notes:null },
+];
+const EMS_TRANSPORT_ICON = { air:"✈", ground:"🚑", "walk-in":"🚶" };
+
+// ─── MOCK: TRANSFER RECORDS ───────────────────────────────────────────────────
+// Wire: base44.entities.Transfer.list({ status:"active" })
+// Entity schema: id, patientId, destination, transport (air|ground|ccm), reason, steps:[{key,completedAt}]
+const TRANSFER_STEPS = [
+  { key:"decision",   label:"Decision made",        short:"Decision"  },
+  { key:"contacted",  label:"Hospital contacted",   short:"Contacted" },
+  { key:"accepted",   label:"Transfer accepted",    short:"Accepted"  },
+  { key:"transport",  label:"Transport dispatched", short:"Transport" },
+  { key:"departed",   label:"Patient departed",     short:"Departed"  },
+];
+const MOCK_TRANSFERS = [
+  { id:"tx1", patientId:"p1", destination:"Mercy Regional Medical Center", transport:"air",    reason:"STEMI — cath lab activation",
+    steps:[{key:"decision",completedAt:"2026-05-29T14:05:00Z"},{key:"contacted",completedAt:"2026-05-29T14:09:00Z"},{key:"accepted",completedAt:"2026-05-29T14:17:00Z"},{key:"transport",completedAt:null},{key:"departed",completedAt:null}]},
+  { id:"tx2", patientId:"p2", destination:"University Stroke Center",       transport:"ground", reason:"Acute stroke — EVT candidate",
+    steps:[{key:"decision",completedAt:"2026-05-29T14:22:00Z"},{key:"contacted",completedAt:null},{key:"accepted",completedAt:null},{key:"transport",completedAt:null},{key:"departed",completedAt:null}]},
+];
+const TRANSFER_TRANSPORT_ICON = { air:"✈", ground:"🚑", ccm:"🏥" };
+
+// ─── MOCK: ON-CALL PROVIDERS ──────────────────────────────────────────────────
+// Wire: base44.entities.OnCallProvider.list()
+// Entity schema: id, specialty, name, phone, typical_response_mins, status, notes, updated_at
+const MOCK_ONCALL = [
+  { id:"oc1", specialty:"Cardiology",      name:"Dr. Harmon",  phone:"ext 4421", typical_response_mins:12, status:"available",  notes:null,                        updated_at:"2026-05-29T07:00:00Z" },
+  { id:"oc2", specialty:"Neurology",       name:"Dr. Patel",   phone:"ext 4487", typical_response_mins:18, status:"paged",      notes:"Paged 14:32 re: stroke A4", updated_at:"2026-05-29T14:32:00Z" },
+  { id:"oc3", specialty:"General Surgery", name:"Dr. Wallace", phone:"ext 4409", typical_response_mins:15, status:"responding", notes:"En route from OR",          updated_at:"2026-05-29T14:18:00Z" },
+  { id:"oc4", specialty:"Orthopedics",     name:"Dr. Kim",     phone:"ext 4455", typical_response_mins:25, status:"available",  notes:"Home call tonight",         updated_at:"2026-05-29T07:00:00Z" },
+  { id:"oc5", specialty:"Psychiatry",      name:"Dr. Torres",  phone:"ext 4498", typical_response_mins:20, status:"available",  notes:null,                        updated_at:"2026-05-29T07:00:00Z" },
+];
+const ONCALL_STATUS_COLOR = { available:T.teal, paged:T.orange, responding:T.gold, unavailable:T.red };
+const ONCALL_STATUS_LABEL = { available:"Available", paged:"Paged", responding:"Responding", unavailable:"Unavailable" };
+
+// ─── MOCK: EQUIPMENT STATUS ───────────────────────────────────────────────────
+// Wire: base44.entities.EquipmentStatus.list()
+// Entity schema: id, name, category, status (operational|degraded|down), notes, updated_at
+const MOCK_EQUIPMENT = [
+  { id:"eq1", name:"CT Scanner",       category:"imaging", status:"operational", notes:null,                                 updated_at:"2026-05-29T07:00:00Z" },
+  { id:"eq2", name:"MRI",              category:"imaging", status:"down",        notes:"Scheduled maintenance",              updated_at:"2026-05-29T06:30:00Z" },
+  { id:"eq3", name:"Ventilators",      category:"airway",  status:"operational", notes:"3 of 3 available",                  updated_at:"2026-05-29T07:00:00Z" },
+  { id:"eq4", name:"Blood Bank O-neg", category:"blood",   status:"degraded",    notes:"2 units remaining — reorder placed", updated_at:"2026-05-29T13:45:00Z" },
+  { id:"eq5", name:"Portable US",      category:"imaging", status:"operational", notes:null,                                 updated_at:"2026-05-29T07:00:00Z" },
+  { id:"eq6", name:"Rapid Infuser",    category:"airway",  status:"operational", notes:null,                                 updated_at:"2026-05-29T07:00:00Z" },
+];
+const EQ_STATUS_COLOR = { operational:T.teal, degraded:T.gold, down:T.red };
+const EQ_STATUS_DOT   = { operational:"●", degraded:"◐", down:"○" };
+
+// ════════════════════════════════════════════════════════════════════════════
+// MODULE 3 — SA PURE FUNCTIONS  (no JSX, no hooks — safe to unit test)
+// ════════════════════════════════════════════════════════════════════════════
+
+// ─── PROTOCOL TIMERS ─────────────────────────────────────────────────────────
 function getProtocolTimer(patient) {
   const flags = Array.isArray(patient.flags) ? patient.flags : [];
   const mins  = patient.mins || 0;
   if (flags.includes("STEMI")) {
-    // Door-to-balloon target: 90 min
     const c = mins>=90?T.red:mins>=60?T.gold:T.green;
-    return { label:`D2B ${mins}m`, sublabel:"/ 90m", color:c, urgent:mins>=90, protocol:"STEMI" };
+    return { label:`D2B ${mins}m`, sublabel:"/ 90m", color:c, urgent:mins>=90 };
   }
   if (flags.includes("Stroke")) {
-    // tPA window: 4.5h (270 min) from last known well
     const lkw = patient.lkw_mins||mins;
     const rem  = Math.max(0, 270-lkw);
-    if (rem===0) return { label:"tPA CLOSED", sublabel:"window gone", color:T.red, urgent:true, protocol:"Stroke" };
+    if (rem===0) return { label:"tPA CLOSED", sublabel:"window gone", color:T.red, urgent:true };
     const c = rem<=60?T.red:rem<=120?T.gold:T.teal;
-    return { label:`tPA ${rem}m`, sublabel:"remaining", color:c, urgent:rem<=60, protocol:"Stroke" };
+    return { label:`tPA ${rem}m`, sublabel:"remaining", color:c, urgent:rem<=60 };
   }
   if (flags.includes("Sepsis")) {
-    // Antibiotic target: 60 min
     const c = mins>=60?T.red:mins>=45?T.gold:T.green;
-    return { label:`ABX ${mins}m`, sublabel:"/ 60m", color:c, urgent:mins>=60, protocol:"Sepsis" };
+    return { label:`ABX ${mins}m`, sublabel:"/ 60m", color:c, urgent:mins>=60 };
   }
   return null;
 }
 
-// Clinical trajectory: ↑ ↓ → from last 2 vital sets — shows direction, not just value
+// ─── CLINICAL TRAJECTORY ─────────────────────────────────────────────────────
+// Depends on deriveVitalsTrend — defined in Module 4 (primitives).
+// Call order is fine: JS hoists function declarations.
 function deriveTrajectory(patient) {
   const sets = deriveVitalsTrend(patient);
   if (sets.length < 2) return null;
   const first=sets[0], last=sets[sets.length-1];
   let score=0;
-  const hrDiff=last.HR-first.HR;           // lower HR = better
-  const spDiff=last.SpO2-first.SpO2;       // higher SpO2 = better
-  const rrDiff=last.RR-first.RR;           // lower RR = better
+  const hrDiff=last.HR-first.HR, spDiff=last.SpO2-first.SpO2, rrDiff=last.RR-first.RR;
   const bpF=parseInt(first.BP||"120"), bpL=parseInt(last.BP||"120");
-  if (hrDiff < -5) score++; else if (hrDiff > 5) score--;
-  if (spDiff >  1) score++; else if (spDiff < -1) score--;
-  if (rrDiff < -2) score++; else if (rrDiff >  2) score--;
+  if (hrDiff<-5) score++; else if (hrDiff>5) score--;
+  if (spDiff>1)  score++; else if (spDiff<-1) score--;
+  if (rrDiff<-2) score++; else if (rrDiff>2) score--;
   if (!isNaN(bpF)&&!isNaN(bpL)) {
-    if (bpF<90&&bpL>bpF+5)    score++;   // BP recovering from hypotension
-    else if (bpF>=90&&bpL<bpF-10) score--; // BP falling from normal
+    if (bpF<90&&bpL>bpF+5) score++;
+    else if (bpF>=90&&bpL<bpF-10) score--;
   }
-  if (score >= 2)  return { icon:"↑", color:T.green, label:"Improving"    };
-  if (score <= -2) return { icon:"↓", color:T.red,   label:"Deteriorating" };
-  return                 { icon:"→", color:T.txt4,  label:"Stable"        };
+  if (score>=2)  return { icon:"↑", color:T.green, label:"Improving"     };
+  if (score<=-2) return { icon:"↓", color:T.red,   label:"Deteriorating" };
+  return               { icon:"→", color:T.txt4,  label:"Stable"        };
 }
 
-// q-SOFA early warning score (0–3): uses derived vitals for demo
-// Wire: when real-time vitals land in entity, swap deriveVitalsTrend for patient.vitals directly
+// ─── q-SOFA ───────────────────────────────────────────────────────────────────
 function qSOFA(patient) {
   const sets = deriveVitalsTrend(patient);
   const v    = sets[sets.length-1];
   if (!v) return null;
   let score = 0;
-  if ((v.RR||0) >= 22)                  score++; // tachypnea
-  if (parseInt(v.BP||"120") <= 100)     score++; // hypotension
-  if ((v.GCS||15) < 15)                 score++; // altered mentation
-  const color = score>=2?T.red:score===1?T.gold:T.txt4;
-  return { score, color };
+  if ((v.RR||0)>=22)              score++;
+  if (parseInt(v.BP||"120")<=100) score++;
+  if ((v.GCS||15)<15)             score++;
+  return { score, color:score>=2?T.red:score===1?T.gold:T.txt4 };
 }
 
-// ─── STORAGE (window.storage + in-memory fallback) ────────────────────────────
-const _ewMem = {};
-async function ewGet(k, fb) {
-  try { if (window?.storage?.get) { const r = await window.storage.get(k); if (r?.value !== undefined) return r.value; } } catch(e) {}
-  return k in _ewMem ? _ewMem[k] : fb;
-}
-async function ewSet(k, v) {
-  _ewMem[k] = v;
-  try { if (window?.storage?.set) await window.storage.set(k, v); } catch(e) {}
+// ─── REASSESSMENT STATUS ──────────────────────────────────────────────────────
+// Wire: replace mockLastReassess with patient.last_reassess_mins
+const mockLastReassess = (p) =>
+  p.last_reassess_mins != null ? p.last_reassess_mins :
+  Math.max(5, Math.floor((p.mins||40)*0.38) + (idHash(String(p.id||""))%28));
+
+function deriveReassessmentStatus(patient) {
+  const elapsed=mockLastReassess(patient), threshold=REASSESS_THRESHOLDS[patient.esi]||120;
+  const pct=elapsed/threshold;
+  if (pct<0.5) return null;
+  const overdue=pct>=1.0, urgent=pct>=0.85;
+  return { elapsed, threshold, pct, overdue, urgent, color:overdue?T.red:urgent?T.gold:T.txt4 };
 }
 
-// ─── RESULT CHIPS ─────────────────────────────────────────────────────────────
-const CHIP_STYLE = {
-  pending:  { color:T.gold,   marker:"⏳", bg:"rgba(245,200,66,0.08)",   border:"rgba(245,200,66,0.38)"   },
-  resulted: { color:T.teal,   marker:"✓",  bg:"rgba(0,229,192,0.07)",   border:"rgba(0,229,192,0.38)"    },
-  critical: { color:T.red,    marker:"!",  bg:"rgba(255,68,68,0.12)",   border:"rgba(255,68,68,0.55)"    },
-  running:  { color:T.cyan,   marker:"↻",  bg:"rgba(0,212,255,0.07)",   border:"rgba(0,212,255,0.38)"    },
-  consult:  { color:T.purple, marker:"→",  bg:"rgba(155,109,255,0.08)", border:"rgba(155,109,255,0.38)"  },
-};
-const WORKUP_PROFILES = [
-  [{ label:"3 Labs",  status:"pending"  },{ label:"Troponin",status:"critical"},{ label:"CT",   status:"pending" },{ label:"Cards", status:"consult" }],
-  [{ label:"2 Labs",  status:"pending"  },{ label:"CXR",     status:"resulted"},{ label:"EKG",  status:"resulted"}],
-  [{ label:"Lactate", status:"critical" },{ label:"BC x2",   status:"pending" },{ label:"CT",   status:"running" },{ label:"ID",    status:"consult" }],
-  [{ label:"Labs",    status:"pending"  },{ label:"CT",      status:"critical"},{ label:"Neuro",status:"consult" }],
-  [{ label:"2 Labs",  status:"pending"  },{ label:"XR",      status:"pending" }],
-  [{ label:"Labs",    status:"resulted" },{ label:"CT",      status:"resulted"},{ label:"Neuro",status:"consult" }],
-  [{ label:"2 Labs",  status:"pending"  },{ label:"US",      status:"running" }],
-  [{ label:"Labs",    status:"resulted" },{ label:"XR",      status:"resulted"}],
-  [{ label:"UA",      status:"pending"  }],
-  [{ label:"UA",      status:"resulted" },{ label:"XR",      status:"resulted"}],
-];
-function deriveResultChips(patient) {
+// ─── PAIN REASSESSMENT STATUS ─────────────────────────────────────────────────
+// Wire: replace mock branch with patient.last_analgesic_mins
+function derivePainReassessStatus(patient) {
   const orders = Array.isArray(patient.orders) ? patient.orders : [];
-  if (orders.length > 0) {
-    const chips=[], labs=orders.filter(o=>o.type==="lab"), imaging=orders.filter(o=>o.type==="imaging"), consults=orders.filter(o=>o.type==="consult");
-    labs.filter(o=>o.status==="critical").forEach(o=>chips.push({ label:(o.name||"Lab").split(" ")[0], status:"critical" }));
-    const pend=labs.filter(o=>o.status==="pending"), done=labs.filter(o=>o.status==="resulted"||o.status==="given");
-    if (pend.length) chips.push({ label:`${pend.length} Lab${pend.length>1?"s":""}`, status:"pending" });
-    else if (done.length) chips.push({ label:"Labs", status:"resulted" });
-    imaging.forEach(o=>chips.push({ label:(o.name||"Img").split(" ")[0], status:o.status==="critical"?"critical":o.status==="resulted"?"resulted":o.status==="running"?"running":"pending" }));
-    consults.forEach(o=>chips.push({ label:(o.name||"Consult").split(" ")[0], status:"consult" }));
-    return chips;
-  }
-  const h=idHash(String(patient.id||"")+String(patient.mins||"")), esi=patient.esi||3;
-  return esi<=2 ? WORKUP_PROFILES[h%4] : esi===3 ? WORKUP_PROFILES[4+(h%4)] : WORKUP_PROFILES[8+(h%2)];
-}
-function ResultChipsRow({ chips }) {
-  if (!chips||chips.length===0) return null;
-  return (
-    <div style={{ display:"flex",alignItems:"center",gap:4,flexWrap:"nowrap",marginTop:3 }}>
-      {chips.slice(0,4).map((chip,i)=>{ const s=CHIP_STYLE[chip.status]||CHIP_STYLE.pending; const isCrit=chip.status==="critical"; return <span key={i} className={isCrit?"pulse-red":undefined} style={{ display:"inline-flex",alignItems:"center",gap:3,fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:isCrit?700:500,color:s.color,background:s.bg,border:`1px solid ${s.border}`,borderRadius:5,padding:"2px 6px",whiteSpace:"nowrap",flexShrink:0 }}>{chip.label} {s.marker}</span>; })}
-      {chips.length>4&&<span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,flexShrink:0 }}>+{chips.length-4}</span>}
-    </div>
+  const analgesicOrder = orders.find(o =>
+    (o.status==="given"||o.status==="running") &&
+    ANALGESIC_KEYWORDS.some(kw=>(o.name||"").toLowerCase().includes(kw))
   );
+  if (orders.length>0 && !analgesicOrder) return null;
+  const h=idHash(String(patient.id||"")), cc=(patient.cc||"").toLowerCase();
+  const isPainCC=["pain","chest","abdominal","abdom","headache","migraine","back","fracture","laceration","trauma","kidney","renal","flank"].some(k=>cc.includes(k));
+  if (!isPainCC && !analgesicOrder) return null;
+  if ((patient.mins||0)<15) return null;
+  const elapsed=analgesicOrder?Math.max(5,Math.floor((patient.mins||30)*0.45)):Math.max(8,12+(h%44));
+  const win=PAIN_REASSESS_WINDOW, due=elapsed>=win*0.7, overdue=elapsed>=win;
+  if (!due) return null;
+  return { elapsed, window:win, due, overdue, minsUntil:Math.max(0,win-elapsed),
+           color:overdue?T.red:elapsed>=win*0.85?T.orange:T.gold };
 }
+
+// ─── BOARDING STATUS ──────────────────────────────────────────────────────────
+// Wire: replace mock with patient.admitted_at ISO timestamp
+function getBoardingMins(patient) {
+  if (patient.boarding_mins!=null) return patient.boarding_mins;
+  const d=patient.dispo_status||deriveDispoStatus(patient);
+  if (!["admitted","boarding"].includes(d)) return null;
+  const h=idHash(String(patient.id||"")), factor=patient.esi<=2?0.65:0.45;
+  const mins=Math.round((patient.mins||0)*factor)+(h%40);
+  return mins>30?mins:null;
+}
+const boardingColor  = (m) => m>=BOARDING_THRESHOLDS.crit?T.red:m>=BOARDING_THRESHOLDS.warn?T.gold:T.teal;
+const fmtBoardingTime= (m) => m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`;
+
+// ─── TRANSFER STATUS ──────────────────────────────────────────────────────────
+function deriveTransferStatus(patient, transfers=[]) {
+  const list=Array.isArray(transfers)&&transfers.length?transfers:MOCK_TRANSFERS;
+  const rec=list.find(t=>t.patientId===patient.id);
+  if (!rec) return null;
+  const steps=TRANSFER_STEPS.map(def=>{
+    const data=(rec.steps||[]).find(s=>s.key===def.key)||{};
+    return {...def,completedAt:data.completedAt||null};
+  });
+  const completedCount=steps.filter(s=>s.completedAt).length;
+  const activeStep=steps.find(s=>!s.completedAt)||null;
+  const decisionStep=steps.find(s=>s.key==="decision");
+  const elapsedMins=decisionStep?.completedAt
+    ?Math.round((Date.now()-new Date(decisionStep.completedAt).getTime())/60000):0;
+  const stepsWithState=steps.map((s,i)=>({
+    ...s,
+    done:!!s.completedAt,
+    active:!s.completedAt&&(i===0||!!steps[i-1]?.completedAt),
+    blocked:!s.completedAt&&i>0&&!steps[i-1]?.completedAt,
+  }));
+  return { activeStep, completedCount, totalSteps:TRANSFER_STEPS.length, elapsedMins,
+           stepsWithState, transport:rec.transport, destination:rec.destination, reason:rec.reason };
+}
+
+// ─── EMS QUEUE ────────────────────────────────────────────────────────────────
+// Wire: replace MOCK_EMS_RUNS with base44.entities.EmsRun.list({ status:"incoming" })
+function deriveEmsQueue(entityRuns) {
+  const runs=Array.isArray(entityRuns)&&entityRuns.length?entityRuns:MOCK_EMS_RUNS;
+  return [...runs].sort((a,b)=>(a.eta_mins||99)-(b.eta_mins||99));
+}
+
+// ─── TIME-TO-EVENT HELPERS ────────────────────────────────────────────────────
+const DTD_TARGET=30, EKG_TARGET=10, STALE_THRESH=30;
+const dtdColor        =(m)=>m>60?T.red:m>DTD_TARGET?T.gold:T.green;
+const staleColor      =(m)=>m>60?T.red:m>STALE_THRESH?T.gold:T.txt4;
+const mockDtd         =(p)=>p.door_to_doc!=null?p.door_to_doc:Math.max(5,Math.min(90,Math.floor((p.mins||30)*0.3)+(idHash(String(p.id||""))%25)));
+const isCardiac       =(p)=>["chest","stemi","cardiac","ekg","palpitat","syncope"].some(kw=>(p.cc||"").toLowerCase().includes(kw));
+const mockDoorToEkg   =(p)=>p.door_to_ekg!=null?p.door_to_ekg:Math.max(3,5+(idHash(String(p.id||""))%20));
+const mockLastOrderMins=(p)=>p.last_order_mins!=null?p.last_order_mins:(idHash(String(p.id||""))*11+17)%75;
+
+// ════════════════════════════════════════════════════════════════════════════
+// MODULE 4 — SHARED UI PRIMITIVES & DATA DERIVATION
+// ════════════════════════════════════════════════════════════════════════════
 
 // ─── DISPOSITION ──────────────────────────────────────────────────────────────
-const DISPO_MAP = {
-  dc_ready:         { label:"D/C Ready",      color:T.green  },
-  admitted:         { label:"Bed Pending",     color:T.cyan   },
-  obs:              { label:"Obs Pending",     color:T.gold   },
-  awaiting_consult: { label:"Consult Pending", color:T.purple },
-  transfer:         { label:"Transfer Pending",color:T.orange },
-  boarding:         { label:"Boarding",        color:T.blue   },
+const DISPO_MAP={
+  dc_ready:{label:"D/C Ready",color:T.green},admitted:{label:"Bed Pending",color:T.cyan},
+  obs:{label:"Obs Pending",color:T.gold},awaiting_consult:{label:"Consult Pending",color:T.purple},
+  transfer:{label:"Transfer Pending",color:T.orange},boarding:{label:"Boarding",color:T.blue},
 };
-const DISPO_BY_ESI = {
-  1:["admitted","boarding","awaiting_consult","admitted"],
-  2:["admitted","awaiting_consult","obs","boarding"],
-  3:["dc_ready","obs","awaiting_consult","workup"],
-  4:["dc_ready","workup","dc_ready","workup"],
-  5:["dc_ready","workup"],
+const DISPO_BY_ESI={
+  1:["admitted","boarding","awaiting_consult","admitted"],2:["admitted","awaiting_consult","obs","boarding"],
+  3:["dc_ready","obs","awaiting_consult","workup"],4:["dc_ready","workup","dc_ready","workup"],5:["dc_ready","workup"],
 };
-const dispoHash = (id="",mins=0) => (id.split("").reduce((a,c)=>(a*17+c.charCodeAt(0))&0xffff,0)+mins*7)&0xffff;
+const dispoHash=(id="",mins=0)=>(id.split("").reduce((a,c)=>(a*17+c.charCodeAt(0))&0xffff,0)+mins*7)&0xffff;
 function deriveDispoStatus(patient) {
   if (patient.dispo_status) return patient.dispo_status;
-  const pool = DISPO_BY_ESI[patient.esi||3]||DISPO_BY_ESI[3];
-  return pool[dispoHash(String(patient.id||""), patient.mins||0) % pool.length];
+  const pool=DISPO_BY_ESI[patient.esi||3]||DISPO_BY_ESI[3];
+  return pool[dispoHash(String(patient.id||""),patient.mins||0)%pool.length];
 }
 function DispoBadge({ status }) {
-  const d = DISPO_MAP[status]; if (!d) return null;
+  const d=DISPO_MAP[status]; if (!d) return null;
   return <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:600,color:d.color,background:`${d.color}14`,border:`1px solid ${d.color}44`,borderRadius:5,padding:"2px 7px",whiteSpace:"nowrap",flexShrink:0 }}><span style={{ width:4,height:4,borderRadius:"50%",background:d.color,display:"inline-block",flexShrink:0 }}/>{d.label}</span>;
 }
 
@@ -237,12 +353,12 @@ const ROLE_STYLE     = { MD:{color:T.teal,abbr:"MD"}, RN:{color:T.gold,abbr:"RN"
 const ATTENDING_POOL = ["Skiba","Chen","Patel","Williams","Martinez","Johnson","Park","Thompson"];
 const NURSE_POOL     = ["Torres","Kim","Johnson","Davis","Lee","Nguyen","Brown","Wilson"];
 const RESIDENT_POOL  = ["Smith (R1)","Brown (R2)","Garcia (R3)","Wilson (R1)","Patel (R2)"];
-const providerHash   = (id="",mins=0) => (id.split("").reduce((a,c)=>(a*23+c.charCodeAt(0))&0xffff,0)+mins*11)&0xffff;
+const providerHash   = (id="",mins=0)=>(id.split("").reduce((a,c)=>(a*23+c.charCodeAt(0))&0xffff,0)+mins*11)&0xffff;
 function deriveProviders(patient) {
   if (patient.providers?.length) return patient.providers;
-  const h=providerHash(String(patient.id||""), patient.mins||0), esi=patient.esi||3;
-  const list=[{ role:"MD",name:ATTENDING_POOL[h%ATTENDING_POOL.length] },{ role:"RN",name:NURSE_POOL[(h*3+7)%NURSE_POOL.length] }];
-  if (esi<=2||(esi===3&&h%3===0)) list.push({ role:"R",name:RESIDENT_POOL[(h*5)%RESIDENT_POOL.length] });
+  const h=providerHash(String(patient.id||""),patient.mins||0), esi=patient.esi||3;
+  const list=[{role:"MD",name:ATTENDING_POOL[h%ATTENDING_POOL.length]},{role:"RN",name:NURSE_POOL[(h*3+7)%NURSE_POOL.length]}];
+  if (esi<=2||(esi===3&&h%3===0)) list.push({role:"R",name:RESIDENT_POOL[(h*5)%RESIDENT_POOL.length]});
   return list;
 }
 function ProviderRow({ providers, compact }) {
@@ -266,148 +382,236 @@ function SectionTitle({ children }) {
   return <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:T.txt4,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8 }}>{children}</div>;
 }
 
-// ─── LAB DERIVATION ───────────────────────────────────────────────────────────
-// Wire: replace with patient.labs entity field when data model is ready
-const CC_LAB_PROFILES = {
+// ─── RESULT CHIPS ─────────────────────────────────────────────────────────────
+const CHIP_STYLE={
+  pending: {color:T.gold,  marker:"⏳",bg:"rgba(245,200,66,0.08)",  border:"rgba(245,200,66,0.38)"},
+  resulted:{color:T.teal,  marker:"✓", bg:"rgba(0,229,192,0.07)",   border:"rgba(0,229,192,0.38)" },
+  critical:{color:T.red,   marker:"!", bg:"rgba(255,68,68,0.12)",   border:"rgba(255,68,68,0.55)" },
+  running: {color:T.cyan,  marker:"↻",bg:"rgba(0,212,255,0.07)",   border:"rgba(0,212,255,0.38)" },
+  consult: {color:T.purple,marker:"→",bg:"rgba(155,109,255,0.08)", border:"rgba(155,109,255,0.38)"},
+};
+const CHIP_PROFILES=[
+  [{label:"3 Labs",status:"pending"},{label:"Troponin",status:"critical"},{label:"CT",status:"pending"},{label:"Cards",status:"consult"}],
+  [{label:"2 Labs",status:"pending"},{label:"CXR",status:"resulted"},{label:"EKG",status:"resulted"}],
+  [{label:"Lactate",status:"critical"},{label:"BC x2",status:"pending"},{label:"CT",status:"running"},{label:"ID",status:"consult"}],
+  [{label:"Labs",status:"pending"},{label:"CT",status:"critical"},{label:"Neuro",status:"consult"}],
+  [{label:"2 Labs",status:"pending"},{label:"XR",status:"pending"}],
+  [{label:"Labs",status:"resulted"},{label:"CT",status:"resulted"},{label:"Neuro",status:"consult"}],
+  [{label:"2 Labs",status:"pending"},{label:"US",status:"running"}],
+  [{label:"Labs",status:"resulted"},{label:"XR",status:"resulted"}],
+  [{label:"UA",status:"pending"}],
+  [{label:"UA",status:"resulted"},{label:"XR",status:"resulted"}],
+];
+function deriveResultChips(patient) {
+  const orders=Array.isArray(patient.orders)?patient.orders:[];
+  if (orders.length>0) {
+    const chips=[];
+    const labs=orders.filter(o=>o.type==="lab"),imaging=orders.filter(o=>o.type==="imaging"),consults=orders.filter(o=>o.type==="consult");
+    labs.filter(o=>o.status==="critical").forEach(o=>chips.push({label:(o.name||"Lab").split(" ")[0],status:"critical"}));
+    const pend=labs.filter(o=>o.status==="pending"),done=labs.filter(o=>o.status==="resulted"||o.status==="given");
+    if (pend.length) chips.push({label:`${pend.length} Lab${pend.length>1?"s":""}`,status:"pending"});
+    else if (done.length) chips.push({label:"Labs",status:"resulted"});
+    imaging.forEach(o=>chips.push({label:(o.name||"Img").split(" ")[0],status:o.status==="critical"?"critical":o.status==="resulted"?"resulted":o.status==="running"?"running":"pending"}));
+    consults.forEach(o=>chips.push({label:(o.name||"Consult").split(" ")[0],status:"consult"}));
+    return chips;
+  }
+  const h=idHash(String(patient.id||"")+String(patient.mins||"")),esi=patient.esi||3;
+  return esi<=2?CHIP_PROFILES[h%4]:esi===3?CHIP_PROFILES[4+(h%4)]:CHIP_PROFILES[8+(h%2)];
+}
+function ResultChipsRow({ chips }) {
+  if (!chips?.length) return null;
+  return (
+    <div style={{ display:"flex",alignItems:"center",gap:4,flexWrap:"nowrap",marginTop:3 }}>
+      {chips.slice(0,4).map((chip,i)=>{ const s=CHIP_STYLE[chip.status]||CHIP_STYLE.pending,isCrit=chip.status==="critical"; return <span key={i} className={isCrit?"pulse-red":undefined} style={{ display:"inline-flex",alignItems:"center",gap:3,fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:isCrit?700:500,color:s.color,background:s.bg,border:`1px solid ${s.border}`,borderRadius:5,padding:"2px 6px",whiteSpace:"nowrap",flexShrink:0 }}>{chip.label} {s.marker}</span>; })}
+      {chips.length>4&&<span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,flexShrink:0 }}>+{chips.length-4}</span>}
+    </div>
+  );
+}
+
+// ─── DATA DERIVATION (labs, vitals, meds) ─────────────────────────────────────
+// Wire: replace each function body with the entity field read
+const CC_LAB_PROFILES={
   cardiac:[
-    { name:"WBC",    value:14.2, unit:"K/μL",   lo:4.5, hi:11.0, delta:"+2.1" },
-    { name:"Hgb",    value:13.8, unit:"g/dL",   lo:12,  hi:17.5, delta:null   },
-    { name:"Plt",    value:198,  unit:"K/μL",   lo:150, hi:400,  delta:null   },
-    { name:"Na",     value:136,  unit:"mEq/L",  lo:136, hi:145,  delta:null   },
-    { name:"K",      value:3.8,  unit:"mEq/L",  lo:3.5, hi:5.0,  delta:"−0.2"},
-    { name:"Cr",     value:1.2,  unit:"mg/dL",  lo:0.6, hi:1.2,  delta:null   },
-    { name:"Glc",    value:158,  unit:"mg/dL",  lo:70,  hi:100,  delta:null   },
-    { name:"Lactate",value:1.8,  unit:"mmol/L", lo:0.5, hi:2.0,  delta:null   },
-    { name:"Trop I", value:"CRITICAL  0.84", unit:"ng/mL", critical:true, lo:0, hi:0.04, delta:null },
+    {name:"WBC",value:14.2,unit:"K/μL",lo:4.5,hi:11.0,delta:"+2.1"},{name:"Hgb",value:13.8,unit:"g/dL",lo:12,hi:17.5,delta:null},
+    {name:"Plt",value:198,unit:"K/μL",lo:150,hi:400,delta:null},{name:"Na",value:136,unit:"mEq/L",lo:136,hi:145,delta:null},
+    {name:"K",value:3.8,unit:"mEq/L",lo:3.5,hi:5.0,delta:"−0.2"},{name:"Cr",value:1.2,unit:"mg/dL",lo:0.6,hi:1.2,delta:null},
+    {name:"Glc",value:158,unit:"mg/dL",lo:70,hi:100,delta:null},{name:"Lactate",value:1.8,unit:"mmol/L",lo:0.5,hi:2.0,delta:null},
+    {name:"Trop I",value:"CRITICAL  0.84",unit:"ng/mL",critical:true,lo:0,hi:0.04,delta:null},
   ],
   sepsis:[
-    { name:"WBC",    value:18.4, unit:"K/μL",   lo:4.5, hi:11.0, delta:"+6.2"},
-    { name:"Hgb",    value:11.2, unit:"g/dL",   lo:12,  hi:17.5, delta:null   },
-    { name:"Plt",    value:142,  unit:"K/μL",   lo:150, hi:400,  delta:"−28" },
-    { name:"Na",     value:134,  unit:"mEq/L",  lo:136, hi:145,  delta:null   },
-    { name:"K",      value:4.2,  unit:"mEq/L",  lo:3.5, hi:5.0,  delta:null   },
-    { name:"Cr",     value:2.1,  unit:"mg/dL",  lo:0.6, hi:1.2,  delta:null   },
-    { name:"BUN",    value:32,   unit:"mg/dL",  lo:7,   hi:20,   delta:null   },
-    { name:"Glc",    value:142,  unit:"mg/dL",  lo:70,  hi:100,  delta:null   },
-    { name:"Lactate",value:"CRITICAL  4.2", unit:"mmol/L", critical:true, lo:0.5, hi:2.0, delta:null },
+    {name:"WBC",value:18.4,unit:"K/μL",lo:4.5,hi:11.0,delta:"+6.2"},{name:"Hgb",value:11.2,unit:"g/dL",lo:12,hi:17.5,delta:null},
+    {name:"Plt",value:142,unit:"K/μL",lo:150,hi:400,delta:"−28"},{name:"Na",value:134,unit:"mEq/L",lo:136,hi:145,delta:null},
+    {name:"K",value:4.2,unit:"mEq/L",lo:3.5,hi:5.0,delta:null},{name:"Cr",value:2.1,unit:"mg/dL",lo:0.6,hi:1.2,delta:null},
+    {name:"BUN",value:32,unit:"mg/dL",lo:7,hi:20,delta:null},{name:"Glc",value:142,unit:"mg/dL",lo:70,hi:100,delta:null},
+    {name:"Lactate",value:"CRITICAL  4.2",unit:"mmol/L",critical:true,lo:0.5,hi:2.0,delta:null},
   ],
   default:[
-    { name:"WBC",    value:9.2,  unit:"K/μL",   lo:4.5, hi:11.0, delta:null },
-    { name:"Hgb",    value:13.4, unit:"g/dL",   lo:12,  hi:17.5, delta:null },
-    { name:"Plt",    value:234,  unit:"K/μL",   lo:150, hi:400,  delta:null },
-    { name:"Na",     value:140,  unit:"mEq/L",  lo:136, hi:145,  delta:null },
-    { name:"K",      value:4.0,  unit:"mEq/L",  lo:3.5, hi:5.0,  delta:null },
-    { name:"Cr",     value:0.9,  unit:"mg/dL",  lo:0.6, hi:1.2,  delta:null },
-    { name:"Glc",    value:98,   unit:"mg/dL",  lo:70,  hi:100,  delta:null },
+    {name:"WBC",value:9.2,unit:"K/μL",lo:4.5,hi:11.0,delta:null},{name:"Hgb",value:13.4,unit:"g/dL",lo:12,hi:17.5,delta:null},
+    {name:"Plt",value:234,unit:"K/μL",lo:150,hi:400,delta:null},{name:"Na",value:140,unit:"mEq/L",lo:136,hi:145,delta:null},
+    {name:"K",value:4.0,unit:"mEq/L",lo:3.5,hi:5.0,delta:null},{name:"Cr",value:0.9,unit:"mg/dL",lo:0.6,hi:1.2,delta:null},
+    {name:"Glc",value:98,unit:"mg/dL",lo:70,hi:100,delta:null},
   ],
 };
 function deriveLabs(p) {
   if (Array.isArray(p.labs)&&p.labs.length) return p.labs;
   const cc=(p.cc||"").toLowerCase();
-  const isCardiac=["chest","stemi","cardiac","arrest","troponin"].some(k=>cc.includes(k));
-  const isSepsis=["sepsis","fever","hypotension","lactate","infection"].some(k=>cc.includes(k));
-  return CC_LAB_PROFILES[isCardiac?"cardiac":isSepsis?"sepsis":"default"].map(r=>({...r,ts:"14:"+(38+idHash(String(p.id||"")+r.name)%12).toString().padStart(2,"0")}));
+  const k=["chest","stemi","cardiac","arrest","troponin"].some(k=>cc.includes(k))?"cardiac":["sepsis","fever","hypotension","lactate","infection"].some(k=>cc.includes(k))?"sepsis":"default";
+  return CC_LAB_PROFILES[k].map(r=>({...r,ts:"14:"+(38+idHash(String(p.id||"")+r.name)%12).toString().padStart(2,"0")}));
 }
-
-// ─── VITALS TREND DERIVATION ──────────────────────────────────────────────────
-// Wire: replace with patient.vitals_trend entity field when data model is ready
 function deriveVitalsTrend(p) {
   if (Array.isArray(p.vitals_trend)&&p.vitals_trend.length) return p.vitals_trend;
-  const raw=p.vitals, cc=(p.cc||"").toLowerCase();
-  const improving=["arrest","shock","hypotension","sepsis"].some(k=>cc.includes(k));
-  const now=new Date(), sv=raw&&typeof raw==="object"&&!Array.isArray(raw);
+  const cc=(p.cc||"").toLowerCase(),imp=["arrest","shock","hypotension","sepsis"].some(k=>cc.includes(k));
+  const now=new Date(),hr0=imp?124:88,bp0=imp?[82,52]:[138,88];
   const t=(off)=>new Date(now.getTime()-(p.mins||60)*60000+off*60000).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false});
-  const hr0=sv&&raw.hr?raw.hr+12:improving?124:88, bp0=improving?[82,52]:[138,88];
-  const sp0=improving?93:98, rr0=improving?24:16, gc0=improving?13:15;
   return [0,Math.round((p.mins||60)*0.33),Math.round((p.mins||60)*0.66),p.mins||60].map((off,i)=>{
-    const f=improving?i/3:0, hr=Math.round(hr0-(hr0-(sv&&raw.hr||72))*f);
-    const sys=Math.round(bp0[0]+(((sv&&raw.bp?parseInt(raw.bp):120)-bp0[0])*f));
-    const dia=Math.round(bp0[1]+(((sv&&raw.bp?parseInt(raw.bp.split("/")[1]||70):70)-bp0[1])*f));
-    return { ts:t(off), HR:hr, BP:`${sys}/${dia}`, SpO2:Math.round(sp0+((99-sp0)*f)), RR:Math.round(rr0+((16-rr0)*f)), Temp:(parseFloat((sv&&raw.temp)||98.4)||98.4).toFixed(1), GCS:Math.min(15,Math.round(gc0+((15-gc0)*f))) };
+    const f=imp?i/3:0,hr=Math.round(hr0-(hr0-(p.vitals?.hr||72))*f);
+    const sys=Math.round(bp0[0]+((((p.vitals?.bp?parseInt(p.vitals.bp):120))-bp0[0])*f));
+    const dia=Math.round(bp0[1]+((((p.vitals?.bp?parseInt(p.vitals.bp.split("/")[1]||70):70))-bp0[1])*f));
+    return {ts:t(off),HR:hr,BP:`${sys}/${dia}`,SpO2:Math.round((imp?93:98)+((99-(imp?93:98))*f)),RR:Math.round((imp?24:16)+((16-(imp?24:16))*f)),Temp:((p.vitals?.temp)||98.4).toFixed(1),GCS:Math.min(15,Math.round((imp?13:15)+((15-(imp?13:15))*f)))};
   });
 }
-
-// ─── MED / ALLERGY DERIVATION ─────────────────────────────────────────────────
-// Wire: replace with patient.meds entity field when data model is ready
-const HOME_MED_POOLS = {
+const HOME_MED_POOLS={
   cardiac:["Metoprolol succinate 50mg PO daily","Atorvastatin 40mg PO daily","Aspirin 81mg PO daily","Lisinopril 10mg PO daily"],
   sepsis: ["Lisinopril 10mg PO daily","Metformin 500mg PO BID","Amlodipine 5mg PO daily"],
   default:["No home medications on file"],
 };
-const ALLERGY_POOLS = [
-  [{ allergen:"Penicillin",   reaction:"Rash",        sev:"moderate" }],
-  [{ allergen:"Ibuprofen",    reaction:"GI bleeding", sev:"severe"   },{ allergen:"Codeine", reaction:"Nausea", sev:"mild" }],
-  [{ allergen:"Contrast dye", reaction:"Urticaria",   sev:"moderate" }],
+const ALLERGY_POOLS=[
+  [{allergen:"Penicillin",reaction:"Rash",sev:"moderate"}],
+  [{allergen:"Ibuprofen",reaction:"GI bleeding",sev:"severe"},{allergen:"Codeine",reaction:"Nausea",sev:"mild"}],
+  [{allergen:"Contrast dye",reaction:"Urticaria",sev:"moderate"}],
   [],
 ];
 function deriveMeds(p) {
   if (p.meds) return p.meds;
-  const orders=Array.isArray(p.orders)?p.orders:[{ name:"Aspirin 324mg PO",type:"med",status:"given",ts:"14:10" },{ name:"NS 1L IV bolus",type:"med",status:"running",ts:"14:15" }];
+  const orders=Array.isArray(p.orders)?p.orders:[{name:"Aspirin 324mg PO",type:"med",status:"given",ts:"14:10"},{name:"NS 1L IV bolus",type:"med",status:"running",ts:"14:15"}];
   const cc=(p.cc||"").toLowerCase();
-  const isCardiac=["chest","stemi","cardiac","arrest"].some(k=>cc.includes(k));
-  const isSepsis=["sepsis","fever","hypotension"].some(k=>cc.includes(k));
-  const poolKey=isCardiac?"cardiac":isSepsis?"sepsis":"default";
-  return { active:orders.filter(o=>o.type==="med"), home:HOME_MED_POOLS[poolKey].map(name=>({ name,status:"home" })), allergies:ALLERGY_POOLS[idHash(String(p.id||""))%ALLERGY_POOLS.length] };
+  const poolKey=["chest","stemi","cardiac","arrest"].some(k=>cc.includes(k))?"cardiac":["sepsis","fever","hypotension"].some(k=>cc.includes(k))?"sepsis":"default";
+  return {active:orders.filter(o=>o.type==="med"),home:HOME_MED_POOLS[poolKey].map(name=>({name,status:"home"})),allergies:ALLERGY_POOLS[idHash(String(p.id||""))%ALLERGY_POOLS.length]};
+}
+
+// ─── WORKUP COMPLETENESS ──────────────────────────────────────────────────────
+const WORKUP_PROFILES_CC=[
+  {match:["chest pain","chest pressure","stemi","acs","troponin"],label:"Chest pain",expected:["bmp-cbc","trop","cxr","hep"],optional:["coags","ddimer"]},
+  {match:["stroke","weakness","aphasia","facial droop","tpa","last known well"],label:"Stroke",expected:["ct-head","bmp-cbc","coags"],optional:["ct-csp"]},
+  {match:["sepsis","fever","hypotension","infection","bacteremia","altered","aloc"],label:"Sepsis / infection",expected:["bmp-cbc","lactate","bc","ua"],optional:["lfts","coags","abg"]},
+  {match:["abdominal","abdom","nausea","vomiting","rlq","llq","epigastric","flank"],label:"Abdominal pain",expected:["bmp-cbc","lipase","ct-ap"],optional:["lfts","ua","bhcg"]},
+  {match:["shortness of breath","dyspnea","sob","pe ","pulmonary embolism","hypoxia"],label:"Dyspnea / PE",expected:["bmp-cbc","ddimer","cxr"],optional:["ct-pe","abg"]},
+  {match:["syncope","near-syncope","palpitation","palpitat","lightheaded"],label:"Syncope / palpitations",expected:["bmp-cbc","trop","cxr"],optional:["coags","ct-head"]},
+  {match:["altered mental","ams","confusion","unresponsive","gcs"],label:"Altered mentation",expected:["bmp-cbc","ct-head","ua","bc"],optional:["etoh","abg"]},
+  {match:["trauma","mvc","motor vehicle","fall","injury","fracture"],label:"Trauma",expected:["bmp-cbc","cxr"],optional:["ct-head","ct-csp","coags"]},
+  {match:["uti","urinary","dysuria","hematuria","renal colic","kidney stone"],label:"Urinary",expected:["ua","bmp-cbc"],optional:["bc","ct-ap"]},
+];
+function getPlacedOrderIds(patient) {
+  const orders=Array.isArray(patient.orders)?patient.orders:[];
+  if (orders.length>0) return orders.map(o=>(o.id||o.name||"").toLowerCase());
+  const h=idHash(String(patient.id||"")),cc=(patient.cc||"").toLowerCase();
+  if (["chest","stemi","cardiac","arrest","troponin"].some(k=>cc.includes(k))) return ["bmp-cbc","trop","cxr",h%3===0?"hep":""].filter(Boolean);
+  if (["sepsis","fever","hypotension"].some(k=>cc.includes(k))) return ["bmp-cbc","bc","lactate",h%4===0?"ua":""].filter(Boolean);
+  const chips=deriveResultChips(patient);
+  const placed=["bmp-cbc"];
+  if (chips.length>1) placed.push("cxr");
+  return placed;
+}
+function deriveWorkupCompleteness(patient) {
+  const cc=(patient.cc||"").toLowerCase();
+  const profile=WORKUP_PROFILES_CC.find(p=>p.match.some(kw=>cc.includes(kw)));
+  if (!profile||(patient.mins||0)<8) return null;
+  const placed=getPlacedOrderIds(patient),total=profile.expected.length;
+  const hit=profile.expected.filter(id=>placed.some(pid=>pid.includes(id)||id.includes(pid)));
+  const missing=profile.expected.filter(id=>!placed.some(pid=>pid.includes(id)||id.includes(pid)));
+  const count=hit.length,pct=count/total;
+  return {label:profile.label,placed:count,total,pct,missing,color:pct>=1?T.green:pct>=0.5?T.gold:T.red};
+}
+
+// ─── SA BADGE COMPONENTS ──────────────────────────────────────────────────────
+function ReassessmentBadge({ patient }) {
+  const mountRef=useRef(Date.now());
+  const [,setTick]=useState(0);
+  useEffect(()=>{ const id=setInterval(()=>setTick(t=>t+1),60000); return()=>clearInterval(id); },[]);
+  const elapsed=mockLastReassess(patient)+Math.floor((Date.now()-mountRef.current)/60000);
+  const threshold=REASSESS_THRESHOLDS[patient.esi]||120,pct=elapsed/threshold;
+  if (pct<0.5) return null;
+  const overdue=pct>=1.0,color=overdue?T.red:pct>=0.85?T.gold:T.txt4;
+  const display=overdue?`+${elapsed-threshold}m past due`:`Reassess ${Math.max(0,threshold-elapsed)}m`;
+  return <div className={overdue?"ew-pulse":undefined} style={{ display:"inline-flex",alignItems:"center",gap:5,background:`${color}0f`,border:`1px solid ${color}44`,borderRadius:6,padding:"3px 8px",alignSelf:"flex-start" }}><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color,lineHeight:1 }}>⏱</span><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color }}>{display}</span></div>;
+}
+
+function PainReassessBadge({ patient }) {
+  const mountRef=useRef(Date.now());
+  const [,setTick]=useState(0);
+  useEffect(()=>{ const id=setInterval(()=>setTick(t=>t+1),60000); return()=>clearInterval(id); },[]);
+  const base=derivePainReassessStatus(patient);
+  if (!base) return null;
+  const elapsed=base.elapsed+Math.floor((Date.now()-mountRef.current)/60000);
+  const overdue=elapsed>=base.window,color=overdue?T.red:elapsed>=base.window*0.85?T.orange:T.gold;
+  const label=overdue?`Pain reassess +${elapsed-base.window}m past due`:`Pain reassess in ${Math.max(0,base.window-elapsed)}m`;
+  return <div className={overdue?"ew-pulse":undefined} style={{ display:"inline-flex",alignItems:"center",gap:5,background:`${color}0f`,border:`1px solid ${color}44`,borderRadius:6,padding:"3px 8px",alignSelf:"flex-start" }}><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color,lineHeight:1 }}>💊</span><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color }}>{label}</span></div>;
+}
+
+function WorkupCompletenessRow({ workup }) {
+  if (!workup) return null;
+  return (
+    <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+      <div style={{ display:"flex",gap:2,flexShrink:0 }}>
+        {Array.from({length:workup.total}).map((_,i)=>(
+          <div key={i} style={{ width:14,height:4,borderRadius:2,background:i<workup.placed?workup.color:"rgba(90,130,168,0.28)" }}/>
+        ))}
+      </div>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:workup.color,flexShrink:0 }}>{workup.placed}/{workup.total}</span>
+      <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1 }}
+        title={workup.missing.length?`Missing: ${workup.missing.join(", ")}`:`${workup.label} workup complete`}>
+        {workup.pct>=1
+          ?<span style={{ color:T.green }}>✓ Complete</span>
+          :workup.missing.length
+            ?workup.missing.slice(0,2).join(" · ")+(workup.missing.length>2?` +${workup.missing.length-2}`:"")
+            :workup.label}
+      </span>
+    </div>
+  );
+}
+
+function TransferPipelineBadge({ patient, transfers }) {
+  const status=deriveTransferStatus(patient,transfers);
+  if (!status) return null;
+  const {completedCount,totalSteps,stepsWithState,elapsedMins,transport,destination,activeStep}=status;
+  const done=completedCount===totalSteps,accentC=done?T.teal:T.blue;
+  const tipText=`${TRANSFER_TRANSPORT_ICON[transport]||"🚑"} → ${destination}\n`+
+    stepsWithState.map(s=>`${s.done?"✓":s.active?"▶":"○"} ${s.label}${s.completedAt?" ("+new Date(s.completedAt).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false})+")":" "}`).join("\n");
+  return (
+    <div title={tipText} style={{ display:"flex",alignItems:"center",gap:6,background:`${accentC}0d`,border:`1px solid ${accentC}33`,borderRadius:6,padding:"4px 8px",alignSelf:"flex-start",cursor:"default" }}>
+      <span style={{ fontSize:11,lineHeight:1,flexShrink:0 }}>{TRANSFER_TRANSPORT_ICON[transport]||"🚑"}</span>
+      <div style={{ display:"flex",gap:3,alignItems:"center",flexShrink:0 }}>
+        {stepsWithState.map((s)=>(
+          <div key={s.key} style={{ width:s.active?10:7,height:s.active?10:7,borderRadius:"50%",background:s.done?accentC:s.active?T.gold:"rgba(90,130,168,0.28)",border:s.active?`1.5px solid ${T.gold}`:"none",flexShrink:0,transition:"all .2s" }}/>
+        ))}
+      </div>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:done?accentC:T.gold,whiteSpace:"nowrap" }}>{done?"Transfer complete":activeStep?activeStep.short:"—"}</span>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,flexShrink:0 }}>{elapsedMins}m</span>
+    </div>
+  );
 }
 
 // ─── WORKSPACE ORDER CATALOG ──────────────────────────────────────────────────
-// Curated common subset for inline OrdersTab panel.
-// Full ROC (used by RapidOrderDrawer) is defined later in this file.
-const ROC_INLINE = {
-  labs:[
-    { id:"bmp-cbc",name:"BMP + CBC",                common:true  },
-    { id:"trop",   name:"Troponin I (High-Sens.)",   common:true  },
-    { id:"lactate",name:"Lactate",                   common:true  },
-    { id:"ua",     name:"Urinalysis w/ Reflex Cx",   common:true  },
-    { id:"bc",     name:"Blood Cultures ×2",         common:true  },
-    { id:"coags",  name:"PT / INR / PTT",            common:false },
-    { id:"ddimer", name:"D-Dimer",                   common:false },
-    { id:"abg",    name:"ABG",                       common:false },
-    { id:"lfts",   name:"Hepatic Function Panel",    common:false },
-    { id:"lipase", name:"Lipase",                    common:false },
-    { id:"bhcg",   name:"β-hCG Serum",               common:false },
-    { id:"etoh",   name:"Ethanol Level",             common:false },
-  ],
-  imaging:[
-    { id:"cxr",    name:"CXR PA & Lateral",          common:true  },
-    { id:"ct-head",name:"CT Head w/o Contrast",      common:true  },
-    { id:"ct-pe",  name:"CT Chest CTA — PE",         common:true  },
-    { id:"ct-ap",  name:"CT Abd/Pelvis w/ Contrast", common:true  },
-    { id:"us-ruq", name:"US Abdomen RUQ",             common:true  },
-    { id:"us-dvt", name:"US Lower Extremity DVT",    common:false },
-    { id:"ct-csp", name:"CT C-Spine w/o",            common:false },
-    { id:"xr-cxr", name:"CXR Portable AP",           common:false },
-  ],
-  meds:[
-    { id:"keto",   name:"Ketorolac 30mg IV",         common:true  },
-    { id:"zofran", name:"Ondansetron 4mg IV",        common:true  },
-    { id:"morph",  name:"Morphine 4mg IV",           common:true  },
-    { id:"ns1l",   name:"Normal Saline 1L IV",       common:true  },
-    { id:"asa",    name:"Aspirin 324mg PO",          common:true  },
-    { id:"hep",    name:"Heparin IV (ACS protocol)", common:false },
-    { id:"mag",    name:"Magnesium Sulf. 2g IV",     common:false },
-    { id:"adeno",  name:"Adenosine 6mg IV",          common:false },
-  ],
-  consults:[
-    { id:"cards",  name:"Cardiology",       common:true  },
-    { id:"neuro",  name:"Neurology",        common:true  },
-    { id:"surg",   name:"General Surgery",  common:true  },
-    { id:"ortho",  name:"Orthopedics",      common:false },
-    { id:"psych",  name:"Psychiatry",       common:false },
-    { id:"id",     name:"Infectious Disease",common:false},
-  ],
+const ROC_INLINE={
+  labs:[{id:"bmp-cbc",name:"BMP + CBC",common:true},{id:"trop",name:"Troponin I (High-Sens.)",common:true},{id:"lactate",name:"Lactate",common:true},{id:"ua",name:"Urinalysis w/ Reflex Cx",common:true},{id:"bc",name:"Blood Cultures ×2",common:true},{id:"coags",name:"PT / INR / PTT",common:false},{id:"ddimer",name:"D-Dimer",common:false},{id:"abg",name:"ABG",common:false},{id:"lfts",name:"Hepatic Function Panel",common:false},{id:"lipase",name:"Lipase",common:false},{id:"bhcg",name:"β-hCG Serum",common:false},{id:"etoh",name:"Ethanol Level",common:false}],
+  imaging:[{id:"cxr",name:"CXR PA & Lateral",common:true},{id:"ct-head",name:"CT Head w/o Contrast",common:true},{id:"ct-pe",name:"CT Chest CTA — PE",common:true},{id:"ct-ap",name:"CT Abd/Pelvis w/ Contrast",common:true},{id:"us-ruq",name:"US Abdomen RUQ",common:true},{id:"us-dvt",name:"US Lower Extremity DVT",common:false},{id:"ct-csp",name:"CT C-Spine w/o",common:false},{id:"xr-cxr",name:"CXR Portable AP",common:false}],
+  meds:[{id:"keto",name:"Ketorolac 30mg IV",common:true},{id:"zofran",name:"Ondansetron 4mg IV",common:true},{id:"morph",name:"Morphine 4mg IV",common:true},{id:"ns1l",name:"Normal Saline 1L IV",common:true},{id:"asa",name:"Aspirin 324mg PO",common:true},{id:"hep",name:"Heparin IV (ACS protocol)",common:false},{id:"mag",name:"Magnesium Sulf. 2g IV",common:false},{id:"adeno",name:"Adenosine 6mg IV",common:false}],
+  consults:[{id:"cards",name:"Cardiology",common:true},{id:"neuro",name:"Neurology",common:true},{id:"surg",name:"General Surgery",common:true},{id:"ortho",name:"Orthopedics",common:false},{id:"psych",name:"Psychiatry",common:false},{id:"id",name:"Infectious Disease",common:false}],
   sets:[
-    { id:"s-acs",   name:"ACS Protocol",   sub:"ASA · Trop · CXR · Heparin",              items:["asa","trop","cxr","hep"]          },
-    { id:"s-sepsis",name:"Sepsis Bundle",  sub:"BC×2 · Lactate · BMP+CBC · NS 1L",        items:["bc","lactate","bmp-cbc","ns1l"]   },
-    { id:"s-stroke",name:"Stroke Protocol",sub:"CT Head · BMP+CBC · Coags",               items:["ct-head","bmp-cbc","coags"]       },
-    { id:"s-pe",    name:"PE Protocol",    sub:"D-Dimer · CTA Chest · BMP+CBC",           items:["ddimer","ct-pe","bmp-cbc"]        },
-    { id:"s-abd",   name:"Abdominal W/U",  sub:"BMP+CBC · Lipase · LFTs · CT Abd/Pelvis", items:["bmp-cbc","lipase","lfts","ct-ap"] },
+    {id:"s-acs",name:"ACS Protocol",sub:"ASA · Trop · CXR · Heparin",items:["asa","trop","cxr","hep"]},
+    {id:"s-sepsis",name:"Sepsis Bundle",sub:"BC×2 · Lactate · BMP+CBC · NS 1L",items:["bc","lactate","bmp-cbc","ns1l"]},
+    {id:"s-stroke",name:"Stroke Protocol",sub:"CT Head · BMP+CBC · Coags",items:["ct-head","bmp-cbc","coags"]},
+    {id:"s-pe",name:"PE Protocol",sub:"D-Dimer · CTA Chest · BMP+CBC",items:["ddimer","ct-pe","bmp-cbc"]},
+    {id:"s-abd",name:"Abdominal W/U",sub:"BMP+CBC · Lipase · LFTs · CT Abd/Pelvis",items:["bmp-cbc","lipase","lfts","ct-ap"]},
   ],
 };
-// ROCF = flat lookup for workspace order sets (separate from RapidOrderDrawer's ROC_FLAT)
-const ROCF = Object.entries(ROC_INLINE).reduce((acc,[k,arr])=>{ if(k!=="sets") arr.forEach(o=>{acc[o.id]=o;}); return acc; },{});
+const ROCF=Object.entries(ROC_INLINE).reduce((acc,[k,arr])=>{ if(k!=="sets") arr.forEach(o=>{acc[o.id]=o;}); return acc; },{});
+// ════════════════════════════════════════════════════════════════════════════
+// MODULE 5 — ENCOUNTER WORKSPACE  (5-tab inline clinical surface)
+// ════════════════════════════════════════════════════════════════════════════
 
-// ─── WORKSPACE HEADER ─────────────────────────────────────────────────────────
+
+
 function WorkspaceHeader({ patient, summary }) {
   const vitals = useMemo(()=>{
     const rv=patient.vitals, sv=rv&&typeof rv==="object"&&!Array.isArray(rv);
@@ -715,14 +919,18 @@ function EncounterWorkspace({ patient, summary, onRapidOrder, embedded=false }) 
   );
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// MODULE 6 — COMMAND CENTER SHELL  (panels, topbar, overlays, default export)
+// ════════════════════════════════════════════════════════════════════════════
+
 // ─── RESULTS BANNER ──────────────────────────────────────────────────────────
 // Interrupt-driven notification strip for new results across all patients.
 // Sits between TopBar and the main three-column area. Each notif is dismissible
 // and navigates directly to that patient on click.
 function ResultsBanner({ notifs, onDismiss, onPatientSelect, patients }) {
   if (!notifs?.length) return null;
-  const TYPE_ICON   = { critical:"🚨", result:"🧪", imaging:"🩻", consult:"📞" };
-  const TYPE_COLOR  = { critical:T.red, result:T.teal, imaging:T.purple, consult:T.blue };
+  const TYPE_ICON   = { critical:"🚨", result:"🧪", imaging:"🩻", consult:"📞", pain:"💊" };
+  const TYPE_COLOR  = { critical:T.red, result:T.teal, imaging:T.purple, consult:T.blue, pain:T.orange };
   return (
     <div style={{ display:"flex",alignItems:"center",gap:0,background:"rgba(5,15,30,0.96)",borderBottom:`1px solid ${T.teal}33`,flexShrink:0,overflowX:"auto",minHeight:34 }}>
       <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,color:T.txt4,textTransform:"uppercase",letterSpacing:"0.14em",padding:"0 10px",flexShrink:0 }}>New</div>
@@ -834,7 +1042,7 @@ function NewPatientModal({ onClose }) {
 }
 
 // ─── CENSUS PANEL ─────────────────────────────────────────────────────────────
-function CensusPanel({ patients, search, onSearch, selectedId, onSelect, summaries }) {
+function CensusPanel({ patients, search, onSearch, selectedId, onSelect, summaries, transfers=[] }) {
   const [filterMode,setFilterMode]=useState("all");
   const filtered=patients.filter(p=>[p.name,p.cc,p.room].some(s=>(s||"").toLowerCase().includes(search.toLowerCase())));
   const sorted=[...filtered].sort((a,b)=>a.esi!==b.esi?a.esi-b.esi:b.mins-a.mins);
@@ -864,6 +1072,8 @@ function CensusPanel({ patients, search, onSearch, selectedId, onSelect, summari
           const timer=getProtocolTimer(p);
           const traj=deriveTrajectory(p);
           const sofa=qSOFA(p);
+          const workup=deriveWorkupCompleteness(p);
+          const transfer=deriveTransferStatus(p, transfers);
           return (
           <div key={p.id} onClick={()=>onSelect(p)} style={{ padding:"10px 16px",background:isSelected?`linear-gradient(135deg,${T.teal}12,${T.teal}06)`:"transparent",borderLeft:`3px solid ${isSelected?T.teal:"transparent"}`,borderBottom:"1px solid rgba(26,53,85,0.3)",cursor:"pointer",transition:"all .12s",display:"flex",flexDirection:"column",gap:4 }} onMouseEnter={e=>{ if(!isSelected){e.currentTarget.style.background=`linear-gradient(135deg,${T.teal}07,transparent)`;e.currentTarget.style.borderLeftColor=T.teal+"44";} }} onMouseLeave={e=>{ if(!isSelected){e.currentTarget.style.background="transparent";e.currentTarget.style.borderLeftColor="transparent";} }}>
             {/* Row 1: room · badges row */}
@@ -903,6 +1113,14 @@ function CensusPanel({ patients, search, onSearch, selectedId, onSelect, summari
             </div>
             {/* Row 7: result chips */}
             <ResultChipsRow chips={deriveResultChips(p)}/>
+            {/* Row 8: reassessment timer — self-ticking live countdown, returns null when within safe window */}
+            <ReassessmentBadge patient={p}/>
+            {/* Row 9: workup completeness */}
+            <WorkupCompletenessRow workup={workup}/>
+            {/* Row 10: pain reassessment */}
+            <PainReassessBadge patient={p}/>
+            {/* Row 11: transfer pipeline — compact 5-pip track, only rendered when patient has active transfer */}
+            <TransferPipelineBadge patient={p} transfers={transfers}/>
           </div>
         ); })}
       </div>
@@ -924,6 +1142,12 @@ function SelectPatientPrompt({ patients }) {
   );
 }
 
+// EMS data + deriveEmsQueue → Module 2/3
+
+// Transfer data + helpers → Module 2/3/4
+
+// Boarding helpers → Module 3
+
 // ─── TIME-TO-EVENT HELPERS ────────────────────────────────────────────────────
 const DTD_TARGET=30, EKG_TARGET=10, STALE_THRESH=30;
 const dtdColor   =(m)=>m>60?T.red:m>DTD_TARGET?T.gold:T.green;
@@ -933,8 +1157,61 @@ const isCardiac  =(p)=>["chest","stemi","cardiac","ekg","palpitat","syncope"].so
 const mockDoorToEkg    =(p)=>p.door_to_ekg!=null?p.door_to_ekg:Math.max(3,5+(idHash(String(p.id||""))%20));
 const mockLastOrderMins=(p)=>p.last_order_mins!=null?p.last_order_mins:(idHash(String(p.id||""))*11+17)%75;
 
+// ─── SHIFT RAIL SECTION COMPONENTS ──────────────────────────────────────────
+// Extracted from inline JSX to keep ShiftRail render readable.
+function StaleWorkupsSection({ pts }) {
+  if (!pts.length) return null;
+  return (
+    <div style={{ marginBottom:14 }}>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:T.gold,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8 }}>Stale Workups</div>
+      {pts.map(p=>(
+        <div key={p.id} onClick={()=>nav("PatientEncounter",{patientId:p.id})}
+          style={{ ...gc({borderRadius:9,borderLeft:`3px solid ${staleColor(mockLastOrderMins(p))}`,background:"rgba(245,200,66,0.04)"}),padding:"8px 10px",marginBottom:6,cursor:"pointer" }}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:2 }}>
+            <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:T.txt }}>{(p.name||"").split(",")[0]}</span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:staleColor(mockLastOrderMins(p)) }}>{mockLastOrderMins(p)}m</span>
+          </div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4 }}>{p.room} · No new orders</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CriticalPatientsSection({ pts }) {
+  if (!pts.length) return null;
+  return (
+    <div style={{ marginBottom:14 }}>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:T.red,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8 }}>Critical — Needs Attention</div>
+      {pts.map(p=>(
+        <div key={p.id} onClick={()=>nav("PatientEncounter",{patientId:p.id})}
+          style={{ ...gc({borderRadius:9,borderLeft:`3px solid ${T.red}`,background:"rgba(255,68,68,0.05)"}),padding:"9px 11px",marginBottom:6,cursor:"pointer" }}>
+          <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:T.txt,marginBottom:2 }}>{p.name}</div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,marginBottom:4 }}>{p.room} · {p.cc}</div>
+          {(Array.isArray(p.alerts)?p.alerts:[]).filter(a=>a.t==="critical").map((a,i)=>(
+            <div key={i} style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.red,lineHeight:1.4 }}>🚨 {a.m}</div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── SHIFT RAIL ───────────────────────────────────────────────────────────────
-function ShiftRail({ patients }) {
+function ShiftRail({ patients, emsQueue=[], transferRecords=[], onCallProviders=[], equipmentItems=[] }) {
+  const queue       = deriveEmsQueue(emsQueue);
+  const onCall      = onCallProviders.length    ? onCallProviders : MOCK_ONCALL;
+  const equipment   = equipmentItems.length     ? equipmentItems  : MOCK_EQUIPMENT;
+  // Highlight any degraded/down items and any actively paged consultants
+  const critEquip   = equipment.filter(e=>e.status==="down");
+  const degradedEq  = equipment.filter(e=>e.status==="degraded");
+  const activeCalls = onCall.filter(c=>c.status==="paged"||c.status==="responding");
+  // Active transfers — derive from real records or fall back to mock
+  const allTransfers = Array.isArray(transferRecords)&&transferRecords.length ? transferRecords : MOCK_TRANSFERS;
+  const activeTransfers = allTransfers
+    .map(rec=>({ rec, status:deriveTransferStatus({ id:rec.patientId }, allTransfers) }))
+    .filter(({status})=>status && status.completedCount<status.totalSteps)
+    .sort((a,b)=>b.status.elapsedMins-a.status.elapsedMins); // longest pending first
   const critPts=patients.filter(p=>Array.isArray(p.alerts)&&p.alerts.some(a=>a.t==="critical"));
   const avgTime=patients.length?Math.round(patients.reduce((s,p)=>s+(p.mins||0),0)/patients.length):0;
   const dtdValues=patients.map(p=>mockDtd(p));
@@ -953,22 +1230,86 @@ function ShiftRail({ patients }) {
     return !["dc_ready","admitted","transfer"].includes(d);
   }).length;
   const pob_color=projectedOnBoard>4?T.red:projectedOnBoard>2?T.orange:T.gold;
+  // Patients whose reassessment window has expired — drives the metric tile and list below
+  const overdueReassessPts=patients.filter(p=>{ const rs=deriveReassessmentStatus(p); return rs?.overdue; });
+  const overdueReassessCount=overdueReassessPts.length;
+  // Boarding pressure — admitted patients still in ED beds
+  const boardingPts = patients
+    .map(p=>({ p, mins:getBoardingMins(p) }))
+    .filter(({mins})=>mins!==null)
+    .sort((a,b)=>b.mins-a.mins); // longest boarding first
+  const boardingCount    = boardingPts.length;
+  const maxBoardingMins  = boardingPts[0]?.mins||0;
+  const critBoardingPts  = boardingPts.filter(({mins})=>mins>=BOARDING_THRESHOLDS.crit);
+  const boardingSummaryColor = critBoardingPts.length>0 ? T.red
+                             : boardingCount>0 ? T.gold : T.green;
   const secLabel=(txt,color=T.txt4)=><div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8 }}>{txt}</div>;
   const metricRow=(label,value,valueColor,sub=null)=><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7 }}><div style={{ minWidth:0 }}><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt3,lineHeight:1.3 }}>{label}</div>{sub&&<div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,marginTop:1 }}>{sub}</div>}</div><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,color:valueColor,flexShrink:0,marginLeft:8 }}>{value}</span></div>;
+
+  // Highest-acuity incoming — used to decide whether to show the "prep" banner
+  const critIncoming = queue.filter(r=>r.esi_pretriage<=2);
+
   return (
     <div style={{ width:258,minWidth:258,flexShrink:0,height:"100%",borderLeft:"1px solid rgba(26,53,85,0.5)",background:T.panel,display:"flex",flexDirection:"column",overflow:"hidden" }}>
       <div style={{ padding:"14px 14px 10px",borderBottom:"1px solid rgba(26,53,85,0.5)",flexShrink:0 }}>
         <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:T.txt4,textTransform:"uppercase",letterSpacing:"0.12em" }}>Shift Overview</div>
       </div>
       <div style={{ padding:"12px 12px 12px",flex:1,overflowY:"auto" }}>
+
+        {/* ── EMS PRE-ARRIVAL QUEUE ─────────────────────────── */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
+            {secLabel(`Incoming (${queue.length})`, critIncoming.length>0?T.orange:T.txt4)}
+            {critIncoming.length>0&&<span className="ew-pulse" style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:T.orange,background:"rgba(255,159,67,0.12)",border:"1px solid rgba(255,159,67,0.4)",borderRadius:4,padding:"1px 6px",flexShrink:0,marginTop:-8 }}>{critIncoming.length} high-acuity</span>}
+          </div>
+          {queue.length===0
+            ?<div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt4,textAlign:"center",padding:"10px 0",background:"rgba(26,53,85,0.2)",borderRadius:8 }}>No incoming units</div>
+            :queue.map(run=>{
+              const ec = emsEsiColor(run.esi_pretriage);
+              const isAir = run.transport==="air";
+              const isWalk = run.transport==="walk-in";
+              const borderColor = run.esi_pretriage<=1?T.red:run.esi_pretriage===2?T.orange:run.esi_pretriage===3?T.gold:T.txt4;
+              return (
+                <div key={run.id} style={{ ...gc({ borderRadius:9,borderLeft:`3px solid ${borderColor}`,background:run.esi_pretriage<=2?"rgba(255,159,67,0.04)":T.card }),padding:"9px 10px",marginBottom:7 }}>
+                  {/* Row 1: unit name · ETA · transport icon */}
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5 }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:5 }}>
+                      <span style={{ fontSize:11,lineHeight:1,flexShrink:0 }}>{EMS_TRANSPORT_ICON[run.transport]||"🚑"}</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:isAir?T.cyan:isWalk?T.txt4:T.txt2 }}>{run.unit}</span>
+                    </div>
+                    <div style={{ display:"flex",alignItems:"center",gap:5,flexShrink:0 }}>
+                      {/* Pre-triage ESI badge */}
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:ec,background:`${ec}18`,border:`1px solid ${ec}45`,borderRadius:4,padding:"1px 5px" }}>ESI {run.esi_pretriage}</span>
+                      {/* ETA counter */}
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:run.eta_mins<=5?T.red:run.eta_mins<=12?T.orange:T.txt3 }}>
+                        {run.eta_mins<=1?"NOW":`${run.eta_mins}m`}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Row 2: age/sex + chief complaint */}
+                  <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt2,lineHeight:1.35,marginBottom:run.notes?4:0 }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,marginRight:5 }}>{run.age}{run.sex}</span>
+                    {run.cc}
+                  </div>
+                  {/* Row 3: prehospital interventions note (optional) */}
+                  {run.notes&&<div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4,lineHeight:1.35,fontStyle:"italic" }}>{run.notes}</div>}
+                </div>
+              );
+            })
+          }
+        </div>
+        {/* ── DIVIDER between EMS and census metrics ────────── */}
+        <div style={{ height:1,background:"rgba(26,53,85,0.5)",marginBottom:14 }}/>
+
+        {/* ── EXISTING METRICS GRID ─────────────────────────── */}
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:14 }}>
           {[
-            { label:"Total Pts",    value:patients.length,                                                                                              color:T.teal    },
-            { label:"ESI 1–2",      value:patients.filter(p=>p.esi<=2).length,                                                                         color:T.coral   },
-            { label:"Crit Alerts",  value:patients.filter(p=>Array.isArray(p.alerts)&&p.alerts.some(a=>a.t==="critical")).length,                      color:T.red     },
-            { label:"Avg LOS",      value:`${avgTime}m`,                                                                                               color:T.gold    },
-            { label:"No Dispo Yet", value:projectedOnBoard,                                                                                             color:pob_color },
-            { label:"Stale W/U",    value:stalePts.length,                                                                                             color:stalePts.length>2?T.red:stalePts.length>0?T.gold:T.green },
+            { label:"Total Pts",    value:patients.length,          color:T.teal    },
+            { label:"ESI 1–2",      value:patients.filter(p=>p.esi<=2).length, color:T.coral },
+            { label:"Crit Alerts",  value:patients.filter(p=>Array.isArray(p.alerts)&&p.alerts.some(a=>a.t==="critical")).length, color:T.red },
+            { label:"Avg LOS",      value:`${avgTime}m`,            color:T.gold    },
+            { label:"No Dispo Yet", value:projectedOnBoard,         color:pob_color },
+            { label:"Boarding",     value:boardingCount,            color:boardingSummaryColor },
           ].map((s,i)=><div key={i} style={{ ...gc({ borderRadius:9 }),padding:"10px 11px",textAlign:"center" }}><div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:20,fontWeight:700,color:s.color,lineHeight:1 }}>{s.value}</div><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4,marginTop:4 }}>{s.label}</div></div>)}
         </div>
         <div style={{ ...gc({ borderRadius:10 }),padding:"11px 12px",marginBottom:14 }}>
@@ -981,12 +1322,197 @@ function ShiftRail({ patients }) {
               <div style={{ height:1,background:"rgba(26,53,85,0.5)",margin:"8px 0" }}/>
               {metricRow("EKG ≤10m (Cardiac)",  cardiacPts.length===0?"—":ekgLabel, ekgAllGood?T.green:ekgSomemissed?T.red:T.txt4)}
               {metricRow("Stale Workups >30m",  stalePts.length===0?"0":String(stalePts.length), stalePts.length===0?T.green:stalePts.length>2?T.red:T.gold, "LOS >45m, no new orders")}
+              <div style={{ height:1,background:"rgba(26,53,85,0.5)",margin:"8px 0" }}/>
+              {metricRow("Overdue reassessments", overdueReassessCount===0?"—":String(overdueReassessCount), overdueReassessCount===0?T.green:T.red, "ESI threshold exceeded")}
+              <div style={{ height:1,background:"rgba(26,53,85,0.5)",margin:"8px 0" }}/>
+              {metricRow("Boarding",  boardingCount===0?"None":`${boardingCount} pt${boardingCount>1?"s":""}`, boardingSummaryColor, maxBoardingMins>0?`Longest: ${fmtBoardingTime(maxBoardingMins)}`:null)}
             </>}
         </div>
-        {stalePts.length>0&&<div style={{ marginBottom:14 }}>{secLabel("Stale Workups",T.gold)}{stalePts.map(p=><div key={p.id} onClick={()=>nav("PatientEncounter",{ patientId:p.id })} style={{ ...gc({ borderRadius:9,borderLeft:`3px solid ${staleColor(mockLastOrderMins(p))}`,background:"rgba(245,200,66,0.04)" }),padding:"8px 10px",marginBottom:6,cursor:"pointer" }}><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:2 }}><span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:T.txt }}>{(p.name||"").split(",")[0]}</span><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:staleColor(mockLastOrderMins(p)) }}>{mockLastOrderMins(p)}m</span></div><div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4 }}>{p.room} · No new orders</div></div>)}</div>}
-        {critPts.length>0&&<div style={{ marginBottom:14 }}>{secLabel("Critical — Needs Attention",T.red)}{critPts.map(p=><div key={p.id} onClick={()=>nav("PatientEncounter",{ patientId:p.id })} style={{ ...gc({ borderRadius:9,borderLeft:`3px solid ${T.red}`,background:"rgba(255,68,68,0.05)" }),padding:"9px 11px",marginBottom:6,cursor:"pointer" }}><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:T.txt,marginBottom:2 }}>{p.name}</div><div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,marginBottom:4 }}>{p.room} · {p.cc}</div>{(Array.isArray(p.alerts)?p.alerts:[]).filter(a=>a.t==="critical").map((a,i)=><div key={i} style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.red,lineHeight:1.4 }}>🚨 {a.m}</div>)}</div>)}</div>}
+        {overdueReassessPts.length>0&&<div style={{ marginBottom:14 }}>
+          {secLabel("Reassessment Overdue",T.red)}
+          {overdueReassessPts.map(p=>{ const rs=deriveReassessmentStatus(p); const overBy=rs?rs.elapsed-rs.threshold:0; return (
+            <div key={p.id} onClick={()=>nav("PatientEncounter",{ patientId:p.id })} style={{ ...gc({ borderRadius:9,borderLeft:`3px solid ${T.red}`,background:"rgba(255,68,68,0.05)" }),padding:"8px 10px",marginBottom:6,cursor:"pointer" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:2 }}>
+                <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:T.txt }}>{(p.name||"").split(",")[0]}</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:T.red }}>+{overBy}m</span>
+              </div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4 }}>{p.room} · ESI {p.esi} · {(REASSESS_THRESHOLDS[p.esi]||120)}m threshold</div>
+            </div>
+          ); })}
+        </div>}
+
+        {/* ── TRANSFER BOARD ─────────────────────────────────────────── */}
+        {activeTransfers.length>0&&<div style={{ marginBottom:14 }}>
+          {secLabel(`Transfers (${activeTransfers.length})`, T.blue)}
+          {activeTransfers.map(({ rec, status })=>{
+            const pt=patients.find(p=>p.id===rec.patientId);
+            const name=pt?(pt.name||"").split(",")[0]:rec.patientId;
+            const room=pt?pt.room:"—";
+            const { stepsWithState, elapsedMins, transport, destination, reason, activeStep } = status;
+            const transportC=transport==="air"?T.cyan:transport==="ground"?T.blue:T.txt3;
+            return (
+              <div key={rec.id} onClick={()=>pt&&nav("PatientEncounter",{ patientId:rec.patientId })} style={{ ...gc({ borderRadius:10,borderLeft:`3px solid ${T.blue}`,background:"rgba(59,158,255,0.04)" }),padding:"10px 11px",marginBottom:8,cursor:pt?"pointer":"default" }}>
+                {/* Header: name · room · elapsed */}
+                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5 }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:6,minWidth:0 }}>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:T.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{name}</span>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4,flexShrink:0 }}>{room}</span>
+                  </div>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:elapsedMins>60?T.orange:T.txt4,flexShrink:0,marginLeft:6 }}>{elapsedMins}m</span>
+                </div>
+                {/* Destination + transport */}
+                <div style={{ display:"flex",alignItems:"center",gap:5,marginBottom:7 }}>
+                  <span style={{ fontSize:11,flexShrink:0 }}>{TRANSFER_TRANSPORT_ICON[transport]||"🚑"}</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:transportC,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1 }}>{destination}</span>
+                </div>
+                {/* Reason */}
+                <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4,marginBottom:8,lineHeight:1.4 }}>{reason}</div>
+                {/* Step pip track with labels */}
+                <div style={{ display:"flex",alignItems:"flex-start",gap:0 }}>
+                  {stepsWithState.map((s,i)=>{
+                    const lineColor = s.done ? T.blue : "rgba(26,53,85,0.5)";
+                    const dotBg     = s.done ? T.blue : s.active ? T.gold : "rgba(26,53,85,0.55)";
+                    const dotBd     = s.active ? `2px solid ${T.gold}` : "none";
+                    return (
+                      <div key={s.key} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative" }}>
+                        {/* Connector line */}
+                        {i>0&&<div style={{ position:"absolute",top:5,right:"50%",width:"100%",height:1.5,background:stepsWithState[i-1].done?T.blue:"rgba(26,53,85,0.45)",zIndex:0 }}/>}
+                        {/* Dot */}
+                        <div className={s.active?"ew-pulse":undefined} style={{ width:s.active?11:7,height:s.active?11:7,borderRadius:"50%",background:dotBg,border:dotBd,zIndex:1,flexShrink:0,marginBottom:4,boxShadow:s.done?`0 0 4px ${T.blue}55`:"none" }}/>
+                        {/* Step short label */}
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:s.active?700:400,color:s.done?T.blue:s.active?T.gold:T.txt4,textAlign:"center",lineHeight:1.2,maxWidth:44,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{s.short}</span>
+                        {/* Timestamp if done */}
+                        {s.completedAt&&<span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:7,color:T.txt4,textAlign:"center",lineHeight:1.2 }}>{new Date(s.completedAt).toLocaleTimeString("en-US",{ hour:"2-digit",minute:"2-digit",hour12:false })}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>}
+
+        {/* ── BOARDING PRESSURE DETAIL ──────────────────────────────── */}
+        {boardingPts.length>0&&<div style={{ marginBottom:14 }}>
+          {secLabel(`Boarding (${boardingCount})`, boardingSummaryColor)}
+          {/* Summary gauge bar — proportion of ED beds occupied by boarders */}
+          <div style={{ ...gc({ borderRadius:10,borderLeft:`3px solid ${boardingSummaryColor}` }),padding:"10px 12px",marginBottom:8 }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6 }}>
+              <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt3 }}>Admitted, bed pending</span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:boardingSummaryColor }}>{boardingCount} / {patients.length}</span>
+            </div>
+            {/* Stacked bar: red = critical boarding, gold = warn, teal = tolerable */}
+            <div style={{ height:6,background:"rgba(26,53,85,0.55)",borderRadius:3,overflow:"hidden",display:"flex" }}>
+              {boardingPts.map(({p,mins},i)=>{
+                const segColor=boardingColor(mins);
+                const w=patients.length>0?(1/patients.length)*100:0;
+                return <div key={p.id} style={{ width:`${w}%`,height:"100%",background:segColor,borderRight:"1px solid rgba(5,15,30,0.5)" }}/>;
+              })}
+            </div>
+            {/* Threshold legend */}
+            <div style={{ display:"flex",justifyContent:"space-between",marginTop:5 }}>
+              {[{label:"< 2h",color:T.teal},{label:"2–4h",color:T.gold},{label:"> 4h",color:T.red}].map(t=>(
+                <div key={t.label} style={{ display:"flex",alignItems:"center",gap:3 }}>
+                  <div style={{ width:6,height:6,borderRadius:1,background:t.color,flexShrink:0 }}/>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:T.txt4 }}>{t.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Individual boarding patient rows */}
+          {boardingPts.map(({p,mins})=>{
+            const bc=boardingColor(mins);
+            const isCrit=mins>=BOARDING_THRESHOLDS.crit;
+            return (
+              <div key={p.id} onClick={()=>nav("PatientEncounter",{patientId:p.id})}
+                style={{ ...gc({ borderRadius:9,borderLeft:`3px solid ${bc}`,background:isCrit?"rgba(255,68,68,0.05)":"rgba(26,53,85,0.1)" }),padding:"8px 10px",marginBottom:6,cursor:"pointer" }}>
+                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3 }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:5,minWidth:0 }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,flexShrink:0 }}>{p.room}</span>
+                    <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:T.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{(p.name||"").split(",")[0]}</span>
+                  </div>
+                  <span className={isCrit?"ew-pulse":undefined} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:bc,flexShrink:0,marginLeft:6 }}>{fmtBoardingTime(mins)}</span>
+                </div>
+                <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+                  <EsiBadge esi={p.esi}/>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{p.cc}</span>
+                </div>
+                {/* Inline threshold bar for this patient */}
+                <div style={{ marginTop:5,height:3,background:"rgba(26,53,85,0.5)",borderRadius:2,overflow:"hidden" }}>
+                  <div style={{ width:`${Math.min(100,(mins/BOARDING_THRESHOLDS.crit)*100)}%`,height:"100%",background:bc,borderRadius:2,transition:"width .5s ease" }}/>
+                </div>
+              </div>
+            );
+          })}
+        </div>}
+
+                <StaleWorkupsSection pts={stalePts}/>
+                <CriticalPatientsSection pts={critPts}/>
+        {/* ── ON-CALL CONSULTANT BOARD ──────────────────────────────── */}
         <div style={{ marginBottom:14 }}>
-          {secLabel("ESI Breakdown")}
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
+            {secLabel(`On Call (${onCall.length})`, activeCalls.length>0?T.orange:T.txt4)}
+            {activeCalls.length>0&&<span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:T.orange,background:"rgba(255,159,67,0.12)",border:"1px solid rgba(255,159,67,0.4)",borderRadius:4,padding:"1px 6px",flexShrink:0,marginTop:-8 }}>{activeCalls.length} active</span>}
+          </div>
+          <div style={{ ...gc({borderRadius:10}),overflow:"hidden" }}>
+            {onCall.map((oc,i)=>{
+              const sc=ONCALL_STATUS_COLOR[oc.status]||T.txt4;
+              const isActive=oc.status==="paged"||oc.status==="responding";
+              const updatedMin=Math.round((Date.now()-new Date(oc.updated_at).getTime())/60000);
+              return (
+                <div key={oc.id} style={{ padding:"9px 11px",borderBottom:i<onCall.length-1?"1px solid rgba(26,53,85,0.3)":"none",borderLeft:`3px solid ${isActive?sc:"transparent"}`,background:isActive?`${sc}06`:"transparent" }}>
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:isActive||oc.notes?3:0 }}>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:T.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{oc.specialty}</div>
+                      <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4 }}>{oc.name} · {oc.phone}</div>
+                    </div>
+                    <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,flexShrink:0,marginLeft:6 }}>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:sc,background:`${sc}18`,border:`1px solid ${sc}44`,borderRadius:4,padding:"1px 5px",whiteSpace:"nowrap" }}>{ONCALL_STATUS_LABEL[oc.status]}</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:T.txt4 }}>~{oc.typical_response_mins}m</span>
+                    </div>
+                  </div>
+                  {oc.notes&&<div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:isActive?sc:T.txt4,fontStyle:"italic",lineHeight:1.35,marginTop:2 }}>{oc.notes}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── CRITICAL EQUIPMENT STATUS ─────────────────────────────── */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
+            {secLabel("Equipment", critEquip.length>0?T.red:degradedEq.length>0?T.gold:T.txt4)}
+            {critEquip.length>0&&<span className="ew-pulse" style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:T.red,background:"rgba(255,68,68,0.12)",border:"1px solid rgba(255,68,68,0.4)",borderRadius:4,padding:"1px 6px",flexShrink:0,marginTop:-8 }}>{critEquip.length} down</span>}
+          </div>
+          <div style={{ ...gc({borderRadius:10}),overflow:"hidden" }}>
+            {equipment.map((eq,i)=>{
+              const sc=EQ_STATUS_COLOR[eq.status]||T.txt4;
+              const dot=EQ_STATUS_DOT[eq.status]||"○";
+              const isIssue=eq.status!=="operational";
+              const updatedMin=Math.round((Date.now()-new Date(eq.updated_at).getTime())/60000);
+              const staleness=updatedMin>240?"rgba(90,130,168,0.25)":"transparent";
+              return (
+                <div key={eq.id} style={{ padding:"8px 11px",borderBottom:i<equipment.length-1?"1px solid rgba(26,53,85,0.3)":"none",borderLeft:`3px solid ${isIssue?sc:"transparent"}`,background:eq.status==="down"?"rgba(255,68,68,0.04)":eq.status==="degraded"?"rgba(245,200,66,0.03)":"transparent" }}>
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:6,minWidth:0 }}>
+                      <span className={eq.status==="down"?"ew-pulse":undefined} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:sc,flexShrink:0,lineHeight:1 }}>{dot}</span>
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:T.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{eq.name}</div>
+                        {eq.notes&&<div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:sc,lineHeight:1.35,marginTop:1 }}>{eq.notes}</div>}
+                      </div>
+                    </div>
+                    <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,flexShrink:0,marginLeft:6 }}>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:sc,background:`${sc}18`,border:`1px solid ${sc}44`,borderRadius:4,padding:"1px 5px",textTransform:"capitalize",whiteSpace:"nowrap" }}>{eq.status}</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:T.txt4 }}>{updatedMin<60?`${updatedMin}m ago`:updatedMin<1440?`${Math.floor(updatedMin/60)}h ago`:"stale"}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── ESI BREAKDOWN ─────────────────────────────────────────── */}
           {[1,2,3,4,5].map(esi=>{ const count=patients.filter(p=>p.esi===esi).length, c=esiColor(esi), pct=patients.length?(count/patients.length)*100:0; return <div key={esi} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:5 }}><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:c,minWidth:36 }}>ESI {esi}</span><div style={{ flex:1,height:5,background:"rgba(26,53,85,0.5)",borderRadius:3,overflow:"hidden" }}><div style={{ width:`${pct}%`,height:"100%",background:c,borderRadius:3,transition:"width .4s" }}/></div><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,minWidth:12,textAlign:"right" }}>{count}</span></div>; })}
         </div>
       </div>
@@ -994,8 +1520,94 @@ function ShiftRail({ patients }) {
   );
 }
 
+// ─── SURGE SPARKLINE ─────────────────────────────────────────────────────────
+// Samples patient count every render; stores rolling 8-point history in
+// window.storage so the trend survives re-renders within a session.
+// Wire: replace storage snapshots with base44.entities.CensusSnapshot.list()
+// Entity schema: { ts (ISO), count, discharges, arrivals }
+function SurgeSparkline({ patients }) {
+  const [history, setHistory] = useState([]);
+  useEffect(()=>{
+    const load = async () => {
+      let stored = [];
+      try { const r=await window?.storage?.get?.(SURGE_KEY); if(r?.value)stored=JSON.parse(r.value); } catch {}
+      const now=Date.now(), count=patients.length;
+      const last=stored[stored.length-1];
+      const push=!last||last.c!==count||(now-last.t)>300000;
+      const next=push?[...stored,{t:now,c:count}]:stored;
+      const trimmed=next.slice(-SURGE_MAX_PTS);
+      setHistory(trimmed);
+      if(push){try{await window?.storage?.set?.(SURGE_KEY,JSON.stringify(trimmed));}catch{}}
+    };
+    load();
+  },[patients.length]);
+  // Seed plausible demo history when storage is empty
+  const pts=history.length>=2?history:[
+    {t:Date.now()-70*60000,c:4},{t:Date.now()-55*60000,c:5},
+    {t:Date.now()-40*60000,c:7},{t:Date.now()-25*60000,c:8},
+    {t:Date.now()-10*60000,c:9},{t:Date.now(),c:patients.length||9},
+  ];
+  const counts=pts.map(p=>p.c);
+  const minC=Math.max(0,Math.min(...counts)-1), maxC=Math.max(...counts)+1, range=maxC-minC||1;
+  const W=90,H=32,pad=3;
+  const sx=(i)=>pad+(i/(pts.length-1))*(W-pad*2);
+  const sy=(c)=>(H-pad)-((c-minC)/range)*(H-pad*2);
+  const polyline=pts.map((p,i)=>`${sx(i)},${sy(p.c)}`).join(" ");
+  const delta=counts[counts.length-1]-counts[0];
+  const trendC=delta>1?T.red:delta<-1?T.teal:T.txt4;
+  const trendIcon=delta>1?"↑":delta<-1?"↓":"→";
+  return (
+    <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"rgba(11,30,54,0.7)",border:"1px solid rgba(26,53,85,0.55)",borderRadius:9,padding:"5px 12px",flexShrink:0,minWidth:108 }}>
+      <div style={{ display:"flex",alignItems:"center",gap:6,width:"100%" }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:16,fontWeight:700,color:trendC,lineHeight:1 }}>{trendIcon}</span>
+        <svg width={W} height={H} style={{ display:"block",flexShrink:0 }}>
+          <polyline points={polyline} fill="none" stroke={trendC} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.85"/>
+          <circle cx={sx(pts.length-1)} cy={sy(counts[counts.length-1])} r="2.5" fill={trendC}/>
+        </svg>
+      </div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:9,color:T.txt4,letterSpacing:"0.04em",textAlign:"center" }}>Census trend</div>
+    </div>
+  );
+}
+
+// On-call data → moved to MODULE 2 MOCK DATA
+
+// Equipment data → moved to MODULE 2 MOCK DATA
+
 // ─── TOP BAR ──────────────────────────────────────────────────────────────────
-function TopBar({ onQuickNote, onNewPatient, onOpenPalette, onRapidOrder }) {
+// ─── CAPACITY GAUGE ───────────────────────────────────────────────────────────
+// Sits in the TopBar center between the clock and On Shift badge.
+function CapacityGauge({ patients }) {
+  const occupied = patients.length;
+  const pct      = Math.min(1, occupied / ED_CAPACITY);
+  // Pressure tiers: green < 70%, amber 70–89%, red ≥ 90%
+  const pressure = pct >= 0.90 ? "surge"   : pct >= 0.70 ? "elevated" : "normal";
+  const barColor = pressure==="surge" ? T.red : pressure==="elevated" ? T.orange : T.teal;
+  const bgColor  = pressure==="surge" ? "rgba(255,68,68,0.08)" : pressure==="elevated" ? "rgba(255,159,67,0.08)" : "rgba(0,229,192,0.06)";
+  const bdColor  = pressure==="surge" ? "rgba(255,68,68,0.4)"  : pressure==="elevated" ? "rgba(255,159,67,0.35)" : "rgba(0,229,192,0.28)";
+  const LABEL    = { normal:"Normal", elevated:"Elevated", surge:"Surge" };
+  return (
+    <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:bgColor,border:`1px solid ${bdColor}`,borderRadius:9,padding:"6px 13px",minWidth:118,flexShrink:0 }}>
+      {/* Numeric + label row */}
+      <div style={{ display:"flex",alignItems:"baseline",gap:5 }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:18,fontWeight:700,color:barColor,lineHeight:1 }}>{occupied}</span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.txt4,lineHeight:1 }}>/ {ED_CAPACITY}</span>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:barColor,background:`${barColor}1a`,border:`1px solid ${barColor}44`,borderRadius:4,padding:"1px 5px",marginLeft:2 }}>{LABEL[pressure]}</span>
+      </div>
+      {/* Progress bar */}
+      <div style={{ width:"100%",height:4,background:"rgba(26,53,85,0.55)",borderRadius:3,overflow:"hidden" }}>
+        <div style={{ width:`${pct*100}%`,height:"100%",background:barColor,borderRadius:3,transition:"width .6s ease" }}/>
+      </div>
+      {/* Sub-label */}
+      <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:9,color:T.txt4,letterSpacing:"0.04em" }}>
+        ED Capacity · {Math.round(pct*100)}%
+      </div>
+    </div>
+  );
+}
+
+// ─── TOP BAR ──────────────────────────────────────────────────────────────────
+function TopBar({ onQuickNote, onNewPatient, onOpenPalette, onRapidOrder, patients }) {
   const now=new Date();
   return (
     <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",height:58,minHeight:58,borderBottom:"1px solid rgba(26,53,85,0.5)",background:T.panel,flexShrink:0 }}>
@@ -1011,11 +1623,13 @@ function TopBar({ onQuickNote, onNewPatient, onOpenPalette, onRapidOrder }) {
           <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:T.txt4,background:"rgba(26,53,85,0.6)",border:"1px solid rgba(26,53,85,0.8)",borderRadius:4,padding:"1px 6px",marginLeft:2 }}>⌘K</span>
         </div>
       </div>
-      <div style={{ display:"flex",alignItems:"center",gap:14 }}>
+      <div style={{ display:"flex",alignItems:"center",gap:10 }}>
         <div style={{ textAlign:"center" }}>
           <div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:20,fontWeight:700,color:T.txt,letterSpacing:"0.04em" }}>{now.toLocaleTimeString("en-US",{ hour:"2-digit",minute:"2-digit" })}</div>
           <div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:10,color:T.txt4,marginTop:-2 }}>{now.toLocaleDateString("en-US",{ weekday:"short",month:"short",day:"numeric" })}</div>
         </div>
+        <CapacityGauge patients={patients}/>
+        <SurgeSparkline patients={patients}/>
         <div style={{ background:"rgba(0,229,192,0.08)",border:"1px solid rgba(0,229,192,0.3)",borderRadius:8,padding:"4px 12px",display:"flex",alignItems:"center",gap:6 }}>
           <span style={{ width:6,height:6,borderRadius:"50%",background:T.teal,display:"inline-block" }}/>
           <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.teal,fontWeight:700 }}>On Shift</span>
@@ -1225,6 +1839,16 @@ export default function CommandCenter() {
   const [selectedPatient,setSelectedPatient]= useState(null);
   const [summaries,      setSummaries]      = useState({});
   const [notifs,         setNotifs]         = useState([]);
+  // Wire: replace empty array with base44.entities.EmsRun.list({ status:"incoming" })
+  // when the EmsRun entity and dispatch integration are ready. MOCK_EMS_RUNS seeds the demo.
+  const [emsRuns,          setEmsRuns]          = useState([]);
+  // Wire: replace empty array with base44.entities.Transfer.list({ status:"active" })
+  // when the Transfer entity is created. MOCK_TRANSFERS seeds the demo pipeline view.
+  const [transferRecords,  setTransferRecords]  = useState([]);
+  // Wire: replace with base44.entities.OnCallProvider.list() at shift-change refresh
+  const [onCallProviders,  setOnCallProviders]  = useState([]);
+  // Wire: replace with base44.entities.EquipmentStatus.list() polled every 5 min
+  const [equipmentItems,   setEquipmentItems]   = useState([]);
 
   useEffect(()=>{
     base44.entities.Patient.list().then(data=>{ setPatients(data); setLoading(false); });
@@ -1242,6 +1866,32 @@ export default function CommandCenter() {
     const timers=seeds.map(({delay,notif})=>setTimeout(()=>setNotifs(prev=>[...prev,notif]),delay));
     return()=>timers.forEach(clearTimeout);
   },[]);
+
+  // Pain reassessment banner notifications.
+  // Polls the loaded patient list every 60 s; fires a ResultsBanner notif the moment
+  // a patient crosses their reassessment window for the first time this session.
+  // Wire: replace derivePainReassessStatus mock with patient.last_analgesic_mins entity field.
+  const firedPainNotifsRef = useRef(new Set());
+  useEffect(()=>{
+    if (!patients.length) return;
+    const check = () => {
+      patients.forEach(p=>{
+        const status = derivePainReassessStatus(p);
+        if (status?.overdue && !firedPainNotifsRef.current.has(p.id)) {
+          firedPainNotifsRef.current.add(p.id);
+          setNotifs(prev=>[...prev,{
+            type:"pain",
+            room:p.room||"",
+            text:`Pain reassessment due — analgesic given ${status.elapsed}m ago`,
+            patientId:p.id,
+          }]);
+        }
+      });
+    };
+    check(); // run immediately on patient load
+    const id = setInterval(check, 60000);
+    return ()=>clearInterval(id);
+  },[patients]);
 
   const dismissNotif=(idx)=>setNotifs(prev=>prev.filter((_,i)=>i!==idx));
 
@@ -1286,6 +1936,7 @@ export default function CommandCenter() {
         onNewPatient={()=>setShowNewPatient(true)}
         onOpenPalette={()=>setShowPalette(true)}
         onRapidOrder={()=>setShowRapidOrder(true)}
+        patients={patients}
       />
       <ResultsBanner
         notifs={notifs}
@@ -1301,6 +1952,7 @@ export default function CommandCenter() {
           selectedId={selectedPatient?.id}
           onSelect={handleSelectPatient}
           summaries={summaries}
+          transfers={transferRecords}
         />
         {selectedPatient
           ? <EncounterWorkspace
@@ -1311,7 +1963,7 @@ export default function CommandCenter() {
             />
           : <SelectPatientPrompt patients={patients}/>
         }
-        <ShiftRail patients={patients}/>
+        <ShiftRail patients={patients} emsQueue={emsRuns} transferRecords={transferRecords} onCallProviders={onCallProviders} equipmentItems={equipmentItems}/>
       </div>
 
       {showNewPatient&&<NewPatientModal onClose={()=>setShowNewPatient(false)}/>}

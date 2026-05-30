@@ -4,8 +4,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
-import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
-import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
+
 import { PulseNavBadge } from "@/components/PulseActivators";
 const StrokeQualityLog = base44.entities.StrokeQualityLog;
 
@@ -691,8 +690,7 @@ export default function StrokeHub({embedded=false,onBack,demo={},vitals={},cc={}
     <div ref={wrapRef} style={{display:"flex",flexDirection:"column",minHeight:"100vh",
       background:"linear-gradient(160deg,rgba(7,12,32,1) 0%,rgba(11,19,46,1) 100%)",
       fontFamily:"'DM Sans',sans-serif",color:C.text}}>
-      {!embedded && <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingRight:16}}><NotryaHubHeader hubName="Stroke Hub" category="Neurology" homeUrl="/" /><PulseNavBadge /></div>}
-      {!embedded && <NotryaPatientBar />}
+
       <div style={{display:"flex",flex:1}}>
 
       {/* Left rail */}

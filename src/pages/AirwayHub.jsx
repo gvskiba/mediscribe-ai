@@ -1,7 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
-import NotryaNav from "@/components/HubHeader/NotryaNav";
-import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
+
 
 const T = {
   bg:"#050f1e",panel:"#081628",b:"rgba(26,53,85,0.8)",
@@ -50,11 +48,8 @@ export default function AirwayHub() {
   const navigate = useNavigate();
   return (
     <div style={{display:"flex",minHeight:"100vh",background:T.bg,color:T.txt,fontFamily:"'DM Sans',sans-serif"}}>
-      <NotryaNav currentHub="AirwayHub" />
       <style>{`*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(26,53,85,0.9);border-radius:2px}button,input,textarea{font-family:inherit}`}</style>
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
-      <NotryaHubHeader hubName="Airway Hub" category="Critical Care" homeUrl="/" />
-      <NotryaPatientBar />
       <div style={{background:T.panel,borderBottom:`1px solid ${T.b}`,padding:"10px 20px",flexShrink:0}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
           {STATS.map((s,i)=>(

@@ -2,9 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import QuickOrderPanel, { useQuickOrder, QuickOrderButton } from './QuickOrderPanel';
-import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
-import NotryaNav from "@/components/HubHeader/NotryaNav";
-import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
+
 
 const SepsisEntity    = base44.entities.SepsisBundle;
 const HandoffEntity   = base44.entities.HandoffEntry;
@@ -888,10 +886,7 @@ export default function SepsisHub({allergies=[],medications=[],pmhSelected=[],vi
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div style={{display:"flex",minHeight:"100vh",background:T.bg,fontFamily:T.sans,color:T.txt}}>
-      <NotryaNav currentHub="SepsisHub" />
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,paddingBottom:80}}>
-        <NotryaHubHeader hubName="Sepsis Hub" category="Critical Care" homeUrl="/" />
-        <NotryaPatientBar />
 
         {toast && (
           <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"rgba(7,17,31,.97)",border:`1px solid ${toast.c}40`,borderRadius:10,padding:"9px 18px",fontSize:12,fontWeight:700,color:toast.c,zIndex:200,pointerEvents:"none",boxShadow:"0 4px 24px rgba(0,0,0,.5)"}}>

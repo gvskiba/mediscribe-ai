@@ -47,9 +47,7 @@ import { EMLevel, PatientResponsePanel } from "@/components/QuickNote/QuickNoteM
 import { MDMHandoffBridge } from "@/components/quicknote/MDMHandoffBridge";
 import StagedOrderQueue from "@/components/StagedOrderQueue";
 import NoteExportPanel from "@/components/NoteExportPanel";
-import NotryaHubHeader from "@/components/HubHeader/NotryaHubHeader";
-import NotryaNav from "@/components/HubHeader/NotryaNav";
-import NotryaPatientBar from "@/components/HubHeader/NotryaPatientBar";
+
 
 injectQNStyles();
 
@@ -1164,11 +1162,8 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
 
   return (
     <div style={embedded ? {fontFamily:"'DM Sans',sans-serif",background:"transparent",color:"var(--qn-txt)"} :
-      {display:"flex",minHeight:"100vh",background:"var(--qn-bg)",fontFamily:"'DM Sans',sans-serif",color:"var(--qn-txt)"}}>
-      {!embedded && <NotryaNav currentHub="QuickNote" />}
+      {display:"flex",minHeight:"100%",background:"var(--qn-bg)",fontFamily:"'DM Sans',sans-serif",color:"var(--qn-txt)"}}>
       <div style={embedded ? {} : {flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,paddingBottom:80}}>
-        {!embedded && <NotryaHubHeader hubName="QuickNote" category="Documentation" homeUrl="/" />}
-        {!embedded && <NotryaPatientBar />}
 
         {/* ── Census patient context banner ── */}
         {!embedded && patientRecord && (

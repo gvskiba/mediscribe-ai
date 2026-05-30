@@ -40,7 +40,7 @@ const PAGE_ID = "tracking";
   --teal:#00e5c0; --gold:#f5c842; --red:#ff4444; --coral:#ff6b6b;
   --green:#3dffa0; --blue:#3b9eff; --purple:#9b6dff; --orange:#ff9f43;
   --t:#f2f7ff; --t2:#b8d4f0; --t3:#82aece; --t4:#5a82a8;
-  position:fixed; top:48px; left:0; right:0; bottom:0; display:flex; flex-direction:column;
+  position:fixed; top:58px; left:0; right:0; bottom:0; display:flex; flex-direction:column;
   background:var(--bg); font-family:'DM Sans',sans-serif; color:var(--t); overflow:hidden;
 }
 

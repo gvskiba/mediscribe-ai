@@ -232,151 +232,151 @@ const AuthenticatedApp = () => {
         <Route path="/patientchart" element={<PatientChart />} />
         <Route path="/ProviderStudio" element={<LayoutWrapper currentPageName="ProviderStudio"><ProviderStudio /></LayoutWrapper>} />
         <Route path="/notedetail"    element={<LayoutWrapper currentPageName="ProviderStudio"><ProviderStudio /></LayoutWrapper>} />
-        <Route path="/notehistory"   element={<NoteHistory />} />
-        <Route path="/npidemo"       element={<NPIDemo />} />
-        <Route path="/basetemplate"  element={<BaseTemplate />} />
-        <Route path="/QuickNote"     element={<QuickNote />} />
-        <Route path="/AddendumManager"   element={<AddendumManager />} />
-        <Route path="/ClinicalNoteV2"    element={<ClinicalNoteV2 />} />
-        <Route path="/AIFlagReview"      element={<AIFlagReview />} />
-        <Route path="/TemplateStudio"    element={<TemplateStudio />} />
-        <Route path="/UserPreferences"   element={<UserPreferences />} />
-        <Route path="/ShiftDashboard"    element={<ShiftDashboard />} />
-        <Route path="/EDTrackingBoard"   element={<EDTrackingBoard />} />
-        <Route path="/DispositionBoard"  element={<DispositionBoard />} />
-        <Route path="/shift-signout"     element={<ShiftSignout />} />
-        <Route path="/command-center"    element={<CommandCenterWrapper />} />
+        <Route path="/notehistory"   element={<LayoutWrapper currentPageName="NoteHistory"><NoteHistory /></LayoutWrapper>} />
+        <Route path="/npidemo"       element={<LayoutWrapper currentPageName="NPIDemo"><NPIDemo /></LayoutWrapper>} />
+        <Route path="/basetemplate"  element={<LayoutWrapper currentPageName="BaseTemplate"><BaseTemplate /></LayoutWrapper>} />
+        <Route path="/QuickNote"     element={<LayoutWrapper currentPageName="QuickNote"><QuickNote /></LayoutWrapper>} />
+        <Route path="/AddendumManager"   element={<LayoutWrapper currentPageName="AddendumManager"><AddendumManager /></LayoutWrapper>} />
+        <Route path="/ClinicalNoteV2"    element={<LayoutWrapper currentPageName="ClinicalNoteV2"><ClinicalNoteV2 /></LayoutWrapper>} />
+        <Route path="/AIFlagReview"      element={<LayoutWrapper currentPageName="AIFlagReview"><AIFlagReview /></LayoutWrapper>} />
+        <Route path="/TemplateStudio"    element={<LayoutWrapper currentPageName="TemplateStudio"><TemplateStudio /></LayoutWrapper>} />
+        <Route path="/UserPreferences"   element={<LayoutWrapper currentPageName="UserPreferences"><UserPreferences /></LayoutWrapper>} />
+        <Route path="/ShiftDashboard"    element={<LayoutWrapper currentPageName="ShiftDashboard"><ShiftDashboard /></LayoutWrapper>} />
+        <Route path="/EDTrackingBoard"   element={<LayoutWrapper currentPageName="EDTrackingBoard"><EDTrackingBoard /></LayoutWrapper>} />
+        <Route path="/DispositionBoard"  element={<LayoutWrapper currentPageName="DispositionBoard"><DispositionBoard /></LayoutWrapper>} />
+        <Route path="/shift-signout"     element={<LayoutWrapper currentPageName="ShiftSignout"><ShiftSignout /></LayoutWrapper>} />
+        <Route path="/command-center"    element={<LayoutWrapper currentPageName="CommandCenterWrapper"><CommandCenterWrapper /></LayoutWrapper>} />
         <Route path="/landing"           element={<LakonyxLanding />} />
         <Route path="/LakonyxLandingPage" element={<LakonyxLandingPage />} />
         <Route path="/LakonyxNavBar" element={<LakonyxNavBar />} />
-        <Route path="/new-technology"    element={<LakonyxNewTechnology />} />
-        <Route path="/huddle-board"        element={<HuddleBoard />} />
-        <Route path="/EDOrderHub"          element={<EDOrderHub />} />
+        <Route path="/new-technology"    element={<LayoutWrapper currentPageName="LakonyxNewTechnology"><LakonyxNewTechnology /></LayoutWrapper>} />
+        <Route path="/huddle-board"        element={<LayoutWrapper currentPageName="HuddleBoard"><HuddleBoard /></LayoutWrapper>} />
+        <Route path="/EDOrderHub"          element={<LayoutWrapper currentPageName="EDOrderHub"><EDOrderHub /></LayoutWrapper>} />
         <Route path="/patient-workspace" element={<LayoutWrapper currentPageName="PatientWorkspace"><PatientWorkspace /></LayoutWrapper>} />
 
         {/* Billing & coding */}
         <Route path="/provider-billing"    element={<LayoutWrapper currentPageName="ProviderBilling"><ProviderBilling /></LayoutWrapper>} />
-        <Route path="/billing-submissions" element={<BillingSubmissions />} />
-        <Route path="/DischargeRxCard"     element={<DischargeRxCard />} />
+        <Route path="/billing-submissions" element={<LayoutWrapper currentPageName="BillingSubmissions"><BillingSubmissions /></LayoutWrapper>} />
+        <Route path="/DischargeRxCard"     element={<LayoutWrapper currentPageName="DischargeRxCard"><DischargeRxCard /></LayoutWrapper>} />
 
         {/* Documentation & notes */}
         <Route path="/hpi"       element={<LayoutWrapper currentPageName="HPI"><HPI /></LayoutWrapper>} />
         <Route path="/hpi-admin" element={<LayoutWrapper currentPageName="HPITemplateAdmin"><HPITemplateAdmin /></LayoutWrapper>} />
-        <Route path="/discharge-disposition" element={<DischargeDisposition />} />
-        <Route path="/ed-procedure-notes"    element={<EDProcedureNotes />} />
-        <Route path="/narrative-engine"      element={<ClinicalNarrativeEngine />} />
-        <Route path="/ddx-engine"            element={<DDxEngine />} />
-        <Route path="/critical-inbox"        element={<CriticalResultsInbox />} />
-        <Route path="/imaging-interpreter"   element={<ImagingInterpreter />} />
-        <Route path="/ClinicalDecisionHub"   element={<ClinicalDecisionHub />} />
-        <Route path="/hub-index"              element={<HubIndex />} />
-        <Route path="/RsiPage"                element={<RSIPage />} />
-        <Route path="/ElectrolyteAcidBaseHub" element={<ElectrolyteAcidBaseHub />} />
-        <Route path="/electrolyte-hub"        element={<ElectrolyteAcidBaseHub />} />
-        <Route path="/rsi-page"               element={<RSIPage />} />
-        <Route path="/NIVPage"                element={<NIVPage />} />
-        <Route path="/VentPage"               element={<VentPage />} />
-        <Route path="/CriticalProtocolsPage"  element={<CriticalProtocolsPage />} />
-        <Route path="/critical-protocols"     element={<CriticalProtocolsPage />} />
-        <Route path="/AnaphylaxisHub"         element={<AnaphylaxisHub />} />
-        <Route path="/HyperkalemiaHub"        element={<HyperkalemiaHub />} />
-        <Route path="/StatusEpilepticusHub"   element={<StatusEpilepticusHub />} />
-        <Route path="/AirwayRSIHub"           element={<AirwayRSIHub />} />
-        <Route path="/DKAHub"                 element={<DKAHub />} />
-        <Route path="/MassivePEHub"           element={<MassivePEHub />} />
-        <Route path="/HypertensiveEmergencyHub" element={<HypertensiveEmergencyHub />} />
-        <Route path="/ADHFHub"                element={<ADHFHub />} />
-        <Route path="/MeningitisHub"          element={<MeningitisHub />} />
-        <Route path="/RhabdomyolysisHub"      element={<RhabdomyolysisHub />} />
-        <Route path="/AdrenalCrisisHub"       element={<AdrenalCrisisHub />} />
-        <Route path="/ThyroidStormHub"        element={<ThyroidStormHub />} />
-        <Route path="/AcuteLiverFailureHub"      element={<AcuteLiverFailureHub />} />
-        <Route path="/AcuteIschemicStrokeHub"    element={<AcuteIschemicStrokeHub />} />
-        <Route path="/SAHHub"                    element={<SAHHub />} />
-        <Route path="/MyasthenicCrisisHub"       element={<MyasthenicCrisisHub />} />
-        <Route path="/CardiogenicShockHub"       element={<CardiogenicShockHub />} />
-        <Route path="/MassiveGIBleedHub"        element={<MassiveGIBleedHub />} />
-        <Route path="/MTPHub"                   element={<MTPHub />} />
-        <Route path="/HeatStrokeHub"            element={<HeatStrokeHub />} />
-        <Route path="/HyponatremiaHub"          element={<HyponatremiaHub />} />
-        <Route path="/HypercalcemiaHub"         element={<HypercalcemiaHub />} />
-        <Route path="/NMSHub"                   element={<NMSHub />} />
-        <Route path="/STEMIHub"                 element={<STEMIHub />} />
-        <Route path="/CardiacTamponadeHub"     element={<CardiacTamponadeHub />} />
-        <Route path="/StatusAsthmaticusHub"   element={<StatusAsthmaticusHub />} />
-        <Route path="/TensionPneumothoraxHub" element={<TensionPneumothoraxHub />} />
-        <Route path="/AlcoholWithdrawalHub"  element={<AlcoholWithdrawalHub />} />
-        <Route path="/ToxicAlcoholHub"      element={<ToxicAlcoholHub />} />
-        <Route path="/SympathomimeticHub"    element={<SympathomimeticHub />} />
-        <Route path="/TTPHub"                 element={<TTPHub />} />
-        <Route path="/AnticoagulantReversalHub" element={<AnticoagulantReversalHub />} />
-        <Route path="/SickleCellHub"         element={<SickleCellHub />} />
-        <Route path="/HELLPHub"              element={<HELLPHub />} />
-        <Route path="/PostPartumHemorrhageHub" element={<PostPartumHemorrhageHub />} />
-        <Route path="/OpioidOverdoseHub"      element={<OpioidOverdoseHub />} />
-        <Route path="/EMTALAHub"             element={<EMTALAHub />} />
-        <Route path="/SepsisHub"              element={<SepsisHub />} />
-        <Route path="/ClinicalPresentationHub" element={<ClinicalPresentationHub />} />
+        <Route path="/discharge-disposition" element={<LayoutWrapper currentPageName="DischargeDisposition"><DischargeDisposition /></LayoutWrapper>} />
+        <Route path="/ed-procedure-notes"    element={<LayoutWrapper currentPageName="EDProcedureNotes"><EDProcedureNotes /></LayoutWrapper>} />
+        <Route path="/narrative-engine"      element={<LayoutWrapper currentPageName="ClinicalNarrativeEngine"><ClinicalNarrativeEngine /></LayoutWrapper>} />
+        <Route path="/ddx-engine"            element={<LayoutWrapper currentPageName="DDxEngine"><DDxEngine /></LayoutWrapper>} />
+        <Route path="/critical-inbox"        element={<LayoutWrapper currentPageName="CriticalResultsInbox"><CriticalResultsInbox /></LayoutWrapper>} />
+        <Route path="/imaging-interpreter"   element={<LayoutWrapper currentPageName="ImagingInterpreter"><ImagingInterpreter /></LayoutWrapper>} />
+        <Route path="/ClinicalDecisionHub"   element={<LayoutWrapper currentPageName="ClinicalDecisionHub"><ClinicalDecisionHub /></LayoutWrapper>} />
+        <Route path="/hub-index"              element={<LayoutWrapper currentPageName="HubIndex"><HubIndex /></LayoutWrapper>} />
+        <Route path="/RsiPage"                element={<LayoutWrapper currentPageName="RsiPage"><RSIPage /></LayoutWrapper>} />
+        <Route path="/ElectrolyteAcidBaseHub" element={<LayoutWrapper currentPageName="ElectrolyteAcidBaseHub"><ElectrolyteAcidBaseHub /></LayoutWrapper>} />
+        <Route path="/electrolyte-hub"        element={<LayoutWrapper currentPageName="ElectrolyteAcidBaseHub"><ElectrolyteAcidBaseHub /></LayoutWrapper>} />
+        <Route path="/rsi-page"               element={<LayoutWrapper currentPageName="RsiPage"><RSIPage /></LayoutWrapper>} />
+        <Route path="/NIVPage"                element={<LayoutWrapper currentPageName="NIVPage"><NIVPage /></LayoutWrapper>} />
+        <Route path="/VentPage"               element={<LayoutWrapper currentPageName="VentPage"><VentPage /></LayoutWrapper>} />
+        <Route path="/CriticalProtocolsPage"  element={<LayoutWrapper currentPageName="CriticalProtocolsPage"><CriticalProtocolsPage /></LayoutWrapper>} />
+        <Route path="/critical-protocols"     element={<LayoutWrapper currentPageName="CriticalProtocolsPage"><CriticalProtocolsPage /></LayoutWrapper>} />
+        <Route path="/AnaphylaxisHub"         element={<LayoutWrapper currentPageName="AnaphylaxisHub"><AnaphylaxisHub /></LayoutWrapper>} />
+        <Route path="/HyperkalemiaHub"        element={<LayoutWrapper currentPageName="HyperkalemiaHub"><HyperkalemiaHub /></LayoutWrapper>} />
+        <Route path="/StatusEpilepticusHub"   element={<LayoutWrapper currentPageName="StatusEpilepticusHub"><StatusEpilepticusHub /></LayoutWrapper>} />
+        <Route path="/AirwayRSIHub"           element={<LayoutWrapper currentPageName="AirwayRSIHub"><AirwayRSIHub /></LayoutWrapper>} />
+        <Route path="/DKAHub"                 element={<LayoutWrapper currentPageName="DKAHub"><DKAHub /></LayoutWrapper>} />
+        <Route path="/MassivePEHub"           element={<LayoutWrapper currentPageName="MassivePEHub"><MassivePEHub /></LayoutWrapper>} />
+        <Route path="/HypertensiveEmergencyHub" element={<LayoutWrapper currentPageName="HypertensiveEmergencyHub"><HypertensiveEmergencyHub /></LayoutWrapper>} />
+        <Route path="/ADHFHub"                element={<LayoutWrapper currentPageName="ADHFHub"><ADHFHub /></LayoutWrapper>} />
+        <Route path="/MeningitisHub"          element={<LayoutWrapper currentPageName="MeningitisHub"><MeningitisHub /></LayoutWrapper>} />
+        <Route path="/RhabdomyolysisHub"      element={<LayoutWrapper currentPageName="RhabdomyolysisHub"><RhabdomyolysisHub /></LayoutWrapper>} />
+        <Route path="/AdrenalCrisisHub"       element={<LayoutWrapper currentPageName="AdrenalCrisisHub"><AdrenalCrisisHub /></LayoutWrapper>} />
+        <Route path="/ThyroidStormHub"        element={<LayoutWrapper currentPageName="ThyroidStormHub"><ThyroidStormHub /></LayoutWrapper>} />
+        <Route path="/AcuteLiverFailureHub"      element={<LayoutWrapper currentPageName="AcuteLiverFailureHub"><AcuteLiverFailureHub /></LayoutWrapper>} />
+        <Route path="/AcuteIschemicStrokeHub"    element={<LayoutWrapper currentPageName="AcuteIschemicStrokeHub"><AcuteIschemicStrokeHub /></LayoutWrapper>} />
+        <Route path="/SAHHub"                    element={<LayoutWrapper currentPageName="SAHHub"><SAHHub /></LayoutWrapper>} />
+        <Route path="/MyasthenicCrisisHub"       element={<LayoutWrapper currentPageName="MyasthenicCrisisHub"><MyasthenicCrisisHub /></LayoutWrapper>} />
+        <Route path="/CardiogenicShockHub"       element={<LayoutWrapper currentPageName="CardiogenicShockHub"><CardiogenicShockHub /></LayoutWrapper>} />
+        <Route path="/MassiveGIBleedHub"        element={<LayoutWrapper currentPageName="MassiveGIBleedHub"><MassiveGIBleedHub /></LayoutWrapper>} />
+        <Route path="/MTPHub"                   element={<LayoutWrapper currentPageName="MTPHub"><MTPHub /></LayoutWrapper>} />
+        <Route path="/HeatStrokeHub"            element={<LayoutWrapper currentPageName="HeatStrokeHub"><HeatStrokeHub /></LayoutWrapper>} />
+        <Route path="/HyponatremiaHub"          element={<LayoutWrapper currentPageName="HyponatremiaHub"><HyponatremiaHub /></LayoutWrapper>} />
+        <Route path="/HypercalcemiaHub"         element={<LayoutWrapper currentPageName="HypercalcemiaHub"><HypercalcemiaHub /></LayoutWrapper>} />
+        <Route path="/NMSHub"                   element={<LayoutWrapper currentPageName="NMSHub"><NMSHub /></LayoutWrapper>} />
+        <Route path="/STEMIHub"                 element={<LayoutWrapper currentPageName="STEMIHub"><STEMIHub /></LayoutWrapper>} />
+        <Route path="/CardiacTamponadeHub"     element={<LayoutWrapper currentPageName="CardiacTamponadeHub"><CardiacTamponadeHub /></LayoutWrapper>} />
+        <Route path="/StatusAsthmaticusHub"   element={<LayoutWrapper currentPageName="StatusAsthmaticusHub"><StatusAsthmaticusHub /></LayoutWrapper>} />
+        <Route path="/TensionPneumothoraxHub" element={<LayoutWrapper currentPageName="TensionPneumothoraxHub"><TensionPneumothoraxHub /></LayoutWrapper>} />
+        <Route path="/AlcoholWithdrawalHub"  element={<LayoutWrapper currentPageName="AlcoholWithdrawalHub"><AlcoholWithdrawalHub /></LayoutWrapper>} />
+        <Route path="/ToxicAlcoholHub"      element={<LayoutWrapper currentPageName="ToxicAlcoholHub"><ToxicAlcoholHub /></LayoutWrapper>} />
+        <Route path="/SympathomimeticHub"    element={<LayoutWrapper currentPageName="SympathomimeticHub"><SympathomimeticHub /></LayoutWrapper>} />
+        <Route path="/TTPHub"                 element={<LayoutWrapper currentPageName="TTPHub"><TTPHub /></LayoutWrapper>} />
+        <Route path="/AnticoagulantReversalHub" element={<LayoutWrapper currentPageName="AnticoagulantReversalHub"><AnticoagulantReversalHub /></LayoutWrapper>} />
+        <Route path="/SickleCellHub"         element={<LayoutWrapper currentPageName="SickleCellHub"><SickleCellHub /></LayoutWrapper>} />
+        <Route path="/HELLPHub"              element={<LayoutWrapper currentPageName="HELLPHub"><HELLPHub /></LayoutWrapper>} />
+        <Route path="/PostPartumHemorrhageHub" element={<LayoutWrapper currentPageName="PostPartumHemorrhageHub"><PostPartumHemorrhageHub /></LayoutWrapper>} />
+        <Route path="/OpioidOverdoseHub"      element={<LayoutWrapper currentPageName="OpioidOverdoseHub"><OpioidOverdoseHub /></LayoutWrapper>} />
+        <Route path="/EMTALAHub"             element={<LayoutWrapper currentPageName="EMTALAHub"><EMTALAHub /></LayoutWrapper>} />
+        <Route path="/SepsisHub"              element={<LayoutWrapper currentPageName="SepsisHub"><SepsisHub /></LayoutWrapper>} />
+        <Route path="/ClinicalPresentationHub" element={<LayoutWrapper currentPageName="ClinicalPresentationHub"><ClinicalPresentationHub /></LayoutWrapper>} />
 
         {/* Pharmacology */}
-        <Route path="/unified-pharma" element={<UnifiedPharmacologyHub />} />
-        <Route path="/MedRecHub"               element={<MedRecHub />} />
-        <Route path="/DrugFormularyAdmin"      element={<DrugFormularyAdmin />} />
-        <Route path="/DrugComparisonHub"       element={<DrugComparisonHub />} />
-        <Route path="/AntibioticStewardshipHub" element={<AntibioticStewardshipHub />} />
-        <Route path="/CriticalCareDripHub"     element={<CriticalCareDripHub />} />
-        <Route path="/FluidElectrolyteCalculator" element={<FluidElectrolyteCalculator />} />
+        <Route path="/unified-pharma" element={<LayoutWrapper currentPageName="UnifiedPharmacologyHub"><UnifiedPharmacologyHub /></LayoutWrapper>} />
+        <Route path="/MedRecHub"               element={<LayoutWrapper currentPageName="MedRecHub"><MedRecHub /></LayoutWrapper>} />
+        <Route path="/DrugFormularyAdmin"      element={<LayoutWrapper currentPageName="DrugFormularyAdmin"><DrugFormularyAdmin /></LayoutWrapper>} />
+        <Route path="/DrugComparisonHub"       element={<LayoutWrapper currentPageName="DrugComparisonHub"><DrugComparisonHub /></LayoutWrapper>} />
+        <Route path="/AntibioticStewardshipHub" element={<LayoutWrapper currentPageName="AntibioticStewardshipHub"><AntibioticStewardshipHub /></LayoutWrapper>} />
+        <Route path="/CriticalCareDripHub"     element={<LayoutWrapper currentPageName="CriticalCareDripHub"><CriticalCareDripHub /></LayoutWrapper>} />
+        <Route path="/FluidElectrolyteCalculator" element={<LayoutWrapper currentPageName="FluidElectrolyteCalculator"><FluidElectrolyteCalculator /></LayoutWrapper>} />
         <Route path="/PediatricDosingCalculator" element={<LayoutWrapper currentPageName="PediatricDosing"><PediatricDosingCalculator /></LayoutWrapper>} />
 
         {/* Specialty hubs */}
-        <Route path="/hub"             element={<HubSelectorPage />} />
-        <Route path="/cardiac-hub"     element={<CardiacHub />} />
-        <Route path="/trauma-hub"      element={<TraumaHub />} />
-        <Route path="/ob-hub"          element={<OBGYNHub />} />
-        <Route path="/OBGYNHub"        element={<OBGYNHub />} />
-        <Route path="/airway-hub"      element={<AirwayHub />} />
-        <Route path="/AirwayHub"       element={<AirwayHub />} />
-        <Route path="/surgical-airway-hub" element={<SurgicalAirwayHub />} />
-        <Route path="/tox-hub"         element={<ToxicologyHub />} />
-        <Route path="/ToxHub"          element={<ToxicologyHub />} />
-        <Route path="/lab-interpreter" element={<LabHub />} />
-        <Route path="/LabHub"          element={<LabHub />} />
-        <Route path="/peds-hub"        element={<PedsHub />} />
-        <Route path="/PediatricHub"    element={<PedsHub />} />
-        <Route path="/triage-hub"      element={<TriageHub />} />
-        <Route path="/TriageHub"       element={<TriageHub />} />
-        <Route path="/rapid-assessment-hub" element={<RapidAssessmentHub />} />
-        <Route path="/ecg-hub"         element={<ECGHub />} />
-        <Route path="/psyche-hub"      element={<PsycheHub />} />
-        <Route path="/PsychHub"        element={<PsycheHub />} />
-        <Route path="/shock-hub"       element={<ShockHub />} />
-        <Route path="/ShockHub"        element={<ShockHub />} />
-        <Route path="/pocus-hub"       element={<POCUSHub />} />
-        <Route path="/POCUSHub"        element={<POCUSHub />} />
-        <Route path="/ortho-hub"       element={<OrthoHub />} />
-        <Route path="/OrthoHub"        element={<OrthoHub />} />
-        <Route path="/resus-hub"       element={<ResusHub />} />
-        <Route path="/ResusHub"        element={<ResusHub />} />
-        <Route path="/antidote-hub"    element={<AntidoteHub />} />
-        <Route path="/radiology-hub"   element={<RadiologyHub />} />
-        <Route path="/consult-hub"     element={<ConsultHub />} />
-        <Route path="/procedure-hub"   element={<ProcedureHub />} />
-        <Route path="/id-hub"          element={<InfectiousDiseaseHub />} />
-        <Route path="/discharge-hub"   element={<DischargeHub />} />
+        <Route path="/hub"             element={<LayoutWrapper currentPageName="HubSelectorPage"><HubSelectorPage /></LayoutWrapper>} />
+        <Route path="/cardiac-hub"     element={<LayoutWrapper currentPageName="CardiacHub"><CardiacHub /></LayoutWrapper>} />
+        <Route path="/trauma-hub"      element={<LayoutWrapper currentPageName="TraumaHub"><TraumaHub /></LayoutWrapper>} />
+        <Route path="/ob-hub"          element={<LayoutWrapper currentPageName="OBGYNHub"><OBGYNHub /></LayoutWrapper>} />
+        <Route path="/OBGYNHub"        element={<LayoutWrapper currentPageName="OBGYNHub"><OBGYNHub /></LayoutWrapper>} />
+        <Route path="/airway-hub"      element={<LayoutWrapper currentPageName="AirwayHub"><AirwayHub /></LayoutWrapper>} />
+        <Route path="/AirwayHub"       element={<LayoutWrapper currentPageName="AirwayHub"><AirwayHub /></LayoutWrapper>} />
+        <Route path="/surgical-airway-hub" element={<LayoutWrapper currentPageName="SurgicalAirwayHub"><SurgicalAirwayHub /></LayoutWrapper>} />
+        <Route path="/tox-hub"         element={<LayoutWrapper currentPageName="ToxicologyHub"><ToxicologyHub /></LayoutWrapper>} />
+        <Route path="/ToxHub"          element={<LayoutWrapper currentPageName="ToxicologyHub"><ToxicologyHub /></LayoutWrapper>} />
+        <Route path="/lab-interpreter" element={<LayoutWrapper currentPageName="LabHub"><LabHub /></LayoutWrapper>} />
+        <Route path="/LabHub"          element={<LayoutWrapper currentPageName="LabHub"><LabHub /></LayoutWrapper>} />
+        <Route path="/peds-hub"        element={<LayoutWrapper currentPageName="PedsHub"><PedsHub /></LayoutWrapper>} />
+        <Route path="/PediatricHub"    element={<LayoutWrapper currentPageName="PedsHub"><PedsHub /></LayoutWrapper>} />
+        <Route path="/triage-hub"      element={<LayoutWrapper currentPageName="TriageHub"><TriageHub /></LayoutWrapper>} />
+        <Route path="/TriageHub"       element={<LayoutWrapper currentPageName="TriageHub"><TriageHub /></LayoutWrapper>} />
+        <Route path="/rapid-assessment-hub" element={<LayoutWrapper currentPageName="RapidAssessmentHub"><RapidAssessmentHub /></LayoutWrapper>} />
+        <Route path="/ecg-hub"         element={<LayoutWrapper currentPageName="ECGHub"><ECGHub /></LayoutWrapper>} />
+        <Route path="/psyche-hub"      element={<LayoutWrapper currentPageName="PsycheHub"><PsycheHub /></LayoutWrapper>} />
+        <Route path="/PsychHub"        element={<LayoutWrapper currentPageName="PsycheHub"><PsycheHub /></LayoutWrapper>} />
+        <Route path="/shock-hub"       element={<LayoutWrapper currentPageName="ShockHub"><ShockHub /></LayoutWrapper>} />
+        <Route path="/ShockHub"        element={<LayoutWrapper currentPageName="ShockHub"><ShockHub /></LayoutWrapper>} />
+        <Route path="/pocus-hub"       element={<LayoutWrapper currentPageName="POCUSHub"><POCUSHub /></LayoutWrapper>} />
+        <Route path="/POCUSHub"        element={<LayoutWrapper currentPageName="POCUSHub"><POCUSHub /></LayoutWrapper>} />
+        <Route path="/ortho-hub"       element={<LayoutWrapper currentPageName="OrthoHub"><OrthoHub /></LayoutWrapper>} />
+        <Route path="/OrthoHub"        element={<LayoutWrapper currentPageName="OrthoHub"><OrthoHub /></LayoutWrapper>} />
+        <Route path="/resus-hub"       element={<LayoutWrapper currentPageName="ResusHub"><ResusHub /></LayoutWrapper>} />
+        <Route path="/ResusHub"        element={<LayoutWrapper currentPageName="ResusHub"><ResusHub /></LayoutWrapper>} />
+        <Route path="/antidote-hub"    element={<LayoutWrapper currentPageName="AntidoteHub"><AntidoteHub /></LayoutWrapper>} />
+        <Route path="/radiology-hub"   element={<LayoutWrapper currentPageName="RadiologyHub"><RadiologyHub /></LayoutWrapper>} />
+        <Route path="/consult-hub"     element={<LayoutWrapper currentPageName="ConsultHub"><ConsultHub /></LayoutWrapper>} />
+        <Route path="/procedure-hub"   element={<LayoutWrapper currentPageName="ProcedureHub"><ProcedureHub /></LayoutWrapper>} />
+        <Route path="/id-hub"          element={<LayoutWrapper currentPageName="InfectiousDiseaseHub"><InfectiousDiseaseHub /></LayoutWrapper>} />
+        <Route path="/discharge-hub"   element={<LayoutWrapper currentPageName="DischargeHub"><DischargeHub /></LayoutWrapper>} />
         <Route path="/wound-hub"       element={<LayoutWrapper currentPageName="WoundHub"><WoundHub /></LayoutWrapper>} />
-        <Route path="/wound-care-hub"  element={<WoundCareHub />} />
-        <Route path="/score-hub"       element={<ScoreHub />} />
-        <Route path="/VitalsHub"       element={<VitalsHub />} />
-        <Route path="/pain-hub"        element={<PainHub />} />
-        <Route path="/syncope-hub"     element={<SyncopeHub />} />
-        <Route path="/seizure-hub"     element={<SeizureHub />} />
-        <Route path="/ams-hub"         element={<AMSHub />} />
-        <Route path="/AMSHub"          element={<AMSHub />} />
-        <Route path="/dvt-hub"         element={<DVTHub />} />
-        <Route path="/derm-hub"        element={<DermatologyHub />} />
-        <Route path="/derm-morphology" element={<DermMorphologyRef />} />
-        <Route path="/stroke-hub"       element={<StrokeHub />} />
-        <Route path="/StrokeHub"        element={<StrokeHub />} />
+        <Route path="/wound-care-hub"  element={<LayoutWrapper currentPageName="WoundCareHub"><WoundCareHub /></LayoutWrapper>} />
+        <Route path="/score-hub"       element={<LayoutWrapper currentPageName="ScoreHub"><ScoreHub /></LayoutWrapper>} />
+        <Route path="/VitalsHub"       element={<LayoutWrapper currentPageName="VitalsHub"><VitalsHub /></LayoutWrapper>} />
+        <Route path="/pain-hub"        element={<LayoutWrapper currentPageName="PainHub"><PainHub /></LayoutWrapper>} />
+        <Route path="/syncope-hub"     element={<LayoutWrapper currentPageName="SyncopeHub"><SyncopeHub /></LayoutWrapper>} />
+        <Route path="/seizure-hub"     element={<LayoutWrapper currentPageName="SeizureHub"><SeizureHub /></LayoutWrapper>} />
+        <Route path="/ams-hub"         element={<LayoutWrapper currentPageName="AMSHub"><AMSHub /></LayoutWrapper>} />
+        <Route path="/AMSHub"          element={<LayoutWrapper currentPageName="AMSHub"><AMSHub /></LayoutWrapper>} />
+        <Route path="/dvt-hub"         element={<LayoutWrapper currentPageName="DVTHub"><DVTHub /></LayoutWrapper>} />
+        <Route path="/derm-hub"        element={<LayoutWrapper currentPageName="DermatologyHub"><DermatologyHub /></LayoutWrapper>} />
+        <Route path="/derm-morphology" element={<LayoutWrapper currentPageName="DermMorphologyRef"><DermMorphologyRef /></LayoutWrapper>} />
+        <Route path="/stroke-hub"       element={<LayoutWrapper currentPageName="StrokeHub"><StrokeHub /></LayoutWrapper>} />
+        <Route path="/StrokeHub"        element={<LayoutWrapper currentPageName="StrokeHub"><StrokeHub /></LayoutWrapper>} />
 
         {/* Presentation-based hubs */}
         <Route path="/ChestPainHub"     element={<LayoutWrapper currentPageName="ChestPainHub"><ChestPainHub /></LayoutWrapper>} />
@@ -388,13 +388,13 @@ const AuthenticatedApp = () => {
         {/* Legacy / misc */}
         <Route path="/OrderDashboard"  element={<LayoutWrapper currentPageName="OrderDashboard"><OrderDashboard /></LayoutWrapper>} />
         <Route path="/AutocoderHub" element={<LayoutWrapper currentPageName="AutoCoder"><AutocoderHubPage /></LayoutWrapper>} />
-        <Route path="/specialty-note-hub" element={<SpecialtyNoteHub />} />
-        <Route path="/SpecialtyNoteHubT2" element={<SpecialtyNoteHubT2 />} />
-        <Route path="/tech-hub" element={<LakonyxTechHub />} />
-        <Route path="/follow-up-hub" element={<FollowUpHub />} />
-        <Route path="/EdNoteGenerator"  element={<QuickNote />} />
-        <Route path="/anamnesis"         element={<AnamnesisPage />} />
-        <Route path="/anamnesis/analytics" element={<AnamnesisAnalyticsDashboard />} />
+        <Route path="/specialty-note-hub" element={<LayoutWrapper currentPageName="SpecialtyNoteHub"><SpecialtyNoteHub /></LayoutWrapper>} />
+        <Route path="/SpecialtyNoteHubT2" element={<LayoutWrapper currentPageName="SpecialtyNoteHubT2"><SpecialtyNoteHubT2 /></LayoutWrapper>} />
+        <Route path="/tech-hub" element={<LayoutWrapper currentPageName="LakonyxTechHub"><LakonyxTechHub /></LayoutWrapper>} />
+        <Route path="/follow-up-hub" element={<LayoutWrapper currentPageName="FollowUpHub"><FollowUpHub /></LayoutWrapper>} />
+        <Route path="/EdNoteGenerator"  element={<LayoutWrapper currentPageName="QuickNote"><QuickNote /></LayoutWrapper>} />
+        <Route path="/anamnesis"         element={<LayoutWrapper currentPageName="AnamnesisPage"><AnamnesisPage /></LayoutWrapper>} />
+        <Route path="/anamnesis/analytics" element={<LayoutWrapper currentPageName="AnamnesisAnalyticsDashboard"><AnamnesisAnalyticsDashboard /></LayoutWrapper>} />
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>

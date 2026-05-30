@@ -168,7 +168,7 @@ export default function DischargeHub() {
   useEffect(() => {
     if (!patientId) { setLoading(false); return; }
     Promise.all([
-      Patient.get(patientId),
+      Patient.filter({ id: patientId }, "-created_date", 1).then(r => r?.[0] || null).catch(() => null),
       ClinicalNote.filter({ patient_id: patientId }, "-created_date", 1)
         .catch(() => []),
     ]).then(([p, notes]) => {
@@ -193,58 +193,74 @@ export default function DischargeHub() {
   }, [patientId]);
 
   // ── AI generators ─────────────────────────────────────────────────────────────
+  const extractText = (res) => typeof res === "string" ? res : res?.text || res?.content || JSON.stringify(res);
+
   const genDiagnosis = async () => {
-    if (!assessment) return;
+    if (!assessment || !patient) return;
     setGenDx(true);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an emergency physician writing discharge instructions for a patient. Based on the clinical assessment below, write a plain-language explanation of what was found and diagnosed. Use simple, non-medical language that a patient can understand. Keep it to 3-4 sentences.
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an emergency physician writing discharge instructions for a patient. Based on the clinical assessment below, write a plain-language explanation of what was found and diagnosed. Use simple, non-medical language that a patient can understand. Keep it to 3-4 sentences.
 
 Patient: ${patient.name}, ${patient.age}yo, CC: ${patient.cc}
 Clinical Assessment:
 ${assessment}`,
-    });
-    setDiagnosis(typeof res === "string" ? res : res?.text || res?.content || JSON.stringify(res));
-    setGenDx(false);
+      });
+      setDiagnosis(extractText(res));
+    } finally {
+      setGenDx(false);
+    }
   };
 
   const genMedications = async () => {
-    if (!medsRaw) return;
+    if (!medsRaw || !patient) return;
     setGenMeds(true);
-    const allergies = patient?.allergies?.length ? patient.allergies.join(", ") : "None";
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an emergency physician writing discharge instructions. Convert the following medication list into a clear, patient-friendly format. For each medication include: what it is, what it's for, how to take it, and any key warnings. Flag any potential concerns given allergies: ${allergies}.
+    try {
+      const allergies = patient?.allergies?.length ? patient.allergies.join(", ") : "None";
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an emergency physician writing discharge instructions. Convert the following medication list into a clear, patient-friendly format. For each medication include: what it is, what it's for, how to take it, and any key warnings. Flag any potential concerns given allergies: ${allergies}.
 
 Medications:
 ${medsRaw}
 
 Patient: ${patient.name}, ${patient.age}yo`,
-    });
-    setMedications(typeof res === "string" ? res : res?.text || res?.content || JSON.stringify(res));
-    setGenMeds(false);
+      });
+      setMedications(extractText(res));
+    } finally {
+      setGenMeds(false);
+    }
   };
 
   const genPrecautions = async () => {
+    if (!patient) return;
     setGenPrec(true);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an emergency physician writing return precautions for a patient being discharged. Based on the chief complaint and clinical assessment, list 5-7 specific "Return to the ER if…" warning signs in plain language. Be specific and clinically appropriate.
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an emergency physician writing return precautions for a patient being discharged. Based on the chief complaint and clinical assessment, list 5-7 specific "Return to the ER if…" warning signs in plain language. Be specific and clinically appropriate.
 
 Patient: ${patient.name}, ${patient.age}yo
 Chief Complaint: ${patient.cc}
 Assessment: ${assessment || "(not provided)"}
 PMHx: ${patient?.pmhx?.join(", ") || "None"}`,
-    });
-    setPrecautions(typeof res === "string" ? res : res?.text || res?.content || JSON.stringify(res));
-    setGenPrec(false);
+      });
+      setPrecautions(extractText(res));
+    } finally {
+      setGenPrec(false);
+    }
   };
 
   const generateAll = async () => {
+    if (!patient) return;
     setGenAll(true);
-    await Promise.all([
-      assessment ? genDiagnosis() : Promise.resolve(),
-      medsRaw    ? genMedications() : Promise.resolve(),
-      genPrecautions(),
-    ]);
-    setGenAll(false);
+    try {
+      await Promise.all([
+        assessment ? genDiagnosis() : Promise.resolve(),
+        medsRaw    ? genMedications() : Promise.resolve(),
+        genPrecautions(),
+      ]);
+    } finally {
+      setGenAll(false);
+    }
   };
 
   // ── Copy text block ──────────────────────────────────────────────────────────
@@ -295,7 +311,7 @@ PMHx: ${patient?.pmhx?.join(", ") || "None"}`,
     <div style={{ minHeight:"100vh", background:T.bg, color:T.txt, fontFamily:"'DM Sans',sans-serif" }}>
 
       {/* Top bar */}
-      <div className="dh-no-print" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px", height:52, background:T.panel, borderBottom:"1px solid rgba(26,53,85,0.5)", position:"sticky", top:0, zIndex:10 }}>
+      <div className="dh-no-print" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px", height:52, background:T.panel, borderBottom:"1px solid rgba(26,53,85,0.5)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <a href={`/PatientEncounter?patientId=${patientId}`} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:T.txt4, background:"transparent", border:"1px solid rgba(26,53,85,0.5)", borderRadius:6, padding:"4px 10px", cursor:"pointer", textDecoration:"none" }}>← Encounter</a>
           <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(26,53,85,0.5)", borderRadius:5, padding:"2px 8px" }}>{patient.room}</span>

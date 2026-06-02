@@ -20,6 +20,7 @@ import LakonyxHeader from "@/components/LakonyxHeader";
 // Pages that render their own top chrome — Layout adds no header to these.
 const NO_HEADER = new Set([
   "CommandCenter",
+  "CommandCenterSpine",
   // add a full-bleed landing/login route here if you have one
 ]);
 

@@ -4,17 +4,14 @@ import { useEffect, useRef, useState, useCallback } from "react";
   CommandCenterSpine — upload #1: a wiring test harness, not the real UI.
 
   Purpose: prove the one-screen rule works before any styled surface exists.
-  Drop into a NEW Base44 component. Then:
-    - press o n l i a h v p t and watch surfaces appear over the board
-    - press Esc to peel layers back to the bare board
-    - click into the scratch field and type: letters must NOT fire commands,
-      and the first Esc should just blur the field (your place is kept)
+  Press o n l i a h v p t to summon surfaces over the board. Press Esc to peel
+  layers back to the bare board. Click the scratch field and type: letters must
+  NOT fire commands, and the first Esc should only blur the field.
 
   Intentionally unstyled. The navy/teal/gold surfaces come later.
   Base44-safe: single file, default export, no Router/localStorage/form/alert.
 */
 
-// key -> surface id. Extend here; nothing else needs to change.
 const SURFACE_KEYS = {
   o: "orders",
   n: "note",
@@ -27,7 +24,6 @@ const SURFACE_KEYS = {
   t: "triage",
 };
 
-// Describes how each surface renders, so the stub can label its tier.
 const SURFACE_META = {
   orders: { label: "Orders", tier: "half-sheet" },
   note: { label: "Note", tier: "dock" },
@@ -58,13 +54,11 @@ function useCommandKeys({ onCommand, onEscape, onPalette, enabled = true }) {
   useEffect(() => {
     if (!enabled) return undefined;
     function onKeyDown(e) {
-      // Command palette: the one cross-platform combo.
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         if (cb.current.onPalette) cb.current.onPalette();
         return;
       }
-      // Escape: protect typing first, then head to the board.
       if (e.key === "Escape") {
         if (isEditable(document.activeElement)) {
           document.activeElement.blur();
@@ -73,7 +67,6 @@ function useCommandKeys({ onCommand, onEscape, onPalette, enabled = true }) {
         if (cb.current.onEscape) cb.current.onEscape();
         return;
       }
-      // Single-key commands: only when no modifier held and not typing.
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (isEditable(document.activeElement)) return;
       const surface = SURFACE_KEYS[e.key.toLowerCase()];
@@ -87,7 +80,6 @@ function useCommandKeys({ onCommand, onEscape, onPalette, enabled = true }) {
   }, [enabled]);
 }
 
-// --- minimal styling, deliberately plain (NOT the design system) ---
 const S = {
   shell: { minHeight: "100vh", background: "#0b1220", color: "#e6edf6", fontFamily: "monospace", position: "relative" },
   banner: { display: "flex", gap: 16, alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #1e2a3d", background: "#0f1830", position: "sticky", top: 0, zIndex: 5 },
@@ -123,19 +115,18 @@ function SurfacePanel({ surface, onClose }) {
 }
 
 export default function CommandCenterSpine() {
-  const [activeSurface, setActiveSurface] = useState(null); // one transient/takeover at a time
-  const [noteOpen, setNoteOpen] = useState(false);          // the single dock
+  const [activeSurface, setActiveSurface] = useState(null);
+  const [noteOpen, setNoteOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   const handleCommand = useCallback((surface) => {
     if (surface === "note") {
-      setNoteOpen((open) => !open); // dock toggles; board stays put
+      setNoteOpen((open) => !open);
       return;
     }
-    setActiveSurface(surface);      // enforces one transient surface at a time
+    setActiveSurface(surface);
   }, []);
 
-  // Esc peels back exactly one layer toward the bare board.
   const returnToBoard = useCallback(() => {
     if (paletteOpen) { setPaletteOpen(false); return; }
     if (activeSurface) { setActiveSurface(null); return; }
@@ -152,7 +143,6 @@ export default function CommandCenterSpine() {
 
   return (
     <div style={S.shell}>
-      {/* Always-on banner: allergies + vitals + identity live here, never hunted. */}
       <div style={S.banner}>
         <strong>DOE, JANE</strong>
         <span style={S.glance}>54F . MRN 0042318</span>
@@ -161,7 +151,6 @@ export default function CommandCenterSpine() {
         <span style={{ marginLeft: "auto", ...S.glance }}>Cmd/Ctrl+K palette</span>
       </div>
 
-      {/* The board: the only address. Always mounted, never replaced. */}
       <div style={S.board}>
         <div style={{ fontSize: 18 }}>CommandCenter board (placeholder)</div>
         <input style={S.scratch} placeholder="scratch field - type here to test the focus guard" />
@@ -172,16 +161,12 @@ export default function CommandCenterSpine() {
         </div>
       </div>
 
-      {/* Backdrop for transient/takeover surfaces and the palette. */}
       {showBackdrop && <div style={S.overlayBackdrop} onClick={returnToBoard} />}
 
-      {/* Dock coexists with the board. */}
       {noteOpen && <SurfacePanel surface="note" onClose={() => setNoteOpen(false)} />}
 
-      {/* Exactly one transient/takeover surface at a time. */}
       {activeSurface && <SurfacePanel surface={activeSurface} onClose={returnToBoard} />}
 
-      {/* Command palette. */}
       {paletteOpen && (
         <div style={S.palette}>
           <div style={{ fontSize: 15, marginBottom: 8 }}>Command palette (stub)</div>

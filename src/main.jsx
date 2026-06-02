@@ -10,13 +10,14 @@ async function clearSWAndRender() {
   if ('serviceWorker' in navigator) {
     try {
       const registrations = await navigator.serviceWorker.getRegistrations();
-      let unregistered = 0;
-      await Promise.all(registrations.map(reg => { unregistered++; return reg.unregister(); }));
+      const hadSW = registrations.length > 0;
+      await Promise.all(registrations.map(reg => reg.unregister()));
       if (window.caches) {
         const keys = await caches.keys();
+        const hadCache = keys.length > 0;
         await Promise.all(keys.map(key => caches.delete(key)));
-        if (unregistered > 0) {
-          // Stale SW was present — force reload with fresh bundles
+        if (hadSW || hadCache) {
+          // Stale SW or cache found — force reload with fresh bundles
           window.location.reload();
           return;
         }

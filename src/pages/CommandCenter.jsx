@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import HubTakeover from "@/components/HubTakeover";
 import { liveHubs } from "@/components/hubRegistry";
+import { BOARD_ORDERS, BOARD_ORDERS_FLAT } from "@/components/boardOrderCatalog";
 
 // ════════════════════════════════════════════════════════════════════════════
 // MODULE 1 — DESIGN TOKENS, STYLE, NAVIGATION, GLOBAL HELPERS
@@ -575,21 +576,7 @@ function TransferPipelineBadge({ patient, transfers }) {
   );
 }
 
-// ─── WORKSPACE ORDER CATALOG ──────────────────────────────────────────────────
-const ROC_INLINE={
-  labs:[{id:"bmp-cbc",name:"BMP + CBC",common:true},{id:"trop",name:"Troponin I (High-Sens.)",common:true},{id:"lactate",name:"Lactate",common:true},{id:"ua",name:"Urinalysis w/ Reflex Cx",common:true},{id:"bc",name:"Blood Cultures ×2",common:true},{id:"coags",name:"PT / INR / PTT",common:false},{id:"ddimer",name:"D-Dimer",common:false},{id:"abg",name:"ABG",common:false},{id:"lfts",name:"Hepatic Function Panel",common:false},{id:"lipase",name:"Lipase",common:false},{id:"bhcg",name:"β-hCG Serum",common:false},{id:"etoh",name:"Ethanol Level",common:false}],
-  imaging:[{id:"cxr",name:"CXR PA & Lateral",common:true},{id:"ct-head",name:"CT Head w/o Contrast",common:true},{id:"ct-pe",name:"CT Chest CTA — PE",common:true},{id:"ct-ap",name:"CT Abd/Pelvis w/ Contrast",common:true},{id:"us-ruq",name:"US Abdomen RUQ",common:true},{id:"us-dvt",name:"US Lower Extremity DVT",common:false},{id:"ct-csp",name:"CT C-Spine w/o",common:false},{id:"xr-cxr",name:"CXR Portable AP",common:false}],
-  meds:[{id:"keto",name:"Ketorolac 30mg IV",common:true},{id:"zofran",name:"Ondansetron 4mg IV",common:true},{id:"morph",name:"Morphine 4mg IV",common:true},{id:"ns1l",name:"Normal Saline 1L IV",common:true},{id:"asa",name:"Aspirin 324mg PO",common:true},{id:"hep",name:"Heparin IV (ACS protocol)",common:false},{id:"mag",name:"Magnesium Sulf. 2g IV",common:false},{id:"adeno",name:"Adenosine 6mg IV",common:false}],
-  consults:[{id:"cards",name:"Cardiology",common:true},{id:"neuro",name:"Neurology",common:true},{id:"surg",name:"General Surgery",common:true},{id:"ortho",name:"Orthopedics",common:false},{id:"psych",name:"Psychiatry",common:false},{id:"id",name:"Infectious Disease",common:false}],
-  sets:[
-    {id:"s-acs",name:"ACS Protocol",sub:"ASA · Trop · CXR · Heparin",items:["asa","trop","cxr","hep"]},
-    {id:"s-sepsis",name:"Sepsis Bundle",sub:"BC×2 · Lactate · BMP+CBC · NS 1L",items:["bc","lactate","bmp-cbc","ns1l"]},
-    {id:"s-stroke",name:"Stroke Protocol",sub:"CT Head · BMP+CBC · Coags",items:["ct-head","bmp-cbc","coags"]},
-    {id:"s-pe",name:"PE Protocol",sub:"D-Dimer · CTA Chest · BMP+CBC",items:["ddimer","ct-pe","bmp-cbc"]},
-    {id:"s-abd",name:"Abdominal W/U",sub:"BMP+CBC · Lipase · LFTs · CT Abd/Pelvis",items:["bmp-cbc","lipase","lfts","ct-ap"]},
-  ],
-};
-const ROCF=Object.entries(ROC_INLINE).reduce((acc,[k,arr])=>{ if(k!=="sets") arr.forEach(o=>{acc[o.id]=o;}); return acc; },{});
+
 // ════════════════════════════════════════════════════════════════════════════
 // MODULE 5 — ENCOUNTER WORKSPACE  (5-tab inline clinical surface)
 // ════════════════════════════════════════════════════════════════════════════
@@ -721,13 +708,13 @@ function OrdersTab({ patient }) {
     { name:"NS 1L IV bolus",    type:"med",     status:"running", ts:"14:15" },
     { name:"Aspirin 324mg PO",  type:"med",     status:"given",   ts:"14:10" },
   ],[patient]);
-  const accent=TAB_ACCENT[orderCat]||T.teal, catList=ROC_INLINE[orderCat]||[];
+  const accent=TAB_ACCENT[orderCat]||T.teal, catList=BOARD_ORDERS[orderCat]||[];
   const q=oQuery.toLowerCase().trim(), filtered=q?catList.filter(o=>o.name.toLowerCase().includes(q)):catList;
   const common=filtered.filter(o=>o.common), more=filtered.filter(o=>!o.common);
   const selCount=Object.keys(selected).length, canPlace=selCount>0&&!placing&&!placed;
   const stOC={ pending:T.gold,given:T.green,running:T.teal,cancelled:T.txt4 }, tyOC={ lab:T.cyan,imaging:T.purple,med:T.gold,consult:T.blue };
   const toggle=(id,name)=>setSelected(prev=>{ const n={...prev}; n[id]?delete n[id]:n[id]=name; return n; });
-  const applySet=(set)=>{ const n={...selected}; set.items.forEach(id=>{ const o=ROCF[id]; if(o) n[id]=o.name; }); setSelected(n); };
+  const applySet=(set)=>{ const n={...selected}; set.items.forEach(id=>{ const o=BOARD_ORDERS_FLAT[id]; if(o) n[id]=o.name; }); setSelected(n); };
   const placeOrders=async()=>{ if(!canPlace)return; setPlacing(true); await new Promise(r=>setTimeout(r,1200)); setPlacing(false); setPlaced(true); setTimeout(()=>{ setSelected({}); setPlaced(false); },2000); };
   const btnA=placed?T.green:stat?T.red:T.teal;
   return (
@@ -746,7 +733,7 @@ function OrdersTab({ patient }) {
         </div>
         <div style={{ flex:1,overflowY:"auto",padding:"4px 10px 8px" }}>
           {orderCat==="sets"
-            ? filtered.map(set=>{ const all=set.items.every(id=>!!selected[id]); return <div key={set.id} onClick={()=>applySet(set)} style={{ ...gc({borderRadius:10,borderLeft:`3px solid ${all?T.teal:T.teal+"55"}`,background:all?`${T.teal}0d`:`linear-gradient(135deg,${T.teal}07,${T.card})`}),padding:"10px 12px",marginBottom:7,cursor:"pointer" }}><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4 }}><span style={{ fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:all?T.teal:T.txt }}>{set.name}</span><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:all?T.teal:T.txt4,background:all?`${T.teal}18`:"rgba(26,53,85,0.4)",border:`1px solid ${all?T.teal+"44":"rgba(26,53,85,0.5)"}`,borderRadius:4,padding:"2px 6px" }}>{all?"✓ Applied":"+ Apply all"}</span></div><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt3,marginBottom:7 }}>{set.sub}</div><div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>{set.items.map(id=>{ const o=ROCF[id]; if(!o)return null; const sel=!!selected[id]; return <span key={id} onClick={e=>{e.stopPropagation();toggle(id,o.name);}} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:sel?T.teal:T.txt4,background:sel?`${T.teal}18`:"rgba(26,53,85,0.35)",border:`1px solid ${sel?T.teal+"44":"rgba(26,53,85,0.4)"}`,borderRadius:4,padding:"2px 6px",cursor:"pointer" }}>{sel?"✓ ":""}{o.name}</span>; })}</div></div>; })
+            ? filtered.map(set=>{ const all=set.items.every(id=>!!selected[id]); return <div key={set.id} onClick={()=>applySet(set)} style={{ ...gc({borderRadius:10,borderLeft:`3px solid ${all?T.teal:T.teal+"55"}`,background:all?`${T.teal}0d`:`linear-gradient(135deg,${T.teal}07,${T.card})`}),padding:"10px 12px",marginBottom:7,cursor:"pointer" }}><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4 }}><span style={{ fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:all?T.teal:T.txt }}>{set.name}</span><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:all?T.teal:T.txt4,background:all?`${T.teal}18`:"rgba(26,53,85,0.4)",border:`1px solid ${all?T.teal+"44":"rgba(26,53,85,0.5)"}`,borderRadius:4,padding:"2px 6px" }}>{all?"✓ Applied":"+ Apply all"}</span></div><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt3,marginBottom:7 }}>{set.sub}</div><div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>{set.items.map(id=>{ const o=BOARD_ORDERS_FLAT[id]; if(!o)return null; const sel=!!selected[id]; return <span key={id} onClick={e=>{e.stopPropagation();toggle(id,o.name);}} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:sel?T.teal:T.txt4,background:sel?`${T.teal}18`:"rgba(26,53,85,0.35)",border:`1px solid ${sel?T.teal+"44":"rgba(26,53,85,0.4)"}`,borderRadius:4,padding:"2px 6px",cursor:"pointer" }}>{sel?"✓ ":""}{o.name}</span>; })}</div></div>; })
             : <>
                 {!q&&common.length>0&&<div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,color:T.txt4,textTransform:"uppercase",letterSpacing:"0.12em",padding:"5px 2px 4px" }}>Common</div>}
                 {(q?filtered:common).map(o=><div key={o.id} onClick={()=>toggle(o.id,o.name)} style={{ display:"flex",alignItems:"center",gap:9,padding:"7px 8px 7px 10px",borderRadius:8,background:selected[o.id]?`${accent}0d`:"transparent",border:`1px solid ${selected[o.id]?accent+"33":"transparent"}`,cursor:"pointer",marginBottom:2,transition:"all .1s" }}><div style={{ width:13,height:13,borderRadius:4,background:selected[o.id]?accent:"transparent",border:`1.5px solid ${selected[o.id]?accent:"rgba(90,130,168,0.45)"}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center" }}>{selected[o.id]&&<span style={{ color:"#000",fontSize:9,fontWeight:700,lineHeight:1 }}>✓</span>}</div><span style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:selected[o.id]?T.txt:T.txt2,flex:1 }}>{o.name}</span></div>)}
@@ -1625,88 +1612,7 @@ function TopBar({ onQuickNote, onNewPatient, onOpenPalette, onRapidOrder, patien
 }
 
 // ─── RAPID ORDER CATALOG ──────────────────────────────────────────────────────
-const ROC = {
-  labs:[
-    { id:"bmp",      name:"BMP",                             common:true  },
-    { id:"cbc",      name:"CBC w/ Differential",             common:true  },
-    { id:"bmp-cbc",  name:"BMP + CBC",                       common:true  },
-    { id:"trop",     name:"Troponin I (High-Sensitivity)",   common:true  },
-    { id:"lactate",  name:"Lactate",                         common:true  },
-    { id:"ua",       name:"Urinalysis w/ Reflex Culture",    common:true  },
-    { id:"bc",       name:"Blood Cultures x2",               common:false },
-    { id:"lfts",     name:"Hepatic Function Panel",          common:false },
-    { id:"coags",    name:"PT / INR / PTT",                  common:false },
-    { id:"ddimer",   name:"D-Dimer",                         common:false },
-    { id:"tsh",      name:"TSH",                             common:false },
-    { id:"lipase",   name:"Lipase",                          common:false },
-    { id:"bhcg",     name:"β-hCG (Serum)",                   common:false },
-    { id:"apap",     name:"Acetaminophen Level",             common:false },
-    { id:"etoh",     name:"Ethanol Level",                   common:false },
-    { id:"vbg",      name:"Venous Blood Gas",                common:false },
-    { id:"abg",      name:"Arterial Blood Gas",              common:false },
-  ],
-  imaging:[
-    { id:"cxr",      name:"CXR PA & Lateral",                common:true  },
-    { id:"ct-head",  name:"CT Head w/o Contrast",            common:true  },
-    { id:"ct-pe",    name:"CT Chest CTA (PE Protocol)",      common:true  },
-    { id:"ct-ap",    name:"CT Abd/Pelvis w/ Contrast",       common:true  },
-    { id:"us-ruq",   name:"US Abdomen RUQ",                  common:true  },
-    { id:"cxr-p",    name:"CXR Portable AP",                 common:false },
-    { id:"ct-headc", name:"CT Head w/ Contrast",             common:false },
-    { id:"ct-csp",   name:"CT C-Spine w/o",                  common:false },
-    { id:"ct-chest", name:"CT Chest w/o (Routine)",          common:false },
-    { id:"ct-apo",   name:"CT Abd/Pelvis w/o",               common:false },
-    { id:"us-pelv",  name:"US Pelvis (Transvaginal)",        common:false },
-    { id:"us-dvt",   name:"US Lower Extremity DVT",          common:false },
-    { id:"us-renal", name:"US Renal",                        common:false },
-    { id:"xr-ankle", name:"XR Ankle",                        common:false },
-    { id:"xr-wrist", name:"XR Wrist",                        common:false },
-    { id:"xr-hand",  name:"XR Hand",                         common:false },
-  ],
-  meds:[
-    { id:"keto",     name:"Ketorolac 30mg IV",               common:true  },
-    { id:"zofran",   name:"Ondansetron 4mg IV",              common:true  },
-    { id:"morph",    name:"Morphine 4mg IV",                 common:true  },
-    { id:"dilaud",   name:"HYDROmorphone 0.5mg IV",          common:true  },
-    { id:"ns1l",     name:"Normal Saline 1L IV Bolus",       common:true  },
-    { id:"asa",      name:"Aspirin 324mg PO",                common:true  },
-    { id:"alb",      name:"Albuterol 2.5mg Neb",             common:true  },
-    { id:"ativan",   name:"LORazepam 2mg IV",                common:false },
-    { id:"plavix",   name:"Clopidogrel 600mg PO",            common:false },
-    { id:"hep",      name:"Heparin IV (ACS Weight-Based)",   common:false },
-    { id:"solumed",  name:"Methylprednisolone 125mg IV",     common:false },
-    { id:"benadryl", name:"DiphenhydrAMINE 50mg IV",         common:false },
-    { id:"metro",    name:"Metoprolol 5mg IV",               common:false },
-    { id:"adeno",    name:"Adenosine 6mg IV (Rapid Push)",   common:false },
-    { id:"mag",      name:"Magnesium Sulfate 2g IV",         common:false },
-    { id:"d5w",      name:"D5W 250mL IV",                    common:false },
-  ],
-  consults:[
-    { id:"cards",    name:"Cardiology",                      common:true  },
-    { id:"neuro",    name:"Neurology",                       common:true  },
-    { id:"surg",     name:"General Surgery",                 common:true  },
-    { id:"ortho",    name:"Orthopedics",                     common:false },
-    { id:"psych",    name:"Psychiatry",                      common:false },
-    { id:"obgyn",    name:"OB / GYN",                        common:false },
-    { id:"uro",      name:"Urology",                         common:false },
-    { id:"neph",     name:"Nephrology",                      common:false },
-    { id:"gi",       name:"Gastroenterology",                common:false },
-    { id:"pulm",     name:"Pulmonology",                     common:false },
-    { id:"id-cons",  name:"Infectious Disease",              common:false },
-    { id:"heme",     name:"Hematology / Oncology",           common:false },
-  ],
-  sets:[
-    { id:"s-acs",    name:"ACS Protocol",       sub:"ASA · Troponin · CXR · Heparin",              items:["asa","trop","cxr","hep"]           },
-    { id:"s-sepsis", name:"Sepsis Bundle",       sub:"Blood Cx x2 · Lactate · BMP · CBC · NS 1L",  items:["bc","lactate","bmp","cbc","ns1l"]  },
-    { id:"s-stroke", name:"Stroke Protocol",     sub:"CT Head · BMP · CBC · Coags",                items:["ct-head","bmp","cbc","coags"]      },
-    { id:"s-chest",  name:"Chest Pain W/U",      sub:"Troponin · CXR · BMP · Ketorolac",           items:["trop","cxr","bmp","keto"]          },
-    { id:"s-pe",     name:"PE Protocol",         sub:"D-Dimer · CTA Chest · BMP",                  items:["ddimer","ct-pe","bmp"]             },
-    { id:"s-sync",   name:"Syncope W/U",         sub:"BMP · CBC · Troponin · CXR",                 items:["bmp","cbc","trop","cxr"]           },
-    { id:"s-abd",    name:"Abdominal Pain W/U",  sub:"BMP · CBC · Lipase · LFTs · CT Abd/Pelvis",  items:["bmp","cbc","lipase","lfts","ct-ap"]},
-    { id:"s-uti",    name:"UTI / Urosepsis",     sub:"UA w/ Reflex · Blood Cx x2 · BMP · CBC",     items:["ua","bc","bmp","cbc"]              },
-  ],
-};
-const ROC_FLAT = Object.entries(ROC).reduce((acc,[key,arr])=>{ if(key!=="sets") arr.forEach(o=>{ acc[o.id]=o; }); return acc; },{});
+// Catalog data imported from @/components/boardOrderCatalog
 const TAB_META = [
   { key:"labs",    label:"Labs",    icon:"🧪", color:T.cyan   },
   { key:"imaging", label:"Imaging", icon:"🩻", color:T.purple },
@@ -1733,10 +1639,10 @@ function RapidOrderDrawer({ open, onClose, patients, selectedPatient }) {
   useEffect(()=>{ setShowMore(false);setQuery(p=>({...p,[tab]:""})); },[tab]);
   const activePt=patients.find(p=>p.id===ptId)||selectedPatient||null;
   const toggle=(id,name)=>setSelected(prev=>{ const n={...prev}; n[id]?delete n[id]:n[id]={ name }; return n; });
-  const applySet=(set)=>setSelected(prev=>{ const n={...prev}; set.items.forEach(id=>{ const o=ROC_FLAT[id]; if(o)n[id]={ name:o.name }; }); return n; });
+  const applySet=(set)=>setSelected(prev=>{ const n={...prev}; set.items.forEach(id=>{ const o=BOARD_ORDERS_FLAT[id]; if(o)n[id]={ name:o.name }; }); return n; });
   const selectedCount=Object.keys(selected).length;
   const tabMeta=TAB_META.find(t=>t.key===tab)||TAB_META[0];
-  const currentList=tab==="sets"?ROC.sets:(ROC[tab]||[]);
+  const currentList=tab==="sets"?BOARD_ORDERS.sets:(BOARD_ORDERS[tab]||[]);
   const q=(query[tab]||"").toLowerCase();
   const filtered=q?currentList.filter(o=>(o.name||"").toLowerCase().includes(q)):currentList;
   const commonOrders=filtered.filter(o=>o.common), moreOrders=filtered.filter(o=>!o.common);
@@ -1785,7 +1691,7 @@ function RapidOrderDrawer({ open, onClose, patients, selectedPatient }) {
         </div>
         <div style={{ flex:1,overflowY:"auto",padding:"4px 16px 8px" }}>
           {tab==="sets"
-            ?<div style={{ display:"flex",flexDirection:"column",gap:8,paddingTop:4 }}>{filtered.map(set=>{ const allApplied=set.items.every(id=>!!selected[id]); return <div key={set.id} onClick={()=>applySet(set)} style={{ ...gc({ borderRadius:10,borderLeft:`3px solid ${allApplied?T.teal:T.teal+"55"}`,background:allApplied?`${T.teal}0d`:`linear-gradient(135deg,${T.teal}07,${T.card})` }),padding:"12px 14px",cursor:"pointer" }}><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5 }}><span style={{ fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:allApplied?T.teal:T.txt }}>{set.name}</span><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:allApplied?T.teal:T.txt4,background:allApplied?`${T.teal}18`:"rgba(26,53,85,0.4)",border:`1px solid ${allApplied?T.teal+"44":"rgba(26,53,85,0.5)"}`,borderRadius:4,padding:"2px 7px" }}>{allApplied?"✓ Applied":"+ Apply All"}</span></div><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt3,lineHeight:1.5,marginBottom:8 }}>{set.sub}</div><div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>{set.items.map(id=>{ const o=ROC_FLAT[id]; if(!o)return null; const isSel=!!selected[id]; return <span key={id} onClick={e=>{ e.stopPropagation();toggle(id,o.name); }} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:isSel?T.teal:T.txt4,background:isSel?`${T.teal}18`:"rgba(26,53,85,0.35)",border:`1px solid ${isSel?T.teal+"44":"rgba(26,53,85,0.4)"}`,borderRadius:4,padding:"2px 7px",cursor:"pointer" }}>{isSel?"✓ ":""}{o.name}</span>; })}</div></div>; })}</div>
+            ?<div style={{ display:"flex",flexDirection:"column",gap:8,paddingTop:4 }}>{filtered.map(set=>{ const allApplied=set.items.every(id=>!!selected[id]); return <div key={set.id} onClick={()=>applySet(set)} style={{ ...gc({ borderRadius:10,borderLeft:`3px solid ${allApplied?T.teal:T.teal+"55"}`,background:allApplied?`${T.teal}0d`:`linear-gradient(135deg,${T.teal}07,${T.card})` }),padding:"12px 14px",cursor:"pointer" }}><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5 }}><span style={{ fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:allApplied?T.teal:T.txt }}>{set.name}</span><span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:allApplied?T.teal:T.txt4,background:allApplied?`${T.teal}18`:"rgba(26,53,85,0.4)",border:`1px solid ${allApplied?T.teal+"44":"rgba(26,53,85,0.5)"}`,borderRadius:4,padding:"2px 7px" }}>{allApplied?"✓ Applied":"+ Apply All"}</span></div><div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:11,color:T.txt3,lineHeight:1.5,marginBottom:8 }}>{set.sub}</div><div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>{set.items.map(id=>{ const o=BOARD_ORDERS_FLAT[id]; if(!o)return null; const isSel=!!selected[id]; return <span key={id} onClick={e=>{ e.stopPropagation();toggle(id,o.name); }} style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:isSel?T.teal:T.txt4,background:isSel?`${T.teal}18`:"rgba(26,53,85,0.35)",border:`1px solid ${isSel?T.teal+"44":"rgba(26,53,85,0.4)"}`,borderRadius:4,padding:"2px 7px",cursor:"pointer" }}>{isSel?"✓ ":""}{o.name}</span>; })}</div></div>; })}</div>
             :<div style={{ paddingTop:4 }}>
               {!q&&commonOrders.length>0&&<div style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,color:T.txt4,textTransform:"uppercase",letterSpacing:"0.12em",padding:"4px 2px 5px" }}>Common</div>}
               {(q?filtered:commonOrders).map(o=><OrderRow key={o.id} order={o} selected={!!selected[o.id]} tabColor={tabMeta.color} onToggle={()=>toggle(o.id,o.name)}/>)}

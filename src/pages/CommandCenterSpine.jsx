@@ -3,6 +3,7 @@ import PatientBanner from "@/components/PatientBanner";
 import OrderSheet from "@/components/OrderSheet";
 import NoteDock from "@/components/NoteDock";
 import QuickPopover from "@/components/QuickPopover";
+import HubTakeover from "@/components/HubTakeover";
 
 /*
   CommandCenterSpine — upload #1: a wiring test harness, not the real UI.
@@ -165,7 +166,7 @@ export default function CommandCenterSpine() {
 
       {activeSurface === "orders" && <OrderSheet onClose={returnToBoard} />}
       {["triage", "labs", "imaging", "allergies", "vitals"].includes(activeSurface) && <QuickPopover kind={activeSurface} onClose={returnToBoard} />}
-      {activeSurface === "hub" && <SurfacePanel surface="hub" onClose={returnToBoard} />}
+      {activeSurface === "hub" && <HubTakeover onClose={returnToBoard} />}
 
       {paletteOpen && (
         <div style={S.palette}>

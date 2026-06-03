@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 /*
-  CommandCenterSpine - build 6: the popover set, complete.
+  CommandCenterSpine - build 7: every surface real.
 
   Build 1 wiring; build 2 banner + board; build 3 orders half-sheet; build 5
-  triage popover + note dock. Build 6 fills the rest of the popover tier off the
-  proven triage mold (PopoverShell): labs (l), imaging (i), allergies detail (a),
-  vitals trend (v), and patient info (p). Every keyboard surface is now real
-  except the one remaining tier: the h clinical-hub takeover. The banner, board,
-  keyboard contract, and focus guard are unchanged.
+  triage popover + note dock; build 6 completed the popover tier (labs, imaging,
+  allergies, vitals, patient). Build 7 adds the last tier - the clinical hub
+  takeover (h): a full-screen launcher into the decision hubs, the patient's
+  complaint-relevant hubs surfaced first, still summoned and dismissed with Esc
+  rather than navigated to. With this, all nine keys drive real surfaces. The
+  banner, board, keyboard contract, and focus guard are unchanged.
 
   NOTE: this is the last build that fits the single-file budget. The h takeover
   build is where surfaces move into their own component files.
@@ -1199,6 +1200,160 @@ function PatientSurface({ patient, depth, onClose }) {
   );
 }
 
+/* ---------------------------------------- clinical hub (the takeover tier) ----------------------------------------
+   A full-screen takeover that is still summoned and dismissed, never navigated
+   to: Esc returns to the board like every other surface. It is the launcher
+   into the decision hubs, with the ones relevant to this patient's complaint
+   surfaced first. Selecting a hub swaps the takeover's body to that hub (a stub
+   here) - in production the hub's tools render in this same container, so the
+   one-screen rule holds even for deep clinical work. */
+const HUBS = [
+  { id: "chestpain", name: "Chest Pain", cat: "Cardiac", mark: "CP", desc: "HEART score, ACS pathway, dispo" },
+  { id: "ecg", name: "ECG", cat: "Cardiac", mark: "EKG", desc: "Intervals, ischemia, tox patterns" },
+  { id: "cardiacrisk", name: "Cardiac Risk", cat: "Cardiac", mark: "CR", desc: "Risk scores and stratification" },
+  { id: "airway", name: "Airway / RSI", cat: "Resp", mark: "AW", desc: "RSI dosing, NIV, vent setup" },
+  { id: "sepsis", name: "Sepsis", cat: "Infectious", mark: "SEP", desc: "Bundle timer, lactate, antibiotics" },
+  { id: "id", name: "Infectious Dz", cat: "Infectious", mark: "ID", desc: "Empiric antibiotics by source" },
+  { id: "abdpain", name: "Abdominal Pain", cat: "Abdominal", mark: "AB", desc: "DDx, imaging, surgical flags" },
+  { id: "tox", name: "Toxicology", cat: "Tox", mark: "TOX", desc: "Antidotes, nomograms, decontam" },
+  { id: "neuro", name: "Neuro / Stroke", cat: "Neuro", mark: "NEU", desc: "BEFAST, tPA window, NIHSS" },
+  { id: "peds", name: "Pediatrics", cat: "Peds", mark: "PED", desc: "Weight-based dosing, peds vitals" },
+  { id: "ortho", name: "Orthopedics", cat: "MSK", mark: "ORT", desc: "Reduction, splinting, X-ray rules" },
+  { id: "electrolyte", name: "Electrolytes / ABG", cat: "Metabolic", mark: "LYT", desc: "Repletion, stepwise acid-base" },
+  { id: "labinterp", name: "Lab Interpreter", cat: "Diagnostics", mark: "LAB", desc: "Pattern-based lab read" },
+  { id: "imaginginterp", name: "Imaging Interpreter", cat: "Diagnostics", mark: "IMG", desc: "Read assist and follow-up" },
+  { id: "pocus", name: "POCUS", cat: "Procedures", mark: "US", desc: "Protocols and interpretation" },
+  { id: "emtala", name: "EMTALA", cat: "Compliance", mark: "LAW", desc: "Transfer and MSE compliance" },
+];
+
+const HUB_CAT_COLOR = {
+  Cardiac: T.coral, Resp: T.teal, Infectious: T.orange, Abdominal: T.gold,
+  Tox: T.orange, Neuro: T.purple, Peds: T.blue, MSK: T.gold,
+  Metabolic: T.teal, Diagnostics: T.purple, Procedures: T.teal, Compliance: T.dim,
+};
+
+const HUB_BY_ID = HUBS.reduce((m, h) => { m[h.id] = h; return m; }, {});
+
+/* Surface the hubs relevant to a chief complaint (the suggestHubs pattern). */
+function suggestHubs(cc) {
+  const c = (cc || "").toLowerCase();
+  const map = [
+    { kw: "chest", ids: ["chestpain", "ecg", "cardiacrisk"] },
+    { kw: "syncope", ids: ["ecg", "cardiacrisk", "neuro"] },
+    { kw: "abdominal", ids: ["abdpain", "pocus", "imaginginterp"] },
+    { kw: "renal", ids: ["abdpain", "imaginginterp", "pocus"] },
+    { kw: "fever", ids: ["peds", "id", "sepsis"] },
+    { kw: "sepsis", ids: ["sepsis", "id", "labinterp"] },
+    { kw: "weakness", ids: ["neuro", "electrolyte", "labinterp"] },
+    { kw: "asthma", ids: ["airway"] },
+    { kw: "ankle", ids: ["ortho", "imaginginterp"] },
+    { kw: "injury", ids: ["ortho", "imaginginterp"] },
+  ];
+  for (let i = 0; i < map.length; i++) {
+    if (c.indexOf(map[i].kw) >= 0) return map[i].ids;
+  }
+  return [];
+}
+
+function HubCard({ hub, onOpen, suggested }) {
+  const c = HUB_CAT_COLOR[hub.cat] || T.teal;
+  return (
+    <button
+      onClick={() => onOpen(hub.id)}
+      style={{
+        textAlign: "left",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        background: T.card,
+        border: "1px solid " + (suggested ? c + "66" : T.border),
+        borderRadius: 12,
+        padding: 13,
+        minHeight: 92,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+        <span style={{ fontFamily: T.mono, fontWeight: 700, fontSize: 11, color: c, background: c + "1f", border: "1px solid " + c + "55", borderRadius: 7, padding: "4px 7px", minWidth: 38, textAlign: "center" }}>
+          {hub.mark}
+        </span>
+        <span style={{ fontFamily: T.sans, fontWeight: 600, fontSize: 14, color: T.bright, flex: 1 }}>{hub.name}</span>
+      </div>
+      <span style={{ fontFamily: T.sans, fontSize: 12, color: T.dim, lineHeight: 1.45 }}>{hub.desc}</span>
+      <span style={{ fontFamily: T.mono, fontSize: 9, color: c, letterSpacing: "0.06em", marginTop: "auto" }}>{hub.cat.toUpperCase()}</span>
+    </button>
+  );
+}
+
+function HubTakeover({ patient, depth, onClose }) {
+  const [active, setActive] = useState(null);
+  const suggestedIds = patient ? suggestHubs(patient.cc) : [];
+  const suggested = suggestedIds.map((id) => HUB_BY_ID[id]).filter(Boolean);
+  const sheet = { ...tierStyle("takeover"), zIndex: 100 + depth };
+  const hub = active ? HUB_BY_ID[active] : null;
+  const c = hub ? (HUB_CAT_COLOR[hub.cat] || T.teal) : T.teal;
+
+  return (
+    <div style={sheet}>
+      {/* header */}
+      <div style={{ flexShrink: 0, padding: "14px 18px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 18, color: T.bright }}>Clinical Hub</span>
+        {patient ? (
+          <span style={{ fontFamily: T.mono, fontSize: 12, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {patient.name} / {patient.room} / {patient.cc}
+          </span>
+        ) : (
+          <span style={{ fontFamily: T.sans, fontSize: 13, color: T.dim }}>No patient selected</span>
+        )}
+        <button onClick={onClose} style={{ marginLeft: "auto", cursor: "pointer", background: "transparent", border: "1px solid " + T.border, borderRadius: 6, color: T.dim, fontFamily: T.mono, fontSize: 11, padding: "5px 10px" }}>
+          Esc
+        </button>
+      </div>
+
+      {/* body */}
+      {hub ? (
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", padding: 18 }}>
+          <button
+            onClick={() => setActive(null)}
+            style={{ alignSelf: "flex-start", cursor: "pointer", background: "transparent", border: "1px solid " + T.border, borderRadius: 7, color: T.dim, fontFamily: T.sans, fontSize: 12.5, padding: "6px 12px", marginBottom: 16 }}
+          >
+            Back to hubs
+          </button>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center" }}>
+            <span style={{ fontFamily: T.mono, fontWeight: 700, fontSize: 18, color: c, background: c + "1f", border: "1px solid " + c + "55", borderRadius: 12, padding: "12px 16px" }}>
+              {hub.mark}
+            </span>
+            <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 22, color: T.bright }}>{hub.name}</span>
+            <span style={{ fontFamily: T.sans, fontSize: 14, color: T.txt, maxWidth: 460, lineHeight: 1.6 }}>{hub.desc}</span>
+            <span style={{ fontFamily: T.sans, fontSize: 13, color: T.dim, maxWidth: 460, lineHeight: 1.6 }}>
+              In production the {hub.name} tools render right here, inside the takeover. Esc still returns you to the board - the hub is summoned, never a place you navigate away to.
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 20 }}>
+          {suggested.length > 0 && (
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.gold, letterSpacing: "0.08em", marginBottom: 10 }}>
+                SUGGESTED FOR {(patient && patient.cc ? patient.cc : "").toUpperCase()}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 10 }}>
+                {suggested.map((h) => <HubCard key={h.id} hub={h} onOpen={setActive} suggested />)}
+              </div>
+            </div>
+          )}
+          <div>
+            <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 10 }}>ALL HUBS</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 10 }}>
+              {HUBS.map((h) => <HubCard key={h.id} hub={h} onOpen={setActive} suggested={false} />)}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------------------------------------- footer hint (keycap legend) ---------------------------------------- */
 function HintBar() {
   const keys = ["o orders", "n note", "l labs", "i imaging", "a allergies", "h hub", "v vitals", "p patient", "t triage"];
@@ -1311,6 +1466,9 @@ export default function CommandCenterSpine() {
         }
         if (id === "patient") {
           return <PatientSurface key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
+        }
+        if (id === "hub") {
+          return <HubTakeover key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
         }
         return <SurfaceStub key={id + "-" + depth} id={id} patient={patient} depth={depth} onClose={close} />;
       })}

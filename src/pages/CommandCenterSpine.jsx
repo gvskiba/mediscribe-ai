@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import PatientBanner from "@/components/PatientBanner";
 import OrderSheet from "@/components/OrderSheet";
+import NoteDock from "@/components/NoteDock";
 
 /*
   CommandCenterSpine — upload #1: a wiring test harness, not the real UI.
@@ -159,7 +160,7 @@ export default function CommandCenterSpine() {
 
       {showBackdrop && <div style={S.overlayBackdrop} onClick={returnToBoard} />}
 
-      {noteOpen && <SurfacePanel surface="note" onClose={() => setNoteOpen(false)} />}
+      <NoteDock open={noteOpen} onClose={() => setNoteOpen(false)} />
 
       {activeSurface === "orders" && <OrderSheet onClose={returnToBoard} />}
       {activeSurface && activeSurface !== "orders" && <SurfacePanel surface={activeSurface} onClose={returnToBoard} />}

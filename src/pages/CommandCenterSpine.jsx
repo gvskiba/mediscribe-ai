@@ -54,8 +54,6 @@ const T = {
   mono: "'JetBrains Mono', monospace",
 };
 
-/* ---------------------------------------- surface contract (unchanged from build 1) ----------------------------------------
-   key -> surface id. Extend here; nothing else needs to change. */
 const SURFACE_KEYS = {
   o: "orders",
   n: "note",
@@ -68,7 +66,6 @@ const SURFACE_KEYS = {
   t: "triage",
 };
 
-/* How each surface renders, so the stub can label its tier. */
 const SURFACE_META = {
   orders: { label: "Orders", tier: "half-sheet" },
   note: { label: "Note", tier: "dock" },
@@ -92,11 +89,6 @@ function isEditable(el) {
   );
 }
 
-/* ---------------------------------------- keyboard layer (the rule, enforced in code) ----------------------------------------
-   Bare single keys summon. Esc always heads back to the board, but
-   only after the focus guard has had its turn. Arrow Up/Down move the
-   board selection. The one modifier combo is the palette (Cmd/Ctrl+K),
-   handled with (metaKey || ctrlKey) so both OSes work with no branch. */
 function useCommandKeys({ onSurface, onEscape, onPalette, onNav, enabled = true }) {
   const cb = useRef({ onSurface, onEscape, onPalette, onNav });
   cb.current = { onSurface, onEscape, onPalette, onNav };
@@ -104,18 +96,15 @@ function useCommandKeys({ onSurface, onEscape, onPalette, onNav, enabled = true 
   useEffect(() => {
     if (!enabled) return undefined;
     function onKeyDown(e) {
-      // Command palette: the one cross-platform combo.
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         if (cb.current.onPalette) cb.current.onPalette();
         return;
       }
-      // Escape: always offered; the handler protects typing first.
       if (e.key === "Escape") {
         if (cb.current.onEscape) cb.current.onEscape(e);
         return;
       }
-      // From here on, bare keys only. Never fire while typing or modified.
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (isEditable(document.activeElement)) return;
 
@@ -136,7 +125,6 @@ function useCommandKeys({ onSurface, onEscape, onPalette, onNav, enabled = true 
   }, [enabled]);
 }
 
-/* ---------------------------------------- sample data (config, not entities - swapped for Patient.list later) */
 const COLUMNS = [
   { id: "waiting", title: "Waiting", sub: "To be seen" },
   { id: "active", title: "In Progress", sub: "Active workup" },
@@ -163,10 +151,8 @@ const PATIENTS = [
   { id: "p9", room: "H2", name: "Im, Soo-jin", age: 52, sex: "F", mrn: "0061004", cc: "Renal colic", esi: 3, col: "dispo", status: "DC", wait: 96, allergies: [] },
 ];
 
-/* Flattened, column-ordered list - drives arrow-key selection order. */
 const ORDER = COLUMNS.flatMap((c) => PATIENTS.filter((p) => p.col === c.id).map((p) => p.id));
 
-/* Order catalog for the orders surface (config; becomes an entity/order set later). */
 const ORDER_CATALOG = [
   { id: "cbc", cat: "Lab", label: "CBC with differential" },
   { id: "bmp", cat: "Lab", label: "Basic metabolic panel" },
@@ -202,7 +188,6 @@ const ORDER_CATALOG = [
 const CAT_COLOR = { Lab: T.teal, Imaging: T.purple, Med: T.gold, Nursing: T.blue };
 const CATALOG_BY_ID = ORDER_CATALOG.reduce((m, o) => { m[o.id] = o; return m; }, {});
 
-/* Nurse triage notes, keyed by patient id (read-only surface content). */
 const TRIAGE_BY_ID = {
   p1: { arrival: "Ambulatory", arrTime: "13:42", triTime: "13:51", nurse: "RN K. Pham", ccQuote: "Pressure in my chest, came on an hour ago", vitals: { hr: 98, bp: "158/92", rr: 20, spo2: 96, temp: 98.4, pain: 7 }, narrative: "Substernal pressure radiating to left arm, onset ~1 hr while mowing. Diaphoretic on arrival. Denies SOB at rest.", screens: [{ label: "Sepsis screen", result: "Negative" }, { label: "Stroke (BEFAST)", result: "Negative" }, { label: "Fall risk", result: "Low" }] },
   p2: { arrival: "EMS", arrTime: "14:05", triTime: "14:09", nurse: "RN D. Cole", ccQuote: "I passed out in the kitchen", vitals: { hr: 62, bp: "104/64", rr: 16, spo2: 98, temp: 98.1, pain: 0 }, narrative: "Witnessed syncope at home with brief LOC, no head strike per spouse. Alert and oriented on arrival.", screens: [{ label: "Fall risk", result: "High", flag: true }, { label: "Stroke (BEFAST)", result: "Negative" }, { label: "Cardiac monitor", result: "Applied" }] },
@@ -215,7 +200,6 @@ const TRIAGE_BY_ID = {
   p9: { arrival: "Ambulatory", arrTime: "12:40", triTime: "12:58", nurse: "RN J. Ortiz", ccQuote: "Worst flank pain of my life", vitals: { hr: 96, bp: "138/86", rr: 18, spo2: 99, temp: 98.7, pain: 9 }, narrative: "Left flank pain radiating to groin with gross hematuria. Prior history of kidney stones. Unable to find comfortable position.", screens: [{ label: "Sepsis screen", result: "Negative" }, { label: "Fall risk", result: "Low" }] },
 };
 
-/* Triage vital thresholds -> abnormal flag (marked with color AND a trailing * so it never relies on color alone). */
 function vitalFlag(key, v) {
   if (key === "hr") return v > 100 || v < 60;
   if (key === "rr") return v > 20 || v < 10;
@@ -225,7 +209,6 @@ function vitalFlag(key, v) {
   return false;
 }
 
-/* Resulted labs, keyed by patient id. flag is "H", "L", or "" (text, colorblind-safe). */
 const LABS_BY_ID = {
   p1: [
     { name: "Troponin hs", value: "18", unit: "ng/L", ref: "<14", flag: "H" },
@@ -250,7 +233,6 @@ const LABS_BY_ID = {
   ],
 };
 
-/* Imaging studies, keyed by patient id. status is Final / Prelim / Pending. */
 const IMAGING_BY_ID = {
   p1: [{ study: "ECG, 12-lead", status: "Final", impression: "Sinus rhythm, no acute ST changes." }, { study: "Chest X-ray, portable", status: "Prelim", impression: "No acute cardiopulmonary process." }],
   p3: [{ study: "X-ray, right ankle", status: "Final", impression: "No acute fracture. Soft tissue swelling laterally." }],
@@ -258,7 +240,6 @@ const IMAGING_BY_ID = {
   p8: [{ study: "Chest X-ray, portable", status: "Final", impression: "Right lower lobe opacity, concerning for pneumonia." }],
 };
 
-/* Allergen detail lookup (reaction + severity), reused across patients. */
 const ALLERGY_DETAIL = {
   Penicillin: { reaction: "Hives", severity: "Moderate" },
   Aspirin: { reaction: "Angioedema", severity: "Severe" },
@@ -270,7 +251,18 @@ const ALLERGY_DETAIL = {
   Vancomycin: { reaction: "Red man syndrome", severity: "Moderate" },
 };
 
-/* Synthesize a short, plausible trend from a current numeric value (no per-patient trend data). */
+const PATIENT_CARE_BY_ID = {
+  p1: { codeStatus: "Full code", pcp: "Dr. Ramirez", insurer: "Blue Cross Blue Shield", contact: "(555) 123-4567" },
+  p2: { codeStatus: "Full code", pcp: "Dr. Johnson", insurer: "Aetna", contact: "(555) 234-5678" },
+  p3: { codeStatus: "Full code", pcp: "Dr. Williams", insurer: "United Healthcare", contact: "(555) 345-6789" },
+  p4: { codeStatus: "Full code", pcp: "Dr. Chen", insurer: "Kaiser Permanente", contact: "(555) 456-7890" },
+  p5: { codeStatus: "DNR", pcp: "Dr. Martinez", insurer: "Humana", contact: "(555) 567-8901" },
+  p6: { codeStatus: "Full code", pcp: "Dr. Anderson", insurer: "Cigna", contact: "(555) 678-9012" },
+  p7: { codeStatus: "Full code", pcp: "Dr. Taylor", insurer: "Blue Shield", contact: "(555) 789-0123" },
+  p8: { codeStatus: "DNR", pcp: "Dr. Brown", insurer: "Medicare Advantage", contact: "(555) 890-1234" },
+  p9: { codeStatus: "Full code", pcp: "Dr. Singh", insurer: "Aetna", contact: "(555) 901-2345" },
+};
+
 function trendFrom(cur) {
   const n = typeof cur === "number" ? cur : parseFloat(cur);
   if (isNaN(n)) return [cur, cur, cur];
@@ -394,7 +386,6 @@ function PatientCard({ p, selected, onSelect }) {
   );
 }
 
-/* ---------------------------------------- banner: the always-on layer (never summoned, never dismissed) */
 function Banner({ patient, clock }) {
   return (
     <header
@@ -410,7 +401,6 @@ function Banner({ patient, clock }) {
         zIndex: 50,
       }}
     >
-      {/* mark + wordmark */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
         <div
           style={{
@@ -439,7 +429,6 @@ function Banner({ patient, clock }) {
 
       <div style={{ width: 1, height: 34, background: T.border, flexShrink: 0 }} />
 
-      {/* selected patient identity */}
       <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 12 }}>
         {patient ? (
           <>
@@ -465,7 +454,6 @@ function Banner({ patient, clock }) {
         )}
       </div>
 
-      {/* always-visible allergy chip - the Epic fix lives here */}
       {patient && <AllergyChip allergies={patient.allergies} />}
 
       <span style={{ fontFamily: T.mono, fontSize: 12, color: T.dim, flexShrink: 0, marginLeft: 4 }}>{clock}</span>
@@ -473,7 +461,6 @@ function Banner({ patient, clock }) {
   );
 }
 
-/* ---------------------------------------- board: three columns of cards ---------------------------------------- */
 function Board({ selectedId, onSelect }) {
   return (
     <main style={{ flex: 1, minHeight: 0, display: "flex", gap: 12, padding: 14, overflow: "hidden" }}>
@@ -519,13 +506,11 @@ function Board({ selectedId, onSelect }) {
   );
 }
 
-/* ---------------------------------------- surface stub (styled by tier; real content is a later build) */
 function tierStyle(tier) {
   const base = { position: "fixed", background: T.card, border: "1px solid " + T.borderHi, boxShadow: "0 20px 60px rgba(0,0,0,0.55)", display: "flex", flexDirection: "column" };
   if (tier === "half-sheet") return { ...base, top: 0, right: 0, bottom: 0, width: "min(440px, 42vw)", borderRadius: "14px 0 0 14px" };
   if (tier === "dock") return { ...base, left: 0, right: 0, bottom: 0, height: "42vh", borderRadius: "14px 14px 0 0" };
   if (tier === "takeover") return { ...base, inset: 24, borderRadius: 16 };
-  // popover
   return { ...base, top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "min(420px, 80vw)", borderRadius: 14 };
 }
 
@@ -552,14 +537,6 @@ function SurfaceStub({ id, patient, depth, onClose }) {
   );
 }
 
-/* ---------------------------------------- orders surface (first real surface) ----------------------------------------
-   A right half-sheet that summons over the frame. Search the catalog, toggle
-   orders into a pending tray, then Sign - which closes the sheet so the loop
-   ends on the board. Self-contained: lift this verbatim into its own component
-   file later. Keyboard: ArrowUp/Down move the highlight, Enter toggles the
-   highlighted order, Cmd/Ctrl+Enter signs. The global hook ignores arrows while
-   a surface is open, so there is no collision; typing in the search field is
-   protected by the same focus guard the board uses. */
 function OrdersSurface({ patient, depth, onClose }) {
   const [query, setQuery] = useState("");
   const [pending, setPending] = useState([]);
@@ -592,8 +569,6 @@ function OrdersSurface({ patient, depth, onClose }) {
     return () => clearTimeout(t);
   }, [signed, onClose]);
 
-  // local keyboard for the sheet; mirrors current values through a ref so the
-  // window listener only needs to mount once.
   const st = useRef({ filtered, hi, toggle, sign });
   st.current = { filtered, hi, toggle, sign };
   useEffect(() => {
@@ -629,7 +604,6 @@ function OrdersSurface({ patient, depth, onClose }) {
 
   return (
     <div style={sheet}>
-      {/* header */}
       <div style={{ flexShrink: 0, padding: "14px 16px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 16, color: T.bright }}>Orders</span>
         <span style={{ fontFamily: T.mono, fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -640,7 +614,6 @@ function OrdersSurface({ patient, depth, onClose }) {
         </button>
       </div>
 
-      {/* search */}
       <div style={{ flexShrink: 0, padding: "10px 14px", borderBottom: "1px solid " + T.border }}>
         <input
           type="text"
@@ -662,7 +635,6 @@ function OrdersSurface({ patient, depth, onClose }) {
         />
       </div>
 
-      {/* catalog */}
       <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "8px 10px" }}>
         {filtered.length === 0 && (
           <div style={{ fontFamily: T.sans, fontSize: 13, color: T.dim, padding: 16, textAlign: "center" }}>No matching orders.</div>
@@ -704,7 +676,6 @@ function OrdersSurface({ patient, depth, onClose }) {
         })}
       </div>
 
-      {/* pending tray */}
       {pending.length > 0 && (
         <div style={{ flexShrink: 0, borderTop: "1px solid " + T.border, padding: "10px 12px", maxHeight: "26vh", overflow: "auto" }}>
           <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 7 }}>
@@ -727,7 +698,6 @@ function OrdersSurface({ patient, depth, onClose }) {
         </div>
       )}
 
-      {/* sign bar */}
       <div style={{ flexShrink: 0, borderTop: "1px solid " + T.border, padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ fontFamily: T.mono, fontSize: 10.5, color: T.faint }}>Cmd / Ctrl + Enter</span>
         <button
@@ -750,7 +720,6 @@ function OrdersSurface({ patient, depth, onClose }) {
         </button>
       </div>
 
-      {/* signed confirmation, then auto-return to the board */}
       {signed && (
         <div style={{ position: "absolute", inset: 0, background: "rgba(5,15,30,0.92)", borderRadius: "14px 0 0 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <div style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 20, color: T.teal }}>Signed {pending.length} order{pending.length === 1 ? "" : "s"}</div>
@@ -761,14 +730,6 @@ function OrdersSurface({ patient, depth, onClose }) {
   );
 }
 
-/* ---------------------------------------- note dock (first real dock) ----------------------------------------
-   A bottom dock that summons over the lower ~42vh while the board stays visible
-   above it - the point of the dock tier: you keep the board in view while you
-   document. APSO section tabs, a per-section editor, and quick-phrase chips.
-   Save shows a brief confirmation, then closes back to the board. The AI draft
-   control is a stub here; it is where InvokeLLM plugs in once PHI-safe. Editing
-   happens in a real textarea, so the global focus guard protects it: letters do
-   not summon, and the first Esc blurs before the second Esc closes the dock. */
 const APSO = [
   { id: "A", label: "Assessment" },
   { id: "P", label: "Plan" },
@@ -813,7 +774,6 @@ function NoteDock({ patient, depth, onClose }) {
 
   return (
     <div style={sheet}>
-      {/* header: title, patient, APSO tabs, count, actions */}
       <div style={{ flexShrink: 0, padding: "11px 14px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 16, color: T.bright }}>Note</span>
         <span style={{ fontFamily: T.mono, fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
@@ -865,7 +825,6 @@ function NoteDock({ patient, depth, onClose }) {
         </button>
       </div>
 
-      {/* body: editor + quick phrases */}
       <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 12, padding: 12 }}>
         <textarea
           value={body}
@@ -907,7 +866,6 @@ function NoteDock({ patient, depth, onClose }) {
         </div>
       </div>
 
-      {/* saved confirmation */}
       {saved && (
         <div style={{ position: "absolute", inset: 0, background: "rgba(5,15,30,0.92)", borderRadius: "14px 14px 0 0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <div style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 20, color: T.teal }}>Draft saved</div>
@@ -918,11 +876,6 @@ function NoteDock({ patient, depth, onClose }) {
   );
 }
 
-/* ---------------------------------------- triage surface (first real popover) ----------------------------------------
-   A centered popover that surfaces the nurse triage note over the board, then
-   dismisses with Esc - the read you do without losing your place. Read-only by
-   design. Self-contained and lift-out-ready; the same shape (header + scrollable
-   body in the popover tier) is the mold labs / imaging / vitals / patient reuse. */
 function TriageVital({ label, value, unit, flag }) {
   return (
     <div style={{ background: T.bg, border: "1px solid " + (flag ? "rgba(255,159,67,0.45)" : T.border), borderRadius: 8, padding: "7px 9px" }}>
@@ -940,7 +893,6 @@ function TriageSurface({ patient, depth, onClose }) {
 
   return (
     <div style={sheet}>
-      {/* header */}
       <div style={{ flexShrink: 0, padding: "14px 16px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 16, color: T.bright }}>Triage Note</span>
         <span style={{ fontFamily: T.mono, fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -951,7 +903,6 @@ function TriageSurface({ patient, depth, onClose }) {
         </button>
       </div>
 
-      {/* body */}
       <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: 16 }}>
         {!rec ? (
           <div style={{ fontFamily: T.sans, fontSize: 13, color: T.dim, textAlign: "center", padding: 20 }}>
@@ -959,7 +910,6 @@ function TriageSurface({ patient, depth, onClose }) {
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {/* arrival line */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", fontFamily: T.mono, fontSize: 11, color: T.dim }}>
               <span>{rec.arrival}</span>
               <span>Arr {rec.arrTime}</span>
@@ -967,7 +917,6 @@ function TriageSurface({ patient, depth, onClose }) {
               <span>{rec.nurse}</span>
             </div>
 
-            {/* chief complaint in patient words */}
             <div>
               <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 5 }}>STATED COMPLAINT</div>
               <div style={{ fontFamily: T.sans, fontStyle: "italic", fontSize: 14, color: T.bright, lineHeight: 1.5, borderLeft: "2px solid " + T.gold, paddingLeft: 10 }}>
@@ -975,7 +924,6 @@ function TriageSurface({ patient, depth, onClose }) {
               </div>
             </div>
 
-            {/* triage vitals */}
             <div>
               <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 7 }}>TRIAGE VITALS</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
@@ -988,13 +936,11 @@ function TriageSurface({ patient, depth, onClose }) {
               </div>
             </div>
 
-            {/* narrative */}
             <div>
               <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 5 }}>TRIAGE NARRATIVE</div>
               <div style={{ fontFamily: T.sans, fontSize: 13.5, color: T.txt, lineHeight: 1.6 }}>{rec.narrative}</div>
             </div>
 
-            {/* screens */}
             <div>
               <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 7 }}>SCREENS</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1015,11 +961,6 @@ function TriageSurface({ patient, depth, onClose }) {
   );
 }
 
-/* ---------------------------------------- popover surfaces (the proven mold) ----------------------------------------
-   PopoverShell is the literal mold triage established: popover-tier container,
-   a standard header (title + patient + Esc), and a scrollable body slot. Labs,
-   Imaging, Allergies, Vitals, and Patient all pour into it. Each is read-only
-   and self-contained / lift-out-ready. */
 function PopoverShell({ title, patient, depth, onClose, children, width }) {
   const sheet = { ...tierStyle("popover"), zIndex: 100 + depth, width: width || "min(460px, 86vw)", maxHeight: "82vh" };
   return (
@@ -1173,7 +1114,9 @@ function PatientSurface({ patient, depth, onClose }) {
     );
   }
   const a = ACUITY[patient.esi] || ACUITY[3];
-  const fields = [
+  const care = PATIENT_CARE_BY_ID[patient.id] || {};
+  const isDNR = care.codeStatus && care.codeStatus.indexOf("DNR") >= 0;
+  const demogFields = [
     ["MRN", patient.mrn],
     ["Age / Sex", patient.age + " " + patient.sex],
     ["Room", patient.room],
@@ -1182,16 +1125,30 @@ function PatientSurface({ patient, depth, onClose }) {
     ["Status", patient.status],
     ["Time in dept", patient.wait + " min"],
   ];
+  const careFields = [
+    ["Code status", care.codeStatus || "Not on file", isDNR],
+    ["PCP", care.pcp || "Not on file", false],
+    ["Insurer", care.insurer || "Not on file", false],
+    ["Emergency contact", care.contact || "Not on file", false],
+  ];
   return (
     <PopoverShell title="Patient info" patient={patient} depth={depth} onClose={onClose}>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {fields.map(([k, val]) => (
+        <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 2 }}>DEMOGRAPHICS</div>
+        {demogFields.map(([k, val]) => (
           <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, background: T.bg, border: "1px solid " + T.border, borderRadius: 8, padding: "8px 11px" }}>
-            <span style={{ fontFamily: T.mono, fontSize: 10.5, color: T.dim, letterSpacing: "0.05em", width: 120 }}>{k}</span>
+            <span style={{ fontFamily: T.mono, fontSize: 10.5, color: T.dim, letterSpacing: "0.05em", width: 120, flexShrink: 0 }}>{k}</span>
             <span style={{ fontFamily: T.sans, fontSize: 13.5, color: T.bright, flex: 1 }}>{val}</span>
           </div>
         ))}
-        <div style={{ marginTop: 4 }}>
+        <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginTop: 8, marginBottom: 2 }}>CARE</div>
+        {careFields.map(([k, val, flagRow]) => (
+          <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, background: flagRow ? "rgba(255,68,68,0.06)" : T.bg, border: "1px solid " + (flagRow ? "rgba(255,107,107,0.40)" : T.border), borderRadius: 8, padding: "8px 11px" }}>
+            <span style={{ fontFamily: T.mono, fontSize: 10.5, color: T.dim, letterSpacing: "0.05em", width: 120, flexShrink: 0 }}>{k}</span>
+            <span style={{ fontFamily: T.sans, fontSize: 13.5, color: flagRow ? T.coral : T.bright, flex: 1, fontWeight: flagRow ? 700 : 400 }}>{val}</span>
+          </div>
+        ))}
+        <div style={{ marginTop: 6 }}>
           <AllergyChip allergies={patient.allergies} />
         </div>
       </div>
@@ -1199,7 +1156,6 @@ function PatientSurface({ patient, depth, onClose }) {
   );
 }
 
-/* ---------------------------------------- footer hint (keycap legend) ---------------------------------------- */
 function HintBar() {
   const keys = ["o orders", "n note", "l labs", "i imaging", "a allergies", "h hub", "v vitals", "p patient", "t triage"];
   return (
@@ -1225,7 +1181,6 @@ function HintBar() {
   );
 }
 
-/* ---------------------------------------- page ---------------------------------------- */
 export default function CommandCenterSpine() {
   const [selectedId, setSelectedId] = useState(ORDER[0] || null);
   const [stack, setStack] = useState([]);
@@ -1251,7 +1206,7 @@ export default function CommandCenterSpine() {
   }, []);
 
   const navSelect = useCallback((dir) => {
-    if (stack.length > 0) return; // arrows drive board only when no surface is up
+    if (stack.length > 0) return;
     setSelectedId((cur) => {
       const i = ORDER.indexOf(cur);
       const next = i < 0 ? 0 : Math.max(0, Math.min(ORDER.length - 1, i + dir));
@@ -1262,14 +1217,14 @@ export default function CommandCenterSpine() {
   const escape = useCallback(() => {
     const el = typeof document !== "undefined" ? document.activeElement : null;
     if (isEditable(el)) {
-      el.blur(); // focus guard: first Esc keeps your place in a field
+      el.blur();
       return;
     }
     if (palette) {
       setPalette(false);
       return;
     }
-    setStack((s) => s.slice(0, -1)); // peel one layer back toward the board
+    setStack((s) => s.slice(0, -1));
   }, [palette]);
 
   useCommandKeys({
@@ -1285,7 +1240,6 @@ export default function CommandCenterSpine() {
       <Board selectedId={selectedId} onSelect={setSelectedId} />
       <HintBar />
 
-      {/* summoned surfaces overlay the frame; banner/board stay put underneath */}
       {stack.map((id, depth) => {
         const close = () => setStack((s) => s.filter((_, idx) => idx !== depth));
         if (id === "orders") {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import PatientBanner from "@/components/PatientBanner";
 
 /*
   CommandCenterSpine — upload #1: a wiring test harness, not the real UI.
@@ -143,13 +144,7 @@ export default function CommandCenterSpine() {
 
   return (
     <div style={S.shell}>
-      <div style={S.banner}>
-        <strong>DOE, JANE</strong>
-        <span style={S.glance}>54F . MRN 0042318</span>
-        <span style={S.chip}>PCN . Contrast . Codeine</span>
-        <span style={S.glance}>BP 148/92 . HR 104 . SpO2 96%</span>
-        <span style={{ marginLeft: "auto", ...S.glance }}>Cmd/Ctrl+K palette</span>
-      </div>
+      <PatientBanner embedded onOpenAllergies={() => setActiveSurface("allergies")} onOpenVitals={() => setActiveSurface("vitals")} />
 
       <div style={S.board}>
         <div style={{ fontSize: 18 }}>CommandCenter board (placeholder)</div>

@@ -1,143 +1,140 @@
-// ── Order Catalog ─────────────────────────────────────────────────────────────
-// Single source of truth for SIMPLE orders, DRUGS, buildBlock, AMAP, etc.
-// Imported by EDOrderHub and any component that needs catalog data.
+// orderCatalog.js — single source of truth for the ED order + drug catalog.
+// Plain JavaScript module (no React, no JSX). Consumed by:
+//   • EDOrderHub.jsx              (composer + queue)
+//   • CommandCenter OrdersTab     (in-board order entry)  → replaces ROC_INLINE
+//   • CommandCenter RapidOrderDrawer (board rapid entry)  → replaces ROC
+// Import path convention: "@/components/orderCatalog" (match across all consumers).
+//
+// IMPORTANT — clinical data integrity:
+// Do NOT re-type the dose strings. The SIMPLE and DRUGS arrays below are paste
+// slots. Move them VERBATIM out of your already-tested EDOrderHub.jsx so no
+// weight-based dose math is re-keyed by hand.
 
-// ── Internal helpers ──────────────────────────────────────────────────────────
-export const BAR='━'.repeat(46);
-export const ts=()=>{const d=new Date();return`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
-const pad=(s,n=12)=>s.padEnd(n,' ');
-const bline=(k,v)=>`${pad(k+':')} ${v}`;
+// ── Text-builder helpers (order text / CPOE bridge) ─────────────────────────
+// These back every drug scenario's build() function. Lakonyx-branded footer.
+const BAR = "\u2501".repeat(46);
+const ts = () => {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+export const fmt = (n) => Math.round(n).toLocaleString();
+const pad = (s, n = 12) => s.padEnd(n, " ");
+const bline = (k, v) => `${pad(k + ":")} ${v}`;
+export const buildBlock = (name, rows, note) => {
+  const body = rows.map(([k, v]) => bline(k, v)).join("\n");
+  return `${BAR}\n${body}${note ? `\n${BAR}\n\u26A0  ${note}` : ""}\n${BAR}\n[Lakonyx Order Generator \u00B7 ${ts()}]`;
+};
 
-// ── Exported helpers ──────────────────────────────────────────────────────────
-export const fmt=n=>Math.round(n).toLocaleString();
-export const buildBlock=(name,rows,note)=>{const body=rows.map(([k,v])=>bline(k,v)).join('\n');return`${BAR}\n${body}${note?`\n${BAR}\n⚠  ${note}`:''}\n${BAR}\n[Notrya · ${ts()}]`;};
+// ── Allergy map (labels only — no dose math, safe to define here) ───────────
+export const AMAP = {
+  contrast: { name: "Iodinated Contrast", sev: "Moderate", reaction: "Urticaria" },
+  codeine:  { name: "Codeine",            sev: "Mild",     reaction: "Nausea/Vomiting" },
+  pcn:      { name: "Penicillin",         sev: "SEVERE",   reaction: "Anaphylaxis" },
+};
+export const getAllergyWarn = (o) => {
+  if (o && o.alert && AMAP[o.alert]) return AMAP[o.alert];
+  if (o && o.contrast && AMAP.contrast) return AMAP.contrast;
+  return null;
+};
 
-// ── Allergy map ───────────────────────────────────────────────────────────────
-export const AMAP={contrast:{name:'Iodinated Contrast',sev:'Moderate',reaction:'Urticaria'},codeine:{name:'Codeine',sev:'Mild',reaction:'Nausea/Vomiting'},pcn:{name:'Penicillin',sev:'SEVERE',reaction:'Anaphylaxis'}};
-export function getAllergyWarn(o){if(o.alert&&AMAP[o.alert])return AMAP[o.alert];if(o.contrast&&AMAP.contrast)return AMAP.contrast;return null;}
+// ── Category meta (medication catalog grouping) ─────────────────────────────
+export const CAT_META = {
+  cardiac:  { label: "Cardiac",                    color: "#ff6b6b" },
+  rhythm:   { label: "Arrhythmia",                 color: "#f5c842" },
+  pressors: { label: "Vasopressors",               color: "#ff9f43" },
+  abx:      { label: "Antibiotics",                color: "#00e5c0" },
+  sedation: { label: "RSI / Sedation",             color: "#9b6dff" },
+  pain:     { label: "Analgesia",                  color: "#3b9eff" },
+  psych:    { label: "Psych / Behavioral Health",  color: "#9b6dff" },
+  support:  { label: "Supportive",                 color: "#3dffa0" },
+};
 
-// ── Non-medication orders ─────────────────────────────────────────────────────
-export const SIMPLE=[
-  {id:'l_trop',cat:'labs',sub:'Cardiac',icon:'❤️',name:'Troponin-I (High Sensitivity)',detail:'Serial q3h · NSTEMI protocol',meta:'~30 min',priority:'STAT',alert:null,contrast:false},
-  {id:'l_bnp',cat:'labs',sub:'Cardiac',icon:'❤️',name:'BNP (B-Natriuretic Peptide)',detail:'Heart failure marker',meta:'~45 min',priority:'STAT',alert:null,contrast:false},
-  {id:'l_ckmb',cat:'labs',sub:'Cardiac',icon:'❤️',name:'CK-MB',detail:'Cardiac isoenzyme',meta:'~45 min',priority:'URGENT',alert:null,contrast:false},
-  {id:'l_bmp',cat:'labs',sub:'Metabolic',icon:'🧪',name:'BMP (Basic Metabolic Panel)',detail:'Na, K, Cl, CO₂, BUN, Cr, Glu',meta:'~30 min',priority:'STAT',alert:null,contrast:false},
-  {id:'l_cmp',cat:'labs',sub:'Metabolic',icon:'🧪',name:'CMP (Comprehensive Metabolic)',detail:'Full metabolic + LFTs',meta:'~45 min',priority:'ROUTINE',alert:null,contrast:false},
-  {id:'l_mg',cat:'labs',sub:'Metabolic',icon:'🧪',name:'Magnesium (Serum)',detail:'Electrolyte monitoring',meta:'~30 min',priority:'ROUTINE',alert:null,contrast:false},
-  {id:'l_lac',cat:'labs',sub:'Metabolic',icon:'🧪',name:'Lactate (Serum)',detail:'Perfusion / shock marker',meta:'~25 min',priority:'URGENT',alert:null,contrast:false},
-  {id:'l_a1c',cat:'labs',sub:'Metabolic',icon:'🩸',name:'HbA1c',detail:'Diabetes monitoring',meta:'~2 hr',priority:'ROUTINE',alert:null,contrast:false},
-  {id:'l_bhcg',cat:'labs',sub:'Metabolic',icon:'🩸',name:'β-hCG (Quantitative)',detail:'Pregnancy test',meta:'~45 min',priority:'STAT',alert:null,contrast:false},
-  {id:'l_ua',cat:'labs',sub:'Metabolic',icon:'🧪',name:'Urinalysis + Culture',detail:'UTI, pyelo, renal eval',meta:'~30 min / 48h Cx',priority:'ROUTINE',alert:null,contrast:false},
-  {id:'l_etoh',cat:'labs',sub:'Tox/Psych',icon:'🧪',name:'Ethanol Level (Serum)',detail:'Quantitative ETOH · toxicology',meta:'~45 min',priority:'STAT',alert:null,contrast:false},
-  {id:'l_utox',cat:'labs',sub:'Tox/Psych',icon:'🧪',name:'Urine Drug Screen (Comprehensive)',detail:'Multi-panel UDS · immunoassay',meta:'~60 min',priority:'URGENT',alert:null,contrast:false},
-  {id:'l_tsh',cat:'labs',sub:'Tox/Psych',icon:'🧪',name:'TSH (Thyroid Stimulating Hormone)',detail:'Thyroid function — AMS, agitation workup',meta:'~2 hr',priority:'ROUTINE',alert:null,contrast:false},
-  {id:'l_cbc',cat:'labs',sub:'Hematology',icon:'🩸',name:'CBC with Differential',detail:'Complete blood count + diff',meta:'~30 min',priority:'STAT',alert:null,contrast:false},
-  {id:'l_coag',cat:'labs',sub:'Hematology',icon:'🩸',name:'PT / INR / PTT',detail:'PTT goal 60–100 on heparin',meta:'~30 min',priority:'STAT',alert:null,contrast:false},
-  {id:'l_type',cat:'labs',sub:'Hematology',icon:'🩸',name:'Type & Screen',detail:'Blood bank · pre-procedure',meta:'Blood Bank',priority:'URGENT',alert:null,contrast:false},
-  {id:'i_cxr',cat:'imaging',sub:'X-Ray',icon:'🫁',name:'Chest X-Ray PA / Lateral',detail:'Cardiomegaly, pulm edema, effusion',meta:'XR · ~15 min',priority:'STAT',alert:null,contrast:false},
-  {id:'i_tte',cat:'imaging',sub:'Echo',icon:'❤️',name:'Echocardiogram (TTE)',detail:'LV function, wall motion, EF',meta:'Echo · ~45 min',priority:'URGENT',alert:null,contrast:false},
-  {id:'i_ctpe',cat:'imaging',sub:'CT',icon:'🩻',name:'CT Pulmonary Angiography',detail:'R/O pulmonary embolism',meta:'CT W · ~30 min',priority:'STAT',alert:'contrast',contrast:true},
-  {id:'i_ctca',cat:'imaging',sub:'CT',icon:'🩻',name:'CT Coronary Angiography',detail:'Non-invasive coronary imaging',meta:'CT W · ~45 min',priority:'URGENT',alert:'contrast',contrast:true},
-  {id:'i_cthead',cat:'imaging',sub:'CT',icon:'🩻',name:'CT Head (Non-Contrast)',detail:'R/O ICH, stroke, mass',meta:'CT · ~20 min',priority:'STAT',alert:null,contrast:false},
-  {id:'i_ctabd',cat:'imaging',sub:'CT',icon:'🩻',name:'CT Abdomen / Pelvis',detail:'Acute abdomen, appy, diverticulitis',meta:'CT W/WO · ~30 min',priority:'URGENT',alert:'contrast',contrast:true},
-  {id:'p_ecg',cat:'procedures',sub:'Cardiac',icon:'⚡',name:'12-Lead ECG',detail:'ST changes, rhythm eval',meta:'~5 min · Bedside',priority:'STAT',alert:null,contrast:false},
-  {id:'p_ecg_s',cat:'procedures',sub:'Cardiac',icon:'⚡',name:'Serial 12-Lead ECG (q4h × 3)',detail:'NSTEMI monitoring protocol',meta:'~5 min each',priority:'URGENT',alert:null,contrast:false},
-  {id:'p_tele',cat:'procedures',sub:'Monitoring',icon:'📡',name:'Continuous Cardiac Telemetry',detail:'Real-time arrhythmia monitoring',meta:'Ongoing',priority:'STAT',alert:null,contrast:false},
-  {id:'p_o2',cat:'procedures',sub:'Monitoring',icon:'💨',name:'Supplemental O₂ — 2L NC',detail:'SpO₂ target ≥ 94%',meta:'Ongoing',priority:'STAT',alert:null,contrast:false},
-  {id:'p_iv2',cat:'procedures',sub:'Access',icon:'💉',name:'Peripheral IV × 2 Large Bore',detail:'18G+ — antecubital preferred',meta:'Bedside',priority:'STAT',alert:null,contrast:false},
-  {id:'p_1to1',cat:'procedures',sub:'Safety',icon:'🛡️',name:'1:1 Nursing Observation',detail:'Continuous monitoring — behavioral health',meta:'Ongoing',priority:'STAT',alert:null,contrast:false},
-  {id:'p_rest',cat:'procedures',sub:'Safety',icon:'🔒',name:'Soft Restraints (4-point)',detail:'PRN agitation — document Q15 min',meta:'PRN · Ongoing',priority:'URGENT',alert:null,contrast:false},
-  {id:'c_cards',cat:'consults',sub:'Medical',icon:'🩺',name:'Cardiology Consult',detail:'NSTEMI mgmt, cath lab decision',meta:'URGENT',priority:'URGENT',alert:null,contrast:false},
-  {id:'c_surg',cat:'consults',sub:'Medical',icon:'🩺',name:'General Surgery Consult',detail:'Acute abdomen, appendicitis eval',meta:'URGENT',priority:'URGENT',alert:null,contrast:false},
-  {id:'c_neuro',cat:'consults',sub:'Medical',icon:'🩺',name:'Neurology Consult',detail:'Stroke eval, seizure management',meta:'STAT',priority:'STAT',alert:null,contrast:false},
-  {id:'c_psych',cat:'consults',sub:'Behavioral',icon:'🧠',name:'Psychiatry Consult',detail:'Capacity eval, disposition, safety plan',meta:'URGENT',priority:'URGENT',alert:null,contrast:false},
-  {id:'c_addx',cat:'consults',sub:'Behavioral',icon:'🤝',name:'Addiction Medicine / SBIRT',detail:'ETOH / opioid use — treatment linkage',meta:'ROUTINE',priority:'ROUTINE',alert:null,contrast:false},
-  {id:'c_pharm',cat:'consults',sub:'Support',icon:'💊',name:'Pharmacy Consult',detail:'Drip adjustment, med reconcile',meta:'ROUTINE',priority:'ROUTINE',alert:null,contrast:false},
-  {id:'c_sw',cat:'consults',sub:'Support',icon:'🤝',name:'Social Work Consult',detail:'Disposition, resources, safety',meta:'ROUTINE',priority:'ROUTINE',alert:null,contrast:false},
+// ── NON-MEDICATION ORDERS (labs / imaging / procedures / consults) ──────────
+// PASTE EDOrderHub.jsx's exact `SIMPLE` array contents below, verbatim.
+// (Just the array literal entries — the `export const SIMPLE = [` wrapper is here.)
+export const SIMPLE = [
+  { id: "l_trop",  cat: "labs", sub: "Cardiac",    icon: "\u2764\uFE0F", name: "Troponin-I (High Sensitivity)",      detail: "Serial q3h \u00B7 NSTEMI protocol",        meta: "~30 min",            priority: "STAT",    alert: null,       contrast: false },
+  { id: "l_bnp",   cat: "labs", sub: "Cardiac",    icon: "\u2764\uFE0F", name: "BNP (B-Natriuretic Peptide)",        detail: "Heart failure marker",                meta: "~45 min",            priority: "STAT",    alert: null,       contrast: false },
+  { id: "l_ckmb",  cat: "labs", sub: "Cardiac",    icon: "\u2764\uFE0F", name: "CK-MB",                              detail: "Cardiac isoenzyme",                   meta: "~45 min",            priority: "URGENT",  alert: null,       contrast: false },
+  { id: "l_bmp",   cat: "labs", sub: "Metabolic",  icon: "\uD83E\uDDEA", name: "BMP (Basic Metabolic Panel)",        detail: "Na, K, Cl, CO\u2082, BUN, Cr, Glu",   meta: "~30 min",            priority: "STAT",    alert: null,       contrast: false },
+  { id: "l_cmp",   cat: "labs", sub: "Metabolic",  icon: "\uD83E\uDDEA", name: "CMP (Comprehensive Metabolic)",      detail: "Full metabolic + LFTs",               meta: "~45 min",            priority: "ROUTINE", alert: null,       contrast: false },
+  { id: "l_mg",    cat: "labs", sub: "Metabolic",  icon: "\uD83E\uDDEA", name: "Magnesium (Serum)",                  detail: "Electrolyte monitoring",              meta: "~30 min",            priority: "ROUTINE", alert: null,       contrast: false },
+  { id: "l_lac",   cat: "labs", sub: "Metabolic",  icon: "\uD83E\uDDEA", name: "Lactate (Serum)",                    detail: "Perfusion / shock marker",            meta: "~25 min",            priority: "URGENT",  alert: null,       contrast: false },
+  { id: "l_a1c",   cat: "labs", sub: "Metabolic",  icon: "\uD83E\uDE78", name: "HbA1c",                              detail: "Diabetes monitoring",                 meta: "~2 hr",              priority: "ROUTINE", alert: null,       contrast: false },
+  { id: "l_bhcg",  cat: "labs", sub: "Metabolic",  icon: "\uD83E\uDE78", name: "\u03B2-hCG (Quantitative)",          detail: "Pregnancy test",                      meta: "~45 min",            priority: "STAT",    alert: null,       contrast: false },
+  { id: "l_ua",    cat: "labs", sub: "Metabolic",  icon: "\uD83E\uDDEA", name: "Urinalysis + Culture",               detail: "UTI, pyelo, renal eval",              meta: "~30 min / 48h Cx",   priority: "ROUTINE", alert: null,       contrast: false },
+  { id: "l_etoh",  cat: "labs", sub: "Tox/Psych",  icon: "\uD83E\uDDEA", name: "Ethanol Level (Serum)",              detail: "Quantitative ETOH \u00B7 toxicology", meta: "~45 min",            priority: "STAT",    alert: null,       contrast: false },
+  { id: "l_utox",  cat: "labs", sub: "Tox/Psych",  icon: "\uD83E\uDDEA", name: "Urine Drug Screen (Comprehensive)",  detail: "Multi-panel UDS \u00B7 immunoassay",  meta: "~60 min",            priority: "URGENT",  alert: null,       contrast: false },
+  { id: "l_tsh",   cat: "labs", sub: "Tox/Psych",  icon: "\uD83E\uDDEA", name: "TSH (Thyroid Stimulating Hormone)",  detail: "Thyroid function \u2014 AMS, agitation workup", meta: "~2 hr",     priority: "ROUTINE", alert: null,       contrast: false },
+  { id: "l_cbc",   cat: "labs", sub: "Hematology", icon: "\uD83E\uDE78", name: "CBC with Differential",              detail: "Complete blood count + diff",         meta: "~30 min",            priority: "STAT",    alert: null,       contrast: false },
+  { id: "l_coag",  cat: "labs", sub: "Hematology", icon: "\uD83E\uDE78", name: "PT / INR / PTT",                     detail: "PTT goal 60\u2013100 on heparin",     meta: "~30 min",            priority: "STAT",    alert: null,       contrast: false },
+  { id: "l_type",  cat: "labs", sub: "Hematology", icon: "\uD83E\uDE78", name: "Type & Screen",                      detail: "Blood bank \u00B7 pre-procedure",     meta: "Blood Bank",         priority: "URGENT",  alert: null,       contrast: false },
+  { id: "i_cxr",   cat: "imaging", sub: "X-Ray", icon: "\uD83E\uDEC1", name: "Chest X-Ray PA / Lateral",            detail: "Cardiomegaly, pulm edema, effusion",  meta: "XR \u00B7 ~15 min",  priority: "STAT",    alert: null,       contrast: false },
+  { id: "i_tte",   cat: "imaging", sub: "Echo",  icon: "\u2764\uFE0F", name: "Echocardiogram (TTE)",                detail: "LV function, wall motion, EF",        meta: "Echo \u00B7 ~45 min", priority: "URGENT", alert: null,      contrast: false },
+  { id: "i_ctpe",  cat: "imaging", sub: "CT",    icon: "\uD83E\uDEBB", name: "CT Pulmonary Angiography",            detail: "R/O pulmonary embolism",              meta: "CT W \u00B7 ~30 min", priority: "STAT",   alert: "contrast", contrast: true },
+  { id: "i_ctca",  cat: "imaging", sub: "CT",    icon: "\uD83E\uDEBB", name: "CT Coronary Angiography",             detail: "Non-invasive coronary imaging",       meta: "CT W \u00B7 ~45 min", priority: "URGENT", alert: "contrast", contrast: true },
+  { id: "i_cthead",cat: "imaging", sub: "CT",    icon: "\uD83E\uDEBB", name: "CT Head (Non-Contrast)",              detail: "R/O ICH, stroke, mass",               meta: "CT \u00B7 ~20 min",  priority: "STAT",    alert: null,       contrast: false },
+  { id: "i_ctabd", cat: "imaging", sub: "CT",    icon: "\uD83E\uDEBB", name: "CT Abdomen / Pelvis",                 detail: "Acute abdomen, appy, diverticulitis", meta: "CT W/WO \u00B7 ~30 min", priority: "URGENT", alert: "contrast", contrast: true },
+  { id: "p_ecg",   cat: "procedures", sub: "Cardiac",    icon: "\u26A1",     name: "12-Lead ECG",                  detail: "ST changes, rhythm eval",             meta: "~5 min \u00B7 Bedside", priority: "STAT",   alert: null, contrast: false },
+  { id: "p_ecg_s", cat: "procedures", sub: "Cardiac",    icon: "\u26A1",     name: "Serial 12-Lead ECG (q4h \u00D7 3)", detail: "NSTEMI monitoring protocol",      meta: "~5 min each",        priority: "URGENT", alert: null, contrast: false },
+  { id: "p_tele",  cat: "procedures", sub: "Monitoring", icon: "\uD83D\uDCE1", name: "Continuous Cardiac Telemetry", detail: "Real-time arrhythmia monitoring",     meta: "Ongoing",            priority: "STAT",   alert: null, contrast: false },
+  { id: "p_o2",    cat: "procedures", sub: "Monitoring", icon: "\uD83D\uDCA8", name: "Supplemental O\u2082 \u2014 2L NC", detail: "SpO\u2082 target \u2265 94%",      meta: "Ongoing",            priority: "STAT",   alert: null, contrast: false },
+  { id: "p_iv2",   cat: "procedures", sub: "Access",     icon: "\uD83D\uDC89", name: "Peripheral IV \u00D7 2 Large Bore", detail: "18G+ \u2014 antecubital preferred", meta: "Bedside",          priority: "STAT",   alert: null, contrast: false },
+  { id: "p_1to1",  cat: "procedures", sub: "Safety",     icon: "\uD83D\uDEE1\uFE0F", name: "1:1 Nursing Observation",  detail: "Continuous monitoring \u2014 behavioral health", meta: "Ongoing",  priority: "STAT",   alert: null, contrast: false },
+  { id: "p_rest",  cat: "procedures", sub: "Safety",     icon: "\uD83D\uDD12", name: "Soft Restraints (4-point)",    detail: "PRN agitation \u2014 document Q15 min", meta: "PRN \u00B7 Ongoing", priority: "URGENT", alert: null, contrast: false },
+  { id: "c_cards", cat: "consults", sub: "Medical",    icon: "\uD83E\uDE7A", name: "Cardiology Consult",            detail: "NSTEMI mgmt, cath lab decision",      meta: "URGENT",             priority: "URGENT",  alert: null, contrast: false },
+  { id: "c_surg",  cat: "consults", sub: "Medical",    icon: "\uD83E\uDE7A", name: "General Surgery Consult",       detail: "Acute abdomen, appendicitis eval",    meta: "URGENT",             priority: "URGENT",  alert: null, contrast: false },
+  { id: "c_neuro", cat: "consults", sub: "Medical",    icon: "\uD83E\uDE7A", name: "Neurology Consult",             detail: "Stroke eval, seizure management",     meta: "STAT",               priority: "STAT",    alert: null, contrast: false },
+  { id: "c_psych", cat: "consults", sub: "Behavioral", icon: "\uD83E\uDDE0", name: "Psychiatry Consult",            detail: "Capacity eval, disposition, safety plan", meta: "URGENT",         priority: "URGENT",  alert: null, contrast: false },
+  { id: "c_addx",  cat: "consults", sub: "Behavioral", icon: "\uD83E\uDD1D", name: "Addiction Medicine / SBIRT",    detail: "ETOH / opioid use \u2014 treatment linkage", meta: "ROUTINE",      priority: "ROUTINE", alert: null, contrast: false },
+  { id: "c_pharm", cat: "consults", sub: "Support",    icon: "\uD83D\uDC8A", name: "Pharmacy Consult",              detail: "Drip adjustment, med reconcile",      meta: "ROUTINE",            priority: "ROUTINE", alert: null, contrast: false },
+  { id: "c_sw",    cat: "consults", sub: "Support",    icon: "\uD83E\uDD1D", name: "Social Work Consult",           detail: "Disposition, resources, safety",      meta: "ROUTINE",            priority: "ROUTINE", alert: null, contrast: false },
 ];
 
-// ── Medication catalog ────────────────────────────────────────────────────────
-export const DRUGS=[
-  // ── Cardiac ──
-  {id:'asa',cat:'cardiac',icon:'💊',name:'Aspirin',sub:'ASA 325 mg',cor:'I',wtBased:false,scenarios:[{label:'ACS Load',build:()=>buildBlock('Aspirin',[['DRUG','Aspirin (ASA)'],['DOSE','325 mg — CHEW × 1, then 81 mg daily'],['ROUTE','Oral (PO)'],['INDICATION','ACS — STEMI/NSTEMI/UA  [COR I-A  2025 ACC/AHA]']],'Omit if aspirin allergy — substitute P2Y₁₂ monotherapy')}]},
-  {id:'tica',cat:'cardiac',icon:'💊',name:'Ticagrelor',sub:'Brilinta 180 mg load',cor:'I',wtBased:false,scenarios:[{label:'ACS Load',build:()=>buildBlock('Ticagrelor',[['DRUG','Ticagrelor (Brilinta)'],['DOSE','180 mg PO — loading dose, swallow whole'],['THEN','90 mg BID × 12 months'],['INDICATION','ACS — NSTEMI/STEMI  [COR I-B  2025 ACC/AHA]']],'Hold if CABG planned < 5 days · Avoid: prior ICH, active bleed')}]},
-  {id:'clopi',cat:'cardiac',icon:'💊',name:'Clopidogrel',sub:'Plavix 600 mg load',cor:'I',wtBased:false,scenarios:[{label:'ACS Load (alt P2Y₁₂)',build:()=>buildBlock('Clopidogrel',[['DRUG','Clopidogrel (Plavix)'],['DOSE','600 mg PO — loading dose'],['THEN','75 mg daily'],['INDICATION','ACS alternative P2Y₁₂  [COR I-B]']],'Check CYP2C19 metabolizer status — poor metabolizers have reduced efficacy')}]},
-  {id:'heparin',cat:'cardiac',icon:'🩸',name:'Heparin UFH',sub:'Weight-based bolus + drip',cor:'I',wtBased:true,scenarios:[
-    {label:'STEMI / PCI',build:(wt)=>{const b=fmt(Math.min(wt*60,4000));const i=fmt(Math.round(wt*12));return buildBlock('Heparin UFH',[['DRUG','Heparin (Unfractionated UFH)'],['BOLUS',`${b} units IV push  [60 u/kg × ${wt} kg, max 4,000 u]`],['DRIP',`${i} units/hr  [12 u/kg/hr × ${wt} kg]`],['INDICATION','STEMI — PCI anticoagulation  [COR I-C  2025]']],'Monitor ACT during PCI · Target aPTT 50–70 sec post-procedure');}},
-    {label:'NSTEMI / Medical Rx',build:(wt)=>{const b=fmt(Math.min(wt*60,5000));const i=fmt(Math.min(Math.round(wt*12),1000));return buildBlock('Heparin UFH',[['DRUG','Heparin (Unfractionated UFH)'],['BOLUS',`${b} units IV push  [60 u/kg × ${wt} kg, max 5,000 u]`],['DRIP',`${i} units/hr  [12 u/kg/hr, max 1,000 u/hr]`],['INDICATION','NSTEMI — medical anticoagulation  [COR I-B]']],'Titrate per hospital nomogram · Target aPTT 50–70 sec');}},
-  ]},
-  {id:'enox',cat:'cardiac',icon:'🩸',name:'Enoxaparin',sub:'Lovenox — SQ',cor:'I',wtBased:true,scenarios:[{label:'NSTEMI Treatment',build:(wt)=>buildBlock('Enoxaparin',[['DRUG','Enoxaparin (Lovenox)'],['DOSE',`${fmt(wt)} mg SQ  [1 mg/kg × ${wt} kg]`],['FREQUENCY','Every 12 hours'],['INDICATION','NSTEMI anticoagulation  [COR I-A  2025]']],'Reduce to 1 mg/kg daily if CrCl < 30 · Avoid if CrCl < 15 or HD-dependent')}]},
-  {id:'tnk',cat:'cardiac',icon:'💉',name:'Tenecteplase',sub:'TNKase — STEMI lytics',cor:'I',wtBased:true,scenarios:[{label:'STEMI Fibrinolysis',build:(wt)=>{const w=parseFloat(wt)||0;const d=w<60?30:w<70?35:w<80?40:w<90?45:50;return buildBlock('Tenecteplase',[['DRUG','Tenecteplase (TNKase)'],['DOSE',`${d} mg IV bolus over 5–10 sec  [${wt} kg]`],['VOLUME',`${d/5} mL from reconstituted 5 mg/mL vial`],['INDICATION','STEMI fibrinolysis — PCI unavailable or delay > 120 min  [COR I-A]']],'ABS CI: prior ICH, stroke < 3 mo, active bleed, aortic dissection — verify ALL before giving');}}]},
-  {id:'statin',cat:'cardiac',icon:'💊',name:'Atorvastatin',sub:'Lipitor 80 mg — ACS',cor:'I',wtBased:false,scenarios:[{label:'ACS High-Intensity',build:()=>buildBlock('Atorvastatin',[['DRUG','Atorvastatin (Lipitor) — HIGH INTENSITY'],['DOSE','80 mg PO — first dose STAT, then nightly'],['INDICATION','ACS — plaque stabilization + LDL reduction  [COR I-A  2025]']],'Avoid simvastatin/lovastatin concurrently with many ACS medications')}]},
-  {id:'metro_iv',cat:'cardiac',icon:'💊',name:'Metoprolol IV',sub:'Lopressor — rate control',cor:'IIa',wtBased:false,scenarios:[{label:'IV Rate Control / ACS',build:()=>buildBlock('Metoprolol Tartrate',[['DRUG','Metoprolol tartrate (Lopressor)'],['DOSE','5 mg IV over 2–5 min'],['REPEAT','May repeat q5 min × 3 doses (max 15 mg)'],['INDICATION','ACS beta-blockade OR rate control — hemodynamically stable  [COR IIa]']],'CI: HR < 60, SBP < 100, bronchospasm, 2°/3° AVB, decompensated HF')}]},
-  {id:'nitro_sl',cat:'cardiac',icon:'💊',name:'Nitroglycerin SL',sub:'NTG 0.4 mg',cor:'I',wtBased:false,scenarios:[{label:'ACS Sublingual',build:()=>buildBlock('Nitroglycerin',[['DRUG','Nitroglycerin (NTG)'],['DOSE','0.4 mg SL tablet or spray'],['FREQUENCY','Repeat q5 min × 3 prn; if ongoing pain → IV drip'],['INDICATION','ACS — ongoing chest pain  [COR I-B]']],'CI: SBP < 90, PDE inhibitor use w/in 24–48h, RV infarct')}]},
-  // ── Arrhythmia ──
-  {id:'adenosine',cat:'rhythm',icon:'⚡',name:'Adenosine',sub:'Adenocard — SVT',cor:'I',wtBased:false,scenarios:[{label:'SVT Termination',build:()=>buildBlock('Adenosine',[['DRUG','Adenosine (Adenocard)'],['DOSE','6 mg IV RAPID push — proximal IV'],['FLUSH','20 mL NS rapid flush IMMEDIATELY after'],['REPEAT','12 mg IV if no conversion in 1–2 min; then 12 mg × 1'],['INDICATION','Stable SVT — termination and diagnosis  [COR I-B  ACLS 2025]']],'Warn pt: asystole < 30 sec, chest pressure, dyspnea · Never use in pre-excited AFib or WPW')}]},
-  {id:'diltia',cat:'rhythm',icon:'💊',name:'Diltiazem',sub:'Cardizem — AFib rate',cor:'I',wtBased:true,scenarios:[{label:'AFib Rate Control',build:(wt)=>{const b=fmt(wt*0.25);const b2=fmt(wt*0.35);return buildBlock('Diltiazem',[['DRUG','Diltiazem (Cardizem)'],['DOSE',`${b} mg IV over 2 min  [0.25 mg/kg × ${wt} kg, max 25 mg]`],['REPEAT',`${b2} mg in 15 min if inadequate  [0.35 mg/kg, max 35 mg]`],['THEN','5–15 mg/hr infusion — titrate to HR < 110 bpm'],['INDICATION','AFib / Aflutter rate control  [COR I-B]']],'CI: EF < 40%, accessory pathway, WPW · Monitor BP — significant vasodilation');}}]},
-  {id:'amio_iv',cat:'rhythm',icon:'💉',name:'Amiodarone IV',sub:'Cordarone — VT/VF/AFib',cor:'IIa',wtBased:false,scenarios:[
-    {label:'VT / Refractory VF',build:()=>buildBlock('Amiodarone',[['DRUG','Amiodarone (Cordarone)'],['DOSE','150 mg IV over 10 min (loading)'],['THEN','1 mg/min × 6 hr, then 0.5 mg/min × 18 hr'],['INDICATION','Stable VT / refractory VF/pVT  [COR IIa-B  ACLS 2025]']],'Dilute in D5W · Non-PVC tubing preferred · Monitor QT, BP')},
-    {label:'AFib Cardioversion',build:()=>buildBlock('Amiodarone',[['DRUG','Amiodarone (Cordarone)'],['DOSE','150 mg IV over 10 min'],['THEN','1 mg/min × 6 hr, then 0.5 mg/min × 18 hr (total 1 g/24h)'],['INDICATION','AFib chemical cardioversion — hemodynamically stable  [COR IIb]']],'Less effective than ibutilide for acute AFib · QT monitoring required')},
-  ]},
-  {id:'procain',cat:'rhythm',icon:'💉',name:'Procainamide',sub:'Pronestyl — stable VT',cor:'IIa',wtBased:true,scenarios:[{label:'Stable Monomorphic VT',build:(wt)=>buildBlock('Procainamide',[['DRUG','Procainamide (Pronestyl)'],['DOSE','20–50 mg/min IV until VT suppressed, QRS widens > 50%, or hypotension'],['MAX',`${fmt(wt*17)} mg total  [17 mg/kg × ${wt} kg]`],['THEN','1–4 mg/min maintenance IV'],['INDICATION','Stable monomorphic VT  [COR IIa-B  ACLS 2025]']],'AVOID: prolonged QT, HF, severe LV dysfunction · Preferred over amiodarone for stable VT')}]},
-  {id:'mag_iv',cat:'rhythm',icon:'⚡',name:'Magnesium Sulfate',sub:'MgSO₄ — TdP / hypoMg',cor:'IIb',wtBased:false,scenarios:[{label:'Torsades de Pointes',build:()=>buildBlock('Magnesium Sulfate',[['DRUG','Magnesium Sulfate (MgSO₄)'],['DOSE','2 g IV over 5–20 min  (arrest: 1–2 min)'],['THEN','0.5–1 g/hr infusion for recurrence'],['INDICATION','Torsades de Pointes — first-line  [COR IIb-C  ACLS 2025]']],'Correct hypokalemia simultaneously · Monitor DTRs for toxicity')}]},
-  {id:'atropine',cat:'rhythm',icon:'⚡',name:'Atropine',sub:'Bradycardia — first-line',cor:'I',wtBased:false,scenarios:[{label:'Symptomatic Bradycardia',build:()=>buildBlock('Atropine',[['DRUG','Atropine Sulfate'],['DOSE','1 mg IV bolus'],['REPEAT','q3–5 min, max 3 mg total (0.04 mg/kg)'],['INDICATION','Symptomatic bradycardia — first-line  [COR I-B  ACLS 2025]']],'Ineffective for Mobitz II / CHB → proceed immediately to TCP or pacing')}]},
-  // ── Vasopressors ──
-  {id:'norepi',cat:'pressors',icon:'💉',name:'Norepinephrine',sub:'Levophed — sepsis 1st-line',cor:'I',wtBased:true,scenarios:[{label:'Septic Shock',build:(wt)=>buildBlock('Norepinephrine',[['DRUG','Norepinephrine (Levophed)'],['MIX','4 mg in 250 mL D5W = 16 mcg/mL  |  8 mg in 250 mL = 32 mcg/mL'],['START',`${(wt*0.1).toFixed(1)} mcg/min  [0.1 mcg/kg/min × ${wt} kg]`],['TITRATE','Increase 0.05–0.1 mcg/kg/min q5–10 min prn'],['RANGE','0.01–3 mcg/kg/min  (typical 0.1–0.5)'],['INDICATION','Septic shock — first-line vasopressor  [COR I-B  SSC 2021]']],'Central line/arterial line ASAP · Target MAP ≥ 65 mmHg')}]},
-  {id:'epi_anap',cat:'pressors',icon:'💉',name:'Epinephrine',sub:'Anaphylaxis / pressor drip',cor:'I',wtBased:true,scenarios:[
-    {label:'Anaphylaxis — IM',build:()=>buildBlock('Epinephrine',[['DRUG','Epinephrine 1:1,000'],['DOSE','0.3 mg IM (0.3 mL of 1 mg/mL)'],['ROUTE','Anterolateral thigh — IM'],['REPEAT','q5–15 min prn if no improvement'],['INDICATION','Anaphylaxis — first-line  [COR I-A  WAO 2020]']],'Preferred over IV · Prepare IV drip if biphasic reaction')},
-    {label:'Pressor Infusion',build:(wt)=>buildBlock('Epinephrine Infusion',[['DRUG','Epinephrine Infusion'],['MIX','1 mg in 250 mL NS = 4 mcg/mL'],['START','2 mcg/min IV — titrate 2–10 mcg/min'],['INDICATION','Refractory bradycardia or anaphylactic shock  [COR IIa-B]']])},
-  ]},
-  {id:'dopa',cat:'pressors',icon:'💉',name:'Dopamine',sub:'Cardiogenic shock',cor:'IIb',wtBased:true,scenarios:[{label:'Cardiogenic Shock',build:(wt)=>buildBlock('Dopamine',[['DRUG','Dopamine HCl'],['MIX','400 mg in 250 mL D5W = 1,600 mcg/mL'],['START',`${fmt(wt*5)} mcg/min  [5 mcg/kg/min × ${wt} kg]`],['TITRATE','5–20 mcg/kg/min to target MAP/HR'],['INDICATION','Cardiogenic/distributive shock  [COR IIb]']],'Norepinephrine preferred over dopamine in septic shock — less arrhythmia')}]},
-  // ── Antibiotics ──
-  {id:'vanc',cat:'abx',icon:'🦠',name:'Vancomycin',sub:'MRSA / gram-positive',cor:null,wtBased:true,scenarios:[{label:'Sepsis / SSTI / CAP',build:(wt)=>buildBlock('Vancomycin',[['DRUG','Vancomycin HCl'],['DOSE',`${fmt(Math.min(Math.round(wt*25),3000))} mg IV  [25 mg/kg × ${wt} kg, max 3,000 mg]`],['RATE','Over 1–2 hr  (no faster than 10 mg/min)'],['FREQUENCY','Q8–12h — renal dosing per pharmacy'],['INDICATION','MRSA / gram-positive — sepsis, SSTI, CAP, HAP']],'AUC/MIC-guided dosing preferred · Trough before 4th dose · CrCl < 50 → reduce · Redman → slow infusion')}]},
-  {id:'piptz',cat:'abx',icon:'🦠',name:'Pip-Tazo',sub:'Zosyn — broad spectrum',cor:null,wtBased:false,alert:'pcn',contrast:false,scenarios:[{label:'Broad Spectrum Sepsis',build:()=>buildBlock('Piperacillin-Tazobactam',[['DRUG','Pip-Tazobactam (Zosyn)'],['DOSE','4.5 g IV  (4 g pip + 0.5 g tazo)'],['RATE','Over 30 min  (extended: 4 hr for severe sepsis)'],['FREQUENCY','Q6–8h; Q6h for severe; adjust for CrCl < 40'],['INDICATION','Broad spectrum — sepsis, HAP, intra-abdominal, UTI']],'Do NOT mix with aminoglycosides · Extended 4-hr infusion improves PK/PD attainment')}]},
-  {id:'cefep',cat:'abx',icon:'🦠',name:'Cefepime',sub:'Maxipime — gram-negative',cor:null,wtBased:false,scenarios:[{label:'HAP / Febrile Neutropenia',build:()=>buildBlock('Cefepime',[['DRUG','Cefepime (Maxipime)'],['DOSE','2 g IV over 30 min'],['FREQUENCY','Q8h severe; Q12h mild/moderate; adjust for CrCl < 60'],['INDICATION','HAP, febrile neutropenia, gram-negative bacteremia, Pseudomonas']],'Neurotoxicity risk with renal impairment — monitor closely')}]},
-  {id:'ceftx',cat:'abx',icon:'🦠',name:'Ceftriaxone',sub:'Rocephin',cor:null,wtBased:false,scenarios:[{label:'CAP / UTI / Meningitis',build:()=>buildBlock('Ceftriaxone',[['DRUG','Ceftriaxone (Rocephin)'],['DOSE','1 g IV over 30 min  (2 g for meningitis / severe sepsis)'],['FREQUENCY','Q12h (meningitis) or Daily (CAP, UTI, skin)'],['INDICATION','CAP, UTI, pyelonephritis, meningitis, Lyme, gonorrhea']],'Avoid with Ca-containing fluids in same line · Safe in renal impairment')}]},
-  {id:'azithro',cat:'abx',icon:'🦠',name:'Azithromycin',sub:'Zithromax — atypical CAP',cor:null,wtBased:false,scenarios:[{label:'CAP Atypical Coverage',build:()=>buildBlock('Azithromycin',[['DRUG','Azithromycin (Zithromax)'],['DOSE','500 mg IV over 60 min'],['FREQUENCY','Daily (switch PO when tolerating)'],['INDICATION','CAP atypical coverage — Legionella, Mycoplasma, Chlamydia']],'QTc prolongation — baseline ECG · Combine with beta-lactam for hospitalized CAP per IDSA/ATS')}]},
-  // ── RSI / Sedation ──
-  {id:'etom',cat:'sedation',icon:'😴',name:'Etomidate',sub:'Amidate — RSI induction',cor:null,wtBased:true,scenarios:[{label:'RSI Induction',build:(wt)=>buildBlock('Etomidate',[['DRUG','Etomidate (Amidate)'],['DOSE',`${(wt*0.3).toFixed(1)} mg IV  [0.3 mg/kg × ${wt} kg]`],['ROUTE','IV push over 30–60 sec'],['ONSET','30–60 seconds'],['INDICATION','RSI induction — hemodynamically unstable patients']],'Single dose only · No analgesia — add fentanyl pre-treatment · Adrenal suppression: do NOT repeat')}]},
-  {id:'ketamine',cat:'sedation',icon:'😴',name:'Ketamine',sub:'Ketalar — RSI / PSA',cor:null,wtBased:true,scenarios:[
-    {label:'RSI Induction',build:(wt)=>buildBlock('Ketamine',[['DRUG','Ketamine (Ketalar)'],['DOSE',`${(wt*2).toFixed(0)} mg IV  [1.5–2 mg/kg × ${wt} kg]`],['ONSET','30–60 sec IV  |  IM: 3–5 min at 4–6 mg/kg'],['INDICATION','RSI induction — hemodynamically unstable, bronchospasm, trauma']],'Preserves airway reflexes + BP · Relative CI: severe hypertensive emergency')},
-    {label:'Procedural Sedation',build:(wt)=>buildBlock('Ketamine',[['DRUG','Ketamine (Ketalar) — Dissociative'],['DOSE',`${(wt*1.5).toFixed(0)} mg IV  [1–1.5 mg/kg × ${wt} kg]  |  IM: ${(wt*4).toFixed(0)} mg`],['ROUTE','IV over 1–2 min'],['DURATION','10–20 min IV · 20–45 min IM'],['INDICATION','Procedural sedation — fracture reduction, I&D, painful procedures']],'Glycopyrrolate 0.2 mg IV reduces sialorrhea · Laryngospasm rare (<1%)')},
-  ]},
-  {id:'succs',cat:'sedation',icon:'😴',name:'Succinylcholine',sub:'Anectine — RSI paralytic',cor:null,wtBased:true,scenarios:[{label:'RSI Paralytic',build:(wt)=>buildBlock('Succinylcholine',[['DRUG','Succinylcholine (Anectine)'],['DOSE',`${(wt*1.5).toFixed(0)} mg IV  [1.5 mg/kg × ${wt} kg]`],['ONSET','45–60 seconds'],['DURATION','6–10 minutes'],['INDICATION','RSI — depolarizing paralytic']],'ABS CI: hyperkalemia, crush/burn > 24h, denervation, MH risk · Have sugammadex ready')}]},
-  {id:'roc',cat:'sedation',icon:'😴',name:'Rocuronium',sub:'Zemuron — RSI paralytic',cor:null,wtBased:true,scenarios:[{label:'RSI Paralytic',build:(wt)=>{const d=(wt*1.2).toFixed(0);const s=(wt*16).toFixed(0);return buildBlock('Rocuronium',[['DRUG','Rocuronium (Zemuron)'],['DOSE',`${d} mg IV  [1.2 mg/kg × ${wt} kg]  high-dose RSI`],['ONSET','45–60 sec at high dose'],['DURATION','45–70 min'],['REVERSAL',`Sugammadex ${s} mg IV  [16 mg/kg] for IMMEDIATE reversal`],['INDICATION','RSI — preferred if succinylcholine CI']],'Keep sugammadex at bedside · Prolonged paralysis risk if failed airway');}}]},
-  {id:'midaz',cat:'sedation',icon:'😴',name:'Midazolam',sub:'Versed — PSA / anxiolysis',cor:null,wtBased:true,scenarios:[{label:'Procedural Sedation',build:(wt)=>buildBlock('Midazolam',[['DRUG','Midazolam (Versed)'],['DOSE',`${(wt*0.05).toFixed(1)} mg IV  [0.05 mg/kg × ${wt} kg]  titrate to effect`],['REPEAT','0.025 mg/kg IV q2–3 min prn, max 0.2 mg/kg total'],['INDICATION','Procedural sedation, anxiolysis']],'REVERSAL: flumazenil 0.2 mg IV q1 min × 5 · Reduce 30% in elderly/hepatic impairment')}]},
-  // ── Analgesia ──
-  {id:'fent',cat:'pain',icon:'🩹',name:'Fentanyl',sub:'Sublimaze — IV/IN analgesia',cor:null,wtBased:true,scenarios:[{label:'IV Pain Management',build:(wt)=>buildBlock('Fentanyl',[['DRUG','Fentanyl Citrate (Sublimaze)'],['DOSE',`${(wt*1).toFixed(0)} mcg IV  [1 mcg/kg × ${wt} kg]`],['ROUTE','IV over 2–3 min  |  IN: 1.5 mcg/kg split nares'],['REPEAT','Titrate q5–10 min prn NRS ≥ 7'],['INDICATION','Moderate–severe acute pain — preferred in renal failure, hemodynamic instability']],'REVERSAL: naloxone 0.4 mg IV · 100× more potent than morphine')}]},
-  {id:'morph',cat:'pain',icon:'🩹',name:'Morphine',sub:'IV analgesia',cor:null,wtBased:false,scenarios:[{label:'IV Pain Management',build:()=>buildBlock('Morphine Sulfate',[['DRUG','Morphine Sulfate'],['DOSE','2–4 mg IV — titrate to effect'],['ROUTE','IV over 2–5 min'],['REPEAT','q15–20 min prn NRS ≥ 7'],['INDICATION','Moderate–severe acute pain']],'REVERSAL: naloxone 0.4 mg IV · AVOID: hypotension, renal failure (active metabolite accumulates)')}]},
-  {id:'ketor',cat:'pain',icon:'🩹',name:'Ketorolac',sub:'Toradol — non-opioid NSAID',cor:null,wtBased:false,scenarios:[{label:'IV Non-Opioid Analgesia',build:()=>buildBlock('Ketorolac',[['DRUG','Ketorolac (Toradol)'],['DOSE','15–30 mg IV  (30 mg IM)  — ↓ to 15 mg if > 65y or < 50 kg'],['ROUTE','IV over 2 min  OR  IM'],['FREQUENCY','Q6h prn, max 5 days total (IV + PO combined)'],['INDICATION','Moderate–severe pain — renal colic, MSK, headache']],'AVOID: CrCl < 30, active GI bleed, aspirin-sensitive asthma, concurrent anticoagulation')}]},
-  {id:'apap',cat:'pain',icon:'🩹',name:'Acetaminophen',sub:'Ofirmev IV — safe in renal failure',cor:null,wtBased:true,scenarios:[{label:'IV Analgesia / Antipyretic',build:(wt)=>buildBlock('Acetaminophen',[['DRUG','Acetaminophen (Ofirmev IV)'],['DOSE',`${wt<50?'650 mg':'1,000 mg'} IV  [${wt} kg — max 4 g/24h]`],['RATE','Over 15 min'],['FREQUENCY','Q6h scheduled OR Q4–6h prn'],['INDICATION','Pain adjunct, antipyretic — safe in renal failure']],'Max 2 g/24h hepatic impairment / chronic ETOH · Multimodal analgesia reduces opioid needs')}]},
-  // ── Psych / Behavioral Health ──
-  {id:'haldo',cat:'psych',icon:'🧠',name:'Haloperidol',sub:'Haldol — acute agitation',cor:null,wtBased:false,scenarios:[
-    {label:'Acute Agitation IM',build:()=>buildBlock('Haloperidol',[['DRUG','Haloperidol (Haldol)'],['DOSE','5 mg IM (moderate) — 10 mg IM (severe undifferentiated)'],['ROUTE','IM — anterolateral thigh or deltoid'],['REPEAT','May repeat 5 mg IM q30–60 min prn, max ~20 mg/24h'],['INDICATION','Acute agitation — antipsychotic  [ACEP Agitation Policy 2021]']],'Baseline QTc · Avoid if QTc > 500 ms · No respiratory depression unlike BZDs · Akathisia risk')},
-    {label:'IV (Monitored)',build:()=>buildBlock('Haloperidol IV',[['DRUG','Haloperidol (Haldol) IV'],['DOSE','2–5 mg IV over 2–3 min'],['REPEAT','q20–30 min prn; may double dose if inadequate response'],['MAX','~20 mg in 24 hr'],['INDICATION','Acute delirium/agitation — monitored setting  [ACEP 2021]']],'Continuous QTc monitoring required for IV route · Reduce dose in elderly / hepatic impairment')},
-  ]},
-  {id:'droper',cat:'psych',icon:'🧠',name:'Droperidol',sub:'Inapsine — rapid agitation control',cor:null,wtBased:false,scenarios:[{label:'Acute Agitation',build:()=>buildBlock('Droperidol',[['DRUG','Droperidol (Inapsine)'],['DOSE','5 mg IM — may repeat 2.5 mg IM q15 min prn'],['MAX','10 mg per acute episode'],['ROUTE','IM preferred · IV with continuous monitoring'],['INDICATION','Acute undifferentiated agitation — faster onset than haloperidol  [ACEP 2021]']],'FDA Black Box warning — QTc monitoring required · Faster + more effective than haldol for undifferentiated agitation')}]},
-  {id:'olanzIM',cat:'psych',icon:'🧠',name:'Olanzapine IM',sub:'Zyprexa — agitation with psychosis',cor:null,wtBased:false,scenarios:[{label:'Acute Agitation',build:()=>buildBlock('Olanzapine IM',[['DRUG','Olanzapine (Zyprexa) IM formulation'],['DOSE','10 mg IM (5 mg elderly/debilitated)'],['ROUTE','IM ONLY — do NOT give IV'],['REPEAT','5–10 mg IM q2–4h prn, max 30 mg/24h'],['INDICATION','Acute agitation — psychosis/bipolar mania  [ACEP 2021]']],'DO NOT combine with IM lorazepam — respiratory depression risk · Approved specifically for agitation associated with schizophrenia and bipolar disorder')}]},
-  {id:'diaz',cat:'psych',icon:'🧠',name:'Diazepam',sub:'Valium — ETOH withdrawal / seizure',cor:null,wtBased:false,scenarios:[
-    {label:'ETOH Withdrawal',build:()=>buildBlock('Diazepam',[['DRUG','Diazepam (Valium)'],['DOSE','10 mg IV — repeat q5–10 min prn for CIWA ≥ 15 or active seizure'],['ROUTE','IV preferred (PO/IM: less reliable absorption)'],['INDICATION','Alcohol withdrawal seizure / CIWA ≥ 15  [ASAM 2020, ACEP]']],'Long half-life provides smooth coverage — preferred for ETOH withdrawal seizure · Monitor respiratory drive · Reduce dose in elderly and cirrhotic patients')},
-    {label:'Status Epilepticus (alt)',build:()=>buildBlock('Diazepam',[['DRUG','Diazepam (Valium)'],['DOSE','10 mg IV over 2 min'],['INDICATION','Status epilepticus — alternative if lorazepam unavailable']],'Shorter anticonvulsant duration than lorazepam · Follow with fosphenytoin or levetiracetam')},
-  ]},
-  // ── Supportive ──
-  {id:'zofran',cat:'support',icon:'⚕️',name:'Ondansetron',sub:'Zofran — antiemetic',cor:null,wtBased:false,scenarios:[{label:'Nausea / Vomiting',build:()=>buildBlock('Ondansetron',[['DRUG','Ondansetron (Zofran)'],['DOSE','4 mg IV over 2–5 min  (8 mg for PONV / chemo-related)'],['FREQUENCY','Q4–6h prn nausea'],['INDICATION','Acute nausea and vomiting']],'QTc prolongation — avoid if QTc > 480 ms · Serotonin syndrome risk with serotonergic co-meds')}]},
-  {id:'lzp',cat:'support',icon:'⚕️',name:'Lorazepam',sub:'Ativan — seizure / status',cor:null,wtBased:true,scenarios:[{label:'Status Epilepticus',build:(wt)=>buildBlock('Lorazepam',[['DRUG','Lorazepam (Ativan)'],['DOSE',`${(Math.min(wt*0.1,4)).toFixed(1)} mg IV  [0.1 mg/kg × ${wt} kg, max 4 mg]`],['ROUTE','IV over 2 min  (IM if no IV)'],['REPEAT','Repeat × 1 in 5–10 min if still seizing'],['INDICATION','Status epilepticus — first-line BZD  [AES 2023]']],'No IV: midazolam IM 10 mg (> 40 kg) · Have airway management ready')}]},
-  {id:'labet',cat:'support',icon:'⚕️',name:'Labetalol',sub:'IV — hypertensive emergency',cor:null,wtBased:false,scenarios:[{label:'Hypertensive Emergency',build:()=>buildBlock('Labetalol',[['DRUG','Labetalol HCl'],['DOSE','20 mg IV over 2 min'],['REPEAT','Double q10 min prn: 40 → 80 mg; max single 80 mg; cumulative max 300 mg'],['THEN','0.5–2 mg/min infusion if needed'],['INDICATION','Hypertensive emergency — dissection, SAH, eclampsia  [AHA/ACC 2024]']],'CI: asthma/COPD, severe bradycardia, acute decompensated HF · Dual HR + BP control')}]},
-  {id:'cacl',cat:'support',icon:'⚕️',name:'Calcium Chloride',sub:'10% CaCl₂ — hyperkalemia',cor:null,wtBased:false,scenarios:[{label:'Hyperkalemia / CCB OD / Arrest',build:()=>buildBlock('Calcium Chloride 10%',[['DRUG','Calcium Chloride 10%  (1 g = 13.6 mEq Ca²⁺)'],['DOSE','1 g (10 mL of 10%) IV slow push'],['RATE','Over 5–10 min  (arrest: 1–2 min)'],['REPEAT','q5–10 min prn (hyperkalemia / CCB OD)'],['INDICATION','Hyperkalemia, CCB toxicity, ionized hypocalcemia, cardiac arrest']],'3× more elemental Ca than gluconate · Central line preferred — vesicant')}]},
-  {id:'bicarb',cat:'support',icon:'⚕️',name:'Sodium Bicarbonate',sub:'NaHCO₃ — TCA / acidosis',cor:null,wtBased:true,scenarios:[{label:'TCA OD / Severe Acidosis',build:(wt)=>buildBlock('Sodium Bicarbonate',[['DRUG','Sodium Bicarbonate (NaHCO₃)  8.4% = 1 mEq/mL'],['DOSE',`${fmt(wt)} mEq IV bolus  [1 mEq/kg × ${wt} kg]`],['ROUTE','IV push'],['INDICATION','TCA overdose, severe metabolic acidosis, hyperkalemia, Na-channel blockade']],'TCA OD: push until QRS < 100 ms, target pH 7.45–7.55 · Do NOT mix with calcium in same line')}]},
-  {id:'d50',cat:'support',icon:'⚕️',name:'Dextrose 50%',sub:'D50W — hypoglycemia',cor:null,wtBased:false,scenarios:[{label:'Symptomatic Hypoglycemia',build:()=>buildBlock('Dextrose 50% (D50W)',[['DRUG','Dextrose 50% (D50W)'],['DOSE','25 g IV  (50 mL of D50W)'],['ROUTE','Large patent IV — sclerosing, irritating to veins'],['REPEAT','Recheck BG in 15 min; repeat if < 70 mg/dL'],['INDICATION','Symptomatic hypoglycemia — AMS, seizure, BG < 60 mg/dL']],'Give thiamine 100 mg IV BEFORE dextrose if malnourished / chronic ETOH · D10 250 mL/hr gentler alternative')}]},
-  {id:'thiam',cat:'support',icon:'⚕️',name:'Thiamine',sub:'Vitamin B1 — ETOH / malnutrition',cor:null,wtBased:false,scenarios:[{label:'Wernicke Prophylaxis',build:()=>buildBlock('Thiamine',[['DRUG','Thiamine HCl (Vitamin B1)'],['DOSE','100 mg IV over 5–10 min (Wernicke: 500 mg IV q8h × 3 days)'],['ROUTE','IV preferred — higher serum levels than IM or PO'],['INDICATION','ETOH use disorder, malnutrition, Wernicke encephalopathy prevention']],'Give BEFORE dextrose in suspected thiamine deficiency · Anaphylaxis rare but possible with IV · Do not withhold if unsure')}]},
-  {id:'nalox',cat:'support',icon:'⚕️',name:'Naloxone',sub:'Narcan — opioid reversal',cor:null,wtBased:false,scenarios:[{label:'Opioid Reversal',build:()=>buildBlock('Naloxone',[['DRUG','Naloxone (Narcan)'],['DOSE','0.4–2 mg IV/IM/IN — titrate to RESPIRATORY DRIVE, not full reversal'],['ROUTE','IV preferred · IN: 4 mg per nare (2 mg/0.1 mL)'],['REPEAT','q2–3 min prn; infusion: 2/3 of effective reversal dose per hour'],['INDICATION','Opioid respiratory depression  (RR < 12, SpO₂ < 92%, unresponsive)']],'Avoid full reversal in opioid-dependent — withdrawal, seizure, pulm edema · Duration 30–90 min — WATCH FOR RENARCOTIZATION')}]},
+// ── MEDICATION CATALOG (weight-based dosing builders) ───────────────────────
+// MOVE EDOrderHub.jsx's exact `DRUGS` array entries into the slot below,
+// VERBATIM. In your EDOrderHub source, select everything between the
+// `const DRUGS=[` opening bracket and its closing `];` (the 44 drug objects,
+// including all the `// ── Cardiac ──` style comments) and paste it here,
+// replacing the placeholder line.
+//
+// No edits needed after pasting:
+//   • Each entry's scenarios[].build() calls buildBlock(...) / fmt(...), which
+//     are exported from this file above — they resolve automatically.
+//   • The CPOE footer rebrands from "[Notrya ...]" to
+//     "[Lakonyx Order Generator ...]" for free, because the build() functions
+//     use THIS file's buildBlock.
+//
+// Do NOT retype the dose strings by hand. This must be a copy, so every dose,
+// max, and weight coefficient is preserved exactly as in your tested source.
+export const DRUGS = [
+  /* ⟨⟨ MOVE EDOrderHub's 44 DRUGS entries here, verbatim — see note above ⟩⟩ */
 ];
 
-// ── Category meta ─────────────────────────────────────────────────────────────
-export const CAT_META={
-  cardiac:{label:'Cardiac',color:'#ff6b6b'},
-  rhythm:{label:'Arrhythmia',color:'#f5c842'},
-  pressors:{label:'Vasopressors',color:'#ff9f43'},
-  abx:{label:'Antibiotics',color:'#00e5c0'},
-  sedation:{label:'RSI / Sedation',color:'#9b6dff'},
-  pain:{label:'Analgesia',color:'#3b9eff'},
-  psych:{label:'Psych / Behavioral Health',color:'#9b6dff'},
-  support:{label:'Supportive',color:'#3dffa0'},
+// ── Selectors (the shared API every order surface calls) ────────────────────
+export const ALL_ORDERS = () => [...SIMPLE, ...DRUGS];
+export const getSimple = (id) => SIMPLE.find((o) => o.id === id);
+export const getDrug = (id) => DRUGS.find((d) => d.id === id);
+export const getOrder = (id) => getSimple(id) || getDrug(id);
+export const drugsByCategory = (cat) => DRUGS.filter((d) => d.cat === cat);
+
+// Unified search across both order types. Returns tagged results so a caller
+// can render meds and simple orders differently.
+export const searchCatalog = (query) => {
+  const q = (query || "").trim().toLowerCase();
+  if (!q) return [];
+  const inText = (...parts) => parts.some((p) => (p || "").toLowerCase().includes(q));
+  const simple = SIMPLE.filter((o) => inText(o.name, o.detail, o.sub)).map((o) => ({ ...o, _type: "simple" }));
+  const drugs = DRUGS.filter((d) => inText(d.name, d.sub)).map((d) => ({ ...d, _type: "drug" }));
+  return [...simple, ...drugs];
+};
+
+// Build the CPOE order text for a drug id at a given weight (kg), scenario index.
+// Centralizes the "which scenario" + "what weight" logic so every surface that
+// wants order text calls one function instead of reaching into scenarios[].
+export const buildOrderText = (drugId, weightKg = 70, scenarioIdx = 0) => {
+  const d = getDrug(drugId);
+  if (!d || !d.scenarios || !d.scenarios.length) return "";
+  const sc = d.scenarios[scenarioIdx] || d.scenarios[0];
+  return sc.build(parseFloat(weightKg) || 70);
 };

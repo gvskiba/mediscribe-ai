@@ -4,6 +4,7 @@ import UniversalSearchBar from "./UniversalSearchBar";
 import FavoritesBar from "./FavoritesBar";
 import BreadcrumbBar from "./BreadcrumbBar";
 import { PAGES, CATS, CAT_COLOR } from "@/lib/navPages";
+import { base44 } from "@/api/base44Client";
 
 // Load Playfair Display font
 if (typeof document !== 'undefined') {
@@ -264,12 +265,74 @@ function PaletteItem({ page, current, idx, sel, navigate }) {
   );
 }
 
+// Patient context (URL ?patientId= -> chip), ported from LakonyxHeader
+const navEsiColor = (n) => ({ 1:"#ff4444", 2:"#ff9f43", 3:"#f5c842", 4:"#3dffa0", 5:"#5a82a8" }[n] || "#5a82a8");
+
+async function navLoadPatient(id) {
+  const E = base44?.entities?.Patient;
+  if (!E || !id) return null;
+  try {
+    if (E.get)    { const p = await E.get(id);        if (p) return p; }
+    if (E.filter) { const a = await E.filter({ id });  if (Array.isArray(a) && a[0]) return a[0]; }
+    if (E.list)   { const a = await E.list();          return (a || []).find(x => String(x.id) === String(id)) || null; }
+  } catch { /* show no chip rather than break the bar */ }
+  return null;
+}
+
+function NavPatientChip({ patient }) {
+  if (!patient) return null;
+  const ec = navEsiColor(patient.esi);
+  const name = patient.name || patient.patient_name;
+  const cc = patient.cc || patient.chief_complaint || patient.chiefComplaint;
+  return (
+    <div title={cc || ""} style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(0,229,192,0.05)", border:"1px solid rgba(0,229,192,0.25)", borderRadius:8, padding:"4px 11px", cursor:"default", maxWidth:420, minWidth:0, flexShrink:0 }}>
+      {patient.room && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"#5a82a8", background:"rgba(26,53,85,0.6)", border:"1px solid rgba(26,53,85,0.8)", borderRadius:4, padding:"2px 6px" }}>{patient.room}</span>}
+      <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:"#f2f7ff", whiteSpace:"nowrap" }}>{name}</span>
+      {patient.esi != null && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:ec, background:`${ec}1f`, border:`1px solid ${ec}55`, borderRadius:4, padding:"1px 5px" }}>ESI {patient.esi}</span>}
+      {(patient.age != null || patient.sex) && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"#5a82a8" }}>{patient.age}{patient.sex}</span>}
+      {cc && <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"#00e5c0", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0 }}>{cc}</span>}
+    </div>
+  );
+}
+
 // ════════════════════════════════════════════════════════════════════
 //  GLOBAL NAV
 // ════════════════════════════════════════════════════════════════════
 export default function GlobalNav({ alerts = 0 }) {
   const routerNavigate = useNavigate();
   const location = useLocation();
+
+  const [now, setNow] = useState(new Date());
+  const [patient, setPatient] = useState(null);
+  const [shiftCtx, setShiftCtx] = useState(null);
+
+  const patientId = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("patientId") : null;
+
+  useEffect(() => {
+    let live = true;
+    if (!patientId) { setPatient(null); return; }
+    navLoadPatient(patientId).then(p => { if (live) setPatient(p); });
+    return () => { live = false; };
+  }, [patientId]);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 15000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!window.storage) return;
+        const r = await window.storage.get("shiftContext");
+        if (r?.value) { const ctx = JSON.parse(r.value); if (ctx?.dept) setShiftCtx(ctx); }
+      } catch (_) {}
+    })();
+  }, []);
+
+  const NO_CLOCK = location.pathname === "/ShiftBrief" || location.pathname === "/ShiftBriefPage";
+  const shiftLabel = shiftCtx ? [shiftCtx.facility, shiftCtx.dept].filter(Boolean).join(" · ") : null;
 
   // Pages with their own full navigation — GlobalNav should not render
   if (EXCLUDED_ROUTES.has(location.pathname)) return null;
@@ -299,9 +362,23 @@ export default function GlobalNav({ alerts = 0 }) {
         LAKONYX
       </span>
 
-      {/* Search bar — now lives in the top nav row */}
+      {/* Search bar — lives in the top nav row */}
       <div style={{ flex: 1, display: "flex", justifyContent: "center", minWidth: 0 }}>
         <UniversalSearchBar />
+      </div>
+
+      {/* Right cluster: patient context · clock · shift status */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        <NavPatientChip patient={patient} />
+        {!NO_CLOCK && (
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 14, fontWeight: 700, color: "#f2f7ff", letterSpacing: "0.04em", lineHeight: 1 }}>
+            {now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+          </div>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(0,229,192,0.08)", border: "1px solid rgba(0,229,192,0.3)", borderRadius: 8, padding: "4px 11px" }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00e5c0", display: "inline-block" }} />
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, color: "#00e5c0", whiteSpace: "nowrap" }}>{shiftLabel || "On Shift"}</span>
+        </div>
       </div>
     </div>
   );

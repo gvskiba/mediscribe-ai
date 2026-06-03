@@ -1,8 +1,8 @@
-// orderCatalog.js — single source of truth for the ED order + drug catalog.
+// orderCatalog.js — weight-based dosing / CPOE composer catalog.
 // Plain JavaScript module (no React, no JSX). Consumed by:
-//   • EDOrderHub.jsx              (composer + queue)
-//   • CommandCenter OrdersTab     (in-board order entry)  → replaces ROC_INLINE
-//   • CommandCenter RapidOrderDrawer (board rapid entry)  → replaces ROC
+//   • EDOrderHub.jsx  (composer + queue — primary consumer)
+// NOTE: The in-board quick-pick surfaces (CommandCenter OrdersTab and
+//   RapidOrderDrawer) use a separate catalog: boardOrderCatalog.js.
 // Import path convention: "@/components/orderCatalog" (match across all consumers).
 //
 // IMPORTANT — clinical data integrity:

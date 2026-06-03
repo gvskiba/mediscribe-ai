@@ -3,39 +3,18 @@ import { useState, useEffect } from "react";
 /*
   LakonyxHeader.jsx  —  shared single-row top header for every Lakonyx page
   --------------------------------------------------------------------------
-  Gold LAKONYX wordmark on the left, optional breadcrumb wayfinding, an
-  optional passive patient-context chip in the center, and a right cluster
-  (search · clock · On-Shift). One row, ~58px — matches the Command Center
-  TopBar height so the whole app reads as one surface.
+  Gold LAKONYX wordmark on the left, optional breadcrumb, the Search bar now
+  inline in the nav row (left of center, just past the wordmark/breadcrumb), a
+  passive patient-context chip in the center, and a right cluster (clock ·
+  On-Shift). One row, ~58px — matches the Command Center TopBar height.
 
-  One component, one source of truth. Each page passes only what it needs;
-  everything beyond the wordmark is optional, so a bare reference page stays
-  bare and an in-encounter hub fills the space with context.
-
-  Usage (Base44):
-    import LakonyxHeader from "@/components/LakonyxHeader";
-
-    // Bare reference page
-    <LakonyxHeader pageName="ECG Interpreter" />
-
-    // Hub opened on a live encounter — chip appears, breadcrumb compacts
-    <LakonyxHeader pageName="ECG Interpreter" patient={activePatient} />
+  Change vs prior: the Search affordance moved from the right cluster into the
+  main nav row on the left, and reads as a "Search  ⌘K" bar rather than a bare
+  icon. Behavior is unchanged (click or ⌘/Ctrl-K both fire onSearch).
 
   Props (all optional):
-    pageName         hub/page title. Omit → wordmark only (no breadcrumb).
-    patient          active encounter object → renders the PASSIVE context
-                     chip (identity only, never a navigation target). Shape:
-                     { room, name, esi, age, sex, cc }. Omit → center is empty.
-    onSearch         handler for ⌘/Ctrl-K and the search pill.
-                     Default → navigate to the Command Center.
-    showSearch       hide the search pill when false (default true).
-    showClock        hide the clock when false (default true). Self-ticking.
-    showShiftStatus  hide the On-Shift badge when false (default true).
-    backLabel        breadcrumb root label (default "Command Center").
-    onBack           handler for the back-arrow / root label
-                     (default → navigate to the Command Center).
-    onLogoClick      handler for the wordmark (default → Command Center).
-    rightContent     extra node appended to the right cluster.
+    pageName, patient, onSearch, showSearch, showClock, showShiftStatus,
+    backLabel, onBack, onLogoClick, rightContent
 */
 
 // ─── TOKENS (local — component has zero external deps) ────────────────────────
@@ -60,7 +39,6 @@ function ensureFonts() {
 }
 
 // ─── PASSIVE PATIENT-CONTEXT CHIP ─────────────────────────────────────────────
-// Identity confirmation only. No onClick, cursor:default — never navigates.
 function PatientChip({ patient }) {
   if (!patient) return null;
   const ec = esiColor(patient.esi);
@@ -115,7 +93,6 @@ export default function LakonyxHeader({
 
   useEffect(() => { ensureFonts(); }, []);
 
-  // Self-ticking clock — 15s keeps the minute fresh without churn.
   useEffect(() => {
     if (!showClock) return;
     const id = setInterval(() => setNow(new Date()), 15000);
@@ -126,7 +103,6 @@ export default function LakonyxHeader({
   const fireBack   = () => { onBack   ? onBack()   : goTo("CommandCenter"); };
   const fireLogo   = () => { onLogoClick ? onLogoClick() : goTo("CommandCenter"); };
 
-  // ⌘/Ctrl-K anywhere opens search.
   useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
@@ -156,7 +132,6 @@ export default function LakonyxHeader({
           <span onClick={fireBack} style={{ display:"inline-flex", alignItems:"center", color:C.txt4, cursor:"pointer" }} title={`Back to ${backLabel}`}>
             <span style={{ fontSize:14, lineHeight:1 }}>‹</span>
           </span>
-          {/* When a patient is loaded, compact the breadcrumb to make room for the chip */}
           {!hasPatient && (
             <>
               <span onClick={fireBack} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:C.txt3, cursor:"pointer", whiteSpace:"nowrap" }}>
@@ -171,26 +146,28 @@ export default function LakonyxHeader({
         </div>
       )}
 
+      {/* ── SEARCH BAR: now inline in the nav row, left of center ── */}
+      {showSearch && (
+        <div
+          onClick={fireSearch}
+          style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.04)", border:`1px solid ${C.border}`, borderRadius:18, padding:"6px 14px", cursor:"pointer", transition:"border-color .15s", flexShrink:0 }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,229,192,0.3)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
+          title="Search (⌘K)"
+        >
+          <span style={{ fontSize:12, lineHeight:1 }}>🔍</span>
+          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:C.txt4 }}>Search</span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.txt4, letterSpacing:"0.04em", marginLeft:2 }}>⌘K</span>
+        </div>
+      )}
+
       {/* ── CENTER: passive patient chip (or empty space) ── */}
       <div style={{ flex:1, display:"flex", justifyContent:"center", minWidth:0 }}>
         <PatientChip patient={patient} />
       </div>
 
-      {/* ── RIGHT: search · clock · shift · custom ── */}
+      {/* ── RIGHT: clock · shift · custom ── */}
       <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
-        {showSearch && (
-          <div
-            onClick={fireSearch}
-            style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.04)", border:`1px solid ${C.border}`, borderRadius:18, padding:"6px 12px", cursor:"pointer", transition:"border-color .15s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,229,192,0.3)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
-            title="Search (⌘K)"
-          >
-            <span style={{ fontSize:12, lineHeight:1 }}>🔍</span>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:C.txt4, letterSpacing:"0.04em" }}>⌘K</span>
-          </div>
-        )}
-
         {showClock && (
           <div style={{ textAlign:"center" }}>
             <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:15, fontWeight:700, color:C.txt, letterSpacing:"0.04em", lineHeight:1 }}>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import PatientBanner from "@/components/PatientBanner";
+import OrderSheet from "@/components/OrderSheet";
 
 /*
   CommandCenterSpine — upload #1: a wiring test harness, not the real UI.
@@ -160,7 +161,8 @@ export default function CommandCenterSpine() {
 
       {noteOpen && <SurfacePanel surface="note" onClose={() => setNoteOpen(false)} />}
 
-      {activeSurface && <SurfacePanel surface={activeSurface} onClose={returnToBoard} />}
+      {activeSurface === "orders" && <OrderSheet onClose={returnToBoard} />}
+      {activeSurface && activeSurface !== "orders" && <SurfacePanel surface={activeSurface} onClose={returnToBoard} />}
 
       {paletteOpen && (
         <div style={S.palette}>

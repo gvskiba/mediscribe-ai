@@ -299,8 +299,10 @@ export default function GlobalNav({ alerts = 0 }) {
         LAKONYX
       </span>
 
-      {/* Spacer */}
-      <div style={{ flex: 1 }} />
+      {/* Search bar — now lives in the top nav row */}
+      <div style={{ flex: 1, display: "flex", justifyContent: "center", minWidth: 0 }}>
+        <UniversalSearchBar />
+      </div>
     </div>
   );
 }

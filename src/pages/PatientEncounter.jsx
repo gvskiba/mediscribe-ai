@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { suggestHubs, getHubById, liveHubs, CATEGORIES } from "@/components/hubRegistry";
 const Patient = base44.entities.Patient;
 
 (() => {
@@ -34,65 +35,14 @@ const nav = (page, params = {}) => {
   window.location.href = `/${page}${query}`;
 };
 
-// ─── SUGGEST HUBS BY CHIEF COMPLAINT ─────────────────────────────────────────
-const suggestHubs = (cc = "") => {
-  const c = cc.toLowerCase();
-  if (c.includes("chest pain") || c.includes("chest"))
-    return ["ECGHub","CardiacRiskPage","LabInterpreter","OrderGeneratorHub"];
-  if (c.includes("stroke") || c.includes("tpa") || c.includes("neuro"))
-    return ["StrokeHub","ImagingInterpreter","CardiacRiskPage"];
-  if (c.includes("overdose") || c.includes("opioid") || c.includes("tox") || c.includes("ingestion"))
-    return ["ToxicologyHub","AirwayHub","OrderGeneratorHub"];
-  if (c.includes("shortness") || c.includes("sob") || c.includes("breath") || c.includes("respiratory"))
-    return ["ECGHub","POCUSHub","LabInterpreter","ImagingInterpreter"];
-  if (c.includes("sepsis") || c.includes("fever") || c.includes("infection") || c.includes("uti"))
-    return ["SepsisHub","LabInterpreter","OrderGeneratorHub"];
-  if (c.includes("rash") || c.includes("derm") || c.includes("skin"))
-    return ["DermatologyHub","DermMorphologyRef","LabInterpreter"];
-  if (c.includes("abdominal") || c.includes("abd") || c.includes("belly"))
-    return ["POCUSHub","LabInterpreter","ImagingInterpreter"];
-  if (c.includes("altered") || c.includes("ams") || c.includes("confusion") || c.includes("mental"))
-    return ["ToxicologyHub","LabInterpreter","ImagingInterpreter"];
-  if (c.includes("weakness") || c.includes("electrolyte") || c.includes("k+") || c.includes("potassium"))
-    return ["ElectrolyteHub","ECGHub","LabInterpreter"];
-  if (c.includes("trauma") || c.includes("fracture") || c.includes("ortho") || c.includes("fall"))
-    return ["ImagingInterpreter","OrderGeneratorHub"];
-  if (c.includes("cardiac") || c.includes("heart") || c.includes("arrest"))
-    return ["ECGHub","CardiacRiskPage","OrderGeneratorHub"];
-  if (c.includes("airway") || c.includes("intub") || c.includes("rsi"))
-    return ["AirwayHub","OrderGeneratorHub"];
-  return ["LabInterpreter","ECGHub","OrderGeneratorHub"];
+const openHub = (route, patientId) => {
+  if (!route) return;
+  const path = route.startsWith("/") ? route : `/${route}`;
+  const q = patientId ? "?" + new URLSearchParams({ patientId }).toString() : "";
+  window.location.href = `${path}${q}`;
 };
 
-// ─── HUB REGISTRY ─────────────────────────────────────────────────────────────
-const HUBS = {
-  ECGHub:             { label:"ECG Hub",         icon:"⚡", color:T.teal   },
-  CardiacRiskPage:    { label:"Cardiac Risk",    icon:"🫀", color:T.coral  },
-  StrokeHub:          { label:"Stroke Hub",      icon:"🧠", color:T.purple },
-  ToxicologyHub:      { label:"Toxicology",      icon:"☣️", color:T.orange },
-  SepsisHub:          { label:"Sepsis Hub",      icon:"🔬", color:T.coral  },
-  AirwayHub:          { label:"Airway Hub",      icon:"💨", color:T.teal   },
-  LabInterpreter:     { label:"Lab Interpreter", icon:"🧪", color:T.teal   },
-  ImagingInterpreter: { label:"Imaging",         icon:"🩻", color:T.gold   },
-  DermatologyHub:     { label:"Derm Hub",        icon:"🔎", color:T.purple },
-  DermMorphologyRef:  { label:"Derm Ref",        icon:"📖", color:T.purple },
-  POCUSHub:           { label:"POCUS Hub",       icon:"📡", color:T.teal   },
-  OrderGeneratorHub:  { label:"Orders",          icon:"📋", color:T.gold   },
-  ElectrolyteHub:     { label:"Electrolytes",    icon:"⚗️", color:T.cyan   },
-  OrthoHub:           { label:"Ortho Hub",       icon:"🦴", color:T.gold   },
-  ERxHub:             { label:"ERx Hub",         icon:"💊", color:T.blue   },
-  ShockHub:           { label:"Shock Hub",       icon:"⚡", color:T.red    },
-  PsychHub:           { label:"Psych Hub",       icon:"🧩", color:T.purple },
-};
 
-const HUB_DOMAINS = [
-  { domain:"Cardiac & Vascular", color:T.coral,  hubs:["ECGHub","CardiacRiskPage","ShockHub"]             },
-  { domain:"Neuro & Psych",      color:T.purple, hubs:["StrokeHub","PsychHub"]                            },
-  { domain:"Critical Care",      color:T.orange, hubs:["SepsisHub","AirwayHub","ToxicologyHub"]            },
-  { domain:"Diagnostics",        color:T.teal,   hubs:["LabInterpreter","ImagingInterpreter","POCUSHub","ElectrolyteHub"] },
-  { domain:"Subspecialty",       color:T.gold,   hubs:["DermatologyHub","DermMorphologyRef","OrthoHub"]   },
-  { domain:"Orders & Rx",        color:T.blue,   hubs:["OrderGeneratorHub","ERxHub"]                      },
-];
 
 
 
@@ -190,7 +140,7 @@ function TopContextBar({ patient, onDischarge }) {
       {/* Right */}
       <div style={{ display:"flex", gap:8 }}>
         <Btn accent={T.teal} sm onClick={() => nav("QuickNote", { patientId:p.id })}>✏️ Quick Note</Btn>
-        <Btn accent={T.gold} sm onClick={() => nav("OrderGeneratorHub", { patientId:p.id })}>📋 Orders</Btn>
+        <Btn accent={T.gold} sm onClick={() => nav("EDOrderHub", { patientId:p.id })}>📋 Orders</Btn>
         <Btn accent={T.green} sm onClick={onDischarge}>🏥 Discharge</Btn>
       </div>
     </div>
@@ -278,7 +228,11 @@ function DocumentationLane({ patientId }) {
 // ─── CLINICAL DECISION LANE (CENTER) ─────────────────────────────────────────
 function ClinicalDecisionLane({ patient }) {
   const [showLib, setShowLib] = useState(false);
-  const suggested = suggestHubs(patient.cc);
+  const [activeCat, setActiveCat] = useState("All");
+
+  const suggested = suggestHubs(patient.cc).map(getHubById).filter(Boolean);
+  const all = liveHubs();
+  const displayed = activeCat === "All" ? all : all.filter(h => h.category === activeCat);
 
   return (
     <div style={{ flex:1, height:"100%", background:T.bg, display:"flex", flexDirection:"column", overflowY:"auto" }}>
@@ -321,55 +275,53 @@ function ClinicalDecisionLane({ patient }) {
         {/* Suggested hubs grid */}
         {!showLib && (
           <div className="pe-fade" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, paddingBottom:20 }}>
-            {suggested.map((key) => {
-              const h = HUBS[key];
-              if (!h) return null;
-              return (
-                <div
-                  key={key}
-                  onClick={() => nav(key, { patientId:patient.id })}
-                  style={{ background:`linear-gradient(135deg,${h.color}0d,${h.color}05)`, border:`1px solid ${h.color}30`, borderLeft:`3px solid ${h.color}`, borderRadius:10, padding:"11px 13px", cursor:"pointer", transition:"box-shadow .15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 0 16px ${h.color}1a`; }}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow="none"; }}
-                >
-                  <div style={{ fontSize:18, marginBottom:5 }}>{h.icon}</div>
-                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:h.color, marginBottom:2 }}>{h.label}</div>
-                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4 }}>Open for this patient →</div>
-                </div>
-              );
-            })}
+            {suggested.map((h) => (
+              <div
+                key={h.id}
+                onClick={() => openHub(h.route, patient.id)}
+                style={{ background:`linear-gradient(135deg,${h.color}0d,${h.color}05)`, border:`1px solid ${h.color}30`, borderLeft:`3px solid ${h.color}`, borderRadius:10, padding:"11px 13px", cursor:"pointer", transition:"box-shadow .15s" }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 0 16px ${h.color}1a`; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow="none"; }}
+              >
+                <div style={{ fontSize:18, marginBottom:5 }}>{h.icon}</div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:h.color, marginBottom:2 }}>{h.title}</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4 }}>Open for this patient →</div>
+              </div>
+            ))}
           </div>
         )}
 
         {/* Hub Library — full grouped list */}
         {showLib && (
           <div className="pe-fade" style={{ paddingBottom:20 }}>
-            {HUB_DOMAINS.map((dom, di) => (
-              <div key={di} style={{ marginBottom:16 }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:dom.color, textTransform:"uppercase", letterSpacing:"0.10em", marginBottom:7 }}>
-                  {dom.domain}
+            {/* Category filter */}
+            <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:14 }}>
+              {CATEGORIES.filter(c => c !== "Essential").map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCat(cat)}
+                  style={{ padding:"3px 9px", borderRadius:5, cursor:"pointer", border:`1px solid ${activeCat===cat?T.teal+"55":"rgba(26,53,85,0.5)"}`, background:activeCat===cat?"rgba(0,229,192,0.08)":"transparent", color:activeCat===cat?T.teal:T.txt4, fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:activeCat===cat?700:400 }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              {displayed.map((h) => (
+                <div
+                  key={h.id}
+                  onClick={() => openHub(h.route, patient.id)}
+                  style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(26,53,85,0.4)", cursor:"pointer", transition:"all .12s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background=`${h.color}0d`; e.currentTarget.style.borderColor=`${h.color}35`; }}
+                  onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor="rgba(26,53,85,0.4)"; }}
+                >
+                  <span style={{ fontSize:14 }}>{h.icon}</span>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:500, color:T.txt2 }}>{h.title}</span>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:T.txt4, marginLeft:"auto" }}>{h.category}</span>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>›</span>
                 </div>
-                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                  {dom.hubs.map((key) => {
-                    const h = HUBS[key];
-                    if (!h) return null;
-                    return (
-                      <div
-                        key={key}
-                        onClick={() => nav(key, { patientId:patient.id })}
-                        style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(26,53,85,0.4)", cursor:"pointer", transition:"all .12s" }}
-                        onMouseEnter={e => { e.currentTarget.style.background=`${h.color}0d`; e.currentTarget.style.borderColor=`${h.color}35`; }}
-                        onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor="rgba(26,53,85,0.4)"; }}
-                      >
-                        <span style={{ fontSize:14 }}>{h.icon}</span>
-                        <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:500, color:T.txt2 }}>{h.label}</span>
-                        <span style={{ marginLeft:"auto", fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:T.txt4 }}>›</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
@@ -380,7 +332,7 @@ function ClinicalDecisionLane({ patient }) {
 
 // ─── ORDERS LANE (RIGHT) ──────────────────────────────────────────────────────
 const ORDER_CARDS = [
-  { key:"OrderGeneratorHub", icon:"📋", label:"Order Generator", sub:"43-drug CPOE, 6 quick bundles", color:T.gold   },
+  { key:"EDOrderHub", icon:"📋", label:"Order Generator", sub:"43-drug CPOE, 6 quick bundles", color:T.gold   },
   { key:"ERxHub",            icon:"💊", label:"ERx Hub",         sub:"Discharge Rx and prescriptions", color:T.blue  },
 ];
 

@@ -103,7 +103,6 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100vh", overflow:"hidden", background:"#050f1e" }}>
-      <LakonyxHeader pageName={title} patient={patient} showClock={!NO_CLOCK.has(routeName)} />
       <div style={{ flex:1, overflow:"auto", minHeight:0 }}>
         {children}
       </div>

@@ -48,6 +48,7 @@ export const HUBS = [
   { name: "Shock Hub", route: "/ShockHub", keywords: ["shock", "hypotension"] },
   { name: "POCUS Hub", route: "/POCUSHub", keywords: ["pocus", "ultrasound"] },
   { name: "Procedure Hub", route: "/procedure-hub", keywords: ["procedure", "procedural"] },
+  { name: "Order Dashboard", route: "/OrderDashboard", keywords: ["orders", "order dashboard", "clinical orders", "order management", "pending orders"] },
 ];
 
 export function searchHubs(query) {

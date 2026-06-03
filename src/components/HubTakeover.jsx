@@ -1,46 +1,33 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { CATEGORIES, liveHubs, suggestHubs, getHubById } from "@/components/hubRegistry";
 
-const COLORS = {
-  teal:"#5eead4", gold:"#e6c878", blue:"#60a5fa", purple:"#a78bfa",
-  orange:"#fb923c", coral:"#fb7185", green:"#4ade80", cyan:"#22d3ee",
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// HubTakeover — the clinical hub launcher as a takeover overlay (key: h).
+//
+// Now consumes hubRegistry.js as the single source of truth. Its old embedded
+// HUBS array (a fourth diverging catalog with PascalCase routes that 404'd) is
+// gone. Routes are canonical, dead (live:false) hubs never surface, and when a
+// patient chief-complaint is present a "Suggested" rail leads using suggestHubs().
+//
+// Adjust the import path to wherever hubRegistry.js lives in your tree.
+// ─────────────────────────────────────────────────────────────────────────────
 
-const HUBS = [
-  { icon:"CP",  name:"Chest Pain",        cat:"Cardiac",        badge:"HEART", color:COLORS.coral,  route:"CardiacRiskPage" },
-  { icon:"ECG", name:"ECG",               cat:"Cardiac",        badge:"ACC",   color:COLORS.cyan,   route:"ECGHub" },
-  { icon:"RES", name:"Resuscitation",     cat:"Cardiac",        badge:"AHA",   color:COLORS.coral,  route:"ResusHub" },
-  { icon:"AIR", name:"Airway",            cat:"Pulmonary",      badge:"DAS",   color:COLORS.blue,   route:"AirwayHub" },
-  { icon:"VEN", name:"Ventilator",        cat:"Pulmonary",      badge:"ARDS",  color:COLORS.blue,   route:"VentPage" },
-  { icon:"DYS", name:"Dyspnea",           cat:"Pulmonary",      badge:"GUIDE", color:COLORS.blue,   route:"DyspneaHub" },
-  { icon:"SEP", name:"Sepsis",            cat:"Critical Care",  badge:"SSC",   color:COLORS.orange, route:"SepsisHub" },
-  { icon:"SHK", name:"Shock",             cat:"Critical Care",  badge:"UNI",   color:COLORS.orange, route:"ShockHub" },
-  { icon:"STK", name:"Stroke",            cat:"Neurology",      badge:"AHA",   color:COLORS.purple, route:"StrokeHub" },
-  { icon:"SZ",  name:"Seizure",           cat:"Neurology",      badge:"AES",   color:COLORS.purple, route:"SeizureHub" },
-  { icon:"HA",  name:"Headache",          cat:"Neurology",      badge:"GUIDE", color:COLORS.purple, route:"HeadacheHub" },
-  { icon:"TRA", name:"Trauma",            cat:"Trauma",         badge:"ATLS",  color:COLORS.orange, route:"TraumaHub" },
-  { icon:"ORT", name:"Ortho",             cat:"Trauma",         badge:"REF",   color:COLORS.gold,   route:"OrthoHub" },
-  { icon:"TOX", name:"Toxicology",        cat:"Toxicology",     badge:"ACMT",  color:COLORS.green,  route:"ToxicologyHub" },
-  { icon:"IMG", name:"Imaging",           cat:"Diagnostics",    badge:"AI",    color:COLORS.cyan,   route:"ImagingInterpreter" },
-  { icon:"US",  name:"POCUS",             cat:"Diagnostics",    badge:"ACEP",  color:COLORS.cyan,   route:"POCUSHub" },
-  { icon:"LAB", name:"Lab Interpreter",   cat:"Diagnostics",    badge:"AI",    color:COLORS.green,  route:"LabHub" },
-  { icon:"LYT", name:"Electrolytes",      cat:"Metabolic",      badge:"AB",    color:COLORS.teal,   route:"ElectrolyteAcidBaseHub" },
-  { icon:"DRM", name:"Dermatology",       cat:"Dermatology",    badge:"LRINEC",color:COLORS.orange, route:"DermatologyHub" },
-  { icon:"PED", name:"Pediatric",         cat:"Pediatrics",     badge:"PALS",  color:COLORS.blue,   route:"PedsHub" },
-  { icon:"ANA", name:"Anamnesis",         cat:"FHIR",           badge:"TEFCA", color:COLORS.cyan,   route:"AnamnesisPage" },
-  { icon:"RX",  name:"Pharmacology",      cat:"Pharmacology",   badge:"UNI",   color:COLORS.green,  route:"UnifiedPharmacologyHub" },
-  { icon:"NPI", name:"New Patient Input", cat:"Documentation",  badge:"NPI",   color:COLORS.teal,   route:"NewPatientInput" },
-  { icon:"ORD", name:"Order Generator",   cat:"Documentation",  badge:"CPOE",  color:COLORS.blue,   route:"OrderGeneratorHub" },
-  { icon:"COD", name:"Autocoder",         cat:"Documentation",  badge:"ICD",   color:COLORS.gold,   route:"AutocoderHub" },
-];
-
-const CAT_ORDER = ["Cardiac","Pulmonary","Critical Care","Neurology","Trauma","Toxicology","Diagnostics","Metabolic","Dermatology","Pediatrics","FHIR","Pharmacology","Documentation"];
+// Category display order — straight from the registry taxonomy (drop the
+// virtual "All"/"Essential" filters, which aren't real categories).
+const CAT_ORDER = CATEGORIES.filter((c) => c !== "All" && c !== "Essential");
 
 const DEFAULT_PATIENT = { name:"DOE, JANE", esi:2, age:54, sex:"F", cc:"Chest pain" };
 
 function matches(h, q) {
   if (!q) return true;
   const s = q.toLowerCase();
-  return h.name.toLowerCase().includes(s) || h.cat.toLowerCase().includes(s) || h.badge.toLowerCase().includes(s);
+  return (
+    h.title.toLowerCase().includes(s) ||
+    h.category.toLowerCase().includes(s) ||
+    h.badge.toLowerCase().includes(s) ||
+    h.abbr.toLowerCase().includes(s) ||
+    h.subtitle.toLowerCase().includes(s)
+  );
 }
 
 export default function HubTakeover({
@@ -57,20 +44,50 @@ export default function HubTakeover({
 
   useEffect(() => { inputRef.current?.focus(); }, [selected]);
 
-  const flat = useMemo(() => HUBS.filter(h => matches(h, query)), [query]);
+  // Live hubs only — dead / roadmap (live:false) entries never appear in the launcher.
+  const live = useMemo(() => liveHubs(), []);
+
+  // Patient-context rail: chief-complaint -> suggested hubs (live only).
+  const suggested = useMemo(
+    () => (patient?.cc ? suggestHubs(patient.cc).map(getHubById).filter((h) => h && h.live) : []),
+    [patient?.cc]
+  );
+
+  const filtered = useMemo(() => (query ? live.filter((h) => matches(h, query)) : live), [query, live]);
   useEffect(() => { setCursor(0); }, [query]);
+
+  // Grouped display order:
+  //  • searching        -> category groups over the filtered set, no suggested rail
+  //  • idle, has cc      -> Suggested rail first, then categories with the suggested
+  //                         hubs pulled out (nothing renders twice -> clean keyboard nav)
+  //  • idle, no cc       -> plain category catalog
+  const groups = useMemo(() => {
+    if (query) {
+      return CAT_ORDER
+        .map((cat) => ({ cat, items: filtered.filter((h) => h.category === cat) }))
+        .filter((g) => g.items.length);
+    }
+    const suggestedSet = new Set(suggested.map((h) => h.id));
+    const rest = live.filter((h) => !suggestedSet.has(h.id));
+    const catGroups = CAT_ORDER
+      .map((cat) => ({ cat, items: rest.filter((h) => h.category === cat) }))
+      .filter((g) => g.items.length);
+    return suggested.length
+      ? [{ cat: `Suggested · ${patient.cc}`, items: suggested, hot: true }, ...catGroups]
+      : catGroups;
+  }, [query, filtered, live, suggested, patient?.cc]);
+
+  // Flat list in display order drives keyboard nav. No duplicates (suggested hubs
+  // are removed from their category groups), so flat.indexOf is unambiguous.
+  const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
 
   const open = (h) => { setSelected(h); onOpenHub(h.route); };
 
   const onKey = (e) => {
-    if (e.key === "ArrowDown") { e.preventDefault(); setCursor(c => Math.min(c + 1, flat.length - 1)); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setCursor(c => Math.max(c - 1, 0)); }
+    if (e.key === "ArrowDown") { e.preventDefault(); setCursor((c) => Math.min(c + 1, flat.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setCursor((c) => Math.max(c - 1, 0)); }
     else if (e.key === "Enter" && flat[cursor]) { e.preventDefault(); open(flat[cursor]); }
   };
-
-  const grouped = CAT_ORDER
-    .map(cat => ({ cat, items: flat.filter(h => h.cat === cat) }))
-    .filter(g => g.items.length);
 
   return (
     <div className="lkx-ht" style={{ top: topOffset + 14, left: 16, right: 16, bottom: 16 }} role="dialog" aria-label="Clinical hubs">
@@ -97,9 +114,9 @@ export default function HubTakeover({
           {renderHub ? renderHub(selected) : (
             <div className="lkx-ht-placeholder">
               <div className="lkx-ht-ph-icon" style={{ color: selected.color, background: selected.color + "16", borderColor: selected.color + "40" }}>{selected.icon}</div>
-              <div className="lkx-ht-ph-name">{selected.name} Hub</div>
+              <div className="lkx-ht-ph-name">{selected.title}</div>
               <div className="lkx-ht-ph-sub">
-                In the live app, the {selected.name} hub mounts here — scoped to {patient.name}, with the board still underneath. Pass a renderHub prop to wire the real component.
+                In the live app, the {selected.title} hub mounts here — scoped to {patient.name}, with the board still underneath. Pass a renderHub prop to wire the real component.
               </div>
               <button className="lkx-ht-ph-back" onClick={() => setSelected(null)}>‹ Back to all hubs</button>
             </div>
@@ -120,22 +137,22 @@ export default function HubTakeover({
           />
           <div className="lkx-ht-body">
             {flat.length === 0 && <div className="lkx-ht-empty">No hubs match "{query}"</div>}
-            {grouped.map(g => (
+            {groups.map((g) => (
               <div className="lkx-ht-group" key={g.cat}>
-                <div className="lkx-ht-cat">{g.cat}</div>
+                <div className={"lkx-ht-cat" + (g.hot ? " hot" : "")}>{g.cat}</div>
                 <div className="lkx-ht-grid">
-                  {g.items.map(h => {
+                  {g.items.map((h) => {
                     const idx = flat.indexOf(h);
                     return (
                       <button
-                        key={h.route + h.name}
+                        key={h.id}
                         className={"lkx-ht-card" + (idx === cursor ? " sel" : "")}
                         style={{ borderLeftColor: h.color }}
                         onMouseEnter={() => setCursor(idx)}
                         onClick={() => open(h)}
                       >
                         <span className="lkx-ht-card-icon" style={{ color: h.color, background: h.color + "1a", borderColor: h.color + "40" }}>{h.icon}</span>
-                        <span className="lkx-ht-card-name">{h.name}</span>
+                        <span className="lkx-ht-card-name">{h.title}</span>
                         <span className="lkx-ht-card-badge" style={{ color: h.color, borderColor: h.color + "55", background: h.color + "14" }}>{h.badge}</span>
                       </button>
                     );
@@ -189,17 +206,18 @@ const CSS = `
 .lkx-ht-empty { padding:40px; text-align:center; color:var(--muted-2); font-size:13px; }
 .lkx-ht-group { margin-bottom:16px; }
 .lkx-ht-cat { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted-2); margin:8px 2px; }
+.lkx-ht-cat.hot { color:var(--teal); }
 .lkx-ht-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:9px; }
 .lkx-ht-card { display:flex; align-items:center; gap:9px; padding:11px 12px; border-radius:10px; cursor:pointer; text-align:left; color:var(--text); background:rgba(8,22,40,0.6); border:1px solid var(--stroke); border-left:3px solid var(--stroke); transition:transform .13s, border-color .13s, background .13s; }
 .lkx-ht-card:hover, .lkx-ht-card.sel { transform:translateY(-2px); background:rgba(255,255,255,0.04); }
 .lkx-ht-card.sel { box-shadow:0 0 0 1px var(--stroke-hi); }
-.lkx-ht-card-icon { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700; letter-spacing:0.03em; width:32px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid; flex-shrink:0; }
+.lkx-ht-card-icon { font-size:15px; line-height:1; width:32px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid; flex-shrink:0; }
 .lkx-ht-card-name { flex:1; font-size:13px; font-weight:600; min-width:0; }
 .lkx-ht-card-badge { font-family:'JetBrains Mono',monospace; font-size:7.5px; font-weight:700; padding:2px 6px; border-radius:20px; border:1px solid; letter-spacing:0.05em; flex-shrink:0; }
 
 .lkx-ht-pane { flex:1; overflow-y:auto; display:flex; }
 .lkx-ht-placeholder { margin:auto; text-align:center; max-width:440px; padding:40px; }
-.lkx-ht-ph-icon { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; letter-spacing:0.04em; width:84px; height:60px; display:flex; align-items:center; justify-content:center; border-radius:14px; border:1px solid; margin:0 auto 16px; }
+.lkx-ht-ph-icon { font-size:30px; line-height:1; width:84px; height:60px; display:flex; align-items:center; justify-content:center; border-radius:14px; border:1px solid; margin:0 auto 16px; }
 .lkx-ht-ph-name { font-size:22px; font-weight:700; margin-bottom:10px; }
 .lkx-ht-ph-sub { font-size:13px; line-height:1.6; color:var(--muted); margin-bottom:20px; }
 .lkx-ht-ph-back { background:rgba(94,234,212,0.08); border:1px solid rgba(94,234,212,0.35); color:var(--teal); font-size:13px; font-weight:600; padding:8px 16px; border-radius:8px; cursor:pointer; transition:all .14s; }

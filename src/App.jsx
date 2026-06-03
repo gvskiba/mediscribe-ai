@@ -155,7 +155,7 @@ import FollowUpHub from '@/pages/FollowUpHub';
 import PatientEncounter from '@/pages/PatientEncounter';
 import LakonyxInvestorPitch from '@/pages/LakonyxInvestorPitch';
 import LakonyxLandingPage from '@/pages/LakonyxLandingPage';
-import LakonyxNavBar from '@/pages/LakonyxNavBar';
+
 
 // Pages that have their own built-in AI floating button
 const PAGES_WITH_OWN_AI = new Set(["/NewPatientInput", "/patientchart", "/CommandCenter"]);
@@ -250,7 +250,7 @@ const AuthenticatedApp = () => {
         <Route path="/command-center"    element={<LayoutWrapper currentPageName="CommandCenterWrapper"><CommandCenterWrapper /></LayoutWrapper>} />
         <Route path="/landing"           element={<LakonyxLanding />} />
         <Route path="/LakonyxLandingPage" element={<LakonyxLandingPage />} />
-        <Route path="/LakonyxNavBar" element={<LakonyxNavBar />} />
+
         <Route path="/new-technology"    element={<LayoutWrapper currentPageName="LakonyxNewTechnology"><LakonyxNewTechnology /></LayoutWrapper>} />
         <Route path="/huddle-board"        element={<LayoutWrapper currentPageName="HuddleBoard"><HuddleBoard /></LayoutWrapper>} />
         <Route path="/EDOrderHub"          element={<LayoutWrapper currentPageName="EDOrderHub"><EDOrderHub /></LayoutWrapper>} />

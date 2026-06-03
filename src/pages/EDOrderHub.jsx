@@ -942,7 +942,7 @@ Mark each order status as: done (already given), active (currently running), or 
   },[showToast]);
 
   const exportSet=useCallback(async set=>{
-    const json=JSON.stringify({notryaOrderSet:true,version:1,name:set.name,orders:set.orders},null,2);
+    const json=JSON.stringify({lakonyxOrderSet:true,version:1,name:set.name,orders:set.orders},null,2);
     await copyText(json);
     showToast('📋 Set JSON copied to clipboard');
   },[showToast]);
@@ -950,14 +950,14 @@ Mark each order status as: done (already given), active (currently running), or 
   const importFromJson=useCallback(str=>{
     try{
       const data=JSON.parse(str);
-      if(!data.notryaOrderSet||!Array.isArray(data.orders))throw new Error('Invalid');
+      if((!data.lakonyxOrderSet&&!data.notryaOrderSet)||!Array.isArray(data.orders))throw new Error('Invalid');
       const newSet={id:Date.now().toString(),name:data.name||'Imported Set',savedAt:new Date().toISOString(),orders:data.orders};
       setSavedSets(p=>[newSet,...p]);
       setImportInput('');
       setShowImport(false);
       showToast(`✓ Imported “${newSet.name}” — ${newSet.orders.length} orders`);
     }catch{
-      showToast('⚠ Invalid format — paste a Notrya order set JSON');
+      showToast('⚠ Invalid format — paste a Lakonyx order set JSON');
     }
   },[showToast]);
 
@@ -1483,7 +1483,7 @@ Mark each order status as: done (already given), active (currently running), or 
                     className="import-ta"
                     value={importInput}
                     onChange={e=>setImportInput(e.target.value)}
-                    placeholder='{"notryaOrderSet": true, "name": "...", "orders": [...]}'
+                    placeholder='{"lakonyxOrderSet": true, "name": "...", "orders": [...]}'
                   />
                   <div style={{display:'flex',gap:5}}>
                     <button className="import-btn" onClick={()=>importFromJson(importInput)}>Import Set</button>

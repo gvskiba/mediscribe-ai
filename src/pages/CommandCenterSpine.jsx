@@ -1,23 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 /*
-  CommandCenterSpine - build 2: the always-on frame.
+  CommandCenterSpine - build 3: the first real surface (orders).
 
-  Build 1 proved the wiring: single keys summon surfaces over a bare board,
-  Esc peels layers back, and an input-focus guard protects typing. That
-  contract is preserved verbatim below (SURFACE_KEYS, SURFACE_META,
-  isEditable, useCommandKeys).
-
-  Build 2 replaces the bare board with the real always-on frame:
-    - a persistent Banner (LX mark, selected-patient identity, and the
-      always-visible allergy chip) that no surface and no Esc ever dismisses
-    - a three-column ED trackboard (Waiting / In Progress / Disposition)
-      with selectable, colorblind-safe patient cards
-    - arrow Up/Down to move the selection across the board with the keyboard
-
-  The nine summon surfaces (o n l i a h v p t) still render as labeled stubs.
-  Their real content is a later build; here they only prove they now overlay
-  a real banner + board instead of a placeholder div.
+  Build 1 proved the wiring; build 2 added the always-on banner + board frame.
+  Build 3 replaces the orders stub with a real right half-sheet: search the
+  catalog, toggle orders into a pending tray, Sign, and the sheet closes so the
+  loop ends on the board. The other eight keys (n l i a h v p t) stay labeled
+  stubs until their turn. The banner, board, keyboard contract, and focus guard
+  are unchanged.
 
   Base44-safe: single file, default export, no Router, no localStorage,
   no <form>, no alert(), straight quotes only, no non-ASCII glyphs.
@@ -171,6 +162,42 @@ const PATIENTS = [
 
 /* Flattened, column-ordered list - drives arrow-key selection order. */
 const ORDER = COLUMNS.flatMap((c) => PATIENTS.filter((p) => p.col === c.id).map((p) => p.id));
+
+/* Order catalog for the orders surface (config; becomes an entity/order set later). */
+const ORDER_CATALOG = [
+  { id: "cbc", cat: "Lab", label: "CBC with differential" },
+  { id: "bmp", cat: "Lab", label: "Basic metabolic panel" },
+  { id: "cmp", cat: "Lab", label: "Comprehensive metabolic panel" },
+  { id: "trop", cat: "Lab", label: "Troponin, high-sensitivity" },
+  { id: "lactate", cat: "Lab", label: "Lactate" },
+  { id: "vbg", cat: "Lab", label: "Venous blood gas" },
+  { id: "lipase", cat: "Lab", label: "Lipase" },
+  { id: "ua", cat: "Lab", label: "Urinalysis, reflex culture" },
+  { id: "coags", cat: "Lab", label: "PT / INR / PTT" },
+  { id: "ddimer", cat: "Lab", label: "D-dimer" },
+  { id: "bcx", cat: "Lab", label: "Blood cultures x2" },
+  { id: "cxr", cat: "Imaging", label: "Chest X-ray, portable" },
+  { id: "ecg", cat: "Imaging", label: "ECG, 12-lead" },
+  { id: "cth", cat: "Imaging", label: "CT head without contrast" },
+  { id: "ctap", cat: "Imaging", label: "CT abdomen / pelvis with contrast" },
+  { id: "cta", cat: "Imaging", label: "CTA chest, PE protocol" },
+  { id: "usruq", cat: "Imaging", label: "Ultrasound, right upper quadrant" },
+  { id: "xr", cat: "Imaging", label: "X-ray, extremity" },
+  { id: "apap", cat: "Med", label: "Acetaminophen 1 g PO" },
+  { id: "ibu", cat: "Med", label: "Ibuprofen 600 mg PO" },
+  { id: "zofran", cat: "Med", label: "Ondansetron 4 mg IV" },
+  { id: "morphine", cat: "Med", label: "Morphine 4 mg IV" },
+  { id: "toradol", cat: "Med", label: "Ketorolac 15 mg IV" },
+  { id: "ctx", cat: "Med", label: "Ceftriaxone 1 g IV" },
+  { id: "nsbolus", cat: "Med", label: "Normal saline 1 L bolus" },
+  { id: "asa", cat: "Med", label: "Aspirin 324 mg PO chewed" },
+  { id: "iv", cat: "Nursing", label: "Establish IV access" },
+  { id: "monitor", cat: "Nursing", label: "Continuous cardiac monitor" },
+  { id: "npo", cat: "Nursing", label: "NPO" },
+];
+
+const CAT_COLOR = { Lab: T.teal, Imaging: T.purple, Med: T.gold, Nursing: T.blue };
+const CATALOG_BY_ID = ORDER_CATALOG.reduce((m, o) => { m[o.id] = o; return m; }, {});
 
 /* ---------------------------------------- primitives ---------------------------------------- */
 function AcuityBadge({ esi }) {
@@ -446,6 +473,215 @@ function SurfaceStub({ id, patient, depth, onClose }) {
   );
 }
 
+/* ---------------------------------------- orders surface (first real surface) ----------------------------------------
+   A right half-sheet that summons over the frame. Search the catalog, toggle
+   orders into a pending tray, then Sign - which closes the sheet so the loop
+   ends on the board. Self-contained: lift this verbatim into its own component
+   file later. Keyboard: ArrowUp/Down move the highlight, Enter toggles the
+   highlighted order, Cmd/Ctrl+Enter signs. The global hook ignores arrows while
+   a surface is open, so there is no collision; typing in the search field is
+   protected by the same focus guard the board uses. */
+function OrdersSurface({ patient, depth, onClose }) {
+  const [query, setQuery] = useState("");
+  const [pending, setPending] = useState([]);
+  const [hi, setHi] = useState(0);
+  const [signed, setSigned] = useState(false);
+
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? ORDER_CATALOG.filter((o) => o.label.toLowerCase().indexOf(q) >= 0 || o.cat.toLowerCase().indexOf(q) >= 0)
+    : ORDER_CATALOG;
+
+  useEffect(() => {
+    setHi((h) => Math.max(0, Math.min(h, Math.max(0, filtered.length - 1))));
+  }, [filtered.length]);
+
+  const toggle = useCallback((id) => {
+    setPending((p) => (p.indexOf(id) >= 0 ? p.filter((x) => x !== id) : p.concat(id)));
+  }, []);
+
+  const sign = useCallback(() => {
+    setPending((p) => {
+      if (p.length > 0) setSigned(true);
+      return p;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!signed) return undefined;
+    const t = setTimeout(() => onClose(), 950);
+    return () => clearTimeout(t);
+  }, [signed, onClose]);
+
+  // local keyboard for the sheet; mirrors current values through a ref so the
+  // window listener only needs to mount once.
+  const st = useRef({ filtered, hi, toggle, sign });
+  st.current = { filtered, hi, toggle, sign };
+  useEffect(() => {
+    function onKey(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        st.current.sign();
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHi((h) => Math.min(st.current.filtered.length - 1, h + 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHi((h) => Math.max(0, h - 1));
+        return;
+      }
+      if (e.key === "Enter") {
+        const item = st.current.filtered[st.current.hi];
+        if (item) {
+          e.preventDefault();
+          st.current.toggle(item.id);
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const sheet = { ...tierStyle("half-sheet"), zIndex: 100 + depth };
+
+  return (
+    <div style={sheet}>
+      {/* header */}
+      <div style={{ flexShrink: 0, padding: "14px 16px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 16, color: T.bright }}>Orders</span>
+        <span style={{ fontFamily: T.mono, fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {patient ? patient.name + " / " + patient.room : "No patient"}
+        </span>
+        <button onClick={onClose} style={{ marginLeft: "auto", cursor: "pointer", background: "transparent", border: "1px solid " + T.border, borderRadius: 6, color: T.dim, fontFamily: T.mono, fontSize: 11, padding: "4px 9px" }}>
+          Esc
+        </button>
+      </div>
+
+      {/* search */}
+      <div style={{ flexShrink: 0, padding: "10px 14px", borderBottom: "1px solid " + T.border }}>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filter orders (e.g. trop, CT, zofran)"
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            background: T.bg,
+            border: "1px solid " + T.border,
+            borderRadius: 8,
+            padding: "8px 11px",
+            color: T.bright,
+            fontFamily: T.sans,
+            fontSize: 13,
+            outline: "none",
+          }}
+        />
+      </div>
+
+      {/* catalog */}
+      <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "8px 10px" }}>
+        {filtered.length === 0 && (
+          <div style={{ fontFamily: T.sans, fontSize: 13, color: T.dim, padding: 16, textAlign: "center" }}>No matching orders.</div>
+        )}
+        {filtered.map((o, idx) => {
+          const added = pending.indexOf(o.id) >= 0;
+          const isHi = idx === hi;
+          const c = CAT_COLOR[o.cat] || T.teal;
+          return (
+            <button
+              key={o.id}
+              onClick={() => toggle(o.id)}
+              onMouseEnter={() => setHi(idx)}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "8px 10px",
+                marginBottom: 5,
+                borderRadius: 8,
+                background: added ? "rgba(0,229,192,0.10)" : isHi ? T.cardHi : "transparent",
+                border: "1px solid " + (added ? T.borderHi : isHi ? T.border : "transparent"),
+              }}
+            >
+              <span style={{ fontFamily: T.mono, fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: c, border: "1px solid " + c + "66", borderRadius: 4, padding: "2px 5px", flexShrink: 0, minWidth: 52, textAlign: "center" }}>
+                {o.cat.toUpperCase()}
+              </span>
+              <span style={{ fontFamily: T.sans, fontSize: 13, color: T.bright, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {o.label}
+              </span>
+              <span style={{ fontFamily: T.mono, fontSize: 11, color: added ? T.teal : T.faint, flexShrink: 0 }}>
+                {added ? "added" : "+"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* pending tray */}
+      {pending.length > 0 && (
+        <div style={{ flexShrink: 0, borderTop: "1px solid " + T.border, padding: "10px 12px", maxHeight: "26vh", overflow: "auto" }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 7 }}>
+            PENDING ({pending.length})
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {pending.map((id) => {
+              const o = CATALOG_BY_ID[id];
+              if (!o) return null;
+              return (
+                <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: T.card, border: "1px solid " + T.border, borderRadius: 7, padding: "4px 6px 4px 9px" }}>
+                  <span style={{ fontFamily: T.sans, fontSize: 12, color: T.txt }}>{o.label}</span>
+                  <button onClick={() => toggle(id)} style={{ cursor: "pointer", background: "transparent", border: "none", color: T.coral, fontFamily: T.mono, fontSize: 13, lineHeight: 1, padding: "0 2px" }}>
+                    x
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* sign bar */}
+      <div style={{ flexShrink: 0, borderTop: "1px solid " + T.border, padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontFamily: T.mono, fontSize: 10.5, color: T.faint }}>Cmd / Ctrl + Enter</span>
+        <button
+          onClick={sign}
+          disabled={pending.length === 0}
+          style={{
+            marginLeft: "auto",
+            cursor: pending.length === 0 ? "default" : "pointer",
+            background: pending.length === 0 ? "rgba(0,229,192,0.10)" : T.teal,
+            color: pending.length === 0 ? T.faint : T.bg,
+            border: "none",
+            borderRadius: 9,
+            padding: "9px 18px",
+            fontFamily: T.sans,
+            fontWeight: 700,
+            fontSize: 13,
+          }}
+        >
+          {pending.length === 0 ? "Sign orders" : "Sign " + pending.length + " order" + (pending.length === 1 ? "" : "s")}
+        </button>
+      </div>
+
+      {/* signed confirmation, then auto-return to the board */}
+      {signed && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(5,15,30,0.92)", borderRadius: "14px 0 0 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <div style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 20, color: T.teal }}>Signed {pending.length} order{pending.length === 1 ? "" : "s"}</div>
+          <div style={{ fontFamily: T.sans, fontSize: 13, color: T.dim }}>Returning to the board.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------------------------------------- footer hint (keycap legend) ---------------------------------------- */
 function HintBar() {
   const keys = ["o orders", "n note", "l labs", "i imaging", "a allergies", "h hub", "v vitals", "p patient", "t triage"];
@@ -533,15 +769,13 @@ export default function CommandCenterSpine() {
       <HintBar />
 
       {/* summoned surfaces overlay the frame; banner/board stay put underneath */}
-      {stack.map((id, depth) => (
-        <SurfaceStub
-          key={id + "-" + depth}
-          id={id}
-          patient={patient}
-          depth={depth}
-          onClose={() => setStack((s) => s.filter((_, idx) => idx !== depth))}
-        />
-      ))}
+      {stack.map((id, depth) => {
+        const close = () => setStack((s) => s.filter((_, idx) => idx !== depth));
+        if (id === "orders") {
+          return <OrdersSurface key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
+        }
+        return <SurfaceStub key={id + "-" + depth} id={id} patient={patient} depth={depth} onClose={close} />;
+      })}
 
       {palette && (
         <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(5,15,30,0.6)", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "14vh" }}>

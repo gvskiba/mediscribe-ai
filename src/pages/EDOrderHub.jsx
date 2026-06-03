@@ -588,7 +588,7 @@ const buildMDMText=(orders,time)=>{
   if(proc.length)L.push(`Procedures/Monitoring: ${proc.join(', ')}`);
   if(cons.length)L.push(`Consults Placed:       ${cons.join(', ')}`);
   L.push(`\nMDM Complexity (est.): ${cx}`);
-  return`${BAR}\n[MDM — Auto-populated from Notrya EDOrderHub]\n${'─'.repeat(46)}\n${L.join('\n')}\n${BAR}\n[Signed: ${time}]`;
+  return`${BAR}\n[MDM — Auto-populated from Lakonyx EDOrderHub]\n${'─'.repeat(46)}\n${L.join('\n')}\n${BAR}\n[Signed: ${time}]`;
 };
 
 // ── Quick Dose Strip ───────────────────────────────────────────────────────────────────────────────
@@ -1423,8 +1423,8 @@ Mark each order status as: done (already given), active (currently running), or 
               if(queue.length){
                 const now=ts();
                 const snap={orders:[...queue],mdmText:buildMDMText(queue,now),signedAt:now,count:queue.length};
-                window.__notryaMDMBridge=snap;
-                try{window.dispatchEvent(new CustomEvent('notryaOrdersSigned',{detail:snap}));}catch(_){}
+                window.__lakonyxMDMBridge=snap;
+                try{window.dispatchEvent(new CustomEvent('lakonyxOrdersSigned',{detail:snap}));}catch(_){}
                 setSignedSnapshot(snap);
                 setQueue([]);setActiveBundle(null);setSuggestions([]);
                 setAllergyAlts(null);setConflicts([]);dismissedRef.current.clear();
@@ -1528,7 +1528,7 @@ Mark each order status as: done (already given), active (currently running), or 
               <pre className="mdm-pre">{signedSnapshot.mdmText}</pre>
               <div style={{marginTop:8,fontSize:9,color:T.txt4,lineHeight:1.5}}>
                 <div>✦ Paste into MDMBuilderTab → Data &amp; Management section</div>
-                <div style={{marginTop:3}}>✦ Event fired: <code style={{background:'rgba(255,255,255,.06)',padding:'1px 5px',borderRadius:3,fontSize:8,fontFamily:"'JetBrains Mono',monospace"}}>notryaOrdersSigned</code> · window.__notryaMDMBridge set</div>
+                <div style={{marginTop:3}}>✦ Event fired: <code style={{background:'rgba(255,255,255,.06)',padding:'1px 5px',borderRadius:3,fontSize:8,fontFamily:"'JetBrains Mono',monospace"}}>lakonyxOrdersSigned</code> · window.__lakonyxMDMBridge set</div>
               </div>
             </div>
             {/* Footer */}

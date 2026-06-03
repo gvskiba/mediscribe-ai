@@ -28,7 +28,7 @@ import EDOrderHub from '@/pages/EDOrderHub';
 import OrderDashboard from '@/pages/OrderDashboard';
 import CardiacHub from '@/pages/CardiacHub';
 import TraumaHub from '@/pages/TraumaHub';
-import HubSelectorPage from '@/pages/HubSelectorPage';
+import HubLauncherPage from '@/pages/HubLauncherPage';
 import OBGYNHub from '@/pages/OBGYNHub';
 import AirwayHub from '@/pages/AirwayHub';
 import ToxicologyHub from '@/pages/ToxicologyHub';
@@ -331,7 +331,7 @@ const AuthenticatedApp = () => {
         <Route path="/PediatricDosingCalculator" element={<LayoutWrapper currentPageName="PediatricDosing"><PediatricDosingCalculator /></LayoutWrapper>} />
 
         {/* Specialty hubs */}
-        <Route path="/hub"             element={<LayoutWrapper currentPageName="HubSelectorPage"><HubSelectorPage /></LayoutWrapper>} />
+        <Route path="/hub"             element={<HubLauncherPage />} />
         <Route path="/cardiac-hub"     element={<LayoutWrapper currentPageName="CardiacHub"><CardiacHub /></LayoutWrapper>} />
         <Route path="/trauma-hub"      element={<LayoutWrapper currentPageName="TraumaHub"><TraumaHub /></LayoutWrapper>} />
         <Route path="/ob-hub"          element={<LayoutWrapper currentPageName="OBGYNHub"><OBGYNHub /></LayoutWrapper>} />

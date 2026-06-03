@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useNavigate } from "react-router-dom";
 
 const T = {
   bg: "#050f1e", panel: "#081628", card: "#0b1e36", up: "#0e2544",
@@ -113,7 +112,6 @@ const BLANK_FORM = {
 };
 
 export default function OrderDashboard() {
-  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterTab, setFilterTab] = useState("all");

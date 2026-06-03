@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import UniversalSearchBar from "./UniversalSearchBar";
-import FavoritesBar from "./FavoritesBar";
-import BreadcrumbBar from "./BreadcrumbBar";
+
 import { PAGES, CATS, CAT_COLOR } from "@/lib/navPages";
 import { base44 } from "@/api/base44Client";
 

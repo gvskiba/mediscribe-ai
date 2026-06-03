@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 /*
-  CommandCenterSpine - build 5: triage popover + note dock.
+  CommandCenterSpine - build 6: the popover set, complete.
 
-  Build 1 proved the wiring; build 2 added the always-on banner + board; build 3
-  made orders a real right half-sheet. Build 5 adds two more real surfaces in the
-  recommended order: the triage popover (t) - a read-only nurse triage note that
-  is the mold the other popovers reuse - and the note dock (n) - an APSO editor
-  in the bottom dock that leaves the board visible above it while you document.
-  Remaining stubs: l, i, a, h, v, p. The banner, board, keyboard contract, and
-  focus guard are unchanged.
+  Build 1 wiring; build 2 banner + board; build 3 orders half-sheet; build 5
+  triage popover + note dock. Build 6 fills the rest of the popover tier off the
+  proven triage mold (PopoverShell): labs (l), imaging (i), allergies detail (a),
+  vitals trend (v), and patient info (p). Every keyboard surface is now real
+  except the one remaining tier: the h clinical-hub takeover. The banner, board,
+  keyboard contract, and focus guard are unchanged.
+
+  NOTE: this is the last build that fits the single-file budget. The h takeover
+  build is where surfaces move into their own component files.
 
   Base44-safe: single file, default export, no Router, no localStorage,
   no <form>, no alert(), straight quotes only, no non-ASCII glyphs.
@@ -221,6 +223,59 @@ function vitalFlag(key, v) {
   if (key === "temp") return v > 100.4 || v < 96.5;
   if (key === "pain") return v >= 7;
   return false;
+}
+
+/* Resulted labs, keyed by patient id. flag is "H", "L", or "" (text, colorblind-safe). */
+const LABS_BY_ID = {
+  p1: [
+    { name: "Troponin hs", value: "18", unit: "ng/L", ref: "<14", flag: "H" },
+    { name: "Potassium", value: "4.1", unit: "mmol/L", ref: "3.5-5.1", flag: "" },
+    { name: "Creatinine", value: "1.0", unit: "mg/dL", ref: "0.7-1.3", flag: "" },
+    { name: "Hemoglobin", value: "14.2", unit: "g/dL", ref: "13.5-17.5", flag: "" },
+  ],
+  p6: [
+    { name: "WBC", value: "13.8", unit: "K/uL", ref: "4.0-11.0", flag: "H" },
+    { name: "Lipase", value: "44", unit: "U/L", ref: "13-60", flag: "" },
+    { name: "Lactate", value: "1.6", unit: "mmol/L", ref: "0.5-2.0", flag: "" },
+  ],
+  p8: [
+    { name: "Lactate", value: "4.2", unit: "mmol/L", ref: "0.5-2.0", flag: "H" },
+    { name: "WBC", value: "18.6", unit: "K/uL", ref: "4.0-11.0", flag: "H" },
+    { name: "Creatinine", value: "1.9", unit: "mg/dL", ref: "0.7-1.3", flag: "H" },
+    { name: "Bicarbonate", value: "18", unit: "mmol/L", ref: "22-29", flag: "L" },
+  ],
+  p9: [
+    { name: "Creatinine", value: "1.1", unit: "mg/dL", ref: "0.7-1.3", flag: "" },
+    { name: "Urine RBC", value: "many", unit: "/hpf", ref: "0-3", flag: "H" },
+  ],
+};
+
+/* Imaging studies, keyed by patient id. status is Final / Prelim / Pending. */
+const IMAGING_BY_ID = {
+  p1: [{ study: "ECG, 12-lead", status: "Final", impression: "Sinus rhythm, no acute ST changes." }, { study: "Chest X-ray, portable", status: "Prelim", impression: "No acute cardiopulmonary process." }],
+  p3: [{ study: "X-ray, right ankle", status: "Final", impression: "No acute fracture. Soft tissue swelling laterally." }],
+  p6: [{ study: "CT abdomen / pelvis with contrast", status: "Pending", impression: "Acquisition complete, awaiting read." }],
+  p8: [{ study: "Chest X-ray, portable", status: "Final", impression: "Right lower lobe opacity, concerning for pneumonia." }],
+};
+
+/* Allergen detail lookup (reaction + severity), reused across patients. */
+const ALLERGY_DETAIL = {
+  Penicillin: { reaction: "Hives", severity: "Moderate" },
+  Aspirin: { reaction: "Angioedema", severity: "Severe" },
+  Sulfa: { reaction: "Rash", severity: "Mild" },
+  Codeine: { reaction: "Nausea", severity: "Mild" },
+  Iodine: { reaction: "Urticaria", severity: "Moderate" },
+  Latex: { reaction: "Contact dermatitis", severity: "Mild" },
+  NSAIDs: { reaction: "Bronchospasm", severity: "Severe" },
+  Vancomycin: { reaction: "Red man syndrome", severity: "Moderate" },
+};
+
+/* Synthesize a short, plausible trend from a current numeric value (no per-patient trend data). */
+function trendFrom(cur) {
+  const n = typeof cur === "number" ? cur : parseFloat(cur);
+  if (isNaN(n)) return [cur, cur, cur];
+  const step = Math.max(1, Math.round(Math.abs(n) * 0.05));
+  return [n - step * 2, n - step, n];
 }
 
 /* ---------------------------------------- primitives ---------------------------------------- */
@@ -960,6 +1015,190 @@ function TriageSurface({ patient, depth, onClose }) {
   );
 }
 
+/* ---------------------------------------- popover surfaces (the proven mold) ----------------------------------------
+   PopoverShell is the literal mold triage established: popover-tier container,
+   a standard header (title + patient + Esc), and a scrollable body slot. Labs,
+   Imaging, Allergies, Vitals, and Patient all pour into it. Each is read-only
+   and self-contained / lift-out-ready. */
+function PopoverShell({ title, patient, depth, onClose, children, width }) {
+  const sheet = { ...tierStyle("popover"), zIndex: 100 + depth, width: width || "min(460px, 86vw)", maxHeight: "82vh" };
+  return (
+    <div style={sheet}>
+      <div style={{ flexShrink: 0, padding: "14px 16px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 16, color: T.bright }}>{title}</span>
+        <span style={{ fontFamily: T.mono, fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {patient ? patient.name + " / " + patient.room : "No patient"}
+        </span>
+        <button onClick={onClose} style={{ marginLeft: "auto", cursor: "pointer", background: "transparent", border: "1px solid " + T.border, borderRadius: 6, color: T.dim, fontFamily: T.mono, fontSize: 11, padding: "4px 9px" }}>
+          Esc
+        </button>
+      </div>
+      <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: 16 }}>{children}</div>
+    </div>
+  );
+}
+
+function EmptyNote({ text }) {
+  return <div style={{ fontFamily: T.sans, fontSize: 13, color: T.dim, textAlign: "center", padding: 20 }}>{text}</div>;
+}
+
+function LabsSurface({ patient, depth, onClose }) {
+  const rows = patient ? LABS_BY_ID[patient.id] : null;
+  return (
+    <PopoverShell title="Labs" patient={patient} depth={depth} onClose={onClose}>
+      {!rows || rows.length === 0 ? (
+        <EmptyNote text={patient ? "No labs resulted yet." : "Select a patient to view labs."} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {rows.map((r) => {
+            const abn = r.flag === "H" || r.flag === "L";
+            const c = r.flag === "H" ? T.orange : r.flag === "L" ? T.blue : T.dim;
+            return (
+              <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 10, background: T.bg, border: "1px solid " + (abn ? "rgba(255,159,67,0.35)" : T.border), borderRadius: 8, padding: "8px 10px" }}>
+                <span style={{ fontFamily: T.sans, fontSize: 13, color: T.txt, flex: 1 }}>{r.name}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 700, color: abn ? T.bright : T.txt }}>
+                  {r.value}<span style={{ fontSize: 10, color: T.dim, fontWeight: 400 }}> {r.unit}</span>
+                </span>
+                <span style={{ fontFamily: T.mono, fontSize: 11, fontWeight: 700, color: c, minWidth: 16, textAlign: "center" }}>{r.flag || "-"}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 10, color: T.faint, minWidth: 64, textAlign: "right" }}>{r.ref}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </PopoverShell>
+  );
+}
+
+function ImagingSurface({ patient, depth, onClose }) {
+  const rows = patient ? IMAGING_BY_ID[patient.id] : null;
+  return (
+    <PopoverShell title="Imaging" patient={patient} depth={depth} onClose={onClose}>
+      {!rows || rows.length === 0 ? (
+        <EmptyNote text={patient ? "No imaging ordered." : "Select a patient to view imaging."} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {rows.map((r) => {
+            const pending = r.status === "Pending";
+            const sc = r.status === "Final" ? T.teal : r.status === "Prelim" ? T.gold : T.faint;
+            return (
+              <div key={r.study} style={{ background: T.bg, border: "1px solid " + T.border, borderRadius: 8, padding: "9px 11px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                  <span style={{ fontFamily: T.sans, fontSize: 13.5, fontWeight: 600, color: T.bright, flex: 1 }}>{r.study}</span>
+                  <span style={{ fontFamily: T.mono, fontSize: 10, fontWeight: 700, color: sc, border: "1px solid " + sc + "66", borderRadius: 4, padding: "2px 6px" }}>{r.status.toUpperCase()}</span>
+                </div>
+                <div style={{ fontFamily: T.sans, fontSize: 12.5, color: pending ? T.dim : T.txt, lineHeight: 1.5 }}>{r.impression}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </PopoverShell>
+  );
+}
+
+function AllergyDetailSurface({ patient, depth, onClose }) {
+  const list = patient ? patient.allergies : [];
+  return (
+    <PopoverShell title="Allergies" patient={patient} depth={depth} onClose={onClose}>
+      {!list || list.length === 0 ? (
+        <EmptyNote text="No known drug allergies (NKDA)." />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+          {list.map((a) => {
+            const d = ALLERGY_DETAIL[a] || { reaction: "Reaction not documented", severity: "Unknown" };
+            const sev = d.severity;
+            const sc = sev === "Severe" ? T.coral : sev === "Moderate" ? T.orange : T.dim;
+            return (
+              <div key={a} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,68,68,0.06)", border: "1px solid rgba(255,68,68,0.30)", borderRadius: 8, padding: "9px 11px" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: T.sans, fontSize: 14, fontWeight: 600, color: T.bright }}>{a}</div>
+                  <div style={{ fontFamily: T.sans, fontSize: 12, color: T.dim, marginTop: 1 }}>{d.reaction}</div>
+                </div>
+                <span style={{ fontFamily: T.mono, fontSize: 10.5, fontWeight: 700, color: sc, border: "1px solid " + sc + "66", borderRadius: 5, padding: "3px 8px" }}>{sev.toUpperCase()}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </PopoverShell>
+  );
+}
+
+function VitalsSurface({ patient, depth, onClose }) {
+  const rec = patient ? TRIAGE_BY_ID[patient.id] : null;
+  const v = rec ? rec.vitals : null;
+  const rows = v
+    ? [
+        { key: "hr", label: "Heart rate", value: v.hr, unit: "bpm" },
+        { key: "rr", label: "Resp rate", value: v.rr, unit: "/min" },
+        { key: "spo2", label: "SpO2", value: v.spo2, unit: "%" },
+        { key: "temp", label: "Temp", value: v.temp, unit: "F" },
+      ]
+    : [];
+  return (
+    <PopoverShell title="Vitals trend" patient={patient} depth={depth} onClose={onClose}>
+      {!v ? (
+        <EmptyNote text={patient ? "No vitals recorded." : "Select a patient to view vitals."} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em" }}>SINCE TRIAGE ({rec.triTime})</div>
+          {rows.map((r) => {
+            const t = trendFrom(r.value);
+            const flag = vitalFlag(r.key, r.value);
+            const delta = t[2] - t[0];
+            const arrow = delta > 0 ? "^" : delta < 0 ? "v" : "-";
+            return (
+              <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 10, background: T.bg, border: "1px solid " + (flag ? "rgba(255,159,67,0.35)" : T.border), borderRadius: 8, padding: "8px 11px" }}>
+                <span style={{ fontFamily: T.sans, fontSize: 13, color: T.txt, flex: 1 }}>{r.label}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 11, color: T.faint }}>{t[0]} {String.fromCharCode(8594)} {t[1]} {String.fromCharCode(8594)}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 15, fontWeight: 700, color: flag ? T.orange : T.bright }}>{r.value}{flag ? "*" : ""}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 12, color: T.dim, width: 12, textAlign: "center" }}>{arrow}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 9, color: T.faint, width: 30 }}>{r.unit}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </PopoverShell>
+  );
+}
+
+function PatientSurface({ patient, depth, onClose }) {
+  if (!patient) {
+    return (
+      <PopoverShell title="Patient info" patient={patient} depth={depth} onClose={onClose}>
+        <EmptyNote text="Select a patient to view details." />
+      </PopoverShell>
+    );
+  }
+  const a = ACUITY[patient.esi] || ACUITY[3];
+  const fields = [
+    ["MRN", patient.mrn],
+    ["Age / Sex", patient.age + " " + patient.sex],
+    ["Room", patient.room],
+    ["ESI", patient.esi + " (" + a.tone + ")"],
+    ["Chief complaint", patient.cc],
+    ["Status", patient.status],
+    ["Time in dept", patient.wait + " min"],
+  ];
+  return (
+    <PopoverShell title="Patient info" patient={patient} depth={depth} onClose={onClose}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {fields.map(([k, val]) => (
+          <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, background: T.bg, border: "1px solid " + T.border, borderRadius: 8, padding: "8px 11px" }}>
+            <span style={{ fontFamily: T.mono, fontSize: 10.5, color: T.dim, letterSpacing: "0.05em", width: 120 }}>{k}</span>
+            <span style={{ fontFamily: T.sans, fontSize: 13.5, color: T.bright, flex: 1 }}>{val}</span>
+          </div>
+        ))}
+        <div style={{ marginTop: 4 }}>
+          <AllergyChip allergies={patient.allergies} />
+        </div>
+      </div>
+    </PopoverShell>
+  );
+}
+
 /* ---------------------------------------- footer hint (keycap legend) ---------------------------------------- */
 function HintBar() {
   const keys = ["o orders", "n note", "l labs", "i imaging", "a allergies", "h hub", "v vitals", "p patient", "t triage"];
@@ -1057,6 +1296,21 @@ export default function CommandCenterSpine() {
         }
         if (id === "triage") {
           return <TriageSurface key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
+        }
+        if (id === "labs") {
+          return <LabsSurface key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
+        }
+        if (id === "imaging") {
+          return <ImagingSurface key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
+        }
+        if (id === "allergies") {
+          return <AllergyDetailSurface key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
+        }
+        if (id === "vitals") {
+          return <VitalsSurface key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
+        }
+        if (id === "patient") {
+          return <PatientSurface key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
         }
         return <SurfaceStub key={id + "-" + depth} id={id} patient={patient} depth={depth} onClose={close} />;
       })}

@@ -1,7 +1,11 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import NotryaPatientBar from '@/components/HubHeader/NotryaPatientBar';
-import { SIMPLE, DRUGS, buildBlock, fmt, BAR, ts, AMAP, getAllergyWarn, CAT_META } from '@/components/orderCatalog';
+import { SIMPLE, DRUGS, buildBlock, fmt, AMAP, getAllergyWarn, CAT_META } from '@/components/orderCatalog';
+
+// ── Local helpers (BAR / ts not exported from orderCatalog) ──────────────────
+const BAR = '\u2501'.repeat(46);
+const ts = () => { const d = new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
 
 // ── Font ──────────────────────────────────────────────────────────────────────
 (function(){if(document.getElementById('edoh-f'))return;const l=document.createElement('link');l.id='edoh-f';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap';document.head.appendChild(l);})();

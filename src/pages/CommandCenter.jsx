@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
+import HubTakeover from "@/components/HubTakeover";
+import { liveHubs } from "@/components/hubRegistry";
 
 // ════════════════════════════════════════════════════════════════════════════
 // MODULE 1 — DESIGN TOKENS, STYLE, NAVIGATION, GLOBAL HELPERS
@@ -66,28 +68,7 @@ async function ewSet(k, v) {
 }
 
 // ─── COMMAND PALETTE DATA ─────────────────────────────────────────────────────
-const HUBS = [
-  { key:"ECGHub",                 label:"ECG Interpreter",          icon:"💓", cat:"Clinical"      },
-  { key:"AirwayHub",              label:"Airway Management",         icon:"🫁", cat:"Clinical"      },
-  { key:"ShockHub",               label:"Shock Hub",                 icon:"⚡", cat:"Clinical"      },
-  { key:"SepsisHub",              label:"Sepsis Protocol",           icon:"🦠", cat:"Clinical"      },
-  { key:"StrokeHub",              label:"Stroke Assessment",         icon:"🧠", cat:"Clinical"      },
-  { key:"ToxicologyHub",          label:"Toxicology",                icon:"☣️", cat:"Clinical"      },
-  { key:"PsychHub",               label:"Psych Evaluation",          icon:"🧩", cat:"Clinical"      },
-  { key:"OrthoHub",               label:"Ortho Reference",           icon:"🦴", cat:"Clinical"      },
-  { key:"CardiacRiskPage",        label:"Cardiac Risk Calc",         icon:"❤️", cat:"Clinical"      },
-  { key:"POCUSHub",               label:"POCUS Guide",               icon:"🔊", cat:"Clinical"      },
-  { key:"DermatologyHub",         label:"Dermatology",               icon:"🔬", cat:"Clinical"      },
-  { key:"ElectrolyteAcidBaseHub", label:"Electrolytes & Acid-Base",  icon:"⚗️", cat:"Clinical"      },
-  { key:"TriageHub",              label:"Triage Tools",              icon:"🏥", cat:"Workflow"      },
-  { key:"RapidAssessmentHub",     label:"Rapid Assessment",          icon:"🚀", cat:"Workflow"      },
-  { key:"ERxHub",                 label:"ED Prescribing",            icon:"💊", cat:"Workflow"      },
-  { key:"OrderGeneratorHub",      label:"Order Generator",           icon:"📋", cat:"Workflow"      },
-  { key:"AutocoderHub",           label:"Auto-Coder / ICD-10",       icon:"🏷️", cat:"Workflow"      },
-  { key:"ImagingInterpreter",     label:"Imaging Interpreter",       icon:"🩻", cat:"Workflow"      },
-  { key:"NewPatientInput",        label:"Full Intake (NPI)",         icon:"📝", cat:"Documentation" },
-  { key:"QuickNote",              label:"Quick Note",                icon:"✏️", cat:"Documentation" },
-];
+
 const paletteFilter = (query, patients) => {
   const q = query.toLowerCase().trim();
   const match = (strs) => !q || strs.some(s => (s||"").toLowerCase().includes(q));
@@ -97,7 +78,9 @@ const paletteFilter = (query, patients) => {
     { key:"act-cc", label:"Command Center", sub:"Return to census board",     icon:"⚡", badge:"Action", badgeColor:T.purple, execute:() => nav("CommandCenter") },
   ].filter(a => match([a.label, a.sub]));
   const pts  = patients.filter(p => match([p.name, p.cc, p.room, `esi ${p.esi}`, `${p.age}${p.sex}`])).sort((a,b)=>a.esi-b.esi).slice(0, q ? 6 : 4);
-  const hubs = HUBS.filter(h => match([h.label, h.key, h.cat])).slice(0, q ? 10 : 5);
+  const hubs = liveHubs()
+    .filter(h => match([h.title, h.id, h.category, h.abbr]))
+    .slice(0, q ? 10 : 5);
   return { actions, pts, hubs };
 };
 
@@ -970,7 +953,7 @@ function CommandPalette({ open, onClose, patients, onNewPatient }) {
   const flat=[
     ...resolvedActions.map(a=>({ ...a,type:"action" })),
     ...pts.map(p=>({ key:`pt-${p.id}`,type:"patient",label:p.name,sub:`${p.room} · ${p.cc} · ESI ${p.esi} · ${fmtTime(p.mins)}`,icon:"👤",badge:`ESI ${p.esi}`,badgeColor:esiColor(p.esi),execute:()=>nav("PatientEncounter",{ patientId:p.id }) })),
-    ...hubs.map(h=>({ key:`hub-${h.key}`,type:"hub",label:h.label,sub:h.cat,icon:h.icon,badge:"Hub",badgeColor:T.purple,execute:()=>nav(h.key) })),
+    ...hubs.map(h=>({ key:`hub-${h.id}`, type:"hub", label:h.title, sub:h.category, icon:h.icon, badge:"Hub", badgeColor:T.purple, execute:()=>{ window.location.href=h.route; } })),
   ];
   useEffect(()=>{ if(!open)return; const onKey=(e)=>{ if(e.key==="Escape"){onClose();return;} if(e.key==="ArrowDown"){e.preventDefault();setActiveIdx(i=>Math.min(i+1,flat.length-1));} if(e.key==="ArrowUp"){e.preventDefault();setActiveIdx(i=>Math.max(i-1,0));} if(e.key==="Enter"&&flat[activeIdx]){flat[activeIdx].execute?.();onClose();} }; window.addEventListener("keydown",onKey); return()=>window.removeEventListener("keydown",onKey); },[open,activeIdx,flat,onClose]);
   useEffect(()=>{ setActiveIdx(0); },[query]);
@@ -1830,6 +1813,7 @@ export default function CommandCenter() {
   const [showNewPatient, setShowNewPatient] = useState(false);
   const [showPalette,    setShowPalette]    = useState(false);
   const [showRapidOrder, setShowRapidOrder] = useState(false);
+  const [showHubs, setShowHubs] = useState(false);
   const [patients,       setPatients]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   const [selectedPatient,setSelectedPatient]= useState(null);
@@ -1893,8 +1877,12 @@ export default function CommandCenter() {
 
   useEffect(()=>{
     const onKey=(e)=>{
-      if((e.metaKey||e.ctrlKey)&&e.key==="k"){ e.preventDefault(); setShowPalette(p=>!p); }
-      if(e.key==="Escape") setShowRapidOrder(false);
+      const tag=(e.target?.tagName||"");
+      const typing=tag==="INPUT"||tag==="TEXTAREA"||e.target?.isContentEditable;
+      if((e.metaKey||e.ctrlKey)&&e.key==="k"){ e.preventDefault(); setShowPalette(p=>!p); return; }
+      if(e.key==="Escape"){ setShowRapidOrder(false); setShowHubs(false); return; }
+      if(typing||e.metaKey||e.ctrlKey||e.altKey) return;
+      if(e.key==="h"||e.key==="H"){ e.preventDefault(); setShowHubs(p=>!p); }
     };
     window.addEventListener("keydown",onKey);
     return()=>window.removeEventListener("keydown",onKey);
@@ -1917,6 +1905,13 @@ export default function CommandCenter() {
   };
 
   const handleSelectPatient=(p)=>{ setSelectedPatient(p); generateSummary(p); };
+  const openHub=(route)=>{
+    setShowHubs(false);
+    if(!route) return;
+    const path=route.startsWith("/")?route:`/${route}`;
+    const q=selectedPatient?.id?"?"+new URLSearchParams({ patientId:selectedPatient.id }).toString():"";
+    window.location.href=`${path}${q}`;
+  };
 
   if(loading) return (
     <div style={{ display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,background:T.bg }}>
@@ -1965,6 +1960,12 @@ export default function CommandCenter() {
       {showNewPatient&&<NewPatientModal onClose={()=>setShowNewPatient(false)}/>}
       <CommandPalette open={showPalette} onClose={()=>setShowPalette(false)} patients={patients} onNewPatient={()=>{ setShowPalette(false);setShowNewPatient(true); }}/>
       <RapidOrderDrawer open={showRapidOrder} onClose={()=>setShowRapidOrder(false)} patients={patients} selectedPatient={selectedPatient}/>
+      {showHubs&&<HubTakeover
+        patient={selectedPatient||{ name:"No patient selected", esi:null, cc:null }}
+        topOffset={58}
+        onClose={()=>setShowHubs(false)}
+        onOpenHub={openHub}
+      />}
     </div>
   );
 }

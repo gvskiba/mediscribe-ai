@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 /*
-  CommandCenterSpine - build 3: the first real surface (orders).
+  CommandCenterSpine - build 5: triage popover + note dock.
 
-  Build 1 proved the wiring; build 2 added the always-on banner + board frame.
-  Build 3 replaces the orders stub with a real right half-sheet: search the
-  catalog, toggle orders into a pending tray, Sign, and the sheet closes so the
-  loop ends on the board. The other eight keys (n l i a h v p t) stay labeled
-  stubs until their turn. The banner, board, keyboard contract, and focus guard
-  are unchanged.
+  Build 1 proved the wiring; build 2 added the always-on banner + board; build 3
+  made orders a real right half-sheet. Build 5 adds two more real surfaces in the
+  recommended order: the triage popover (t) - a read-only nurse triage note that
+  is the mold the other popovers reuse - and the note dock (n) - an APSO editor
+  in the bottom dock that leaves the board visible above it while you document.
+  Remaining stubs: l, i, a, h, v, p. The banner, board, keyboard contract, and
+  focus guard are unchanged.
 
   Base44-safe: single file, default export, no Router, no localStorage,
   no <form>, no alert(), straight quotes only, no non-ASCII glyphs.
@@ -198,6 +199,29 @@ const ORDER_CATALOG = [
 
 const CAT_COLOR = { Lab: T.teal, Imaging: T.purple, Med: T.gold, Nursing: T.blue };
 const CATALOG_BY_ID = ORDER_CATALOG.reduce((m, o) => { m[o.id] = o; return m; }, {});
+
+/* Nurse triage notes, keyed by patient id (read-only surface content). */
+const TRIAGE_BY_ID = {
+  p1: { arrival: "Ambulatory", arrTime: "13:42", triTime: "13:51", nurse: "RN K. Pham", ccQuote: "Pressure in my chest, came on an hour ago", vitals: { hr: 98, bp: "158/92", rr: 20, spo2: 96, temp: 98.4, pain: 7 }, narrative: "Substernal pressure radiating to left arm, onset ~1 hr while mowing. Diaphoretic on arrival. Denies SOB at rest.", screens: [{ label: "Sepsis screen", result: "Negative" }, { label: "Stroke (BEFAST)", result: "Negative" }, { label: "Fall risk", result: "Low" }] },
+  p2: { arrival: "EMS", arrTime: "14:05", triTime: "14:09", nurse: "RN D. Cole", ccQuote: "I passed out in the kitchen", vitals: { hr: 62, bp: "104/64", rr: 16, spo2: 98, temp: 98.1, pain: 0 }, narrative: "Witnessed syncope at home with brief LOC, no head strike per spouse. Alert and oriented on arrival.", screens: [{ label: "Fall risk", result: "High", flag: true }, { label: "Stroke (BEFAST)", result: "Negative" }, { label: "Cardiac monitor", result: "Applied" }] },
+  p3: { arrival: "Ambulatory", arrTime: "13:30", triTime: "13:48", nurse: "RN K. Pham", ccQuote: "Rolled my ankle at soccer", vitals: { hr: 78, bp: "122/76", rr: 16, spo2: 99, temp: 98.6, pain: 5 }, narrative: "Inversion injury to right ankle during recreational soccer. Limited weightbearing, lateral swelling. Neurovascularly intact distally.", screens: [{ label: "Fall risk", result: "Low" }, { label: "Sepsis screen", result: "Negative" }] },
+  p4: { arrival: "Ambulatory", arrTime: "14:18", triTime: "14:30", nurse: "RN J. Ortiz", ccQuote: "He has had a fever for two days", vitals: { hr: 118, bp: "100/62", rr: 22, spo2: 98, temp: 102.3, pain: 3 }, narrative: "9 y/o with 2 days fever and cough, PO intake fair, last antipyretic 4 hrs ago. Playful in waiting room.", screens: [{ label: "Pediatric sepsis screen", result: "Negative" }, { label: "Fall risk", result: "Standard peds" }] },
+  p5: { arrival: "Family", arrTime: "13:15", triTime: "13:42", nurse: "RN D. Cole", ccQuote: "She just has no strength lately", vitals: { hr: 88, bp: "142/80", rr: 18, spo2: 95, temp: 98.0, pain: 0 }, narrative: "83 y/o with generalized weakness x3 days and decreased PO intake. Baseline ambulates with walker. No focal deficit at triage.", screens: [{ label: "Fall risk", result: "High", flag: true }, { label: "Stroke (BEFAST)", result: "Negative" }, { label: "Delirium (b-CAM)", result: "Negative" }] },
+  p6: { arrival: "Ambulatory", arrTime: "13:55", triTime: "14:12", nurse: "RN K. Pham", ccQuote: "Bad pain on the right side of my belly", vitals: { hr: 92, bp: "134/82", rr: 18, spo2: 98, temp: 99.1, pain: 8 }, narrative: "RLQ pain since morning with nausea, no BM x2 days, no vomiting. Pain worse with movement.", screens: [{ label: "Sepsis screen", result: "Negative" }, { label: "Fall risk", result: "Low" }] },
+  p7: { arrival: "Ambulatory", arrTime: "14:22", triTime: "14:28", nurse: "RN J. Ortiz", ccQuote: "My asthma is acting up, can't catch my breath", vitals: { hr: 104, bp: "128/78", rr: 24, spo2: 93, temp: 98.5, pain: 0 }, narrative: "Audible wheeze, used home albuterol x3 without relief. Speaking in short phrases. Known asthmatic.", screens: [{ label: "Sepsis screen", result: "Negative" }, { label: "Respiratory distress", result: "Moderate", flag: true }] },
+  p8: { arrival: "EMS", arrTime: "11:02", triTime: "11:08", nurse: "RN D. Cole", ccQuote: "Family says he is confused and hot", vitals: { hr: 116, bp: "92/54", rr: 24, spo2: 92, temp: 101.8, pain: 4 }, narrative: "Fever with new confusion, indwelling foley from SNF. Hypotensive and tachycardic on arrival. Sepsis bundle initiated at triage.", screens: [{ label: "Sepsis screen", result: "POSITIVE", flag: true }, { label: "Fall risk", result: "High", flag: true }, { label: "Stroke (BEFAST)", result: "Negative" }] },
+  p9: { arrival: "Ambulatory", arrTime: "12:40", triTime: "12:58", nurse: "RN J. Ortiz", ccQuote: "Worst flank pain of my life", vitals: { hr: 96, bp: "138/86", rr: 18, spo2: 99, temp: 98.7, pain: 9 }, narrative: "Left flank pain radiating to groin with gross hematuria. Prior history of kidney stones. Unable to find comfortable position.", screens: [{ label: "Sepsis screen", result: "Negative" }, { label: "Fall risk", result: "Low" }] },
+};
+
+/* Triage vital thresholds -> abnormal flag (marked with color AND a trailing * so it never relies on color alone). */
+function vitalFlag(key, v) {
+  if (key === "hr") return v > 100 || v < 60;
+  if (key === "rr") return v > 20 || v < 10;
+  if (key === "spo2") return v < 94;
+  if (key === "temp") return v > 100.4 || v < 96.5;
+  if (key === "pain") return v >= 7;
+  return false;
+}
 
 /* ---------------------------------------- primitives ---------------------------------------- */
 function AcuityBadge({ esi }) {
@@ -682,6 +706,260 @@ function OrdersSurface({ patient, depth, onClose }) {
   );
 }
 
+/* ---------------------------------------- note dock (first real dock) ----------------------------------------
+   A bottom dock that summons over the lower ~42vh while the board stays visible
+   above it - the point of the dock tier: you keep the board in view while you
+   document. APSO section tabs, a per-section editor, and quick-phrase chips.
+   Save shows a brief confirmation, then closes back to the board. The AI draft
+   control is a stub here; it is where InvokeLLM plugs in once PHI-safe. Editing
+   happens in a real textarea, so the global focus guard protects it: letters do
+   not summon, and the first Esc blurs before the second Esc closes the dock. */
+const APSO = [
+  { id: "A", label: "Assessment" },
+  { id: "P", label: "Plan" },
+  { id: "S", label: "Subjective" },
+  { id: "O", label: "Objective" },
+];
+
+const NOTE_PHRASES = {
+  A: ["Acute, uncomplicated presentation", "Differential includes", "Clinically stable at this time"],
+  P: ["Workup as ordered above", "Reassess after intervention", "Disposition pending results", "Shared decision-making discussed"],
+  S: ["Patient reports", "Denies fever, chills, or night sweats", "Symptoms began", "No similar episodes previously"],
+  O: ["Alert, no acute distress", "Exam notable for", "Vitals reviewed and within stated ranges"],
+};
+
+function NoteDock({ patient, depth, onClose }) {
+  const [section, setSection] = useState("A");
+  const [text, setText] = useState({ A: "", P: "", S: "", O: "" });
+  const [saved, setSaved] = useState(false);
+
+  const append = useCallback((phrase) => {
+    setText((t) => {
+      const cur = t[section] || "";
+      const joined = cur && !cur.endsWith("\n") && !cur.endsWith(" ") ? cur + " " + phrase : cur + phrase;
+      return { ...t, [section]: joined };
+    });
+  }, [section]);
+
+  const save = useCallback(() => {
+    setSaved(true);
+  }, []);
+
+  useEffect(() => {
+    if (!saved) return undefined;
+    const t = setTimeout(() => onClose(), 950);
+    return () => clearTimeout(t);
+  }, [saved, onClose]);
+
+  const sheet = { ...tierStyle("dock"), zIndex: 100 + depth };
+  const body = text[section] || "";
+  const filled = APSO.filter((s) => (text[s.id] || "").trim().length > 0).length;
+  const chars = Object.keys(text).reduce((n, k) => n + (text[k] || "").length, 0);
+
+  return (
+    <div style={sheet}>
+      {/* header: title, patient, APSO tabs, count, actions */}
+      <div style={{ flexShrink: 0, padding: "11px 14px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 16, color: T.bright }}>Note</span>
+        <span style={{ fontFamily: T.mono, fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+          {patient ? patient.name + " / " + patient.room : "No patient"}
+        </span>
+
+        <div style={{ display: "flex", gap: 6, marginLeft: 6 }}>
+          {APSO.map((s) => {
+            const active = s.id === section;
+            const has = (text[s.id] || "").trim().length > 0;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setSection(s.id)}
+                style={{
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: active ? T.cardHi : "transparent",
+                  border: "1px solid " + (active ? T.borderHi : T.border),
+                  borderRadius: 8,
+                  padding: "5px 10px",
+                  color: active ? T.bright : T.dim,
+                  fontFamily: T.sans,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ fontFamily: T.mono, fontWeight: 700, color: active ? T.teal : T.faint }}>{s.id}</span>
+                {s.label}
+                {has ? <span style={{ width: 5, height: 5, borderRadius: "50%", background: T.teal }} /> : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <span style={{ marginLeft: "auto", fontFamily: T.mono, fontSize: 10.5, color: T.faint }}>
+          {filled}/4 sections / {chars} chars
+        </span>
+        <button onClick={onClose} style={{ cursor: "pointer", background: "transparent", border: "1px solid " + T.border, borderRadius: 6, color: T.dim, fontFamily: T.mono, fontSize: 11, padding: "5px 9px" }}>
+          Esc
+        </button>
+        <button
+          onClick={save}
+          style={{ cursor: "pointer", background: T.teal, color: T.bg, border: "none", borderRadius: 8, padding: "6px 16px", fontFamily: T.sans, fontWeight: 700, fontSize: 12.5 }}
+        >
+          Save draft
+        </button>
+      </div>
+
+      {/* body: editor + quick phrases */}
+      <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 12, padding: 12 }}>
+        <textarea
+          value={body}
+          onChange={(e) => setText((t) => ({ ...t, [section]: e.target.value }))}
+          placeholder={"Document the " + (APSO.find((s) => s.id === section) || {}).label + " section..."}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            resize: "none",
+            background: T.bg,
+            border: "1px solid " + T.border,
+            borderRadius: 10,
+            padding: 12,
+            color: T.bright,
+            fontFamily: T.sans,
+            fontSize: 14,
+            lineHeight: 1.6,
+            outline: "none",
+          }}
+        />
+        <div style={{ width: 230, flexShrink: 0, display: "flex", flexDirection: "column", gap: 7, overflow: "auto" }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em" }}>QUICK PHRASES</div>
+          {(NOTE_PHRASES[section] || []).map((p) => (
+            <button
+              key={p}
+              onClick={() => append(p)}
+              style={{ textAlign: "left", cursor: "pointer", background: T.card, border: "1px solid " + T.border, borderRadius: 8, padding: "7px 9px", color: T.txt, fontFamily: T.sans, fontSize: 12 }}
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            title="Wires to InvokeLLM once PHI-safe"
+            onClick={() => append("[AI draft pending - InvokeLLM]")}
+            style={{ textAlign: "left", cursor: "pointer", background: "rgba(155,109,255,0.10)", border: "1px solid rgba(155,109,255,0.40)", borderRadius: 8, padding: "7px 9px", color: T.purple, fontFamily: T.sans, fontSize: 12, marginTop: 4 }}
+          >
+            AI draft (stub)
+          </button>
+        </div>
+      </div>
+
+      {/* saved confirmation */}
+      {saved && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(5,15,30,0.92)", borderRadius: "14px 14px 0 0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <div style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 20, color: T.teal }}>Draft saved</div>
+          <div style={{ fontFamily: T.sans, fontSize: 13, color: T.dim }}>Returning to the board.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------- triage surface (first real popover) ----------------------------------------
+   A centered popover that surfaces the nurse triage note over the board, then
+   dismisses with Esc - the read you do without losing your place. Read-only by
+   design. Self-contained and lift-out-ready; the same shape (header + scrollable
+   body in the popover tier) is the mold labs / imaging / vitals / patient reuse. */
+function TriageVital({ label, value, unit, flag }) {
+  return (
+    <div style={{ background: T.bg, border: "1px solid " + (flag ? "rgba(255,159,67,0.45)" : T.border), borderRadius: 8, padding: "7px 9px" }}>
+      <div style={{ fontFamily: T.mono, fontSize: 9, color: T.dim, letterSpacing: "0.06em" }}>{label}</div>
+      <div style={{ fontFamily: T.mono, fontSize: 15, fontWeight: 700, color: flag ? T.orange : T.bright, marginTop: 2 }}>
+        {value}{flag ? "*" : ""}{unit ? <span style={{ fontSize: 10, color: T.dim, fontWeight: 400 }}> {unit}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function TriageSurface({ patient, depth, onClose }) {
+  const rec = patient ? TRIAGE_BY_ID[patient.id] : null;
+  const sheet = { ...tierStyle("popover"), zIndex: 100 + depth, width: "min(460px, 86vw)", maxHeight: "82vh" };
+
+  return (
+    <div style={sheet}>
+      {/* header */}
+      <div style={{ flexShrink: 0, padding: "14px 16px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 16, color: T.bright }}>Triage Note</span>
+        <span style={{ fontFamily: T.mono, fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {patient ? patient.name + " / " + patient.room : "No patient"}
+        </span>
+        <button onClick={onClose} style={{ marginLeft: "auto", cursor: "pointer", background: "transparent", border: "1px solid " + T.border, borderRadius: 6, color: T.dim, fontFamily: T.mono, fontSize: 11, padding: "4px 9px" }}>
+          Esc
+        </button>
+      </div>
+
+      {/* body */}
+      <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: 16 }}>
+        {!rec ? (
+          <div style={{ fontFamily: T.sans, fontSize: 13, color: T.dim, textAlign: "center", padding: 20 }}>
+            {patient ? "No triage note on file for this patient." : "Select a patient to view their triage note."}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* arrival line */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", fontFamily: T.mono, fontSize: 11, color: T.dim }}>
+              <span>{rec.arrival}</span>
+              <span>Arr {rec.arrTime}</span>
+              <span>Triaged {rec.triTime}</span>
+              <span>{rec.nurse}</span>
+            </div>
+
+            {/* chief complaint in patient words */}
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 5 }}>STATED COMPLAINT</div>
+              <div style={{ fontFamily: T.sans, fontStyle: "italic", fontSize: 14, color: T.bright, lineHeight: 1.5, borderLeft: "2px solid " + T.gold, paddingLeft: 10 }}>
+                "{rec.ccQuote}"
+              </div>
+            </div>
+
+            {/* triage vitals */}
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 7 }}>TRIAGE VITALS</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
+                <TriageVital label="HR" value={rec.vitals.hr} flag={vitalFlag("hr", rec.vitals.hr)} />
+                <TriageVital label="BP" value={rec.vitals.bp} flag={false} />
+                <TriageVital label="RR" value={rec.vitals.rr} flag={vitalFlag("rr", rec.vitals.rr)} />
+                <TriageVital label="SpO2" value={rec.vitals.spo2} unit="%" flag={vitalFlag("spo2", rec.vitals.spo2)} />
+                <TriageVital label="Temp" value={rec.vitals.temp} unit="F" flag={vitalFlag("temp", rec.vitals.temp)} />
+                <TriageVital label="Pain" value={rec.vitals.pain} unit="/10" flag={vitalFlag("pain", rec.vitals.pain)} />
+              </div>
+            </div>
+
+            {/* narrative */}
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 5 }}>TRIAGE NARRATIVE</div>
+              <div style={{ fontFamily: T.sans, fontSize: 13.5, color: T.txt, lineHeight: 1.6 }}>{rec.narrative}</div>
+            </div>
+
+            {/* screens */}
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 9.5, color: T.dim, letterSpacing: "0.08em", marginBottom: 7 }}>SCREENS</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {rec.screens.map((s) => (
+                  <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10, background: T.bg, border: "1px solid " + (s.flag ? "rgba(255,107,107,0.45)" : T.border), borderRadius: 8, padding: "7px 10px" }}>
+                    <span style={{ fontFamily: T.sans, fontSize: 13, color: T.txt, flex: 1 }}>{s.label}</span>
+                    <span style={{ fontFamily: T.mono, fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", color: s.flag ? T.coral : T.dim }}>
+                      {s.result}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------------- footer hint (keycap legend) ---------------------------------------- */
 function HintBar() {
   const keys = ["o orders", "n note", "l labs", "i imaging", "a allergies", "h hub", "v vitals", "p patient", "t triage"];
@@ -773,6 +1051,12 @@ export default function CommandCenterSpine() {
         const close = () => setStack((s) => s.filter((_, idx) => idx !== depth));
         if (id === "orders") {
           return <OrdersSurface key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
+        }
+        if (id === "note") {
+          return <NoteDock key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
+        }
+        if (id === "triage") {
+          return <TriageSurface key={id + "-" + depth} patient={patient} depth={depth} onClose={close} />;
         }
         return <SurfaceStub key={id + "-" + depth} id={id} patient={patient} depth={depth} onClose={close} />;
       })}

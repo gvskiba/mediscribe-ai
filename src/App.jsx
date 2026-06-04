@@ -148,7 +148,6 @@ import SpecialtyNoteHub from '@/pages/SpecialtyNoteHub';
 import SpecialtyNoteHubT2 from '@/pages/SpecialtyNoteHubT2';
 import LakonyxTechHub from '@/pages/LakonyxTechHub';
 import CommandCenter from '@/pages/CommandCenter';
-import CommandCenterSpine from '@/pages/CommandCenterSpine';
 import AnamnesisPage from '@/pages/AnamnesisPage';
 import AnamnesisAnalyticsDashboard from '@/pages/AnamnesisAnalyticsDashboard';
 import FollowUpHub from '@/pages/FollowUpHub';
@@ -219,7 +218,7 @@ const AuthenticatedApp = () => {
       <Routes>
         <Route path="/" element={<LakonyxLandingPage />} />
         <Route path="/CommandCenter" element={<CommandCenter />} />
-        <Route path="/CommandCenterSpine" element={<CommandCenterSpine />} />
+        {/* CommandCenterSpine route removed — file kept as reference only */}
         <Route path="/PatientEncounter" element={<PatientEncounter />} />
         <Route path="/splash" element={<LakonyxInvestorPitch />} />
 

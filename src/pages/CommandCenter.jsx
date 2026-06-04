@@ -1677,6 +1677,12 @@ function RapidOrderDrawer({ open, onClose, patients, selectedPatient }) {
                 </div>
               </div>
             ):<div style={{ fontFamily:"'DM Sans',sans-serif",fontSize:12,color:T.txt4,textAlign:"center",padding:"4px 0" }}>No patient selected — choose from the list above</div>}
+            {activePt&&selectedPatient&&activePt.id!==selectedPatient.id&&(
+              <div style={{ display:"flex",alignItems:"center",gap:7,marginTop:8,background:"rgba(255,68,68,0.10)",border:`1px solid rgba(255,68,68,0.40)`,borderRadius:7,padding:"6px 10px" }}>
+                <span style={{ fontSize:12,flexShrink:0 }}>⚠️</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:T.red,lineHeight:1.4 }}>Ordering for {activePt.name} ({activePt.room}) — NOT your selected patient {selectedPatient.name}</span>
+              </div>
+            )}
           </div>
         </div>
         <div style={{ display:"flex",borderBottom:"1px solid rgba(26,53,85,0.5)",background:T.bg,flexShrink:0 }}>
@@ -1705,7 +1711,7 @@ function RapidOrderDrawer({ open, onClose, patients, selectedPatient }) {
             <button onClick={()=>setStat(p=>!p)} style={{ display:"flex",alignItems:"center",gap:6,padding:"7px 12px",background:stat?"rgba(255,68,68,0.1)":"rgba(26,53,85,0.28)",border:`1px solid ${stat?T.red+"55":"rgba(26,53,85,0.5)"}`,borderRadius:8,color:stat?T.red:T.txt4,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,transition:"all .15s",flexShrink:0 }}><span style={{ width:6,height:6,borderRadius:"50%",background:stat?T.red:T.txt4,display:"inline-block",flexShrink:0,transition:"background .15s" }}/>{stat?"STAT":"Routine"}</button>
             {selectedCount>0&&<button onClick={()=>setSelected({})} style={{ padding:"7px 10px",background:"transparent",border:"1px solid rgba(26,53,85,0.5)",borderRadius:8,color:T.txt4,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:9,flexShrink:0 }}>Clear</button>}
             <div style={{ flex:1 }}/>
-            <button onClick={placeOrders} disabled={!canPlace&&!placed} style={{ display:"flex",alignItems:"center",gap:8,padding:"9px 18px",background:canPlace||placed?`linear-gradient(135deg,${btnA}2a,${btnA}14)`:"rgba(26,53,85,0.18)",border:`1.5px solid ${canPlace||placed?btnA+"55":"rgba(26,53,85,0.35)"}`,borderRadius:9,color:canPlace||placed?btnA:T.txt4,cursor:canPlace?"pointer":"not-allowed",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,transition:"all .18s",flexShrink:0 }}>{placing?<><span style={{ width:10,height:10,borderRadius:"50%",border:`2px solid ${T.teal}30`,borderTop:`2px solid ${T.teal}`,display:"inline-block",animation:"cc-spin 1s linear infinite" }}/>Placing...</>:placed?"✓ Orders Placed":<>{stat?"⚡ STAT":"Place Orders"}{selectedCount>0&&<span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"1px 7px",lineHeight:1.5 }}>{selectedCount}</span>}</>}</button>
+            <button onClick={placeOrders} disabled={!canPlace&&!placed} style={{ display:"flex",alignItems:"center",gap:8,padding:"9px 18px",background:canPlace||placed?`linear-gradient(135deg,${btnA}2a,${btnA}14)`:"rgba(26,53,85,0.18)",border:`1.5px solid ${canPlace||placed?btnA+"55":"rgba(26,53,85,0.35)"}`,borderRadius:9,color:canPlace||placed?btnA:T.txt4,cursor:canPlace?"pointer":"not-allowed",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,transition:"all .18s",flexShrink:0 }}>{placing?<><span style={{ width:10,height:10,borderRadius:"50%",border:`2px solid ${T.teal}30`,borderTop:`2px solid ${T.teal}`,display:"inline-block",animation:"cc-spin 1s linear infinite" }}/>Placing...</>:placed?"✓ Orders Placed":activePt?<>{stat?`⚡ STAT — ${activePt.name}`:`Place ${selectedCount} for ${activePt.name}`}</>:<>{stat?"⚡ STAT":"Place Orders"}{selectedCount>0&&<span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:10,background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"1px 7px",lineHeight:1.5 }}>{selectedCount}</span>}</>}</button>
           </div>
         </div>
       </div>

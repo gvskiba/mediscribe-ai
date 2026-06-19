@@ -789,7 +789,8 @@ export default function ImagingInterpreter({
     setResults(prev=> ({ ...prev, [panelId]:null }));
     try {
       const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `PATIENT CONTEXT:\n${patientCtx || "Not provided"}\n\nRADIOLOGY REPORT:\n${report}\n\nSYSTEM INSTRUCTIONS:\n${p.sys}`,
+        prompt: `PATIENT CONTEXT:\n${patientCtx || "Not provided"}\n\nRADIOLOGY REPORT:\n${report}\n\nSYSTEM INSTRUCTIONS:\n${p.sys}\n\nReturn valid JSON only, no markdown fences.`,
+        model: "claude_sonnet_4_6",
         response_json_schema: {
           type:"object",
           properties:{
@@ -826,7 +827,7 @@ export default function ImagingInterpreter({
     handleInterpret(panelId, composeStructuredReport(p, selections[panelId]||{}, textInputs[panelId]||{}));
   }, [selections, textInputs, handleInterpret]);
 
-  // Image mode — Anthropic vision API (InvokeLLM is text-only)
+  // Image mode — upload then interpret via InvokeLLM vision
   const handleImageInterpret = useCallback(async (panelId) => {
     const img = images[panelId];
     const p   = PANELS.find(x => x.id === panelId);
@@ -835,26 +836,41 @@ export default function ImagingInterpreter({
     setErrors(prev => ({ ...prev, [panelId]:null }));
     setResults(prev=> ({ ...prev, [panelId]:null }));
     try {
-      const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:2000,
-          messages:[{
-            role:"user",
-            content:[
-              { type:"image", source:{ type:"base64", media_type:img.mimeType, data:img.base64 } },
-              { type:"text",  text:`PATIENT CONTEXT:\n${patientCtx||"Not provided"}\n\nSYSTEM INSTRUCTIONS:\n${p.sys}\n\nYou are directly analyzing this radiology image. Before interpreting, systematically describe ALL visible anatomic structures and findings (do not skip peripheral structures — this is the anti-satisfaction-of-search pass). Then apply the panel-specific checklist. Return ONLY valid JSON with no markdown fences matching the schema in the system instructions.` },
-            ],
-          }],
-        }),
+      // Convert base64 back to a File and upload
+      const byteStr = atob(img.base64);
+      const bytes   = new Uint8Array(byteStr.length);
+      for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+      const blob    = new Blob([bytes], { type: img.mimeType });
+      const file    = new File([blob], img.name || "image.png", { type: img.mimeType });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `PATIENT CONTEXT:\n${patientCtx||"Not provided"}\n\nSYSTEM INSTRUCTIONS:\n${p.sys}\n\nYou are directly analyzing this radiology image. Systematically describe ALL visible anatomic structures and findings (anti-satisfaction-of-search pass). Then apply the panel-specific checklist. Return valid JSON only, no markdown fences.`,
+        model: "claude_sonnet_4_6",
+        file_urls: [file_url],
+        response_json_schema: {
+          type:"object",
+          properties:{
+            headline:                      { type:"string" },
+            critical_findings:             { type:"array",  items:{ type:"string" } },
+            key_findings:                  { type:"array",  items:{ type:"object" } },
+            dont_miss_checklist:           { type:"object" },
+            incidentals_requiring_followup:{ type:"array",  items:{ type:"object" } },
+            neurosurgery_consult:          { type:"string" },
+            neurology_consult:             { type:"string" },
+            pe_management:                 { type:"string" },
+            pe_risk_tier:                  { type:"string" },
+            time_critical:                 { type:"string" },
+            surgical_consult:              { type:"string" },
+            orthopedic_consult:            { type:"string" },
+            pocus_adequacy:                { type:"string" },
+            immediate_actions:             { type:"array",  items:{ type:"string" } },
+            further_imaging:               { type:"string" },
+            pearls:                        { type:"string" },
+          },
+        },
       });
-      if (!apiRes.ok) throw new Error(`Vision API ${apiRes.status}: ${apiRes.statusText}`);
-      const data  = await apiRes.json();
-      const raw   = data.content?.find(b => b.type === "text")?.text || "";
-      const clean = raw.replace(/^```(?:json)?\s*/,"").replace(/\s*```$/,"").trim();
-      setResults(prev => ({ ...prev, [panelId]:JSON.parse(clean) }));
+      setResults(prev => ({ ...prev, [panelId]:response }));
     } catch (e) {
       setErrors(prev => ({ ...prev, [panelId]:"Image analysis error: " + (e.message || "Check connectivity") }));
     } finally {

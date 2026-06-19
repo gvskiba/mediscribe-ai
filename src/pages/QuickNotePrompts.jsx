@@ -10,53 +10,38 @@ const SYS_BIAS = `COGNITIVE BIAS PREVENTION — apply before generating output:
 3. FRAMING BIAS: Evaluate severity based on the objective findings, not the narrative framing of the presenting complaint.
 4. AVAILABILITY BIAS: Do not over-weight dramatic diagnoses. Apply pre-test probability and base rates.`;
 
-const MDM_SCHEMA = {
+export const MDM_SCHEMA = {
   type: "object",
-  required: ["mdm_level", "mdm_narrative", "working_diagnosis", "differential", "risk_tier"],
+  required: ["working_diagnosis","initial_impression","initial_management","mdm_level","problem_complexity","data_complexity","risk_tier"],
   properties: {
-    problem_complexity:    { type: "string" },
-    data_complexity:       { type: "string" },
-    risk_tier:             { type: "string" },
-    mdm_level:             { type: "string" },
-    mdm_narrative:         { type: "string" },
-    working_diagnosis:     { type: "string" },
-    differential: {
-      type:"array", minItems:2, maxItems:5,
-      items:{
-        type:"object",
-        required:["diagnosis","probability","supporting_evidence","against","must_not_miss"],
-        properties:{
-          diagnosis:           { type:"string" },
-          probability:         { type:"string" },
-          supporting_evidence: { type:"string" },
-          against:             { type:"string" },
-          must_not_miss:       { type:"boolean" },
-        },
+    working_diagnosis: { type: "string" },
+    initial_impression: {
+      type: "object",
+      required: ["working_dx_line","clinical_rationale","cannot_exclude","differentials"],
+      properties: {
+        working_dx_line: { type: "string" },
+        clinical_rationale: { type: "string" },
+        cannot_exclude: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 5 },
+        differentials: { type: "array", minItems: 2, maxItems: 8, items: { type: "object", required: ["rank","diagnosis","rationale"], properties: { rank: { type: "integer" }, diagnosis: { type: "string" }, rationale: { type: "string" } } } },
       },
     },
-    red_flags:             { type: "array", items: { type: "string" }, maxItems: 6 },
-    critical_actions:      { type: "array", items: { type: "string" }, maxItems: 5 },
-    recommended_actions:   { type: "array", items: { type: "string" }, maxItems: 6 },
-    treatment_recommendations: {
-      type: "array", maxItems: 8,
-      items: {
-        type: "object",
-        required: ["intervention", "indication", "evidence_level"],
-        properties: {
-          intervention:   { type: "string" },
-          indication:     { type: "string" },
-          evidence_level: { type: "string" },
-          guideline_ref:  { type: "string" },
-          notes:          { type: "string" },
-        },
+    initial_management: {
+      type: "object",
+      required: ["immediate_interventions","diagnostics","pending_data_summary"],
+      properties: {
+        immediate_interventions: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 6 },
+        diagnostics: { type: "array", minItems: 1, maxItems: 10, items: { type: "object", required: ["test","rationale"], properties: { test: { type: "string" }, rationale: { type: "string" } } } },
+        pending_data_summary: { type: "string" },
       },
     },
-    data_reviewed:         { type: "string" },
-    risk_rationale:        { type: "string" },
-    acep_policy_ref:       { type: "string" },
-    // v11.5: MDM confidence indicator
-    mdm_confidence:        { type: "string" },
-    mdm_confidence_note:   { type: "string" },
+    mdm_level: { type: "string" },
+    mdm_label: { type: "string" },
+    problem_complexity: { type: "string" },
+    data_complexity: { type: "string" },
+    risk_tier: { type: "string" },
+    acep_policy_ref: { type: "string" },
+    mdm_confidence: { type: "string" },
+    mdm_confidence_note: { type: "string" },
   },
 };
 
@@ -153,10 +138,24 @@ data_complexity — pick the single best match:
 
 For mdm_narrative write a single clinically complete paragraph suitable for direct EMR charting (3-5 sentences). For differential provide 2-5 alternative diagnoses as structured objects — each with: diagnosis (name), probability (exactly "high" | "moderate" | "low"), supporting_evidence (1 sentence from THIS case's specific findings), against (1 sentence — what argues against it in this case), must_not_miss (true if this diagnosis would be immediately life-threatening if missed — PE, dissection, STEMI, SAH, etc.). Rank high probability first. For critical_actions list only interventions required in the next 15-30 minutes — return an empty array if none are needed. For recommended_actions return an array of plain-text strings ONLY — each item must be a single complete sentence, NOT a JSON object or structured data. For lab/test recommendations use this exact format: "Test name in Xh — if [result], then [action]". Example: "Repeat troponin at 3h — if delta >0.04 ng/mL, initiate ACS protocol and cardiology consult." Example: "Urinalysis with reflex culture — if positive, initiate antibiotic therapy." Each string must stand alone as readable chart text. Return an empty array if none. Do NOT return objects, do NOT use keys like test_name or indication. For treatment_recommendations provide evidence-based in-ED treatment interventions for the working diagnosis. For each item: intervention = specific treatment with dose/route/frequency where applicable; indication = clinical indication or threshold; evidence_level = exactly one of "Class I" / "Class IIa" / "Class IIb" / "Class III" / "Expert consensus" per ACC/AHA classification — use "Expert consensus" if unsure; guideline_ref = cite ONLY if highly confident (ACEP Clinical Policy, ACC/AHA, SSC, etc.) — return empty string if uncertain, never fabricate; notes = cautions or contraindications (optional). Prioritize highest-evidence interventions. Do NOT duplicate items already in critical_actions. For acep_policy_ref, reference the most applicable ACEP Clinical Policy by name only if one directly applies — otherwise return an empty string.
 
-For mdm_confidence return EXACTLY ONE of: "Strong" (clearly meets criteria; no reasonable argument for a different level), "Borderline-up" (could reasonably be coded one level HIGHER given different clinical trajectory), or "Borderline-down" (could reasonably be coded one level LOWER).
-For mdm_confidence_note return ONE sentence: if Strong, state the strongest criteria anchoring this level. If Borderline-up, state what factor would push it higher. If Borderline-down, state what would lower it.
+OUTPUT STRUCTURE — produce exactly two clinical sections:
 
-Respond ONLY in valid JSON, no markdown fences.`;
+SECTION 1 — initial_impression:
+working_dx_line: concise label, format: "[Primary Dx] in the setting of [context]"
+clinical_rationale: 1–3 sentences using "consistent with" language
+cannot_exclude: array of sentences opening with "[Dx] cannot be excluded given [reason]." or "[Dx] must be ruled out in any [descriptor] presenting with [symptom]." Always include life threats and ectopic pregnancy for reproductive-age females with abdominal pain.
+differentials: ranked array, most likely first. Each: rank (int), diagnosis (string with parenthetical context), rationale (3–8 words).
+
+SECTION 2 — initial_management:
+immediate_interventions: brief bedside orders, each under 10 words
+diagnostics: ordered by urgency, each has test (specific name) and rationale (one clause). Include imaging modality and conditional escalation (e.g. CT if ultrasound non-diagnostic).
+pending_data_summary: one sentence: "[results pending] will refine working diagnosis and guide further management."
+
+Also output: mdm_level (99281-99285), mdm_label, problem_complexity, data_complexity, risk_tier, acep_policy_ref, mdm_confidence (Strong|Borderline-up|Borderline-down), mdm_confidence_note.
+
+Clinical rules: always address life threats before anchoring. Use "cannot be excluded" not "ruled out" until definitive testing complete. For reproductive-age females with abdominal pain, ectopic must appear in cannot_exclude.
+
+Respond ONLY in valid JSON. No markdown fences.`;
 }
 
 
@@ -336,10 +335,9 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
       lines.push(`Recommended Actions:`);
       mdm.recommended_actions.forEach((a, i) => lines.push(`  ${i+1}. ${a}`));
     }
-    if (mdm.data_reviewed) lines.push(`Data Reviewed: ${mdm.data_reviewed}`);
-    if (mdm.risk_rationale) lines.push(`Risk Rationale: ${mdm.risk_rationale}`);
-    if (mdm.mdm_narrative) lines.push(`\nMDM NARRATIVE:\n${mdm.mdm_narrative}`);
     if (mdm.acep_policy_ref) lines.push(`ACEP Policy: ${mdm.acep_policy_ref}`);
+    const mdmFullCopyText = formatMDMForCopy(mdm);
+    if (mdmFullCopyText) lines.push(`\n${mdmFullCopyText}`);
     lines.push("");
   }
 
@@ -406,6 +404,30 @@ function buildFullNote(p1, mdm, p2, disp, extras = {}) {
   }
 
   lines.push(`\n---\nGenerated by Notrya QuickNote. Always verify AI-generated content before charting.`);
+  return lines.join("\n");
+}
+
+function formatMDMForCopy(mdmResult) {
+  if (!mdmResult) return "";
+  const imp = mdmResult.initial_impression || {};
+  const mgmt = mdmResult.initial_management || {};
+  const lines = [];
+  lines.push("INITIAL IMPRESSION");
+  if (imp.working_dx_line) lines.push("Working diagnosis: " + imp.working_dx_line);
+  if (imp.clinical_rationale) lines.push(imp.clinical_rationale);
+  (imp.cannot_exclude || []).forEach(s => lines.push(s));
+  if (imp.differentials?.length) {
+    lines.push("Differentials (ranked):");
+    imp.differentials.forEach(d => lines.push(d.rank + ". " + d.diagnosis));
+  }
+  lines.push("");
+  lines.push("INITIAL MANAGEMENT");
+  if (mgmt.immediate_interventions?.length) lines.push("Immediate interventions: " + mgmt.immediate_interventions.join(". ") + ".");
+  if (mgmt.diagnostics?.length) {
+    lines.push("Diagnostics:");
+    mgmt.diagnostics.forEach(d => lines.push("- " + d.test + ": " + d.rationale));
+  }
+  if (mgmt.pending_data_summary) lines.push("Pending data: " + mgmt.pending_data_summary);
   return lines.join("\n");
 }
 
@@ -479,7 +501,8 @@ function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
     if (mdm.working_diagnosis) lines.push(`Working Impression: ${mdm.working_diagnosis}`);
     if (mdm.mdm_level) lines.push(`MDM Complexity: ${mdm.mdm_level}`);
     lines.push("");
-    if (mdm.mdm_narrative) { lines.push(mdm.mdm_narrative); lines.push(""); }
+    const mdmCopyText = formatMDMForCopy(mdm);
+    if (mdmCopyText) { lines.push(mdmCopyText); lines.push(""); }
     // Numbered plan from recommended actions
     const actions = (mdm.recommended_actions || []).filter(Boolean);
     if (actions.length) {
@@ -652,7 +675,6 @@ function buildSOAPNote(p1, mdm, p2, disp) {
 }
 
 export {
-  MDM_SCHEMA,
   DISP_SCHEMA,
   buildMDMPrompt,
   buildDispPrompt,

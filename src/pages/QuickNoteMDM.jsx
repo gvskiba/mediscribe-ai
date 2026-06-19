@@ -617,3 +617,130 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) 
     </div>
   );
 }
+
+// ─── INITIAL IMPRESSION DISPLAY ──────────────────────────────────────────────
+export function InitialImpressionDisplay({ result }) {
+  if (!result) return null;
+  const imp  = result.initial_impression  || {};
+  const mgmt = result.initial_management  || {};
+  const hasImp  = imp.working_dx_line || imp.clinical_rationale || imp.cannot_exclude?.length || imp.differentials?.length;
+  const hasMgmt = mgmt.immediate_interventions?.length || mgmt.diagnostics?.length || mgmt.pending_data_summary;
+  if (!hasImp && !hasMgmt) return null;
+
+  const MONO = "'JetBrains Mono',monospace";
+  const SANS = "'DM Sans',sans-serif";
+  const SERIF = "'Playfair Display',serif";
+
+  return (
+    <div style={{
+      background: "rgba(11,30,54,0.55)",
+      border: "1px solid rgba(0,184,154,0.18)",
+      borderRadius: 10,
+      padding: "18px 20px",
+    }}>
+
+      {/* ── INITIAL IMPRESSION ── */}
+      {hasImp && (
+        <div>
+          <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 12 }}>
+            Initial Impression
+          </div>
+
+          {imp.working_dx_line && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginBottom: 4 }}>
+                Working Diagnosis
+              </div>
+              <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#f5c842" }}>
+                {imp.working_dx_line}
+              </div>
+            </div>
+          )}
+
+          {imp.clinical_rationale && (
+            <div style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", lineHeight: 1.6, marginBottom: 10 }}>
+              {imp.clinical_rationale}
+            </div>
+          )}
+
+          {imp.cannot_exclude?.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              {imp.cannot_exclude.map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", marginBottom: 5 }}>
+                  <span style={{ color: "#f5c842", fontSize: 12, flexShrink: 0, marginTop: 1 }}>▸</span>
+                  <span style={{ fontFamily: SANS, fontSize: 13, color: "#e0c97a", lineHeight: 1.5 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {imp.differentials?.length > 0 && (
+            <div>
+              <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginBottom: 6 }}>
+                Differentials
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {imp.differentials.map((d, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span style={{ fontFamily: MONO, fontSize: 11, color: "#00b89a", flexShrink: 0, minWidth: 18 }}>{d.rank}.</span>
+                    <span style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", fontWeight: 500 }}>{d.diagnosis}</span>
+                    {d.rationale && (
+                      <span style={{ fontFamily: SANS, fontSize: 12, color: "rgba(200,223,240,0.5)", fontStyle: "italic" }}> — {d.rationale}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Divider ── */}
+      {hasImp && hasMgmt && (
+        <div style={{ borderTop: "1px solid rgba(0,184,154,0.15)", margin: "16px 0" }} />
+      )}
+
+      {/* ── INITIAL MANAGEMENT ── */}
+      {hasMgmt && (
+        <div>
+          <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 12 }}>
+            Initial Management
+          </div>
+
+          {mgmt.immediate_interventions?.length > 0 && (
+            <div style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", lineHeight: 1.6, marginBottom: 10 }}>
+              <span style={{ fontWeight: 700, color: "#a8d4f0" }}>Immediate interventions: </span>
+              {mgmt.immediate_interventions.join(". ")}
+            </div>
+          )}
+
+          {mgmt.diagnostics?.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginBottom: 6 }}>
+                Diagnostics
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {mgmt.diagnostics.map((d, i) => (
+                  <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 12, color: "#00b89a", flexShrink: 0 }}>–</span>
+                    <span style={{ fontFamily: SANS, fontSize: 13 }}>
+                      <span style={{ fontWeight: 700, color: "#a8d4f0" }}>{d.test}</span>
+                      {d.rationale && <span style={{ color: "#c8dff0" }}>: {d.rationale}</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {mgmt.pending_data_summary && (
+            <div style={{ borderTop: "1px solid rgba(0,184,154,0.1)", paddingTop: 10, fontFamily: SANS, fontSize: 13, color: "rgba(200,223,240,0.6)", fontStyle: "italic" }}>
+              <span style={{ fontWeight: 700, color: "rgba(200,223,240,0.7)", fontStyle: "normal" }}>Pending data: </span>
+              {mgmt.pending_data_summary}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

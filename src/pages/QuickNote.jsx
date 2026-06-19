@@ -14,6 +14,7 @@ import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
+import { InitialImpressionDisplay } from "./QuickNoteMDM";
 import { PMH_CATS, PMH_CAT_ICONS, PMH_PRI_STYLE, PMH_MDM_HIGH, PMH_MDM_MOD, computePMHMDM, PMHTab } from "./QuickNotePatientHx";
 import { usePMHConditionInjector } from "@/components/MDMBuilderPMHBridge";
 import { injectQNStyles } from "./QuickNoteStyle.jsx";
@@ -39,6 +40,7 @@ import {
   MDM_SCHEMA, DISP_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
   buildFullNote, buildPhase1Copy, buildPhase2Copy,
+  formatMDMForCopy,
 } from "./QuickNotePrompts";
 import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
@@ -839,9 +841,9 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       await base44.entities.ClinicalNote.create({
         source:"QuickNote",encounter_date:new Date().toISOString().split("T")[0],
         cc:cc||"",chief_complaint:cc||"",raw_note:fullText,full_note_text:fullText,
-        working_diagnosis:mdmResult?.working_diagnosis||dispResult?.final_diagnosis||"",
-        mdm_level:mdmResult?.mdm_level||"",mdm_narrative:mdmResult?.mdm_narrative||"",
-        mdm:mdmResult?.mdm_narrative||"",disposition:dispResult?.disposition||"",
+        working_diagnosis:mdmResult?.working_diagnosis||mdmResult?.initial_impression?.working_dx_line||dispResult?.final_diagnosis||"",
+        mdm_level:mdmResult?.mdm_level||"",mdm_narrative:formatMDMForCopy(mdmResult)||"",
+        mdm:formatMDMForCopy(mdmResult)||"",disposition:dispResult?.disposition||"",
         provider_name:user?.full_name||user?.email||"",
         patient_identifier:demo?.mrn||"",status:"finalized",flag_reviewed:false,
         result_flags_json:dispResult?.result_flags?.length?JSON.stringify(dispResult.result_flags):"",
@@ -1541,6 +1543,8 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
               </button>
               <MDMHandoffBridge mdmResult={mdmResult} treatmentPlan={treatmentPlan} actionPlan={actionPlan} cc={cc} />
             </div>
+
+            <InitialImpressionDisplay result={mdmResult} />
 
             <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
               onNarrativeEdit={text=>setMdmResult(prev=>({...prev,mdm_narrative:text}))} />

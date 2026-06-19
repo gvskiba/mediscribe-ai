@@ -676,6 +676,7 @@ function buildSOAPNote(p1, mdm, p2, disp) {
 
 export {
   DISP_SCHEMA,
+  formatMDMForCopy,
   buildMDMPrompt,
   buildDispPrompt,
   buildMDMBlock,

@@ -744,3 +744,149 @@ export function InitialImpressionDisplay({ result }) {
     </div>
   );
 }
+
+// ─── TREATMENT DISPLAY ────────────────────────────────────────────────────────
+export function TreatmentDisplay({ result }) {
+  if (!result) return null;
+  const hasData = result.triage_acuity || result.triage_rationale ||
+    result.immediate_interventions?.length || result.medications?.length ||
+    result.diagnostics_ref?.length || result.monitoring_safety?.length;
+  if (!hasData) return null;
+
+  const MONO = "'JetBrains Mono',monospace";
+  const SANS = "'DM Sans',sans-serif";
+  const SERIF = "'Playfair Display',serif";
+
+  const ACUITY_COLOR = {
+    "Emergent":    "#ff4d4f",
+    "Urgent":      "#f5c842",
+    "Less Urgent": "#00b89a",
+    "Non-Urgent":  "rgba(200,223,240,0.5)",
+  };
+  const acuityColor = ACUITY_COLOR[result.triage_acuity] || "rgba(200,223,240,0.5)";
+
+  const BulletList = ({ items }) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      {(items || []).map((item, i) => (
+        <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", listStyle: "none" }}>
+          <span style={{ fontFamily: MONO, fontSize: 13, color: "#00b89a", flexShrink: 0 }}>–</span>
+          <span style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", lineHeight: 1.5 }}>{item}</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div style={{
+      background: "rgba(11,30,54,0.55)",
+      border: "1px solid rgba(0,184,154,0.18)",
+      borderRadius: 10,
+      padding: "18px 20px",
+      marginTop: 10,
+    }}>
+      <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 12 }}>
+        Treatment
+      </div>
+
+      {/* Triage and Acuity */}
+      {(result.triage_acuity || result.triage_rationale) && (
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginTop: 14, marginBottom: 8 }}>
+            Triage and Acuity
+          </div>
+          {result.triage_acuity && (
+            <div style={{
+              display: "inline-block",
+              fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+              color: acuityColor, border: `1px solid ${acuityColor}`,
+              padding: "3px 10px", borderRadius: 4, marginBottom: 8,
+            }}>
+              {result.triage_acuity}
+            </div>
+          )}
+          {result.triage_rationale && (
+            <div style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", lineHeight: 1.6 }}>
+              {result.triage_rationale}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Immediate Interventions */}
+      {result.immediate_interventions?.length > 0 && (
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginTop: 14, marginBottom: 8 }}>
+            Immediate Interventions
+          </div>
+          <BulletList items={result.immediate_interventions} />
+        </div>
+      )}
+
+      {/* Medications */}
+      {result.medications?.length > 0 && (
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginTop: 14, marginBottom: 8 }}>
+            Medications
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {result.medications.map((m, i) => (
+              <div key={i}>
+                {m.is_note ? (
+                  <div style={{ fontFamily: SANS, fontSize: 13 }}>
+                    <span style={{ fontWeight: 700, color: "#f5c842" }}>Note: </span>
+                    <span style={{ fontStyle: "italic", color: "#e0c97a" }}>{m.agent}</span>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: "#00b89a", minWidth: 88, flexShrink: 0 }}>
+                        {m.category}
+                      </span>
+                      <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: "#a8d4f0" }}>{m.agent}</span>
+                      <span style={{ fontFamily: SANS, fontSize: 13, color: "rgba(200,223,240,0.75)" }}> — {m.dosing}</span>
+                      {m.indication && (
+                        <span style={{ fontFamily: SANS, fontSize: 13, color: "rgba(200,223,240,0.6)" }}> ({m.indication})</span>
+                      )}
+                    </div>
+                    {m.caveats?.map((cav, ci) => (
+                      <div key={ci} style={{ fontFamily: SANS, fontSize: 11.5, fontStyle: "italic", color: "#e0c97a", marginTop: 3, paddingLeft: 4 }}>
+                        ⚠ {cav}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Diagnostics Ref */}
+      {result.diagnostics_ref?.length > 0 && (
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginTop: 14, marginBottom: 8 }}>
+            Diagnostics (see MDM)
+          </div>
+          <BulletList items={result.diagnostics_ref} />
+        </div>
+      )}
+
+      {/* Monitoring and Safety */}
+      {result.monitoring_safety?.length > 0 && (
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginTop: 14, marginBottom: 8 }}>
+            Monitoring and Safety
+          </div>
+          <BulletList items={result.monitoring_safety} />
+        </div>
+      )}
+
+      {/* Attestation footer */}
+      {result.attestation_required && (
+        <div style={{ borderTop: "1px solid rgba(0,184,154,0.1)", paddingTop: 10, marginTop: 14, textAlign: "center", fontFamily: SANS, fontSize: 11, fontStyle: "italic", color: "rgba(200,223,240,0.38)" }}>
+          AI-generated recommendations. Physician attestation and clinical correlation required.
+        </div>
+      )}
+    </div>
+  );
+}

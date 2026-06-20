@@ -192,8 +192,20 @@ const AuthenticatedApp = () => {
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      <div style={{ position:"fixed", inset:0, display:"flex", flexDirection:"column",
+        alignItems:"center", justifyContent:"center", background:"#050f1e", gap:16 }}>
+        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:700, color:"#00e5c0" }}>
+          Lakonyx
+        </div>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:"0.2em",
+          textTransform:"uppercase", color:"rgba(200,223,240,0.4)" }}>
+          Loading...
+        </div>
+        <div style={{ width:120, height:2, background:"rgba(0,184,154,0.15)", borderRadius:2, overflow:"hidden", marginTop:4 }}>
+          <div style={{ height:"100%", width:"40%", background:"#00e5c0",
+            animation:"lkx-slide 1.2s ease-in-out infinite", borderRadius:2 }} />
+        </div>
+        <style>{`@keyframes lkx-slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }`}</style>
       </div>
     );
   }

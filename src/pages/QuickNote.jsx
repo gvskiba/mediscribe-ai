@@ -14,7 +14,7 @@ import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
-import { InitialImpressionDisplay } from "./QuickNoteMDM";
+import { InitialImpressionDisplay, TreatmentDisplay } from "./QuickNoteMDM";
 import { PMH_CATS, PMH_CAT_ICONS, PMH_PRI_STYLE, PMH_MDM_HIGH, PMH_MDM_MOD, computePMHMDM, PMHTab } from "./QuickNotePatientHx";
 import { usePMHConditionInjector } from "@/components/MDMBuilderPMHBridge";
 import { injectQNStyles } from "./QuickNoteStyle.jsx";
@@ -37,10 +37,10 @@ import { DispositionCriteriaBuilder } from "@/components/quicknote/QuickNoteDisp
 import { QuickNoteROSPEScaffolds } from "@/components/quicknote/QuickNoteROSPEScaffolds";
 import HighAlertMedAlert from "@/components/quicknote/HighAlertMedAlert";
 import {
-  MDM_SCHEMA, DISP_SCHEMA,
+  MDM_SCHEMA, DISP_SCHEMA, TREATMENT_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
   buildFullNote, buildPhase1Copy, buildPhase2Copy,
-  formatMDMForCopy,
+  formatMDMForCopy, buildTreatmentPrompt, formatTreatmentForCopy,
 } from "./QuickNotePrompts";
 import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
@@ -202,6 +202,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
 
   const [mdmResult,  setMdmResult]  = useState(null);
   const [dispResult, setDispResult] = useState(null);
+  const [treatmentResult,  setTreatmentResult]  = useState(null);
+  const [treatmentLoading, setTreatmentLoading] = useState(false);
   const [p1Busy,     setP1Busy]     = useState(false);
   const [p2Busy,     setP2Busy]     = useState(false);
   const [p1Error,    setP1Error]    = useState(null);
@@ -305,6 +307,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         response_json_schema: MDM_SCHEMA,
       });
       setMdmResult(res); setP2Open(true);
+      generateTreatment(res);
       const ts = new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
       setMdmInitialTs(ts);
       setMdmTimestamp(new Date().toISOString());
@@ -317,6 +320,18 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     finally { setP1Busy(false); }
   }, [cc,vitals,hpi,ros,exam,phase1Ready,p1Busy,vhAnalysis,parsedMeds,parsedAllergies,
       encounterType,isBounceback,bouncebackDate,patientPregnant,patientWeight,pmh,psh,patientMeds,patientAllergies]);
+
+  const generateTreatment = useCallback(async (resolvedMdmResult) => {
+    setTreatmentLoading(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: buildTreatmentPrompt(cc, vitals, hpi, ros, exam, resolvedMdmResult),
+        response_json_schema: TREATMENT_SCHEMA,
+      });
+      setTreatmentResult(res);
+    } catch (e) { console.error("Treatment generation failed:", e); }
+    finally { setTreatmentLoading(false); }
+  }, [cc, vitals, hpi, ros, exam]);
 
   const handlePMHOrders = useCallback((orders) => {
     if (!orders?.length) return;
@@ -749,12 +764,14 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   const copyPhase1 = useCallback(() => {
     if (!mdmResult) return;
     const prov=window._notryaProvider||{};
-    const text=buildPhase1Copy({cc,vitals,hpi:effectiveHpi,ros,exam},mdmResult,
+    let text=buildPhase1Copy({cc,vitals,hpi:effectiveHpi,ros,exam},mdmResult,
       {parsedMeds,parsedAllergies,hpiSummary,hpiMode,workupRationale,
        providerName:prov.full_name||demo?.full_name||"",sigBlock:prov.sigBlock||"",
        demographics:{...(demo||{}),facility:prov.facility,location:prov.location}},formatMode);
+    const treatmentCopy = formatTreatmentForCopy(treatmentResult);
+    if (treatmentCopy) text = text + "\n\n" + treatmentCopy;
     navigator.clipboard.writeText(stripLabels(text)).then(()=>{setCopiedP1(true);setTimeout(()=>setCopiedP1(false),3000);});
-  }, [cc,vitals,effectiveHpi,ros,exam,mdmResult,parsedMeds,parsedAllergies,hpiSummary,hpiMode,workupRationale,demo,formatMode,pasteReady]);
+  }, [cc,vitals,effectiveHpi,ros,exam,mdmResult,parsedMeds,parsedAllergies,hpiSummary,hpiMode,workupRationale,demo,formatMode,pasteReady,treatmentResult]);
 
   const copyPhase2 = useCallback(() => {
     if (!dispResult) return;
@@ -890,6 +907,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     [setCC,setVitals,setHpi,setRos,setExam,setLabs,setImaging,setEkg,setNewVitals].forEach(fn=>fn(""));
     setParsedMeds([]); setParsedAllergies([]);
     setMdmResult(null); setDispResult(null);
+    setTreatmentResult(null); setTreatmentLoading(false);
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
     setQuickDDxDismissed(false); setIsBounceback(false);
@@ -1545,6 +1563,13 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             </div>
 
             <InitialImpressionDisplay result={mdmResult} />
+
+            {treatmentLoading && (
+              <div style={{ fontSize: 12, color: "#00b89a", padding: "8px 0", fontFamily: "'JetBrains Mono',monospace" }}>
+                Generating treatment plan...
+              </div>
+            )}
+            <TreatmentDisplay result={treatmentResult} />
 
             <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
               onNarrativeEdit={text=>setMdmResult(prev=>({...prev,mdm_narrative:text}))} />

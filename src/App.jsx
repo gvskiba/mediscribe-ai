@@ -193,19 +193,59 @@ const AuthenticatedApp = () => {
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div style={{ position:"fixed", inset:0, display:"flex", flexDirection:"column",
-        alignItems:"center", justifyContent:"center", background:"#050f1e", gap:16 }}>
-        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:700, color:"#00e5c0" }}>
+        alignItems:"center", justifyContent:"center", background:"#050f1e", gap:20 }}>
+        <style>{`
+          @keyframes lkx-ring-spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+          @keyframes lkx-ring-spin-rev { 0%{transform:rotate(0deg)} 100%{transform:rotate(-360deg)} }
+          @keyframes lkx-pulse-glow { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.08)} }
+          @keyframes lkx-dot-fade { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+          @keyframes lkx-wordmark { 0%,100%{opacity:0.7} 50%{opacity:1} }
+        `}</style>
+
+        {/* Outer ring */}
+        <div style={{ position:"relative", width:80, height:80 }}>
+          <div style={{
+            position:"absolute", inset:0, borderRadius:"50%",
+            border:"1.5px solid transparent",
+            borderTopColor:"#00e5c0", borderRightColor:"rgba(0,229,192,0.3)",
+            animation:"lkx-ring-spin 1.4s linear infinite",
+          }} />
+          <div style={{
+            position:"absolute", inset:8, borderRadius:"50%",
+            border:"1px solid transparent",
+            borderBottomColor:"rgba(0,184,154,0.5)", borderLeftColor:"transparent",
+            animation:"lkx-ring-spin-rev 2s linear infinite",
+          }} />
+          {/* Center glow dot */}
+          <div style={{
+            position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
+          }}>
+            <div style={{
+              width:12, height:12, borderRadius:"50%",
+              background:"radial-gradient(circle, #00e5c0 0%, rgba(0,184,154,0.3) 70%)",
+              boxShadow:"0 0 14px 4px rgba(0,229,192,0.35)",
+              animation:"lkx-pulse-glow 1.8s ease-in-out infinite",
+            }} />
+          </div>
+        </div>
+
+        {/* Wordmark */}
+        <div style={{
+          fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:"#00e5c0",
+          letterSpacing:"0.04em", animation:"lkx-wordmark 2s ease-in-out infinite",
+        }}>
           Lakonyx
         </div>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:"0.2em",
-          textTransform:"uppercase", color:"rgba(200,223,240,0.4)" }}>
-          Loading...
+
+        {/* Dot row */}
+        <div style={{ display:"flex", gap:6 }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{
+              width:5, height:5, borderRadius:"50%", background:"#00b89a",
+              animation:`lkx-dot-fade 1.2s ease-in-out ${i * 0.2}s infinite`,
+            }} />
+          ))}
         </div>
-        <div style={{ width:120, height:2, background:"rgba(0,184,154,0.15)", borderRadius:2, overflow:"hidden", marginTop:4 }}>
-          <div style={{ height:"100%", width:"40%", background:"#00e5c0",
-            animation:"lkx-slide 1.2s ease-in-out infinite", borderRadius:2 }} />
-        </div>
-        <style>{`@keyframes lkx-slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }`}</style>
       </div>
     );
   }

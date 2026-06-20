@@ -45,7 +45,7 @@ export const MDM_SCHEMA = {
   },
 };
 
-const DISP_SCHEMA = {
+export const DISP_SCHEMA = {
   type: "object",
   required: ["disposition", "reevaluation_note", "final_diagnosis", "updated_impression", "plan_summary"],
   properties: {
@@ -326,7 +326,7 @@ Respond ONLY in valid JSON, no markdown fences.`;
 }
 
 // ─── MDM BLOCK BUILDER ───────────────────────────────────────────────────────
-function buildMDMBlock(mdm) {
+function buildMDMBlock(mdm, extras = {}) {
   if (!mdm) return "";
   const lines = [
     `MEDICAL DECISION MAKING — ${new Date().toLocaleString()}`, "",
@@ -563,7 +563,7 @@ function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
 
   if (p1.hpi) {
     lines.push(hdr("HISTORY OF PRESENT ILLNESS:"));
-    lines.push(extras.hpiSummary?.trim() || p1.hpi);
+    lines.push((extras.hpiMode === "summary" && extras.hpiSummary?.trim()) ? extras.hpiSummary.trim() : p1.hpi);
     lines.push("");
   }
 
@@ -772,7 +772,6 @@ function buildSOAPNote(p1, mdm, p2, disp) {
 }
 
 export {
-  DISP_SCHEMA,
   formatMDMForCopy,
   buildMDMPrompt,
   buildDispPrompt,

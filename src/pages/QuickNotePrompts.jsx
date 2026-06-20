@@ -159,6 +159,103 @@ Respond ONLY in valid JSON. No markdown fences.`;
 }
 
 
+export const TREATMENT_SCHEMA = {
+  type: "object",
+  required: ["triage_acuity","triage_rationale","immediate_interventions","medications","diagnostics_ref","monitoring_safety","attestation_required"],
+  properties: {
+    triage_acuity: { type: "string" },
+    triage_rationale: { type: "string" },
+    immediate_interventions: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 6 },
+    medications: { type: "array", minItems: 0, maxItems: 10, items: { type: "object", required: ["category","agent","dosing","indication"], properties: { category: { type: "string" }, agent: { type: "string" }, dosing: { type: "string" }, indication: { type: "string" }, caveats: { type: "array", items: { type: "string" } }, is_note: { type: "boolean" } } } },
+    diagnostics_ref: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 8 },
+    monitoring_safety: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 6 },
+    attestation_required: { type: "boolean" },
+  },
+};
+
+export function buildTreatmentPrompt(cc, vitals, hpi, ros, exam, mdmResult) {
+  const workingDx = mdmResult?.initial_impression?.working_dx_line || mdmResult?.working_diagnosis || "unknown";
+  const differentials = mdmResult?.initial_impression?.differentials?.map(d => d.diagnosis).join(", ") || "not provided";
+  const cannotExclude = mdmResult?.initial_impression?.cannot_exclude?.join(" ") || "";
+  const immediateInterventions = mdmResult?.initial_management?.immediate_interventions?.join(", ") || "not provided";
+  const diagnostics = mdmResult?.initial_management?.diagnostics?.map(d => d.test).join(", ") || "not provided";
+
+  return `${SYS_BIAS}
+
+You are a board-certified emergency physician generating the TREATMENT section of an ED note.
+
+PATIENT DATA:
+Chief Complaint: ${cc || "not provided"}
+Triage Vitals: ${vitals || "not provided"}
+HPI: ${hpi || "not provided"}
+Review of Systems: ${ros || "not provided"}
+Physical Exam: ${exam || "not provided"}
+
+WORKING FROM MDM:
+Working Diagnosis: ${workingDx}
+Differentials: ${differentials}
+Cannot Exclude: ${cannotExclude}
+MDM Immediate Interventions: ${immediateInterventions}
+MDM Diagnostics: ${diagnostics}
+
+Produce exactly five subsections:
+
+TRIAGE AND ACUITY: triage_acuity = ESI label ("Emergent"|"Urgent"|"Less Urgent"|"Non-Urgent"). triage_rationale = one sentence: "[Acuity] — [clinical justification citing key surgical or emergent differentials]."
+
+IMMEDIATE INTERVENTIONS: immediate_interventions = array of 1–5 concise bedside orders (no medications). Always include IV access and monitoring. Add NPO only if surgical differential present.
+
+MEDICATIONS: medications array. Each item: category (drug class label), agent (specific drug name, use OR for alternatives), dosing (dose/route/frequency), indication (one clause), caveats (array of safety warnings, especially when cannot-exclude diagnoses create medication contraindications), is_note (true for advisory lines not actual drug orders). Always flag any medication class that should be withheld until workup complete.
+
+DIAGNOSTICS REF: diagnostics_ref = restate the test list from MDM (max 8). Include conditional escalation items (e.g. CT if US non-diagnostic). Do not add new diagnostics.
+
+MONITORING AND SAFETY: monitoring_safety = 2–5 items: vital sign reassessment interval, hemodynamic escalation trigger, specialty consult threshold (triggered by specific finding), any other monitoring parameters.
+
+attestation_required: always true.
+
+Clinical rules: triage acuity reflects highest-risk differential, not most likely Dx. All meds contextualized to cannot-exclude diagnoses.
+
+Respond ONLY in valid JSON. No markdown fences.`;
+}
+
+export function formatTreatmentForCopy(treatmentResult) {
+  if (!treatmentResult) return "";
+  const t = treatmentResult;
+  const lines = [];
+  if (t.triage_acuity || t.triage_rationale) {
+    lines.push("TRIAGE AND ACUITY:");
+    lines.push(t.triage_rationale || t.triage_acuity);
+    lines.push("");
+  }
+  if (t.immediate_interventions?.length) {
+    lines.push("IMMEDIATE INTERVENTIONS:");
+    t.immediate_interventions.forEach(i => lines.push("- " + i));
+    lines.push("");
+  }
+  if (t.medications?.length) {
+    lines.push("MEDICATIONS:");
+    t.medications.forEach(m => {
+      if (m.is_note) { lines.push("- Note: " + m.agent); }
+      else {
+        const cavStr = m.caveats?.length ? " (" + m.caveats.join("; ") + ")" : "";
+        lines.push("- " + m.category + ": " + m.agent + " " + m.dosing + cavStr);
+      }
+    });
+    lines.push("");
+  }
+  if (t.diagnostics_ref?.length) {
+    lines.push("DIAGNOSTICS (see MDM):");
+    t.diagnostics_ref.forEach(d => lines.push("- " + d));
+    lines.push("");
+  }
+  if (t.monitoring_safety?.length) {
+    lines.push("MONITORING AND SAFETY:");
+    t.monitoring_safety.forEach(m => lines.push("- " + m));
+    lines.push("");
+  }
+  lines.push("AI-generated recommendations. Physician attestation and clinical correlation required.");
+  return lines.join("\n");
+}
+
 const SPECIALTY_DISP_CONTEXT = {
   peds: "\nPEDIATRIC DISPOSITION: Weight-based dosing in all Rx. Instructions addressed to caregiver. Fever return precautions include age-specific thresholds (under 3 months any fever = return immediately). Document caregiver verbalized understanding.",
   psych: `\nPSYCHIATRIC DISPOSITION: Document safety plan, means restriction counseling, crisis line (988), psychiatric follow-up within 72h. If admitting: document capacity assessment and involuntary hold status. Return precautions include psychiatric crisis symptoms.`,

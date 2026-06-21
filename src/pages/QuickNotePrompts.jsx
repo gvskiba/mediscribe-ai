@@ -256,6 +256,87 @@ export function formatTreatmentForCopy(treatmentResult) {
   return lines.join("\n");
 }
 
+// ─── LAB SUMMARY ─────────────────────────────────────────────────────────────
+export const LAB_SUMMARY_SCHEMA = {
+  type: "object",
+  required: ["critical_flags","panels","clinical_correlations","recommended_actions"],
+  properties: {
+    critical_flags: { type: "array", items: { type: "object", required: ["test","value","threshold","action"], properties: { test: { type: "string" }, value: { type: "string" }, threshold: { type: "string" }, action: { type: "string" } } } },
+    panels: { type: "array", minItems: 1, items: { type: "object", required: ["panel_name","results"], properties: { panel_name: { type: "string" }, results: { type: "array", minItems: 1, items: { type: "object", required: ["test","value","direction","interpretation"], properties: { test: { type: "string" }, value: { type: "string" }, unit: { type: "string" }, direction: { type: "string" }, tier: { type: "string" }, interpretation: { type: "string" }, threshold_note: { type: "string" }, grouped_with: { type: "array", items: { type: "object", properties: { test: { type: "string" }, value: { type: "string" }, unit: { type: "string" }, direction: { type: "string" } } } } } } } } } },
+    clinical_correlations: { type: "array", minItems: 1, maxItems: 6, items: { type: "object", required: ["number","correlation"], properties: { number: { type: "integer" }, topic: { type: "string" }, correlation: { type: "string" } } } },
+    recommended_actions: { type: "object", required: ["immediate","short_term"], properties: { immediate: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 5 }, short_term: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 6 } } },
+  },
+};
+
+export function buildLabSummaryPrompt(labs, cc, mdmResult, parsedMeds, parsedAllergies) {
+  const workingDx = mdmResult?.initial_impression?.working_dx_line || mdmResult?.working_diagnosis || "not provided";
+  const differentials = mdmResult?.initial_impression?.differentials?.map(d => d.diagnosis).join(", ") || "not provided";
+  const cannotExclude = mdmResult?.initial_impression?.cannot_exclude?.join(" ") || "";
+  const medsCtx = parsedMeds?.length ? parsedMeds.map(m => m.name || m).join(", ") : "not provided";
+  const allergyCtx = parsedAllergies?.length ? parsedAllergies.map(a => a.name || a).join(", ") : "none documented";
+
+  return `${SYS_BIAS}
+
+You are a board-certified emergency physician interpreting lab results for an ED encounter.
+
+ENCOUNTER CONTEXT:
+Chief Complaint: ${cc || "not provided"}
+Working Diagnosis: ${workingDx}
+Active Differentials: ${differentials}
+Cannot Exclude: ${cannotExclude}
+Medications: ${medsCtx}
+Allergies: ${allergyCtx}
+
+LAB DATA:
+${labs || "No labs provided"}
+
+SEVERITY TIER DEFINITIONS:
+NORMAL: within reference range. MILD: mildly abnormal, monitor. MODERATE: warrants clinical attention. SEVERE: requires prompt intervention. CRITICAL: panic value, immediate action.
+
+DIRECTION MARKERS: H = above upper limit. L = below lower limit. C = critical panic value. normal = within range.
+
+OUTPUT RULES:
+
+critical_flags: scan all results for panic values. If any: list test, value with (C) marker, threshold crossed, required immediate action. If none: empty array.
+
+panels: group by panel (CBC, CMP, Inflammatory Markers, Lactate, Microbiology, Coagulation, Cardiac Markers, LFTs, UA — only include panels present in lab data). Per result: test (abbreviation), value (string), unit, direction (H/L/C/normal), tier (NORMAL/MILD/MODERATE/SEVERE/CRITICAL), interpretation (concise clinical clause using "consistent with"/"cannot exclude"/"argues against" language — never "rules out"), threshold_note (only for near-critical or critical values), grouped_with (bundle closely related values: RBC+Hgb+Hct, BUN+Cr).
+
+clinical_correlations: 3–5 numbered items. Each synthesizes multiple lab findings into unified clinical interpretation tied to working Dx and differentials. Connect to bedside findings from CC/MDM where relevant.
+
+recommended_actions.immediate: 1–3 actions needed now.
+recommended_actions.short_term: 2–5 actions for next 1–8 hours.
+
+Respond ONLY in valid JSON. No markdown fences.`;
+}
+
+export function formatLabSummaryForCopy(labResult) {
+  if (!labResult) return "";
+  const lines = [];
+  lines.push("CRITICAL FLAGS:");
+  if (!labResult.critical_flags?.length) { lines.push("None identified."); }
+  else { labResult.critical_flags.forEach(f => lines.push("CRITICAL -- " + f.test + ": " + f.value + " [" + f.threshold + "] -- " + f.action)); }
+  lines.push("");
+  lines.push("LAB SUMMARY:");
+  (labResult.panels || []).forEach(panel => {
+    lines.push(panel.panel_name + ":");
+    (panel.results || []).forEach(r => {
+      const dirStr = r.direction && r.direction !== "normal" ? " (" + r.direction + ")" : "";
+      const grouped = r.grouped_with?.length ? ", " + r.grouped_with.map(g => g.test + " " + g.value + (g.direction && g.direction !== "normal" ? " (" + g.direction + ")" : "")).join(", ") : "";
+      const tierStr = r.tier && r.tier !== "NORMAL" ? "; " + r.tier + " tier" : "";
+      const threshStr = r.threshold_note ? "; " + r.threshold_note : "";
+      lines.push("- " + r.test + " " + r.value + dirStr + grouped + " -- " + r.interpretation + tierStr + threshStr);
+    });
+    lines.push("");
+  });
+  lines.push("CLINICAL CORRELATIONS:");
+  (labResult.clinical_correlations || []).forEach(c => { const t = c.topic ? c.topic + " -- " : ""; lines.push(c.number + ". " + t + c.correlation); });
+  lines.push("");
+  lines.push("RECOMMENDED ACTIONS:");
+  if (labResult.recommended_actions?.immediate?.length) lines.push("Immediate: " + labResult.recommended_actions.immediate.join("; ") + ".");
+  if (labResult.recommended_actions?.short_term?.length) lines.push("Short-term: " + labResult.recommended_actions.short_term.join("; ") + ".");
+  return lines.join("\n");
+}
+
 const SPECIALTY_DISP_CONTEXT = {
   peds: "\nPEDIATRIC DISPOSITION: Weight-based dosing in all Rx. Instructions addressed to caregiver. Fever return precautions include age-specific thresholds (under 3 months any fever = return immediately). Document caregiver verbalized understanding.",
   psych: `\nPSYCHIATRIC DISPOSITION: Document safety plan, means restriction counseling, crisis line (988), psychiatric follow-up within 72h. If admitting: document capacity assessment and involuntary hold status. Return precautions include psychiatric crisis symptoms.`,

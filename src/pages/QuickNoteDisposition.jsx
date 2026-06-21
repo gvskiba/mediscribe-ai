@@ -862,3 +862,193 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch, onDiagE
     </div>
   );
 }
+
+// ─── LAB SUMMARY DISPLAY ─────────────────────────────────────────────────────
+const DIRECTION_COLOR = {
+  H: "#f5c842",
+  L: "#7ec8f7",
+  C: "#ff4d4f",
+  normal: "rgba(200,223,240,0.45)",
+};
+const TIER_COLOR = {
+  NORMAL:   "rgba(200,223,240,0.45)",
+  MILD:     "#f5c842",
+  MODERATE: "#f5a623",
+  SEVERE:   "#ff7a45",
+  CRITICAL: "#ff4d4f",
+};
+const LSD_MONO = "'JetBrains Mono',monospace";
+const LSD_SANS = "'DM Sans',sans-serif";
+const LSD_SERIF = "'Playfair Display',serif";
+
+export function LabSummaryDisplay({ result }) {
+  if (!result) return null;
+  const hasPanels  = result.panels?.length > 0;
+  const hasCorrs   = result.clinical_correlations?.length > 0;
+  const hasActions = result.recommended_actions?.immediate?.length > 0 ||
+                     result.recommended_actions?.short_term?.length > 0;
+  if (!hasPanels && !hasCorrs && !hasActions) return null;
+
+  const SubHeader = ({ children }) => (
+    <div style={{ fontFamily: LSD_MONO, fontSize: 10, textTransform: "uppercase",
+      letterSpacing: "0.09em", color: "rgba(200,223,240,0.45)", marginTop: 14,
+      marginBottom: 6 }}>
+      {children}
+    </div>
+  );
+
+  const Divider = () => (
+    <div style={{ borderTop: "1px solid rgba(0,184,154,0.1)", marginTop: 14 }} />
+  );
+
+  const Bullet = ({ text }) => (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+      <span style={{ fontFamily: LSD_MONO, fontSize: 13, color: "#00b89a", flexShrink: 0 }}>–</span>
+      <span style={{ fontFamily: LSD_SANS, fontSize: 12.5, color: "#c8dff0", lineHeight: 1.55 }}>{text}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ background: "rgba(11,30,54,0.55)", border: "1px solid rgba(0,184,154,0.18)",
+      borderRadius: 10, padding: "18px 20px", marginTop: 10 }}>
+
+      {/* Main header */}
+      <div style={{ fontFamily: LSD_SERIF, fontSize: 11, textTransform: "uppercase",
+        letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 4 }}>
+        Lab Summary
+      </div>
+
+      {/* Critical Flags */}
+      <SubHeader>Critical Flags</SubHeader>
+      {!result.critical_flags?.length ? (
+        <div style={{ fontFamily: LSD_SANS, fontSize: 12.5, fontStyle: "italic",
+          color: "rgba(200,223,240,0.45)" }}>None identified.</div>
+      ) : (
+        <div style={{ background: "rgba(255,77,79,0.1)", border: "1px solid rgba(255,77,79,0.35)",
+          borderRadius: 6, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+          {result.critical_flags.map((f, i) => (
+            <div key={i} style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "baseline" }}>
+              <span style={{ fontFamily: LSD_SANS, fontSize: 12.5, color: "#ff4d4f" }}>⚠</span>
+              <span style={{ fontFamily: LSD_MONO, fontSize: 11, fontWeight: 700, color: "#ff4d4f" }}>{f.test}</span>
+              <span style={{ fontFamily: LSD_MONO, fontSize: 11, color: "#ff4d4f" }}>{f.value}</span>
+              <span style={{ fontFamily: LSD_MONO, fontSize: 10, color: "rgba(255,77,79,0.8)" }}>[{f.threshold}]</span>
+              <span style={{ fontFamily: LSD_SANS, fontSize: 12.5, color: "#ff7a45" }}>→ {f.action}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Panels */}
+      {hasPanels && (
+        <>
+          <Divider />
+          <SubHeader>Lab Results</SubHeader>
+          {result.panels.map((panel, pi) => (
+            <div key={pi} style={{ marginBottom: 10 }}>
+              <div style={{ fontFamily: LSD_MONO, fontSize: 11, fontWeight: 700, color: "#00b89a",
+                textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 12, marginBottom: 5 }}>
+                {panel.panel_name}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {(panel.results || []).map((r, ri) => {
+                  const dirColor = DIRECTION_COLOR[r.direction] || DIRECTION_COLOR.normal;
+                  const tierColor = TIER_COLOR[r.tier] || TIER_COLOR.NORMAL;
+                  return (
+                    <div key={ri}>
+                      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                        {/* Left cell */}
+                        <div style={{ minWidth: 140, flexShrink: 0 }}>
+                          <span style={{ fontFamily: LSD_MONO, fontSize: 11.5, fontWeight: 700,
+                            color: "#a8d4f0" }}>{r.test} </span>
+                          <span style={{ fontFamily: LSD_MONO, fontSize: 11, color: dirColor }}>
+                            {r.value}{r.unit ? " " + r.unit : ""}
+                          </span>
+                          {r.grouped_with?.map((g, gi) => (
+                            <span key={gi} style={{ fontFamily: LSD_MONO, fontSize: 11 }}>
+                              <span style={{ color: "rgba(200,223,240,0.45)" }}>, </span>
+                              <span style={{ fontWeight: 700, color: "#a8d4f0" }}>{g.test} </span>
+                              <span style={{ color: DIRECTION_COLOR[g.direction] || DIRECTION_COLOR.normal }}>
+                                {g.value}{g.unit ? " " + g.unit : ""}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                        {/* Right cell */}
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontFamily: LSD_SANS, fontSize: 12, color: "rgba(200,223,240,0.45)",
+                            marginRight: 5 }}>–</span>
+                          <span style={{ fontFamily: LSD_SANS, fontSize: 12.5, color: "#c8dff0",
+                            lineHeight: 1.5 }}>{r.interpretation}</span>
+                          {r.tier && r.tier !== "NORMAL" && (
+                            <span style={{ display: "inline-block", fontFamily: LSD_MONO, fontSize: 9,
+                              fontWeight: 700, textTransform: "uppercase", color: tierColor,
+                              border: `1px solid ${tierColor}`, padding: "1px 6px", borderRadius: 3,
+                              marginLeft: 6 }}>{r.tier}</span>
+                          )}
+                          {r.threshold_note && (
+                            <div style={{ fontFamily: LSD_SANS, fontSize: 11, fontStyle: "italic",
+                              color: "rgba(200,223,240,0.5)", marginTop: 2 }}>{r.threshold_note}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Clinical Correlations */}
+      {hasCorrs && (
+        <>
+          <Divider />
+          <SubHeader>Clinical Correlations</SubHeader>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {result.clinical_correlations.map((c, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <span style={{ fontFamily: LSD_MONO, fontSize: 11, fontWeight: 700, color: "#00b89a",
+                  minWidth: 18, flexShrink: 0 }}>{c.number}.</span>
+                <span style={{ fontFamily: LSD_SANS, fontSize: 13, color: "#c8dff0", lineHeight: 1.55 }}>
+                  {c.topic && (
+                    <span style={{ fontWeight: 600, color: "#a8d4f0" }}>{c.topic}{" — "}</span>
+                  )}
+                  {c.correlation}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Recommended Actions */}
+      {hasActions && (
+        <>
+          <Divider />
+          <SubHeader>Recommended Actions</SubHeader>
+          {result.recommended_actions?.immediate?.length > 0 && (
+            <>
+              <div style={{ fontFamily: LSD_MONO, fontSize: 10, textTransform: "uppercase",
+                color: "rgba(200,223,240,0.45)", letterSpacing: "0.09em",
+                marginTop: 10, marginBottom: 4 }}>Immediate</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {result.recommended_actions.immediate.map((a, i) => <Bullet key={i} text={a} />)}
+              </div>
+            </>
+          )}
+          {result.recommended_actions?.short_term?.length > 0 && (
+            <>
+              <div style={{ fontFamily: LSD_MONO, fontSize: 10, textTransform: "uppercase",
+                color: "rgba(200,223,240,0.45)", letterSpacing: "0.09em",
+                marginTop: 10, marginBottom: 4 }}>Short-Term</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {result.recommended_actions.short_term.map((a, i) => <Bullet key={i} text={a} />)}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

@@ -337,6 +337,89 @@ export function formatLabSummaryForCopy(labResult) {
   return lines.join("\n");
 }
 
+export const FINAL_IMPRESSION_SCHEMA = {
+  type: "object",
+  required: ["diagnoses","excluded_diagnoses","closing_statement"],
+  properties: {
+    diagnoses: { type: "array", minItems: 1, maxItems: 8, items: { type: "object", required: ["rank","diagnosis","icd10_code","icd10_label","supporting_evidence"], properties: { rank: { type: "integer" }, diagnosis: { type: "string" }, icd10_code: { type: "string" }, icd10_label: { type: "string" }, supporting_evidence: { type: "string" }, qualifier: { type: "string" } } } },
+    excluded_diagnoses: { type: "array", minItems: 0, maxItems: 5, items: { type: "string" } },
+    closing_statement: { type: "string" },
+  },
+};
+
+export function buildFinalImpressionPrompt(cc, hpi, exam, mdmResult, labSummaryResult, imaging, dispResult) {
+  const workingDx = mdmResult?.initial_impression?.working_dx_line || mdmResult?.working_diagnosis || "not provided";
+  const differentials = mdmResult?.initial_impression?.differentials?.map(d => d.rank + ". " + d.diagnosis).join("; ") || "not provided";
+  const cannotExclude = mdmResult?.initial_impression?.cannot_exclude?.join(" ") || "";
+  const labCorr = labSummaryResult?.clinical_correlations?.map(c => (c.topic ? c.topic + ": " : "") + c.correlation).join(" | ") || "";
+  const critFlags = labSummaryResult?.critical_flags?.length ? labSummaryResult.critical_flags.map(f => "CRITICAL: " + f.test + " " + f.value).join("; ") : "None";
+  const finalDx = dispResult?.final_diagnosis || "";
+  const dispDispo = dispResult?.disposition || "";
+
+  return `${SYS_BIAS}
+
+You are a board-certified emergency physician generating the FINAL CLINICAL IMPRESSION section of an ED note after all results have returned.
+
+ENCOUNTER CONTEXT:
+Chief Complaint: ${cc || "not provided"}
+HPI: ${hpi || "not provided"}
+Physical Exam: ${exam || "not provided"}
+
+PHASE 1 MDM:
+Working Diagnosis: ${workingDx}
+Differentials: ${differentials}
+Cannot Exclude: ${cannotExclude}
+E/M Level: ${mdmResult?.mdm_label || ""} | Risk: ${mdmResult?.risk_tier || ""}
+
+PHASE 2 RESULTS:
+Lab Correlations: ${labCorr || "not provided"}
+Critical Flags: ${critFlags}
+Imaging: ${imaging || "not provided"}
+Disposition: ${dispDispo || "not provided"}
+Final Dx from Disposition: ${finalDx || "not provided"}
+
+OUTPUT RULES:
+
+diagnoses: ranked list of confirmed/working diagnoses. Each item:
+- rank: integer, 1 = primary (the chief complaint diagnosis)
+- diagnosis: plain clinical English (not ICD-10 label language). Include laterality, acuity, and specific descriptor where applicable.
+- icd10_code: most specific valid ICD-10-CM code. Use laterality specifiers (L/R). For CKD use N18.1–N18.5 based on GFR stage. For anemia specify type from lab data. Never fabricate codes.
+- icd10_label: official ICD-10-CM code description
+- supporting_evidence: semicolon-separated clause of specific findings (lab values, imaging findings, exam findings) that confirm this diagnosis
+- qualifier: optional — add only if clinically important caveat must accompany the code (e.g. "AKI cannot be excluded", "no abscess identified", "baseline unavailable for KDIGO comparison")
+
+Ranking: 1 = chief complaint diagnosis. Secondary diagnoses = comorbidities confirmed this encounter. Incidentals = last. Do NOT include diagnoses excluded by testing.
+
+excluded_diagnoses: dangerous/time-sensitive diagnoses addressed by workup that are not supported. Draw from cannot_exclude list. Plain name only, no codes. Omit any that are still pending (e.g. cultures pending → do not exclude sepsis).
+
+closing_statement: output exactly this string: "Although other conditions were also considered, they were deemed unlikely based on the clinical information available."
+
+ICD-10 RULES: specificity first. Laterality always when available. Acute over chronic when both present. Use combination codes when available. Never use manifestation codes as primary.
+
+Respond ONLY in valid JSON. No markdown fences.`;
+}
+
+export function formatFinalImpressionForCopy(finalResult, confirmedRanks) {
+  if (!finalResult) return "";
+  const lines = [];
+  lines.push("Based on all of the above, my clinical impression is most compatible with:");
+  lines.push("");
+  const toInclude = (finalResult.diagnoses || []).filter(d => !confirmedRanks?.size || confirmedRanks.has(d.rank));
+  toInclude.forEach(d => {
+    const qualStr = d.qualifier ? " -- " + d.qualifier : "";
+    lines.push(d.rank + ". " + d.diagnosis + " (ICD-10: " + d.icd10_code + ")" + qualStr + " -- " + d.supporting_evidence);
+  });
+  if (finalResult.excluded_diagnoses?.length) {
+    lines.push("");
+    lines.push("The clinical picture is not currently suggestive of " + finalResult.excluded_diagnoses.join(", ") + ".");
+  }
+  if (finalResult.closing_statement) {
+    lines.push("");
+    lines.push(finalResult.closing_statement);
+  }
+  return lines.join("\n");
+}
+
 const SPECIALTY_DISP_CONTEXT = {
   peds: "\nPEDIATRIC DISPOSITION: Weight-based dosing in all Rx. Instructions addressed to caregiver. Fever return precautions include age-specific thresholds (under 3 months any fever = return immediately). Document caregiver verbalized understanding.",
   psych: `\nPSYCHIATRIC DISPOSITION: Document safety plan, means restriction counseling, crisis line (988), psychiatric follow-up within 72h. If admitting: document capacity assessment and involuntary hold status. Return precautions include psychiatric crisis symptoms.`,

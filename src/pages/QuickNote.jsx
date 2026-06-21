@@ -41,7 +41,9 @@ import {
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
   buildFullNote, buildPhase1Copy, buildPhase2Copy,
   formatMDMForCopy, buildTreatmentPrompt, formatTreatmentForCopy,
+  LAB_SUMMARY_SCHEMA, buildLabSummaryPrompt, formatLabSummaryForCopy,
 } from "./QuickNotePrompts";
+import { LabSummaryDisplay } from "./QuickNoteDisposition";
 import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
 import { EncounterPicker } from "./QuickNoteEncounterPicker";
@@ -204,6 +206,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [dispResult, setDispResult] = useState(null);
   const [treatmentResult,  setTreatmentResult]  = useState(null);
   const [treatmentLoading, setTreatmentLoading] = useState(false);
+  const [labSummaryResult,  setLabSummaryResult]  = useState(null);
+  const [labSummaryLoading, setLabSummaryLoading] = useState(false);
   const [p1Busy,     setP1Busy]     = useState(false);
   const [p2Busy,     setP2Busy]     = useState(false);
   const [p1Error,    setP1Error]    = useState(null);
@@ -321,6 +325,19 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   }, [cc,vitals,hpi,ros,exam,phase1Ready,p1Busy,vhAnalysis,parsedMeds,parsedAllergies,
       encounterType,isBounceback,bouncebackDate,patientPregnant,patientWeight,pmh,psh,patientMeds,patientAllergies]);
 
+  const generateLabSummary = useCallback(async () => {
+    if (!labs || labSummaryLoading) return;
+    setLabSummaryLoading(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: buildLabSummaryPrompt(labs, cc, mdmResult, parsedMeds, parsedAllergies),
+        response_json_schema: LAB_SUMMARY_SCHEMA,
+      });
+      setLabSummaryResult(res);
+    } catch (e) { console.error("Lab summary failed:", e); }
+    finally { setLabSummaryLoading(false); }
+  }, [labs, cc, mdmResult, parsedMeds, parsedAllergies, labSummaryLoading]);
+
   const generateTreatment = useCallback(async (resolvedMdmResult) => {
     setTreatmentLoading(true);
     try {
@@ -346,6 +363,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const runDisposition = useCallback(async () => {
     if (!mdmResult || p2Busy) return;
     setP2Busy(true); setP2Error(null); setDispResult(null);
+    if (labs && !labSummaryResult) generateLabSummary();
     try {
       const consultCtx = consults.length
         ? "\nCONSULTS:\n"+consults.map(c=>`  ${c.service}${c.provider?" — Dr."+c.provider:""}${c.time?" at "+c.time:""}: ${c.recommendation}`).join("\n"):"";
@@ -777,10 +795,12 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     if (!dispResult) return;
     const prov=window._notryaProvider||{};
     const consultBlock=consults.length?"\n\nCONSULTS:\n"+consults.map(c=>`  ${c.service}${c.provider?" — Dr."+c.provider:""}${c.time?" at "+c.time:""}: ${c.recommendation}`).join("\n"):"";
-    const text=buildPhase2Copy({labs,imaging,ekg,newVitals},dispResult,
+    let text=buildPhase2Copy({labs,imaging,ekg,newVitals},dispResult,
       {icdSelected,interventions,providerName:prov.full_name||demo?.full_name||"",sigBlock:prov.sigBlock||"",demographics:{...(demo||{}),facility:prov.facility}},formatMode)+consultBlock;
+    const labCopy = formatLabSummaryForCopy(labSummaryResult);
+    if (labCopy) text = text + "\n\n" + labCopy;
     navigator.clipboard.writeText(stripLabels(text)).then(()=>{setCopiedP2(true);setTimeout(()=>setCopiedP2(false),3000);});
-  }, [labs,imaging,ekg,newVitals,dispResult,icdSelected,interventions,demo,formatMode,consults,pasteReady]);
+  }, [labs,imaging,ekg,newVitals,dispResult,icdSelected,interventions,demo,formatMode,consults,pasteReady,labSummaryResult]);
 
   const copyMDMOnly = useCallback(() => {
     if (!mdmResult) return;
@@ -865,6 +885,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         patient_identifier:demo?.mrn||"",status:"finalized",flag_reviewed:false,
         result_flags_json:dispResult?.result_flags?.length?JSON.stringify(dispResult.result_flags):"",
         icd_codes_json:icdSelected.length?JSON.stringify(icdSelected):"",
+        lab_summary_json: labSummaryResult ? JSON.stringify(labSummaryResult) : "",
         meds_raw:medsRaw||"",allergies_raw:allergiesRaw||"",
       });
       setSavedNote(true); setTimeout(()=>setSavedNote(false),3000);
@@ -908,6 +929,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setParsedMeds([]); setParsedAllergies([]);
     setMdmResult(null); setDispResult(null);
     setTreatmentResult(null); setTreatmentLoading(false);
+    setLabSummaryResult(null); setLabSummaryLoading(false);
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
     setQuickDDxDismissed(false); setIsBounceback(false);
@@ -1722,6 +1744,13 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             />
           </div>
         )}
+
+        {labSummaryLoading && (
+          <div style={{ fontSize: 12, color: "#00b89a", padding: "8px 0", fontFamily: "'JetBrains Mono',monospace" }}>
+            Interpreting labs...
+          </div>
+        )}
+        {labSummaryResult && <LabSummaryDisplay result={labSummaryResult} />}
 
         {dispResult&&(
           <div style={{marginBottom:14,padding:"16px",background:"rgba(8,22,40,.5)",

@@ -42,8 +42,9 @@ import {
   buildFullNote, buildPhase1Copy, buildPhase2Copy,
   formatMDMForCopy, buildTreatmentPrompt, formatTreatmentForCopy,
   LAB_SUMMARY_SCHEMA, buildLabSummaryPrompt, formatLabSummaryForCopy,
+  FINAL_IMPRESSION_SCHEMA, buildFinalImpressionPrompt, formatFinalImpressionForCopy,
 } from "./QuickNotePrompts";
-import { LabSummaryDisplay } from "./QuickNoteDisposition";
+import { LabSummaryDisplay, FinalImpressionDisplay } from "./QuickNoteDisposition";
 import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
 import { EncounterPicker } from "./QuickNoteEncounterPicker";
@@ -208,6 +209,10 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [treatmentLoading, setTreatmentLoading] = useState(false);
   const [labSummaryResult,  setLabSummaryResult]  = useState(null);
   const [labSummaryLoading, setLabSummaryLoading] = useState(false);
+  const [finalImpressionResult,  setFinalImpressionResult]  = useState(null);
+  const [finalImpressionLoading, setFinalImpressionLoading] = useState(false);
+  const [confirmedRanks, setConfirmedRanks] = useState(new Set());
+  const [rejectedRanks,  setRejectedRanks]  = useState(new Set());
   const [p1Busy,     setP1Busy]     = useState(false);
   const [p2Busy,     setP2Busy]     = useState(false);
   const [p1Error,    setP1Error]    = useState(null);
@@ -325,6 +330,33 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   }, [cc,vitals,hpi,ros,exam,phase1Ready,p1Busy,vhAnalysis,parsedMeds,parsedAllergies,
       encounterType,isBounceback,bouncebackDate,patientPregnant,patientWeight,pmh,psh,patientMeds,patientAllergies]);
 
+  const generateFinalImpression = useCallback(async (resolvedDispResult) => {
+    setFinalImpressionLoading(true);
+    setConfirmedRanks(new Set());
+    setRejectedRanks(new Set());
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: buildFinalImpressionPrompt(cc, hpi, exam, mdmResult, labSummaryResult, imaging, resolvedDispResult),
+        response_json_schema: FINAL_IMPRESSION_SCHEMA,
+      });
+      setFinalImpressionResult(res);
+    } catch (e) { console.error("Final impression failed:", e); }
+    finally { setFinalImpressionLoading(false); }
+  }, [cc, hpi, exam, mdmResult, labSummaryResult, imaging]);
+
+  const handleConfirmDx = useCallback((rank) => {
+    setConfirmedRanks(prev => { const s = new Set(prev); s.add(rank); return s; });
+    setRejectedRanks(prev => { const s = new Set(prev); s.delete(rank); return s; });
+  }, []);
+  const handleRejectDx = useCallback((rank) => {
+    setRejectedRanks(prev => { const s = new Set(prev); s.add(rank); return s; });
+    setConfirmedRanks(prev => { const s = new Set(prev); s.delete(rank); return s; });
+  }, []);
+  const handleResetDx = useCallback((rank) => {
+    setConfirmedRanks(prev => { const s = new Set(prev); s.delete(rank); return s; });
+    setRejectedRanks(prev => { const s = new Set(prev); s.delete(rank); return s; });
+  }, []);
+
   const generateLabSummary = useCallback(async () => {
     if (!labs || labSummaryLoading) return;
     setLabSummaryLoading(true);
@@ -374,6 +406,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         response_json_schema: DISP_SCHEMA,
       });
       setDispResult(res); setIntGenerated(false); setIntLoading(false);
+      generateFinalImpression(res);
     } catch(e) { setP2Error("Disposition generation failed: "+(e.message||"Check API")); }
     finally { setP2Busy(false); }
   }, [mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,p2Busy,ekg,parsedMeds,parsedAllergies,consults,patientResponse]);
@@ -799,6 +832,8 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       {icdSelected,interventions,providerName:prov.full_name||demo?.full_name||"",sigBlock:prov.sigBlock||"",demographics:{...(demo||{}),facility:prov.facility}},formatMode)+consultBlock;
     const labCopy = formatLabSummaryForCopy(labSummaryResult);
     if (labCopy) text = text + "\n\n" + labCopy;
+    const finalCopy = formatFinalImpressionForCopy(finalImpressionResult, confirmedRanks);
+    if (finalCopy) text = text + "\n\n" + finalCopy;
     navigator.clipboard.writeText(stripLabels(text)).then(()=>{setCopiedP2(true);setTimeout(()=>setCopiedP2(false),3000);});
   }, [labs,imaging,ekg,newVitals,dispResult,icdSelected,interventions,demo,formatMode,consults,pasteReady,labSummaryResult]);
 
@@ -886,6 +921,10 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         result_flags_json:dispResult?.result_flags?.length?JSON.stringify(dispResult.result_flags):"",
         icd_codes_json:icdSelected.length?JSON.stringify(icdSelected):"",
         lab_summary_json: labSummaryResult ? JSON.stringify(labSummaryResult) : "",
+        final_impression_json: finalImpressionResult ? JSON.stringify(finalImpressionResult) : "",
+        confirmed_icd10_codes: finalImpressionResult
+          ? (finalImpressionResult.diagnoses || []).filter(d => confirmedRanks.has(d.rank)).map(d => d.icd10_code).join(", ")
+          : "",
         meds_raw:medsRaw||"",allergies_raw:allergiesRaw||"",
       });
       setSavedNote(true); setTimeout(()=>setSavedNote(false),3000);
@@ -930,6 +969,8 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setMdmResult(null); setDispResult(null);
     setTreatmentResult(null); setTreatmentLoading(false);
     setLabSummaryResult(null); setLabSummaryLoading(false);
+    setFinalImpressionResult(null); setFinalImpressionLoading(false);
+    setConfirmedRanks(new Set()); setRejectedRanks(new Set());
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
     setQuickDDxDismissed(false); setIsBounceback(false);
@@ -1751,6 +1792,22 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           </div>
         )}
         {labSummaryResult && <LabSummaryDisplay result={labSummaryResult} />}
+
+        {finalImpressionLoading && (
+          <div style={{ fontSize: 12, color: "#00b89a", padding: "8px 0", fontFamily: "'JetBrains Mono',monospace" }}>
+            Generating final impression...
+          </div>
+        )}
+        {finalImpressionResult && (
+          <FinalImpressionDisplay
+            result={finalImpressionResult}
+            confirmedRanks={confirmedRanks}
+            rejectedRanks={rejectedRanks}
+            onConfirm={handleConfirmDx}
+            onReject={handleRejectDx}
+            onReset={handleResetDx}
+          />
+        )}
 
         {dispResult&&(
           <div style={{marginBottom:14,padding:"16px",background:"rgba(8,22,40,.5)",

@@ -249,6 +249,178 @@ function AddInterventionRow({ onAdd }) {
   );
 }
 
+// ─── FINAL IMPRESSION DISPLAY ─────────────────────────────────────────────────
+export function FinalImpressionDisplay({ result, confirmedRanks, rejectedRanks, onConfirm, onReject, onReset }) {
+  if (!result || !result.diagnoses?.length) return null;
+
+  const FID_MONO = "'JetBrains Mono',monospace";
+  const FID_SANS = "'DM Sans',sans-serif";
+  const FID_SERIF = "'Playfair Display',serif";
+
+  const accepted  = confirmedRanks?.size || 0;
+  const rejected  = rejectedRanks?.size  || 0;
+  const pending   = result.diagnoses.length - accepted - rejected;
+
+  return (
+    <div style={{ background: "rgba(11,30,54,0.55)", border: "1px solid rgba(0,184,154,0.18)",
+      borderRadius: 10, padding: "18px 20px", marginTop: 10 }}>
+
+      {/* Main header */}
+      <div style={{ fontFamily: FID_SERIF, fontSize: 11, textTransform: "uppercase",
+        letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 8 }}>
+        Final Impression
+      </div>
+
+      {/* Opening line */}
+      <div style={{ fontFamily: FID_SANS, fontSize: 13, fontStyle: "italic",
+        color: "rgba(200,223,240,0.6)", marginBottom: 14 }}>
+        Based on all of the above, my clinical impression is most compatible with:
+      </div>
+
+      {/* Status summary */}
+      <div style={{ fontFamily: FID_MONO, fontSize: 10, color: "rgba(200,223,240,0.3)",
+        letterSpacing: "0.06em", marginBottom: 10 }}>
+        {accepted} accepted · {rejected} rejected · {pending} pending review
+      </div>
+
+      {/* Diagnosis rows */}
+      {result.diagnoses.map((d) => {
+        const isAccepted = confirmedRanks?.has(d.rank);
+        const isRejected = rejectedRanks?.has(d.rank);
+        const status = isAccepted ? "accepted" : isRejected ? "rejected" : "pending";
+
+        const rowStyle = {
+          padding: "10px 12px", borderRadius: 8, marginBottom: 12,
+          opacity: status === "rejected" ? 0.45 : 1,
+          border: status === "accepted"
+            ? "1px solid rgba(0,184,154,0.5)"
+            : status === "rejected"
+              ? "1px solid rgba(255,77,79,0.25)"
+              : "1px solid rgba(0,184,154,0.12)",
+          background: status === "accepted"
+            ? "rgba(0,184,154,0.07)"
+            : status === "rejected"
+              ? "rgba(255,77,79,0.04)"
+              : "rgba(11,30,54,0.3)",
+        };
+
+        const rankColor = isAccepted ? "#00e5c0" : isRejected ? "#ff4d4f" : "#00b89a";
+
+        return (
+          <div key={d.rank} style={rowStyle}>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              {/* Rank */}
+              <div style={{ fontFamily: FID_MONO, fontSize: 11, fontWeight: 700,
+                color: rankColor, minWidth: 20, flexShrink: 0, paddingTop: 2 }}>
+                {d.rank}
+              </div>
+              {/* Content */}
+              <div style={{ flex: 1 }}>
+                {/* Diagnosis name + ICD chip + label */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                  <span style={{ fontFamily: FID_SANS, fontSize: 13.5, fontWeight: 600, color: "#c8dff0" }}>
+                    {d.diagnosis}
+                  </span>
+                  <span style={{ display: "inline-flex", padding: "2px 8px", borderRadius: 4,
+                    border: "1px solid rgba(0,229,192,0.3)", background: "rgba(0,229,192,0.07)",
+                    fontFamily: FID_MONO, fontSize: 10, fontWeight: 700, color: "#00e5c0",
+                    letterSpacing: "0.06em" }}>
+                    {d.icd10_code}
+                  </span>
+                  {d.icd10_label && (
+                    <span style={{ fontFamily: FID_SANS, fontSize: 11, fontStyle: "italic",
+                      color: "rgba(200,223,240,0.5)" }}>
+                      {d.icd10_label}
+                    </span>
+                  )}
+                </div>
+                {/* Supporting evidence */}
+                {d.supporting_evidence && (
+                  <div style={{ fontFamily: FID_SANS, fontSize: 12, color: "rgba(200,223,240,0.6)",
+                    marginTop: 5, lineHeight: 1.5 }}>
+                    {d.supporting_evidence}
+                  </div>
+                )}
+                {/* Qualifier */}
+                {d.qualifier && (
+                  <div style={{ fontFamily: FID_SANS, fontSize: 11.5, fontStyle: "italic",
+                    color: "#e0c97a", marginTop: 3 }}>
+                    ⚑ {d.qualifier}
+                  </div>
+                )}
+                {/* Action chips */}
+                <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => isAccepted ? onReset(d.rank) : onConfirm(d.rank)}
+                    style={{
+                      padding: "2px 10px", borderRadius: 4, cursor: "pointer",
+                      fontFamily: FID_MONO, fontSize: 10, fontWeight: 700,
+                      textTransform: "uppercase", letterSpacing: "0.04em",
+                      border: isAccepted ? "1px solid #00e5c0" : "1px solid rgba(0,229,192,0.3)",
+                      color: isAccepted ? "#00e5c0" : "rgba(0,229,192,0.5)",
+                      background: isAccepted ? "rgba(0,229,192,0.15)" : "transparent",
+                      transition: "all 0.15s",
+                    }}>
+                    {isAccepted ? "✓ Accepted" : "Accept"}
+                  </button>
+                  <button
+                    onClick={() => isRejected ? onReset(d.rank) : onReject(d.rank)}
+                    style={{
+                      padding: "2px 10px", borderRadius: 4, cursor: "pointer",
+                      fontFamily: FID_MONO, fontSize: 10, fontWeight: 700,
+                      textTransform: "uppercase", letterSpacing: "0.04em",
+                      border: isRejected ? "1px solid #ff4d4f" : "1px solid rgba(255,77,79,0.25)",
+                      color: isRejected ? "#ff4d4f" : "rgba(255,77,79,0.4)",
+                      background: isRejected ? "rgba(255,77,79,0.1)" : "transparent",
+                      transition: "all 0.15s",
+                    }}>
+                    {isRejected ? "✗ Rejected" : "Reject"}
+                  </button>
+                  {status === "pending" && (
+                    <span style={{ fontFamily: FID_MONO, fontSize: 10,
+                      color: "rgba(200,223,240,0.3)" }}>pending review</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Excluded diagnoses */}
+      {result.excluded_diagnoses?.length > 0 && (
+        <>
+          <div style={{ borderTop: "1px solid rgba(0,184,154,0.1)", marginTop: 4, marginBottom: 10 }} />
+          <div style={{ fontFamily: FID_MONO, fontSize: 10, textTransform: "uppercase",
+            color: "rgba(200,223,240,0.35)", letterSpacing: "0.06em", marginBottom: 8 }}>
+            Not supported by workup
+          </div>
+          <div style={{ fontFamily: FID_SANS, fontSize: 13, color: "rgba(200,223,240,0.55)",
+            lineHeight: 1.6 }}>
+            The clinical picture is not currently suggestive of{" "}
+            {result.excluded_diagnoses.map((dx, i) => (
+              <span key={i}>
+                <span style={{ color: "rgba(200,223,240,0.75)" }}>{dx}</span>
+                {i < result.excluded_diagnoses.length - 1 ? ", " : ""}
+              </span>
+            ))}
+            .
+          </div>
+        </>
+      )}
+
+      {/* Closing statement */}
+      {result.closing_statement && (
+        <div style={{ fontFamily: FID_SANS, fontSize: 11.5, fontStyle: "italic",
+          color: "rgba(200,223,240,0.4)", paddingTop: 10,
+          borderTop: "1px solid rgba(0,184,154,0.08)", marginTop: 12 }}>
+          {result.closing_statement}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function InterventionsCard({ items, loading, generated, onGenerate, onToggle, onUpdate, onAdd, onRemove }) {
   const confirmed = items.filter(i => i.confirmed !== false).length;
 

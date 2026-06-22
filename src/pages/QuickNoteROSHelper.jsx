@@ -50,7 +50,7 @@ export function QuickNoteROSHelper({ ros, onChange }) {
   const [showLegend,    setShowLegend]    = useState(false);
 
   const emit = useCallback((nextStatuses, nextPositives) => {
-    onChange(buildRosText(nextStatuses, nextPositives));
+    if (onChange) onChange(buildRosText(nextStatuses, nextPositives));
   }, [onChange]);
 
   const markAllNegative = useCallback((id, nextStatuses, nextPositives) => {

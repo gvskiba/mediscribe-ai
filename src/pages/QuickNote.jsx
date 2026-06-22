@@ -1514,8 +1514,8 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           allergiesFromHpi={allergiesFromHpi}
         />
 
-        <QuickNoteROSHelper ros={ros} />
-        <QuickNoteExamHelper exam={exam} cc={cc} autoExamFromCC={autoExamFromCC} autoExamBusy={autoExamBusy} />
+        <QuickNoteROSHelper ros={ros} onChange={setRos} />
+        <QuickNoteExamHelper exam={exam} onChange={setExam} cc={cc} autoExamFromCC={autoExamFromCC} autoExamBusy={autoExamBusy} />
 
         {/* ── v12.2: CC-driven ROS + PE scaffold injection ── */}
         <QuickNoteROSPEScaffolds

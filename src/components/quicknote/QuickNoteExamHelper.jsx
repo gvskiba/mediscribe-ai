@@ -43,16 +43,8 @@ export function QuickNoteExamHelper({ exam, onChange }) {
   const [showLegend,  setShowLegend]  = useState(false);
 
   const emitChange = useCallback((nextStatuses, nextCustom) => {
-    onChange(buildExamText(nextStatuses, nextCustom));
+    if (onChange) onChange(buildExamText(nextStatuses, nextCustom));
   }, [onChange]);
-
-  const setStatus = useCallback((id, status, nextCustom) => {
-    setStatuses(prev => {
-      const next = { ...prev, [id]: status };
-      emitChange(next, nextCustom || customTexts);
-      return next;
-    });
-  }, [customTexts, emitChange]);
 
   const markNormal = useCallback((id) => {
     setStatuses(prev => {
@@ -103,14 +95,12 @@ export function QuickNoteExamHelper({ exam, onChange }) {
     });
   }, [statuses, emitChange]);
 
-  // Keyboard handler
   const handleKeyDown = useCallback((e) => {
     if (!kbActive) return;
 
     const tag = e.target.tagName;
     const inTextarea = tag === "TEXTAREA" || tag === "INPUT";
 
-    // Esc inside abnormal textarea → revert to normal
     if (e.key === "Escape" && inTextarea) {
       const sys = SYSTEMS[focusedIdx];
       markNormal(sys.id);
@@ -119,7 +109,6 @@ export function QuickNoteExamHelper({ exam, onChange }) {
       return;
     }
 
-    // Don't intercept letter keys when typing in a textarea
     if (inTextarea) return;
 
     const meta = e.metaKey || e.ctrlKey;
@@ -128,7 +117,6 @@ export function QuickNoteExamHelper({ exam, onChange }) {
     if (meta && e.key === "0")     { e.preventDefault(); resetAll(); return; }
     if (e.key === "?")             { e.preventDefault(); setShowLegend(v => !v); return; }
 
-    // Arrow navigation
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
       const next = (focusedIdx - 1 + SYSTEMS.length) % SYSTEMS.length;
@@ -144,13 +132,11 @@ export function QuickNoteExamHelper({ exam, onChange }) {
       return;
     }
 
-    // Actions on focused system
     const sys = SYSTEMS[focusedIdx];
     if (e.key === "Enter" || e.key === "1") { e.preventDefault(); markNormal(sys.id);   return; }
     if (e.key === "2")                      { e.preventDefault(); markAbnormal(sys.id); return; }
     if (e.key === "0")                      { e.preventDefault(); clearSystem(sys.id);  return; }
 
-    // System jump (single letter)
     const upper = e.key.toUpperCase();
     if (KEY_MAP[upper] !== undefined) {
       e.preventDefault();
@@ -167,7 +153,6 @@ export function QuickNoteExamHelper({ exam, onChange }) {
 
   const handlePanelFocus = useCallback((e) => {
     setKbActive(true);
-    // If a card was focused, update focusedIdx
     SYSTEMS.forEach((s, i) => {
       if (cardRefs.current[s.id] === e.target) setFocusedIdx(i);
     });
@@ -197,67 +182,32 @@ export function QuickNoteExamHelper({ exam, onChange }) {
         border: `1px solid ${kbActive ? "rgba(0,229,192,0.25)" : "rgba(0,184,154,0.1)"}`,
         borderRadius: 6, padding: "5px 10px",
       }}>
-        {/* Dot */}
-        <div style={{
-          width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
-          background: kbActive ? "#00e5c0" : "rgba(200,223,240,0.2)",
-        }} />
-        {/* Label */}
-        <span style={{
-          fontFamily: MONO, fontSize: 10, textTransform: "uppercase",
-          letterSpacing: "0.07em", flex: 1,
-          color: kbActive ? "#00e5c0" : "rgba(200,223,240,0.35)",
-        }}>
+        <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: kbActive ? "#00e5c0" : "rgba(200,223,240,0.2)" }} />
+        <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", flex: 1, color: kbActive ? "#00e5c0" : "rgba(200,223,240,0.35)" }}>
           {kbActive ? `[${focusedSys.label.toUpperCase()}] focused` : "Focus exam field to activate KB mode"}
         </span>
-        {/* Stats */}
         {kbActive && (
           <span style={{ fontFamily: MONO, fontSize: 9.5, color: "rgba(0,229,192,0.6)", whiteSpace: "nowrap" }}>
             {normalCount} normal · {abnormalCount} abnormal
           </span>
         )}
-        {/* ? button */}
-        <button
-          onClick={() => setShowLegend(v => !v)}
-          style={{
-            fontFamily: MONO, fontSize: 9, padding: "1px 6px",
-            border: "1px solid rgba(200,223,240,0.15)", borderRadius: 3,
-            background: "transparent", color: "rgba(200,223,240,0.5)", cursor: "pointer",
-          }}>?</button>
+        <button onClick={() => setShowLegend(v => !v)} style={{ fontFamily: MONO, fontSize: 9, padding: "1px 6px", border: "1px solid rgba(200,223,240,0.15)", borderRadius: 3, background: "transparent", color: "rgba(200,223,240,0.5)", cursor: "pointer" }}>?</button>
       </div>
 
       {/* Toolbar */}
       <div style={{ display: "flex", gap: 6 }}>
-        <button
-          onClick={markAllNormal}
-          style={{
-            fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase",
-            letterSpacing: "0.05em", padding: "4px 10px", borderRadius: 5, cursor: "pointer",
-            border: "1px solid rgba(0,229,192,0.4)", background: "rgba(0,229,192,0.08)",
-            color: "#00e5c0", display: "flex", alignItems: "center", gap: 6,
-          }}>
+        <button onClick={markAllNormal} style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 10px", borderRadius: 5, cursor: "pointer", border: "1px solid rgba(0,229,192,0.4)", background: "rgba(0,229,192,0.08)", color: "#00e5c0", display: "flex", alignItems: "center", gap: 6 }}>
           ✓ All Normal
           {kbActive && <span style={{ color: "rgba(0,229,192,0.4)", fontSize: 9 }}>⌘↵</span>}
         </button>
-        <button
-          onClick={resetAll}
-          style={{
-            fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase",
-            letterSpacing: "0.05em", padding: "4px 10px", borderRadius: 5, cursor: "pointer",
-            border: "1px solid rgba(200,223,240,0.12)", background: "transparent",
-            color: "rgba(200,223,240,0.4)", display: "flex", alignItems: "center", gap: 6,
-          }}>
+        <button onClick={resetAll} style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 10px", borderRadius: 5, cursor: "pointer", border: "1px solid rgba(200,223,240,0.12)", background: "transparent", color: "rgba(200,223,240,0.4)", display: "flex", alignItems: "center", gap: 6 }}>
           ↺ Reset
           {kbActive && <span style={{ color: "rgba(200,223,240,0.25)", fontSize: 9 }}>⌘0</span>}
         </button>
       </div>
 
       {/* System Grid */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-        gap: 6,
-      }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6 }}>
         {SYSTEMS.map((sys, idx) => {
           const status    = statuses[sys.id];
           const isFocused = kbActive && focusedIdx === idx;
@@ -272,8 +222,6 @@ export function QuickNoteExamHelper({ exam, onChange }) {
 
           const labelColor = isNormal ? "#00b89a" : isAbnormal ? "#ff7a45" : "#a8d4f0";
           const dotColor   = isNormal ? "#00e5c0" : isAbnormal ? "#ff4d4f" : "rgba(200,223,240,0.2)";
-
-          // Trim normal preview: remove "Label: " prefix
           const previewText = sys.normal.replace(/^[^:]+:\s*/, "").slice(0, 60);
 
           return (
@@ -283,43 +231,20 @@ export function QuickNoteExamHelper({ exam, onChange }) {
               tabIndex={0}
               onClick={() => { setFocusedIdx(idx); setKbActive(true); cardRefs.current[sys.id]?.focus(); }}
               onFocus={() => { setFocusedIdx(idx); setKbActive(true); }}
-              style={{
-                border: cardBorder, background: cardBg,
-                borderRadius: 7, padding: "7px 10px", cursor: "pointer",
-                outline: "none", transition: "border 0.1s, background 0.1s",
-              }}
+              style={{ border: cardBorder, background: cardBg, borderRadius: 7, padding: "7px 10px", cursor: "pointer", outline: "none", transition: "border 0.1s, background 0.1s" }}
             >
-              {/* Card header */}
               <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
-                <span style={{ fontFamily: SANS, fontSize: 11.5, fontWeight: 600, color: labelColor, flex: 1 }}>
-                  {sys.label}
-                </span>
-                {/* Key badge */}
-                <span style={{
-                  width: 16, height: 16, borderRadius: 3, flexShrink: 0,
-                  border: `1px solid ${isFocused ? "#00e5c0" : "rgba(200,223,240,0.2)"}`,
-                  fontFamily: MONO, fontSize: 9, fontWeight: 700,
-                  color: isFocused ? "#00e5c0" : "rgba(200,223,240,0.35)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  background: isFocused ? "rgba(0,229,192,0.1)" : "transparent",
-                }}>
-                  {sys.key}
-                </span>
-                {/* Status dot */}
-                <div style={{
-                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                  background: dotColor,
-                }} />
+                <span style={{ fontFamily: SANS, fontSize: 11.5, fontWeight: 600, color: labelColor, flex: 1 }}>{sys.label}</span>
+                <span style={{ width: 16, height: 16, borderRadius: 3, flexShrink: 0, border: `1px solid ${isFocused ? "#00e5c0" : "rgba(200,223,240,0.2)"}`, fontFamily: MONO, fontSize: 9, fontWeight: 700, color: isFocused ? "#00e5c0" : "rgba(200,223,240,0.35)", display: "flex", alignItems: "center", justifyContent: "center", background: isFocused ? "rgba(0,229,192,0.1)" : "transparent" }}>{sys.key}</span>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: dotColor }} />
               </div>
 
-              {/* Normal preview */}
               {isNormal && (
                 <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(0,229,192,0.5)", lineHeight: 1.4 }}>
                   {previewText}…
                 </div>
               )}
 
-              {/* Abnormal textarea */}
               {isAbnormal && (
                 <textarea
                   ref={el => abnormalTextareaRefs.current[sys.id] = el}
@@ -328,17 +253,10 @@ export function QuickNoteExamHelper({ exam, onChange }) {
                   placeholder={`${sys.label} findings...`}
                   onChange={e => handleCustomChange(sys.id, e.target.value)}
                   onClick={e => e.stopPropagation()}
-                  style={{
-                    width: "100%", resize: "none", boxSizing: "border-box",
-                    border: "1px solid rgba(255,77,79,0.25)", borderRadius: 4,
-                    background: "rgba(11,30,54,0.6)", color: "#c8dff0",
-                    fontFamily: SANS, fontSize: 11.5, padding: "4px 6px",
-                    outline: "none", marginTop: 2,
-                  }}
+                  style={{ width: "100%", resize: "none", boxSizing: "border-box", border: "1px solid rgba(255,77,79,0.25)", borderRadius: 4, background: "rgba(11,30,54,0.6)", color: "#c8dff0", fontFamily: SANS, fontSize: 11.5, padding: "4px 6px", outline: "none", marginTop: 2 }}
                 />
               )}
 
-              {/* KB action chips when focused */}
               {isFocused && (
                 <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
                   {[
@@ -346,16 +264,7 @@ export function QuickNoteExamHelper({ exam, onChange }) {
                     { label: "2 Abnormal", color: "#ff7a45", border: "rgba(255,77,79,0.35)", action: () => markAbnormal(sys.id) },
                     { label: "0 Clear", color: "rgba(200,223,240,0.4)", border: "rgba(200,223,240,0.15)", action: () => clearSystem(sys.id) },
                   ].map(chip => (
-                    <button
-                      key={chip.label}
-                      onClick={e => { e.stopPropagation(); chip.action(); }}
-                      style={{
-                        flex: 1, fontFamily: MONO, fontSize: 9, fontWeight: 700,
-                        textTransform: "uppercase", letterSpacing: "0.04em",
-                        border: `1px solid ${chip.border}`, borderRadius: 3,
-                        background: "transparent", color: chip.color,
-                        padding: "2px 0", cursor: "pointer",
-                      }}>
+                    <button key={chip.label} onClick={e => { e.stopPropagation(); chip.action(); }} style={{ flex: 1, fontFamily: MONO, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", border: `1px solid ${chip.border}`, borderRadius: 3, background: "transparent", color: chip.color, padding: "2px 0", cursor: "pointer" }}>
                       {chip.label}
                     </button>
                   ))}
@@ -368,46 +277,17 @@ export function QuickNoteExamHelper({ exam, onChange }) {
 
       {/* Legend Overlay */}
       {showLegend && (
-        <div
-          onClick={() => setShowLegend(false)}
-          style={{
-            position: "fixed", inset: 0, zIndex: 9999,
-            background: "rgba(3,8,16,0.75)", backdropFilter: "blur(4px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: "#081628", border: "1px solid #1a3555",
-              borderRadius: 12, padding: "20px 24px",
-              width: 440, maxWidth: "92vw",
-              display: "flex", flexDirection: "column", gap: 16,
-            }}
-          >
-            <div style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 700, color: "#00e5c0" }}>
-              Keyboard Reference
-            </div>
-
-            {/* Jump to System */}
+        <div onClick={() => setShowLegend(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(3,8,16,0.75)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#081628", border: "1px solid #1a3555", borderRadius: 12, padding: "20px 24px", width: 440, maxWidth: "92vw", display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 700, color: "#00e5c0" }}>Keyboard Reference</div>
             <div>
-              <div style={{ fontFamily: MONO, fontSize: 9, textTransform: "uppercase",
-                color: "rgba(200,223,240,0.4)", letterSpacing: "0.08em", marginBottom: 8 }}>
-                Jump to System
-              </div>
+              <div style={{ fontFamily: MONO, fontSize: 9, textTransform: "uppercase", color: "rgba(200,223,240,0.4)", letterSpacing: "0.08em", marginBottom: 8 }}>Jump to System</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                {SYSTEMS.map(s => (
-                  <LegendRow key={s.id} keyLabel={s.key} desc={s.label} />
-                ))}
+                {SYSTEMS.map(s => <LegendRow key={s.id} keyLabel={s.key} desc={s.label} />)}
               </div>
             </div>
-
-            {/* Actions */}
             <div>
-              <div style={{ fontFamily: MONO, fontSize: 9, textTransform: "uppercase",
-                color: "rgba(200,223,240,0.4)", letterSpacing: "0.08em", marginBottom: 8 }}>
-                Actions on Focused System
-              </div>
+              <div style={{ fontFamily: MONO, fontSize: 9, textTransform: "uppercase", color: "rgba(200,223,240,0.4)", letterSpacing: "0.08em", marginBottom: 8 }}>Actions on Focused System</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <LegendRow keyLabel="Enter / 1" desc="Mark Normal" />
                 <LegendRow keyLabel="2" desc="Mark Abnormal (focuses textarea)" />
@@ -416,29 +296,15 @@ export function QuickNoteExamHelper({ exam, onChange }) {
                 <LegendRow keyLabel="Esc" desc="Exit abnormal textarea → revert to Normal" />
               </div>
             </div>
-
-            {/* Global */}
             <div>
-              <div style={{ fontFamily: MONO, fontSize: 9, textTransform: "uppercase",
-                color: "rgba(200,223,240,0.4)", letterSpacing: "0.08em", marginBottom: 8 }}>
-                Global
-              </div>
+              <div style={{ fontFamily: MONO, fontSize: 9, textTransform: "uppercase", color: "rgba(200,223,240,0.4)", letterSpacing: "0.08em", marginBottom: 8 }}>Global</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <LegendRow keyLabel="⌘ / Ctrl + ↵" desc="Mark ALL systems Normal" />
                 <LegendRow keyLabel="⌘ / Ctrl + 0" desc="Reset ALL systems" />
                 <LegendRow keyLabel="?" desc="Toggle this legend" />
               </div>
             </div>
-
-            <button
-              onClick={() => setShowLegend(false)}
-              style={{
-                alignSelf: "flex-end", fontFamily: MONO, fontSize: 10,
-                fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
-                padding: "5px 14px", borderRadius: 5, cursor: "pointer",
-                border: "1px solid rgba(0,229,192,0.3)", background: "rgba(0,229,192,0.06)",
-                color: "#00e5c0",
-              }}>
+            <button onClick={() => setShowLegend(false)} style={{ alignSelf: "flex-end", fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", padding: "5px 14px", borderRadius: 5, cursor: "pointer", border: "1px solid rgba(0,229,192,0.3)", background: "rgba(0,229,192,0.06)", color: "#00e5c0" }}>
               Close
             </button>
           </div>
@@ -451,17 +317,10 @@ export function QuickNoteExamHelper({ exam, onChange }) {
 function LegendRow({ keyLabel, desc }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{
-        fontFamily: MONO, fontSize: 10, fontWeight: 700, color: "#00e5c0",
-        border: "1px solid rgba(0,229,192,0.3)", background: "rgba(0,229,192,0.06)",
-        minWidth: 80, padding: "2px 8px", borderRadius: 4,
-        display: "inline-block", textAlign: "center",
-      }}>
-        {keyLabel}
-      </span>
-      <span style={{ fontFamily: SANS, fontSize: 12, color: "rgba(200,223,240,0.6)" }}>
-        {desc}
-      </span>
+      <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: "#00e5c0", border: "1px solid rgba(0,229,192,0.3)", background: "rgba(0,229,192,0.06)", minWidth: 80, padding: "2px 8px", borderRadius: 4, display: "inline-block", textAlign: "center" }}>{keyLabel}</span>
+      <span style={{ fontFamily: SANS, fontSize: 12, color: "rgba(200,223,240,0.6)" }}>{desc}</span>
     </div>
   );
 }
+
+export default QuickNoteExamHelper;

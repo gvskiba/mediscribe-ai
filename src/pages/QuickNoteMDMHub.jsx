@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { INITIAL_MDM_SCHEMA, buildInitialMDMPrompt, formatInitialMDMForCopy } from "@/pages/QuickNotePrompts";
+import { INITIAL_MDM_SCHEMA, buildInitialMDMPrompt, formatInitialMDMForCopy, FINAL_MDM_SCHEMA, buildFinalMDMPrompt, formatFinalMDMForCopy } from "@/pages/QuickNotePrompts";
 
 const MONO = "'JetBrains Mono',monospace";
 const SERIF = "'Playfair Display',serif";
@@ -313,10 +313,279 @@ function InitialMDMDisplay({ result, onCopy, copied }) {
 
 // ─── PART 3: QuickNoteMDMHub (default export) ────────────────────────────────
 
-export default function QuickNoteMDMHub({ cc, vitals, hpi, ros, exam, pmh, meds, allergies, onCCChange }) {
+function FinalMDMDisplay({ result, onCopy, copied }) {
+  if (!result) return null;
+
+  const DISP_COLORS = { Discharge: "#00e5c0", Observation: "#7ec8f7", Admission: "#f5c842", Transfer: "#f5a623" };
+  const COND_COLORS = { Improved: "#00b89a", Stable: "#7ec8f7", Unchanged: "#f5a623", Worsening: "#ff7a45", Critical: "#ff4d4f" };
+  const MDM_COLORS = { Straightforward: "#00b89a", Minimal: "#00b89a", Low: "#7ec8f7", Moderate: "#f5c842", High: "#ff7a45" };
+
+  const dispColor = DISP_COLORS[result.disposition?.decision] || "#a8d4f0";
+  const condColor = COND_COLORS[result.disposition?.patient_condition] || "#a8d4f0";
+  const overallColor = MDM_COLORS[result.mdm_complexity?.overall_level] || "#a8d4f0";
+
+  return (
+    <div style={{ background: "rgba(11,30,54,0.55)", border: "1px solid rgba(0,184,154,0.18)", borderRadius: 10, padding: "18px 20px", marginTop: 12 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <span style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "#00e5c0" }}>Final MDM — Meditech Format</span>
+        <button onClick={onCopy} style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 12px", borderRadius: 5, cursor: "pointer", border: `1px solid ${copied ? "rgba(0,229,192,0.5)" : "rgba(0,184,154,0.3)"}`, background: copied ? "rgba(0,229,192,0.1)" : "transparent", color: copied ? "#00e5c0" : "rgba(200,223,240,0.5)" }}>
+          {copied ? "✓ Copied" : "Copy for Meditech"}
+        </button>
+      </div>
+
+      {/* Results Reviewed */}
+      <SectionHeader title="Results Reviewed" />
+
+      {/* Labs */}
+      {result.results_reviewed?.labs?.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          {result.results_reviewed.labs.map((lab, i) => {
+            const isCrit = lab.is_critical;
+            const valColor = isCrit ? "#ff4d4f" : lab.status === "Abnormal" ? "#f5c842" : lab.status === "Normal" ? "#00b89a" : "rgba(200,223,240,0.5)";
+            return (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "4px 6px", marginBottom: 2, background: isCrit ? "rgba(255,77,79,0.06)" : "transparent", borderLeft: isCrit ? "2px solid #ff4d4f" : "2px solid transparent", borderRadius: 3 }}>
+                <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: "#a8d4f0", minWidth: 120, flexShrink: 0 }}>{isCrit ? "⚠ " : ""}{lab.test}</span>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: valColor, minWidth: 60, flexShrink: 0 }}>{lab.value}</span>
+                <span style={{ fontFamily: MONO, fontSize: 9, color: valColor, border: `1px solid ${valColor}`, borderRadius: 3, padding: "1px 5px", flexShrink: 0, alignSelf: "center" }}>{lab.status}</span>
+                <span style={{ fontFamily: SANS, fontSize: 12, color: "rgba(200,223,240,0.6)", lineHeight: 1.4 }}>{lab.interpretation}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Imaging */}
+      {result.results_reviewed?.imaging?.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          {result.results_reviewed.imaging.map((img, i) => (
+            <div key={i} style={{ marginBottom: 8 }}>
+              <div style={{ fontFamily: SANS, fontSize: 13, fontWeight: 700, color: "#a8d4f0" }}>{img.study}</div>
+              <div style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", lineHeight: 1.5, marginTop: 2 }}>{img.findings}</div>
+              {img.physician_review && <div style={{ fontFamily: SANS, fontSize: 11, fontStyle: "italic", color: "rgba(200,223,240,0.45)", marginTop: 3, paddingLeft: 8 }}>{img.physician_review}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ECG */}
+      {result.results_reviewed?.ecg && (
+        <div style={{ marginBottom: 10 }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.4)", letterSpacing: "0.07em" }}>ECG</span>
+          {result.results_reviewed.ecg.performed === false || result.results_reviewed.ecg.performed === "No" ? (
+            <div style={{ fontFamily: SANS, fontSize: 12, fontStyle: "italic", color: "rgba(200,223,240,0.35)", marginTop: 4 }}>Not performed</div>
+          ) : (
+            <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 3 }}>
+              {["rate","rhythm","intervals","st_t_changes","interpretation"].map(key => result.results_reviewed.ecg[key] && (
+                <div key={key} style={{ display: "flex", gap: 8 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: "rgba(200,223,240,0.4)", minWidth: 90, textTransform: "capitalize" }}>{key.replace(/_/g," ")}</span>
+                  <span style={{ fontFamily: SANS, fontSize: 12.5, color: "#c8dff0" }}>{result.results_reviewed.ecg[key]}</span>
+                </div>
+              ))}
+              {result.results_reviewed.ecg.attestation && <div style={{ fontFamily: SANS, fontSize: 11, fontStyle: "italic", color: "rgba(200,223,240,0.45)", marginTop: 2 }}>{result.results_reviewed.ecg.attestation}</div>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Prior records */}
+      {result.results_reviewed?.prior_records?.length > 0 && (
+        <div style={{ marginBottom: 6 }}>
+          <BulletList items={result.results_reviewed.prior_records} />
+        </div>
+      )}
+
+      <SectionDivider />
+
+      {/* Reassessment */}
+      <SectionHeader title="Reassessment" />
+      {result.reassessment?.working_diagnosis && (
+        <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#f5c842", marginBottom: 8 }}>{result.reassessment.working_diagnosis}</div>
+      )}
+      {result.reassessment?.confirmed?.length > 0 && (
+        <div style={{ marginBottom: 6 }}>
+          {result.reassessment.confirmed.map((d, i) => (
+            <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 4 }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "#00b89a", flexShrink: 0 }}>✓</span>
+              <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: "#a8d4f0" }}>{d.diagnosis}</span>
+              <span style={{ fontFamily: SANS, fontSize: 12, color: "rgba(200,223,240,0.6)", marginLeft: 4 }}>— supported by {d.supporting_data}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {result.reassessment?.excluded?.length > 0 && (
+        <div style={{ marginBottom: 6 }}>
+          {result.reassessment.excluded.map((d, i) => (
+            <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 4 }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(200,223,240,0.35)", flexShrink: 0 }}>✕</span>
+              <span style={{ fontFamily: SANS, fontSize: 13, color: "rgba(200,223,240,0.45)", textDecoration: "line-through" }}>{d.diagnosis}</span>
+              <span style={{ fontFamily: SANS, fontSize: 12, color: "rgba(200,223,240,0.45)", fontStyle: "italic", marginLeft: 4 }}>{d.exclusion_data}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {result.reassessment?.uncertain?.length > 0 && (
+        <div style={{ marginBottom: 6 }}>
+          {result.reassessment.uncertain.map((d, i) => (
+            <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 4 }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "#f5a623", flexShrink: 0 }}>?</span>
+              <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: "#f5a623" }}>{d.diagnosis}</span>
+              <span style={{ fontFamily: SANS, fontSize: 12, color: "rgba(200,223,240,0.55)", marginLeft: 4 }}>{d.unresolved} {d.further_plan}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <SectionDivider />
+
+      {/* Final Clinical Reasoning */}
+      <SectionHeader title="Final Clinical Reasoning" />
+      <p style={{ fontFamily: SANS, fontSize: 13.5, color: "#c8dff0", lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap" }}>
+        {result.final_clinical_reasoning}
+      </p>
+
+      <SectionDivider />
+
+      {/* Final Management */}
+      {(result.final_management?.treatments?.length > 0 || result.final_management?.consultations?.length > 0) && (
+        <>
+          <SectionHeader title="Final Management" />
+          {result.final_management?.treatments?.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              {result.final_management.treatments.map((t, i) => (
+                <div key={i} style={{ marginBottom: 5 }}>
+                  <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 700, color: "#a8d4f0" }}>{t.intervention}</span>
+                  {t.response && <span style={{ fontFamily: SANS, fontSize: 11, color: "rgba(200,223,240,0.5)", marginLeft: 6 }}>Response: {t.response}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+          {result.final_management?.consultations?.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              {result.final_management.consultations.map((c, i) => (
+                <div key={i} style={{ marginBottom: 4 }}>
+                  <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 700, color: "#a8d4f0" }}>{c.specialty}</span>
+                  {c.recommendations && <span style={{ fontFamily: SANS, fontSize: 12, color: "rgba(200,223,240,0.65)", marginLeft: 6 }}>{c.recommendations}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+          <SectionDivider />
+        </>
+      )}
+
+      {/* Disposition */}
+      {result.disposition && (
+        <>
+          <SectionHeader title="Disposition" />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <span style={{ display: "inline-flex", fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", padding: "4px 14px", borderRadius: 5, border: `1px solid ${dispColor}`, color: dispColor }}>
+              {result.disposition.decision}
+            </span>
+            {result.disposition.admit_location && (
+              <span style={{ fontFamily: MONO, fontSize: 10, color: "rgba(200,223,240,0.5)" }}>{result.disposition.admit_location}</span>
+            )}
+            {result.disposition.patient_condition && (
+              <span style={{ display: "inline-flex", fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase", padding: "2px 8px", borderRadius: 3, border: `1px solid ${condColor}`, color: condColor }}>
+                {result.disposition.patient_condition}
+              </span>
+            )}
+          </div>
+          {result.disposition.rationale && (
+            <div style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", marginTop: 4, marginBottom: 8 }}>{result.disposition.rationale}</div>
+          )}
+        </>
+      )}
+
+      {/* Discharge Plan */}
+      {result.discharge_plan && (
+        <>
+          <SectionHeader title="Discharge Plan" />
+          {result.discharge_plan.return_precautions?.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              {result.discharge_plan.return_precautions.map((r, i) => (
+                <div key={i} style={{ display: "flex", gap: 7, marginBottom: 3 }}>
+                  <span style={{ color: "#f5c842", fontFamily: MONO, fontSize: 11, flexShrink: 0 }}>▸</span>
+                  <span style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0" }}>{r}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {result.discharge_plan.followup?.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              {result.discharge_plan.followup.map((f, i) => (
+                <div key={i} style={{ fontFamily: SANS, fontSize: 12.5, marginBottom: 3 }}>
+                  <span style={{ fontWeight: 700, color: "#a8d4f0" }}>{f.provider}</span>
+                  <span style={{ color: "rgba(200,223,240,0.65)" }}> — {f.timeframe}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {result.discharge_plan.prescriptions?.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              {result.discharge_plan.prescriptions.map((rx, i) => (
+                <div key={i} style={{ fontFamily: SANS, fontSize: 12.5, marginBottom: 3 }}>
+                  <span style={{ fontWeight: 700, color: "#a8d4f0" }}>{rx.medication}</span>
+                  <span style={{ color: "rgba(200,223,240,0.6)" }}> — {rx.rationale}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {result.discharge_plan.patient_understanding && (
+            <div style={{ fontFamily: SANS, fontSize: 12, fontStyle: "italic", color: "rgba(200,223,240,0.45)", paddingTop: 8, borderTop: "1px solid rgba(0,184,154,0.08)", width: "100%", display: "block" }}>
+              {result.discharge_plan.patient_understanding}
+            </div>
+          )}
+          <SectionDivider />
+        </>
+      )}
+
+      {/* MDM Complexity */}
+      {result.mdm_complexity && (
+        <>
+          <SectionHeader title="MDM Complexity" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+            {[
+              { label: "Problems", val: result.mdm_complexity.problems },
+              { label: "Data", val: result.mdm_complexity.data },
+              { label: "Risk", val: result.mdm_complexity.risk },
+              { label: "Overall", val: result.mdm_complexity.overall_level },
+            ].map(({ label, val }) => {
+              const c = MDM_COLORS[val] || "#a8d4f0";
+              return (
+                <div key={label} style={{ background: "rgba(11,30,54,0.4)", border: "1px solid rgba(0,184,154,0.1)", borderRadius: 6, padding: "8px 10px" }}>
+                  <div style={{ fontFamily: MONO, fontSize: 9, textTransform: "uppercase", color: "rgba(200,223,240,0.4)", marginBottom: 4 }}>{label}</div>
+                  <span style={{ display: "inline-block", fontFamily: MONO, fontSize: 11, fontWeight: 700, borderRadius: 3, padding: "2px 8px", border: `1px solid ${c}`, color: c }}>{val || "—"}</span>
+                </div>
+              );
+            })}
+          </div>
+          {result.mdm_complexity.em_code && (
+            <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: "#00e5c0", marginTop: 8 }}>{result.mdm_complexity.em_code}</div>
+          )}
+          {result.mdm_complexity.coding_note && (
+            <div style={{ fontFamily: SANS, fontSize: 11, fontStyle: "italic", color: "rgba(200,223,240,0.45)", marginTop: 4 }}>{result.mdm_complexity.coding_note}</div>
+          )}
+        </>
+      )}
+
+      {/* Attending Attestation */}
+      {result.attending_attestation && (
+        <div style={{ fontFamily: SANS, fontSize: 12, fontStyle: "italic", color: "rgba(200,223,240,0.4)", textAlign: "center", paddingTop: 10, borderTop: "1px solid rgba(0,184,154,0.08)", marginTop: 14 }}>
+          "{result.attending_attestation}"
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function QuickNoteMDMHub({ cc, vitals, hpi, ros, exam, pmh, meds, allergies, onCCChange, labs, imaging, newVitals, labSummaryResult, finalImpressionResult, confirmedRanks }) {
   const [initialMDMResult, setInitialMDMResult] = useState(null);
   const [initialMDMLoading, setInitialMDMLoading] = useState(false);
   const [copiedInitial, setCopiedInitial] = useState(false);
+  const [finalMDMResult, setFinalMDMResult] = useState(null);
+  const [finalMDMLoading, setFinalMDMLoading] = useState(false);
+  const [copiedFinal, setCopiedFinal] = useState(false);
   const copyTimer = useRef(null);
 
   const canGenerate = !!(cc || hpi);
@@ -333,6 +602,32 @@ export default function QuickNoteMDMHub({ cc, vitals, hpi, ros, exam, pmh, meds,
     setInitialMDMResult(result);
     setInitialMDMLoading(false);
   }, [canGenerate, initialMDMLoading, cc, vitals, hpi, ros, exam, pmh, meds, allergies]);
+
+  const generateFinalMDM = useCallback(async () => {
+    setFinalMDMLoading(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: buildFinalMDMPrompt(
+          cc, vitals, hpi, ros, exam, pmh, meds, allergies,
+          labs, imaging, newVitals,
+          initialMDMResult, labSummaryResult,
+          finalImpressionResult, confirmedRanks
+        ),
+        response_json_schema: FINAL_MDM_SCHEMA,
+      });
+      setFinalMDMResult(res);
+    } catch (e) { console.error("Final MDM failed:", e); }
+    finally { setFinalMDMLoading(false); }
+  }, [cc, vitals, hpi, ros, exam, pmh, meds, allergies,
+      labs, imaging, newVitals, initialMDMResult, labSummaryResult,
+      finalImpressionResult, confirmedRanks]);
+
+  const copyFinalMDM = useCallback(async () => {
+    if (!finalMDMResult) return;
+    await navigator.clipboard.writeText(formatFinalMDMForCopy(finalMDMResult));
+    setCopiedFinal(true);
+    setTimeout(() => setCopiedFinal(false), 2500);
+  }, [finalMDMResult]);
 
   const copyInitialMDM = useCallback(() => {
     if (!initialMDMResult) return;
@@ -405,23 +700,26 @@ export default function QuickNoteMDMHub({ cc, vitals, hpi, ros, exam, pmh, meds,
 
       <div style={{ borderTop: "1px solid rgba(0,184,154,0.1)", margin: "16px 0" }} />
 
-      {/* Section 2 — Final MDM placeholder */}
       <div>
-        <div style={{ marginBottom: 8 }}>
-          <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: "#a8d4f0" }}>Section 2 — Final MDM</span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#a8d4f0" }}>Section 2 — Final MDM</div>
+            <div style={{ fontSize: 11, color: "rgba(200,223,240,0.4)", marginTop: 2 }}>After results return · disposition reasoning · MDM coding</div>
+          </div>
+          <button
+            style={{ marginTop: 10, padding: "9px 20px", borderRadius: 6, cursor: finalMDMLoading ? "not-allowed" : "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid #00e5c0", background: "rgba(0,229,192,0.1)", color: "#00e5c0", opacity: finalMDMLoading ? 0.5 : 1 }}
+            onClick={generateFinalMDM}
+            disabled={finalMDMLoading || (!labs && !imaging)}
+          >
+            {finalMDMLoading ? "Generating..." : "Generate Final MDM"}
+          </button>
         </div>
-        <div style={{ fontFamily: SANS, fontSize: 11, color: "rgba(200,223,240,0.4)", marginBottom: 10 }}>
-          After results return · disposition reasoning · template pending
-        </div>
-        <div style={{
-          background: "rgba(11,30,54,0.3)",
-          border: "1px dashed rgba(0,184,154,0.15)",
-          borderRadius: 8, padding: "20px 16px", textAlign: "center",
-        }}>
-          <span style={{ fontFamily: MONO, fontSize: 12, color: "rgba(200,223,240,0.3)" }}>
-            Final MDM template coming next session
-          </span>
-        </div>
+        {finalMDMLoading && (
+          <div style={{ marginTop: 8, fontSize: 12, color: "#00b89a", fontFamily: "'JetBrains Mono',monospace" }}>
+            Synthesizing results and generating final MDM...
+          </div>
+        )}
+        {finalMDMResult && <FinalMDMDisplay result={finalMDMResult} onCopy={copyFinalMDM} copied={copiedFinal} />}
       </div>
     </div>
   );

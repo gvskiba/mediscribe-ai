@@ -945,3 +945,101 @@ export {
   buildPhase1Copy,
   buildPhase2Copy,
 };
+
+export const INITIAL_MDM_SCHEMA = {
+  type: "object",
+  required: ["clinical_presentation_summary","initial_differential","acute_threats","risk_factors","workup","decision_tools","initial_clinical_reasoning","initial_management"],
+  properties: {
+    clinical_presentation_summary: { type: "string" },
+    initial_differential: { type: "array", minItems: 2, maxItems: 6, items: { type: "object", required: ["rank","diagnosis","reasoning"], properties: { rank: { type: "integer" }, diagnosis: { type: "string" }, reasoning: { type: "string" } } } },
+    acute_threats: { type: "array", items: { type: "string" }, minItems: 1 },
+    risk_factors: { type: "array", items: { type: "string" }, minItems: 1 },
+    workup: { type: "object", required: ["labs","imaging","ecg"], properties: { labs: { type: "array", items: { type: "object", required: ["test","rationale"], properties: { test: { type: "string" }, rationale: { type: "string" } } } }, imaging: { type: "array", items: { type: "object", required: ["study","rationale"], properties: { study: { type: "string" }, rationale: { type: "string" } } } }, ecg: { type: "object", required: ["ordered","rationale"], properties: { ordered: { type: "string" }, rationale: { type: "string" } } }, other: { type: "array", items: { type: "string" } } } },
+    decision_tools: { type: "array", items: { type: "object", required: ["tool","result","interpretation"], properties: { tool: { type: "string" }, result: { type: "string" }, interpretation: { type: "string" } } } },
+    initial_clinical_reasoning: { type: "string" },
+    initial_management: { type: "object", required: ["interventions","consultations","reassessment_plan"], properties: { interventions: { type: "array", items: { type: "string" }, minItems: 1 }, consultations: { type: "array", items: { type: "string" } }, reassessment_plan: { type: "array", items: { type: "string" }, minItems: 1 } } },
+  },
+};
+
+export function buildInitialMDMPrompt(cc, vitals, hpi, ros, exam, pmh, meds, allergies) {
+  return `${SYS_BIAS}
+
+You are a board-certified emergency physician generating the INITIAL MEDICAL DECISION MAKING section of an ED note for Meditech. This captures reasoning AT TIME OF INITIAL EVALUATION — before results return.
+
+PATIENT DATA:
+Chief Complaint: ${cc || "not provided"}
+Triage Vitals: ${vitals || "not provided"}
+HPI: ${hpi || "not provided"}
+Review of Systems: ${ros || "not provided"}
+Physical Exam: ${exam || "not provided"}
+PMH / Comorbidities: ${pmh || "not provided"}
+Medications: ${meds || "not provided"}
+Allergies: ${allergies || "none documented"}
+
+Generate all eight sections:
+
+clinical_presentation_summary: 2–4 sentence synthesis of CC, key history, pertinent positives/negatives. Clinical and specific, not generic.
+
+initial_differential: ranked by danger (most dangerous first, not most likely). 2–5 diagnoses. Each: rank (int), diagnosis (string), reasoning (one sentence with key supporting finding).
+
+acute_threats: life threats actively being evaluated (ACS, PE, aortic dissection, sepsis, stroke, surgical abdomen, ectopic pregnancy, ICH, etc.). If none: ["None identified at this time"].
+
+risk_factors: patient-specific risk factors for this presentation. Age, sex, comorbidities, relevant medications (anticoagulation, immunosuppression), social factors. Be specific.
+
+workup.labs: ordered labs with rationale. Group related tests if ordered for same reason.
+workup.imaging: imaging studies with modality, region, contrast specification, rationale.
+workup.ecg: ordered ("Yes"/"No"/"Not indicated") + rationale.
+workup.other: POC glucose, cultures, LP planned, urine pregnancy, etc.
+
+decision_tools: validated clinical scores APPLIED to this presentation with actual score/result and how it influenced the workup. Only include tools actually applicable. If none: [].
+
+initial_clinical_reasoning: full narrative paragraph in first-person attending voice, present tense. Minimum 4 sentences. Include pre-test probability, dangerous diagnoses to exclude, how risk factors influence workup, key decision points. Use: "This [age]-year-old [sex] presents with [symptom]. Given [risk factors], [dangerous Dx] must be excluded. [Score/finding] suggests [risk level]. Initial workup is directed at [goal]."
+
+initial_management.interventions: immediate management steps (IV access, fluids, meds given, NPO, monitoring, O2).
+initial_management.consultations: "[Specialty] — [reason]" or ["None at this time"].
+initial_management.reassessment_plan: "Will reassess [what] after [trigger]" statements.
+
+Rules: This is initial MDM ONLY — do not reference results not yet returned. Dangerous diagnoses come before likely ones in differential. Reasoning must be specific to THIS patient.
+
+Respond ONLY in valid JSON. No markdown fences.`;
+}
+
+export function formatInitialMDMForCopy(result) {
+  if (!result) return "";
+  const lines = [];
+  lines.push("=====================================================================");
+  lines.push("SECTION 1: INITIAL MEDICAL DECISION MAKING (at time of evaluation)");
+  lines.push("=====================================================================");
+  lines.push("");
+  lines.push("CLINICAL PRESENTATION SUMMARY:");
+  lines.push(result.clinical_presentation_summary || "");
+  lines.push("");
+  lines.push("INITIAL DIFFERENTIAL DIAGNOSIS (in order of clinical concern):");
+  lines.push("");
+  (result.initial_differential || []).forEach(d => lines.push(d.rank + ". " + d.diagnosis + " — " + d.reasoning));
+  lines.push("");
+  lines.push("ACUTE THREATS TO LIFE CONSIDERED:");
+  lines.push("");
+  (result.acute_threats || []).forEach(t => lines.push("* " + t));
+  lines.push("");
+  lines.push("RISK FACTORS CONSIDERED:");
+  lines.push("");
+  (result.risk_factors || []).forEach(r => lines.push("* " + r));
+  lines.push("");
+  lines.push("INITIAL WORKUP ORDERED & RATIONALE:");
+  lines.push("");
+  if (result.workup?.labs?.length) { lines.push("Labs Ordered:"); result.workup.labs.forEach(l => lines.push("* " + l.test + " — " + l.rationale)); lines.push(""); }
+  if (result.workup?.imaging?.length) { lines.push("Imaging Ordered:"); result.workup.imaging.forEach(i => lines.push("* " + i.study + " — " + i.rationale)); lines.push(""); }
+  if (result.workup?.ecg) { lines.push("ECG:"); lines.push("* Ordered: " + result.workup.ecg.ordered + (result.workup.ecg.rationale ? " — " + result.workup.ecg.rationale : "")); lines.push(""); }
+  if (result.workup?.other?.length) { lines.push("Other:"); result.workup.other.forEach(o => lines.push("* " + o)); lines.push(""); }
+  if (result.decision_tools?.length) { lines.push("DECISION TOOLS / CLINICAL SCORES APPLIED:"); lines.push(""); result.decision_tools.forEach(dt => { lines.push("* " + dt.tool + " " + dt.result); lines.push("  " + dt.interpretation); }); lines.push(""); }
+  lines.push("INITIAL CLINICAL REASONING:");
+  lines.push(result.initial_clinical_reasoning || "");
+  lines.push("");
+  lines.push("INITIAL MANAGEMENT INITIATED:");
+  lines.push("");
+  (result.initial_management?.interventions || []).forEach(i => lines.push("* " + i));
+  if (result.initial_management?.consultations?.length) { lines.push(""); lines.push("Consultations Requested:"); result.initial_management.consultations.forEach(c => lines.push("* " + c)); }
+  if (result.initial_management?.reassessment_plan?.length) { lines.push(""); lines.push("Reassessment Plan:"); result.initial_management.reassessment_plan.forEach(r => lines.push("* " + r)); }
+  return lines.join("\n");
+}

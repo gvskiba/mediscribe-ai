@@ -586,6 +586,7 @@ export default function QuickNoteMDMHub({ cc, vitals, hpi, ros, exam, pmh, meds,
   const [finalMDMResult, setFinalMDMResult] = useState(null);
   const [finalMDMLoading, setFinalMDMLoading] = useState(false);
   const [copiedFinal, setCopiedFinal] = useState(false);
+  const [activeTab, setActiveTab] = useState("initial");
   const copyTimer = useRef(null);
 
   const canGenerate = !!(cc || hpi);
@@ -640,87 +641,73 @@ export default function QuickNoteMDMHub({ cc, vitals, hpi, ros, exam, pmh, meds,
 
   useEffect(() => () => clearTimeout(copyTimer.current), []);
 
+  const tabBarStyle = { display: "flex", gap: 0, marginBottom: 14, background: "rgba(11,30,54,0.5)", borderRadius: 8, padding: 3, border: "1px solid rgba(0,184,154,0.12)" };
+
+  const tabBtnStyle = (active) => ({ flex: 1, padding: "8px 0", borderRadius: 6, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", transition: "all 0.15s", background: active ? "rgba(0,229,192,0.1)" : "transparent", color: active ? "#00e5c0" : "rgba(200,223,240,0.35)", border: active ? "1px solid rgba(0,229,192,0.3)" : "1px solid transparent", boxShadow: active ? "0 0 12px rgba(0,229,192,0.08)" : "none" });
+
+  const generateBtnStyle = (disabled) => ({ marginTop: 10, padding: "9px 20px", borderRadius: 6, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid #00e5c0", background: "rgba(0,229,192,0.1)", color: "#00e5c0", opacity: disabled ? 0.5 : 1 });
+
   return (
-    <div style={{
-      background: "rgba(11,30,54,0.4)",
-      border: "1px solid rgba(0,184,154,0.15)",
-      borderRadius: 10, padding: "16px 18px",
-    }}>
-      {/* Header */}
-      <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", color: "#00e5c0", marginBottom: 4 }}>
-        Meditech MDM
-      </div>
-      <div style={{ fontFamily: SANS, fontSize: 12, color: "rgba(200,223,240,0.45)", marginBottom: 16 }}>
-        Generate Initial and Final MDM sections formatted for Meditech documentation.
+    <div style={{ background: "rgba(11,30,54,0.4)", border: "1px solid rgba(0,184,154,0.15)", borderRadius: 10, padding: "16px 18px", fontFamily: "'DM Sans',sans-serif", color: "#c8dff0" }}>
+
+      <p style={{ fontFamily: "'Playfair Display',serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase", color: "#00e5c0", marginBottom: 4, marginTop: 0 }}>Meditech MDM</p>
+      <p style={{ fontSize: 12, color: "rgba(200,223,240,0.45)", marginBottom: 12 }}>Generate Initial and Final MDM sections formatted for Meditech.</p>
+
+      {/* TAB BAR */}
+      <div style={tabBarStyle}>
+        {[
+          { id: "initial", label: "Initial MDM", dot: !!initialMDMResult, dotColor: "#00e5c0" },
+          { id: "final",   label: "Final MDM",   dot: !!finalMDMResult,   dotColor: "#f5c842" },
+        ].map(tab => (
+          <button key={tab.id} style={tabBtnStyle(tab.id === activeTab)} onClick={() => setActiveTab(tab.id)}>
+            {tab.label}
+            <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: tab.dotColor, marginLeft: 6, verticalAlign: "middle", opacity: tab.dot ? 1 : 0, transition: "opacity 0.2s" }} />
+          </button>
+        ))}
       </div>
 
-      {/* CC Search */}
+      {/* CC SEARCH — always visible */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.4)", letterSpacing: "0.07em", marginBottom: 5 }}>
-          Chief Complaint
-        </div>
+        <div style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "rgba(200,223,240,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Chief Complaint</div>
         <CCSearch value={cc} onChange={onCCChange} />
       </div>
 
-      <div style={{ borderTop: "1px solid rgba(0,184,154,0.1)", margin: "14px 0" }} />
+      <hr style={{ border: "none", borderTop: "1px solid rgba(0,184,154,0.1)", margin: "14px 0" }} />
 
-      {/* Section 1 — Initial MDM */}
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
-          <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: "#a8d4f0" }}>Section 1 — Initial MDM</span>
-          <span style={{ fontFamily: SANS, fontSize: 11, color: "rgba(200,223,240,0.4)", flex: 1 }}>
-            At time of initial evaluation · before results return
-          </span>
-          <button
-            onClick={generateInitialMDM}
-            disabled={!canGenerate || initialMDMLoading}
-            style={{
-              fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-              letterSpacing: "0.05em", padding: "5px 14px", borderRadius: 6, cursor: canGenerate && !initialMDMLoading ? "pointer" : "not-allowed",
-              border: "1px solid rgba(0,229,192,0.4)", background: "rgba(0,229,192,0.08)", color: "#00e5c0",
-              opacity: !canGenerate || initialMDMLoading ? 0.5 : 1,
-            }}
-          >
-            {initialMDMLoading ? "Generating…" : "Generate Initial MDM"}
-          </button>
+      {/* INITIAL MDM TAB */}
+      {activeTab === "initial" && (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#a8d4f0" }}>Section 1 — Initial MDM</div>
+              <div style={{ fontSize: 11, color: "rgba(200,223,240,0.4)", marginTop: 2 }}>At time of initial evaluation · before results return</div>
+            </div>
+            <button style={generateBtnStyle(initialMDMLoading || (!cc && !hpi))} onClick={generateInitialMDM} disabled={initialMDMLoading || (!cc && !hpi)}>
+              {initialMDMLoading ? "Generating..." : "Generate Initial MDM"}
+            </button>
+          </div>
+          {initialMDMLoading && <div style={{ marginTop: 8, fontSize: 12, color: "#00b89a", fontFamily: "'JetBrains Mono',monospace" }}>Analyzing clinical data...</div>}
+          {initialMDMResult && <InitialMDMDisplay result={initialMDMResult} onCopy={copyInitialMDM} copied={copiedInitial} />}
         </div>
+      )}
 
-        {initialMDMLoading && (
-          <div style={{ fontFamily: MONO, fontSize: 12, color: "#00b89a", padding: "8px 0" }}>
-            Analyzing clinical data and generating MDM...
+      {/* FINAL MDM TAB */}
+      {activeTab === "final" && (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#a8d4f0" }}>Section 2 — Final MDM</div>
+              <div style={{ fontSize: 11, color: "rgba(200,223,240,0.4)", marginTop: 2 }}>After results return · disposition reasoning · MDM coding</div>
+            </div>
+            <button style={generateBtnStyle(finalMDMLoading || (!labs && !imaging))} onClick={generateFinalMDM} disabled={finalMDMLoading || (!labs && !imaging)}>
+              {finalMDMLoading ? "Generating..." : "Generate Final MDM"}
+            </button>
           </div>
-        )}
-
-        <InitialMDMDisplay
-          result={initialMDMResult}
-          onCopy={copyInitialMDM}
-          copied={copiedInitial}
-        />
-      </div>
-
-      <div style={{ borderTop: "1px solid rgba(0,184,154,0.1)", margin: "16px 0" }} />
-
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#a8d4f0" }}>Section 2 — Final MDM</div>
-            <div style={{ fontSize: 11, color: "rgba(200,223,240,0.4)", marginTop: 2 }}>After results return · disposition reasoning · MDM coding</div>
-          </div>
-          <button
-            style={{ marginTop: 10, padding: "9px 20px", borderRadius: 6, cursor: finalMDMLoading ? "not-allowed" : "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid #00e5c0", background: "rgba(0,229,192,0.1)", color: "#00e5c0", opacity: finalMDMLoading ? 0.5 : 1 }}
-            onClick={generateFinalMDM}
-            disabled={finalMDMLoading || (!labs && !imaging)}
-          >
-            {finalMDMLoading ? "Generating..." : "Generate Final MDM"}
-          </button>
+          {finalMDMLoading && <div style={{ marginTop: 8, fontSize: 12, color: "#00b89a", fontFamily: "'JetBrains Mono',monospace" }}>Synthesizing results and generating final MDM...</div>}
+          {finalMDMResult && <FinalMDMDisplay result={finalMDMResult} onCopy={copyFinalMDM} copied={copiedFinal} />}
         </div>
-        {finalMDMLoading && (
-          <div style={{ marginTop: 8, fontSize: 12, color: "#00b89a", fontFamily: "'JetBrains Mono',monospace" }}>
-            Synthesizing results and generating final MDM...
-          </div>
-        )}
-        {finalMDMResult && <FinalMDMDisplay result={finalMDMResult} onCopy={copyFinalMDM} copied={copiedFinal} />}
-      </div>
+      )}
+
     </div>
   );
 }

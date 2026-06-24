@@ -693,94 +693,37 @@ function formatMDMForCopy(mdmResult) {
 }
 
 // ─── PHASE 1 COPY — Initial note for EHR paste ───────────────────────────────
-function buildPhase1Copy(p1, mdm, extras = {}, mode = "plain") {
-  const ts = new Date().toLocaleString("en-US", {
-    month:"short", day:"numeric", year:"numeric",
-    hour:"2-digit", minute:"2-digit"
-  });
-  const provider = extras.providerName ? ` — ${extras.providerName}` : "";
-  const sep  = mode === "epic" ? "\n" : "\n";
-  const hdr  = (label) => mode === "epic" ? label : label;
-
-  // Demographics header
-  const demog = extras.demographics || {};
-  const nameStr  = [demog.firstName, demog.lastName].filter(Boolean).join(" ") || "_______________";
-  const dobStr   = demog.dob        || "_______________";
-  const mrnStr   = demog.mrn        || "_______________";
-  const encStr   = demog.encounter  || "_______________";
-  const locStr   = demog.location   || "ED";
-
-  const lines = [
-    `${ts}${provider} — Emergency Department Note`,
-    "",
-    `Patient: ${nameStr}    DOB: ${dobStr}    MRN: ${mrnStr}`,
-    `Encounter: ${encStr}    Location: ${locStr}`,
-    "",
-    hdr("CHIEF COMPLAINT:"),
-    p1.cc || "—",
-    "",
-  ];
-
-  if (p1.vitals) {
-    lines.push(hdr("VITAL SIGNS:")); lines.push(p1.vitals); lines.push("");
+export function buildPhase1Copy({ fields = {}, mdmResult, treatmentResult, selectedPlanIds, providerName = "", facilityName = "", timestamp = "" }) {
+  const sections = [];
+  const divider = "\u2500".repeat(64);
+  if (facilityName || timestamp) {
+    sections.push([facilityName ? "FACILITY: " + facilityName : "", timestamp ? "DATE/TIME: " + timestamp : ""].filter(Boolean).join("  |  "));
+    sections.push(divider);
   }
-
-  if (p1.hpi) {
-    lines.push(hdr("HISTORY OF PRESENT ILLNESS:"));
-    lines.push((extras.hpiMode === "summary" && extras.hpiSummary?.trim()) ? extras.hpiSummary.trim() : p1.hpi);
-    lines.push("");
+  if (fields.cc)     sections.push("CHIEF COMPLAINT: " + fields.cc);
+  if (fields.vitals) sections.push("\nVITAL SIGNS:\n" + fields.vitals);
+  if (fields.hpi)    sections.push("\nHISTORY OF PRESENT ILLNESS:\n" + fields.hpi);
+  if (fields.ros)    sections.push("\nREVIEW OF SYSTEMS:\n" + fields.ros);
+  if (fields.exam)   sections.push("\nPHYSICAL EXAMINATION:\n" + fields.exam);
+  sections.push("\n" + divider);
+  sections.push("ASSESSMENT AND PLAN\n");
+  const impText = formatMDMForCopy(mdmResult);
+  if (impText) { sections.push(impText); sections.push(""); }
+  const txText = formatTreatmentForCopy(treatmentResult);
+  if (txText) { sections.push(txText); sections.push(""); }
+  if (mdmResult?.mdm_level || mdmResult?.mdm_label) {
+    const level = mdmResult.mdm_label || "";
+    const code  = mdmResult.mdm_level || "";
+    const conf  = mdmResult.mdm_confidence ? " (" + mdmResult.mdm_confidence + ")" : "";
+    sections.push("MDM COMPLEXITY: " + level + (code ? " \u2014 " + code : "") + conf);
+    if (mdmResult.mdm_confidence_note) sections.push(mdmResult.mdm_confidence_note);
+    sections.push("");
   }
-
-  // Medications & allergies
-  if (extras.parsedMeds?.length || extras.parsedAllergies?.length) {
-    if (extras.parsedMeds?.length) {
-      lines.push(hdr("CURRENT MEDICATIONS:"));
-      extras.parsedMeds.forEach(m => {
-        const parts = [m.name, m.dose, m.route, m.frequency].filter(Boolean);
-        lines.push(`  ${parts.join("  ")}`);
-      });
-      lines.push("");
-    }
-    if (extras.parsedAllergies?.length) {
-      lines.push(hdr("ALLERGIES:"));
-      extras.parsedAllergies.forEach(a => lines.push(`  ${a.allergen}: ${a.reaction}`));
-      lines.push("");
-    }
-  }
-
-  if (p1.ros) {
-    lines.push(hdr("REVIEW OF SYSTEMS:")); lines.push(p1.ros); lines.push("");
-  }
-
-  if (p1.exam) {
-    lines.push(hdr("PHYSICAL EXAMINATION:")); lines.push(p1.exam); lines.push("");
-  }
-
-  // Assessment & Plan — EHR-ready format
-  if (mdm) {
-    lines.push(hdr("ASSESSMENT AND PLAN:"));
-    if (mdm.working_diagnosis) lines.push(`Working Impression: ${mdm.working_diagnosis}`);
-    if (mdm.mdm_level) lines.push(`MDM Complexity: ${mdm.mdm_level}`);
-    lines.push("");
-    const mdmCopyText = formatMDMForCopy(mdm);
-    if (mdmCopyText) { lines.push(mdmCopyText); lines.push(""); }
-    // Numbered plan from recommended actions
-    const actions = (mdm.recommended_actions || []).filter(Boolean);
-    if (actions.length) {
-      lines.push("Plan:");
-      actions.forEach((a, i) => lines.push(`  ${i+1}. ${typeof a === "string" ? a : a.action || a}`));
-      lines.push("");
-    }
-    // Critical actions
-    if (mdm.critical_actions?.length) {
-      lines.push("Immediate Actions:");
-      mdm.critical_actions.forEach(a => lines.push(`  • ${a}`));
-      lines.push("");
-    }
-  }
-
-  if (extras.sigBlock) { lines.push(""); lines.push(extras.sigBlock); }
-  return lines.join(sep);
+  const planLines = buildClinicalPlanText(selectedPlanIds);
+  if (planLines) { sections.push("CLINICAL PLAN:"); sections.push(planLines); sections.push(""); }
+  sections.push(divider);
+  sections.push(providerName ? "Electronically signed: " + providerName + "  |  " + (timestamp || "") : "Documentation time: " + (timestamp || ""));
+  return sections.filter(s => s !== null && s !== undefined).join("\n");
 }
 
 // ─── PHASE 2 COPY — Reevaluation addendum for EHR paste ──────────────────────
@@ -942,7 +885,6 @@ export {
   buildMDMBlock,
   buildSOAPNote,
   buildFullNote,
-  buildPhase1Copy,
   buildPhase2Copy,
 };
 
@@ -1042,4 +984,75 @@ export function formatInitialMDMForCopy(result) {
   if (result.initial_management?.consultations?.length) { lines.push(""); lines.push("Consultations Requested:"); result.initial_management.consultations.forEach(c => lines.push("* " + c)); }
   if (result.initial_management?.reassessment_plan?.length) { lines.push(""); lines.push("Reassessment Plan:"); result.initial_management.reassessment_plan.forEach(r => lines.push("* " + r)); }
   return lines.join("\n");
+}
+
+export const PLAN_CATEGORIES = [
+  { id: "workup", label: "Workup", icon: "🔬", items: [
+    { id: "labs", label: "Laboratory studies ordered" },
+    { id: "imaging", label: "Imaging ordered" },
+    { id: "ecg", label: "ECG ordered" },
+    { id: "cultures", label: "Blood / urine cultures ordered" },
+    { id: "poc", label: "Point-of-care testing" },
+  ]},
+  { id: "treatment", label: "Treatment", icon: "💊", items: [
+    { id: "iv_access", label: "IV access established" },
+    { id: "fluids", label: "IV fluids initiated" },
+    { id: "analgesia", label: "Analgesia administered" },
+    { id: "antiemetic", label: "Antiemetic administered" },
+    { id: "antibiotics", label: "Antibiotics initiated" },
+    { id: "anticoag", label: "Anticoagulation initiated" },
+    { id: "cardiac_meds", label: "Cardiac medications initiated" },
+    { id: "neuro_meds", label: "Neurologic medications initiated" },
+    { id: "resp_tx", label: "Respiratory therapy / bronchodilators" },
+    { id: "wound", label: "Wound care / procedure performed" },
+    { id: "npo", label: "NPO status maintained" },
+    { id: "monitoring", label: "Continuous monitoring initiated" },
+    { id: "o2", label: "Supplemental oxygen initiated" },
+  ]},
+  { id: "consults", label: "Consultations", icon: "📞", items: [
+    { id: "surgery", label: "Surgery consulted" },
+    { id: "cardiology", label: "Cardiology consulted" },
+    { id: "neurology", label: "Neurology consulted" },
+    { id: "ob_gyn", label: "OB/GYN consulted" },
+    { id: "ortho", label: "Orthopedics consulted" },
+    { id: "urology", label: "Urology consulted" },
+    { id: "nephrology", label: "Nephrology consulted" },
+    { id: "pulm", label: "Pulmonology consulted" },
+    { id: "id_consult", label: "Infectious Disease consulted" },
+    { id: "psych", label: "Psychiatry consulted" },
+    { id: "sw", label: "Social Work consulted" },
+    { id: "pcp", label: "Primary care / admitting physician notified" },
+  ]},
+  { id: "monitoring_safety", label: "Monitoring & Safety", icon: "📊", items: [
+    { id: "vitals_q30", label: "Vital signs every 30 minutes" },
+    { id: "vitals_q60", label: "Vital signs every 60 minutes" },
+    { id: "reassess_pain", label: "Reassess pain control in 30-60 minutes" },
+    { id: "reassess_resp", label: "Reassess respiratory status" },
+    { id: "neuro_checks", label: "Neurologic checks every 1 hour" },
+    { id: "tele", label: "Continuous telemetry monitoring" },
+    { id: "spo2", label: "Continuous pulse oximetry" },
+    { id: "foley", label: "Foley / strict urine output monitoring" },
+    { id: "fall_precautions", label: "Fall precautions in place" },
+  ]},
+  { id: "disposition_plan", label: "Disposition Plan", icon: "🏥", items: [
+    { id: "admit_plan", label: "Admission anticipated pending results" },
+    { id: "obs_plan", label: "Observation status anticipated" },
+    { id: "dc_plan", label: "Discharge anticipated if workup negative" },
+    { id: "transfer_plan", label: "Transfer being arranged" },
+    { id: "family_notified", label: "Family / representative notified" },
+    { id: "reassess_dispo", label: "Disposition pending result review" },
+  ]},
+];
+
+export function buildClinicalPlanText(selectedPlanIds) {
+  if (selectedPlanIds !== null && selectedPlanIds !== undefined && selectedPlanIds.size === 0) return "";
+  const lines = [];
+  PLAN_CATEGORIES.forEach(cat => {
+    const catItems = cat.items.filter(item => !selectedPlanIds || selectedPlanIds.has(item.id));
+    if (!catItems.length) return;
+    lines.push(cat.label.toUpperCase() + ":");
+    catItems.forEach(item => lines.push("  \u2022 " + item.label));
+    lines.push("");
+  });
+  return lines.join("\n").trimEnd();
 }

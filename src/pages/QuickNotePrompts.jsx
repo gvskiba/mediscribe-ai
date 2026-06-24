@@ -337,6 +337,98 @@ export function formatLabSummaryForCopy(labResult) {
   return lines.join("\n");
 }
 
+export const IMAGING_ANALYSIS_SCHEMA = {
+  type: "object",
+  required: ["studies","synthesis","next_steps","critical_findings"],
+  properties: {
+    studies: { type: "array", minItems: 1, items: { type: "object", required: ["study","modality","body_region","key_findings","interpretation","physician_attestation"], properties: { study: { type: "string" }, modality: { type: "string" }, body_region: { type: "string" }, key_findings: { type: "array", minItems: 1, items: { type: "object", required: ["finding","significance"], properties: { finding: { type: "string" }, significance: { type: "string" }, is_critical: { type: "boolean" } } } }, interpretation: { type: "string" }, diagnoses_addressed: { type: "array", items: { type: "object", required: ["diagnosis","status"], properties: { diagnosis: { type: "string" }, status: { type: "string" } } } }, physician_attestation: { type: "string" }, incidental_findings: { type: "array", items: { type: "string" } } } } },
+    synthesis: { type: "string" },
+    next_steps: { type: "array", minItems: 1, items: { type: "object", required: ["action","urgency","rationale"], properties: { action: { type: "string" }, urgency: { type: "string" }, rationale: { type: "string" } } } },
+    critical_findings: { type: "array", items: { type: "object", required: ["finding","study","action_required"], properties: { finding: { type: "string" }, study: { type: "string" }, action_required: { type: "string" } } } },
+    final_impression_summary: { type: "string" },
+  },
+};
+
+export function buildImagingAnalysisPrompt(imaging, cc, mdmResult, labSummaryResult) {
+  const workingDx = mdmResult?.initial_impression?.working_dx_line || mdmResult?.working_diagnosis || "not provided";
+  const differentials = mdmResult?.initial_impression?.differentials?.map(d => d.rank + ". " + d.diagnosis).join("; ") || "not provided";
+  const cannotExclude = mdmResult?.initial_impression?.cannot_exclude?.join(" ") || "";
+  const labContext = labSummaryResult?.clinical_correlations?.map(c => (c.topic ? c.topic + ": " : "") + c.correlation).join(" | ") || "";
+  const criticalLabs = labSummaryResult?.critical_flags?.length ? labSummaryResult.critical_flags.map(f => "CRITICAL: " + f.test + " " + f.value).join("; ") : "None";
+
+  return `${SYS_BIAS}
+
+You are a board-certified emergency physician interpreting imaging results for an ED encounter.
+
+ENCOUNTER CONTEXT:
+Chief Complaint: ${cc || "not provided"}
+Working Diagnosis: ${workingDx}
+Active Differentials: ${differentials}
+Cannot Exclude: ${cannotExclude}
+Lab Correlations: ${labContext || "not provided"}
+Critical Lab Flags: ${criticalLabs}
+
+IMAGING REPORTS (interpret ALL studies):
+${imaging || "No imaging provided"}
+
+OUTPUT RULES:
+
+studies: One entry per imaging study. For each:
+- study: full name (e.g. "CT abdomen/pelvis with contrast")
+- modality: CT | X-ray | MRI | Ultrasound | Nuclear | Fluoroscopy | Other
+- body_region: Chest | Abdomen/Pelvis | Head/Brain | Spine | Extremity | Pelvis | Neck | Other
+- key_findings: specific findings from the report. Each: finding (exact clinical language), significance (Critical/Actionable/Incidental/Normal/Reassuring), is_critical (true only for findings requiring immediate action). ALWAYS include relevant negative findings as "Reassuring" items when they address the differential (e.g. "No pneumothorax" | "No free air" | "No acute hemorrhage").
+- interpretation: 2-4 sentence clinical synthesis in attending physician voice. What findings mean clinically, what dangerous diagnoses are excluded, what remains uncertain.
+- diagnoses_addressed: for each diagnosis from cannot-exclude list or differential that this study addresses. status: "Confirmed" | "Excluded" | "Cannot exclude" | "Incidental finding"
+- physician_attestation: always "I personally reviewed the [study name] and agree with the preliminary read." OR note specific observation.
+- incidental_findings: unrelated findings requiring separate follow-up.
+
+synthesis: One paragraph integrating all studies with clinical presentation and labs. How does imaging change or confirm the initial assessment?
+
+next_steps: 2-5 recommended actions based on imaging. Each: action (specific), urgency (Immediate/Urgent/Routine/Outpatient), rationale (why indicated by imaging).
+
+critical_findings: findings with is_critical: true, with required action. Empty array if none.
+
+final_impression_summary: 2-3 sentences MAX for injection into Final Impression. Specific values. What was found, what was excluded, any uncertainty. Example: "CT left lower leg demonstrates skin thickening and subcutaneous edema consistent with cellulitis; no abscess or necrotizing infection identified. CT effectively excludes necrotizing fasciitis and deep space infection."
+
+Rules: Never use "rules out" — use "excluded by imaging". Always address life threats
+
+Respond ONLY in valid JSON. No markdown fences.`;
+}
+
+export function formatImagingAnalysisForCopy(result) {
+  if (!result) return "";
+  const lines = [];
+  if (result.critical_findings?.length) {
+    lines.push("CRITICAL IMAGING FINDINGS:");
+    result.critical_findings.forEach(f => lines.push("CRITICAL -- " + f.study + ": " + f.finding + " -- ACTION: " + f.action_required));
+    lines.push("");
+  }
+  (result.studies || []).forEach(s => {
+    lines.push(s.study + " (" + s.modality + " — " + s.body_region + "):");
+    (s.key_findings || []).forEach(f => {
+      const critStr = f.is_critical ? " [CRITICAL]" : "";
+      lines.push("  - " + f.finding + " (" + f.significance + ")" + critStr);
+    });
+    if (s.interpretation) lines.push("  Interpretation: " + s.interpretation);
+    if (s.physician_attestation) lines.push("  " + s.physician_attestation);
+    if (s.diagnoses_addressed?.length) {
+      lines.push("  Diagnoses addressed:");
+      s.diagnoses_addressed.forEach(d => lines.push("    " + d.diagnosis + ": " + d.status));
+    }
+    if (s.incidental_findings?.length) lines.push("  Incidental: " + s.incidental_findings.join("; "));
+    lines.push("");
+  });
+  if (result.synthesis) { lines.push("IMAGING SYNTHESIS:"); lines.push(result.synthesis); lines.push(""); }
+  if (result.next_steps?.length) {
+    lines.push("NEXT STEPS:");
+    result.next_steps.forEach(n => lines.push("- [" + n.urgency + "] " + n.action + " — " + n.rationale));
+    lines.push("");
+  }
+  if (result.final_impression_summary) { lines.push("FINAL IMPRESSION (imaging):"); lines.push(result.final_impression_summary); }
+  return lines.join("\n");
+}
+
 export const FINAL_IMPRESSION_SCHEMA = {
   type: "object",
   required: ["diagnoses","excluded_diagnoses","closing_statement"],

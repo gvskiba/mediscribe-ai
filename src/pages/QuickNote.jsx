@@ -1609,7 +1609,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                 {workupRationaleBusy?"● …":"✦ Workup Rationale"}
               </button>
               <button onClick={async ()=>{
-                const D = "─".repeat(60);
+                const D = "-".repeat(60);
                 const parts = [];
                 const ts = new Date().toLocaleString();
                 parts.push("MEDICAL DECISION MAKING — " + ts);

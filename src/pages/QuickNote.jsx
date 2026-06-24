@@ -43,8 +43,9 @@ import {
   formatMDMForCopy, buildTreatmentPrompt, formatTreatmentForCopy,
   LAB_SUMMARY_SCHEMA, buildLabSummaryPrompt, formatLabSummaryForCopy,
   FINAL_IMPRESSION_SCHEMA, buildFinalImpressionPrompt, formatFinalImpressionForCopy,
+  ED_MEDICATIONS_SCHEMA, buildEDMedicationsPrompt, formatEDMedicationsForCopy,
 } from "./QuickNotePrompts";
-import { LabSummaryDisplay, FinalImpressionDisplay } from "./QuickNoteDisposition";
+import { LabSummaryDisplay, FinalImpressionDisplay, EDMedicationsDisplay } from "./QuickNoteDisposition";
 import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
 import { HPI_SCAFFOLDS, HPI_ALIASES, getScaffold } from "./QuickNoteScaffolds";
 import { EncounterPicker } from "./QuickNoteEncounterPicker";
@@ -211,6 +212,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [labSummaryLoading, setLabSummaryLoading] = useState(false);
   const [finalImpressionResult,  setFinalImpressionResult]  = useState(null);
   const [finalImpressionLoading, setFinalImpressionLoading] = useState(false);
+  const [edMedsResult,   setEdMedsResult]   = useState(null);
+  const [edMedsLoading,  setEdMedsLoading]  = useState(false);
+  const [copiedEdMeds,   setCopiedEdMeds]   = useState(false);
   const [confirmedRanks, setConfirmedRanks] = useState(new Set());
   const [rejectedRanks,  setRejectedRanks]  = useState(new Set());
   const [p1Busy,     setP1Busy]     = useState(false);
@@ -369,6 +373,28 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     } catch (e) { console.error("Lab summary failed:", e); }
     finally { setLabSummaryLoading(false); }
   }, [labs, cc, mdmResult, parsedMeds, parsedAllergies, labSummaryLoading]);
+
+  const generateEDMedications = useCallback(async () => {
+    setEdMedsLoading(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: buildEDMedicationsPrompt(
+          cc, hpi, exam, mdmResult, labSummaryResult,
+          treatmentResult, parsedMeds, parsedAllergies, pmh.length ? pmh.join(", ") : ""
+        ),
+        response_json_schema: ED_MEDICATIONS_SCHEMA,
+      });
+      setEdMedsResult(res);
+    } catch (e) { console.error("ED Medications failed:", e); }
+    finally { setEdMedsLoading(false); }
+  }, [cc, hpi, exam, mdmResult, labSummaryResult, treatmentResult, parsedMeds, parsedAllergies, pmh]);
+
+  const copyEDMedications = useCallback(async () => {
+    if (!edMedsResult) return;
+    await navigator.clipboard.writeText(formatEDMedicationsForCopy(edMedsResult));
+    setCopiedEdMeds(true);
+    setTimeout(() => setCopiedEdMeds(false), 2500);
+  }, [edMedsResult]);
 
   const generateTreatment = useCallback(async (resolvedMdmResult) => {
     setTreatmentLoading(true);
@@ -973,6 +999,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setTreatmentResult(null); setTreatmentLoading(false);
     setLabSummaryResult(null); setLabSummaryLoading(false);
     setFinalImpressionResult(null); setFinalImpressionLoading(false);
+    setEdMedsResult(null); setEdMedsLoading(false); setCopiedEdMeds(false);
     setConfirmedRanks(new Set()); setRejectedRanks(new Set());
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
@@ -1840,6 +1867,28 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           </div>
         )}
         {labSummaryResult && <LabSummaryDisplay result={labSummaryResult} />}
+
+        <div style={{ marginTop: 12 }}>
+          <button
+            onClick={generateEDMedications}
+            disabled={edMedsLoading}
+            style={{ padding:"8px 18px", borderRadius:6, cursor: edMedsLoading ? "not-allowed" : "pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", border:"1px solid rgba(0,184,154,0.35)", background:"rgba(0,184,154,0.08)", color:"#00b89a", opacity: edMedsLoading ? 0.5 : 1 }}
+          >
+            {edMedsLoading ? "Generating..." : "💊 Generate ED Medications"}
+          </button>
+          {edMedsLoading && (
+            <div style={{ fontSize:12, color:"#00b89a", padding:"6px 0", fontFamily:"'JetBrains Mono',monospace" }}>
+              Analyzing patient profile and generating medication recommendations...
+            </div>
+          )}
+          {edMedsResult && (
+            <EDMedicationsDisplay
+              result={edMedsResult}
+              onCopy={copyEDMedications}
+              copied={copiedEdMeds}
+            />
+          )}
+        </div>
 
         {finalImpressionLoading && (
           <div style={{ fontSize: 12, color: "#00b89a", padding: "8px 0", fontFamily: "'JetBrains Mono',monospace" }}>

@@ -1286,3 +1286,316 @@ export function LabSummaryDisplay({ result }) {
     </div>
   );
 }
+
+// ─── ED MEDICATIONS DISPLAY ──────────────────────────────────────────────────
+const EDM_MONO  = "'JetBrains Mono',monospace";
+const EDM_SANS  = "'DM Sans',sans-serif";
+const EDM_SERIF = "'Playfair Display',serif";
+
+function edSeverityColor(sev) {
+  const s = (sev || "").toLowerCase();
+  if (s.includes("critical"))  return "#ff4d4f";
+  if (s.includes("moderate"))  return "#f5a623";
+  if (s.includes("mild"))      return "#f5c842";
+  return "rgba(200,223,240,0.45)";
+}
+
+function intSeverityColor(sev) {
+  const s = (sev || "").toLowerCase();
+  if (s.includes("absolute"))  return "#ff4d4f";
+  if (s.includes("relative"))  return "#f5a623";
+  if (s.includes("caution"))   return "#f5c842";
+  return "#7ec8f7";
+}
+
+function intRowBg(sev) {
+  const s = (sev || "").toLowerCase();
+  if (s.includes("absolute"))  return "rgba(255,77,79,0.07)";
+  if (s.includes("relative"))  return "rgba(245,166,35,0.06)";
+  return "rgba(11,30,54,0.4)";
+}
+
+function EDMPill({ value, color }) {
+  if (!value) return null;
+  return (
+    <span style={{
+      fontFamily: EDM_MONO, fontSize: 10, fontWeight: 700,
+      color, border: `1px solid ${color}44`, background: `${color}11`,
+      padding: "2px 8px", borderRadius: 4,
+    }}>{value}</span>
+  );
+}
+
+function EDMSubHead({ children }) {
+  return (
+    <div style={{
+      fontFamily: EDM_MONO, fontSize: 10, textTransform: "uppercase",
+      letterSpacing: "0.09em", color: "rgba(200,223,240,0.45)",
+      marginTop: 14, marginBottom: 6,
+    }}>{children}</div>
+  );
+}
+
+function EDMDivider() {
+  return <div style={{ borderTop: "1px solid rgba(0,184,154,0.1)", marginTop: 14 }} />;
+}
+
+export function EDMedicationsDisplay({ result, onCopy, copied }) {
+  if (!result) return null;
+
+  const handleCopy = () => {
+    if (onCopy) onCopy();
+  };
+
+  return (
+    <div style={{
+      background: "rgba(11,30,54,0.55)", border: "1px solid rgba(0,184,154,0.18)",
+      borderRadius: 10, padding: "18px 20px", marginTop: 10,
+    }}>
+
+      {/* Header row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ fontFamily: EDM_SERIF, fontSize: 11, textTransform: "uppercase",
+          letterSpacing: "0.13em", color: "#00e5c0" }}>
+          ED Medications
+        </div>
+        <button onClick={handleCopy} style={{
+          padding: "2px 10px", borderRadius: 6, cursor: "pointer",
+          fontFamily: EDM_MONO, fontSize: 8, fontWeight: 700,
+          border: `1px solid ${copied ? "rgba(61,255,160,0.5)" : "rgba(0,229,192,0.35)"}`,
+          background: copied ? "rgba(61,255,160,0.1)" : "rgba(0,229,192,0.07)",
+          color: copied ? "#3dffa0" : "#00e5c0",
+          letterSpacing: "0.5px", textTransform: "uppercase", transition: "all 0.15s",
+        }}>
+          {copied ? "✓ Copied" : "Copy Medications"}
+        </button>
+      </div>
+
+      {/* Indication */}
+      {result.indication && (
+        <div style={{ display: "flex", gap: 10, alignItems: "baseline", marginBottom: 12 }}>
+          <span style={{ fontFamily: EDM_MONO, fontSize: 10, textTransform: "uppercase",
+            color: "rgba(200,223,240,0.45)", letterSpacing: "0.09em", flexShrink: 0 }}>
+            Indication
+          </span>
+          <span style={{ fontFamily: EDM_SANS, fontSize: 13.5, fontWeight: 700, color: "#a8d4f0" }}>
+            {result.indication}
+          </span>
+        </div>
+      )}
+
+      {/* Safety context banner */}
+      {result.safety_context && (
+        <div style={{
+          background: "rgba(11,30,54,0.5)", border: "1px solid rgba(245,200,66,0.2)",
+          borderRadius: 7, padding: "10px 12px", marginBottom: 14,
+        }}>
+          {result.safety_context.note && (
+            <div style={{ fontFamily: EDM_SANS, fontSize: 11.5, fontStyle: "italic",
+              color: "rgba(200,223,240,0.5)", marginBottom: result.safety_context.flags?.length ? 8 : 0 }}>
+              {result.safety_context.note}
+            </div>
+          )}
+          {result.safety_context.flags?.map((f, i) => {
+            const fc = edSeverityColor(f.severity);
+            return (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: i < result.safety_context.flags.length - 1 ? 8 : 0 }}>
+                <span style={{
+                  fontFamily: EDM_MONO, fontSize: 9, fontWeight: 700, textTransform: "uppercase",
+                  color: fc, border: `1px solid ${fc}`, padding: "2px 7px", borderRadius: 3, flexShrink: 0,
+                }}>
+                  {f.severity || "Info"}
+                </span>
+                <div>
+                  <div style={{ fontFamily: EDM_SANS, fontSize: 12.5, color: "#c8dff0" }}>{f.finding}</div>
+                  <div style={{ fontFamily: EDM_SANS, fontSize: 11.5, fontStyle: "italic",
+                    color: "rgba(200,223,240,0.55)" }}>{f.clinical_implication}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Recommended agents */}
+      {result.recommended_agents?.length > 0 && (
+        <>
+          <EDMSubHead>Recommended</EDMSubHead>
+          {result.recommended_agents.map((a, i) => (
+            <div key={i} style={{
+              background: "rgba(0,184,154,0.04)", border: "1px solid rgba(0,184,154,0.2)",
+              borderRadius: 8, padding: "12px 14px", marginBottom: 8,
+            }}>
+              <div style={{ fontFamily: EDM_MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                color: "#00b89a", marginBottom: 6 }}>
+                {a.label}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginBottom: a.notes || a.renal_note || a.guideline_source ? 6 : 0 }}>
+                <span style={{ fontFamily: EDM_SANS, fontSize: 14, fontWeight: 700, color: "#a8d4f0" }}>{a.agent}</span>
+                <EDMPill value={a.dose}      color="#a8d4f0" />
+                <EDMPill value={a.route}     color="#7ec8f7" />
+                <EDMPill value={a.frequency} color="#00b89a" />
+                <EDMPill value={a.duration}  color="rgba(200,223,240,0.45)" />
+              </div>
+              {a.notes && (
+                <div style={{ fontFamily: EDM_SANS, fontSize: 12, fontStyle: "italic",
+                  color: "rgba(200,223,240,0.6)", marginBottom: 4 }}>
+                  {a.notes}
+                </div>
+              )}
+              {a.renal_note && (
+                <div style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>⚠</span>
+                  <span style={{ fontFamily: EDM_SANS, fontSize: 12, color: "#f5c842" }}>{a.renal_note}</span>
+                </div>
+              )}
+              {a.guideline_source && (
+                <div style={{ fontFamily: EDM_SANS, fontSize: 11, fontStyle: "italic",
+                  color: "rgba(200,223,240,0.35)" }}>
+                  {a.guideline_source}
+                </div>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Alternative agents */}
+      {result.alternative_agents?.length > 0 && (
+        <>
+          <EDMSubHead>Alternatives</EDMSubHead>
+          {result.alternative_agents.map((a, i) => (
+            <div key={i} style={{
+              background: "rgba(11,30,54,0.35)", border: "1px solid rgba(200,223,240,0.08)",
+              borderRadius: 8, padding: "12px 14px", marginBottom: 8,
+            }}>
+              <div style={{ fontFamily: EDM_MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                color: "rgba(200,223,240,0.4)", marginBottom: 6 }}>
+                {a.label}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginBottom: a.notes || a.caution || a.guideline_source ? 6 : 0 }}>
+                <span style={{ fontFamily: EDM_SANS, fontSize: 14, fontWeight: 700, color: "#a8d4f0" }}>{a.agent}</span>
+                <EDMPill value={a.dose}      color="#a8d4f0" />
+                <EDMPill value={a.route}     color="#7ec8f7" />
+                <EDMPill value={a.frequency} color="#00b89a" />
+                <EDMPill value={a.duration}  color="rgba(200,223,240,0.45)" />
+              </div>
+              {a.notes && (
+                <div style={{ fontFamily: EDM_SANS, fontSize: 12, fontStyle: "italic",
+                  color: "rgba(200,223,240,0.6)", marginBottom: 4 }}>
+                  {a.notes}
+                </div>
+              )}
+              {a.caution && (
+                <div style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>⚑</span>
+                  <span style={{ fontFamily: EDM_SANS, fontSize: 12, color: "#f5a623" }}>{a.caution}</span>
+                </div>
+              )}
+              {a.guideline_source && (
+                <div style={{ fontFamily: EDM_SANS, fontSize: 11, fontStyle: "italic",
+                  color: "rgba(200,223,240,0.35)" }}>
+                  {a.guideline_source}
+                </div>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Interactions / Contraindications */}
+      {result.interactions_contraindications?.length > 0 && (
+        <>
+          <EDMDivider />
+          <EDMSubHead>Interactions / Contraindications</EDMSubHead>
+          {result.interactions_contraindications.map((ic, i) => {
+            const ic_color = intSeverityColor(ic.severity);
+            return (
+              <div key={i} style={{
+                display: "flex", gap: 10, padding: "8px 10px", borderRadius: 6,
+                marginBottom: 6, background: intRowBg(ic.severity),
+              }}>
+                <span style={{
+                  fontFamily: EDM_MONO, fontSize: 9, fontWeight: 700, textTransform: "uppercase",
+                  color: ic_color, border: `1px solid ${ic_color}`, padding: "2px 7px",
+                  borderRadius: 3, flexShrink: 0, marginTop: 2,
+                }}>
+                  {ic.severity}
+                </span>
+                <div>
+                  <div style={{ fontFamily: EDM_SANS, fontSize: 12.5, fontWeight: 700, color: "#a8d4f0", marginBottom: 2 }}>
+                    {ic.agent}
+                  </div>
+                  <div style={{ fontFamily: EDM_SANS, fontSize: 12, color: "#c8dff0", marginBottom: 2 }}>
+                    {ic.interaction_or_contraindication}
+                  </div>
+                  <div style={{ fontFamily: EDM_SANS, fontSize: 12, fontStyle: "italic",
+                    color: "rgba(200,223,240,0.6)", marginTop: 2 }}>
+                    {ic.action}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {/* Monitoring */}
+      {result.monitoring?.length > 0 && (
+        <>
+          <EDMDivider />
+          <EDMSubHead>Monitoring</EDMSubHead>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {result.monitoring.map((m, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                <span style={{ fontFamily: EDM_MONO, fontSize: 13, color: "#00b89a", flexShrink: 0 }}>–</span>
+                <span style={{ fontFamily: EDM_SANS, fontSize: 13, fontWeight: 600, color: "#a8d4f0" }}>
+                  {m.parameter}
+                </span>
+                <span style={{ fontFamily: EDM_MONO, fontSize: 10, color: "#f5c842" }}>
+                  [{m.interval}]
+                </span>
+                <span style={{ fontFamily: EDM_SANS, fontSize: 12, color: "rgba(200,223,240,0.6)" }}>
+                  — {m.rationale}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Guideline sources */}
+      {result.guideline_sources?.length > 0 && (
+        <>
+          <EDMDivider />
+          <EDMSubHead>Guideline Sources</EDMSubHead>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {result.guideline_sources.map((g, i) => (
+              <div key={i} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+                <span style={{
+                  fontFamily: EDM_MONO, fontSize: 9, fontWeight: 700, textTransform: "uppercase",
+                  color: "#00b89a", border: "1px solid rgba(0,184,154,0.25)",
+                  padding: "1px 6px", borderRadius: 3, flexShrink: 0,
+                }}>
+                  {g.source}
+                </span>
+                <span style={{ fontFamily: EDM_SANS, fontSize: 12, color: "rgba(200,223,240,0.6)" }}>
+                  {g.title}{g.year ? ` (${g.year})` : ""}{g.citation ? `; ${g.citation}` : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Attestation footer */}
+      <div style={{
+        borderTop: "1px solid rgba(0,184,154,0.08)", marginTop: 14, paddingTop: 10,
+        textAlign: "center", fontFamily: EDM_SANS, fontSize: 11, fontStyle: "italic",
+        color: "rgba(200,223,240,0.35)",
+      }}>
+        AI-generated medication recommendations. All orders require independent physician review, confirmation of allergies, current medications, and patient-specific factors before prescribing.
+      </div>
+    </div>
+  );
+}

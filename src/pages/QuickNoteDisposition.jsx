@@ -5,7 +5,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { dispColor } from "./QuickNoteComponents";
+import { dispColor, InlineCopyBtn } from "./QuickNoteComponents";
 
 // ─── LOCAL HELPERS ───────────────────────────────────────────────────────────
 const s = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
@@ -266,9 +266,28 @@ export function FinalImpressionDisplay({ result, confirmedRanks, rejectedRanks, 
       borderRadius: 10, padding: "18px 20px", marginTop: 10 }}>
 
       {/* Main header */}
-      <div style={{ fontFamily: FID_SERIF, fontSize: 11, textTransform: "uppercase",
-        letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 8 }}>
-        Final Impression
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: 4 }}>
+        <div style={{ fontFamily: FID_SERIF, fontSize: 11, textTransform: "uppercase",
+          letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 0 }}>
+          Final Impression
+        </div>
+        <InlineCopyBtn
+          getValue={() => {
+            if (!result) return "";
+            const lines = [];
+            lines.push("Based on all of the above, my clinical impression is most compatible with:");
+            lines.push("");
+            const toInclude = (result.diagnoses || []).filter(d => !confirmedRanks?.size || confirmedRanks.has(d.rank));
+            toInclude.forEach(d => {
+              const qualStr = d.qualifier ? " -- " + d.qualifier : "";
+              lines.push(d.rank + ". " + d.diagnosis + " (ICD-10: " + d.icd10_code + ")" + qualStr + " -- " + d.supporting_evidence);
+            });
+            if (result.excluded_diagnoses?.length) { lines.push(""); lines.push("The clinical picture is not currently suggestive of " + result.excluded_diagnoses.join(", ") + "."); }
+            if (result.closing_statement) { lines.push(""); lines.push(result.closing_statement); }
+            return lines.join("\n");
+          }}
+          label="Copy Final Impression"
+        />
       </div>
 
       {/* Opening line */}
@@ -802,6 +821,17 @@ export function DispositionResult({ result, copiedDisch, setCopiedDisch, onDiagE
             </div>
           </>
         )}
+        <InlineCopyBtn
+          getValue={() => {
+            if (!result) return "";
+            const lines = [];
+            if (result.disposition_narrative) lines.push(result.disposition_narrative);
+            if (result.closing_statement) { lines.push(""); lines.push(result.closing_statement); }
+            if (result.safety_net) { lines.push(""); lines.push(result.safety_net); }
+            return lines.join("\n");
+          }}
+          label="Copy Disposition"
+        />
       </div>
 
       {/* Final Dx */}
@@ -1085,9 +1115,41 @@ export function LabSummaryDisplay({ result }) {
       borderRadius: 10, padding: "18px 20px", marginTop: 10 }}>
 
       {/* Main header */}
-      <div style={{ fontFamily: LSD_SERIF, fontSize: 11, textTransform: "uppercase",
-        letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 4 }}>
-        Lab Summary
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: 12 }}>
+        <div style={{ fontFamily: LSD_SERIF, fontSize: 11, textTransform: "uppercase",
+          letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 0 }}>
+          Lab Summary
+        </div>
+        <InlineCopyBtn
+          getValue={() => {
+            if (!result) return "";
+            const lines = [];
+            lines.push("CRITICAL FLAGS:");
+            if (!result.critical_flags?.length) { lines.push("None identified."); }
+            else { result.critical_flags.forEach(f => lines.push("CRITICAL -- " + f.test + ": " + f.value + " [" + f.threshold + "] -- " + f.action)); }
+            lines.push("");
+            lines.push("LAB SUMMARY:");
+            (result.panels || []).forEach(panel => {
+              lines.push(panel.panel_name + ":");
+              (panel.results || []).forEach(r => {
+                const dirStr = r.direction && r.direction !== "normal" ? " (" + r.direction + ")" : "";
+                const grouped = r.grouped_with?.length ? ", " + r.grouped_with.map(g => g.test + " " + g.value + (g.direction && g.direction !== "normal" ? " (" + g.direction + ")" : "")).join(", ") : "";
+                const tierStr = r.tier && r.tier !== "NORMAL" ? "; " + r.tier + " tier" : "";
+                const threshStr = r.threshold_note ? "; " + r.threshold_note : "";
+                lines.push("- " + r.test + " " + r.value + dirStr + grouped + " -- " + r.interpretation + tierStr + threshStr);
+              });
+              lines.push("");
+            });
+            lines.push("CLINICAL CORRELATIONS:");
+            (result.clinical_correlations || []).forEach(c => { const t = c.topic ? c.topic + " -- " : ""; lines.push(c.number + ". " + t + c.correlation); });
+            lines.push("");
+            lines.push("RECOMMENDED ACTIONS:");
+            if (result.recommended_actions?.immediate?.length) lines.push("Immediate: " + result.recommended_actions.immediate.join("; ") + ".");
+            if (result.recommended_actions?.short_term?.length) lines.push("Short-term: " + result.recommended_actions.short_term.join("; ") + ".");
+            return lines.join("\n");
+          }}
+          label="Copy Lab Summary"
+        />
       </div>
 
       {/* Critical Flags */}

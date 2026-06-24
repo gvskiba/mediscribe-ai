@@ -929,6 +929,31 @@ export function TreatmentDisplay({ result }) {
         />
       </div>
 
+      {/* ACEP Guideline callout */}
+      {result.acep_guideline?.society && (
+        <div style={{ background:"rgba(0,184,154,0.06)", border:"1px solid rgba(0,184,154,0.25)", borderRadius:7, padding:"10px 12px", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:"#00b89a", letterSpacing:"0.08em", textTransform:"uppercase", border:"1px solid rgba(0,184,154,0.3)", borderRadius:3, padding:"1px 6px" }}>
+              {result.acep_guideline.society}
+            </span>
+            <span style={{ fontSize:12.5, fontWeight:600, color:"#a8d4f0" }}>
+              {result.acep_guideline.policy_name}
+              {result.acep_guideline.year && <span style={{ fontWeight:400, color:"rgba(200,223,240,0.4)", marginLeft:6 }}>({result.acep_guideline.year})</span>}
+            </span>
+            {result.acep_guideline.evidence_level && (
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:"#f5c842", border:"1px solid rgba(245,200,66,0.3)", borderRadius:3, padding:"1px 5px", marginLeft:"auto", flexShrink:0 }}>
+                {result.acep_guideline.evidence_level}
+              </span>
+            )}
+          </div>
+          {result.acep_guideline.key_recommendation && (
+            <p style={{ fontSize:12, color:"rgba(200,223,240,0.6)", fontStyle:"italic", margin:0 }}>
+              {result.acep_guideline.key_recommendation}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Triage and Acuity */}
       {(result.triage_acuity || result.triage_rationale) && (
         <div>
@@ -989,21 +1014,21 @@ export function TreatmentDisplay({ result }) {
                         ⚠ {cav}
                       </div>
                     ))}
+                    {(m.guideline_source || m.recommendation_class) && (
+                      <div style={{ fontSize:11, color:"rgba(200,223,240,0.4)", fontStyle:"italic", marginTop:2 }}>
+                        {m.guideline_source && <span>{m.guideline_source}</span>}
+                        {m.recommendation_class && (
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:"#f5c842", border:"1px solid rgba(245,200,66,0.25)", borderRadius:3, padding:"1px 5px", marginLeft:6 }}>
+                            {m.recommendation_class}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Diagnostics Ref */}
-      {result.diagnostics_ref?.length > 0 && (
-        <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginTop: 14, marginBottom: 8 }}>
-            Diagnostics (see MDM)
-          </div>
-          <BulletList items={result.diagnostics_ref} />
         </div>
       )}
 

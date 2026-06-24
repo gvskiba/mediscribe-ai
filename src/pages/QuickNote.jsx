@@ -815,14 +815,17 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   const copyPhase1 = useCallback(() => {
     if (!mdmResult) return;
     const prov=window._notryaProvider||{};
-    let text=buildPhase1Copy({cc,vitals,hpi:effectiveHpi,ros,exam},mdmResult,
-      {parsedMeds,parsedAllergies,hpiSummary,hpiMode,workupRationale,
-       providerName:prov.full_name||demo?.full_name||"",sigBlock:prov.sigBlock||"",
-       demographics:{...(demo||{}),facility:prov.facility,location:prov.location}},formatMode);
-    const treatmentCopy = formatTreatmentForCopy(treatmentResult);
-    if (treatmentCopy) text = text + "\n\n" + treatmentCopy;
+    const ts = new Date().toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    const text = buildPhase1Copy({
+      fields: {cc, vitals, hpi: effectiveHpi, ros, exam},
+      mdmResult,
+      treatmentResult,
+      providerName: prov.full_name||demo?.full_name||"",
+      facilityName: prov.facility||"",
+      timestamp: ts,
+    });
     navigator.clipboard.writeText(stripLabels(text)).then(()=>{setCopiedP1(true);setTimeout(()=>setCopiedP1(false),3000);});
-  }, [cc,vitals,effectiveHpi,ros,exam,mdmResult,parsedMeds,parsedAllergies,hpiSummary,hpiMode,workupRationale,demo,formatMode,pasteReady,treatmentResult]);
+  }, [cc,vitals,effectiveHpi,ros,exam,mdmResult,demo,formatMode,pasteReady,treatmentResult]);
 
   const copyPhase2 = useCallback(() => {
     if (!dispResult) return;

@@ -40,6 +40,80 @@ function SectionCopyBtn({ buildText, label = "Copy" }) {
   );
 }
 
+export function EditablePlanSection({ items = [], title = "Plan Items", copyLabel = "Copy Selected" }) {
+  const [planItems, setPlanItems] = useState(() => items.map((text, i) => ({ id: i, text, selected: true, editing: false })));
+  const [copied, setCopied] = useState(false);
+  const prevRef = useRef(items);
+
+  useEffect(() => {
+    if (JSON.stringify(items) !== JSON.stringify(prevRef.current)) {
+      prevRef.current = items;
+      setPlanItems(items.map((text, i) => ({ id: i, text, selected: true, editing: false })));
+    }
+  }, [items]);
+
+  const toggle    = id => setPlanItems(p => p.map(x => x.id === id ? { ...x, selected: !x.selected } : x));
+  const startEdit = id => setPlanItems(p => p.map(x => x.id === id ? { ...x, editing: true } : x));
+  const saveEdit  = (id, text) => setPlanItems(p => p.map(x => x.id === id ? { ...x, text, editing: false } : x));
+  const cancelEdit= id => setPlanItems(p => p.map(x => x.id === id ? { ...x, editing: false } : x));
+  const deleteItem= id => setPlanItems(p => p.filter(x => x.id !== id));
+  const addItem   = () => { const newId = Date.now(); setPlanItems(p => [...p, { id: newId, text: "", selected: true, editing: true }]); };
+  const selectAll = () => setPlanItems(p => p.map(x => ({ ...x, selected: true })));
+  const selectNone= () => setPlanItems(p => p.map(x => ({ ...x, selected: false })));
+
+  const selectedCount = planItems.filter(p => p.selected).length;
+
+  const handleCopy = () => {
+    const sel = planItems.filter(p => p.selected && p.text.trim());
+    if (!sel.length) return;
+    const text = title.toUpperCase() + ":\n" + sel.map(p => "- " + p.text).join("\n");
+    copyText(text, setCopied);
+  };
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "rgba(200,223,240,0.45)", letterSpacing: "0.09em", textTransform: "uppercase" }}>{title}</span>
+        <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+          <button onClick={selectAll}  style={{ padding: "2px 7px", borderRadius: 3, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", border: "1px solid rgba(0,184,154,0.2)", background: "transparent", color: "rgba(200,223,240,0.35)" }}>All</button>
+          <button onClick={selectNone} style={{ padding: "2px 7px", borderRadius: 3, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", border: "1px solid rgba(0,184,154,0.2)", background: "transparent", color: "rgba(200,223,240,0.35)" }}>None</button>
+          <button onClick={handleCopy} disabled={selectedCount === 0} style={{ padding: "3px 10px", borderRadius: 4, cursor: selectedCount === 0 ? "not-allowed" : "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", border: copied ? "1px solid #00e5c0" : "1px solid rgba(0,184,154,0.25)", background: copied ? "rgba(0,229,192,0.12)" : "transparent", color: copied ? "#00e5c0" : "rgba(200,223,240,0.4)", opacity: selectedCount === 0 ? 0.4 : 1, transition: "all 0.15s" }}>
+            {copied ? "✓ Copied" : copyLabel + " (" + selectedCount + ")"}
+          </button>
+        </div>
+      </div>
+
+      {planItems.map(item => (
+        <div key={item.id} style={{ display: "flex", gap: 6, alignItems: "flex-start", padding: "5px 6px", borderRadius: 5, marginBottom: 3, background: item.selected ? "rgba(0,184,154,0.05)" : "transparent", border: item.selected ? "1px solid rgba(0,184,154,0.12)" : "1px solid transparent", transition: "all 0.1s" }}>
+          <div onClick={() => toggle(item.id)} style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0, marginTop: 2, border: item.selected ? "1px solid #00e5c0" : "1px solid rgba(200,223,240,0.2)", background: item.selected ? "#00e5c0" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            {item.selected && <span style={{ color: "#081628", fontSize: 9, fontWeight: 700 }}>✓</span>}
+          </div>
+          {item.editing ? (
+            <input
+              autoFocus
+              defaultValue={item.text}
+              onBlur={e => saveEdit(item.id, e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") saveEdit(item.id, e.target.value); if (e.key === "Escape") cancelEdit(item.id); }}
+              style={{ flex: 1, background: "rgba(11,30,54,0.7)", border: "1px solid rgba(0,229,192,0.3)", borderRadius: 4, color: "#c8dff0", fontFamily: "'DM Sans',sans-serif", fontSize: 12.5, padding: "3px 7px", outline: "none", lineHeight: 1.45 }}
+            />
+          ) : (
+            <span onClick={() => toggle(item.id)} onDoubleClick={() => startEdit(item.id)} title="Click to select/deselect - Double-click to edit" style={{ flex: 1, fontSize: 12.5, fontFamily: "'DM Sans',sans-serif", color: item.selected ? "#c8dff0" : "rgba(200,223,240,0.35)", lineHeight: 1.45, cursor: "pointer" }}>
+              {item.text || <em style={{ opacity: 0.4 }}>empty</em>}
+            </span>
+          )}
+          {!item.editing && (
+            <>
+              <button onClick={() => startEdit(item.id)} title="Edit" style={{ padding: "1px 6px", borderRadius: 3, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9, border: "1px solid rgba(0,184,154,0.2)", background: "transparent", color: "rgba(200,223,240,0.3)", flexShrink: 0 }}>✎</button>
+              <button onClick={() => deleteItem(item.id)} title="Remove" style={{ padding: "1px 5px", borderRadius: 3, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9, border: "1px solid rgba(255,77,79,0.2)", background: "transparent", color: "rgba(255,77,79,0.35)", flexShrink: 0 }}>✕</button>
+            </>
+          )}
+        </div>
+      ))}
+      <button onClick={addItem} style={{ marginTop: 5, padding: "4px 10px", borderRadius: 4, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", border: "1px dashed rgba(0,184,154,0.2)", background: "transparent", color: "rgba(0,229,192,0.4)", width: "100%" }}>+ Add item</button>
+    </div>
+  );
+}
+
 function mdmLevelColor(level) {
   const l = (level || '').toLowerCase();
   if (l.includes('high'))            return '#ff4444';
@@ -881,12 +955,7 @@ export function TreatmentDisplay({ result }) {
 
       {/* Immediate Interventions */}
       {result.immediate_interventions?.length > 0 && (
-        <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginTop: 14, marginBottom: 8 }}>
-            Immediate Interventions
-          </div>
-          <BulletList items={result.immediate_interventions} />
-        </div>
+        <EditablePlanSection items={result.immediate_interventions} title="Immediate Interventions" copyLabel="Copy Interventions" />
       )}
 
       {/* Medications */}
@@ -940,12 +1009,7 @@ export function TreatmentDisplay({ result }) {
 
       {/* Monitoring and Safety */}
       {result.monitoring_safety?.length > 0 && (
-        <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginTop: 14, marginBottom: 8 }}>
-            Monitoring and Safety
-          </div>
-          <BulletList items={result.monitoring_safety} />
-        </div>
+        <EditablePlanSection items={result.monitoring_safety} title="Monitoring and Safety" copyLabel="Copy Plan" />
       )}
 
       {/* Attestation footer */}

@@ -320,3 +320,27 @@ export function ClinicalPlanSelector({ selectedIds, onChange, onCopy, onClose, c
 export { MedsAllergyZone };
 export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard };
 export { DiagnosisCodingCard, InterventionsCard, DispositionResult };
+
+export function InlineCopyBtn({ getValue, label = "Copy" }) {
+  const [copied, setCopied] = useState(false);
+  const handle = async () => {
+    const text = typeof getValue === "function" ? getValue() : getValue;
+    if (!text?.trim()) return;
+    try { await navigator.clipboard.writeText(text.trim()); }
+    catch {
+      const el = document.createElement("textarea");
+      el.value = text.trim();
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button onClick={handle} title={label} style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:4, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, fontWeight:700, letterSpacing:"0.06em", textTransform:"uppercase", border: copied ? "1px solid #00e5c0" : "1px solid rgba(0,184,154,0.2)", background: copied ? "rgba(0,229,192,0.1)" : "transparent", color: copied ? "#00e5c0" : "rgba(200,223,240,0.35)", transition:"all 0.15s", flexShrink:0, lineHeight:1 }}>
+      {copied ? "✓" : "⎘"} {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}

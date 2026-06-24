@@ -501,6 +501,41 @@ function buildMDMBlock(mdm, extras = {}) {
   ];
   if (mdm.mdm_confidence) lines.push(`MDM Confidence: ${mdm.mdm_confidence}${mdm.mdm_confidence_note ? ' — ' + mdm.mdm_confidence_note : ''}`);
   if (mdm.working_diagnosis) lines.push(`\nWorking Diagnosis: ${mdm.working_diagnosis}`);
+
+  // ── New schema: initial_impression ──
+  const imp = mdm.initial_impression;
+  if (imp) {
+    lines.push("");
+    lines.push("INITIAL IMPRESSION:");
+    if (imp.working_dx_line)     lines.push(`  ${imp.working_dx_line}`);
+    if (imp.clinical_rationale)  lines.push(`\n  ${imp.clinical_rationale}`);
+    if (imp.cannot_exclude?.length) {
+      lines.push("\n  Cannot Exclude:");
+      imp.cannot_exclude.forEach(s => lines.push(`    • ${s}`));
+    }
+    if (imp.differentials?.length) {
+      lines.push("\n  Differentials (ranked):");
+      imp.differentials.forEach(d => lines.push(`    ${d.rank}. ${d.diagnosis} — ${d.rationale}`));
+    }
+  }
+
+  // ── New schema: initial_management ──
+  const mgmt = mdm.initial_management;
+  if (mgmt) {
+    lines.push("");
+    lines.push("INITIAL MANAGEMENT:");
+    if (mgmt.immediate_interventions?.length) {
+      lines.push("  Immediate Interventions:");
+      mgmt.immediate_interventions.forEach(a => lines.push(`    • ${a}`));
+    }
+    if (mgmt.diagnostics?.length) {
+      lines.push("  Diagnostics:");
+      mgmt.diagnostics.forEach(d => lines.push(`    • ${d.test}: ${d.rationale}`));
+    }
+    if (mgmt.pending_data_summary) lines.push(`\n  ${mgmt.pending_data_summary}`);
+  }
+
+  // ── Legacy flat fields (backward compat) ──
   if (mdm.differential?.length) {
     lines.push("\nDIFFERENTIAL DIAGNOSIS:");
     mdm.differential.forEach((d, i) => {
@@ -511,29 +546,22 @@ function buildMDMBlock(mdm, extras = {}) {
       if (d.against)             lines.push(`     Against: ${d.against}`);
     });
   }
-  if (mdm.red_flags?.length)
-    lines.push(`\nRed Flags: ${mdm.red_flags.join("; ")}`);
   if (mdm.critical_actions?.length) {
     lines.push("\nCRITICAL ACTIONS (Do Now):");
     mdm.critical_actions.forEach((a, i) => lines.push(`  ${i+1}. ${a}`));
-  }
-  if (mdm.treatment_recommendations?.length) {
-    lines.push("\nTREATMENT RECOMMENDATIONS:");
-    mdm.treatment_recommendations.forEach((t, i) => {
-      lines.push(`  ${i+1}. [${t.evidence_level}] ${t.intervention}`);
-      lines.push(`     Indication: ${t.indication}`);
-      if (t.guideline_ref) lines.push(`     Ref: ${t.guideline_ref}`);
-      if (t.notes) lines.push(`     Note: ${t.notes}`);
-    });
   }
   if (mdm.recommended_actions?.length) {
     lines.push("\nRECOMMENDED ACTIONS (This Visit):");
     mdm.recommended_actions.forEach((a, i) => lines.push(`  ${i+1}. ${a}`));
   }
-  if (mdm.data_reviewed) lines.push(`\nData Reviewed: ${mdm.data_reviewed}`);
-  if (mdm.risk_rationale)  lines.push(`Risk Rationale: ${mdm.risk_rationale}`);
+  if (mdm.risk_rationale)  lines.push(`\nRisk Rationale: ${mdm.risk_rationale}`);
   if (mdm.mdm_narrative)   lines.push(`\nMDM NARRATIVE:\n${mdm.mdm_narrative}`);
   if (mdm.acep_policy_ref) lines.push(`\nACEP Policy: ${mdm.acep_policy_ref}`);
+
+  // ── Treatment plan extras ──
+  if (extras.treatmentPlan) lines.push(`\nTREATMENT PLAN:\n${extras.treatmentPlan}`);
+  if (extras.actionPlan)    lines.push(`\nACTION ITEMS:\n${extras.actionPlan}`);
+
   return lines.join("\n");
 }
 

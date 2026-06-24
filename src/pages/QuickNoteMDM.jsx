@@ -4,7 +4,6 @@
 // Exports: DifferentialCard, QuickDDxCard, MDMResult
 
 import { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
 import { CC_HUB_MAP } from "./QuickNoteData";
 import GuidelineSuggestionStrip from "@/components/notes/GuidelineSuggestionStrip";
 
@@ -866,7 +865,7 @@ export function TreatmentDisplay({ result }) {
   if (!result) return null;
   const hasData = result.triage_acuity || result.triage_rationale ||
     result.immediate_interventions?.length || result.medications?.length ||
-    result.diagnostics_ref?.length || result.monitoring_safety?.length;
+    result.monitoring_safety?.length;
   if (!hasData) return null;
 
   const MONO = "'JetBrains Mono',monospace";
@@ -880,17 +879,6 @@ export function TreatmentDisplay({ result }) {
     "Non-Urgent":  "rgba(200,223,240,0.5)",
   };
   const acuityColor = ACUITY_COLOR[result.triage_acuity] || "rgba(200,223,240,0.5)";
-
-  const BulletList = ({ items }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      {(items || []).map((item, i) => (
-        <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", listStyle: "none" }}>
-          <span style={{ fontFamily: MONO, fontSize: 13, color: "#00b89a", flexShrink: 0 }}>–</span>
-          <span style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", lineHeight: 1.5 }}>{item}</span>
-        </div>
-      ))}
-    </div>
-  );
 
   return (
     <div style={{
@@ -913,7 +901,7 @@ export function TreatmentDisplay({ result }) {
             if (t.triage_acuity || t.triage_rationale) { lines.push("TRIAGE AND ACUITY:"); lines.push(t.triage_rationale || t.triage_acuity); lines.push(""); }
             if (t.immediate_interventions?.length) { lines.push("IMMEDIATE INTERVENTIONS:"); t.immediate_interventions.forEach(i => lines.push("- " + i)); lines.push(""); }
             if (t.medications?.length) { lines.push("MEDICATIONS:"); t.medications.forEach(m => { if (m.is_note) { lines.push("- Note: " + m.agent); } else { const c = m.caveats?.length ? " (" + m.caveats.join("; ") + ")" : ""; lines.push("- " + m.category + ": " + m.agent + " " + m.dosing + c); } }); lines.push(""); }
-            if (t.diagnostics_ref?.length) { lines.push("DIAGNOSTICS (see MDM):"); t.diagnostics_ref.forEach(d => lines.push("- " + d)); lines.push(""); }
+
             if (t.monitoring_safety?.length) { lines.push("MONITORING AND SAFETY:"); t.monitoring_safety.forEach(m => lines.push("- " + m)); lines.push(""); }
             if (t.attestation_required) lines.push("AI-generated recommendations. Physician attestation and clinical correlation required.");
             return lines.join("\n");
@@ -981,21 +969,21 @@ export function TreatmentDisplay({ result }) {
                         ⚠ {cav}
                       </div>
                     ))}
+                    {(m.guideline_source || m.recommendation_class) && (
+                      <div style={{ fontSize:11, color:"rgba(200,223,240,0.4)", fontStyle:"italic", marginTop:2 }}>
+                        {m.guideline_source && <span>{m.guideline_source}</span>}
+                        {m.recommendation_class && (
+                          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:"#f5c842", border:"1px solid rgba(245,200,66,0.25)", borderRadius:3, padding:"1px 5px", marginLeft:6 }}>
+                            {m.recommendation_class}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Diagnostics Ref */}
-      {result.diagnostics_ref?.length > 0 && (
-        <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginTop: 14, marginBottom: 8 }}>
-            Diagnostics (see MDM)
-          </div>
-          <BulletList items={result.diagnostics_ref} />
         </div>
       )}
 

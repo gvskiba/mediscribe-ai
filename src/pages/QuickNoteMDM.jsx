@@ -727,7 +727,7 @@ export function InitialImpressionDisplay({ result }) {
   const imp  = result.initial_impression  || {};
   const mgmt = result.initial_management  || {};
   const hasImp  = imp.working_dx_line || imp.clinical_rationale || imp.cannot_exclude?.length || imp.differentials?.length;
-  const hasMgmt = mgmt.immediate_interventions?.length || mgmt.diagnostics?.length || mgmt.pending_data_summary;
+  const hasMgmt = mgmt.diagnostics?.length || mgmt.pending_data_summary;
   if (!hasImp && !hasMgmt) return null;
 
   const MONO = "'JetBrains Mono',monospace";
@@ -762,7 +762,6 @@ export function InitialImpressionDisplay({ result }) {
                 if (imp.differentials?.length) { lines.push("Differentials (ranked):"); imp.differentials.forEach(d => lines.push(d.rank + ". " + d.diagnosis)); }
                 lines.push("");
                 lines.push("INITIAL MANAGEMENT");
-                if (mgmt.immediate_interventions?.length) lines.push("Immediate interventions: " + mgmt.immediate_interventions.join(". ") + ".");
                 if (mgmt.diagnostics?.length) { lines.push("Diagnostics:"); mgmt.diagnostics.forEach(d => lines.push("- " + d.test + ": " + d.rationale)); }
                 if (mgmt.pending_data_summary) lines.push("Pending data: " + mgmt.pending_data_summary);
                 return lines.join("\n");
@@ -830,13 +829,6 @@ export function InitialImpressionDisplay({ result }) {
           <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 12 }}>
             Initial Management
           </div>
-
-          {mgmt.immediate_interventions?.length > 0 && (
-            <div style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", lineHeight: 1.6, marginBottom: 10 }}>
-              <span style={{ fontWeight: 700, color: "#a8d4f0" }}>Immediate interventions: </span>
-              {mgmt.immediate_interventions.join(". ")}
-            </div>
-          )}
 
           {mgmt.diagnostics?.length > 0 && (
             <div style={{ marginBottom: 10 }}>

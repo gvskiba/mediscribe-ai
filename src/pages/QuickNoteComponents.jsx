@@ -5,6 +5,7 @@
 //           ClinicalCalcsCard, DiagnosisCodingCard, InterventionsCard
 
 import { useState, useEffect, useRef } from "react";
+import { PLAN_CATEGORIES } from "@/pages/QuickNotePrompts";
 import { CCPicker, TemplatePicker } from "./QuickNotePickers";
 import { SmartFillBar } from "./QuickNoteSmartFill";
 import { MedsAllergyZone } from "./QuickNoteMeds";
@@ -195,6 +196,122 @@ export function InputZone({ label, value, onChange, placeholder, rows, phase, re
         placeholder={placeholder}
         onKeyDown={handleKeyDown}
       />
+    </div>
+  );
+}
+
+// ─── CLINICAL PLAN SELECTOR ───────────────────────────────────────────────────
+export function ClinicalPlanSelector({ selectedIds, onChange, onCopy, onClose, copied }) {
+  const totalCount = PLAN_CATEGORIES.reduce((sum, cat) => sum + cat.items.length, 0);
+  const selectedCount = selectedIds ? selectedIds.size : 0;
+
+  const toggle = (id) => {
+    const next = new Set(selectedIds || []);
+    next.has(id) ? next.delete(id) : next.add(id);
+    onChange(next);
+  };
+
+  const selectAll = () => {
+    const next = new Set();
+    PLAN_CATEGORIES.forEach(cat => cat.items.forEach(item => next.add(item.id)));
+    onChange(next);
+  };
+
+  const selectNone = () => onChange(new Set());
+
+  const toggleCategory = (cat) => {
+    const allSelected = cat.items.every(item => selectedIds && selectedIds.has(item.id));
+    const next = new Set(selectedIds || []);
+    if (allSelected) {
+      cat.items.forEach(item => next.delete(item.id));
+    } else {
+      cat.items.forEach(item => next.add(item.id));
+    }
+    onChange(next);
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, zIndex: 9000, background: "rgba(3,8,16,0.8)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center" }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ background: "#081628", border: "1px solid rgba(0,184,154,0.25)", borderRadius: 12, width: 540, maxWidth: "96vw", maxHeight: "88vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}
+      >
+        {/* Header */}
+        <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid rgba(0,184,154,0.12)", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, fontWeight: 700, color: "#00e5c0" }}>Clinical Plan</span>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(200,223,240,0.4)", fontSize: 18, lineHeight: 1, padding: 0 }}>✕</button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: selectedCount > 0 ? "#00e5c0" : "rgba(200,223,240,0.3)" }}>
+              {selectedCount} / {totalCount} items selected
+            </span>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[["All", selectAll], ["None", selectNone]].map(([label, action]) => (
+                <button key={label} onClick={action} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, fontWeight: 700, textTransform: "uppercase", border: "1px solid rgba(0,184,154,0.25)", background: "transparent", color: "rgba(200,223,240,0.45)", borderRadius: 4, padding: "3px 10px", cursor: "pointer" }}>{label}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{ overflowY: "auto", padding: "12px 20px", flex: 1 }}>
+          {PLAN_CATEGORIES.map(cat => {
+            const allSel = cat.items.every(item => selectedIds && selectedIds.has(item.id));
+            const someSel = !allSel && cat.items.some(item => selectedIds && selectedIds.has(item.id));
+            const catStatus = allSel ? { label: "✓ All", color: "#00e5c0" } : someSel ? { label: "partial", color: "rgba(200,223,240,0.3)" } : { label: "none", color: "rgba(200,223,240,0.2)" };
+            return (
+              <div key={cat.id} style={{ marginBottom: 14 }}>
+                <div onClick={() => toggleCategory(cat)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", marginBottom: 6 }}>
+                  <span style={{ fontSize: 13 }}>{cat.icon}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: "rgba(200,223,240,0.5)", flex: 1 }}>{cat.label}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: catStatus.color }}>{catStatus.label}</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
+                  {cat.items.map(item => {
+                    const sel = selectedIds && selectedIds.has(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => toggle(item.id)}
+                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 5, cursor: "pointer", transition: "all 0.1s", border: sel ? "1px solid rgba(0,229,192,0.35)" : "1px solid rgba(0,184,154,0.08)", background: sel ? "rgba(0,229,192,0.07)" : "rgba(11,30,54,0.3)" }}
+                      >
+                        <div style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: sel ? "1px solid #00e5c0" : "1px solid rgba(200,223,240,0.2)", background: sel ? "#00e5c0" : "transparent" }}>
+                          {sel && <span style={{ color: "#081628", fontSize: 9, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                        </div>
+                        <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11.5, color: sel ? "#c8dff0" : "rgba(200,223,240,0.45)", lineHeight: 1.3 }}>{item.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "12px 20px", borderTop: "1px solid rgba(0,184,154,0.12)", display: "flex", gap: 10, flexShrink: 0, alignItems: "center" }}>
+          <button onClick={onClose} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, textTransform: "uppercase", border: "1px solid rgba(200,223,240,0.15)", background: "transparent", color: "rgba(200,223,240,0.4)", padding: "9px 18px", borderRadius: 6, cursor: "pointer" }}>
+            Cancel
+          </button>
+          <button
+            onClick={onCopy}
+            disabled={selectedCount === 0}
+            style={{ flex: 1, fontFamily: "'JetBrains Mono',monospace", fontSize: 12, fontWeight: 700, textTransform: "uppercase", border: copied ? "1px solid rgba(0,229,192,0.8)" : "1px solid rgba(0,229,192,0.5)", background: copied ? "rgba(0,229,192,0.18)" : "rgba(0,229,192,0.1)", color: "#00e5c0", padding: "9px 18px", borderRadius: 6, cursor: selectedCount === 0 ? "not-allowed" : "pointer", opacity: selectedCount === 0 ? 0.4 : 1, transition: "all 0.15s" }}
+          >
+            {copied ? "✓ Copied to Clipboard" : `Copy Note (${selectedCount} plan items)`}
+          </button>
+          <button
+            onClick={() => { onChange(null); onCopy(); }}
+            style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, textTransform: "uppercase", border: "1px solid rgba(0,184,154,0.2)", background: "transparent", color: "rgba(0,229,192,0.5)", padding: "9px 14px", borderRadius: 6, cursor: "pointer" }}
+          >
+            Skip Plan
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

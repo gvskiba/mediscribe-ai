@@ -13,7 +13,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard,
-         DifferentialCard, ClinicalCalcsCard } from "./QuickNoteComponents";
+         DifferentialCard, ClinicalCalcsCard, InlineCopyBtn } from "./QuickNoteComponents";
 import { InitialImpressionDisplay, TreatmentDisplay } from "./QuickNoteMDM";
 import { PMH_CATS, PMH_CAT_ICONS, PMH_PRI_STYLE, PMH_MDM_HIGH, PMH_MDM_MOD, computePMHMDM, PMHTab } from "./QuickNotePatientHx";
 import { usePMHConditionInjector } from "@/components/MDMBuilderPMHBridge";

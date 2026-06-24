@@ -5,6 +5,7 @@
 
 import React, { useState } from "react";
 import { RecentLabsPanel } from "./QuickNoteRecentLabs";
+import { InlineCopyBtn } from "./QuickNoteComponents";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const TEXTAREA = {
@@ -298,7 +299,10 @@ export function Phase2Panel({
       <div style={{ marginBottom:12 }}>
         {/* Labs label row */}
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, flexWrap:"wrap" }}>
-          <span style={{ ...LABEL, flex:1 }}>Laboratory Results</span>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1, marginBottom:0 }}>
+            <span style={{ ...LABEL }}>Laboratory Results</span>
+            <InlineCopyBtn getValue={() => labs} label="Copy Labs" />
+          </div>
 
           {/* v11.4: AI Lab Recommendations button */}
           {mdmResult && (
@@ -357,7 +361,10 @@ export function Phase2Panel({
       {/* ── Imaging ──────────────────────────────────────────────────────── */}
       <div style={{ marginBottom:12 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, flexWrap:"wrap" }}>
-          <span style={{ ...LABEL, flex:1 }}>Imaging Results</span>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1, marginBottom:0 }}>
+            <span style={{ ...LABEL }}>Imaging Results</span>
+            <InlineCopyBtn getValue={() => imaging} label="Copy Imaging" />
+          </div>
 
           {/* v11.4: AI Imaging Recommendations button */}
           {mdmResult && (

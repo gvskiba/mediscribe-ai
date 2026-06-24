@@ -10,7 +10,7 @@
 //   6. HPI word + character counter
 
 import React, { useState, useCallback, useRef } from "react";
-import { InputZone, QuickDDxCard } from "./QuickNoteComponents";
+import { InputZone, QuickDDxCard, InlineCopyBtn } from "./QuickNoteComponents";
 import { MedsAllergyZone } from "./QuickNoteMedsAllergy";
 import MedTermHighlighter from "@/components/MedTermHighlighter";
 import ExamShortcuts from "@/components/quicknote/ExamShortcuts";
@@ -155,9 +155,12 @@ export function Phase1Panel({
 
         {/* ── v11.2: HPI label row with word/char counter ── */}
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-            fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
-            textTransform:"uppercase" }}>HPI</span>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
+              textTransform:"uppercase" }}>HPI</span>
+            <InlineCopyBtn getValue={() => hpi} label="Copy HPI" />
+          </div>
           {hpiCharCount > 0 && (
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
               color: hpiWordCount >= 10 ? "rgba(0,229,192,.55)" : "rgba(107,158,200,.45)",
@@ -426,9 +429,12 @@ export function Phase1Panel({
           onKeyDown={makeKeyDown(3, false, runMDM)} />
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
-              textTransform:"uppercase" }}>Physical Exam</span>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1 }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+                fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
+                textTransform:"uppercase" }}>Physical Exam</span>
+              <InlineCopyBtn getValue={() => exam} label="Copy Exam" />
+            </div>
             <VoiceDictationButton
               fieldLabel="Physical Exam"
               compact

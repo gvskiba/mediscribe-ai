@@ -1608,7 +1608,52 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                   color:workupRationaleBusy?"var(--qn-txt4)":"var(--qn-gold)",letterSpacing:.4,transition:"all .15s"}}>
                 {workupRationaleBusy?"● …":"✦ Workup Rationale"}
               </button>
-              <button onClick={()=>{navigator.clipboard.writeText(buildMDMBlock(mdmResult,{treatmentPlan,actionPlan})).then(()=>{setCopiedMDMFull(true);setTimeout(()=>setCopiedMDMFull(false),2000);});}}
+              <button onClick={async ()=>{
+                const D = "─".repeat(60);
+                const parts = [];
+                const ts = new Date().toLocaleString();
+                parts.push("MEDICAL DECISION MAKING — " + ts);
+                parts.push(D);
+                const imp = mdmResult?.initial_impression || {};
+                const mgmt = mdmResult?.initial_management || {};
+                if (imp.working_dx_line) {
+                  parts.push("INITIAL IMPRESSION");
+                  parts.push("Working diagnosis: " + imp.working_dx_line);
+                  if (imp.clinical_rationale) parts.push(imp.clinical_rationale);
+                  (imp.cannot_exclude || []).forEach(s => parts.push(s));
+                  if (imp.differentials?.length) {
+                    parts.push("Differentials (ranked):");
+                    imp.differentials.forEach(d => parts.push(d.rank + ". " + d.diagnosis));
+                  }
+                  parts.push("");
+                }
+                if (mgmt.immediate_interventions?.length || mgmt.diagnostics?.length || mgmt.pending_data_summary) {
+                  parts.push("INITIAL MANAGEMENT");
+                  if (mgmt.immediate_interventions?.length) parts.push("Immediate interventions: " + mgmt.immediate_interventions.join(". ") + ".");
+                  if (mgmt.diagnostics?.length) { parts.push("Diagnostics:"); mgmt.diagnostics.forEach(d => parts.push("- " + d.test + ": " + d.rationale)); }
+                  if (mgmt.pending_data_summary) parts.push("Pending data: " + mgmt.pending_data_summary);
+                  parts.push("");
+                }
+                const t = treatmentResult || null;
+                if (t) {
+                  if (t.triage_acuity || t.triage_rationale) { parts.push("TRIAGE AND ACUITY:"); parts.push(t.triage_rationale || t.triage_acuity); parts.push(""); }
+                  if (t.immediate_interventions?.length) { parts.push("IMMEDIATE INTERVENTIONS:"); t.immediate_interventions.forEach(i => parts.push("- " + i)); parts.push(""); }
+                  if (t.medications?.length) { parts.push("MEDICATIONS:"); t.medications.forEach(m => { if (m.is_note) { parts.push("- Note: " + m.agent); } else { const c = m.caveats?.length ? " (" + m.caveats.join("; ") + ")" : ""; parts.push("- " + m.category + ": " + m.agent + " " + m.dosing + c); } }); parts.push(""); }
+                  if (t.diagnostics_ref?.length) { parts.push("DIAGNOSTICS (see MDM):"); t.diagnostics_ref.forEach(d => parts.push("- " + d)); parts.push(""); }
+                  if (t.monitoring_safety?.length) { parts.push("MONITORING AND SAFETY:"); t.monitoring_safety.forEach(m => parts.push("- " + m)); parts.push(""); }
+                  if (t.attestation_required) { parts.push("AI-generated recommendations. Physician attestation and clinical correlation required."); parts.push(""); }
+                }
+                parts.push(D);
+                parts.push("MDM COMPLEXITY");
+                if (mdmResult?.mdm_label) parts.push("Level: " + mdmResult.mdm_label + (mdmResult.mdm_level ? " (" + mdmResult.mdm_level + ")" : ""));
+                if (mdmResult?.problem_complexity) parts.push("Problem Complexity: " + mdmResult.problem_complexity);
+                if (mdmResult?.data_complexity)    parts.push("Data Complexity: " + mdmResult.data_complexity);
+                if (mdmResult?.risk_tier)          parts.push("Risk: " + mdmResult.risk_tier);
+                if (mdmResult?.mdm_confidence)     parts.push("MDM Confidence: " + mdmResult.mdm_confidence + (mdmResult.mdm_confidence_note ? " — " + mdmResult.mdm_confidence_note : ""));
+                const text = parts.filter(p => p !== null && p !== undefined).join("\n");
+                await navigator.clipboard.writeText(text);
+                setCopiedMDMFull(true); setTimeout(()=>setCopiedMDMFull(false),2000);
+              }}
                 style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
                   border:`1px solid ${copiedMDMFull?"rgba(61,255,160,.5)":"rgba(0,229,192,.35)"}`,
                   background:copiedMDMFull?"rgba(61,255,160,.1)":"rgba(0,229,192,.07)",

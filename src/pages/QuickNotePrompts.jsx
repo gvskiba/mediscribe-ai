@@ -27,8 +27,9 @@ export const MDM_SCHEMA = {
     },
     initial_management: {
       type: "object",
-      required: ["diagnostics","pending_data_summary"],
+      required: ["immediate_interventions","diagnostics","pending_data_summary"],
       properties: {
+        immediate_interventions: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 6 },
         diagnostics: { type: "array", minItems: 1, maxItems: 10, items: { type: "object", required: ["test","rationale"], properties: { test: { type: "string" }, rationale: { type: "string" } } } },
         pending_data_summary: { type: "string" },
       },
@@ -160,62 +161,58 @@ Respond ONLY in valid JSON. No markdown fences.`;
 
 export const TREATMENT_SCHEMA = {
   type: "object",
-  required: ["triage_acuity","triage_rationale","immediate_interventions","medications","monitoring_safety","acep_guideline","attestation_required"],
+  required: ["triage_acuity","triage_rationale","immediate_interventions","medications","diagnostics_ref","monitoring_safety","attestation_required"],
   properties: {
     triage_acuity: { type: "string" },
     triage_rationale: { type: "string" },
     immediate_interventions: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 6 },
-    medications: { type: "array", minItems: 0, maxItems: 10, items: { type: "object", required: ["category","agent","dosing","indication"], properties: { category: { type: "string" }, agent: { type: "string" }, dosing: { type: "string" }, indication: { type: "string" }, caveats: { type: "array", items: { type: "string" } }, is_note: { type: "boolean" }, guideline_source: { type: "string" }, recommendation_class: { type: "string" } } } },
+    medications: { type: "array", minItems: 0, maxItems: 10, items: { type: "object", required: ["category","agent","dosing","indication"], properties: { category: { type: "string" }, agent: { type: "string" }, dosing: { type: "string" }, indication: { type: "string" }, caveats: { type: "array", items: { type: "string" } }, is_note: { type: "boolean" } } } },
+    diagnostics_ref: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 8 },
     monitoring_safety: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 6 },
-    acep_guideline: { type: "object", required: ["society","policy_name","key_recommendation"], properties: { society: { type: "string" }, policy_name: { type: "string" }, year: { type: "string" }, key_recommendation: { type: "string" }, evidence_level: { type: "string" }, url_or_citation: { type: "string" } } },
     attestation_required: { type: "boolean" },
   },
 };
 
 export function buildTreatmentPrompt(cc, vitals, hpi, ros, exam, mdmResult) {
-  const workingDx = mdmResult?.initial_impression?.working_dx_line || mdmResult?.working_diagnosis || "not provided";
-  const differentials = mdmResult?.initial_impression?.differentials?.map(d => d.rank + ". " + d.diagnosis).join("; ") || "not provided";
+  const workingDx = mdmResult?.initial_impression?.working_dx_line || mdmResult?.working_diagnosis || "unknown";
+  const differentials = mdmResult?.initial_impression?.differentials?.map(d => d.diagnosis).join(", ") || "not provided";
   const cannotExclude = mdmResult?.initial_impression?.cannot_exclude?.join(" ") || "";
-  const orderedDiagnostics = mdmResult?.initial_management?.diagnostics?.map(d => d.test).join(", ") || "see MDM diagnostics section";
-  const riskTier = mdmResult?.risk_tier || "";
-  const mdmLabel = mdmResult?.mdm_label || "";
+  const immediateInterventions = mdmResult?.initial_management?.immediate_interventions?.join(", ") || "not provided";
+  const diagnostics = mdmResult?.initial_management?.diagnostics?.map(d => d.test).join(", ") || "not provided";
 
   return `${SYS_BIAS}
 
-You are a board-certified emergency physician generating the TREATMENT section of an ED note. Diagnostics are already in the MDM section — do NOT re-list them here.
+You are a board-certified emergency physician generating the TREATMENT section of an ED note.
 
 PATIENT DATA:
 Chief Complaint: ${cc || "not provided"}
 Triage Vitals: ${vitals || "not provided"}
 HPI: ${hpi || "not provided"}
-ROS: ${ros || "not provided"}
-Exam: ${exam || "not provided"}
+Review of Systems: ${ros || "not provided"}
+Physical Exam: ${exam || "not provided"}
 
-FROM MDM (already documented — do not duplicate):
+WORKING FROM MDM:
 Working Diagnosis: ${workingDx}
 Differentials: ${differentials}
 Cannot Exclude: ${cannotExclude}
-MDM Level: ${mdmLabel} | Risk: ${riskTier}
-Diagnostics Ordered (in MDM, do not re-list): ${orderedDiagnostics}
+MDM Immediate Interventions: ${immediateInterventions}
+MDM Diagnostics: ${diagnostics}
 
-GENERATE:
+Produce exactly five subsections:
 
-triage_acuity: ESI level "Emergent"|"Urgent"|"Less Urgent"|"Non-Urgent". Base on highest-risk differential, not most likely.
-triage_rationale: One sentence: "[Acuity] — [justification citing specific high-risk differentials]."
+TRIAGE AND ACUITY: triage_acuity = ESI label ("Emergent"|"Urgent"|"Less Urgent"|"Non-Urgent"). triage_rationale = one sentence: "[Acuity] — [clinical justification citing key surgical or emergent differentials]."
 
-immediate_interventions: 1–5 BEDSIDE ORDERS ONLY. Strict rules: NO medications here (go in Medications section). NO labs or imaging (already in MDM). YES: IV access, cardiac monitoring, pulse oximetry, NPO, positioning, O2 delivery, foley. Examples: "Establish IV access x2 large bore", "Continuous cardiac and pulse oximetry monitoring", "NPO — surgical differential present".
+IMMEDIATE INTERVENTIONS: immediate_interventions = array of 1–5 concise bedside orders (no medications). Always include IV access and monitoring. Add NPO only if surgical differential present.
 
-medications: Each item needs: category (drug class), agent (specific name, OR for alternatives), dosing (dose/route/frequency), indication (one clause), caveats (REQUIRED when cannot-exclude diagnoses create contraindications, renal dosing needed, or drug interactions present), is_note (true for advisory lines not drug orders), guideline_source (cite the specific ACEP/IDSA/AHA/society policy — format: "[Society] [Policy Name] ([Year])"), recommendation_class (ACEP Level A/B/C or ACC/AHA Class I/IIa/IIb/III).
+MEDICATIONS: medications array. Each item: category (drug class label), agent (specific drug name, use OR for alternatives), dosing (dose/route/frequency), indication (one clause), caveats (array of safety warnings, especially when cannot-exclude diagnoses create medication contraindications), is_note (true for advisory lines not actual drug orders). Always flag any medication class that should be withheld until workup complete.
 
-monitoring_safety: 2–5 items: vital sign interval, hemodynamic escalation trigger, specialty consult threshold, pain reassessment timing, any additional parameters.
+DIAGNOSTICS REF: diagnostics_ref = restate the test list from MDM (max 8). Include conditional escalation items (e.g. CT if US non-diagnostic). Do not add new diagnostics.
 
-acep_guideline: The PRIMARY society guideline governing management of this chief complaint. society: "ACEP" preferred; use other society if no ACEP policy exists. policy_name: full official name. year: most recent. key_recommendation: ONE sentence — the specific recommendation driving this treatment plan. evidence_level: ACEP Level A/B/C or Class I-III.
-
-ACEP policy examples: Chest pain/ACS → "ACEP Clinical Policy: Evaluation and Management of Suspected ACS". Headache → "ACEP Clinical Policy: Critical Issues in Headache". Syncope → "ACEP Clinical Policy: Syncope". Head injury → "ACEP Clinical Policy: Mild TBI". Skin infection → IDSA SSTI Guidelines. Stroke → AHA/ASA Acute Ischemic Stroke. If no ACEP policy, use most relevant subspecialty society.
+MONITORING AND SAFETY: monitoring_safety = 2–5 items: vital sign reassessment interval, hemodynamic escalation trigger, specialty consult threshold (triggered by specific finding), any other monitoring parameters.
 
 attestation_required: always true.
 
-Rules: Do NOT re-list diagnostics. Immediate interventions = bedside orders only, no meds, no tests. Every medication must have guideline_source. Caveats mandatory when cannot-exclude creates safety concern.
+Clinical rules: triage acuity reflects highest-risk differential, not most likely Dx. All meds contextualized to cannot-exclude diagnoses.
 
 Respond ONLY in valid JSON. No markdown fences.`;
 }
@@ -224,30 +221,38 @@ export function formatTreatmentForCopy(treatmentResult) {
   if (!treatmentResult) return "";
   const t = treatmentResult;
   const lines = [];
-  if (t.acep_guideline?.society) {
-    const g = t.acep_guideline;
-    lines.push("GUIDELINE: " + g.society + " -- " + g.policy_name + (g.year ? " (" + g.year + ")" : ""));
-    if (g.key_recommendation) lines.push("Key recommendation: " + g.key_recommendation);
-    if (g.evidence_level) lines.push("Evidence level: " + g.evidence_level);
+  if (t.triage_acuity || t.triage_rationale) {
+    lines.push("TRIAGE AND ACUITY:");
+    lines.push(t.triage_rationale || t.triage_acuity);
     lines.push("");
   }
-  if (t.triage_acuity || t.triage_rationale) { lines.push("TRIAGE AND ACUITY:"); lines.push(t.triage_rationale || t.triage_acuity); lines.push(""); }
-  if (t.immediate_interventions?.length) { lines.push("IMMEDIATE INTERVENTIONS:"); t.immediate_interventions.forEach(i => lines.push("- " + i)); lines.push(""); }
+  if (t.immediate_interventions?.length) {
+    lines.push("IMMEDIATE INTERVENTIONS:");
+    t.immediate_interventions.forEach(i => lines.push("- " + i));
+    lines.push("");
+  }
   if (t.medications?.length) {
     lines.push("MEDICATIONS:");
     t.medications.forEach(m => {
       if (m.is_note) { lines.push("- Note: " + m.agent); }
       else {
         const cavStr = m.caveats?.length ? " (" + m.caveats.join("; ") + ")" : "";
-        const glStr  = m.guideline_source ? " [" + m.guideline_source + "]" : "";
-        const rcStr  = m.recommendation_class ? " " + m.recommendation_class : "";
-        lines.push("- " + m.category + ": " + m.agent + " " + m.dosing + cavStr + glStr + rcStr);
+        lines.push("- " + m.category + ": " + m.agent + " " + m.dosing + cavStr);
       }
     });
     lines.push("");
   }
-  if (t.monitoring_safety?.length) { lines.push("MONITORING AND SAFETY:"); t.monitoring_safety.forEach(m => lines.push("- " + m)); lines.push(""); }
-  if (t.attestation_required) lines.push("AI-generated recommendations. Physician attestation and clinical correlation required.");
+  if (t.diagnostics_ref?.length) {
+    lines.push("DIAGNOSTICS (see MDM):");
+    t.diagnostics_ref.forEach(d => lines.push("- " + d));
+    lines.push("");
+  }
+  if (t.monitoring_safety?.length) {
+    lines.push("MONITORING AND SAFETY:");
+    t.monitoring_safety.forEach(m => lines.push("- " + m));
+    lines.push("");
+  }
+  lines.push("AI-generated recommendations. Physician attestation and clinical correlation required.");
   return lines.join("\n");
 }
 

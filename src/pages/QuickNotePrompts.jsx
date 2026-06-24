@@ -256,6 +256,96 @@ export function formatTreatmentForCopy(treatmentResult) {
   return lines.join("\n");
 }
 
+export const ED_MEDICATIONS_SCHEMA = {
+  type: "object",
+  required: ["indication","safety_context","recommended_agents","alternative_agents","interactions_contraindications","monitoring","guideline_sources"],
+  properties: {
+    indication: { type: "string" },
+    safety_context: { type: "object", required: ["note","flags"], properties: { note: { type: "string" }, flags: { type: "array", items: { type: "object", required: ["system","finding","clinical_implication"], properties: { system: { type: "string" }, finding: { type: "string" }, clinical_implication: { type: "string" }, severity: { type: "string" } } } } } },
+    recommended_agents: { type: "array", minItems: 1, maxItems: 4, items: { type: "object", required: ["label","agent","dose","route","frequency","duration"], properties: { label: { type: "string" }, agent: { type: "string" }, dose: { type: "string" }, route: { type: "string" }, frequency: { type: "string" }, duration: { type: "string" }, notes: { type: "string" }, renal_note: { type: "string" }, guideline_source: { type: "string" } } } },
+    alternative_agents: { type: "array", minItems: 0, maxItems: 4, items: { type: "object", required: ["label","agent","dose","route","frequency","duration"], properties: { label: { type: "string" }, agent: { type: "string" }, dose: { type: "string" }, route: { type: "string" }, frequency: { type: "string" }, duration: { type: "string" }, notes: { type: "string" }, caution: { type: "string" }, guideline_source: { type: "string" } } } },
+    interactions_contraindications: { type: "array", items: { type: "object", required: ["agent","interaction_or_contraindication","severity","action"], properties: { agent: { type: "string" }, interaction_or_contraindication: { type: "string" }, severity: { type: "string" }, action: { type: "string" } } } },
+    monitoring: { type: "array", minItems: 1, items: { type: "object", required: ["parameter","interval","rationale"], properties: { parameter: { type: "string" }, interval: { type: "string" }, rationale: { type: "string" } } } },
+    guideline_sources: { type: "array", minItems: 1, items: { type: "object", required: ["source","title"], properties: { source: { type: "string" }, title: { type: "string" }, year: { type: "string" }, citation: { type: "string" } } } },
+  },
+};
+
+export function buildEDMedicationsPrompt(cc, hpi, exam, mdmResult, labSummaryResult, treatmentResult, parsedMeds, parsedAllergies, pmh) {
+  const workingDx = mdmResult?.initial_impression?.working_dx_line || mdmResult?.working_diagnosis || "not provided";
+  const differentials = mdmResult?.initial_impression?.differentials?.map(d => d.rank + ". " + d.diagnosis).join("; ") || "not provided";
+  const abnormalLabs = labSummaryResult?.panels?.flatMap(p => p.results.filter(r => r.direction && r.direction !== "normal"))?.map(r => r.test + ": " + r.value + " (" + r.direction + ") -- " + r.interpretation)?.join("; ") || "none";
+  const criticalFlags = labSummaryResult?.critical_flags?.length ? labSummaryResult.critical_flags.map(f => "CRITICAL: " + f.test + " " + f.value).join("; ") : "None";
+  const medsCtx = parsedMeds?.length ? parsedMeds.map(m => m.name || m).join(", ") : "not provided";
+  const allergyCtx = parsedAllergies?.length ? parsedAllergies.map(a => a.name || a).join(", ") : "none documented";
+  const treatmentMeds = treatmentResult?.medications?.filter(m => !m.is_note)?.map(m => m.agent).join(", ") || "none";
+
+  return `${SYS_BIAS}
+
+You are a board-certified emergency physician generating the ED MEDICATIONS section. This is a full clinical pharmacology block — indication, safety context, recommended and alternative agents with complete dosing, interactions, monitoring, and guideline citations tailored to this specific patient.
+
+PATIENT PROFILE:
+Chief Complaint: ${cc || "not provided"}
+Working Diagnosis: ${workingDx}
+Differentials: ${differentials}
+PMH: ${pmh || "not provided"}
+Current Medications: ${medsCtx}
+Allergies: ${allergyCtx}
+
+LAB SAFETY CONTEXT:
+Abnormal Labs: ${abnormalLabs}
+Critical Flags: ${criticalFlags}
+
+Already in Treatment section (do not duplicate): ${treatmentMeds}
+
+indication: One phrase — the primary clinical indication. e.g. "Left lower leg cellulitis with wound drainage"
+
+safety_context.note: "Full medication recommendations require confirmation of current active medications, allergies, weight, and hepatic function."
+safety_context.flags: Patient-specific safety flags from lab data and PMH. Required: Renal flag if GFR <60 (include specific GFR and which drug classes need adjustment). Required: Electrolyte flag if any abnormal electrolytes that could be affected by medications. Each flag: system, finding (specific value), clinical_implication, severity (Critical/Moderate/Mild/Informational).
+
+recommended_agents: 1-3 first-line agents based on IDSA/ACEP/society guidelines AND this patient's safety profile. Each: label (indication label with guideline class), agent (generic name), dose, route, frequency, duration, notes (clinical adjustments), renal_note (REQUIRED if GFR <60 — specific GFR-based dosing adjustment), guideline_source (specific citation: "[Society] [Policy Name] ([Year])").
+
+alternative_agents: 1-2 alternatives for allergy, MRSA concern, or intolerance. Each: label (state why this is the alternative), agent, dose, route, frequency, duration, notes, caution (REQUIRED patient-specific warning based on THIS patient's labs — e.g. "TMP-SMX can raise potassium; monitor closely given K+ 5.4").
+
+interactions_contraindications: For EACH agent, evaluate against allergies, current meds, and lab abnormalities. Only include if an actual concern exists. Each: agent, interaction_or_contraindication (specific), severity (Absolute contraindication/Relative contraindication/Caution/Monitor), action (specific guidance). Never leave empty if patient has renal impairment or electrolyte abnormalities.
+
+monitoring: 2-4 parameters. Each: parameter (what), interval (specific timeframe), rationale (why for THIS patient). Always include renal monitoring if GFR <60 and electrolyte monitoring if agents affect potassium.
+
+guideline_sources: 2-4 real, current (2020+) sources. Include: primary society guideline (IDSA/ACEP/AHA), clinical reference (UpToDate/Lexicomp for renal dosing). Each: source, title (full name), year, citation (journal if applicable).
+
+Rules: All agents must be appropriate for this patient's GFR. All alternatives must have patient-specific caution. Interactions must be specific to this patient. Monitoring intervals must be specific.
+
+Respond ONLY in valid JSON. No markdown fences.`;
+}
+
+export function formatEDMedicationsForCopy(result) {
+  if (!result) return "";
+  const lines = [];
+  lines.push("ED MEDICATIONS");
+  lines.push("");
+  if (result.indication) lines.push("Indication: " + result.indication);
+  if (result.safety_context) {
+    if (result.safety_context.note) lines.push("Note: " + result.safety_context.note);
+    result.safety_context.flags?.forEach(f => lines.push(f.system + ": " + f.finding + " -- " + f.clinical_implication));
+  }
+  lines.push("");
+  result.recommended_agents?.forEach(a => {
+    lines.push(a.label + ":"); lines.push(a.agent + " | " + a.dose + " | " + a.route + " | " + a.frequency + " | " + a.duration);
+    if (a.notes) lines.push("(" + a.notes + ")");
+    if (a.renal_note) lines.push("Renal: " + a.renal_note);
+    lines.push("");
+  });
+  result.alternative_agents?.forEach(a => {
+    lines.push(a.label + ":"); lines.push(a.agent + " | " + a.dose + " | " + a.route + " | " + a.frequency + " | " + a.duration);
+    if (a.notes) lines.push("(" + a.notes + ")");
+    if (a.caution) lines.push("Caution: " + a.caution);
+    lines.push("");
+  });
+  if (result.interactions_contraindications?.length) { lines.push("Interactions/Contraindications:"); result.interactions_contraindications.forEach(ic => lines.push(ic.agent + ": " + ic.interaction_or_contraindication + " [" + ic.severity + "] -- " + ic.action)); lines.push(""); }
+  if (result.monitoring?.length) { lines.push("Monitoring:"); result.monitoring.forEach(m => lines.push("- " + m.parameter + ": " + m.interval + " -- " + m.rationale)); lines.push(""); }
+  if (result.guideline_sources?.length) { lines.push("Guideline Source:"); result.guideline_sources.forEach(g => lines.push(g.source + " -- " + g.title + (g.year ? " (" + g.year + ")" : "") + (g.citation ? "; " + g.citation : ""))); }
+  return lines.join("\n");
+}
+
 // ─── LAB SUMMARY ─────────────────────────────────────────────────────────────
 export const LAB_SUMMARY_SCHEMA = {
   type: "object",

@@ -11,6 +11,35 @@ import GuidelineSuggestionStrip from "@/components/notes/GuidelineSuggestionStri
 // ─── LOCAL HELPERS ───────────────────────────────────────────────────────────
 const s = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
 
+async function copyText(text, setCopied) {
+  try {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  } catch {
+    const el = document.createElement("textarea");
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    document.body.removeChild(el);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+}
+
+function SectionCopyBtn({ buildText, label = "Copy" }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { const text = typeof buildText === "function" ? buildText() : buildText; copyText(text, setCopied); }}
+      style={{ padding: "3px 10px", borderRadius: 4, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", border: copied ? "1px solid #00e5c0" : "1px solid rgba(0,184,154,0.25)", background: copied ? "rgba(0,229,192,0.12)" : "transparent", color: copied ? "#00e5c0" : "rgba(200,223,240,0.4)", transition: "all 0.15s", flexShrink: 0 }}
+    >
+      {copied ? "✓ Copied" : label}
+    </button>
+  );
+}
+
 function mdmLevelColor(level) {
   const l = (level || '').toLowerCase();
   if (l.includes('high'))            return '#ff4444';
@@ -642,8 +671,29 @@ export function InitialImpressionDisplay({ result }) {
       {/* ── INITIAL IMPRESSION ── */}
       {hasImp && (
         <div>
-          <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 12 }}>
-            Initial Impression
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 0 }}>
+              Initial Impression
+            </div>
+            <SectionCopyBtn
+              label="Copy Section"
+              buildText={() => {
+                const imp  = result?.initial_impression  || {};
+                const mgmt = result?.initial_management  || {};
+                const lines = [];
+                lines.push("INITIAL IMPRESSION");
+                if (imp.working_dx_line) lines.push("Working diagnosis: " + imp.working_dx_line);
+                if (imp.clinical_rationale) lines.push(imp.clinical_rationale);
+                (imp.cannot_exclude || []).forEach(s => lines.push(s));
+                if (imp.differentials?.length) { lines.push("Differentials (ranked):"); imp.differentials.forEach(d => lines.push(d.rank + ". " + d.diagnosis)); }
+                lines.push("");
+                lines.push("INITIAL MANAGEMENT");
+                if (mgmt.immediate_interventions?.length) lines.push("Immediate interventions: " + mgmt.immediate_interventions.join(". ") + ".");
+                if (mgmt.diagnostics?.length) { lines.push("Diagnostics:"); mgmt.diagnostics.forEach(d => lines.push("- " + d.test + ": " + d.rationale)); }
+                if (mgmt.pending_data_summary) lines.push("Pending data: " + mgmt.pending_data_summary);
+                return lines.join("\n");
+              }}
+            />
           </div>
 
           {imp.working_dx_line && (
@@ -784,8 +834,25 @@ export function TreatmentDisplay({ result }) {
       padding: "18px 20px",
       marginTop: 10,
     }}>
-      <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 12 }}>
-        Treatment
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 0 }}>
+          Treatment
+        </div>
+        <SectionCopyBtn
+          label="Copy Section"
+          buildText={() => {
+            const t = result;
+            if (!t) return "";
+            const lines = [];
+            if (t.triage_acuity || t.triage_rationale) { lines.push("TRIAGE AND ACUITY:"); lines.push(t.triage_rationale || t.triage_acuity); lines.push(""); }
+            if (t.immediate_interventions?.length) { lines.push("IMMEDIATE INTERVENTIONS:"); t.immediate_interventions.forEach(i => lines.push("- " + i)); lines.push(""); }
+            if (t.medications?.length) { lines.push("MEDICATIONS:"); t.medications.forEach(m => { if (m.is_note) { lines.push("- Note: " + m.agent); } else { const c = m.caveats?.length ? " (" + m.caveats.join("; ") + ")" : ""; lines.push("- " + m.category + ": " + m.agent + " " + m.dosing + c); } }); lines.push(""); }
+            if (t.diagnostics_ref?.length) { lines.push("DIAGNOSTICS (see MDM):"); t.diagnostics_ref.forEach(d => lines.push("- " + d)); lines.push(""); }
+            if (t.monitoring_safety?.length) { lines.push("MONITORING AND SAFETY:"); t.monitoring_safety.forEach(m => lines.push("- " + m)); lines.push(""); }
+            if (t.attestation_required) lines.push("AI-generated recommendations. Physician attestation and clinical correlation required.");
+            return lines.join("\n");
+          }}
+        />
       </div>
 
       {/* Triage and Acuity */}

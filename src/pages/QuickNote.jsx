@@ -44,6 +44,7 @@ import {
   LAB_SUMMARY_SCHEMA, buildLabSummaryPrompt, formatLabSummaryForCopy,
   FINAL_IMPRESSION_SCHEMA, buildFinalImpressionPrompt, formatFinalImpressionForCopy,
   ED_MEDICATIONS_SCHEMA, buildEDMedicationsPrompt, formatEDMedicationsForCopy,
+  IMAGING_ANALYSIS_SCHEMA, buildImagingAnalysisPrompt,
 } from "./QuickNotePrompts";
 import { LabSummaryDisplay, FinalImpressionDisplay, EDMedicationsDisplay } from "./QuickNoteDisposition";
 import { detectCriticalValues, getExpectedOPQRST, serializeSlot, deserializeSlot } from "./QuickNoteHelpers";
@@ -214,6 +215,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [finalImpressionLoading, setFinalImpressionLoading] = useState(false);
   const [edMedsResult,   setEdMedsResult]   = useState(null);
   const [edMedsLoading,  setEdMedsLoading]  = useState(false);
+  const [imagingAnalysisResult, setImagingAnalysisResult] = useState(null);
   const [copiedEdMeds,   setCopiedEdMeds]   = useState(false);
   const [confirmedRanks, setConfirmedRanks] = useState(new Set());
   const [rejectedRanks,  setRejectedRanks]  = useState(new Set());
@@ -294,6 +296,46 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const fieldRefs    = useRef([]);
   const setRef       = useCallback((idx) => (ref) => { fieldRefs.current[idx] = ref; }, []);
   const advanceFocus = useCallback((idx) => { fieldRefs.current[idx+1]?.current?.focus(); }, []);
+  const labsAnalyzeTimer    = useRef(null);
+  const imagingAnalyzeTimer = useRef(null);
+  const [labsAutoAnalyzing,    setLabsAutoAnalyzing]    = useState(false);
+  const [imagingAutoAnalyzing, setImagingAutoAnalyzing] = useState(false);
+
+  const handleLabsChange = useCallback((val) => {
+    setLabs(val);
+    if (labsAnalyzeTimer.current) clearTimeout(labsAnalyzeTimer.current);
+    if (val.trim().length > 30) {
+      setLabsAutoAnalyzing(true);
+      labsAnalyzeTimer.current = setTimeout(async () => {
+        try {
+          const res = await base44.integrations.Core.InvokeLLM({
+            prompt: buildLabSummaryPrompt(val, cc, mdmResult, parsedMeds, parsedAllergies),
+            response_json_schema: LAB_SUMMARY_SCHEMA,
+          });
+          setLabSummaryResult(res);
+        } catch (e) { console.error("Auto lab analysis failed:", e); }
+        finally { setLabsAutoAnalyzing(false); }
+      }, 1800);
+    }
+  }, [cc, mdmResult, parsedMeds, parsedAllergies]);
+
+  const handleImagingChange = useCallback((val) => {
+    setImaging(val);
+    if (imagingAnalyzeTimer.current) clearTimeout(imagingAnalyzeTimer.current);
+    if (val.trim().length > 30) {
+      setImagingAutoAnalyzing(true);
+      imagingAnalyzeTimer.current = setTimeout(async () => {
+        try {
+          const res = await base44.integrations.Core.InvokeLLM({
+            prompt: buildImagingAnalysisPrompt(val, cc, mdmResult, labSummaryResult),
+            response_json_schema: IMAGING_ANALYSIS_SCHEMA,
+          });
+          setImagingAnalysisResult(res);
+        } catch (e) { console.error("Auto imaging analysis failed:", e); }
+        finally { setImagingAutoAnalyzing(false); }
+      }, 1800);
+    }
+  }, [cc, mdmResult, labSummaryResult]);
 
   const runMDM = useCallback(async () => {
     if (!phase1Ready || p1Busy) return;
@@ -1000,6 +1042,9 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setLabSummaryResult(null); setLabSummaryLoading(false);
     setFinalImpressionResult(null); setFinalImpressionLoading(false);
     setEdMedsResult(null); setEdMedsLoading(false); setCopiedEdMeds(false);
+    if (labsAnalyzeTimer.current) clearTimeout(labsAnalyzeTimer.current);
+    if (imagingAnalyzeTimer.current) clearTimeout(imagingAnalyzeTimer.current);
+    setLabsAutoAnalyzing(false); setImagingAutoAnalyzing(false);
     setConfirmedRanks(new Set()); setRejectedRanks(new Set());
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
@@ -1867,7 +1912,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
 
         {p2Open&&(
           <Phase2Panel
-            labs={labs} setLabs={setLabs} imaging={imaging} setImaging={setImaging}
+            labs={labs} setLabs={handleLabsChange} imaging={imaging} setImaging={handleImagingChange}
             ekg={ekg} setEkg={setEkg} newVitals={newVitals} setNewVitals={setNewVitals}
             p2Busy={p2Busy} p1Busy={p1Busy} p2Error={p2Error}
             phase2Ready={phase2Ready} mdmResult={mdmResult} dispResult={dispResult}
@@ -1912,7 +1957,27 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
             Interpreting labs...
           </div>
         )}
+        {labsAutoAnalyzing && (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"#00b89a", letterSpacing:"0.06em", marginLeft:6 }}>
+            ● ANALYZING
+          </span>
+        )}
+        {labSummaryResult && !labsAutoAnalyzing && (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(0,229,192,0.5)", letterSpacing:"0.06em", marginLeft:6 }}>
+            ✓ ANALYZED
+          </span>
+        )}
         {labSummaryResult && <LabSummaryDisplay result={labSummaryResult} />}
+        {imagingAutoAnalyzing && (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"#00b89a", letterSpacing:"0.06em", marginLeft:6 }}>
+            ● ANALYZING
+          </span>
+        )}
+        {imagingAnalysisResult && !imagingAutoAnalyzing && (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(0,229,192,0.5)", letterSpacing:"0.06em", marginLeft:6 }}>
+            ✓ ANALYZED
+          </span>
+        )}
 
         <div style={{ marginTop: 12 }}>
           <button

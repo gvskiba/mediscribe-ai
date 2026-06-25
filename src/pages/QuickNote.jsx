@@ -13,7 +13,8 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard,
-         DifferentialCard, ClinicalCalcsCard, InlineCopyBtn } from "./QuickNoteComponents";
+         DifferentialCard, ClinicalCalcsCard, InlineCopyBtn,
+         CCPicker } from "./QuickNoteComponents";
 import { InitialImpressionDisplay, TreatmentDisplay } from "./QuickNoteMDM";
 import { PMH_CATS, PMH_CAT_ICONS, PMH_PRI_STYLE, PMH_MDM_HIGH, PMH_MDM_MOD, computePMHMDM, PMHTab } from "./QuickNotePatientHx";
 import { usePMHConditionInjector } from "@/components/MDMBuilderPMHBridge";
@@ -294,6 +295,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [patientMeds,      setPatientMeds]      = useState([]);
   const [patientAllergies, setPatientAllergies] = useState([]);
   const [pmhMDMData,       setPmhMDMData]       = useState(null);
+  const [showCCPicker,     setShowCCPicker]     = useState(false);
 
   // ── Patient-context awareness (patientId URL param) ──────────────────────
   const [patientRecord,    setPatientRecord]    = useState(null);
@@ -1112,6 +1114,24 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     clearTimeout(undoTimer); setShowUndo(false); setUndoData(null);
   }, [undoData,undoTimer]);
 
+  const handleCCSelect = useCallback((ccLabel, hpiText, rosText, examText) => {
+    setCC(ccLabel);
+    if (hpiText) setHpi(hpiText);
+    if (rosText) setRos(rosText);
+    if (examText) setExam(examText);
+  }, []);
+
+  useEffect(() => {
+    const handleCtrlT = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "t") {
+        e.preventDefault();
+        setShowCCPicker(true);
+      }
+    };
+    document.addEventListener("keydown", handleCtrlT);
+    return () => document.removeEventListener("keydown", handleCtrlT);
+  }, []);
+
   const makeKeyDown = useCallback((idx,isLast,onEnterSubmit)=>(e)=>{
     if (e.key==="Tab"&&!e.shiftKey) { e.preventDefault(); if (!isLast) advanceFocus(idx); }
     if ((e.metaKey||e.ctrlKey)&&e.key==="Enter") { e.preventDefault(); if (onEnterSubmit) onEnterSubmit(); }
@@ -1621,6 +1641,14 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         {addendumMode&&<AddendumBanner addendumRef={addendumRef} />}
         <PriorVisitsPanel visits={priorVisits} loading={priorVisitsLoading} onLoad={loadPriorVisits} />
         {(vitals.trim().length>10||labs.trim().length>5)&&<SepsisBanner vitalsText={vitals} labsText={labs} />}
+
+        <CCPicker
+          isOpen={showCCPicker}
+          onClose={() => setShowCCPicker(false)}
+          onSelect={handleCCSelect}
+          patientAge={slots[activeSlot]?.patientAge || demo?.age}
+          patientAgeUnit="year"
+        />
 
         <EncounterPicker onSelect={handleEncounterImport} />
 

@@ -153,6 +153,13 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     interventions:[], hpiSummary:null, hpiMode:"original",
     encounterType:"adult", p2Open:false,
     patientName:"", patientAge:"", savedNoteId:null, lastActivity:Date.now(),
+    treatmentResult:null, labSummaryResult:null, imagingAnalysisResult:null,
+    edMedsResult:null, finalImpressionResult:null,
+    confirmedRanks:null, rejectedRanks:null, selectedGuideline:null,
+    treatmentLoading:false, labSummaryLoading:false, imagingAnalysisLoading:false,
+    edMedsLoading:false, finalImpressionLoading:false, dispLoading:false,
+    copiedPhase1:false, copiedImaging:false, copiedEdMeds:false,
+    copiedFinal:false, showPlanSelector:false,
   });
   const [slots,      setSlots]      = useState(() => [EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT()]);
   const [activeSlot, setActiveSlot] = useState(0);
@@ -191,6 +198,14 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       setMedsRaw(slot.medsRaw||""); setAllergiesRaw(slot.allergiesRaw||"");
       setParsedMeds(slot.parsedMeds||[]); setParsedAllergies(slot.parsedAllergies||[]);
       setMdmResult(slot.mdmResult||null); setDispResult(slot.dispResult||null);
+      if (typeof setTreatmentResult === "function") setTreatmentResult(slot.treatmentResult || null);
+      if (typeof setLabSummaryResult === "function") setLabSummaryResult(slot.labSummaryResult || null);
+      if (typeof setImagingAnalysisResult === "function") setImagingAnalysisResult(slot.imagingAnalysisResult || null);
+      if (typeof setEdMedsResult === "function") setEdMedsResult(slot.edMedsResult || null);
+      if (typeof setFinalImpressionResult === "function") setFinalImpressionResult(slot.finalImpressionResult || null);
+      if (typeof setConfirmedRanks === "function") setConfirmedRanks(slot.confirmedRanks instanceof Set ? slot.confirmedRanks : new Set());
+      if (typeof setRejectedRanks === "function") setRejectedRanks(slot.rejectedRanks instanceof Set ? slot.rejectedRanks : new Set());
+      // setSelectedGuideline not declared in this file — skipped
       setIcdSelected(slot.icdSelected||[]); setIcdSuggestions([]);
       setInterventions(slot.interventions||[]);
       setHpiSummary(slot.hpiSummary||null); setHpiMode(slot.hpiMode||"original");
@@ -1274,7 +1289,9 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       mdmResult,dispResult,icdSelected,interventions,
       hpiSummary,hpiMode,encounterType,p2Open,
       patientName:[demo?.firstName,demo?.lastName].filter(Boolean).join(" "),
-      patientAge:demo?.age||"",lastActivity:Date.now()};
+      patientAge:demo?.age||"",lastActivity:Date.now(),
+      treatmentResult,labSummaryResult,imagingAnalysisResult,
+      edMedsResult,finalImpressionResult,confirmedRanks,rejectedRanks};
   });
 
   // localStorage auto-save

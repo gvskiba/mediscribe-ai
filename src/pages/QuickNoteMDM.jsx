@@ -741,6 +741,101 @@ export function InitialImpressionDisplay({ result }) {
       padding: "18px 20px",
     }}>
 
+      {/* ── VITAL SIGNS ANALYSIS ── */}
+      {imp.vital_analysis && (imp.vital_analysis.summary || imp.vital_analysis.abnormalities?.length > 0) && (
+        <div style={{ background:"rgba(11,30,54,0.5)", border:"1px solid rgba(0,184,154,0.15)", borderRadius:8, padding:"12px 14px", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:"rgba(200,223,240,0.45)", letterSpacing:"0.09em", textTransform:"uppercase" }}>
+              Vital Signs Analysis
+            </span>
+            {imp.vital_analysis.overall_stability && (
+              <span style={{
+                fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+                padding:"2px 8px", borderRadius:3, letterSpacing:"0.07em", textTransform:"uppercase",
+                border: imp.vital_analysis.overall_stability === "Critical" ? "1px solid #ff4d4f"
+                     : imp.vital_analysis.overall_stability === "Unstable" ? "1px solid #ff7a45"
+                     : imp.vital_analysis.overall_stability === "Borderline stable" ? "1px solid #f5c842"
+                     : "1px solid rgba(0,229,192,0.35)",
+                color: imp.vital_analysis.overall_stability === "Critical" ? "#ff4d4f"
+                     : imp.vital_analysis.overall_stability === "Unstable" ? "#ff7a45"
+                     : imp.vital_analysis.overall_stability === "Borderline stable" ? "#f5c842"
+                     : "#00e5c0",
+              }}>
+                {imp.vital_analysis.overall_stability}
+              </span>
+            )}
+          </div>
+          {imp.vital_analysis.summary && (
+            <p style={{ fontSize:13, color:"#c8dff0", lineHeight:1.6, marginBottom: imp.vital_analysis.abnormalities?.length ? 10 : 0 }}>
+              {imp.vital_analysis.summary}
+            </p>
+          )}
+          {imp.vital_analysis.abnormalities?.map((a, i) => (
+            <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:4 }}>
+              <span style={{
+                fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+                padding:"1px 6px", borderRadius:3, flexShrink:0, letterSpacing:"0.06em", textTransform:"uppercase",
+                border: a.severity === "Critical" ? "1px solid #ff4d4f"
+                     : a.severity === "Concerning" ? "1px solid #f5a623"
+                     : a.severity === "Mild" ? "1px solid #f5c842"
+                     : "1px solid rgba(200,223,240,0.2)",
+                color: a.severity === "Critical" ? "#ff4d4f"
+                     : a.severity === "Concerning" ? "#f5a623"
+                     : a.severity === "Mild" ? "#f5c842"
+                     : "rgba(200,223,240,0.45)",
+              }}>
+                {a.vital}
+              </span>
+              <span style={{ fontSize:12.5, color:"#c8dff0" }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:"#a8d4f0", fontWeight:600 }}>{a.value}</span>
+                {a.interpretation && <span style={{ color:"rgba(200,223,240,0.6)", marginLeft:6 }}>— {a.interpretation}</span>}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── HPI SYNTHESIS ── */}
+      {imp.hpi_synthesis && Object.values(imp.hpi_synthesis).some(v => v) && (
+        <div style={{ background:"rgba(11,30,54,0.5)", border:"1px solid rgba(0,184,154,0.15)", borderRadius:8, padding:"12px 14px", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:"rgba(200,223,240,0.45)", letterSpacing:"0.09em", textTransform:"uppercase" }}>
+              HPI Synthesis
+            </span>
+            {imp.hpi_synthesis.clinical_concern_level && (
+              <span style={{
+                fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+                padding:"2px 8px", borderRadius:3, letterSpacing:"0.07em", textTransform:"uppercase",
+                border: imp.hpi_synthesis.clinical_concern_level === "High" ? "1px solid #ff4d4f"
+                     : imp.hpi_synthesis.clinical_concern_level === "Moderate" ? "1px solid #f5c842"
+                     : "1px solid rgba(0,184,154,0.35)",
+                color: imp.hpi_synthesis.clinical_concern_level === "High" ? "#ff4d4f"
+                     : imp.hpi_synthesis.clinical_concern_level === "Moderate" ? "#f5c842"
+                     : "#00b89a",
+              }}>
+                {imp.hpi_synthesis.clinical_concern_level} Concern
+              </span>
+            )}
+          </div>
+          {[
+            { key:"onset_and_timeline",    label:"Onset & Timeline" },
+            { key:"character_and_severity",label:"Character & Severity" },
+            { key:"associated_symptoms",   label:"Associated Symptoms" },
+            { key:"modifying_factors",     label:"Modifying Factors" },
+            { key:"pertinent_negatives",   label:"Pertinent Negatives" },
+          ].map(row => imp.hpi_synthesis[row.key] ? (
+            <div key={row.key} style={{ display:"flex", gap:10, marginBottom:6, alignItems:"flex-start" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:"rgba(200,223,240,0.4)", letterSpacing:"0.06em", textTransform:"uppercase", minWidth:130, flexShrink:0, paddingTop:2 }}>
+                {row.label}
+              </span>
+              <span style={{ fontSize:12.5, color:"#c8dff0", lineHeight:1.5, flex:1 }}>
+                {imp.hpi_synthesis[row.key]}
+              </span>
+            </div>
+          ) : null)}
+        </div>
+      )}
+
       {/* ── INITIAL IMPRESSION ── */}
       {hasImp && (
         <div>

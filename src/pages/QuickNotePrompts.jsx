@@ -17,8 +17,27 @@ export const MDM_SCHEMA = {
     working_diagnosis: { type: "string" },
     initial_impression: {
       type: "object",
-      required: ["working_dx_line","clinical_rationale","cannot_exclude","differentials"],
+      required: ["vital_analysis","hpi_synthesis","working_dx_line","clinical_rationale","cannot_exclude","differentials"],
       properties: {
+        vital_analysis: {
+          type: "object",
+          properties: {
+            summary: { type: "string" },
+            abnormalities: { type: "array", items: { type: "object", properties: { vital: { type: "string" }, value: { type: "string" }, interpretation: { type: "string" }, severity: { type: "string" } } } },
+            overall_stability: { type: "string" }
+          }
+        },
+        hpi_synthesis: {
+          type: "object",
+          properties: {
+            onset_and_timeline: { type: "string" },
+            character_and_severity: { type: "string" },
+            associated_symptoms: { type: "string" },
+            modifying_factors: { type: "string" },
+            pertinent_negatives: { type: "string" },
+            clinical_concern_level: { type: "string" }
+          }
+        },
         working_dx_line: { type: "string" },
         clinical_rationale: { type: "string" },
         cannot_exclude: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 5 },
@@ -141,6 +160,19 @@ For mdm_narrative write a single clinically complete paragraph suitable for dire
 OUTPUT STRUCTURE — produce exactly two clinical sections:
 
 SECTION 1 — initial_impression:
+vital_analysis:
+  summary: 1-2 sentence synthesis of the vital signs as a whole. e.g. "Vitals demonstrate compensated tachycardia with low-grade fever, consistent with an inflammatory or infectious process."
+  abnormalities: For EACH abnormal vital sign: vital (name), value (actual value with units), interpretation (clinical meaning in this context), severity ("Critical" | "Concerning" | "Mild" | "Borderline"). Only include vitals that are abnormal or borderline. If all vitals are normal, return empty array.
+  overall_stability: "Stable" | "Borderline stable" | "Unstable" | "Critical"
+
+hpi_synthesis:
+  onset_and_timeline: Extract and synthesize onset, duration, and temporal progression from the HPI. Include exact timeframes when documented.
+  character_and_severity: Quality, character, and severity of the primary complaint with exact values (e.g. pain scale scores, severity descriptors).
+  associated_symptoms: Key associated symptoms from HPI and ROS that are clinically relevant to the differential.
+  modifying_factors: What makes it better or worse. Include positional, activity-related, or treatment-related factors documented in the HPI.
+  pertinent_negatives: Clinically important negatives from HPI and ROS that help narrow the differential — specifically those that argue against high-risk diagnoses.
+  clinical_concern_level: "High" | "Moderate" | "Low" — your overall clinical concern level based solely on HPI and vital signs, before considering exam findings.
+
 working_dx_line: concise label, format: "[Primary Dx] in the setting of [context]"
 clinical_rationale: 1–3 sentences using "consistent with" language
 cannot_exclude: array of sentences opening with "[Dx] cannot be excluded given [reason]." or "[Dx] must be ruled out in any [descriptor] presenting with [symptom]." Always include life threats and ectopic pregnancy for reproductive-age females with abdominal pain.

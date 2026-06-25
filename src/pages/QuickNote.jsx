@@ -1015,6 +1015,30 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setUndoTimer(t);
   }, [cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,parsedMeds,parsedAllergies,mdmResult,dispResult,activeSlot,clearSlotCache]);
 
+  const [confirmingSlot, setConfirmingSlot] = useState(null);
+
+  const resetSlot = useCallback((slotIndex) => {
+    if (slotIndex === activeSlot) {
+      setCC(""); setVitals(""); setHpi(""); setRos(""); setExam("");
+      setLabs(""); setImaging(""); setEkg("");
+      setParsedMeds([]); setParsedAllergies([]);
+      setMdmResult(null);
+      setTreatmentResult(null);
+      setLabSummaryResult(null);
+      setEdMedsResult(null);
+      setFinalImpressionResult(null);
+      setDispResult(null);
+      setConfirmedRanks(new Set());
+      setRejectedRanks(new Set());
+    }
+    setSlots(prev => {
+      const next = [...prev];
+      next[slotIndex] = EMPTY_SLOT();
+      return next;
+    });
+    clearSlotCache(slotIndex);
+  }, [activeSlot, clearSlotCache]);
+
   const handleUndo = useCallback(() => {
     if (undoData) {
       setCC(undoData.cc||""); setVitals(undoData.vitals||""); setHpi(undoData.hpi||"");
@@ -1410,6 +1434,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                 const etMap={adult:"ED",peds:"Peds",psych:"Psych",trauma:"Trauma",obs:"Obs"};
                 const etLabel=slot.encounterType&&slot.encounterType!=="adult"?etMap[slot.encounterType]||slot.encounterType:null;
                 const saveLabel=getSaveLabel(slotSaveTimes[i]);
+                const hasData = !!(slot.cc || slot.hpi || slot.vitals || slot.labs || slot.mdmResult);
                 return (
                   <button key={i} onClick={()=>switchToSlot(i)}
                     style={{flex:1,padding:"8px 10px",borderRadius:9,cursor:"pointer",textAlign:"left",transition:"all .15s",position:"relative",
@@ -1422,6 +1447,27 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
                       {isSaved&&<div style={{width:7,height:7,borderRadius:"50%",background:"var(--qn-green)",boxShadow:"0 0 5px rgba(61,255,160,.6)",flexShrink:0}} />}
                       {isActive&&!isSaved&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--qn-teal)",flexShrink:0,animation:"qnpulse 1.2s ease-in-out infinite"}} />}
                       {hasCacheId&&!isSaved&&<div style={{width:5,height:5,borderRadius:"50%",background:"rgba(59,158,255,.6)",flexShrink:0}} />}
+                      {hasData&&(
+                        <button
+                          onClick={e=>{
+                            e.stopPropagation();
+                            if (confirmingSlot===i) {
+                              setConfirmingSlot(null);
+                            } else {
+                              setConfirmingSlot(i);
+                              setTimeout(()=>{
+                                resetSlot(i);
+                                setConfirmingSlot(null);
+                              }, 1500);
+                            }
+                          }}
+                          title={`Reset Patient ${i+1}`}
+                          style={{width:14,height:14,borderRadius:"50%",display:"inline-flex",alignItems:"center",justifyContent:"center",
+                            fontSize:9,fontWeight:700,cursor:"pointer",border:"none",background:"transparent",padding:0,
+                            color:confirmingSlot===i?"#ff4d4f":"rgba(200,223,240,0.3)",flexShrink:0}}>
+                          {confirmingSlot===i?"?":"✕"}
+                        </button>
+                      )}
                     </div>
                     {isEmpty?(
                       <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"rgba(42,79,122,.5)",fontStyle:"italic"}}>Empty</div>

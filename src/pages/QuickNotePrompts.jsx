@@ -153,7 +153,7 @@ pending_data_summary: one sentence: "[results pending] will refine working diagn
 
 Also output: mdm_level (99281-99285), mdm_label, problem_complexity, data_complexity, risk_tier, acep_policy_ref, mdm_confidence (Strong|Borderline-up|Borderline-down), mdm_confidence_note.
 
-Clinical rules: always address life threats before anchoring. Use "cannot be excluded" not "ruled out" until definitive testing complete. For reproductive-age females with abdominal pain, ectopic must appear in cannot_exclude.
+Clinical rules: always address life threats before anchoring. Use "cannot be excluded" not "ruled out" until definitive testing complete. Ectopic pregnancy: include in cannot_exclude ONLY when ALL of the following are true: (1) patient is documented as female or sex is unknown, AND (2) chief complaint involves abdominal pain, pelvic pain, vaginal bleeding, or syncope, AND (3) patient age is consistent with reproductive age (approximately 12-55) or age is unknown. Do NOT include ectopic pregnancy for male patients, chest pain, neurologic complaints, extremity complaints, or any presentation where abdominal/pelvic pathology is not part of the differential.
 
 Respond ONLY in valid JSON. No markdown fences.`;
 }
@@ -204,7 +204,7 @@ TRIAGE AND ACUITY: triage_acuity = ESI label ("Emergent"|"Urgent"|"Less Urgent"|
 
 IMMEDIATE INTERVENTIONS: immediate_interventions = array of 1–5 concise bedside orders (no medications). Always include IV access and monitoring. Add NPO only if surgical differential present.
 
-MEDICATIONS: medications array. Each item: category (drug class label), agent (specific drug name, use OR for alternatives), dosing (dose/route/frequency), indication (one clause), caveats (array of safety warnings, especially when cannot-exclude diagnoses create medication contraindications), is_note (true for advisory lines not actual drug orders). Always flag any medication class that should be withheld until workup complete.
+MEDICATIONS: medications array. Each item: category (drug class label), agent (specific drug name, use OR for alternatives), dosing (dose/route/frequency), indication (one clause), caveats (array of safety warnings, especially when cannot-exclude diagnoses create medication contraindications), is_note (true for advisory lines not actual drug orders). Medication caveats for ectopic pregnancy: add ectopic-related caveats (e.g. withhold NSAIDs) ONLY when ectopic pregnancy is already listed in the MDM cannot_exclude list for this specific patient. Do not add ectopic caveats for patients where ectopic is not clinically relevant.
 
 DIAGNOSTICS REF: diagnostics_ref = restate the test list from MDM (max 8). Include conditional escalation items (e.g. CT if US non-diagnostic). Do not add new diagnostics.
 

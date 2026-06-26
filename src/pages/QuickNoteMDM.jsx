@@ -10,6 +10,70 @@ import GuidelineSuggestionStrip from "@/components/notes/GuidelineSuggestionStri
 // ─── LOCAL HELPERS ───────────────────────────────────────────────────────────
 const s = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
 
+function useEditableList(initialItems, toText) {
+  const [items, setItems] = useState(() => (initialItems||[]).map((item,i)=>({ id:i, text:toText?toText(item):(item||""), selected:true, editing:false })));
+  const prevRef = useRef(initialItems);
+  useEffect(() => {
+    if (JSON.stringify(initialItems) !== JSON.stringify(prevRef.current)) {
+      prevRef.current = initialItems;
+      setItems((initialItems||[]).map((item,i)=>({ id:i, text:toText?toText(item):(item||""), selected:true, editing:false })));
+    }
+  }, [initialItems]);
+  const toggle    = id => setItems(p => p.map(x => x.id===id?{...x,selected:!x.selected}:x));
+  const startEdit = id => setItems(p => p.map(x => x.id===id?{...x,editing:true}:x));
+  const saveEdit  = (id,val) => setItems(p => p.map(x => x.id===id?{...x,text:val,editing:false}:x));
+  const cancelEdit= id => setItems(p => p.map(x => x.id===id?{...x,editing:false}:x));
+  const remove    = id => setItems(p => p.filter(x => x.id!==id));
+  const addItem   = (text="") => { const newId=Date.now(); setItems(p=>[...p,{id:newId,text,selected:true,editing:!text}]); };
+  const selectAll = () => setItems(p => p.map(x=>({...x,selected:true})));
+  const selectNone= () => setItems(p => p.map(x=>({...x,selected:false})));
+  const checked   = items.filter(x => x.selected);
+  return { items, toggle, startEdit, saveEdit, cancelEdit, remove, addItem, selectAll, selectNone, checked };
+}
+
+function SubsectionList({ label, list, onAddLabel }) {
+  const [copiedSec, setCopiedSec] = useState(false);
+  const { items, toggle, startEdit, saveEdit, cancelEdit, remove, addItem, selectAll, selectNone, checked } = list;
+  const copySection = async () => {
+    const lines = [label.toUpperCase() + ":"]; checked.forEach(x => lines.push("- " + x.text));
+    try { await navigator.clipboard.writeText(lines.join("\n")); } catch {}
+    setCopiedSec(true); setTimeout(() => setCopiedSec(false), 2000);
+  };
+  const chk = (sel) => ({ width:14,height:14,borderRadius:3,flexShrink:0,marginTop:2,border:sel?"1px solid #00e5c0":"1px solid rgba(200,223,240,0.2)",background:sel?"#00e5c0":"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" });
+  return (
+    <div style={{ marginBottom:14 }}>
+      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6 }}>
+        <span style={{ fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:"rgba(200,223,240,0.45)",letterSpacing:"0.09em",textTransform:"uppercase" }}>{label}</span>
+        <div style={{ display:"flex",gap:4 }}>
+          <button onClick={selectAll}  style={{ padding:"2px 7px",borderRadius:3,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,border:"1px solid rgba(0,184,154,0.2)",background:"transparent",color:"rgba(200,223,240,0.35)",textTransform:"uppercase",letterSpacing:"0.05em" }}>All</button>
+          <button onClick={selectNone} style={{ padding:"2px 7px",borderRadius:3,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,border:"1px solid rgba(0,184,154,0.2)",background:"transparent",color:"rgba(200,223,240,0.35)",textTransform:"uppercase",letterSpacing:"0.05em" }}>None</button>
+          <button onClick={copySection} style={{ padding:"3px 9px",borderRadius:4,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:9.5,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",border:copiedSec?"1px solid #00e5c0":"1px solid rgba(0,184,154,0.25)",background:copiedSec?"rgba(0,229,192,0.12)":"transparent",color:copiedSec?"#00e5c0":"rgba(200,223,240,0.4)",transition:"all 0.15s" }}>
+            {copiedSec?"✓ Copied":"⎘ Copy"}
+          </button>
+        </div>
+      </div>
+      {items.map(item => (
+        <div key={item.id} style={{ display:"flex",gap:6,alignItems:"flex-start",padding:"6px 8px",borderRadius:6,marginBottom:4,background:item.selected?"rgba(0,184,154,0.05)":"rgba(11,30,54,0.3)",border:item.selected?"1px solid rgba(0,184,154,0.18)":"1px solid rgba(0,184,154,0.06)",transition:"all 0.1s" }}>
+          <div style={chk(item.selected)} onClick={()=>toggle(item.id)}>
+            {item.selected&&<span style={{ color:"#081628",fontSize:9,fontWeight:700 }}>✓</span>}
+          </div>
+          {item.editing
+            ? <input autoFocus defaultValue={item.text} onBlur={e=>saveEdit(item.id,e.target.value)} onKeyDown={e=>{if(e.key==="Enter")saveEdit(item.id,e.target.value);if(e.key==="Escape")cancelEdit(item.id);}} style={{ flex:1,background:"rgba(11,30,54,0.7)",border:"1px solid rgba(0,229,192,0.35)",borderRadius:4,color:"#c8dff0",fontFamily:"'DM Sans',sans-serif",fontSize:12.5,padding:"2px 7px",outline:"none" }} />
+            : <span onClick={()=>toggle(item.id)} onDoubleClick={()=>startEdit(item.id)} title="Click to select · Double-click to edit" style={{ flex:1,fontSize:12.5,color:item.selected?"#c8dff0":"rgba(200,223,240,0.4)",lineHeight:1.45,cursor:"pointer" }}>{item.text||<em style={{ opacity:0.4 }}>empty</em>}</span>
+          }
+          <div style={{ display:"flex",gap:3,flexShrink:0 }}>
+            {!item.editing&&<button onClick={()=>startEdit(item.id)} style={{ padding:"1px 5px",borderRadius:3,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:9,border:"1px solid rgba(200,223,240,0.15)",background:"transparent",color:"rgba(200,223,240,0.3)" }}>✎</button>}
+            <button onClick={()=>remove(item.id)} style={{ padding:"1px 5px",borderRadius:3,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:9,border:"1px solid rgba(255,77,79,0.2)",background:"transparent",color:"rgba(255,77,79,0.35)" }}>✕</button>
+          </div>
+        </div>
+      ))}
+      <button onClick={()=>addItem()} style={{ marginTop:4,padding:"5px 0",width:"100%",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:9.5,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",border:"1px dashed rgba(0,184,154,0.2)",background:"transparent",color:"rgba(0,229,192,0.45)" }}>
+        + {onAddLabel||"Add Item"}
+      </button>
+    </div>
+  );
+}
+
 async function copyText(text, setCopied) {
   try {
     await navigator.clipboard.writeText(text);
@@ -1080,10 +1144,8 @@ function InteractiveDifferentials({ differentials }) {
 export function InitialImpressionDisplay({ result }) {
   if (!result) return null;
   const imp  = result.initial_impression  || {};
-  const mgmt = result.initial_management  || {};
   const hasImp  = imp.working_dx_line || imp.clinical_rationale || imp.cannot_exclude?.length || imp.differentials?.length;
-  const hasMgmt = mgmt.diagnostics?.length || mgmt.pending_data_summary;
-  if (!hasImp && !hasMgmt) return null;
+  if (!hasImp) return null;
 
   const MONO = "'JetBrains Mono',monospace";
   const SANS = "'DM Sans',sans-serif";
@@ -1203,17 +1265,12 @@ export function InitialImpressionDisplay({ result }) {
               label="Copy Section"
               buildText={() => {
                 const imp  = result?.initial_impression  || {};
-                const mgmt = result?.initial_management  || {};
                 const lines = [];
                 lines.push("INITIAL IMPRESSION");
                 if (imp.working_dx_line) lines.push("Working diagnosis: " + imp.working_dx_line);
                 if (imp.clinical_rationale) lines.push(imp.clinical_rationale);
                 (imp.cannot_exclude || []).forEach(s => lines.push(s));
                 if (imp.differentials?.length) { lines.push("Differentials (ranked):"); imp.differentials.forEach(d => lines.push(d.rank + ". " + d.diagnosis)); }
-                lines.push("");
-                lines.push("INITIAL MANAGEMENT");
-                if (mgmt.diagnostics?.length) { lines.push("Diagnostics:"); mgmt.diagnostics.forEach(d => lines.push("- " + d.test + ": " + d.rationale)); }
-                if (mgmt.pending_data_summary) lines.push("Pending data: " + mgmt.pending_data_summary);
                 return lines.join("\n");
               }}
             />
@@ -1253,45 +1310,78 @@ export function InitialImpressionDisplay({ result }) {
         </div>
       )}
 
-      {/* ── Divider ── */}
-      {hasImp && hasMgmt && (
-        <div style={{ borderTop: "1px solid rgba(0,184,154,0.15)", margin: "16px 0" }} />
-      )}
+    </div>
+  );
+}
 
-      {/* ── INITIAL MANAGEMENT ── */}
-      {hasMgmt && (
-        <div>
-          <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 12 }}>
-            Initial Management
-          </div>
+// ─── ASSESSMENT & PLAN MANAGER ───────────────────────────────────────────────
+function AssessmentPlanManager({ triage, guideline, interventions, diagnostics, medications, monitoring, pendingSummary, attestation }) {
+  const ivList  = useEditableList(interventions);
+  const dxList  = useEditableList(diagnostics, d => d.test+(d.rationale?": "+d.rationale:""));
+  const monList = useEditableList(monitoring);
+  const [pending, setPending] = useState(pendingSummary||"");
+  const [copiedAll, setCopiedAll] = useState(false);
+  const DCOL = { "Emergent":"#ff4d4f","Urgent":"#f5c842","Less Urgent":"#00b89a","Non-Urgent":"rgba(200,223,240,0.5)" };
+  const dc = DCOL[triage?.acuity]||"#f5c842";
+  const div = { border:"none",borderTop:"1px solid rgba(0,184,154,0.1)",margin:"10px 0" };
 
-          {mgmt.diagnostics?.length > 0 && (
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginBottom: 6 }}>
-                Diagnostics
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                {mgmt.diagnostics.map((d, i) => (
-                  <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start" }}>
-                    <span style={{ fontFamily: MONO, fontSize: 12, color: "#00b89a", flexShrink: 0 }}>–</span>
-                    <span style={{ fontFamily: SANS, fontSize: 13 }}>
-                      <span style={{ fontWeight: 700, color: "#a8d4f0" }}>{d.test}</span>
-                      {d.rationale && <span style={{ color: "#c8dff0" }}>: {d.rationale}</span>}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+  const copyAll = async () => {
+    const L = [];
+    if (triage?.acuity||triage?.rationale) { L.push("TRIAGE: "+(triage.acuity||"")+(triage.rationale?" -- "+triage.rationale:"")); L.push(""); }
+    if (ivList.checked.length)  { L.push("IMMEDIATE INTERVENTIONS:"); ivList.checked.forEach(x=>L.push("- "+x.text)); L.push(""); }
+    if (dxList.checked.length)  { L.push("DIAGNOSTICS:"); dxList.checked.forEach(x=>L.push("- "+x.text)); L.push(""); }
+    if (monList.checked.length) { L.push("MONITORING AND SAFETY:"); monList.checked.forEach(x=>L.push("- "+x.text)); L.push(""); }
+    if (pending.trim()) { L.push("PENDING DATA: "+pending.trim()); L.push(""); }
+    if (guideline?.society) { L.push("Guideline: "+guideline.society+" -- "+guideline.policy_name+(guideline.year?" ("+guideline.year+")":"")); if(guideline.key_recommendation) L.push(guideline.key_recommendation); }
+    if (attestation) { L.push(""); L.push("AI-generated recommendations. Physician attestation and clinical correlation required."); }
+    try { await navigator.clipboard.writeText(L.join("\n")); } catch {}
+    setCopiedAll(true); setTimeout(()=>setCopiedAll(false),2000);
+  };
 
-          {mgmt.pending_data_summary && (
-            <div style={{ borderTop: "1px solid rgba(0,184,154,0.1)", paddingTop: 10, fontFamily: SANS, fontSize: 13, color: "rgba(200,223,240,0.6)", fontStyle: "italic" }}>
-              <span style={{ fontWeight: 700, color: "rgba(200,223,240,0.7)", fontStyle: "normal" }}>Pending data: </span>
-              {mgmt.pending_data_summary}
-            </div>
-          )}
+  return (
+    <div style={{ background:"rgba(11,30,54,0.55)",border:"1px solid rgba(0,184,154,0.18)",borderRadius:10,padding:"18px 20px",fontFamily:"'DM Sans',sans-serif",color:"#c8dff0",lineHeight:1.65,marginTop:10 }}>
+      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14 }}>
+        <p style={{ fontFamily:"'Playfair Display',serif",fontSize:11,fontWeight:700,letterSpacing:"0.13em",textTransform:"uppercase",color:"#00e5c0",margin:0 }}>Assessment & Plan</p>
+        <button onClick={copyAll} style={{ padding:"5px 14px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:"0.07em",textTransform:"uppercase",border:copiedAll?"1px solid #00e5c0":"1px solid rgba(0,184,154,0.3)",background:copiedAll?"rgba(0,229,192,0.12)":"rgba(0,184,154,0.06)",color:copiedAll?"#00e5c0":"rgba(200,223,240,0.5)",transition:"all 0.15s" }}>
+          {copiedAll?"✓ Copied":"⎘ Copy All"}
+        </button>
+      </div>
+
+      {(triage?.acuity||triage?.rationale) && (
+        <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap" }}>
+          {triage.acuity&&<span style={{ display:"inline-flex",alignItems:"center",padding:"3px 12px",borderRadius:5,border:"1px solid "+dc,color:dc,fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase" }}>{triage.acuity}</span>}
+          {triage.rationale&&<span style={{ fontSize:13,color:"#c8dff0",flex:1 }}>{triage.rationale}</span>}
         </div>
       )}
+
+      {guideline?.society && (
+        <div style={{ background:"rgba(0,184,154,0.06)",border:"1px solid rgba(0,184,154,0.25)",borderRadius:7,padding:"10px 12px",marginBottom:14 }}>
+          <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:4 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"#00b89a",letterSpacing:"0.08em",textTransform:"uppercase",border:"1px solid rgba(0,184,154,0.3)",borderRadius:3,padding:"1px 6px" }}>{guideline.society}</span>
+            <span style={{ fontSize:12.5,fontWeight:600,color:"#a8d4f0" }}>{guideline.policy_name}{guideline.year&&<span style={{ fontWeight:400,color:"rgba(200,223,240,0.4)",marginLeft:6 }}>({guideline.year})</span>}</span>
+            {guideline.evidence_level&&<span style={{ fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"#f5c842",border:"1px solid rgba(245,200,66,0.3)",borderRadius:3,padding:"1px 5px",marginLeft:"auto",flexShrink:0 }}>{guideline.evidence_level}</span>}
+          </div>
+          {guideline.key_recommendation&&<p style={{ fontSize:12,color:"rgba(200,223,240,0.6)",fontStyle:"italic",margin:0 }}>{guideline.key_recommendation}</p>}
+        </div>
+      )}
+
+      <hr style={div} />
+      <SubsectionList label="Immediate Interventions" list={ivList} onAddLabel="Add Intervention" />
+      <hr style={div} />
+      <SubsectionList label="Diagnostics" list={dxList} onAddLabel="Add Diagnostic" />
+      <hr style={div} />
+      <MedicationManager aiMedications={medications} />
+      <hr style={div} />
+      <SubsectionList label="Monitoring & Safety" list={monList} onAddLabel="Add Monitoring Item" />
+      <hr style={div} />
+
+      <div style={{ marginBottom:14 }}>
+        <div style={{ fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:"rgba(200,223,240,0.45)",letterSpacing:"0.09em",textTransform:"uppercase",marginBottom:6 }}>Pending Data</div>
+        <textarea value={pending} onChange={e=>setPending(e.target.value)} rows={2} placeholder="Results pending and next steps..."
+          style={{ width:"100%",boxSizing:"border-box",background:"rgba(11,30,54,0.6)",border:"1px solid rgba(0,184,154,0.15)",borderRadius:6,color:"#c8dff0",fontFamily:"'DM Sans',sans-serif",fontSize:13,padding:"8px 10px",outline:"none",resize:"vertical",lineHeight:1.55 }} />
+      </div>
+
+      {attestation&&<p style={{ marginTop:10,paddingTop:10,borderTop:"1px solid rgba(0,184,154,0.08)",fontSize:11,color:"rgba(200,223,240,0.35)",fontStyle:"italic",textAlign:"center" }}>AI-generated recommendations. Physician attestation and clinical correlation required.</p>}
     </div>
   );
 }
@@ -1299,95 +1389,16 @@ export function InitialImpressionDisplay({ result }) {
 // ─── TREATMENT DISPLAY ────────────────────────────────────────────────────────
 export function TreatmentDisplay({ result }) {
   if (!result) return null;
-  const hasData = result.triage_acuity || result.triage_rationale ||
-    result.immediate_interventions?.length || result.medications?.length ||
-    result.monitoring_safety?.length;
-  if (!hasData) return null;
-
-  const MONO = "'JetBrains Mono',monospace";
-  const SANS = "'DM Sans',sans-serif";
-  const SERIF = "'Playfair Display',serif";
-
-  const ACUITY_COLOR = {
-    "Emergent":    "#ff4d4f",
-    "Urgent":      "#f5c842",
-    "Less Urgent": "#00b89a",
-    "Non-Urgent":  "rgba(200,223,240,0.5)",
-  };
-  const acuityColor = ACUITY_COLOR[result.triage_acuity] || "rgba(200,223,240,0.5)";
-
   return (
-    <div style={{
-      background: "rgba(11,30,54,0.55)",
-      border: "1px solid rgba(0,184,154,0.18)",
-      borderRadius: 10,
-      padding: "18px 20px",
-      marginTop: 10,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <div style={{ fontFamily: SERIF, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.13em", color: "#00e5c0", marginBottom: 0 }}>
-          Treatment
-        </div>
-        <SectionCopyBtn
-          label="Copy Section"
-          buildText={() => {
-            const t = result;
-            if (!t) return "";
-            const lines = [];
-            if (t.triage_acuity || t.triage_rationale) { lines.push("TRIAGE AND ACUITY:"); lines.push(t.triage_rationale || t.triage_acuity); lines.push(""); }
-            if (t.immediate_interventions?.length) { lines.push("IMMEDIATE INTERVENTIONS:"); t.immediate_interventions.forEach(i => lines.push("- " + i)); lines.push(""); }
-            if (t.medications?.length) { lines.push("MEDICATIONS:"); t.medications.forEach(m => { if (m.is_note) { lines.push("- Note: " + m.agent); } else { const c = m.caveats?.length ? " (" + m.caveats.join("; ") + ")" : ""; lines.push("- " + m.category + ": " + m.agent + " " + m.dosing + c); } }); lines.push(""); }
-
-            if (t.monitoring_safety?.length) { lines.push("MONITORING AND SAFETY:"); t.monitoring_safety.forEach(m => lines.push("- " + m)); lines.push(""); }
-            if (t.attestation_required) lines.push("AI-generated recommendations. Physician attestation and clinical correlation required.");
-            return lines.join("\n");
-          }}
-        />
-      </div>
-
-      {/* Triage and Acuity */}
-      {(result.triage_acuity || result.triage_rationale) && (
-        <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginTop: 14, marginBottom: 8 }}>
-            Triage and Acuity
-          </div>
-          {result.triage_acuity && (
-            <div style={{
-              display: "inline-block",
-              fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-              color: acuityColor, border: `1px solid ${acuityColor}`,
-              padding: "3px 10px", borderRadius: 4, marginBottom: 8,
-            }}>
-              {result.triage_acuity}
-            </div>
-          )}
-          {result.triage_rationale && (
-            <div style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", lineHeight: 1.6 }}>
-              {result.triage_rationale}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Immediate Interventions */}
-      {result.immediate_interventions?.length > 0 && (
-        <EditablePlanSection items={result.immediate_interventions} title="Immediate Interventions" copyLabel="Copy Interventions" />
-      )}
-
-      {/* Medications */}
-      <MedicationManager aiMedications={result.medications || []} />
-
-      {/* Monitoring and Safety */}
-      {result.monitoring_safety?.length > 0 && (
-        <EditablePlanSection items={result.monitoring_safety} title="Monitoring and Safety" copyLabel="Copy Plan" />
-      )}
-
-      {/* Attestation footer */}
-      {result.attestation_required && (
-        <div style={{ borderTop: "1px solid rgba(0,184,154,0.1)", paddingTop: 10, marginTop: 14, textAlign: "center", fontFamily: SANS, fontSize: 11, fontStyle: "italic", color: "rgba(200,223,240,0.38)" }}>
-          AI-generated recommendations. Physician attestation and clinical correlation required.
-        </div>
-      )}
-    </div>
+    <AssessmentPlanManager
+      triage={{ acuity: result.triage_acuity, rationale: result.triage_rationale }}
+      guideline={result.acep_guideline}
+      interventions={result.immediate_interventions || []}
+      diagnostics={result.diagnostics || []}
+      medications={result.medications || []}
+      monitoring={result.monitoring_safety || []}
+      pendingSummary={result.pending_data_summary || ""}
+      attestation={result.attestation_required}
+    />
   );
 }

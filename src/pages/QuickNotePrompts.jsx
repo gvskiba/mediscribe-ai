@@ -12,7 +12,7 @@ const SYS_BIAS = `COGNITIVE BIAS PREVENTION — apply before generating output:
 
 export const MDM_SCHEMA = {
   type: "object",
-  required: ["working_diagnosis","initial_impression","initial_management","mdm_level","problem_complexity","data_complexity","risk_tier"],
+  required: ["working_diagnosis","initial_impression","mdm_level","problem_complexity","data_complexity","risk_tier"],
   properties: {
     working_diagnosis: { type: "string" },
     initial_impression: {
@@ -42,15 +42,6 @@ export const MDM_SCHEMA = {
         clinical_rationale: { type: "string" },
         cannot_exclude: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 5 },
         differentials: { type: "array", minItems: 2, maxItems: 8, items: { type: "object", required: ["rank","diagnosis","rationale"], properties: { rank: { type: "integer" }, diagnosis: { type: "string" }, rationale: { type: "string" } } } },
-      },
-    },
-    initial_management: {
-      type: "object",
-      required: ["immediate_interventions","diagnostics","pending_data_summary"],
-      properties: {
-        immediate_interventions: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 6 },
-        diagnostics: { type: "array", minItems: 1, maxItems: 10, items: { type: "object", required: ["test","rationale"], properties: { test: { type: "string" }, rationale: { type: "string" } } } },
-        pending_data_summary: { type: "string" },
       },
     },
     mdm_level: { type: "string" },
@@ -178,10 +169,7 @@ clinical_rationale: 1–3 sentences using "consistent with" language
 cannot_exclude: array of sentences opening with "[Dx] cannot be excluded given [reason]." or "[Dx] must be ruled out in any [descriptor] presenting with [symptom]." Always include life threats and ectopic pregnancy for reproductive-age females with abdominal pain.
 differentials: ranked array, most likely first. Each: rank (int), diagnosis (string with parenthetical context), rationale (3–8 words).
 
-SECTION 2 — initial_management:
-immediate_interventions: brief bedside orders, each under 10 words
-diagnostics: ordered by urgency, each has test (specific name) and rationale (one clause). Include imaging modality and conditional escalation (e.g. CT if ultrasound non-diagnostic).
-pending_data_summary: one sentence: "[results pending] will refine working diagnosis and guide further management."
+Diagnostics, immediate interventions, medications, and monitoring are generated separately in the Assessment and Plan section.
 
 Also output: mdm_level (99281-99285), mdm_label, problem_complexity, data_complexity, risk_tier, acep_policy_ref, mdm_confidence (Strong|Borderline-up|Borderline-down), mdm_confidence_note.
 
@@ -193,14 +181,16 @@ Respond ONLY in valid JSON. No markdown fences.`;
 
 export const TREATMENT_SCHEMA = {
   type: "object",
-  required: ["triage_acuity","triage_rationale","immediate_interventions","medications","diagnostics_ref","monitoring_safety","attestation_required"],
+  required: ["triage_acuity","triage_rationale","immediate_interventions","diagnostics","medications","diagnostics_ref","monitoring_safety","pending_data_summary","attestation_required"],
   properties: {
     triage_acuity: { type: "string" },
     triage_rationale: { type: "string" },
     immediate_interventions: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 6 },
+    diagnostics: { type: "array", minItems: 0, maxItems: 12, items: { type: "object", required: ["test","rationale"], properties: { test: { type: "string" }, rationale: { type: "string" } } } },
     medications: { type: "array", minItems: 0, maxItems: 10, items: { type: "object", required: ["category","agent","dosing","indication"], properties: { category: { type: "string" }, agent: { type: "string" }, dosing: { type: "string" }, indication: { type: "string" }, caveats: { type: "array", items: { type: "string" } }, is_note: { type: "boolean" } } } },
     diagnostics_ref: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 8 },
     monitoring_safety: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 6 },
+    pending_data_summary: { type: "string" },
     attestation_required: { type: "boolean" },
   },
 };
@@ -236,11 +226,15 @@ TRIAGE AND ACUITY: triage_acuity = ESI label ("Emergent"|"Urgent"|"Less Urgent"|
 
 IMMEDIATE INTERVENTIONS: immediate_interventions = array of 1–5 concise bedside orders (no medications). Always include IV access and monitoring. Add NPO only if surgical differential present.
 
+DIAGNOSTICS: diagnostics = Ordered array of ALL diagnostic tests for this patient: labs, imaging, ECG, point-of-care testing. Each: test (specific name e.g. "Serum or urine beta-hCG", "CT abdomen/pelvis with contrast", "12-lead ECG") and rationale (one clause explaining clinical necessity). Order by urgency. This is the ONLY place diagnostics are documented — include everything ordered. Always justify the most critical test first.
+
 MEDICATIONS: medications array. Each item: category (drug class label), agent (specific drug name, use OR for alternatives), dosing (dose/route/frequency), indication (one clause), caveats (array of safety warnings, especially when cannot-exclude diagnoses create medication contraindications), is_note (true for advisory lines not actual drug orders). Medication caveats for ectopic pregnancy: add ectopic-related caveats (e.g. withhold NSAIDs) ONLY when ectopic pregnancy is already listed in the MDM cannot_exclude list for this specific patient. Do not add ectopic caveats for patients where ectopic is not clinically relevant.
 
 DIAGNOSTICS REF: diagnostics_ref = restate the test list from MDM (max 8). Include conditional escalation items (e.g. CT if US non-diagnostic). Do not add new diagnostics.
 
 MONITORING AND SAFETY: monitoring_safety = 2–5 items: vital sign reassessment interval, hemodynamic escalation trigger, specialty consult threshold (triggered by specific finding), any other monitoring parameters.
+
+pending_data_summary: One sentence: "[Key results pending] will refine working diagnosis and guide further management."
 
 attestation_required: always true.
 

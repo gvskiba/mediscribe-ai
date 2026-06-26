@@ -519,6 +519,127 @@ export { MedsAllergyZone };
 export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard };
 export { DiagnosisCodingCard, InterventionsCard, DispositionResult };
 
+// ─── HPI BUILDER ─────────────────────────────────────────────────────────────
+
+function parseHPITemplate(template) {
+  const segments = [];
+  const regex = /\[([^\]]+)\]/g;
+  let lastIndex = 0, match;
+  while ((match = regex.exec(template)) !== null) {
+    if (match.index > lastIndex) segments.push({ type:"text", value:template.slice(lastIndex, match.index) });
+    const inner = match[1].trim();
+    const labelMatch = inner.match(/^([^:]+):\s*(.+)$/);
+    const content = labelMatch ? labelMatch[2] : inner;
+    const label   = labelMatch ? labelMatch[1].trim() : null;
+    if (content.includes(" / ")) {
+      const options = content.split(" / ").map(o => o.trim());
+      segments.push({ type:"choice", label, options, selected:null, custom:"" });
+    } else {
+      segments.push({ type:"input", label:label||content, value:"", placeholder:content });
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < template.length) segments.push({ type:"text", value:template.slice(lastIndex) });
+  return segments;
+}
+
+function buildHPIOutput(segments) {
+  return segments.map(seg => {
+    if (seg.type === "text")   return seg.value;
+    if (seg.type === "choice") {
+      if (seg.selected === "__custom__") return seg.custom || "[" + (seg.label||"...") + "]";
+      return seg.selected || "[" + (seg.label || seg.options?.join(" / ") || "...") + "]";
+    }
+    if (seg.type === "input") return seg.value || "[" + (seg.label||"...") + "]";
+    return "";
+  }).join("");
+}
+
+export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
+  const [segments, setSegments] = useState(() => parseHPITemplate(template || ""));
+  const [showPreview, setShowPreview] = useState(false);
+  const prevTemplate = useRef(template);
+
+  useEffect(() => {
+    if (template !== prevTemplate.current) {
+      prevTemplate.current = template;
+      setSegments(parseHPITemplate(template || ""));
+    }
+  }, [template]);
+
+  const setChoice  = (i, v) => setSegments(p => p.map((s, idx) => idx===i ? { ...s, selected:v, custom:v==="__custom__"?s.custom:"" } : s));
+  const setCustom  = (i, v) => setSegments(p => p.map((s, idx) => idx===i ? { ...s, custom:v } : s));
+  const setInput   = (i, v) => setSegments(p => p.map((s, idx) => idx===i ? { ...s, value:v } : s));
+  const clearChoice= (i)    => setSegments(p => p.map((s, idx) => idx===i ? { ...s, selected:null, custom:"" } : s));
+
+  const output      = buildHPIOutput(segments);
+  const choiceSegs  = segments.filter(s => s.type==="choice");
+  const inputSegs   = segments.filter(s => s.type==="input");
+  const totalFields = choiceSegs.length + inputSegs.length;
+  const totalDone   = choiceSegs.filter(s => s.selected).length + inputSegs.filter(s => s.value.trim()).length;
+  const allDone     = totalDone === totalFields;
+  const pct         = totalFields > 0 ? Math.round((totalDone/totalFields)*100) : 100;
+
+  const chip = (active) => ({ display:"inline-flex", alignItems:"center", padding:"2px 9px", borderRadius:12, cursor:"pointer", fontSize:12, fontWeight:active?600:400, fontFamily:"'DM Sans',sans-serif", border:active?"1px solid #00e5c0":"1px solid rgba(0,184,154,0.2)", background:active?"rgba(0,229,192,0.15)":"rgba(11,30,54,0.5)", color:active?"#00e5c0":"rgba(200,223,240,0.5)", transition:"all 0.1s", userSelect:"none" });
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:9400, background:"rgba(3,8,16,0.85)", backdropFilter:"blur(4px)", display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"60px 16px 20px" }} onClick={onClose}>
+      <div style={{ background:"#081628", border:"1px solid rgba(0,184,154,0.3)", borderRadius:12, width:620, maxWidth:"96vw", maxHeight:"calc(100vh - 100px)", display:"flex", flexDirection:"column", boxShadow:"0 24px 64px rgba(0,0,0,0.7)" }} onClick={e=>e.stopPropagation()}>
+
+        <div style={{ padding:"14px 18px 12px", borderBottom:"1px solid rgba(0,184,154,0.12)", flexShrink:0 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+            <p style={{ fontFamily:"'Playfair Display',serif", fontSize:13, fontWeight:700, color:"#00e5c0", margin:0 }}>HPI Builder</p>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              {ccLabel && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"#00b89a", border:"1px solid rgba(0,184,154,0.3)", borderRadius:3, padding:"1px 7px" }}>{ccLabel}</span>}
+              <button onClick={onClose} style={{ background:"none", border:"none", color:"rgba(200,223,240,0.4)", fontSize:16, cursor:"pointer" }}>✕</button>
+            </div>
+          </div>
+          <div style={{ height:3, background:"rgba(0,184,154,0.1)", borderRadius:2, overflow:"hidden" }}>
+            <div style={{ height:"100%", width:pct+"%", background:allDone?"#00e5c0":"rgba(0,184,154,0.5)", transition:"width 0.3s", borderRadius:2 }} />
+          </div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:allDone?"#00e5c0":"rgba(200,223,240,0.35)", letterSpacing:"0.06em", marginTop:4 }}>
+            {totalFields > 0 ? totalDone+" of "+totalFields+" fields completed" : "Ready to apply"}
+          </div>
+        </div>
+
+        <div style={{ overflowY:"auto", flex:1, padding:"14px 18px" }}>
+          <div style={{ fontSize:13.5, color:"#c8dff0", lineHeight:2.4, fontFamily:"'DM Sans',sans-serif" }}>
+            {segments.map((seg, i) => {
+              if (seg.type==="text") return <span key={i}>{seg.value}</span>;
+              if (seg.type==="choice") return (
+                <span key={i} style={{ display:"inline-flex", flexWrap:"wrap", gap:4, verticalAlign:"middle", margin:"0 2px" }}>
+                  {seg.label && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(200,223,240,0.35)", marginRight:3, verticalAlign:"middle" }}>{seg.label}:</span>}
+                  {seg.options.map(opt => <span key={opt} style={chip(seg.selected===opt)} onClick={()=>seg.selected===opt?clearChoice(i):setChoice(i,opt)}>{opt}</span>)}
+                  <span style={chip(seg.selected==="__custom__")} onClick={()=>seg.selected==="__custom__"?clearChoice(i):setChoice(i,"__custom__")}>other...</span>
+                  {seg.selected==="__custom__" && <input autoFocus value={seg.custom||""} onChange={e=>setCustom(i,e.target.value)} placeholder="type here..." style={{ display:"inline-block", background:"rgba(11,30,54,0.7)", border:"1px solid rgba(0,229,192,0.35)", borderRadius:4, color:"#c8dff0", fontFamily:"'DM Sans',sans-serif", fontSize:12, padding:"2px 7px", outline:"none", width:120, marginLeft:4, verticalAlign:"middle" }} onClick={e=>e.stopPropagation()} />}
+                  {seg.selected && <span style={{ display:"inline-flex", alignItems:"center", padding:"2px 7px", borderRadius:12, cursor:"pointer", fontSize:10, fontFamily:"'JetBrains Mono',monospace", border:"1px solid rgba(255,77,79,0.25)", color:"rgba(255,77,79,0.4)", marginLeft:2 }} onClick={()=>clearChoice(i)}>✕</span>}
+                </span>
+              );
+              if (seg.type==="input") return <input key={i} value={seg.value} onChange={e=>setInput(i,e.target.value)} placeholder={seg.label||"..."} style={{ display:"inline-block", background:"rgba(11,30,54,0.6)", border:"1px solid rgba(0,184,154,0.2)", borderRadius:4, color:"#c8dff0", fontFamily:"'DM Sans',sans-serif", fontSize:12, padding:"2px 8px", outline:"none", minWidth:80, maxWidth:160, verticalAlign:"middle", margin:"0 2px" }} />;
+              return null;
+            })}
+          </div>
+          {showPreview && (
+            <div style={{ background:"rgba(11,30,54,0.6)", border:"1px solid rgba(0,184,154,0.15)", borderRadius:8, padding:"12px 14px", fontSize:13, color:"#c8dff0", lineHeight:1.7, marginTop:14, whiteSpace:"pre-wrap" }}>
+              {output}
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding:"12px 18px", borderTop:"1px solid rgba(0,184,154,0.12)", display:"flex", gap:8, alignItems:"center", flexShrink:0 }}>
+          <button onClick={()=>setShowPreview(p=>!p)} style={{ padding:"7px 14px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase", border:"1px solid rgba(0,184,154,0.25)", background:"transparent", color:"rgba(200,223,240,0.45)" }}>
+            {showPreview?"Hide Preview":"Preview HPI"}
+          </button>
+          <button onClick={onClose} style={{ padding:"7px 14px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase", border:"1px solid rgba(200,223,240,0.15)", background:"transparent", color:"rgba(200,223,240,0.4)" }}>Cancel</button>
+          <button onClick={()=>{ onApply(output); onClose(); }} style={{ flex:1, padding:"9px 0", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase", border:"1px solid rgba(0,229,192,0.5)", background:"rgba(0,229,192,0.1)", color:"#00e5c0" }}>
+            Apply to HPI
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function InlineCopyBtn({ getValue, label = "Copy" }) {
   const [copied, setCopied] = useState(false);
   const handle = async () => {

@@ -720,6 +720,212 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) 
   );
 }
 
+// ─── ED DRUG LIBRARY ─────────────────────────────────────────────────────────
+const ED_DRUG_LIBRARY = [
+  { name:"Ketorolac", category:"Analgesia", routes:[{ route:"IV", dose:"15-30 mg", freq:"q6h", max:"120 mg/day", notes:"Max 5 days; renally dose-adjust" },{ route:"IM", dose:"30-60 mg", freq:"q6h", max:"120 mg/day", notes:"Max 5 days" },{ route:"PO", dose:"10 mg", freq:"q4-6h", max:"40 mg/day", notes:"Continuation only" }]},
+  { name:"Morphine", category:"Analgesia", routes:[{ route:"IV", dose:"2-4 mg", freq:"q3-4h PRN", max:"", notes:"Titrate to effect; monitor resp" },{ route:"IM", dose:"5-10 mg", freq:"q3-4h PRN", max:"", notes:"" },{ route:"PO", dose:"5-30 mg", freq:"q4h PRN", max:"", notes:"IR formulation" }]},
+  { name:"Hydromorphone (Dilaudid)", category:"Analgesia", routes:[{ route:"IV", dose:"0.2-1 mg", freq:"q3-4h PRN", max:"", notes:"8x more potent than morphine IV" },{ route:"IM", dose:"1-2 mg", freq:"q4-6h PRN", max:"", notes:"" },{ route:"PO", dose:"2-4 mg", freq:"q4-6h PRN", max:"", notes:"" }]},
+  { name:"Fentanyl", category:"Analgesia", routes:[{ route:"IV", dose:"0.5-1 mcg/kg", freq:"q30-60 min PRN", max:"", notes:"Rapid onset; short duration" },{ route:"IM", dose:"1-2 mcg/kg", freq:"q1-2h PRN", max:"", notes:"" },{ route:"IN", dose:"1-2 mcg/kg", freq:"q5-10 min x2", max:"", notes:"Intranasal; 0.5 mL per nostril" }]},
+  { name:"Acetaminophen", category:"Analgesia", routes:[{ route:"PO", dose:"650-1000 mg", freq:"q6h", max:"4g/day", notes:"" },{ route:"IV", dose:"1000 mg", freq:"q6h", max:"4g/day", notes:"Over 15 min; <50 kg use 15mg/kg" },{ route:"PR", dose:"650 mg", freq:"q6h", max:"4g/day", notes:"Rectal if unable to take PO" }]},
+  { name:"Ibuprofen", category:"Analgesia", routes:[{ route:"PO", dose:"400-800 mg", freq:"q6-8h", max:"3200 mg/day", notes:"Take with food" },{ route:"IV", dose:"400-800 mg", freq:"q6h", max:"3200 mg/day", notes:"Over 30 min" }]},
+  { name:"Ketamine (sub-dissociative)", category:"Analgesia", routes:[{ route:"IV", dose:"0.1-0.3 mg/kg", freq:"over 10-15 min", max:"", notes:"Sub-dissociative dose for analgesia" },{ route:"IN", dose:"0.5-1 mg/kg", freq:"q20 min PRN", max:"", notes:"Intranasal; max 1 mL per nostril" },{ route:"IM", dose:"0.5 mg/kg", freq:"PRN", max:"", notes:"" }]},
+  { name:"Ondansetron (Zofran)", category:"Antiemetic", routes:[{ route:"IV", dose:"4-8 mg", freq:"q4-6h PRN", max:"32 mg/day", notes:"Over 2 min; QT prolongation risk" },{ route:"PO", dose:"4-8 mg", freq:"q4-6h PRN", max:"32 mg/day", notes:"ODT available" },{ route:"IM", dose:"4 mg", freq:"q4h PRN", max:"", notes:"" }]},
+  { name:"Metoclopramide (Reglan)", category:"Antiemetic", routes:[{ route:"IV", dose:"10-20 mg", freq:"q6h PRN", max:"", notes:"Over 15 min; extrapyramidal risk" },{ route:"PO", dose:"10 mg", freq:"q6h PRN", max:"", notes:"30 min before meals" }]},
+  { name:"Prochlorperazine (Compazine)", category:"Antiemetic", routes:[{ route:"IV", dose:"5-10 mg", freq:"q3-4h PRN", max:"40 mg/day", notes:"Extrapyramidal risk; consider diphenhydramine prophylaxis" },{ route:"IM", dose:"5-10 mg", freq:"q3-4h PRN", max:"40 mg/day", notes:"" },{ route:"PR", dose:"25 mg", freq:"q12h PRN", max:"", notes:"Rectal suppository" }]},
+  { name:"Ceftriaxone", category:"Antibiotic", routes:[{ route:"IV", dose:"1-2 g", freq:"q12-24h", max:"", notes:"4g/day for meningitis" },{ route:"IM", dose:"250-500 mg", freq:"single dose", max:"", notes:"STI treatment" }]},
+  { name:"Cefazolin", category:"Antibiotic", routes:[{ route:"IV", dose:"1-2 g", freq:"q8h", max:"12 g/day", notes:"Skin/soft tissue; surgical prophylaxis" }]},
+  { name:"Cephalexin", category:"Antibiotic", routes:[{ route:"PO", dose:"500 mg", freq:"q6h", max:"4 g/day", notes:"SSTI; adjust for GFR <30" }]},
+  { name:"Augmentin (Amoxicillin-Clavulanate)", category:"Antibiotic", routes:[{ route:"PO", dose:"875/125 mg", freq:"q12h", max:"", notes:"Bite wounds; SSTI; sinusitis" }]},
+  { name:"Azithromycin", category:"Antibiotic", routes:[{ route:"PO", dose:"500 mg day 1, then 250 mg days 2-5", freq:"daily", max:"", notes:"CAP; STI" },{ route:"IV", dose:"500 mg", freq:"q24h", max:"", notes:"Severe CAP" }]},
+  { name:"Doxycycline", category:"Antibiotic", routes:[{ route:"PO", dose:"100 mg", freq:"q12h", max:"", notes:"SSTI; STI; Lyme; CAP; take with food" },{ route:"IV", dose:"100 mg", freq:"q12h", max:"", notes:"Over 1 hour" }]},
+  { name:"TMP-SMX (Bactrim DS)", category:"Antibiotic", routes:[{ route:"PO", dose:"1-2 DS tablets (160/800 mg)", freq:"q12h", max:"", notes:"MRSA SSTI; UTI; adjust for renal; monitor K+" },{ route:"IV", dose:"8-10 mg/kg/day TMP component", freq:"divided q8-12h", max:"", notes:"Severe MRSA" }]},
+  { name:"Vancomycin", category:"Antibiotic", routes:[{ route:"IV", dose:"15-20 mg/kg", freq:"q8-12h", max:"3 g/dose", notes:"AUC/MIC dosing preferred; monitor renal function" },{ route:"PO", dose:"125-500 mg", freq:"q6h", max:"", notes:"C. diff only - NOT absorbed systemically" }]},
+  { name:"Piperacillin-Tazobactam (Zosyn)", category:"Antibiotic", routes:[{ route:"IV", dose:"3.375 g", freq:"q6h or 4.5g q8h", max:"", notes:"Extended infusion over 4h preferred; sepsis; intraabdominal" }]},
+  { name:"Metronidazole (Flagyl)", category:"Antibiotic", routes:[{ route:"IV", dose:"500 mg", freq:"q8h", max:"4 g/day", notes:"Anaerobic; C. diff; over 30-60 min" },{ route:"PO", dose:"500 mg", freq:"q8h", max:"4 g/day", notes:"C. diff; BV; trichomoniasis" }]},
+  { name:"Ciprofloxacin", category:"Antibiotic", routes:[{ route:"PO", dose:"500 mg", freq:"q12h", max:"", notes:"UTI; GI infections" },{ route:"IV", dose:"400 mg", freq:"q12h", max:"", notes:"Over 60 min" }]},
+  { name:"Levofloxacin", category:"Antibiotic", routes:[{ route:"PO", dose:"500-750 mg", freq:"q24h", max:"", notes:"CAP; UTI; QT prolongation risk" },{ route:"IV", dose:"500-750 mg", freq:"q24h", max:"", notes:"Over 60-90 min" }]},
+  { name:"Clindamycin", category:"Antibiotic", routes:[{ route:"PO", dose:"300-450 mg", freq:"q6-8h", max:"", notes:"SSTI; MRSA alternative; anaerobic" },{ route:"IV", dose:"600-900 mg", freq:"q8h", max:"2.7 g/day", notes:"Over 20-60 min" }]},
+  { name:"Cefepime", category:"Antibiotic", routes:[{ route:"IV", dose:"1-2 g", freq:"q8-12h", max:"", notes:"Pseudomonas; febrile neutropenia; meningitis" }]},
+  { name:"Aspirin", category:"Cardiovascular", routes:[{ route:"PO", dose:"325 mg (ACS) or 81 mg (antiplatelet)", freq:"once or daily", max:"", notes:"Non-enteric coated preferred for ACS" }]},
+  { name:"Nitroglycerin", category:"Cardiovascular", routes:[{ route:"SL", dose:"0.3-0.4 mg", freq:"q5 min x3 PRN", max:"", notes:"Hold if SBP <90 or recent PDE5 inhibitor" },{ route:"IV", dose:"5-200 mcg/min", freq:"continuous", max:"", notes:"Titrate to symptom relief; monitor BP" }]},
+  { name:"Metoprolol", category:"Cardiovascular", routes:[{ route:"IV", dose:"2.5-5 mg", freq:"q5 min x3 PRN", max:"15 mg", notes:"Rate control; ACS; caution in decompensated HF" },{ route:"PO", dose:"25-100 mg", freq:"q6-12h", max:"", notes:"" }]},
+  { name:"Labetalol", category:"Cardiovascular", routes:[{ route:"IV", dose:"10-20 mg", freq:"q10 min PRN", max:"300 mg total", notes:"Hypertensive urgency/emergency" },{ route:"PO", dose:"100-400 mg", freq:"q12h", max:"", notes:"" }]},
+  { name:"Adenosine", category:"Cardiovascular", routes:[{ route:"IV", dose:"6 mg first, then 12 mg x2 PRN", freq:"rapid bolus", max:"30 mg", notes:"SVT; push fast then flush; warn patient" }]},
+  { name:"Amiodarone", category:"Cardiovascular", routes:[{ route:"IV", dose:"150 mg over 10 min, then 1 mg/min x6h", freq:"per protocol", max:"", notes:"VT/VF; AFib; central line preferred" }]},
+  { name:"Diltiazem", category:"Cardiovascular", routes:[{ route:"IV", dose:"0.25 mg/kg over 2 min, repeat 0.35 mg/kg in 15 min if needed", freq:"then 5-15 mg/hr infusion", max:"", notes:"AFib rate control; avoid in WPW" }]},
+  { name:"Albuterol", category:"Respiratory", routes:[{ route:"INH", dose:"2.5 mg in 3 mL NS", freq:"q20 min x3, then q1-4h", max:"", notes:"Nebulization; continuous neb for severe asthma" },{ route:"MDI", dose:"2-4 puffs (90 mcg/puff)", freq:"q4-6h PRN", max:"", notes:"With spacer" }]},
+  { name:"Ipratropium (Atrovent)", category:"Respiratory", routes:[{ route:"INH", dose:"0.5 mg in 3 mL NS", freq:"q20 min x3 with albuterol", max:"", notes:"Add to albuterol neb; COPD exacerbation" }]},
+  { name:"Methylprednisolone (Solu-Medrol)", category:"Respiratory", routes:[{ route:"IV", dose:"60-125 mg", freq:"q6h x24h then taper", max:"", notes:"Asthma/COPD exacerbation; anaphylaxis" },{ route:"IM", dose:"60-125 mg", freq:"once", max:"", notes:"Single dose for asthma if unable to take PO" }]},
+  { name:"Prednisone", category:"Respiratory", routes:[{ route:"PO", dose:"40-60 mg", freq:"daily x5 days", max:"", notes:"Asthma/COPD exacerbation outpatient course" }]},
+  { name:"Dexamethasone", category:"Respiratory/Neuro", routes:[{ route:"PO", dose:"10 mg", freq:"once", max:"", notes:"Asthma single-dose alternative to prednisone burst" },{ route:"IV", dose:"4-10 mg", freq:"q6-8h", max:"", notes:"Cerebral edema; croup; severe asthma" },{ route:"IM", dose:"0.6 mg/kg", freq:"once", max:"10 mg", notes:"Croup" }]},
+  { name:"Magnesium Sulfate", category:"Respiratory/OB", routes:[{ route:"IV", dose:"2 g over 20 min (asthma) or 4-6 g over 20-30 min (eclampsia)", freq:"single/continuous", max:"", notes:"Severe asthma; eclampsia; torsades; monitor resp and DTRs" }]},
+  { name:"Lorazepam (Ativan)", category:"Neurology", routes:[{ route:"IV", dose:"2-4 mg (0.05-0.1 mg/kg)", freq:"q5-10 min PRN seizure", max:"8-10 mg total", notes:"Seizure; EtOH withdrawal" },{ route:"IM", dose:"0.05-0.1 mg/kg", freq:"once PRN", max:"", notes:"" },{ route:"IN", dose:"0.1 mg/kg", freq:"once", max:"", notes:"Intranasal; pediatric seizure" }]},
+  { name:"Diazepam (Valium)", category:"Neurology", routes:[{ route:"IV", dose:"5-10 mg", freq:"q5 min PRN seizure", max:"30 mg", notes:"Faster onset than lorazepam" },{ route:"PR", dose:"0.2-0.5 mg/kg", freq:"once", max:"20 mg", notes:"Pediatric rectal" },{ route:"PO", dose:"5-10 mg", freq:"q6-8h", max:"40 mg/day", notes:"EtOH withdrawal" }]},
+  { name:"Levetiracetam (Keppra)", category:"Neurology", routes:[{ route:"IV", dose:"20-60 mg/kg or 1000-3000 mg", freq:"over 15 min", max:"3000 mg/dose", notes:"Seizure; renal adjust" },{ route:"PO", dose:"500-1500 mg", freq:"q12h", max:"", notes:"Maintenance" }]},
+  { name:"Sumatriptan", category:"Neurology", routes:[{ route:"PO", dose:"25-100 mg", freq:"once, repeat in 2h PRN", max:"200 mg/day", notes:"Migraine; avoid in hemiplegic migraine or CAD" },{ route:"SC", dose:"4-6 mg", freq:"once, repeat in 1h PRN", max:"12 mg/day", notes:"Faster onset" },{ route:"IN", dose:"5-20 mg", freq:"once", max:"40 mg/day", notes:"Nasal spray" }]},
+  { name:"Pantoprazole (Protonix)", category:"GI", routes:[{ route:"IV", dose:"40-80 mg", freq:"q12-24h", max:"", notes:"GI bleed; over 2-15 min" },{ route:"PO", dose:"40 mg", freq:"q24h", max:"", notes:"30 min before eating" }]},
+  { name:"Epinephrine", category:"Allergy/Resus", routes:[{ route:"IM", dose:"0.3-0.5 mg (1:1000)", freq:"q5-15 min PRN", max:"", notes:"Anaphylaxis FIRST LINE; lateral thigh; 0.01 mg/kg pediatric" },{ route:"IV", dose:"0.1-0.5 mcg/kg/min", freq:"infusion", max:"", notes:"Anaphylaxis refractory to IM" },{ route:"IV", dose:"1 mg (1:10,000)", freq:"q3-5 min", max:"", notes:"Cardiac arrest only - ACLS" }]},
+  { name:"Diphenhydramine (Benadryl)", category:"Allergy", routes:[{ route:"IV", dose:"25-50 mg", freq:"q4-6h PRN", max:"400 mg/day", notes:"Anaphylaxis adjunct; EPS prophylaxis; sedating" },{ route:"PO", dose:"25-50 mg", freq:"q4-6h PRN", max:"400 mg/day", notes:"" },{ route:"IM", dose:"25-50 mg", freq:"q4-6h PRN", max:"", notes:"" }]},
+  { name:"Normal Saline (0.9% NaCl)", category:"Fluids", routes:[{ route:"IV", dose:"500 mL - 1 L bolus", freq:"per clinical need", max:"", notes:"Sepsis: 30 mL/kg bolus; reassess after each bolus" }]},
+  { name:"Lactated Ringer's", category:"Fluids", routes:[{ route:"IV", dose:"500 mL - 1 L bolus", freq:"per clinical need", max:"", notes:"Preferred over NS for sepsis; not for hyperkalemia" }]},
+  { name:"Potassium Chloride", category:"Fluids", routes:[{ route:"IV", dose:"10-20 mEq over 1 hour", freq:"per K+ level", max:"40 mEq/hr central", notes:"Max 10-20 mEq/hr peripheral; cardiac monitor required" },{ route:"PO", dose:"20-40 mEq", freq:"q4-6h", max:"", notes:"Preferred if able to tolerate PO" }]},
+  { name:"Haloperidol (Haldol)", category:"Psychiatry", routes:[{ route:"IV", dose:"2-5 mg", freq:"q30-60 min PRN agitation", max:"", notes:"QT prolongation; monitor ECG" },{ route:"IM", dose:"2-10 mg", freq:"q30-60 min PRN", max:"", notes:"" },{ route:"PO", dose:"1-10 mg", freq:"q4-8h", max:"", notes:"" }]},
+  { name:"Olanzapine (Zyprexa)", category:"Psychiatry", routes:[{ route:"IM", dose:"5-10 mg", freq:"q2-4h PRN agitation", max:"30 mg/day", notes:"Do NOT give IV; avoid with benzodiazepines IM within 1h" },{ route:"PO", dose:"5-20 mg", freq:"once or q12h", max:"", notes:"" }]},
+  { name:"Ketamine (dissociative)", category:"Sedation", routes:[{ route:"IV", dose:"1-2 mg/kg", freq:"over 1-2 min", max:"", notes:"PSA; consider midazolam for emergence reactions" },{ route:"IM", dose:"4-6 mg/kg", freq:"once", max:"", notes:"Uncooperative patient; pediatric" }]},
+  { name:"Midazolam (Versed)", category:"Sedation", routes:[{ route:"IV", dose:"0.02-0.05 mg/kg (usual 1-2.5 mg)", freq:"q3-5 min PRN", max:"", notes:"Procedural sedation; monitor airway" },{ route:"IM", dose:"0.07-0.1 mg/kg", freq:"once", max:"", notes:"" },{ route:"IN", dose:"0.2-0.3 mg/kg", freq:"once", max:"10 mg", notes:"Intranasal; pediatric seizure" }]},
+  { name:"Naloxone (Narcan)", category:"Toxicology", routes:[{ route:"IV", dose:"0.04-0.4 mg (resp depression) or 2 mg (OD/arrest)", freq:"q2-3 min PRN", max:"10 mg", notes:"Titrate to respiratory rate; short duration - re-dose or infuse" },{ route:"IM", dose:"0.4-2 mg", freq:"q2-3 min PRN", max:"", notes:"" },{ route:"IN", dose:"4 mg per nostril", freq:"q2-3 min PRN", max:"", notes:"Narcan nasal spray" }]},
+  { name:"N-Acetylcysteine (NAC)", category:"Toxicology", routes:[{ route:"IV", dose:"150 mg/kg over 60 min, then 50 mg/kg over 4h, then 100 mg/kg over 16h", freq:"per protocol", max:"", notes:"APAP toxicity; use Rumack-Matthew nomogram" },{ route:"PO", dose:"140 mg/kg load, then 70 mg/kg q4h x17 doses", freq:"per protocol", max:"", notes:"May cause N/V; mix in juice" }]},
+  { name:"Activated Charcoal", category:"Toxicology", routes:[{ route:"PO", dose:"1 g/kg (usual 25-100 g)", freq:"once", max:"100 g", notes:"Within 1-2h of ingestion; protected airway required; contraindicated in caustics/hydrocarbons" }]},
+  { name:"Heparin", category:"Anticoagulation", routes:[{ route:"IV", dose:"80 units/kg bolus then 18 units/kg/hr", freq:"continuous", max:"", notes:"ACS/PE/DVT; weight-based protocol; monitor aPTT q6h" },{ route:"SC", dose:"5000 units", freq:"q8-12h", max:"", notes:"DVT prophylaxis" }]},
+  { name:"Enoxaparin (Lovenox)", category:"Anticoagulation", routes:[{ route:"SC", dose:"1 mg/kg", freq:"q12h (treatment)", max:"", notes:"Reduce to q24h if GFR <30; avoid if GFR <15" },{ route:"SC", dose:"40 mg", freq:"q24h (prophylaxis)", max:"", notes:"DVT prophylaxis" }]},
+];
+
+// ─── MEDICATION MANAGER ───────────────────────────────────────────────────────
+function MedicationManager({ aiMedications, onCopy }) {
+  const [selected, setSelected] = useState(() => (aiMedications || []).map((m, i) => ({ id:"ai-"+i, source:"ai", category:m.category||"Other", agent:m.agent||"", dose:m.dosing||"", route:m.route||"", freq:"", notes:m.indication||"", caveats:m.caveats||[], is_note:m.is_note||false, checked:true })));
+  const prevAI = useRef(aiMedications);
+  useEffect(() => {
+    if (JSON.stringify(aiMedications) !== JSON.stringify(prevAI.current)) {
+      prevAI.current = aiMedications;
+      setSelected(prev => { const userMeds = prev.filter(m => m.source !== "ai"); const newAI = (aiMedications||[]).map((m,i)=>({ id:"ai-"+i, source:"ai", category:m.category||"Other", agent:m.agent||"", dose:m.dosing||"", route:m.route||"", freq:"", notes:m.indication||"", caveats:m.caveats||[], is_note:m.is_note||false, checked:true })); return [...newAI,...userMeds]; });
+    }
+  }, [aiMedications]);
+
+  const [query, setQuery]           = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchHL, setSearchHL]     = useState(0);
+  const [routePicker, setRoutePicker] = useState(null);
+  const [copiedMeds, setCopiedMeds] = useState(false);
+  const searchRef = useRef(null);
+
+  const searchResults = query.trim().length > 1 ? ED_DRUG_LIBRARY.filter(d => d.name.toLowerCase().includes(query.toLowerCase()) || d.category.toLowerCase().includes(query.toLowerCase())).slice(0, 10) : [];
+
+  const toggle = id => setSelected(p => p.map(m => m.id===id ? {...m,checked:!m.checked} : m));
+  const remove = id => setSelected(p => p.filter(m => m.id!==id));
+  const openRoutePicker = drug => { setRoutePicker({ drug, selectedRoute:drug.routes[0] }); setShowSearch(false); setQuery(""); };
+  const confirmRoute = () => {
+    if (!routePicker) return;
+    const { drug, selectedRoute: r } = routePicker;
+    setSelected(p => [...p, { id:"lib-"+Date.now(), source:"library", category:drug.category, agent:drug.name, dose:r.dose, route:r.route, freq:r.freq, notes:r.notes, caveats:[], is_note:false, checked:true }]);
+    setRoutePicker(null);
+  };
+
+  const handleCopy = async () => {
+    const checked = selected.filter(m => m.checked);
+    if (!checked.length) return;
+    const lines = ["MEDICATIONS:"];
+    checked.forEach(m => {
+      if (m.is_note) { lines.push("- Note: " + m.agent); }
+      else { const parts = ["- " + m.category + ": " + m.agent]; if (m.dose) parts.push(m.dose); if (m.route) parts.push(m.route); if (m.freq) parts.push(m.freq); const cavStr = m.caveats?.length ? " (" + m.caveats.join("; ") + ")" : ""; lines.push(parts.join(" ") + cavStr); if (m.notes) lines.push("  Indication: " + m.notes); }
+    });
+    const text = lines.join("\n");
+    try { await navigator.clipboard.writeText(text); } catch {}
+    setCopiedMeds(true); setTimeout(() => setCopiedMeds(false), 2000);
+    if (onCopy) onCopy(text);
+  };
+
+  const checkedCount = selected.filter(m => m.checked).length;
+  const pill = color => ({ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, padding:"1px 7px", borderRadius:4, border:"1px solid "+color+"44", background:color+"11", color });
+
+  return (
+    <div style={{ marginTop:8 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+        <span style={{ fontSize:10, fontFamily:"'JetBrains Mono',monospace", color:"rgba(200,223,240,0.45)", letterSpacing:"0.09em", textTransform:"uppercase" }}>Medications</span>
+        <div style={{ display:"flex", gap:5 }}>
+          <button onClick={() => { setShowSearch(s=>!s); if (!showSearch) setTimeout(()=>searchRef.current?.focus(),50); }} style={{ padding:"3px 9px", borderRadius:4, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, fontWeight:700, letterSpacing:"0.06em", textTransform:"uppercase", border:"1px solid rgba(0,184,154,0.25)", background:showSearch?"rgba(0,229,192,0.1)":"transparent", color:showSearch?"#00e5c0":"rgba(0,229,192,0.5)" }}>
+            {showSearch ? "✕ Close" : "+ Search Meds"}
+          </button>
+          <button onClick={handleCopy} disabled={checkedCount===0} style={{ padding:"3px 9px", borderRadius:4, cursor:checkedCount===0?"not-allowed":"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, fontWeight:700, letterSpacing:"0.06em", textTransform:"uppercase", border:copiedMeds?"1px solid #00e5c0":"1px solid rgba(0,184,154,0.25)", background:copiedMeds?"rgba(0,229,192,0.12)":"transparent", color:copiedMeds?"#00e5c0":checkedCount>0?"rgba(0,229,192,0.7)":"rgba(200,223,240,0.3)", opacity:checkedCount===0?0.5:1, transition:"all 0.15s" }}>
+            {copiedMeds ? "✓ Copied" : checkedCount>0 ? "Copy ("+checkedCount+")" : "Copy"}
+          </button>
+        </div>
+      </div>
+
+      {showSearch && (
+        <div style={{ background:"rgba(11,30,54,0.7)", border:"1px solid rgba(0,229,192,0.3)", borderRadius:7, padding:"8px 10px", marginBottom:8 }}>
+          <input ref={searchRef} value={query} onChange={e=>{setQuery(e.target.value);setSearchHL(0);}}
+            onKeyDown={e=>{ if(e.key==="ArrowDown"){e.preventDefault();setSearchHL(h=>Math.min(h+1,searchResults.length-1));} if(e.key==="ArrowUp"){e.preventDefault();setSearchHL(h=>Math.max(h-1,0));} if(e.key==="Enter"&&searchResults[searchHL]){openRoutePicker(searchResults[searchHL]);} if(e.key==="Escape"){setShowSearch(false);setQuery("");} }}
+            placeholder="Search 80+ ED medications (ketorolac, vancomycin, metoprolol...)"
+            style={{ width:"100%", boxSizing:"border-box", background:"transparent", border:"none", color:"#c8dff0", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none" }} />
+          {query.trim().length > 1 && (
+            <div style={{ marginTop:6 }}>
+              {searchResults.length === 0
+                ? <div style={{ fontSize:12, color:"rgba(200,223,240,0.35)", fontStyle:"italic", padding:"6px 8px" }}>No results for "{query}"</div>
+                : searchResults.map((drug, i) => (
+                    <div key={drug.name} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 8px", borderRadius:5, cursor:"pointer", background:i===searchHL?"rgba(0,229,192,0.1)":"transparent", border:i===searchHL?"1px solid rgba(0,229,192,0.2)":"1px solid transparent", marginBottom:2 }}
+                      onClick={()=>openRoutePicker(drug)} onMouseEnter={()=>setSearchHL(i)}>
+                      <span style={{ fontSize:12.5, color:i===searchHL?"#00e5c0":"#c8dff0", fontWeight:i===searchHL?600:400, flex:1 }}>{drug.name}</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(200,223,240,0.35)" }}>{drug.category}</span>
+                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(200,223,240,0.25)" }}>{drug.routes.map(r=>r.route).join(" · ")}</span>
+                    </div>
+                  ))}
+            </div>
+          )}
+          {query.trim().length <= 1 && <div style={{ marginTop:4, fontSize:11, color:"rgba(200,223,240,0.3)", fontFamily:"'JetBrains Mono',monospace" }}>Type 2+ characters to search</div>}
+        </div>
+      )}
+
+      {selected.length === 0
+        ? <div style={{ padding:"12px 0", fontSize:12, color:"rgba(200,223,240,0.3)", fontStyle:"italic", textAlign:"center" }}>No medications yet - AI medications will appear here, or search above</div>
+        : selected.map(m => (
+            <div key={m.id} style={{ display:"flex", gap:6, alignItems:"flex-start", padding:"7px 8px", borderRadius:6, marginBottom:4, background:m.checked?"rgba(0,184,154,0.05)":"rgba(11,30,54,0.3)", border:m.checked?"1px solid rgba(0,184,154,0.18)":"1px solid rgba(0,184,154,0.06)", transition:"all 0.1s" }}>
+              <div onClick={()=>toggle(m.id)} style={{ width:14, height:14, borderRadius:3, flexShrink:0, marginTop:3, border:m.checked?"1px solid #00e5c0":"1px solid rgba(200,223,240,0.2)", background:m.checked?"#00e5c0":"transparent", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                {m.checked && <span style={{ color:"#081628", fontSize:9, fontWeight:700 }}>✓</span>}
+              </div>
+              <div style={{ flex:1 }}>
+                {m.is_note
+                  ? <div style={{ fontSize:12.5, color:"#e0c97a", fontStyle:"italic" }}>Note: {m.agent}</div>
+                  : <>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color:"#00b89a", letterSpacing:"0.07em", textTransform:"uppercase" }}>{m.category}</span>
+                        <span style={{ fontSize:13, fontWeight:600, color:"#a8d4f0" }}>{m.agent}</span>
+                        {m.dose  && <span style={pill("#a8d4f0")}>{m.dose}</span>}
+                        {m.route && <span style={pill("#7ec8f7")}>{m.route}</span>}
+                        {m.freq  && <span style={pill("#00b89a")}>{m.freq}</span>}
+                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, padding:"1px 5px", borderRadius:3, border:m.source==="ai"?"1px solid rgba(245,200,66,0.3)":"1px solid rgba(0,184,154,0.2)", color:m.source==="ai"?"#f5c842":"#00b89a", letterSpacing:"0.05em", textTransform:"uppercase" }}>{m.source==="ai"?"AI":"Added"}</span>
+                      </div>
+                      {m.notes && <div style={{ fontSize:11.5, color:"rgba(200,223,240,0.55)", fontStyle:"italic", marginTop:3 }}>{m.notes}</div>}
+                      {m.caveats?.map((c,i) => <div key={i} style={{ fontSize:11, color:"#e0c97a", marginTop:2 }}>⚠ {c}</div>)}
+                    </>
+                }
+              </div>
+              <button onClick={()=>remove(m.id)} style={{ padding:"1px 5px", borderRadius:3, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:9, border:"1px solid rgba(255,77,79,0.2)", background:"transparent", color:"rgba(255,77,79,0.35)", flexShrink:0, marginTop:1 }}>✕</button>
+            </div>
+          ))
+      }
+
+      {routePicker && (
+        <div style={{ position:"fixed", inset:0, zIndex:9300, background:"rgba(3,8,16,0.8)", backdropFilter:"blur(3px)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={()=>setRoutePicker(null)}>
+          <div style={{ background:"#081628", border:"1px solid rgba(0,184,154,0.3)", borderRadius:10, width:480, maxWidth:"96vw", boxShadow:"0 16px 48px rgba(0,0,0,0.6)", padding:"18px 20px" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:14, fontWeight:700, color:"#00e5c0", marginBottom:4 }}>{routePicker.drug.name}</div>
+            <div style={{ fontSize:11, color:"rgba(200,223,240,0.4)", marginBottom:14 }}>{routePicker.drug.category} · Select route and dosing</div>
+            {routePicker.drug.routes.map((r,i) => {
+              const isActive = routePicker.selectedRoute === r;
+              return (
+                <div key={i} onClick={()=>setRoutePicker(p=>({...p,selectedRoute:r}))} style={{ padding:"10px 12px", borderRadius:7, cursor:"pointer", marginBottom:6, border:isActive?"1px solid #00e5c0":"1px solid rgba(0,184,154,0.12)", background:isActive?"rgba(0,229,192,0.08)":"rgba(11,30,54,0.4)", transition:"all 0.1s" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:4, border:"1px solid rgba(0,184,154,0.3)", color:"#00b89a" }}>{r.route}</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:"#a8d4f0" }}>{r.dose}</span>
+                    {r.freq && <span style={{ fontSize:12, color:"rgba(200,223,240,0.6)", marginLeft:"auto" }}>{r.freq}</span>}
+                  </div>
+                  {r.max && <div style={{ fontSize:11, color:"#f5c842", marginBottom:2 }}>Max: {r.max}</div>}
+                  {r.notes && <div style={{ fontSize:11.5, color:"rgba(200,223,240,0.45)", fontStyle:"italic" }}>{r.notes}</div>}
+                </div>
+              );
+            })}
+            <div style={{ display:"flex", gap:8, marginTop:14 }}>
+              <button onClick={()=>setRoutePicker(null)} style={{ padding:"8px 16px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase", border:"1px solid rgba(200,223,240,0.15)", background:"transparent", color:"rgba(200,223,240,0.4)" }}>Cancel</button>
+              <button onClick={confirmRoute} style={{ flex:1, padding:"9px 0", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", border:"1px solid #00e5c0", background:"rgba(0,229,192,0.1)", color:"#00e5c0" }}>
+                + Add {routePicker.selectedRoute?.route} - {routePicker.selectedRoute?.dose}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── INTERACTIVE DIFFERENTIALS ───────────────────────────────────────────────
 function InteractiveDifferentials({ differentials }) {
   const [items, setItems] = useState(() =>

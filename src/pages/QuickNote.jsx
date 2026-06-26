@@ -14,7 +14,7 @@ import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard, InlineCopyBtn,
-         CCPicker } from "./QuickNoteComponents";
+         CCPicker, HPIBuilder } from "./QuickNoteComponents";
 import { InitialImpressionDisplay, TreatmentDisplay } from "./QuickNoteMDM";
 import { PMH_CATS, PMH_CAT_ICONS, PMH_PRI_STYLE, PMH_MDM_HIGH, PMH_MDM_MOD, computePMHMDM, PMHTab } from "./QuickNotePatientHx";
 import { usePMHConditionInjector } from "@/components/MDMBuilderPMHBridge";
@@ -296,6 +296,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [patientAllergies, setPatientAllergies] = useState([]);
   const [pmhMDMData,       setPmhMDMData]       = useState(null);
   const [showCCPicker,     setShowCCPicker]     = useState(false);
+  const [showHPIBuilder,   setShowHPIBuilder]   = useState(false);
+  const [hpiTemplate,      setHpiTemplate]      = useState("");
+  const [hpiBuilderCC,     setHpiBuilderCC]     = useState("");
 
   // ── Patient-context awareness (patientId URL param) ──────────────────────
   const [patientRecord,    setPatientRecord]    = useState(null);
@@ -1071,6 +1074,9 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setMdmTimestamp("");
     setHpiGaps([]); setLabRecs(null); setImagingRecs(null);
     setMedsFromHpi([]); setAllergiesFromHpi([]);
+    setShowHPIBuilder(false);
+    setHpiTemplate("");
+    setHpiBuilderCC("");
     clearSlotCache(activeSlot);
     setShowUndo(true);
     const t=setTimeout(()=>{setShowUndo(false);setUndoData(null);},6000);
@@ -1115,10 +1121,21 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   }, [undoData,undoTimer]);
 
   const handleCCSelect = useCallback((ccLabel, hpiText, rosText, examText) => {
-    setCC(ccLabel);
-    if (hpiText) setHpi(hpiText);
-    if (rosText) setRos(rosText);
-    if (examText) setExam(examText);
+    if (typeof setCC  === "function") setCC(ccLabel);
+
+    if (rosText) {
+      if (typeof setRos === "function") setRos(rosText);
+    }
+
+    if (examText) {
+      if (typeof setExam === "function") setExam(examText);
+    }
+
+    if (hpiText) {
+      setHpiTemplate(hpiText);
+      setHpiBuilderCC(ccLabel);
+      setShowHPIBuilder(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -1649,6 +1666,17 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           patientAge={slots[activeSlot]?.patientAge || demo?.age}
           patientAgeUnit="year"
         />
+
+        {showHPIBuilder && hpiTemplate && (
+          <HPIBuilder
+            template={hpiTemplate}
+            ccLabel={hpiBuilderCC}
+            onApply={(completedHpi) => {
+              if (typeof setHpi === "function") setHpi(completedHpi);
+            }}
+            onClose={() => setShowHPIBuilder(false)}
+          />
+        )}
 
         <EncounterPicker onSelect={handleEncounterImport} />
 

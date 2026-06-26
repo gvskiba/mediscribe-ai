@@ -720,6 +720,156 @@ export function MDMResult({ result, copiedMDM, setCopiedMDM, onNarrativeEdit }) 
   );
 }
 
+// ─── INTERACTIVE DIFFERENTIALS ───────────────────────────────────────────────
+function InteractiveDifferentials({ differentials }) {
+  const [items, setItems] = useState(() =>
+    differentials.map((d, i) => ({
+      id: i,
+      rank: d.rank,
+      diagnosis: d.diagnosis,
+      rationale: d.rationale || "",
+      selected: false,
+      editing: false,
+    }))
+  );
+  const [newDx, setNewDx] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const addRef = useRef(null);
+
+  const prevRef = useRef(differentials);
+  useEffect(() => {
+    if (JSON.stringify(differentials) !== JSON.stringify(prevRef.current)) {
+      prevRef.current = differentials;
+      setItems(differentials.map((d, i) => ({ id: i, rank: d.rank, diagnosis: d.diagnosis, rationale: d.rationale || "", selected: false, editing: false })));
+    }
+  }, [differentials]);
+
+  const toggle     = id => setItems(p => p.map(x => x.id === id ? { ...x, selected: !x.selected } : x));
+  const startEdit  = id => { setItems(p => p.map(x => x.id === id ? { ...x, editing: true } : x)); };
+  const saveEdit   = (id, val) => setItems(p => p.map(x => x.id === id ? { ...x, diagnosis: val, editing: false } : x));
+  const cancelEdit = id => setItems(p => p.map(x => x.id === id ? { ...x, editing: false } : x));
+  const remove     = id => setItems(p => { const next = p.filter(x => x.id !== id).map((x, i) => ({ ...x, rank: i + 1 })); return next; });
+  const moveUp     = id => setItems(p => { const i = p.findIndex(x => x.id === id); if (i === 0) return p; const n = [...p]; [n[i-1], n[i]] = [n[i], n[i-1]]; return n.map((x, idx) => ({ ...x, rank: idx + 1 })); });
+  const moveDown   = id => setItems(p => { const i = p.findIndex(x => x.id === id); if (i === p.length - 1) return p; const n = [...p]; [n[i], n[i+1]] = [n[i+1], n[i]]; return n.map((x, idx) => ({ ...x, rank: idx + 1 })); });
+
+  const selectAll  = () => setItems(p => p.map(x => ({ ...x, selected: true })));
+  const selectNone = () => setItems(p => p.map(x => ({ ...x, selected: false })));
+
+  const addItem = () => {
+    if (!newDx.trim()) return;
+    const newId = Date.now();
+    setItems(p => [...p, { id: newId, rank: p.length + 1, diagnosis: newDx.trim(), rationale: "", selected: true, editing: false }]);
+    setNewDx("");
+    setShowAdd(false);
+  };
+
+  const handleCopy = async () => {
+    const selected = items.filter(x => x.selected);
+    const src = selected.length > 0 ? selected : items;
+    const text = "Differentials (ranked):\n" + src.map(x => x.rank + ". " + x.diagnosis).join("\n");
+    try { await navigator.clipboard.writeText(text); } catch {}
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const selectedCount = items.filter(x => x.selected).length;
+
+  const S = {
+    wrap: { marginTop: 10 },
+    headerRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
+    subHead: { fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: "rgba(200,223,240,0.45)", letterSpacing: "0.09em", textTransform: "uppercase" },
+    controls: { display: "flex", gap: 5, alignItems: "center" },
+    microBtn: { padding: "2px 7px", borderRadius: 3, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", border: "1px solid rgba(0,184,154,0.2)", background: "transparent", color: "rgba(200,223,240,0.35)" },
+    copyBtn: { padding: "3px 9px", borderRadius: 4, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", border: copied ? "1px solid #00e5c0" : "1px solid rgba(0,184,154,0.25)", background: copied ? "rgba(0,229,192,0.12)" : "transparent", color: copied ? "#00e5c0" : "rgba(200,223,240,0.4)", transition: "all 0.15s" },
+    addBtn: { padding: "3px 9px", borderRadius: 4, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", border: "1px solid rgba(0,184,154,0.25)", background: "transparent", color: "rgba(0,229,192,0.5)" },
+    item: (sel) => ({ display: "flex", gap: 6, alignItems: "flex-start", padding: "6px 8px", borderRadius: 6, marginBottom: 4, background: sel ? "rgba(0,184,154,0.06)" : "rgba(11,30,54,0.3)", border: sel ? "1px solid rgba(0,184,154,0.2)" : "1px solid rgba(0,184,154,0.07)", transition: "all 0.1s", cursor: "pointer" }),
+    checkbox: (sel) => ({ width: 14, height: 14, borderRadius: 3, flexShrink: 0, marginTop: 2, border: sel ? "1px solid #00e5c0" : "1px solid rgba(200,223,240,0.2)", background: sel ? "#00e5c0" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }),
+    checkmark: { color: "#081628", fontSize: 9, fontWeight: 700, lineHeight: 1 },
+    rankBadge: { fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, color: "#00b89a", minWidth: 16, flexShrink: 0, paddingTop: 2 },
+    diagText: (sel) => ({ flex: 1, fontSize: 12.5, color: sel ? "#c8dff0" : "rgba(200,223,240,0.55)", lineHeight: 1.4, cursor: "pointer" }),
+    editInput: { flex: 1, background: "rgba(11,30,54,0.7)", border: "1px solid rgba(0,229,192,0.35)", borderRadius: 4, color: "#c8dff0", fontFamily: "'DM Sans',sans-serif", fontSize: 12.5, padding: "2px 7px", outline: "none" },
+    actionBtns: { display: "flex", gap: 4, flexShrink: 0 },
+    iconBtn: (color) => ({ padding: "1px 5px", borderRadius: 3, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9, border: "1px solid " + (color || "rgba(200,223,240,0.15)"), background: "transparent", color: color || "rgba(200,223,240,0.3)" }),
+    addRow: { display: "flex", gap: 6, marginTop: 6 },
+    addInput: { flex: 1, background: "rgba(11,30,54,0.7)", border: "1px solid rgba(0,229,192,0.3)", borderRadius: 5, color: "#c8dff0", fontFamily: "'DM Sans',sans-serif", fontSize: 12.5, padding: "6px 10px", outline: "none" },
+    addConfirm: { padding: "6px 12px", borderRadius: 5, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, border: "1px solid #00e5c0", background: "rgba(0,229,192,0.1)", color: "#00e5c0" },
+    addCancel: { padding: "6px 10px", borderRadius: 5, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 10, border: "1px solid rgba(200,223,240,0.15)", background: "transparent", color: "rgba(200,223,240,0.4)" },
+    showAddBtn: { marginTop: 6, padding: "5px 0", width: "100%", borderRadius: 5, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", border: "1px dashed rgba(0,184,154,0.2)", background: "transparent", color: "rgba(0,229,192,0.45)" },
+  };
+
+  return (
+    <div style={S.wrap}>
+      <div style={S.headerRow}>
+        <div style={S.subHead}>Differentials (ranked)</div>
+        <div style={S.controls}>
+          <button style={S.microBtn} onClick={selectAll}>All</button>
+          <button style={S.microBtn} onClick={selectNone}>None</button>
+          <button style={S.copyBtn} onClick={handleCopy}>
+            {copied ? "✓ Copied" : selectedCount > 0 ? `Copy (${selectedCount})` : "Copy All"}
+          </button>
+          <button style={S.addBtn} onClick={() => { setShowAdd(true); setTimeout(() => addRef.current?.focus(), 50); }}>+ Add</button>
+        </div>
+      </div>
+
+      {items.map((item, idx) => (
+        <div key={item.id} style={S.item(item.selected)}>
+          <div style={S.checkbox(item.selected)} onClick={() => toggle(item.id)}>
+            {item.selected && <span style={S.checkmark}>✓</span>}
+          </div>
+          <span style={S.rankBadge}>{item.rank}.</span>
+          {item.editing ? (
+            <input
+              autoFocus
+              style={S.editInput}
+              defaultValue={item.diagnosis}
+              onBlur={e => saveEdit(item.id, e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") saveEdit(item.id, e.target.value);
+                if (e.key === "Escape") cancelEdit(item.id);
+              }}
+              onClick={e => e.stopPropagation()}
+            />
+          ) : (
+            <span style={S.diagText(item.selected)} onClick={() => toggle(item.id)} onDoubleClick={() => startEdit(item.id)} title="Click to select · Double-click to edit">
+              {item.diagnosis}
+              {item.rationale && <span style={{ color: "rgba(200,223,240,0.4)", fontStyle: "italic", marginLeft: 6, fontSize: 11.5 }}>— {item.rationale}</span>}
+            </span>
+          )}
+          <div style={S.actionBtns}>
+            {idx > 0 && <button style={S.iconBtn()} onClick={() => moveUp(item.id)} title="Move up">↑</button>}
+            {idx < items.length - 1 && <button style={S.iconBtn()} onClick={() => moveDown(item.id)} title="Move down">↓</button>}
+            {!item.editing && <button style={S.iconBtn()} onClick={() => startEdit(item.id)} title="Edit">✎</button>}
+            <button style={S.iconBtn("rgba(255,77,79,0.4)")} onClick={() => remove(item.id)} title="Remove">✕</button>
+          </div>
+        </div>
+      ))}
+
+      {showAdd ? (
+        <div style={S.addRow}>
+          <input
+            ref={addRef}
+            style={S.addInput}
+            value={newDx}
+            onChange={e => setNewDx(e.target.value)}
+            placeholder="Enter diagnosis..."
+            onKeyDown={e => {
+              if (e.key === "Enter") addItem();
+              if (e.key === "Escape") { setShowAdd(false); setNewDx(""); }
+            }}
+          />
+          <button style={S.addConfirm} onClick={addItem}>Add</button>
+          <button style={S.addCancel} onClick={() => { setShowAdd(false); setNewDx(""); }}>Cancel</button>
+        </div>
+      ) : (
+        <button style={S.showAddBtn} onClick={() => { setShowAdd(true); setTimeout(() => addRef.current?.focus(), 50); }}>
+          + Add Differential
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── INITIAL IMPRESSION DISPLAY ──────────────────────────────────────────────
 export function InitialImpressionDisplay({ result }) {
   if (!result) return null;
@@ -892,22 +1042,7 @@ export function InitialImpressionDisplay({ result }) {
           )}
 
           {imp.differentials?.length > 0 && (
-            <div>
-              <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", color: "rgba(200,223,240,0.45)", marginBottom: 6 }}>
-                Differentials
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {imp.differentials.map((d, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                    <span style={{ fontFamily: MONO, fontSize: 11, color: "#00b89a", flexShrink: 0, minWidth: 18 }}>{d.rank}.</span>
-                    <span style={{ fontFamily: SANS, fontSize: 13, color: "#c8dff0", fontWeight: 500 }}>{d.diagnosis}</span>
-                    {d.rationale && (
-                      <span style={{ fontFamily: SANS, fontSize: 12, color: "rgba(200,223,240,0.5)", fontStyle: "italic" }}> — {d.rationale}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <InteractiveDifferentials differentials={imp.differentials} />
           )}
         </div>
       )}

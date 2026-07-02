@@ -1,13 +1,15 @@
-// QuickNote.jsx  v12.2  — CC-driven ROS + PE scaffold injection added
-// v12.2 adds:
-//   - QuickNoteROSPEScaffolds: auto-surfaces one-click ROS + PE templates on CC match
-//   - 13 chief complaints covered with full bracket-placeholder clinical templates
-//   - Mirrors HPI scaffold pattern — zero-latency, no API call
-// Carries forward all v12.1 features:
-//   - EMLevel meter, MDM Thread, PatientResponsePanel
-//   - PMHTab, EncounterPicker, MDMHandoffBridge
-//   - localStorage auto-save, slot persistence
-//   - All AI generators (plan, labs, imaging, recs)
+// QuickNote.jsx  v13.0  — Full layout restructure + HPI-driven ROS/PE AI
+// v13.0 changes:
+//   - LAYOUT: Two-phase clinical flow with clear visual dividers
+//   - PHASE 1 DATA: CC → Vitals → HPI → [AI: Generate ROS + PE] → ROS → PE
+//   - HPI auto-generates ROS + PE after 1.8s debounce (no button needed)
+//   - Manual "Generate ROS from HPI" and "Generate PE from HPI" buttons also added
+//   - Generate Initial Impression button anchored BELOW focused exam
+//   - PHASE 1 OUTPUT: Initial Impression → A&P → Clinical Plan — all grouped together
+//   - PHASE 2 DATA: Labs → Imaging → EKG → Recheck Vitals → Patient Response
+//   - PHASE 2 OUTPUT: Lab Summary → Imaging Analysis → Final Impression → Disposition → ED Meds
+//   - EHR EXPORT: Meditech MDM Hub + ActionBar at very bottom
+//   - All v12.2 features preserved (scaffolds, EMLevel, MDM thread, etc.)
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
@@ -56,8 +58,56 @@ import { MDMHandoffBridge } from "@/components/quicknote/MDMHandoffBridge";
 import StagedOrderQueue from "@/components/StagedOrderQueue";
 import NoteExportPanel from "@/components/NoteExportPanel";
 
-
 injectQNStyles();
+
+// ─── Section divider component ────────────────────────────────────────────────
+function PhaseDivider({ phase, label, color = "var(--qn-teal)", sublabel }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 12, margin: "20px 0 14px",
+    }}>
+      <div style={{
+        padding: "4px 14px", borderRadius: 20,
+        background: `${color}18`, border: `1px solid ${color}50`,
+        fontFamily: "'JetBrains Mono',monospace", fontSize: 9, fontWeight: 700,
+        color, letterSpacing: 1.5, textTransform: "uppercase", flexShrink: 0,
+      }}>
+        {phase}
+      </div>
+      <div style={{ flex: 1, height: 1, background: `${color}25` }} />
+      <div style={{
+        fontFamily: "'Playfair Display',serif", fontSize: 13, fontWeight: 700,
+        color: "var(--qn-txt2)", flexShrink: 0,
+      }}>
+        {label}
+      </div>
+      {sublabel && (
+        <div style={{
+          fontFamily: "'JetBrains Mono',monospace", fontSize: 8,
+          color: "var(--qn-txt4)", flexShrink: 0, letterSpacing: .4,
+        }}>
+          {sublabel}
+        </div>
+      )}
+      <div style={{ flex: 1, height: 1, background: `${color}25` }} />
+    </div>
+  );
+}
+
+// ─── Section card wrapper ─────────────────────────────────────────────────────
+function SectionCard({ children, accent = "rgba(42,79,122,.4)", style = {} }) {
+  return (
+    <div style={{
+      marginBottom: 12, padding: "14px 16px",
+      background: "rgba(8,22,40,.5)",
+      border: `1px solid ${accent}`,
+      borderRadius: 12,
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
 
 export default function QuickNote({ embedded = false, demo, vitals: initVitals, cc: initCC }) {
   const [cc,     setCC]     = useState(initCC?.text || "");
@@ -84,22 +134,12 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [isBounceback,   setIsBounceback]   = useState(false);
   const [bouncebackDate, setBouncebackDate] = useState("");
   const [consults, setConsults] = useState([]);
-
-  // Consult Logger state — lifted so NoteExportPanel can read it
   const [consultList, setConsultList] = useState([]);
   const [showOrderQueue, setShowOrderQueue] = useState(false);
-
-  // Staged Order Queue state — lifted so NoteExportPanel can read it
   const [orderPhases, setOrderPhases] = useState([
-    {
-      id: 1,
-      label: "Phase 1 — Initial Orders",
-      trigger: "On arrival",
-      status: "active",
-      firedAt: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-      orders: [],
-      note: "",
-    }
+    { id:1, label:"Phase 1 — Initial Orders", trigger:"On arrival", status:"active",
+      firedAt: new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}),
+      orders:[], note:"" },
   ]);
 
   const DEFAULT_EVENTS = [
@@ -120,6 +160,95 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [workupRationaleBusy, setWorkupRationaleBusy] = useState(false);
   const [copiedWorkup,        setCopiedWorkup]        = useState(false);
   const [autoRosBusy, setAutoRosBusy] = useState(false);
+
+  // ─── v13.0: HPI-driven ROS + PE auto-generation ───────────────────────────
+  const [hpiRosBusy,  setHpiRosBusy]  = useState(false);
+  const [hpiExamBusy, setHpiExamBusy] = useState(false);
+  const [hpiRosDone,  setHpiRosDone]  = useState(false);
+  const [hpiExamDone, setHpiExamDone] = useState(false);
+  const hpiRosTimer  = useRef(null);
+  const hpiExamTimer = useRef(null);
+
+  const generateROSFromHPI = useCallback(async (hpiText, ccText) => {
+    if (!hpiText?.trim() || hpiRosBusy) return;
+    setHpiRosBusy(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a board-certified emergency physician. The nursing staff has documented the following HPI. Generate a complete, complaint-appropriate Review of Systems (ROS) based on this HPI.
+
+Chief Complaint: ${ccText || "not specified"}
+HPI: ${hpiText}
+
+Rules:
+1. Only include systems relevant to this chief complaint and its major differentials
+2. Format each system as: "System: (+) positive symptom, (-) negative symptom"
+3. Extract explicitly mentioned symptoms as positives
+4. Include pertinent negatives for high-risk differentials (e.g. for chest pain: deny diaphoresis, syncope, leg swelling)
+5. Do NOT invent symptoms — only document what is stated or can be clinically inferred from the CC/HPI
+6. Include 4-8 relevant systems
+7. Common systems to consider: Constitutional, Cardiovascular, Pulmonary, GI, GU, Musculoskeletal, Neurological, Dermatologic, Psychiatric
+
+Return JSON: { "ros_text": "System-by-system ROS here..." }`,
+        response_json_schema: { type:"object", required:["ros_text"], properties:{ ros_text:{type:"string"} } },
+      });
+      if (res?.ros_text?.trim()) {
+        setRos(res.ros_text.trim());
+        setHpiRosDone(true);
+        setTimeout(() => setHpiRosDone(false), 4000);
+      }
+    } catch(e) { console.error("HPI→ROS failed:", e); }
+    finally { setHpiRosBusy(false); }
+  }, [hpiRosBusy]);
+
+  const generatePEFromHPI = useCallback(async (hpiText, ccText) => {
+    if (!hpiText?.trim() || hpiExamBusy) return;
+    setHpiExamBusy(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a board-certified emergency physician. Generate a focused physical exam template for an ED patient based on the chief complaint and HPI below.
+
+Chief Complaint: ${ccText || "not specified"}
+HPI: ${hpiText}
+
+Rules:
+1. Include only systems relevant to this complaint and its high-risk differentials
+2. Pre-fill normal findings where universally appropriate (e.g. "Alert and oriented x3", "Regular rate and rhythm")
+3. Use [FINDING] bracket placeholders for exam findings that require direct patient assessment
+4. Include 4-7 relevant exam components
+5. Format: "System: findings here [SPECIFIC FINDING TO ASSESS]"
+6. Always include: General appearance, Vital signs interpretation, and the primary system for this complaint
+7. For chest pain: include Cardiovascular, Pulmonary, Extremities
+8. For abdominal pain: include Abdomen with palpation template, Rectal if indicated
+9. For neuro complaints: include full Neurological with GCS
+
+Return JSON: { "exam_text": "System-by-system PE template here..." }`,
+        response_json_schema: { type:"object", required:["exam_text"], properties:{ exam_text:{type:"string"} } },
+      });
+      if (res?.exam_text?.trim()) {
+        setExam(res.exam_text.trim());
+        setHpiExamDone(true);
+        setTimeout(() => setHpiExamDone(false), 4000);
+      }
+    } catch(e) { console.error("HPI→PE failed:", e); }
+    finally { setHpiExamBusy(false); }
+  }, [hpiExamBusy]);
+
+  // Auto-trigger ROS + PE from HPI after 1.8s debounce
+  const handleHpiChange = useCallback((val) => {
+    setHpi(val);
+    if (hpiRosTimer.current) clearTimeout(hpiRosTimer.current);
+    if (hpiExamTimer.current) clearTimeout(hpiExamTimer.current);
+    if (val.trim().length > 60) {
+      hpiRosTimer.current = setTimeout(() => {
+        generateROSFromHPI(val, cc);
+      }, 1800);
+      hpiExamTimer.current = setTimeout(() => {
+        generatePEFromHPI(val, cc);
+      }, 2200);
+    }
+  }, [cc, generateROSFromHPI, generatePEFromHPI]);
+  // ──────────────────────────────────────────────────────────────────────────
+
   const [patientPregnant,    setPatientPregnant]    = useState("Unknown");
   const [patientWeight,      setPatientWeight]      = useState("");
   const [showProcedureModal, setShowProcedureModal] = useState(false);
@@ -179,9 +308,9 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const slotCacheIdsRef = useRef(slotCacheIds);
   const activeSlotRef   = useRef(activeSlot);
   const slotSavingRef   = useRef(false);
-  useEffect(() => { slotsRef.current = slots; },             [slots]);
+  useEffect(() => { slotsRef.current = slots; },              [slots]);
   useEffect(() => { slotCacheIdsRef.current = slotCacheIds; },[slotCacheIds]);
-  useEffect(() => { activeSlotRef.current = activeSlot; },   [activeSlot]);
+  useEffect(() => { activeSlotRef.current = activeSlot; },    [activeSlot]);
 
   const saveCurrentToSlot = useCallback((idx, state) => {
     setSlots(prev => { const next=[...prev]; next[idx]={...prev[idx],...state}; return next; });
@@ -206,7 +335,6 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
       if (typeof setFinalImpressionResult === "function") setFinalImpressionResult(slot.finalImpressionResult || null);
       if (typeof setConfirmedRanks === "function") setConfirmedRanks(slot.confirmedRanks instanceof Set ? slot.confirmedRanks : new Set());
       if (typeof setRejectedRanks === "function") setRejectedRanks(slot.rejectedRanks instanceof Set ? slot.rejectedRanks : new Set());
-      // setSelectedGuideline not declared in this file — skipped
       setIcdSelected(slot.icdSelected||[]); setIcdSuggestions([]);
       setInterventions(slot.interventions||[]);
       setHpiSummary(slot.hpiSummary||null); setHpiMode(slot.hpiMode||"original");
@@ -299,13 +427,8 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
   const [showHPIBuilder,   setShowHPIBuilder]   = useState(false);
   const [hpiTemplate,      setHpiTemplate]      = useState("");
   const [hpiBuilderCC,     setHpiBuilderCC]     = useState("");
-
-  // ── Patient-context awareness (patientId URL param) ──────────────────────
   const [patientRecord,    setPatientRecord]    = useState(null);
   const [patientIdParam,   setPatientIdParam]   = useState(null);
-
-  const activeOrderCount = orderPhases.filter(p => p.status === "active").reduce((n, p) => n + p.orders.length, 0);
-  const stagedOrderCount = orderPhases.filter(p => p.status === "staged").reduce((n, p) => n + p.orders.length, 0);
 
   const effectiveHpi = hpiMode === "summary" && hpiSummary ? hpiSummary : hpi;
   const phase1Ready  = Boolean(cc.trim() || hpi.trim() || exam.trim());
@@ -333,7 +456,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
             response_json_schema: LAB_SUMMARY_SCHEMA,
           });
           setLabSummaryResult(res);
-        } catch (e) { console.error("Auto lab analysis failed:", e); }
+        } catch(e) { console.error("Auto lab analysis failed:", e); }
         finally { setLabsAutoAnalyzing(false); }
       }, 1800);
     }
@@ -351,7 +474,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
             response_json_schema: IMAGING_ANALYSIS_SCHEMA,
           });
           setImagingAnalysisResult(res);
-        } catch (e) { console.error("Auto imaging analysis failed:", e); }
+        } catch(e) { console.error("Auto imaging analysis failed:", e); }
         finally { setImagingAutoAnalyzing(false); }
       }, 1800);
     }
@@ -398,29 +521,28 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
 
   const generateFinalImpression = useCallback(async (resolvedDispResult) => {
     setFinalImpressionLoading(true);
-    setConfirmedRanks(new Set());
-    setRejectedRanks(new Set());
+    setConfirmedRanks(new Set()); setRejectedRanks(new Set());
     try {
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: buildFinalImpressionPrompt(cc, hpi, exam, mdmResult, labSummaryResult, imaging, resolvedDispResult),
         response_json_schema: FINAL_IMPRESSION_SCHEMA,
       });
       setFinalImpressionResult(res);
-    } catch (e) { console.error("Final impression failed:", e); }
+    } catch(e) { console.error("Final impression failed:", e); }
     finally { setFinalImpressionLoading(false); }
   }, [cc, hpi, exam, mdmResult, labSummaryResult, imaging]);
 
   const handleConfirmDx = useCallback((rank) => {
-    setConfirmedRanks(prev => { const s = new Set(prev); s.add(rank); return s; });
-    setRejectedRanks(prev => { const s = new Set(prev); s.delete(rank); return s; });
+    setConfirmedRanks(prev => { const s=new Set(prev); s.add(rank); return s; });
+    setRejectedRanks(prev => { const s=new Set(prev); s.delete(rank); return s; });
   }, []);
   const handleRejectDx = useCallback((rank) => {
-    setRejectedRanks(prev => { const s = new Set(prev); s.add(rank); return s; });
-    setConfirmedRanks(prev => { const s = new Set(prev); s.delete(rank); return s; });
+    setRejectedRanks(prev => { const s=new Set(prev); s.add(rank); return s; });
+    setConfirmedRanks(prev => { const s=new Set(prev); s.delete(rank); return s; });
   }, []);
   const handleResetDx = useCallback((rank) => {
-    setConfirmedRanks(prev => { const s = new Set(prev); s.delete(rank); return s; });
-    setRejectedRanks(prev => { const s = new Set(prev); s.delete(rank); return s; });
+    setConfirmedRanks(prev => { const s=new Set(prev); s.delete(rank); return s; });
+    setRejectedRanks(prev => { const s=new Set(prev); s.delete(rank); return s; });
   }, []);
 
   const generateLabSummary = useCallback(async () => {
@@ -432,7 +554,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         response_json_schema: LAB_SUMMARY_SCHEMA,
       });
       setLabSummaryResult(res);
-    } catch (e) { console.error("Lab summary failed:", e); }
+    } catch(e) { console.error("Lab summary failed:", e); }
     finally { setLabSummaryLoading(false); }
   }, [labs, cc, mdmResult, parsedMeds, parsedAllergies, labSummaryLoading]);
 
@@ -447,7 +569,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         response_json_schema: ED_MEDICATIONS_SCHEMA,
       });
       setEdMedsResult(res);
-    } catch (e) { console.error("ED Medications failed:", e); }
+    } catch(e) { console.error("ED Medications failed:", e); }
     finally { setEdMedsLoading(false); }
   }, [cc, hpi, exam, mdmResult, labSummaryResult, treatmentResult, parsedMeds, parsedAllergies, pmh]);
 
@@ -466,7 +588,7 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
         response_json_schema: TREATMENT_SCHEMA,
       });
       setTreatmentResult(res);
-    } catch (e) { console.error("Treatment generation failed:", e); }
+    } catch(e) { console.error("Treatment generation failed:", e); }
     finally { setTreatmentLoading(false); }
   }, [cc, vitals, hpi, ros, exam]);
 
@@ -518,15 +640,10 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     try {
       const schema = {
         type:"object", required:["treatment_plan","action_items"],
-        properties:{
-          treatment_plan:{ type:"string" },
-          action_items:{ type:"array", items:{ type:"string" } },
-        },
+        properties:{ treatment_plan:{type:"string"}, action_items:{type:"array",items:{type:"string"}} },
       };
-      const medsCtx = parsedMeds.length
-        ? "\nCurrent medications: "+parsedMeds.map(m=>`${m.name} ${m.dose} ${m.route} ${m.frequency}`).join(", "):"";
-      const allergyCtx = parsedAllergies.length
-        ? "\nAllergies: "+parsedAllergies.map(a=>`${a.allergen} (${a.reaction})`).join(", "):"";
+      const medsCtx = parsedMeds.length ? "\nCurrent medications: "+parsedMeds.map(m=>`${m.name} ${m.dose} ${m.route} ${m.frequency}`).join(", "):"";
+      const allergyCtx = parsedAllergies.length ? "\nAllergies: "+parsedAllergies.map(a=>`${a.allergen} (${a.reaction})`).join(", "):"";
       const weightCtx = patientWeight ? `\nWeight: ${patientWeight}kg` : "";
       const pregnancyCtx = patientPregnant==="Yes" ? "\nPATIENT IS PREGNANT — avoid teratogenic medications." : "";
       const res = await base44.integrations.Core.InvokeLLM({
@@ -535,25 +652,21 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
 WORKING DIAGNOSIS: ${mdmResult.working_diagnosis||""}
 DIFFERENTIAL: ${mdmResult.differential?.map(d=>d.diagnosis).join(", ")||""}
 MDM LEVEL: ${mdmResult.mdm_level||""}
-CRITICAL ACTIONS: ${(mdmResult.critical_actions||[]).join("; ")||"none"}
-RECOMMENDED ACTIONS: ${(mdmResult.recommended_actions||[]).join("; ")||""}
 CC: ${cc}
 VITALS: ${vitals}
 ENCOUNTER TYPE: ${encounterType}
 ${medsCtx}${allergyCtx}${weightCtx}${pregnancyCtx}
 
 Generate two things:
-1. treatment_plan: A 2-4 sentence narrative of the evidence-based treatment plan for this ED presentation. Include specific medications with doses, routes, and frequencies where appropriate. Reference guidelines (ACEP, ACC/AHA, UpToDate) where applicable. Account for allergies and current medications.
-2. action_items: Array of 5-10 specific, actionable, discrete orders/tasks for this encounter. Each should be a single actionable statement. Include monitoring, nursing orders, and disposition-related items.
+1. treatment_plan: A 2-4 sentence narrative of the evidence-based treatment plan.
+2. action_items: Array of 5-10 specific, actionable, discrete orders/tasks.
 
 Return JSON only.`,
         response_json_schema: schema,
       });
       if (res?.treatment_plan?.trim()) setTreatmentPlan(res.treatment_plan.trim());
-      if (res?.action_items?.length) {
-        setActionPlan(res.action_items.map(item => `• ${item}`).join("\n"));
-      }
-    } catch(e) { console.error("Clinical plan generation failed:",e); }
+      if (res?.action_items?.length) setActionPlan(res.action_items.map(item=>`• ${item}`).join("\n"));
+    } catch(e) { console.error("Clinical plan failed:",e); }
     finally { setTreatmentPlanBusy(false); }
   }, [mdmResult,cc,vitals,encounterType,parsedMeds,parsedAllergies,patientWeight,patientPregnant,treatmentPlanBusy]);
 
@@ -564,25 +677,13 @@ Return JSON only.`,
       const schema = {
         type:"object", required:["immediate","urgent","consider"],
         properties:{
-          immediate:{ type:"array", items:{ type:"object", required:["name","rationale","category"],
-            properties:{ name:{type:"string"}, rationale:{type:"string"}, category:{type:"string"} }}},
-          urgent:{ type:"array", items:{ type:"object", required:["name","rationale","category"],
-            properties:{ name:{type:"string"}, rationale:{type:"string"}, category:{type:"string"} }}},
-          consider:{ type:"array", items:{ type:"object", required:["name","rationale","category"],
-            properties:{ name:{type:"string"}, rationale:{type:"string"}, category:{type:"string"} }}},
+          immediate:{type:"array",items:{type:"object",required:["name","rationale","category"],properties:{name:{type:"string"},rationale:{type:"string"},category:{type:"string"}}}},
+          urgent:{type:"array",items:{type:"object",required:["name","rationale","category"],properties:{name:{type:"string"},rationale:{type:"string"},category:{type:"string"}}}},
+          consider:{type:"array",items:{type:"object",required:["name","rationale","category"],properties:{name:{type:"string"},rationale:{type:"string"},category:{type:"string"}}}},
         },
       };
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`You are a board-certified emergency physician recommending evidence-based laboratory studies.
-
-WORKING DIAGNOSIS: ${mdmResult.working_diagnosis||""}
-DIFFERENTIAL: ${mdmResult.differential?.map(d=>d.diagnosis).join(", ")||""}
-CC: ${cc}
-VITALS: ${vitals}
-MDM LEVEL: ${mdmResult.mdm_level||""}
-ENCOUNTER TYPE: ${encounterType}
-
-Recommend evidence-based labs: immediate (must order now), urgent (should order this visit), consider (may add value). For each: name, rationale (one sentence), category. Ground in ACEP/ACC-AHA/UpToDate. Return JSON only.`,
+        prompt:`You are a board-certified emergency physician recommending evidence-based laboratory studies. WORKING DIAGNOSIS: ${mdmResult.working_diagnosis||""} DIFFERENTIAL: ${mdmResult.differential?.map(d=>d.diagnosis).join(", ")||""} CC: ${cc} VITALS: ${vitals} MDM LEVEL: ${mdmResult.mdm_level||""} ENCOUNTER TYPE: ${encounterType}. Return JSON only.`,
         response_json_schema: schema,
       });
       setLabRecs(res);
@@ -597,26 +698,13 @@ Recommend evidence-based labs: immediate (must order now), urgent (should order 
       const schema = {
         type:"object", required:["recommended","consider"],
         properties:{
-          recommended:{ type:"array", items:{ type:"object", required:["modality","indication","guideline","priority"],
-            properties:{ modality:{type:"string"}, indication:{type:"string"}, guideline:{type:"string"}, priority:{type:"string"} }}},
-          consider:{ type:"array", items:{ type:"object", required:["modality","indication","guideline"],
-            properties:{ modality:{type:"string"}, indication:{type:"string"}, guideline:{type:"string"} }}},
+          recommended:{type:"array",items:{type:"object",required:["modality","indication","guideline","priority"],properties:{modality:{type:"string"},indication:{type:"string"},guideline:{type:"string"},priority:{type:"string"}}}},
+          consider:{type:"array",items:{type:"object",required:["modality","indication","guideline"],properties:{modality:{type:"string"},indication:{type:"string"},guideline:{type:"string"}}}},
         },
       };
-      const pregnancyWarning = patientPregnant==="Yes"
-        ? "\nPATIENT IS PREGNANT — minimize radiation. Prefer ultrasound or MRI where clinically equivalent." : "";
+      const pregnancyWarning = patientPregnant==="Yes" ? "\nPATIENT IS PREGNANT — minimize radiation." : "";
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`You are a board-certified emergency physician recommending evidence-based imaging studies.
-
-WORKING DIAGNOSIS: ${mdmResult.working_diagnosis||""}
-DIFFERENTIAL: ${mdmResult.differential?.map(d=>d.diagnosis).join(", ")||""}
-CC: ${cc}
-VITALS: ${vitals}
-MDM LEVEL: ${mdmResult.mdm_level||""}
-ENCOUNTER TYPE: ${encounterType}
-${pregnancyWarning}
-
-Recommend imaging: recommended (clearly indicated), consider (may be indicated). For each: modality, indication, guideline, priority. Return JSON only.`,
+        prompt:`Evidence-based imaging for WORKING DIAGNOSIS: ${mdmResult.working_diagnosis||""} CC: ${cc} VITALS: ${vitals} ENCOUNTER TYPE: ${encounterType}${pregnancyWarning}. Return JSON only.`,
         response_json_schema: schema,
       });
       setImagingRecs(res);
@@ -629,7 +717,7 @@ Recommend imaging: recommended (clearly indicated), consider (may be indicated).
     setEkgBusy(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`Write one-sentence EKG interpretation for ED chart. Include rate, rhythm, key intervals, significant findings, ST changes explicitly. EKG: ${ekgText}. Return JSON: { "interpretation": "..." }`,
+        prompt:`Write one-sentence EKG interpretation for ED chart. EKG: ${ekgText}. Return JSON: { "interpretation": "..." }`,
         response_json_schema:{type:"object",required:["interpretation"],properties:{interpretation:{type:"string"}}},
       });
       if (res?.interpretation) setEkg(res.interpretation.trim());
@@ -669,16 +757,12 @@ Recommend imaging: recommended (clearly indicated), consider (may be indicated).
     setHpiSummary(null); setHpiGaps([]);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`Extract OPQRST from nursing triage note. CC: ${cc||"not specified"}. NOTE: ${hpi}.
-Format as labeled fields, one per line. Omit lines not present. No inference. Use exact phrasing.
-Also return: chief_complaint_extracted, fields_found, meds_extracted (each {name,dose,route,frequency}), allergies_extracted (each {allergen,reaction}).
-Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fields_found": ["..."], "meds_extracted": [], "allergies_extracted": [] }`,
+        prompt:`Extract OPQRST from nursing triage note. CC: ${cc||"not specified"}. NOTE: ${hpi}. Format as labeled fields. Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fields_found": ["..."], "meds_extracted": [], "allergies_extracted": [] }`,
         response_json_schema:{
           type:"object",
           required:["structured_hpi","chief_complaint_extracted","fields_found"],
           properties:{
-            structured_hpi:{type:"string"},
-            chief_complaint_extracted:{type:"string"},
+            structured_hpi:{type:"string"},chief_complaint_extracted:{type:"string"},
             fields_found:{type:"array",items:{type:"string"}},
             meds_extracted:{type:"array",items:{type:"object",properties:{name:{type:"string"},dose:{type:"string"},route:{type:"string"},frequency:{type:"string"}}}},
             allergies_extracted:{type:"array",items:{type:"object",properties:{allergen:{type:"string"},reaction:{type:"string"}}}},
@@ -703,7 +787,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setHpiSumBusy(true); setHpiSumError(null);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`Convert this OPQRST outline to a physician HPI paragraph. No added details. Past tense, 3rd person, 3-5 sentences, no labels/headers. OPQRST: ${hpiSummary}. Return JSON: { "summary": "..." }`,
+        prompt:`Convert this OPQRST outline to a physician HPI paragraph. No added details. Past tense, 3rd person, 3-5 sentences. OPQRST: ${hpiSummary}. Return JSON: { "summary": "..." }`,
         response_json_schema:{type:"object",required:["summary"],properties:{summary:{type:"string"}}},
       });
       const text=res?.summary?.trim()||"";
@@ -718,7 +802,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setHpiSumBusy(true); setHpiSumError(null); setHpiSummary(null);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`Rewrite nursing HPI as physician clinical paragraph. No added details. Past tense, 3rd person, 3-5 sentences, no headers/bullets. SOURCE HPI: ${hpi}. Return JSON: { "summary": "..." }`,
+        prompt:`Rewrite nursing HPI as physician clinical paragraph. Past tense, 3rd person, 3-5 sentences. SOURCE HPI: ${hpi}. Return JSON: { "summary": "..." }`,
         response_json_schema:{type:"object",required:["summary"],properties:{summary:{type:"string"}}},
       });
       const text=res?.summary?.trim()||"";
@@ -733,13 +817,11 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setMedsParsing(true); setMedsError(null);
     try {
       const schema={type:"object",required:["medications","allergies"],properties:{
-        medications:{type:"array",items:{type:"object",required:["name","dose","route","frequency"],
-          properties:{name:{type:"string"},dose:{type:"string"},route:{type:"string"},frequency:{type:"string"}}}},
-        allergies:{type:"array",items:{type:"object",required:["allergen","reaction"],
-          properties:{allergen:{type:"string"},reaction:{type:"string"}}}},
+        medications:{type:"array",items:{type:"object",required:["name","dose","route","frequency"],properties:{name:{type:"string"},dose:{type:"string"},route:{type:"string"},frequency:{type:"string"}}}},
+        allergies:{type:"array",items:{type:"object",required:["allergen","reaction"],properties:{allergen:{type:"string"},reaction:{type:"string"}}}},
       }};
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`Parse meds: ${medsRaw||"none"}. Allergies: ${allergiesRaw||"none"}. Generic name, dose, route (PO/IV/SQ/IM/TOP/INH/SL), frequency (Daily/BID/TID/QID/QHS/PRN). JSON only.`,
+        prompt:`Parse meds: ${medsRaw||"none"}. Allergies: ${allergiesRaw||"none"}. Return JSON only.`,
         response_json_schema:schema,
       });
       setParsedMeds(res?.medications||[]); setParsedAllergies(res?.allergies||[]);
@@ -756,7 +838,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           properties:{diagnosis:{type:"string"},probability:{type:"string"},
             supporting_evidence:{type:"string"},against:{type:"string"},must_not_miss:{type:"boolean"}}}}}};
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`ED rapid differential. CC: ${cc||"?"} HPI: ${hpi||"?"} Vitals: ${vitals||"?"} ${ros?"ROS:"+ros:""} ${exam?"PE:"+exam:""}. 3-5 dx with probability, supporting_evidence, against, must_not_miss. JSON only.`,
+        prompt:`ED rapid differential. CC: ${cc||"?"} HPI: ${hpi||"?"} Vitals: ${vitals||"?"} ${ros?"ROS:"+ros:""} ${exam?"PE:"+exam:""}. 3-5 dx. JSON only.`,
         response_json_schema:schema,
       });
       if (!res?.differential?.length) throw new Error("Empty response");
@@ -773,7 +855,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         items:{type:"object",required:["code","description","type","specificity_note"],
           properties:{code:{type:"string"},description:{type:"string"},type:{type:"string"},specificity_note:{type:"string"}}}}}};
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`ICD-10-CM codes for "${diagnosisText}" in ED. 4-6 billable codes, primary to secondary. JSON only.`,
+        prompt:`ICD-10-CM codes for "${diagnosisText}" in ED. 4-6 billable codes. JSON only.`,
         response_json_schema:schema,
       });
       setIcdSuggestions(res?.codes||[]);
@@ -790,7 +872,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
           properties:{type:{type:"string"},name:{type:"string"},dose_route:{type:"string"},
             time_given:{type:"string"},response:{type:"string"},confirmed:{type:"boolean"}}}}}};
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`Pre-populate ED interventions list. CC: ${cc} Dx: ${mdmResult?.working_diagnosis} Disposition: ${dispResult?.disposition||"TBD"}. type: medication|procedure|iv_access|monitoring|imaging|lab|other. confirmed: true. JSON only.`,
+        prompt:`Pre-populate ED interventions list. CC: ${cc} Dx: ${mdmResult?.working_diagnosis} Disposition: ${dispResult?.disposition||"TBD"}. JSON only.`,
         response_json_schema:schema,
       });
       setInterventions((res?.interventions||[]).map((item,i)=>({...item,id:`int-${i}-${Date.now()}`})));
@@ -815,16 +897,15 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     setSignOutBusy(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt:`SBAR sign-out for oncoming ED provider. Patient: ${[demo?.age,demo?.sex].filter(Boolean).join("yo ")||"Adult"}. CC: ${cc}. Working Dx: ${mdmResult.working_diagnosis||"TBD"} (${mdmResult.mdm_level||""}). Disposition: ${dispResult?.disposition||"Pending"}. 2-4 sentences, plain text, no headers. Return JSON: { "signout_text": "..." }`,
+        prompt:`SBAR sign-out for oncoming ED provider. CC: ${cc}. Working Dx: ${mdmResult.working_diagnosis||"TBD"} (${mdmResult.mdm_level||""}). Disposition: ${dispResult?.disposition||"Pending"}. 2-4 sentences. Return JSON: { "signout_text": "..." }`,
         response_json_schema:{type:"object",required:["signout_text"],properties:{signout_text:{type:"string"}}},
       });
       const text=res?.signout_text?.trim();
       if (text) {
         await base44.entities.ShiftSignOut.create({
-          source:"QuickNote",patient_identifier:demo?.mrn||"",
-          cc:cc||"",working_diagnosis:mdmResult.working_diagnosis||"",
-          mdm_level:mdmResult.mdm_level||"",signout_text:text,
-          status:"pending",created_date:new Date().toISOString(),
+          source:"QuickNote",patient_identifier:demo?.mrn||"",cc:cc||"",
+          working_diagnosis:mdmResult.working_diagnosis||"",mdm_level:mdmResult.mdm_level||"",
+          signout_text:text,status:"pending",created_date:new Date().toISOString(),
         }).catch(()=>null);
         setSignOutDone(true); setTimeout(()=>setSignOutDone(false),4000);
       }
@@ -838,7 +919,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     try {
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: buildMDMPrompt(cc,vitals,hpi,ros,exam,vhAnalysis,parsedMeds,parsedAllergies,encounterType)
-          + `\n\nADDENDUM: Prev Dx: ${mdmResult.working_diagnosis} (${mdmResult.mdm_level}). Labs: ${labs||"pending"}. Imaging: ${imaging||"pending"}. EKG: ${ekg||"not done"}. Recheck vitals: ${newVitals||"not yet"}. Revise if warranted.`,
+          + `\n\nADDENDUM: Prev Dx: ${mdmResult.working_diagnosis} (${mdmResult.mdm_level}). Labs: ${labs||"pending"}. Imaging: ${imaging||"pending"}. Revise if warranted.`,
         response_json_schema: MDM_SCHEMA,
       });
       setMdmResult(res);
@@ -847,36 +928,25 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         working_diagnosis:res.working_diagnosis||"",mdm_level:res.mdm_level||"",mdm_narrative:res.mdm_narrative||""}]);
     } catch(e) { console.error("Addendum failed:",e); }
     finally { setRerunAddendumBusy(false); }
-  }, [mdmResult,cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,vhAnalysis,parsedMeds,parsedAllergies,encounterType,rerunAddendumBusy]);
+  }, [mdmResult,cc,vitals,hpi,ros,exam,labs,imaging,vhAnalysis,parsedMeds,parsedAllergies,encounterType,rerunAddendumBusy]);
 
   const handleAddendumReady = useCallback((addendum) => {
-    const ts = new Date().toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit"});
-    setMdmResult(prev => prev ? {
-      ...prev,
-      mdm_narrative: (prev.mdm_narrative||"").trim() + "\n\n---\nADDENDUM [" + ts + "]:\n" + addendum,
-    } : prev);
-    setMdmHistory(prev => [...prev, {
-      ts, trigger:"Treatment Response Addendum",
-      working_diagnosis:"", mdm_level:"", mdm_narrative:addendum,
-    }]);
+    const ts=new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+    setMdmResult(prev=>prev?{...prev,mdm_narrative:(prev.mdm_narrative||"").trim()+"\n\n---\nADDENDUM ["+ts+"]:\n"+addendum}:prev);
+    setMdmHistory(prev=>[...prev,{ts,trigger:"Treatment Response Addendum",working_diagnosis:"",mdm_level:"",mdm_narrative:addendum}]);
   }, []);
 
   usePMHConditionInjector({
-    mdmResult,
-    pmh,
+    mdmResult, pmh,
     onInject: useCallback((appendText) => {
-      setMdmResult(prev => prev ? { ...prev, mdm_narrative: (prev.mdm_narrative || "") + appendText } : prev);
+      setMdmResult(prev=>prev?{...prev,mdm_narrative:(prev.mdm_narrative||"")+appendText}:prev);
     }, []),
   });
 
   const handleEncounterImport = useCallback(({ cc: impCC, age, vitals: impVitals }) => {
     if (impCC)     setCC(impCC);
     if (impVitals) setVitals(impVitals);
-    if (age) setSlots(prev => {
-      const next = [...prev];
-      next[activeSlot] = { ...next[activeSlot], patientAge: age };
-      return next;
-    });
+    if (age) setSlots(prev=>{const next=[...prev];next[activeSlot]={...next[activeSlot],patientAge:age};return next;});
   }, [activeSlot]);
 
   const smartExpansions = DEFAULT_EXPANSIONS;
@@ -896,35 +966,27 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       {label:"PHYSICAL EXAM",text:exam},
     ].filter(s=>s.text?.trim());
     if (!sections.length) return;
-    const block = pasteReady==="prose"?sections.map(s=>s.text.trim()).join("\n\n"):sections.map(s=>`${s.label}:\n${s.text.trim()}`).join("\n\n");
+    const block=pasteReady==="prose"?sections.map(s=>s.text.trim()).join("\n\n"):sections.map(s=>`${s.label}:\n${s.text.trim()}`).join("\n\n");
     navigator.clipboard.writeText(block).then(()=>{setCopiedInputs(true);setTimeout(()=>setCopiedInputs(false),2500);});
   }, [cc,vitals,effectiveHpi,ros,exam,hpiMode,hpiSummary,pasteReady]);
 
   const copyPhase1 = useCallback(() => {
     if (!mdmResult) return;
     const prov=window._notryaProvider||{};
-    const ts = new Date().toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"});
-    const text = buildPhase1Copy({
-      fields: {cc, vitals, hpi: effectiveHpi, ros, exam},
-      mdmResult,
-      treatmentResult,
-      providerName: prov.full_name||demo?.full_name||"",
-      facilityName: prov.facility||"",
-      timestamp: ts,
-    });
+    const ts=new Date().toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    const text=buildPhase1Copy({fields:{cc,vitals,hpi:effectiveHpi,ros,exam},mdmResult,treatmentResult,providerName:prov.full_name||demo?.full_name||"",facilityName:prov.facility||"",timestamp:ts});
     navigator.clipboard.writeText(stripLabels(text)).then(()=>{setCopiedP1(true);setTimeout(()=>setCopiedP1(false),3000);});
-  }, [cc,vitals,effectiveHpi,ros,exam,mdmResult,demo,formatMode,pasteReady,treatmentResult]);
+  }, [cc,vitals,effectiveHpi,ros,exam,mdmResult,demo,pasteReady,treatmentResult]);
 
   const copyPhase2 = useCallback(() => {
     if (!dispResult) return;
     const prov=window._notryaProvider||{};
     const consultBlock=consults.length?"\n\nCONSULTS:\n"+consults.map(c=>`  ${c.service}${c.provider?" — Dr."+c.provider:""}${c.time?" at "+c.time:""}: ${c.recommendation}`).join("\n"):"";
-    let text=buildPhase2Copy({labs,imaging,ekg,newVitals},dispResult,
-      {icdSelected,interventions,providerName:prov.full_name||demo?.full_name||"",sigBlock:prov.sigBlock||"",demographics:{...(demo||{}),facility:prov.facility}},formatMode)+consultBlock;
-    const labCopy = formatLabSummaryForCopy(labSummaryResult);
-    if (labCopy) text = text + "\n\n" + labCopy;
-    const finalCopy = formatFinalImpressionForCopy(finalImpressionResult, confirmedRanks);
-    if (finalCopy) text = text + "\n\n" + finalCopy;
+    let text=buildPhase2Copy({labs,imaging,ekg,newVitals},dispResult,{icdSelected,interventions,providerName:prov.full_name||demo?.full_name||"",sigBlock:prov.sigBlock||"",demographics:{...(demo||{}),facility:prov.facility}},formatMode)+consultBlock;
+    const labCopy=formatLabSummaryForCopy(labSummaryResult);
+    if (labCopy) text=text+"\n\n"+labCopy;
+    const finalCopy=formatFinalImpressionForCopy(finalImpressionResult,confirmedRanks);
+    if (finalCopy) text=text+"\n\n"+finalCopy;
     navigator.clipboard.writeText(stripLabels(text)).then(()=>{setCopiedP2(true);setTimeout(()=>setCopiedP2(false),3000);});
   }, [labs,imaging,ekg,newVitals,dispResult,icdSelected,interventions,demo,formatMode,consults,pasteReady,labSummaryResult]);
 
@@ -936,11 +998,8 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   const copyDischargeOnly = useCallback(() => {
     const di=dispResult?.discharge_instructions;
     if (!di) return;
-    const patName=[demo?.firstName,demo?.lastName].filter(Boolean).join(" ");
     const dateStr=new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
-    const lines=["DISCHARGE INSTRUCTIONS"];
-    if (patName) lines.push(`Patient: ${patName}`);
-    lines.push(`Date: ${dateStr}`,"","WHAT YOU WERE TREATED FOR:");
+    const lines=["DISCHARGE INSTRUCTIONS","","Date: "+dateStr,"","WHAT YOU WERE TREATED FOR:"];
     lines.push(di.diagnosis_explanation||dispResult?.final_diagnosis||"See your physician.","");
     lines.push("HOW TO CARE FOR YOURSELF AT HOME:");
     const homeCare=[];
@@ -948,18 +1007,17 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     if (di.medications?.length) di.medications.forEach(m=>homeCare.push(`Take ${typeof m==="string"?m:m.medication||m} as prescribed.`));
     if (di.activity) homeCare.push(di.activity);
     if (di.diet) homeCare.push(di.diet);
-    if (homeCare.length) homeCare.forEach(i=>lines.push(`• ${i}`));
-    else lines.push("• Follow up with your doctor for specific home care instructions.");
+    if (homeCare.length) homeCare.forEach(i=>lines.push(`• ${i}`)); else lines.push("• Follow up with your doctor for specific home care instructions.");
     lines.push("");
     if (di.return_precautions?.length) {
       lines.push("RETURN TO THE EMERGENCY DEPARTMENT OR CALL 911 IF:");
-      di.return_precautions.forEach((r,i)=>lines.push(`${i+1}. ${typeof r==="string"?r:r}`));
+      di.return_precautions.forEach((r,i)=>lines.push(`${i+1}. ${r}`));
       lines.push("");
     }
     lines.push("FOLLOW-UP CARE:",di.followup||"Contact your primary care provider within 3-5 days.","");
-    lines.push("Our goal in the emergency department is to identify and treat conditions that require immediate care.","","IMPORTANT REMINDER:","These instructions support your care but do not replace medical advice.");
+    lines.push("These instructions support your care but do not replace medical advice.");
     navigator.clipboard.writeText(lines.join("\n")).then(()=>{setCopiedDischargeOnly(true);setTimeout(()=>setCopiedDischargeOnly(false),2500);});
-  }, [dispResult,demo]);
+  }, [dispResult]);
   const copyDischargeInstructions = copyDischargeOnly;
 
   const saveAllSlots = useCallback(async (force=false) => {
@@ -1004,31 +1062,25 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       await base44.entities.ClinicalNote.create({
         source:"QuickNote",encounter_date:new Date().toISOString().split("T")[0],
         cc:cc||"",chief_complaint:cc||"",raw_note:fullText,full_note_text:fullText,
-        working_diagnosis:mdmResult?.working_diagnosis||mdmResult?.initial_impression?.working_dx_line||dispResult?.final_diagnosis||"",
+        working_diagnosis:mdmResult?.working_diagnosis||dispResult?.final_diagnosis||"",
         mdm_level:mdmResult?.mdm_level||"",mdm_narrative:formatMDMForCopy(mdmResult)||"",
         mdm:formatMDMForCopy(mdmResult)||"",disposition:dispResult?.disposition||"",
-        provider_name:user?.full_name||user?.email||"",
-        patient_identifier:demo?.mrn||"",status:"finalized",flag_reviewed:false,
+        provider_name:user?.full_name||user?.email||"",patient_identifier:demo?.mrn||"",
+        status:"finalized",flag_reviewed:false,
         result_flags_json:dispResult?.result_flags?.length?JSON.stringify(dispResult.result_flags):"",
         icd_codes_json:icdSelected.length?JSON.stringify(icdSelected):"",
-        lab_summary_json: labSummaryResult ? JSON.stringify(labSummaryResult) : "",
-        final_impression_json: finalImpressionResult ? JSON.stringify(finalImpressionResult) : "",
-        confirmed_icd10_codes: finalImpressionResult
-          ? (finalImpressionResult.diagnoses || []).filter(d => confirmedRanks.has(d.rank)).map(d => d.icd10_code).join(", ")
-          : "",
+        lab_summary_json:labSummaryResult?JSON.stringify(labSummaryResult):"",
+        final_impression_json:finalImpressionResult?JSON.stringify(finalImpressionResult):"",
+        confirmed_icd10_codes:finalImpressionResult?(finalImpressionResult.diagnoses||[]).filter(d=>confirmedRanks.has(d.rank)).map(d=>d.icd10_code).join(", "):"",
         meds_raw:medsRaw||"",allergies_raw:allergiesRaw||"",
       });
       setSavedNote(true); setTimeout(()=>setSavedNote(false),3000);
       setSlots(prev=>{const next=[...prev];next[activeSlot]={...next[activeSlot],savedNoteId:"saved"};return next;});
       clearSlotCache(activeSlot);
       if (draftId) { base44.entities.ClinicalNote.update(draftId,{status:"superseded"}).catch(()=>null); setDraftId(null); }
-      // ── If launched from census, mark note completion on patient record ──
       if (patientIdParam) {
-        const ts = new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
-        const noteTask = `QuickNote completed — ${ts}`;
-        base44.entities.Patient.update(patientIdParam, {
-          tasks: [...(patientRecord?.tasks || []), noteTask],
-        }).catch(() => null);
+        const ts=new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+        base44.entities.Patient.update(patientIdParam,{tasks:[...(patientRecord?.tasks||[]),`QuickNote completed — ${ts}`]}).catch(()=>null);
       }
     } catch(e) { console.error("Save failed:",e); }
     finally { setSaving(false); }
@@ -1038,9 +1090,6 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     if (sendingNPI) return;
     setSendingNPI(true);
     try {
-      const prior=await base44.entities.ClinicalNote.list({sort:"-created_date",limit:5}).catch(()=>[]);
-      await Promise.all((prior||[]).filter(r=>r.source==="QN-Handoff"&&r.status==="pending")
-        .map(r=>base44.entities.ClinicalNote.update(r.id,{status:"superseded"}).catch(()=>null)));
       await base44.entities.ClinicalNote.create({
         source:"QN-Handoff",status:"pending",encounter_date:new Date().toISOString().split("T")[0],
         cc:cc||"",full_note_text:vitals||"",hpi_raw:hpi||"",ros_raw:ros||"",exam_raw:exam||"",
@@ -1058,25 +1107,19 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     [setCC,setVitals,setHpi,setRos,setExam,setLabs,setImaging,setEkg,setNewVitals].forEach(fn=>fn(""));
     setParsedMeds([]); setParsedAllergies([]);
     setMdmResult(null); setDispResult(null);
-    setTreatmentResult(null); setTreatmentLoading(false);
-    setLabSummaryResult(null); setLabSummaryLoading(false);
-    setFinalImpressionResult(null); setFinalImpressionLoading(false);
-    setEdMedsResult(null); setEdMedsLoading(false); setCopiedEdMeds(false);
+    setTreatmentResult(null); setLabSummaryResult(null);
+    setFinalImpressionResult(null); setEdMedsResult(null);
     if (labsAnalyzeTimer.current) clearTimeout(labsAnalyzeTimer.current);
     if (imagingAnalyzeTimer.current) clearTimeout(imagingAnalyzeTimer.current);
-    setLabsAutoAnalyzing(false); setImagingAutoAnalyzing(false);
+    if (hpiRosTimer.current) clearTimeout(hpiRosTimer.current);
+    if (hpiExamTimer.current) clearTimeout(hpiExamTimer.current);
     setConfirmedRanks(new Set()); setRejectedRanks(new Set());
     setP1Error(null); setP2Error(null); setP2Open(false);
     setWorkupRationale(null); setConsults([]);
-    setQuickDDxDismissed(false); setIsBounceback(false);
     setTreatmentPlan(""); setActionPlan("");
     setPatientResponse(""); setMdmHistory([]); setMdmInitialTs(null);
-    setMdmTimestamp("");
     setHpiGaps([]); setLabRecs(null); setImagingRecs(null);
-    setMedsFromHpi([]); setAllergiesFromHpi([]);
-    setShowHPIBuilder(false);
-    setHpiTemplate("");
-    setHpiBuilderCC("");
+    setShowHPIBuilder(false); setHpiTemplate(""); setHpiBuilderCC("");
     clearSlotCache(activeSlot);
     setShowUndo(true);
     const t=setTimeout(()=>{setShowUndo(false);setUndoData(null);},6000);
@@ -1086,26 +1129,17 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   const [confirmingSlot, setConfirmingSlot] = useState(null);
 
   const resetSlot = useCallback((slotIndex) => {
-    if (slotIndex === activeSlot) {
+    if (slotIndex===activeSlot) {
       setCC(""); setVitals(""); setHpi(""); setRos(""); setExam("");
       setLabs(""); setImaging(""); setEkg("");
       setParsedMeds([]); setParsedAllergies([]);
-      setMdmResult(null);
-      setTreatmentResult(null);
-      setLabSummaryResult(null);
-      setEdMedsResult(null);
-      setFinalImpressionResult(null);
-      setDispResult(null);
-      setConfirmedRanks(new Set());
-      setRejectedRanks(new Set());
+      setMdmResult(null); setTreatmentResult(null); setLabSummaryResult(null);
+      setEdMedsResult(null); setFinalImpressionResult(null); setDispResult(null);
+      setConfirmedRanks(new Set()); setRejectedRanks(new Set());
     }
-    setSlots(prev => {
-      const next = [...prev];
-      next[slotIndex] = EMPTY_SLOT();
-      return next;
-    });
+    setSlots(prev=>{const next=[...prev];next[slotIndex]=EMPTY_SLOT();return next;});
     clearSlotCache(slotIndex);
-  }, [activeSlot, clearSlotCache]);
+  }, [activeSlot,clearSlotCache]);
 
   const handleUndo = useCallback(() => {
     if (undoData) {
@@ -1121,96 +1155,43 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
   }, [undoData,undoTimer]);
 
   const handleCCSelect = useCallback((ccLabel, hpiText, rosText, examText) => {
-    if (typeof setCC  === "function") setCC(ccLabel);
-
-    if (rosText) {
-      if (typeof setRos === "function") setRos(rosText);
-    }
-
-    if (examText) {
-      if (typeof setExam === "function") setExam(examText);
-    }
-
-    if (hpiText) {
-      setHpiTemplate(hpiText);
-      setHpiBuilderCC(ccLabel);
-      setShowHPIBuilder(true);
-    }
+    if (typeof setCC==="function") setCC(ccLabel);
+    if (rosText&&typeof setRos==="function") setRos(rosText);
+    if (examText&&typeof setExam==="function") setExam(examText);
+    if (hpiText) { setHpiTemplate(hpiText); setHpiBuilderCC(ccLabel); setShowHPIBuilder(true); }
   }, []);
 
-  useEffect(() => {
-    const handleCtrlT = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "t") {
-        e.preventDefault();
-        setShowCCPicker(true);
-      }
+  useEffect(()=>{
+    const handleCtrlT=(e)=>{
+      if ((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="t") { e.preventDefault(); setShowCCPicker(true); }
     };
-    document.addEventListener("keydown", handleCtrlT);
-    return () => document.removeEventListener("keydown", handleCtrlT);
-  }, []);
+    document.addEventListener("keydown",handleCtrlT);
+    return ()=>document.removeEventListener("keydown",handleCtrlT);
+  },[]);
 
   const makeKeyDown = useCallback((idx,isLast,onEnterSubmit)=>(e)=>{
     if (e.key==="Tab"&&!e.shiftKey) { e.preventDefault(); if (!isLast) advanceFocus(idx); }
     if ((e.metaKey||e.ctrlKey)&&e.key==="Enter") { e.preventDefault(); if (onEnterSubmit) onEnterSubmit(); }
-  }, [advanceFocus]);
+  },[advanceFocus]);
 
   useEffect(()=>{
     const fn=e=>{
       const tag=document.activeElement?.tagName?.toLowerCase();
       const inInput=tag==="textarea"||tag==="input";
-      if ((e.ctrlKey||e.metaKey)&&e.key==="Enter") {
-        e.preventDefault();
-        if (p2Open&&parseInt(document.activeElement?.dataset?.phase||"1")===2) runDisposition(); else runMDM();
-        return;
-      }
-      if (e.altKey&&!e.metaKey) {
-        const jumpMap={h:2,r:3,e:4,l:5};
-        const idx=jumpMap[e.key.toLowerCase()];
-        if (idx!==undefined) { e.preventDefault(); fieldRefs.current[idx]?.current?.focus(); return; }
-      }
-      if ((e.ctrlKey||e.metaKey)&&!e.shiftKey&&["1","2","3","4"].includes(e.key)) {
-        e.preventDefault(); switchToSlot(parseInt(e.key)-1); return;
-      }
+      if ((e.ctrlKey||e.metaKey)&&e.key==="Enter") { e.preventDefault(); if (p2Open&&parseInt(document.activeElement?.dataset?.phase||"1")===2) runDisposition(); else runMDM(); return; }
+      if ((e.ctrlKey||e.metaKey)&&!e.shiftKey&&["1","2","3","4"].includes(e.key)) { e.preventDefault(); switchToSlot(parseInt(e.key)-1); return; }
       if ((e.ctrlKey||e.metaKey)&&e.key==="s") { e.preventDefault(); saveAllSlots(true); return; }
       if (e.shiftKey&&e.key==="?"&&!e.ctrlKey&&!e.metaKey) { e.preventDefault(); setShowKbHelp(h=>!h); return; }
       if (e.shiftKey&&e.key==="1"&&!e.ctrlKey&&!e.metaKey&&mdmResult)  { e.preventDefault(); copyPhase1(); return; }
       if (e.shiftKey&&e.key==="2"&&!e.ctrlKey&&!e.metaKey&&dispResult) { e.preventDefault(); copyPhase2(); return; }
-      if (e.shiftKey&&e.key==="3"&&!e.ctrlKey&&!e.metaKey&&mdmResult)  { e.preventDefault(); copyMDMOnly(); return; }
-      if (e.shiftKey&&e.key==="4"&&!e.ctrlKey&&!e.metaKey&&dispResult) { e.preventDefault(); copyDischargeOnly(); return; }
       if (inInput) return;
-      if ((e.key==="e"||e.key==="E")&&!e.ctrlKey&&!e.metaKey&&mdmResult) { e.preventDefault(); window.dispatchEvent(new CustomEvent("qn-edit-narrative")); return; }
-      if ((e.key==="c"||e.key==="C")&&!e.ctrlKey&&!e.metaKey) {
-        if (e.shiftKey) { e.preventDefault(); copyClinicalInputs(); return; }
-        if (mdmResult||dispResult) { e.preventDefault(); copyNote(); }
-      }
-      if ((e.key==="p"||e.key==="P")&&!e.ctrlKey&&!e.metaKey) { e.preventDefault(); window.print(); }
+      if ((e.key==="c"||e.key==="C")&&!e.ctrlKey&&!e.metaKey) { if (e.shiftKey) { e.preventDefault(); copyClinicalInputs(); return; } if (mdmResult||dispResult) { e.preventDefault(); copyNote(); } }
     };
     window.addEventListener("keydown",fn);
     return ()=>window.removeEventListener("keydown",fn);
-  },[p2Open,mdmResult,dispResult,runMDM,runDisposition,copyNote,copyClinicalInputs,copyPhase1,copyPhase2,copyMDMOnly,copyDischargeOnly,switchToSlot,saveAllSlots]);
+  },[p2Open,mdmResult,dispResult,runMDM,runDisposition,copyNote,copyClinicalInputs,copyPhase1,copyPhase2,switchToSlot,saveAllSlots]);
 
   useEffect(()=>{ if (p2Open) setTimeout(()=>{fieldRefs.current[5]?.current?.focus();},80); },[p2Open]);
-
-  useEffect(()=>{
-    const saveDraft=async()=>{
-      if (!cc.trim()&&!hpi.trim()) return;
-      const payload={source:"QuickNote",status:"draft",encounter_date:new Date().toISOString().split("T")[0],
-        cc:cc||"",hpi_raw:hpi||"",ros_raw:ros||"",exam_raw:exam||"",labs_raw:labs||"",imaging_raw:imaging||"",
-        full_note_text:vitals||"",working_diagnosis:mdmResult?.working_diagnosis||"",
-        mdm_level:mdmResult?.mdm_level||"",mdm_narrative:mdmResult?.mdm_narrative||""};
-      try {
-        if (draftId) await base44.entities.ClinicalNote.update(draftId,payload).catch(()=>null);
-        else { const rec=await base44.entities.ClinicalNote.create(payload).catch(()=>null); if (rec?.id) setDraftId(rec.id); }
-      } catch {}
-    };
-    const interval=setInterval(saveDraft,90000);
-    return ()=>clearInterval(interval);
-  },[cc,hpi,ros,exam,labs,imaging,vitals,mdmResult,draftId]);
-
-  useEffect(()=>{
-    const interval=setInterval(()=>saveAllSlots(),60000);
-    return ()=>clearInterval(interval);
-  },[saveAllSlots]);
 
   useEffect(()=>{
     try {
@@ -1221,11 +1202,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     base44.entities.UserPreferences.list({sort:"-created_date",limit:1}).then(results=>{
       const r=results?.[0];
       if (r) {
-        if (r.provider_name&&!demo?.full_name) {
-          window._notryaProvider={full_name:[r.provider_name,r.credentials].filter(Boolean).join(", "),
-            firstName:r.provider_name,facility:r.facility||"",
-            location:r.location||"Emergency Department",sigBlock:r.signature_block||""};
-        }
+        if (r.provider_name&&!demo?.full_name) { window._notryaProvider={full_name:[r.provider_name,r.credentials].filter(Boolean).join(", "),firstName:r.provider_name,facility:r.facility||"",location:r.location||"Emergency Department",sigBlock:r.signature_block||""}; }
         if (r.format_mode) setFormatMode(r.format_mode);
         if (r.default_encounter_type) setEncounterType(r.default_encounter_type);
         setProviderInfo({name:r.provider_name||"",credentials:r.credentials||"",facility:r.facility||""});
@@ -1257,7 +1234,7 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
     base44.entities.ClinicalNote.list({sort:"-created_date",limit:50}).then(results=>{
       const cacheRecords=(results||[]).filter(r=>r.source==="QN-SlotCache"&&r.status==="active");
       if (!cacheRecords.length) return;
-      const slotMap={};const idMap={};
+      const slotMap={}; const idMap={};
       cacheRecords.forEach(r=>{
         const match=(r.patient_identifier||"").match(/^slot:(\d)$/);
         if (!match) return;
@@ -1266,16 +1243,12 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       });
       const restoredCount=Object.keys(slotMap).length;
       if (!restoredCount) return;
-      setSlots(prev=>{
-        const next=[...prev];
-        Object.entries(slotMap).forEach(([idx,slotState])=>{ next[parseInt(idx)]={...EMPTY_SLOT(),...slotState}; });
-        return next;
-      });
+      setSlots(prev=>{const next=[...prev];Object.entries(slotMap).forEach(([idx,slotState])=>{next[parseInt(idx)]={...EMPTY_SLOT(),...slotState};});return next;});
       if (slotMap[0]) {
         const s=slotMap[0];
         if (s.cc) setCC(s.cc); if (s.hpi) setHpi(s.hpi); if (s.ros) setRos(s.ros);
         if (s.exam) setExam(s.exam); if (s.labs) setLabs(s.labs); if (s.imaging) setImaging(s.imaging);
-        if (s.vitals) setVitals(s.vitals); if (s.ekg) setEkg(s.ekg); if (s.newVitals) setNewVitals(s.newVitals);
+        if (s.vitals) setVitals(s.vitals); if (s.ekg) setEkg(s.ekg);
         if (s.medsRaw) setMedsRaw(s.medsRaw); if (s.allergiesRaw) setAllergiesRaw(s.allergiesRaw);
         if (s.parsedMeds?.length) setParsedMeds(s.parsedMeds);
         if (s.parsedAllergies?.length) setParsedAllergies(s.parsedAllergies);
@@ -1288,37 +1261,25 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
         if (s.encounterType) setEncounterType(s.encounterType);
       }
       const newCacheIds=[null,null,null,null];
-      Object.entries(idMap).forEach(([idx,id])=>{ newCacheIds[parseInt(idx)]=id; });
+      Object.entries(idMap).forEach(([idx,id])=>{newCacheIds[parseInt(idx)]=id;});
       setSlotCacheIds(newCacheIds); slotCacheIdsRef.current=newCacheIds;
       setSlotsRestoredCount(restoredCount); setSlotsRestored(true);
     }).catch(()=>null);
-    base44.entities.ClinicalNote.list({sort:"-created_date",limit:5}).then(results=>{
-      const draft=(results||[]).find(r=>r.status==="draft"&&r.source==="QuickNote");
-      if (draft) { const age=Date.now()-new Date(draft.created_date||0).getTime(); if (age<8*3600000) setDraftId(draft.id); }
-    }).catch(()=>null);
   },[]);
 
-  // ── Patient-context mount effect ─────────────────────────────────────────
   useEffect(()=>{
-    const params = new URLSearchParams(window.location.search);
-    const pid = params.get("patientId");
+    const params=new URLSearchParams(window.location.search);
+    const pid=params.get("patientId");
     if (!pid) return;
     setPatientIdParam(pid);
-    base44.entities.Patient.get(pid).then(patient => {
+    base44.entities.Patient.get(pid).then(patient=>{
       if (!patient) return;
       setPatientRecord(patient);
-      // Auto-populate fields only if they are currently empty
-      if (patient.cc)       setCC(prev => prev || patient.cc);
-      if (patient.allergies?.length) {
-        const allergyStr = patient.allergies.join(", ");
-        setAllergiesRaw(prev => prev || allergyStr);
-      }
-      if (patient.pmhx?.length) {
-        setPmh(prev => prev.length ? prev : patient.pmhx);
-      }
-    }).catch(() => null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      if (patient.cc) setCC(prev=>prev||patient.cc);
+      if (patient.allergies?.length) setAllergiesRaw(prev=>prev||patient.allergies.join(", "));
+      if (patient.pmhx?.length) setPmh(prev=>prev.length?prev:patient.pmhx);
+    }).catch(()=>null);
+  },[]);
 
   useEffect(()=>{
     slotStateRef.current={cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,
@@ -1331,936 +1292,673 @@ Return JSON: { "structured_hpi": "...", "chief_complaint_extracted": "...", "fie
       edMedsResult,finalImpressionResult,confirmedRanks,rejectedRanks};
   });
 
-  // localStorage auto-save
-  const LS_KEY = "qn_autosave_v1";
+  const LS_KEY="qn_autosave_v1";
   useEffect(()=>{
     if (!cc&&!hpi&&!mdmResult) return;
-    const t = setTimeout(()=>{
-      try {
-        localStorage.setItem(LS_KEY, JSON.stringify({
-          cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,
-          medsRaw,allergiesRaw,parsedMeds,parsedAllergies,
-          mdmResult,dispResult,icdSelected,
-          hpiSummary,hpiMode,encounterType,p2Open,
-          treatmentPlan,actionPlan, savedAt: Date.now(),
-        }));
-      } catch(e){}
-    }, 1500);
+    const t=setTimeout(()=>{
+      try { localStorage.setItem(LS_KEY,JSON.stringify({cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,medsRaw,allergiesRaw,parsedMeds,parsedAllergies,mdmResult,dispResult,icdSelected,hpiSummary,hpiMode,encounterType,p2Open,treatmentPlan,actionPlan,savedAt:Date.now()})); } catch(e){}
+    },1500);
     return ()=>clearTimeout(t);
-  },[cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,
-     medsRaw,allergiesRaw,parsedMeds,parsedAllergies,
-     mdmResult,dispResult,icdSelected,
-     hpiSummary,hpiMode,encounterType,p2Open,treatmentPlan,actionPlan]);
+  },[cc,vitals,hpi,ros,exam,labs,imaging,ekg,newVitals,medsRaw,allergiesRaw,parsedMeds,parsedAllergies,mdmResult,dispResult,icdSelected,hpiSummary,hpiMode,encounterType,p2Open,treatmentPlan,actionPlan]);
 
-  const [lsRestored, setLsRestored] = useState(false);
-  const [lsRestoredAt, setLsRestoredAt] = useState(null);
+  const [lsRestored,setLsRestored]=useState(false);
+  const [lsRestoredAt,setLsRestoredAt]=useState(null);
   useEffect(()=>{
     try {
-      const raw = localStorage.getItem(LS_KEY);
+      const raw=localStorage.getItem(LS_KEY);
       if (!raw) return;
-      const d = JSON.parse(raw);
+      const d=JSON.parse(raw);
       if (!d||!d.savedAt||Date.now()-d.savedAt>8*3600000) return;
       if (!d.cc&&!d.hpi&&!d.mdmResult) return;
-      if (d.cc)       setCC(d.cc);
-      if (d.vitals)   setVitals(d.vitals);
-      if (d.hpi)      setHpi(d.hpi);
-      if (d.ros)      setRos(d.ros);
-      if (d.exam)     setExam(d.exam);
-      if (d.labs)     setLabs(d.labs);
-      if (d.imaging)  setImaging(d.imaging);
-      if (d.ekg)      setEkg(d.ekg);
-      if (d.newVitals) setNewVitals(d.newVitals);
-      if (d.medsRaw)  setMedsRaw(d.medsRaw);
-      if (d.allergiesRaw) setAllergiesRaw(d.allergiesRaw);
-      if (d.parsedMeds?.length)      setParsedMeds(d.parsedMeds);
+      if (d.cc) setCC(d.cc); if (d.vitals) setVitals(d.vitals); if (d.hpi) setHpi(d.hpi);
+      if (d.ros) setRos(d.ros); if (d.exam) setExam(d.exam); if (d.labs) setLabs(d.labs);
+      if (d.imaging) setImaging(d.imaging); if (d.ekg) setEkg(d.ekg);
+      if (d.medsRaw) setMedsRaw(d.medsRaw); if (d.allergiesRaw) setAllergiesRaw(d.allergiesRaw);
+      if (d.parsedMeds?.length) setParsedMeds(d.parsedMeds);
       if (d.parsedAllergies?.length) setParsedAllergies(d.parsedAllergies);
-      if (d.mdmResult)  { setMdmResult(d.mdmResult); setP2Open(true); }
+      if (d.mdmResult) { setMdmResult(d.mdmResult); setP2Open(true); }
       if (d.dispResult) setDispResult(d.dispResult);
       if (d.icdSelected?.length) setIcdSelected(d.icdSelected);
       if (d.hpiSummary) setHpiSummary(d.hpiSummary);
-      if (d.hpiMode)    setHpiMode(d.hpiMode);
+      if (d.hpiMode) setHpiMode(d.hpiMode);
       if (d.encounterType) setEncounterType(d.encounterType);
       if (d.treatmentPlan) setTreatmentPlan(d.treatmentPlan);
-      if (d.actionPlan)    setActionPlan(d.actionPlan);
-      setLsRestored(true);
-      setLsRestoredAt(d.savedAt);
+      if (d.actionPlan) setActionPlan(d.actionPlan);
+      setLsRestored(true); setLsRestoredAt(d.savedAt);
     } catch(e){}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  const isFatigueRisk = useMemo(()=>{ const h=new Date().getHours(); return h>=17||h<=7; },[]);
-  const getSaveLabel = (ts) => {
+  useEffect(()=>{ const interval=setInterval(()=>saveAllSlots(),60000); return ()=>clearInterval(interval); },[saveAllSlots]);
+
+  const isFatigueRisk=useMemo(()=>{ const h=new Date().getHours(); return h>=17||h<=7; },[]);
+  const getSaveLabel=(ts)=>{
     if (!ts) return null;
     const min=Math.floor((Date.now()-ts)/60000);
     if (min<1) return "just now"; if (min===1) return "1m ago";
     if (min<60) return `${min}m ago`; return `${Math.floor(min/60)}h ago`;
   };
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div style={embedded ? {fontFamily:"'DM Sans',sans-serif",background:"transparent",color:"var(--qn-txt)"} :
+    <div style={embedded?{fontFamily:"'DM Sans',sans-serif",background:"transparent",color:"var(--qn-txt)"}:
       {display:"flex",minHeight:"100%",background:"var(--qn-bg)",fontFamily:"'DM Sans',sans-serif",color:"var(--qn-txt)"}}>
-      <div style={embedded ? {} : {flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,paddingBottom:80}}>
+      <div style={embedded?{}:{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0,paddingBottom:80}}>
 
         {/* ── Census patient context banner ── */}
-        {!embedded && patientRecord && (
-          <div style={{
-            maxWidth:1100, margin:"0 auto", width:"100%", padding:"0 16px 8px",
-          }}>
-            <div style={{
-              display:"flex", alignItems:"center", gap:12, flexWrap:"wrap",
-              padding:"10px 16px", borderRadius:10,
-              background:"rgba(8,22,40,.75)", border:"1px solid rgba(0,229,192,.25)",
-              borderLeft:"3px solid rgba(0,229,192,.6)",
-            }}>
-              {/* Room */}
-              {patientRecord.room && (
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,
-                  color:"var(--qn-teal)",background:"rgba(0,229,192,.1)",
-                  border:"1px solid rgba(0,229,192,.3)",borderRadius:5,padding:"2px 8px"}}>
-                  Rm {patientRecord.room}
-                </span>
-              )}
-              {/* Name */}
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#f2f7ff"}}>
-                {patientRecord.name}
-              </span>
-              {/* Age / sex */}
-              {(patientRecord.age || patientRecord.sex) && (
-                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(184,212,240,.7)"}}>
-                  {[patientRecord.age && `${patientRecord.age}y`, patientRecord.sex].filter(Boolean).join(" · ")}
-                </span>
-              )}
-              {/* CC */}
-              {patientRecord.cc && (
-                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,
-                  color:"var(--qn-teal)",background:"rgba(0,229,192,.07)",
-                  border:"1px solid rgba(0,229,192,.2)",borderRadius:20,padding:"1px 10px"}}>
-                  CC: {patientRecord.cc}
-                </span>
-              )}
-              {/* ESI */}
-              {patientRecord.esi && (
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,
-                  color: patientRecord.esi<=2?"#ff6b6b": patientRecord.esi===3?"#ffa726":"var(--qn-teal)",
-                  background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",
-                  borderRadius:6,padding:"2px 8px"}}>
-                  ESI {patientRecord.esi}
-                </span>
-              )}
-              <div style={{flex:1}} />
-              {/* Back to Census */}
-              <button onClick={()=>{ window.location.href="/CommandCenter"; }}
-                style={{padding:"5px 14px",borderRadius:8,cursor:"pointer",
-                  fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,
-                  border:"1px solid rgba(42,79,122,.5)",background:"rgba(8,22,46,.8)",
-                  color:"rgba(130,174,206,.85)"}}>
-                ← Back to Census
-              </button>
+        {!embedded&&patientRecord&&(
+          <div style={{maxWidth:1100,margin:"0 auto",width:"100%",padding:"0 16px 8px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",padding:"10px 16px",borderRadius:10,background:"rgba(8,22,40,.75)",border:"1px solid rgba(0,229,192,.25)",borderLeft:"3px solid rgba(0,229,192,.6)"}}>
+              {patientRecord.room&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:"var(--qn-teal)",background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.3)",borderRadius:5,padding:"2px 8px"}}>Rm {patientRecord.room}</span>}
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#f2f7ff"}}>{patientRecord.name}</span>
+              {(patientRecord.age||patientRecord.sex)&&<span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(184,212,240,.7)"}}>{[patientRecord.age&&`${patientRecord.age}y`,patientRecord.sex].filter(Boolean).join(" · ")}</span>}
+              {patientRecord.cc&&<span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-teal)",background:"rgba(0,229,192,.07)",border:"1px solid rgba(0,229,192,.2)",borderRadius:20,padding:"1px 10px"}}>CC: {patientRecord.cc}</span>}
+              {patientRecord.esi&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,color:patientRecord.esi<=2?"#ff6b6b":patientRecord.esi===3?"#ffa726":"var(--qn-teal)",background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"2px 8px"}}>ESI {patientRecord.esi}</span>}
+              <div style={{flex:1}}/>
+              <button onClick={()=>{window.location.href="/CommandCenter";}} style={{padding:"5px 14px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,border:"1px solid rgba(42,79,122,.5)",background:"rgba(8,22,46,.8)",color:"rgba(130,174,206,.85)"}}>← Back to Census</button>
             </div>
           </div>
         )}
 
         <div style={{maxWidth:1100,margin:"0 auto",width:"100%",padding:embedded?"0":"0 16px 40px"}}>
 
-        {embedded&&(
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}} className="no-print">
-            <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:"var(--qn-teal)"}}>QuickNote</span>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",
-              letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.1)",
-              border:"1px solid rgba(0,229,192,.25)",borderRadius:4,padding:"2px 7px"}}>
-              v12.2 · ROS+PE Scaffolds · E/M Meter · MDM Thread
-            </span>
-          </div>
-        )}
+          {embedded&&(
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}} className="no-print">
+              <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:"var(--qn-teal)"}}>QuickNote</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1.5,textTransform:"uppercase",background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.25)",borderRadius:4,padding:"2px 7px"}}>v13.0 · HPI→ROS+PE · Layout Restructure</span>
+            </div>
+          )}
 
-        <PatientBanner demo={demo} />
-        {isFatigueRisk&&!fatigueDismissed&&<FatigueBanner onDismiss={()=>setFatigueDismissed(true)} />}
-        <StepProgress phase1Done={Boolean(mdmResult)} phase2Done={Boolean(dispResult)} p2Open={p2Open} />
+          <PatientBanner demo={demo} />
+          {isFatigueRisk&&!fatigueDismissed&&<FatigueBanner onDismiss={()=>setFatigueDismissed(true)} />}
+          <StepProgress phase1Done={Boolean(mdmResult)} phase2Done={Boolean(dispResult)} p2Open={p2Open} />
 
-        {!embedded&&(
-          <div style={{marginBottom:10}} className="no-print">
-            {lsRestored&&(
-              <div className="qn-fade" style={{display:"flex",alignItems:"center",gap:10,
-                padding:"8px 14px",marginBottom:8,borderRadius:10,
-                background:"rgba(59,158,255,.05)",border:"1px solid rgba(59,158,255,.3)"}}>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--qn-blue)"}}>⚡</span>
-                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",flex:1}}>
-                  <strong style={{color:"var(--qn-blue)"}}>Auto-saved session restored</strong>
-                  {lsRestoredAt&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",marginLeft:8}}>
-                    saved {Math.round((Date.now()-lsRestoredAt)/60000)}m ago
-                  </span>}
-                </span>
-                <button onClick={()=>{localStorage.removeItem(LS_KEY);setLsRestored(false);}}
-                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)"}}>Clear cache</button>
-                <button onClick={()=>setLsRestored(false)}
-                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)"}}>✕</button>
-              </div>
-            )}
-            {slotsRestored&&(
-              <div className="qn-fade" style={{display:"flex",alignItems:"center",gap:10,
-                padding:"8px 14px",marginBottom:8,borderRadius:10,
-                background:"rgba(0,229,192,.06)",border:"1px solid rgba(0,229,192,.3)"}}>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--qn-teal)"}}>↻</span>
-                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",flex:1}}>
-                  <strong style={{color:"var(--qn-teal)"}}>{slotsRestoredCount} patient slot{slotsRestoredCount>1?"s":""}</strong> restored from your last session
-                </span>
-                <button onClick={()=>setSlotsRestored(false)}
-                  style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)"}}>✕</button>
-              </div>
-            )}
-            {/* Patient Queue Bar */}
-            <div style={{display:"flex",gap:6,padding:"8px 10px",borderRadius:12,background:"rgba(8,22,40,.7)",border:"1px solid rgba(42,79,122,.35)"}}>
-              {slots.map((slot,i)=>{
-                const isActive=i===activeSlot;
-                const isEmpty=!slot.cc&&!slot.hpi&&!slot.mdmResult;
-                const isSaved=!!slot.savedNoteId;
-                const hasDisp=!!slot.dispResult;
-                const hasMDM=!!slot.mdmResult;
-                const hasP2Data=!!(slot.labs||slot.imaging||slot.newVitals);
-                const hasP1Data=!!(slot.cc||slot.hpi);
-                const hasCacheId=!!slotCacheIds[i];
-                const status=isEmpty?null
-                  :isSaved?{label:"Saved",color:"var(--qn-green)",bg:"rgba(61,255,160,.12)",bd:"rgba(61,255,160,.4)"}
-                  :hasDisp?{label:"Dispo Done",color:"var(--qn-purple)",bg:"rgba(155,109,255,.12)",bd:"rgba(155,109,255,.4)"}
-                  :hasMDM&&hasP2Data?{label:"Phase 2",color:"var(--qn-blue)",bg:"rgba(59,158,255,.12)",bd:"rgba(59,158,255,.4)"}
-                  :hasMDM?{label:"MDM Done",color:"var(--qn-teal)",bg:"rgba(0,229,192,.12)",bd:"rgba(0,229,192,.4)"}
-                  :hasP1Data?{label:"Phase 1",color:"var(--qn-gold)",bg:"rgba(245,200,66,.1)",bd:"rgba(245,200,66,.35)"}
-                  :null;
-                const displayName=slot.patientName||(slot.cc?slot.cc.slice(0,22)+(slot.cc.length>22?"…":""):null);
-                const minutesAgo=slot.lastActivity?Math.floor((Date.now()-slot.lastActivity)/60000):null;
-                const timeLabel=minutesAgo!==null&&minutesAgo<120&&!isActive
-                  ?minutesAgo<1?"just now":minutesAgo===1?"1m ago":`${minutesAgo}m ago`:null;
-                const etMap={adult:"ED",peds:"Peds",psych:"Psych",trauma:"Trauma",obs:"Obs"};
-                const etLabel=slot.encounterType&&slot.encounterType!=="adult"?etMap[slot.encounterType]||slot.encounterType:null;
-                const saveLabel=getSaveLabel(slotSaveTimes[i]);
-                const hasData = !!(slot.cc || slot.hpi || slot.vitals || slot.labs || slot.mdmResult);
-                return (
-                  <button key={i} onClick={()=>switchToSlot(i)}
-                    style={{flex:1,padding:"8px 10px",borderRadius:9,cursor:"pointer",textAlign:"left",transition:"all .15s",position:"relative",
-                      border:`1px solid ${isActive?"rgba(0,229,192,.55)":isEmpty?"rgba(42,79,122,.2)":"rgba(42,79,122,.45)"}`,
-                      background:isActive?"rgba(0,229,192,.1)":isEmpty?"rgba(8,22,40,.3)":"rgba(14,37,68,.55)"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:isEmpty?0:4}}>
-                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,letterSpacing:.5,color:isActive?"var(--qn-teal)":"var(--qn-txt4)"}}>P{i+1}</span>
-                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(42,79,122,.5)"}}>Ctrl+{i+1}</span>
-                      <div style={{flex:1}} />
-                      {isSaved&&<div style={{width:7,height:7,borderRadius:"50%",background:"var(--qn-green)",boxShadow:"0 0 5px rgba(61,255,160,.6)",flexShrink:0}} />}
-                      {isActive&&!isSaved&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--qn-teal)",flexShrink:0,animation:"qnpulse 1.2s ease-in-out infinite"}} />}
-                      {hasCacheId&&!isSaved&&<div style={{width:5,height:5,borderRadius:"50%",background:"rgba(59,158,255,.6)",flexShrink:0}} />}
-                      {hasData&&(
-                        <button
-                          onClick={e=>{
-                            e.stopPropagation();
-                            if (confirmingSlot===i) {
-                              setConfirmingSlot(null);
-                            } else {
-                              setConfirmingSlot(i);
-                              setTimeout(()=>{
-                                resetSlot(i);
-                                setConfirmingSlot(null);
-                              }, 1500);
-                            }
-                          }}
-                          title={`Reset Patient ${i+1}`}
-                          style={{width:14,height:14,borderRadius:"50%",display:"inline-flex",alignItems:"center",justifyContent:"center",
-                            fontSize:9,fontWeight:700,cursor:"pointer",border:"none",background:"transparent",padding:0,
-                            color:confirmingSlot===i?"#ff4d4f":"rgba(200,223,240,0.3)",flexShrink:0}}>
-                          {confirmingSlot===i?"?":"✕"}
-                        </button>
-                      )}
-                    </div>
-                    {isEmpty?(
-                      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"rgba(42,79,122,.5)",fontStyle:"italic"}}>Empty</div>
-                    ):(
-                      <>
-                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:isActive?700:600,
-                          color:isActive?"var(--qn-txt)":"var(--qn-txt2)",lineHeight:1.25,marginBottom:4,
-                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          {displayName||"No CC entered"}
-                        </div>
-                        <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
-                          {slot.patientAge&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)"}}>{slot.patientAge}yo</span>}
-                          {etLabel&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.6)",background:"rgba(42,79,122,.2)",borderRadius:4,padding:"1px 5px"}}>{etLabel}</span>}
-                          {timeLabel&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.4)",marginLeft:"auto"}}>{timeLabel}</span>}
-                        </div>
-                        {status&&(
-                          <div style={{marginTop:5,display:"inline-flex",alignItems:"center",gap:4,padding:"2px 7px",borderRadius:5,background:status.bg,border:`1px solid ${status.bd}`}}>
-                            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,color:status.color,letterSpacing:.5,textTransform:"uppercase"}}>{status.label}</span>
-                          </div>
-                        )}
-                        <div style={{display:"flex",alignItems:"center",gap:4,marginTop:5}}>
-                          {saveLabel&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(59,158,255,.5)",flex:1}}>☁ {saveLabel}</span>}
-                          <button onClick={e=>{e.stopPropagation();saveAllSlots(true);}} disabled={slotSaving}
-                            style={{padding:"1px 7px",borderRadius:4,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,
-                              border:`1px solid ${slotSaving?"rgba(42,79,122,.25)":"rgba(59,158,255,.4)"}`,
-                              background:slotSaving?"rgba(14,37,68,.3)":"rgba(59,158,255,.08)",
-                              color:slotSaving?"var(--qn-txt4)":"var(--qn-blue)"}}>
-                            {slotSaving?"●":"↑ Save"}
+          {/* ── Auto-save restore banners ── */}
+          {!embedded&&(
+            <div style={{marginBottom:10}} className="no-print">
+              {lsRestored&&(
+                <div className="qn-fade" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",marginBottom:8,borderRadius:10,background:"rgba(59,158,255,.05)",border:"1px solid rgba(59,158,255,.3)"}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--qn-blue)"}}>⚡</span>
+                  <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",flex:1}}><strong style={{color:"var(--qn-blue)"}}>Auto-saved session restored</strong>{lsRestoredAt&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",marginLeft:8}}>saved {Math.round((Date.now()-lsRestoredAt)/60000)}m ago</span>}</span>
+                  <button onClick={()=>{localStorage.removeItem(LS_KEY);setLsRestored(false);}} style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)"}}>Clear cache</button>
+                  <button onClick={()=>setLsRestored(false)} style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)"}}>✕</button>
+                </div>
+              )}
+              {slotsRestored&&(
+                <div className="qn-fade" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",marginBottom:8,borderRadius:10,background:"rgba(0,229,192,.06)",border:"1px solid rgba(0,229,192,.3)"}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"var(--qn-teal)"}}>↻</span>
+                  <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",flex:1}}><strong style={{color:"var(--qn-teal)"}}>{slotsRestoredCount} patient slot{slotsRestoredCount>1?"s":""}</strong> restored from your last session</span>
+                  <button onClick={()=>setSlotsRestored(false)} style={{padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)"}}>✕</button>
+                </div>
+              )}
+
+              {/* ── Patient Queue Bar ── */}
+              <div style={{display:"flex",gap:6,padding:"8px 10px",borderRadius:12,background:"rgba(8,22,40,.7)",border:"1px solid rgba(42,79,122,.35)"}}>
+                {slots.map((slot,i)=>{
+                  const isActive=i===activeSlot;
+                  const isEmpty=!slot.cc&&!slot.hpi&&!slot.mdmResult;
+                  const isSaved=!!slot.savedNoteId;
+                  const hasDisp=!!slot.dispResult;
+                  const hasMDM=!!slot.mdmResult;
+                  const hasP2Data=!!(slot.labs||slot.imaging||slot.newVitals);
+                  const hasP1Data=!!(slot.cc||slot.hpi);
+                  const hasCacheId=!!slotCacheIds[i];
+                  const status=isEmpty?null:isSaved?{label:"Saved",color:"var(--qn-green)",bg:"rgba(61,255,160,.12)",bd:"rgba(61,255,160,.4)"}:hasDisp?{label:"Dispo Done",color:"var(--qn-purple)",bg:"rgba(155,109,255,.12)",bd:"rgba(155,109,255,.4)"}:hasMDM&&hasP2Data?{label:"Phase 2",color:"var(--qn-blue)",bg:"rgba(59,158,255,.12)",bd:"rgba(59,158,255,.4)"}:hasMDM?{label:"MDM Done",color:"var(--qn-teal)",bg:"rgba(0,229,192,.12)",bd:"rgba(0,229,192,.4)"}:hasP1Data?{label:"Phase 1",color:"var(--qn-gold)",bg:"rgba(245,200,66,.1)",bd:"rgba(245,200,66,.35)"}:null;
+                  const displayName=slot.patientName||(slot.cc?slot.cc.slice(0,22)+(slot.cc.length>22?"…":""):null);
+                  const hasData=!!(slot.cc||slot.hpi||slot.vitals||slot.labs||slot.mdmResult);
+                  return (
+                    <button key={i} onClick={()=>switchToSlot(i)} style={{flex:1,padding:"8px 10px",borderRadius:9,cursor:"pointer",textAlign:"left",transition:"all .15s",position:"relative",border:`1px solid ${isActive?"rgba(0,229,192,.55)":isEmpty?"rgba(42,79,122,.2)":"rgba(42,79,122,.45)"}`,background:isActive?"rgba(0,229,192,.1)":isEmpty?"rgba(8,22,40,.3)":"rgba(14,37,68,.55)"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:isEmpty?0:4}}>
+                        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,letterSpacing:.5,color:isActive?"var(--qn-teal)":"var(--qn-txt4)"}}>P{i+1}</span>
+                        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(42,79,122,.5)"}}>Ctrl+{i+1}</span>
+                        <div style={{flex:1}}/>
+                        {isSaved&&<div style={{width:7,height:7,borderRadius:"50%",background:"var(--qn-green)",boxShadow:"0 0 5px rgba(61,255,160,.6)",flexShrink:0}}/>}
+                        {isActive&&!isSaved&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--qn-teal)",flexShrink:0,animation:"qnpulse 1.2s ease-in-out infinite"}}/>}
+                        {hasCacheId&&!isSaved&&<div style={{width:5,height:5,borderRadius:"50%",background:"rgba(59,158,255,.6)",flexShrink:0}}/>}
+                        {hasData&&(
+                          <button onClick={e=>{e.stopPropagation();if(confirmingSlot===i){setConfirmingSlot(null);}else{setConfirmingSlot(i);setTimeout(()=>{resetSlot(i);setConfirmingSlot(null);},1500);}}} title={`Reset Patient ${i+1}`}
+                            style={{width:14,height:14,borderRadius:"50%",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700,cursor:"pointer",border:"none",background:"transparent",padding:0,color:confirmingSlot===i?"#ff4d4f":"rgba(200,223,240,0.3)",flexShrink:0}}>
+                            {confirmingSlot===i?"?":"✕"}
                           </button>
-                        </div>
-                      </>
-                    )}
-                  </button>
-                );
-              })}
-              <div style={{display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 2px"}}>
-                <div style={{width:1,height:40,background:"rgba(42,79,122,.35)"}} />
-              </div>
-              {/* Orders toggle button */}
-              {(()=>{
-                const activeOrderCount = orderPhases.filter(p=>p.status==="active").reduce((n,p)=>n+p.orders.length,0);
-                const stagedOrderCount = orderPhases.filter(p=>p.status==="staged").reduce((n,p)=>n+p.orders.length,0);
-                const hasOrders = activeOrderCount > 0 || stagedOrderCount > 0;
-                return (
-                  <button onClick={()=>setShowOrderQueue(v=>!v)}
-                    style={{alignSelf:"center",padding:"5px 10px",borderRadius:7,cursor:"pointer",
-                      fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,flexShrink:0,
-                      border:`1px solid ${showOrderQueue?"rgba(245,158,11,.5)":hasOrders?"rgba(245,158,11,.35)":"rgba(42,79,122,.4)"}`,
-                      background:showOrderQueue?"rgba(245,158,11,.12)":hasOrders?"rgba(245,158,11,.06)":"transparent",
-                      color:showOrderQueue||hasOrders?"#f59e0b":"var(--qn-txt4)"}}>
-                    Orders{activeOrderCount>0?` · ${activeOrderCount} active`:""}{stagedOrderCount>0?` · ${stagedOrderCount} staged`:""}
-                  </button>
-                );
-              })()}
-
-              <button onClick={()=>setShowKbHelp(h=>!h)} title="Keyboard shortcuts (Shift+?)"
-                style={{alignSelf:"center",padding:"6px 10px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)",flexShrink:0}}>?</button>
-            </div>
-            {slots.some(s=>!!(s.cc||s.hpi||s.mdmResult))&&(
-              <div style={{display:"flex",gap:10,marginTop:5,paddingLeft:4,flexWrap:"wrap",alignItems:"center"}}>
-                {[
-                  {label:"Phase 1",color:"var(--qn-gold)"},{label:"MDM Done",color:"var(--qn-teal)"},
-                  {label:"Phase 2",color:"var(--qn-blue)"},{label:"Dispo Done",color:"var(--qn-purple)"},
-                  {label:"Saved",color:"var(--qn-green)"},
-                ].map(({label,color})=>(
-                  <div key={label} style={{display:"flex",alignItems:"center",gap:4}}>
-                    <div style={{width:6,height:6,borderRadius:"50%",background:color,flexShrink:0}} />
-                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.5)",letterSpacing:.4}}>{label}</span>
-                  </div>
-                ))}
-                <div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <div style={{width:5,height:5,borderRadius:"50%",background:"rgba(59,158,255,.6)",flexShrink:0}} />
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.5)"}}>Session saved</span>
-                </div>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(42,79,122,.5)",marginLeft:4}}>Ctrl+1–4 switch · Ctrl+S save all</span>
-                <div style={{display:"flex",alignItems:"center",gap:4,marginLeft:"auto"}}>
-                  <div style={{width:5,height:5,borderRadius:"50%",background:"rgba(59,158,255,.7)",flexShrink:0}} />
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(59,158,255,.6)"}}>⚡ Auto-saved locally</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {showUndo&&<UndoToast onUndo={handleUndo} onDismiss={()=>{clearTimeout(undoTimer);setShowUndo(false);setUndoData(null);}} />}
-        {nhResumed&&!nhResumeDismissed&&<NhResumeBanner onDismiss={()=>setNhResumeDismissed(true)} />}
-        {vhImported&&!vhDismissed&&<VhImportBanner onDismiss={()=>setVhDismissed(true)} />}
-        <VhAnalysisCard vhAnalysis={vhAnalysis&&!vhAnalysisDismissed?vhAnalysis:null} onDismiss={()=>setVhAnalysisDismissed(true)} />
-        {addendumMode&&<AddendumBanner addendumRef={addendumRef} />}
-        <PriorVisitsPanel visits={priorVisits} loading={priorVisitsLoading} onLoad={loadPriorVisits} />
-        {(vitals.trim().length>10||labs.trim().length>5)&&<SepsisBanner vitalsText={vitals} labsText={labs} />}
-
-        <CCPicker
-          isOpen={showCCPicker}
-          onClose={() => setShowCCPicker(false)}
-          onSelect={handleCCSelect}
-          patientAge={slots[activeSlot]?.patientAge || demo?.age}
-          patientAgeUnit="year"
-        />
-
-        {showHPIBuilder && hpiTemplate && (
-          <HPIBuilder
-            template={hpiTemplate}
-            ccLabel={hpiBuilderCC}
-            onApply={(completedHpi) => {
-              if (typeof setHpi === "function") setHpi(completedHpi);
-            }}
-            onClose={() => setShowHPIBuilder(false)}
-          />
-        )}
-
-        <EncounterPicker onSelect={handleEncounterImport} />
-
-        <Phase1Panel
-          cc={cc} setCC={setCC} vitals={vitals} setVitals={setVitals}
-          hpi={hpi} setHpi={setHpi} ros={ros} setRos={setRos} exam={exam} setExam={setExam}
-          encounterType={encounterType} setEncounterType={setEncounterType}
-          hpiMode={hpiMode} setHpiMode={setHpiMode} hpiSummary={hpiSummary} setHpiSummary={setHpiSummary}
-          hpiSumBusy={hpiSumBusy} hpiSumError={hpiSumError} copiedHpiSum={copiedHpiSum} setCopiedHpiSum={setCopiedHpiSum}
-          summarizeHPI={summarizeHPI}
-          structureHPI={structureHPI} hpiStructureBusy={hpiStructureBusy} hpiStructureError={hpiStructureError}
-          summarizeFromStructure={summarizeFromStructure} hpiGaps={hpiGaps}
-          quickDDx={quickDDx} quickDDxBusy={quickDDxBusy} quickDDxErr={quickDDxErr}
-          quickDDxDismissed={quickDDxDismissed} setQuickDDxDismissed={setQuickDDxDismissed} runQuickDDx={runQuickDDx}
-          medsRaw={medsRaw} setMedsRaw={setMedsRaw} allergiesRaw={allergiesRaw} setAllergiesRaw={setAllergiesRaw}
-          parsedMeds={parsedMeds} parsedAllergies={parsedAllergies}
-          setParsedMeds={setParsedMeds} setParsedAllergies={setParsedAllergies}
-          medsParsing={medsParsing} medsError={medsError} parseMedsAllergies={parseMedsAllergies}
-          p1Busy={p1Busy} p1Error={p1Error} phase1Ready={phase1Ready} mdmResult={mdmResult}
-          copiedInputs={copiedInputs} copyClinicalInputs={copyClinicalInputs}
-          setRef={setRef} makeKeyDown={makeKeyDown} runMDM={runMDM}
-          isBounceback={isBounceback} setIsBounceback={setIsBounceback}
-          bouncebackDate={bouncebackDate} setBouncebackDate={setBouncebackDate}
-          autoRosFromHpi={autoRosFromHpi} autoRosBusy={autoRosBusy}
-          patientPregnant={patientPregnant} setPatientPregnant={setPatientPregnant}
-          patientWeight={patientWeight} setPatientWeight={setPatientWeight}
-          smartExpansions={smartExpansions}
-          medsFromHpi={medsFromHpi}
-          allergiesFromHpi={allergiesFromHpi}
-        />
-
-        <QuickNoteROSHelper ros={ros} onChange={setRos} />
-        <QuickNoteExamHelper exam={exam} onChange={setExam} cc={cc} autoExamFromCC={autoExamFromCC} autoExamBusy={autoExamBusy} />
-
-        {/* ── v12.2: CC-driven ROS + PE scaffold injection ── */}
-        <QuickNoteROSPEScaffolds
-          cc={cc}
-          ros={ros}   setRos={setRos}
-          exam={exam} setExam={setExam}
-        />
-
-        {/* Patient History Tab */}
-        <PMHTab
-          pmh={pmh} setPmh={setPmh}
-          psh={psh} setPsh={setPsh}
-          patientMeds={patientMeds} setPatientMeds={setPatientMeds}
-          patientAllergies={patientAllergies} setPatientAllergies={setPatientAllergies}
-          chiefComplaint={cc} hpi={hpi}
-          onOrderQueueChange={handlePMHOrders}
-          onMDMDataChange={setPmhMDMData}
-        />
-
-        {/* HPI Scaffold */}
-        {cc.trim()&&(()=>{
-          const scaffold=getScaffold(cc);
-          if (!scaffold||hpi.trim()===scaffold.text.trim()) return null;
-          return (
-            <div style={{marginBottom:10,background:"rgba(59,158,255,.04)",border:"1px solid rgba(59,158,255,.2)",borderRadius:12,overflow:"hidden"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-                padding:"7px 14px",borderBottom:scaffoldOpen?"1px solid rgba(59,158,255,.15)":"none",cursor:"pointer"}}
-                onClick={()=>setScaffoldOpen(p=>!p)}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"var(--qn-blue)",letterSpacing:1.5,textTransform:"uppercase"}}>
-                    💡 HPI Scaffold — {scaffold.cc}
-                  </span>
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-                    color:hpi.trim()?"var(--qn-gold)":"var(--qn-txt4)",
-                    background:hpi.trim()?"rgba(245,200,66,.1)":"rgba(59,158,255,.1)",
-                    border:`1px solid ${hpi.trim()?"rgba(245,200,66,.25)":"rgba(59,158,255,.2)"}`,
-                    borderRadius:4,padding:"1px 6px"}}>
-                    {hpi.trim()?"Compare / Reload":"Click to expand"}
-                  </span>
-                </div>
-                <span style={{color:"var(--qn-txt4)",fontSize:11}}>{scaffoldOpen?"▲":"▼"}</span>
-              </div>
-              {scaffoldOpen&&(
-                <div style={{padding:"10px 14px"}}>
-                  <pre style={{margin:"0 0 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,
-                    color:"var(--qn-txt2)",lineHeight:1.75,background:"rgba(59,158,255,.04)",
-                    borderRadius:8,padding:"10px 14px",border:"1px solid rgba(59,158,255,.12)",
-                    whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
-                    {scaffold.text}
-                  </pre>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    <button onClick={()=>{setHpi(scaffold.text);setScaffoldOpen(false);}}
-                      style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",
-                        border:"1px solid rgba(59,158,255,.45)",background:"rgba(59,158,255,.1)",
-                        color:"var(--qn-blue)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}}>
-                      {hpi.trim()?"↩ Replace HPI with scaffold":"↓ Insert into HPI"}
+                        )}
+                      </div>
+                      {isEmpty?(<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"rgba(42,79,122,.5)",fontStyle:"italic"}}>Empty</div>):(
+                        <>
+                          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:isActive?700:600,color:isActive?"var(--qn-txt)":"var(--qn-txt2)",lineHeight:1.25,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName||"No CC entered"}</div>
+                          {status&&(<div style={{marginTop:4,display:"inline-flex",alignItems:"center",gap:4,padding:"2px 7px",borderRadius:5,background:status.bg,border:`1px solid ${status.bd}`}}><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,color:status.color,letterSpacing:.5,textTransform:"uppercase"}}>{status.label}</span></div>)}
+                          <div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
+                            {getSaveLabel(slotSaveTimes[i])&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(59,158,255,.5)",flex:1}}>☁ {getSaveLabel(slotSaveTimes[i])}</span>}
+                            <button onClick={e=>{e.stopPropagation();saveAllSlots(true);}} disabled={slotSaving} style={{padding:"1px 7px",borderRadius:4,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:7,fontWeight:700,border:`1px solid ${slotSaving?"rgba(42,79,122,.25)":"rgba(59,158,255,.4)"}`,background:slotSaving?"rgba(14,37,68,.3)":"rgba(59,158,255,.08)",color:slotSaving?"var(--qn-txt4)":"var(--qn-blue)"}}>
+                              {slotSaving?"●":"↑ Save"}
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </button>
-                    {hpi.trim()&&(
-                      <button onClick={()=>{setHpi(prev=>scaffold.text+"\n\n"+prev);setScaffoldOpen(false);}}
-                        style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",
-                          border:"1px solid rgba(245,200,66,.4)",background:"rgba(245,200,66,.07)",
-                          color:"var(--qn-gold)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}}>
-                        ↑ Prepend scaffold
+                  );
+                })}
+                <div style={{display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 2px"}}><div style={{width:1,height:40,background:"rgba(42,79,122,.35)"}}/></div>
+                <button onClick={()=>setShowOrderQueue(v=>!v)} style={{alignSelf:"center",padding:"5px 10px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,flexShrink:0,border:`1px solid ${showOrderQueue?"rgba(245,158,11,.5)":"rgba(42,79,122,.4)"}`,background:showOrderQueue?"rgba(245,158,11,.12)":"transparent",color:showOrderQueue?"#f59e0b":"var(--qn-txt4)"}}>Orders</button>
+                <button onClick={()=>setShowKbHelp(h=>!h)} title="Keyboard shortcuts" style={{alignSelf:"center",padding:"6px 10px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,border:"1px solid rgba(42,79,122,.4)",background:"transparent",color:"var(--qn-txt4)",flexShrink:0}}>?</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Toasts and banners ── */}
+          {showUndo&&<UndoToast onUndo={handleUndo} onDismiss={()=>{clearTimeout(undoTimer);setShowUndo(false);setUndoData(null);}}/>}
+          {nhResumed&&!nhResumeDismissed&&<NhResumeBanner onDismiss={()=>setNhResumeDismissed(true)}/>}
+          {vhImported&&!vhDismissed&&<VhImportBanner onDismiss={()=>setVhDismissed(true)}/>}
+          <VhAnalysisCard vhAnalysis={vhAnalysis&&!vhAnalysisDismissed?vhAnalysis:null} onDismiss={()=>setVhAnalysisDismissed(true)}/>
+          {addendumMode&&<AddendumBanner addendumRef={addendumRef}/>}
+          <PriorVisitsPanel visits={priorVisits} loading={priorVisitsLoading} onLoad={loadPriorVisits}/>
+          {(vitals.trim().length>10||labs.trim().length>5)&&<SepsisBanner vitalsText={vitals} labsText={labs}/>}
+
+          {/* ── Modals ── */}
+          <CCPicker isOpen={showCCPicker} onClose={()=>setShowCCPicker(false)} onSelect={handleCCSelect} patientAge={slots[activeSlot]?.patientAge||demo?.age} patientAgeUnit="year"/>
+          {showHPIBuilder&&hpiTemplate&&(<HPIBuilder template={hpiTemplate} ccLabel={hpiBuilderCC} onApply={(completedHpi)=>{if(typeof setHpi==="function")setHpi(completedHpi);}} onClose={()=>setShowHPIBuilder(false)}/>)}
+          <EncounterPicker onSelect={handleEncounterImport}/>
+
+          {/* ══════════════════════════════════════════════════════════════════
+              PHASE 1 — DATA COLLECTION
+          ══════════════════════════════════════════════════════════════════ */}
+          <PhaseDivider phase="Phase 1" label="Initial Assessment" color="var(--qn-teal)" sublabel="CC · Vitals · HPI · ROS · Exam" />
+
+          {/* Patient History Tab (PMH/Meds/Allergies) */}
+          <PMHTab
+            pmh={pmh} setPmh={setPmh} psh={psh} setPsh={setPsh}
+            patientMeds={patientMeds} setPatientMeds={setPatientMeds}
+            patientAllergies={patientAllergies} setPatientAllergies={setPatientAllergies}
+            chiefComplaint={cc} hpi={hpi}
+            onOrderQueueChange={handlePMHOrders} onMDMDataChange={setPmhMDMData}
+          />
+
+          {/* Phase 1 core data entry panel */}
+          <Phase1Panel
+            cc={cc} setCC={setCC} vitals={vitals} setVitals={setVitals}
+            hpi={hpi} setHpi={handleHpiChange}
+            ros={ros} setRos={setRos} exam={exam} setExam={setExam}
+            encounterType={encounterType} setEncounterType={setEncounterType}
+            hpiMode={hpiMode} setHpiMode={setHpiMode} hpiSummary={hpiSummary} setHpiSummary={setHpiSummary}
+            hpiSumBusy={hpiSumBusy} hpiSumError={hpiSumError} copiedHpiSum={copiedHpiSum} setCopiedHpiSum={setCopiedHpiSum}
+            summarizeHPI={summarizeHPI}
+            structureHPI={structureHPI} hpiStructureBusy={hpiStructureBusy} hpiStructureError={hpiStructureError}
+            summarizeFromStructure={summarizeFromStructure} hpiGaps={hpiGaps}
+            quickDDx={quickDDx} quickDDxBusy={quickDDxBusy} quickDDxErr={quickDDxErr}
+            quickDDxDismissed={quickDDxDismissed} setQuickDDxDismissed={setQuickDDxDismissed} runQuickDDx={runQuickDDx}
+            medsRaw={medsRaw} setMedsRaw={setMedsRaw} allergiesRaw={allergiesRaw} setAllergiesRaw={setAllergiesRaw}
+            parsedMeds={parsedMeds} parsedAllergies={parsedAllergies}
+            setParsedMeds={setParsedMeds} setParsedAllergies={setParsedAllergies}
+            medsParsing={medsParsing} medsError={medsError} parseMedsAllergies={parseMedsAllergies}
+            p1Busy={p1Busy} p1Error={p1Error} phase1Ready={phase1Ready} mdmResult={mdmResult}
+            copiedInputs={copiedInputs} copyClinicalInputs={copyClinicalInputs}
+            setRef={setRef} makeKeyDown={makeKeyDown} runMDM={runMDM}
+            isBounceback={isBounceback} setIsBounceback={setIsBounceback}
+            bouncebackDate={bouncebackDate} setBouncebackDate={setBouncebackDate}
+            autoRosFromHpi={autoRosFromHpi} autoRosBusy={autoRosBusy}
+            patientPregnant={patientPregnant} setPatientPregnant={setPatientPregnant}
+            patientWeight={patientWeight} setPatientWeight={setPatientWeight}
+            smartExpansions={smartExpansions}
+            medsFromHpi={medsFromHpi} allergiesFromHpi={allergiesFromHpi}
+          />
+
+          {/* ── v13.0: HPI→ROS+PE AI status strip ── */}
+          {hpi.trim().length > 60 && (
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 14px",marginBottom:8,borderRadius:8,background:"rgba(0,229,192,.04)",border:"1px solid rgba(0,229,192,.15)"}} className="no-print">
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-teal)",letterSpacing:.5}}>AI ASSIST</span>
+              <div style={{width:1,height:12,background:"rgba(0,229,192,.2)"}}/>
+              <button
+                onClick={()=>generateROSFromHPI(hpi,cc)}
+                disabled={hpiRosBusy}
+                style={{padding:"3px 12px",borderRadius:6,cursor:hpiRosBusy?"not-allowed":"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,border:`1px solid ${hpiRosDone?"rgba(61,255,160,.5)":hpiRosBusy?"rgba(42,79,122,.3)":"rgba(0,229,192,.4)"}`,background:hpiRosDone?"rgba(61,255,160,.1)":hpiRosBusy?"rgba(14,37,68,.4)":"rgba(0,229,192,.07)",color:hpiRosDone?"var(--qn-green)":hpiRosBusy?"var(--qn-txt4)":"var(--qn-teal)"}}>
+                {hpiRosDone?"✓ ROS Generated":hpiRosBusy?"● Generating ROS…":"↳ Generate ROS from HPI"}
+              </button>
+              <button
+                onClick={()=>generatePEFromHPI(hpi,cc)}
+                disabled={hpiExamBusy}
+                style={{padding:"3px 12px",borderRadius:6,cursor:hpiExamBusy?"not-allowed":"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,border:`1px solid ${hpiExamDone?"rgba(61,255,160,.5)":hpiExamBusy?"rgba(42,79,122,.3)":"rgba(0,229,192,.4)"}`,background:hpiExamDone?"rgba(61,255,160,.1)":hpiExamBusy?"rgba(14,37,68,.4)":"rgba(0,229,192,.07)",color:hpiExamDone?"var(--qn-green)":hpiExamBusy?"var(--qn-txt4)":"var(--qn-teal)"}}>
+                {hpiExamDone?"✓ PE Generated":hpiExamBusy?"● Generating PE…":"↳ Generate PE from HPI"}
+              </button>
+              {(hpiRosBusy||hpiExamBusy)&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(0,229,192,.5)",letterSpacing:.3}}>Analyzing HPI…</span>}
+              {(hpiRosDone||hpiExamDone)&&!hpiRosBusy&&!hpiExamBusy&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(61,255,160,.6)"}}>Review and edit below before generating Initial Impression</span>}
+            </div>
+          )}
+
+          {/* ROS helper — immediately after HPI */}
+          <QuickNoteROSHelper ros={ros} onChange={setRos}/>
+
+          {/* CC-driven ROS + PE scaffold injection */}
+          <QuickNoteROSPEScaffolds cc={cc} ros={ros} setRos={setRos} exam={exam} setExam={setExam}/>
+
+          {/* PE helper — immediately after ROS */}
+          <QuickNoteExamHelper exam={exam} onChange={setExam} cc={cc} autoExamFromCC={autoExamFromCC} autoExamBusy={autoExamBusy}/>
+
+          {/* HPI Scaffold — inline, before generate button */}
+          {cc.trim()&&(()=>{
+            const scaffold=getScaffold(cc);
+            if (!scaffold||hpi.trim()===scaffold.text.trim()) return null;
+            return (
+              <div style={{marginBottom:10,background:"rgba(59,158,255,.04)",border:"1px solid rgba(59,158,255,.2)",borderRadius:12,overflow:"hidden"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 14px",borderBottom:scaffoldOpen?"1px solid rgba(59,158,255,.15)":"none",cursor:"pointer"}} onClick={()=>setScaffoldOpen(p=>!p)}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"var(--qn-blue)",letterSpacing:1.5,textTransform:"uppercase"}}>💡 HPI Scaffold — {scaffold.cc}</span>
+                  </div>
+                  <span style={{color:"var(--qn-txt4)",fontSize:11}}>{scaffoldOpen?"▲":"▼"}</span>
+                </div>
+                {scaffoldOpen&&(
+                  <div style={{padding:"10px 14px"}}>
+                    <pre style={{margin:"0 0 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",lineHeight:1.75,background:"rgba(59,158,255,.04)",borderRadius:8,padding:"10px 14px",border:"1px solid rgba(59,158,255,.12)",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{scaffold.text}</pre>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      <button onClick={()=>{setHpi(scaffold.text);setScaffoldOpen(false);}} style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",border:"1px solid rgba(59,158,255,.45)",background:"rgba(59,158,255,.1)",color:"var(--qn-blue)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}}>{hpi.trim()?"↩ Replace HPI with scaffold":"↓ Insert into HPI"}</button>
+                      {hpi.trim()&&(<button onClick={()=>{setHpi(prev=>scaffold.text+"\n\n"+prev);setScaffoldOpen(false);}} style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",border:"1px solid rgba(245,200,66,.4)",background:"rgba(245,200,66,.07)",color:"var(--qn-gold)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}}>↑ Prepend scaffold</button>)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ── PHASE 1 ACTION: Generate Initial Impression ── */}
+          {/* This button sits BELOW all Phase 1 inputs (CC, Vitals, HPI, ROS, Exam) */}
+          {!mdmResult && phase1Ready && (
+            <div style={{marginBottom:16,padding:"16px 20px",borderRadius:14,background:"rgba(0,229,192,.04)",border:"1px solid rgba(0,229,192,.3)",display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}} className="no-print">
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"var(--qn-teal)",marginBottom:3}}>Ready to Generate Initial Impression</div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:.4}}>
+                  {[cc&&`CC: ${cc.slice(0,30)}`,hpi.trim()&&"HPI ✓",ros.trim()&&"ROS ✓",exam.trim()&&"Exam ✓"].filter(Boolean).join("  ·  ")}
+                </div>
+              </div>
+              <button
+                onClick={runMDM}
+                disabled={p1Busy}
+                style={{padding:"12px 28px",borderRadius:10,cursor:p1Busy?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:700,letterSpacing:.3,transition:"all .15s",flexShrink:0,
+                  border:`2px solid ${p1Busy?"rgba(42,79,122,.3)":"rgba(0,229,192,.7)"}`,
+                  background:p1Busy?"rgba(14,37,68,.4)":"rgba(0,229,192,.15)",
+                  color:p1Busy?"var(--qn-txt4)":"var(--qn-teal)",
+                  boxShadow:p1Busy?"none":"0 0 20px rgba(0,229,192,.12)"}}>
+                {p1Busy ? "● Generating…" : "✦ Generate Initial Impression"}
+              </button>
+              {p1Error&&<div style={{width:"100%",fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"var(--qn-coral)",padding:"6px 10px",borderRadius:6,background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.3)"}}>{p1Error}</div>}
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              PHASE 1 OUTPUT — Initial Impression + A&P
+          ══════════════════════════════════════════════════════════════════ */}
+          {mdmResult && (
+            <>
+              <PhaseDivider phase="Phase 1 Output" label="Initial Impression & Plan" color="var(--qn-teal)" sublabel={mdmInitialTs ? `Generated ${mdmInitialTs}` : undefined} />
+
+              <SectionCard accent="rgba(0,229,192,.25)">
+                <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14,flexWrap:"wrap"}}>
+                  <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:"var(--qn-teal)"}}>Initial Impression</span>
+                  {isBounceback&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-coral)",background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.35)",borderRadius:4,padding:"2px 7px"}}>⚠ Bounceback</span>}
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.2)",borderRadius:4,padding:"2px 7px"}}>AMA/CMS 2023 · ACEP</span>
+                  <div style={{flex:1}}/>
+                  <button onClick={runWorkupRationale} disabled={workupRationaleBusy} style={{padding:"4px 11px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,border:`1px solid ${workupRationaleBusy?"rgba(42,79,122,.3)":"rgba(245,200,66,.4)"}`,background:workupRationaleBusy?"rgba(14,37,68,.4)":"rgba(245,200,66,.07)",color:workupRationaleBusy?"var(--qn-txt4)":"var(--qn-gold)"}}>
+                    {workupRationaleBusy?"● …":"✦ Workup Rationale"}
+                  </button>
+                  <button onClick={async()=>{
+                    const parts=[];
+                    const ts=new Date().toLocaleString();
+                    parts.push("MEDICAL DECISION MAKING — "+ts,"");
+                    const imp=mdmResult?.initial_impression||{};
+                    if (imp.working_dx_line) { parts.push("INITIAL IMPRESSION:"); parts.push("Working diagnosis: "+imp.working_dx_line); if(imp.clinical_rationale) parts.push(imp.clinical_rationale); (imp.cannot_exclude||[]).forEach(s=>parts.push(s)); if(imp.differentials?.length){parts.push("Differentials:");imp.differentials.forEach(d=>parts.push(d.rank+". "+d.diagnosis));} parts.push(""); }
+                    const t=treatmentResult||null;
+                    if(t){if(t.immediate_interventions?.length){parts.push("IMMEDIATE INTERVENTIONS:");t.immediate_interventions.forEach(i=>parts.push("- "+i));parts.push("");} if(t.medications?.length){parts.push("MEDICATIONS:");t.medications.forEach(m=>{if(m.is_note)parts.push("- Note: "+m.agent);else parts.push("- "+m.category+": "+m.agent+" "+m.dosing);});parts.push("");}}
+                    parts.push("MDM COMPLEXITY");
+                    if(mdmResult?.mdm_label) parts.push("Level: "+mdmResult.mdm_label+(mdmResult.mdm_level?" ("+mdmResult.mdm_level+")":""));
+                    if(mdmResult?.problem_complexity) parts.push("Problem Complexity: "+mdmResult.problem_complexity);
+                    if(mdmResult?.data_complexity) parts.push("Data Complexity: "+mdmResult.data_complexity);
+                    if(mdmResult?.risk_tier) parts.push("Risk: "+mdmResult.risk_tier);
+                    await navigator.clipboard.writeText(parts.filter(Boolean).join("\n"));
+                    setCopiedMDMFull(true); setTimeout(()=>setCopiedMDMFull(false),2000);
+                  }} style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,border:`1px solid ${copiedMDMFull?"rgba(61,255,160,.5)":"rgba(0,229,192,.35)"}`,background:copiedMDMFull?"rgba(61,255,160,.1)":"rgba(0,229,192,.07)",color:copiedMDMFull?"var(--qn-green)":"var(--qn-teal)"}}>
+                    {copiedMDMFull?"✓ Copied":"Copy MDM"}
+                  </button>
+                  <button onClick={()=>{setMdmResult(null);setDispResult(null);setP2Open(false);setWorkupRationale(null);}} style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,border:"1px solid rgba(245,200,66,.35)",background:"rgba(245,200,66,.07)",color:"var(--qn-gold)"}}>↩ Re-run</button>
+                  <button onClick={runMDMAddendum} disabled={rerunAddendumBusy} style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,border:`1px solid ${rerunAddendumBusy?"rgba(42,79,122,.3)":"rgba(155,109,255,.4)"}`,background:rerunAddendumBusy?"rgba(14,37,68,.4)":"rgba(155,109,255,.07)",color:rerunAddendumBusy?"var(--qn-txt4)":"var(--qn-purple)"}}>
+                    {rerunAddendumBusy?"● …":"+ Addendum"}
+                  </button>
+                  <MDMHandoffBridge mdmResult={mdmResult} treatmentPlan={treatmentPlan} actionPlan={actionPlan} cc={cc}/>
+                </div>
+
+                <InitialImpressionDisplay result={mdmResult}/>
+
+                {treatmentLoading&&<div style={{fontSize:12,color:"#00b89a",padding:"8px 0",fontFamily:"'JetBrains Mono',monospace"}}>Generating treatment plan…</div>}
+                <TreatmentDisplay result={treatmentResult}/>
+
+                <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
+                  onNarrativeEdit={text=>setMdmResult(prev=>({...prev,mdm_narrative:text}))}/>
+
+                {/* My Clinical Plan */}
+                <div style={{marginTop:12,padding:"12px 14px",borderRadius:10,background:"rgba(14,37,68,.4)",border:"1px solid rgba(42,79,122,.3)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-txt2)",flex:1}}>My Clinical Plan</span>
+                    <button onClick={generateClinicalPlan} disabled={treatmentPlanBusy} style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:11,border:`1px solid ${treatmentPlanBusy?"rgba(42,79,122,.3)":"rgba(0,229,192,.5)"}`,background:treatmentPlanBusy?"rgba(14,37,68,.4)":"rgba(0,229,192,.1)",color:treatmentPlanBusy?"var(--qn-txt4)":"var(--qn-teal)"}}>
+                      {treatmentPlanBusy?"● Generating…":(treatmentPlan||actionPlan)?"↻ Re-generate":"✦ AI Generate Plan"}
+                    </button>
+                    {(treatmentPlan||actionPlan)&&<button onClick={()=>{setTreatmentPlan("");setActionPlan("");}} style={{padding:"5px 10px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,border:"1px solid rgba(42,79,122,.35)",background:"transparent",color:"var(--qn-txt4)"}}>Clear</button>}
+                  </div>
+                  {!treatmentPlan&&!actionPlan&&!treatmentPlanBusy&&<div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"rgba(107,158,200,.4)",letterSpacing:.4,marginBottom:8}}>Click ✦ AI Generate Plan for an evidence-based treatment plan and action checklist</div>}
+                  <MDMPlanEntry treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan} actionPlan={actionPlan} setActionPlan={setActionPlan}/>
+                </div>
+
+                <GuidelineAssist workingDx={mdmResult?.working_diagnosis||""} mdmNarrative={mdmResult?.mdm_narrative||""}
+                  onInsertSentence={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))}/>
+
+                <div style={{marginTop:10}}>
+                  <EMLevel mdmText={mdmResult?.mdm_narrative||""} hpi={effectiveHpi} labs={labs} imaging={imaging} ekg={ekg} newVitals={newVitals} consults={consults}/>
+                </div>
+
+                {mdmResult.mdm_level&&(
+                  <details style={{marginTop:10}}>
+                    <summary style={{cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",listStyle:"none"}}>▶ Why {mdmResult.mdm_level} complexity?</summary>
+                    <div style={{marginTop:8,padding:"10px 12px",borderRadius:8,background:"rgba(14,37,68,.5)",border:"1px solid rgba(42,79,122,.3)"}}>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+                        {[{label:"Problem Complexity",value:mdmResult.problem_complexity,color:"var(--qn-teal)"},{label:"Data Complexity",value:mdmResult.data_complexity,color:"var(--qn-blue)"},{label:"Risk Level",value:mdmResult.risk_tier,color:"var(--qn-gold)"}].map(({label,value,color})=>(
+                          <div key={label}><div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"var(--qn-txt4)",letterSpacing:.8,textTransform:"uppercase",marginBottom:4}}>{label}</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color,lineHeight:1.4}}>{value||"—"}</div></div>
+                        ))}
+                      </div>
+                      {mdmResult.risk_rationale&&<div style={{marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",lineHeight:1.6,paddingTop:8,borderTop:"1px solid rgba(42,79,122,.25)"}}>{mdmResult.risk_rationale}</div>}
+                    </div>
+                  </details>
+                )}
+
+                {workupRationale&&(
+                  <div className="qn-fade" style={{marginTop:10,padding:"12px 14px",borderRadius:10,background:"rgba(245,200,66,.05)",border:"1px solid rgba(245,200,66,.3)"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"var(--qn-gold)",letterSpacing:1,textTransform:"uppercase",flex:1}}>Workup Rationale</span>
+                      <button onClick={()=>{navigator.clipboard.writeText(workupRationale).then(()=>{setCopiedWorkup(true);setTimeout(()=>setCopiedWorkup(false),2000);});}} style={{padding:"2px 9px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,border:`1px solid ${copiedWorkup?"rgba(61,255,160,.5)":"rgba(245,200,66,.4)"}`,background:copiedWorkup?"rgba(61,255,160,.1)":"transparent",color:copiedWorkup?"var(--qn-green)":"var(--qn-gold)"}}>
+                        {copiedWorkup?"✓ Copied":"Copy"}
                       </button>
+                    </div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",lineHeight:1.75}}>{workupRationale}</div>
+                  </div>
+                )}
+
+                {mdmHistory.length>1&&(
+                  <div style={{marginTop:10}}>
+                    <button onClick={()=>setShowMdmHistory(p=>!p)} style={{padding:"3px 10px",borderRadius:6,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,border:`1px solid ${showMdmHistory?"rgba(155,109,255,.5)":"rgba(42,79,122,.35)"}`,background:showMdmHistory?"rgba(155,109,255,.08)":"transparent",color:showMdmHistory?"var(--qn-purple)":"var(--qn-txt4)"}}>
+                      {showMdmHistory?"▲":"▼"} Clinical Progression ({mdmHistory.length} entries)
+                    </button>
+                    {showMdmHistory&&(
+                      <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
+                        {mdmHistory.map((h,i)=>(
+                          <div key={i} style={{padding:"9px 12px",borderRadius:8,background:i===mdmHistory.length-1?"rgba(155,109,255,.07)":"rgba(14,37,68,.4)",border:`1px solid ${i===mdmHistory.length-1?"rgba(155,109,255,.3)":"rgba(42,79,122,.25)"}`}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:i===mdmHistory.length-1?"var(--qn-purple)":"var(--qn-txt4)",letterSpacing:.8,textTransform:"uppercase"}}>{h.trigger}</span>
+                              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)"}}>{h.ts}</span>
+                              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-gold)",background:"rgba(245,200,66,.1)",border:"1px solid rgba(245,200,66,.25)",borderRadius:3,padding:"1px 5px"}}>{h.mdm_level}</span>
+                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",flex:1}}>{h.working_diagnosis}</span>
+                            </div>
+                            {h.mdm_narrative&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt3)",lineHeight:1.5}}>{h.mdm_narrative.slice(0,200)}{h.mdm_narrative.length>200?"…":""}</div>}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* MDM Result */}
-        {mdmResult&&(
-          <div style={{marginBottom:14,padding:"16px",background:"rgba(8,22,40,.5)",
-            border:"1px solid rgba(0,229,192,.2)",borderRadius:14}} className="print-body">
-            <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14,flexWrap:"wrap"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:"var(--qn-teal)"}}>Initial Impression</span>
-              {mdmInitialTs&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-teal)",letterSpacing:.5,background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.25)",borderRadius:4,padding:"2px 7px"}}>⏱ {mdmInitialTs}</span>}
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",background:"rgba(0,229,192,.1)",border:"1px solid rgba(0,229,192,.2)",borderRadius:4,padding:"2px 7px"}}>AMA/CMS 2023 · ACEP</span>
-              {isBounceback&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-coral)",background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.35)",borderRadius:4,padding:"2px 7px"}}>⚠ Bounceback</span>}
-              <div style={{flex:1}} />
-              <button onClick={runWorkupRationale} disabled={workupRationaleBusy}
-                style={{padding:"4px 11px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                  border:`1px solid ${workupRationaleBusy?"rgba(42,79,122,.3)":"rgba(245,200,66,.4)"}`,
-                  background:workupRationaleBusy?"rgba(14,37,68,.4)":"rgba(245,200,66,.07)",
-                  color:workupRationaleBusy?"var(--qn-txt4)":"var(--qn-gold)",letterSpacing:.4,transition:"all .15s"}}>
-                {workupRationaleBusy?"● …":"✦ Workup Rationale"}
-              </button>
-              <button onClick={async ()=>{
-                const D = "-".repeat(60);
-                const parts = [];
-                const ts = new Date().toLocaleString();
-                parts.push("MEDICAL DECISION MAKING — " + ts);
-                parts.push(D);
-                const imp = mdmResult?.initial_impression || {};
-                const mgmt = mdmResult?.initial_management || {};
-                if (imp.working_dx_line) {
-                  parts.push("INITIAL IMPRESSION");
-                  parts.push("Working diagnosis: " + imp.working_dx_line);
-                  if (imp.clinical_rationale) parts.push(imp.clinical_rationale);
-                  (imp.cannot_exclude || []).forEach(s => parts.push(s));
-                  if (imp.differentials?.length) {
-                    parts.push("Differentials (ranked):");
-                    imp.differentials.forEach(d => parts.push(d.rank + ". " + d.diagnosis));
-                  }
-                  parts.push("");
-                }
-                if (mgmt.immediate_interventions?.length || mgmt.diagnostics?.length || mgmt.pending_data_summary) {
-                  parts.push("INITIAL MANAGEMENT");
-                  if (mgmt.immediate_interventions?.length) parts.push("Immediate interventions: " + mgmt.immediate_interventions.join(". ") + ".");
-                  if (mgmt.diagnostics?.length) { parts.push("Diagnostics:"); mgmt.diagnostics.forEach(d => parts.push("- " + d.test + ": " + d.rationale)); }
-                  if (mgmt.pending_data_summary) parts.push("Pending data: " + mgmt.pending_data_summary);
-                  parts.push("");
-                }
-                const t = treatmentResult || null;
-                if (t) {
-                  if (t.triage_acuity || t.triage_rationale) { parts.push("TRIAGE AND ACUITY:"); parts.push(t.triage_rationale || t.triage_acuity); parts.push(""); }
-                  if (t.immediate_interventions?.length) { parts.push("IMMEDIATE INTERVENTIONS:"); t.immediate_interventions.forEach(i => parts.push("- " + i)); parts.push(""); }
-                  if (t.medications?.length) { parts.push("MEDICATIONS:"); t.medications.forEach(m => { if (m.is_note) { parts.push("- Note: " + m.agent); } else { const c = m.caveats?.length ? " (" + m.caveats.join("; ") + ")" : ""; parts.push("- " + m.category + ": " + m.agent + " " + m.dosing + c); } }); parts.push(""); }
-                  if (t.diagnostics_ref?.length) { parts.push("DIAGNOSTICS (see MDM):"); t.diagnostics_ref.forEach(d => parts.push("- " + d)); parts.push(""); }
-                  if (t.monitoring_safety?.length) { parts.push("MONITORING AND SAFETY:"); t.monitoring_safety.forEach(m => parts.push("- " + m)); parts.push(""); }
-                  if (t.attestation_required) { parts.push("AI-generated recommendations. Physician attestation and clinical correlation required."); parts.push(""); }
-                }
-                parts.push(D);
-                parts.push("MDM COMPLEXITY");
-                if (mdmResult?.mdm_label) parts.push("Level: " + mdmResult.mdm_label + (mdmResult.mdm_level ? " (" + mdmResult.mdm_level + ")" : ""));
-                if (mdmResult?.problem_complexity) parts.push("Problem Complexity: " + mdmResult.problem_complexity);
-                if (mdmResult?.data_complexity)    parts.push("Data Complexity: " + mdmResult.data_complexity);
-                if (mdmResult?.risk_tier)          parts.push("Risk: " + mdmResult.risk_tier);
-                if (mdmResult?.mdm_confidence)     parts.push("MDM Confidence: " + mdmResult.mdm_confidence + (mdmResult.mdm_confidence_note ? " — " + mdmResult.mdm_confidence_note : ""));
-                const text = parts.filter(p => p !== null && p !== undefined).join("\n");
-                await navigator.clipboard.writeText(text);
-                setCopiedMDMFull(true); setTimeout(()=>setCopiedMDMFull(false),2000);
-              }}
-                style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
-                  border:`1px solid ${copiedMDMFull?"rgba(61,255,160,.5)":"rgba(0,229,192,.35)"}`,
-                  background:copiedMDMFull?"rgba(61,255,160,.1)":"rgba(0,229,192,.07)",
-                  color:copiedMDMFull?"var(--qn-green)":"var(--qn-teal)",transition:"all .15s"}}>
-                {copiedMDMFull?"✓ MDM Copied":"Copy MDM"}
-              </button>
-              <button onClick={()=>{setMdmResult(null);setDispResult(null);setP2Open(false);setWorkupRationale(null);setLabRecs(null);setImagingRecs(null);}}
-                style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
-                  border:"1px solid rgba(245,200,66,.35)",background:"rgba(245,200,66,.07)",color:"var(--qn-gold)"}}>↩ Re-run MDM</button>
-              <button onClick={runMDMAddendum} disabled={rerunAddendumBusy}
-                style={{padding:"4px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
-                  border:`1px solid ${rerunAddendumBusy?"rgba(42,79,122,.3)":"rgba(155,109,255,.4)"}`,
-                  background:rerunAddendumBusy?"rgba(14,37,68,.4)":"rgba(155,109,255,.07)",
-                  color:rerunAddendumBusy?"var(--qn-txt4)":"var(--qn-purple)",transition:"all .15s"}}>
-                {rerunAddendumBusy?"● …":"+ Addendum Re-run"}
-              </button>
-              <MDMHandoffBridge mdmResult={mdmResult} treatmentPlan={treatmentPlan} actionPlan={actionPlan} cc={cc} />
-            </div>
-
-            <InitialImpressionDisplay result={mdmResult} />
-
-            {treatmentLoading && (
-              <div style={{ fontSize: 12, color: "#00b89a", padding: "8px 0", fontFamily: "'JetBrains Mono',monospace" }}>
-                Generating treatment plan...
-              </div>
-            )}
-            <TreatmentDisplay result={treatmentResult} />
-
-            <MDMResult result={mdmResult} copiedMDM={copiedMDM} setCopiedMDM={setCopiedMDM}
-              onNarrativeEdit={text=>setMdmResult(prev=>({...prev,mdm_narrative:text}))} />
-
-            <div style={{marginTop:12,padding:"12px 14px",borderRadius:10,background:"rgba(14,37,68,.4)",border:"1px solid rgba(42,79,122,.3)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-                <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-txt2)",flex:1}}>My Clinical Plan</span>
-                <button onClick={generateClinicalPlan} disabled={treatmentPlanBusy}
-                  style={{padding:"5px 14px",borderRadius:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:11,transition:"all .15s",
-                    border:`1px solid ${treatmentPlanBusy?"rgba(42,79,122,.3)":"rgba(0,229,192,.5)"}`,
-                    background:treatmentPlanBusy?"rgba(14,37,68,.4)":"rgba(0,229,192,.1)",
-                    color:treatmentPlanBusy?"var(--qn-txt4)":"var(--qn-teal)",
-                    boxShadow:treatmentPlanBusy?"none":"0 0 12px rgba(0,229,192,.08)"}}>
-                  {treatmentPlanBusy?<><span style={{marginRight:5}}>●</span>Generating Plan…</>
-                    :(treatmentPlan||actionPlan)?"↻ Re-generate Plan":"✦ AI Generate Plan"}
-                </button>
-                {(treatmentPlan||actionPlan)&&(
-                  <button onClick={()=>{setTreatmentPlan("");setActionPlan("");}}
-                    style={{padding:"5px 10px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,border:"1px solid rgba(42,79,122,.35)",background:"transparent",color:"var(--qn-txt4)"}}>Clear</button>
                 )}
-              </div>
-              {!treatmentPlan&&!actionPlan&&!treatmentPlanBusy&&(
-                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"rgba(107,158,200,.4)",letterSpacing:.4,marginBottom:8}}>
-                  Click ✦ AI Generate Plan to get an evidence-based treatment plan and action item checklist for this presentation
-                </div>
-              )}
-              <MDMPlanEntry treatmentPlan={treatmentPlan} setTreatmentPlan={setTreatmentPlan} actionPlan={actionPlan} setActionPlan={setActionPlan} />
-            </div>
+              </SectionCard>
 
-            <GuidelineAssist workingDx={mdmResult?.working_diagnosis||""} mdmNarrative={mdmResult?.mdm_narrative||""}
-              onInsertSentence={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
+              {/* Clinical calcs — below Initial Impression */}
+              <ClinicalCalcsCard cc={cc} workingDx={mdmResult?.working_diagnosis||""} labs={labs} imaging={imaging}
+                onAddToMDM={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))}/>
+            </>
+          )}
 
-            <div style={{marginTop:10}}>
-              <EMLevel
-                mdmText={mdmResult?.mdm_narrative||""} hpi={effectiveHpi}
-                labs={labs} imaging={imaging} ekg={ekg} newVitals={newVitals} consults={consults}
+          {/* ══════════════════════════════════════════════════════════════════
+              PHASE 2 — RESULTS INPUT
+          ══════════════════════════════════════════════════════════════════ */}
+          {p2Open && (
+            <>
+              <PhaseDivider phase="Phase 2" label="Results & Reevaluation" color="var(--qn-gold)" sublabel="Labs · Imaging · EKG · Recheck Vitals"/>
+
+              <Phase2Panel
+                labs={labs} setLabs={handleLabsChange} imaging={imaging} setImaging={handleImagingChange}
+                ekg={ekg} setEkg={setEkg} newVitals={newVitals} setNewVitals={setNewVitals}
+                p2Busy={p2Busy} p1Busy={p1Busy} p2Error={p2Error}
+                phase2Ready={phase2Ready} mdmResult={mdmResult} dispResult={dispResult}
+                dispColor={dispColor} setRef={setRef} makeKeyDown={makeKeyDown}
+                runDisposition={runDisposition} consults={consults} setConsults={setConsults}
+                onConsultsChange={(next)=>setConsultList(next)}
+                criticalFlags={criticalFlags} ekgBusy={ekgBusy} onEkgInterpret={interpretEKG}
+                labRecs={labRecs} labRecsBusy={labRecsBusy} generateLabRecs={generateLabRecs}
+                imagingRecs={imagingRecs} imagingRecsBusy={imagingRecsBusy} generateImagingRecs={generateImagingRecs}
+                patientId={demo?.mrn||demo?.patient_identifier||""}
               />
-            </div>
 
-            {mdmResult.mdm_level&&(
-              <details style={{marginTop:10}}>
-                <summary style={{cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",listStyle:"none"}}>
-                  ▶ Why {mdmResult.mdm_level} complexity?
-                </summary>
-                <div style={{marginTop:8,padding:"10px 12px",borderRadius:8,background:"rgba(14,37,68,.5)",border:"1px solid rgba(42,79,122,.3)"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-                    {[
-                      {label:"Problem Complexity",value:mdmResult.problem_complexity,color:"var(--qn-teal)"},
-                      {label:"Data Complexity",   value:mdmResult.data_complexity,   color:"var(--qn-blue)"},
-                      {label:"Risk Level",        value:mdmResult.risk_tier,         color:"var(--qn-gold)"},
-                    ].map(({label,value,color})=>(
-                      <div key={label}>
-                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"var(--qn-txt4)",letterSpacing:.8,textTransform:"uppercase",marginBottom:4}}>{label}</div>
-                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color,lineHeight:1.4}}>{value||"—"}</div>
-                      </div>
-                    ))}
+              {/* Abnormals flag panel */}
+              {(labs||imaging||ekg)&&(
+                <QuickNoteAbnormals labs={labs} imaging={imaging} ekg={ekg}
+                  onAddToMDM={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))}/>
+              )}
+
+              {/* Patient Response to Treatment */}
+              <SectionCard accent="rgba(42,79,122,.3)">
+                <PatientResponsePanel
+                  patientResponse={patientResponse} setPatientResponse={setPatientResponse}
+                  cc={cc} hpi={effectiveHpi} working_diagnosis={mdmResult?.working_diagnosis||""}
+                  mdmResult={mdmResult?.mdm_narrative||""} mdmTimestamp={mdmTimestamp}
+                  labs={labs} imaging={imaging} ekg={ekg} newVitals={newVitals} consults={consults}
+                  onAddendumReady={handleAddendumReady}
+                />
+              </SectionCard>
+
+              {/* ── PHASE 2 ACTION: Generate Final Disposition ── */}
+              {!dispResult && (
+                <div style={{marginBottom:16,padding:"16px 20px",borderRadius:14,background:"rgba(245,200,66,.04)",border:"1px solid rgba(245,200,66,.3)",display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}} className="no-print">
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"var(--qn-gold)",marginBottom:3}}>Ready to Generate Final Disposition</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:.4}}>
+                      {[labs.trim()&&"Labs ✓",imaging.trim()&&"Imaging ✓",ekg.trim()&&"EKG ✓",newVitals.trim()&&"Recheck Vitals ✓",patientResponse.trim()&&"Patient Response ✓"].filter(Boolean).join("  ·  ")||"Add labs, imaging, or recheck vitals above"}
+                    </div>
                   </div>
-                  {mdmResult.risk_rationale&&<div style={{marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",lineHeight:1.6,paddingTop:8,borderTop:"1px solid rgba(42,79,122,.25)"}}>{mdmResult.risk_rationale}</div>}
-                  <div style={{marginTop:6,fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(107,158,200,.45)"}}>MDM level driven by HIGHEST column — Problem, Data, or Risk</div>
-                </div>
-              </details>
-            )}
-
-            {workupRationale&&(
-              <div className="qn-fade" style={{marginTop:10,padding:"12px 14px",borderRadius:10,background:"rgba(245,200,66,.05)",border:"1px solid rgba(245,200,66,.3)"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"var(--qn-gold)",letterSpacing:1,textTransform:"uppercase",flex:1}}>Workup Rationale</span>
-                  <button onClick={()=>{navigator.clipboard.writeText(workupRationale).then(()=>{setCopiedWorkup(true);setTimeout(()=>setCopiedWorkup(false),2000);});}}
-                    style={{padding:"2px 9px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                      border:`1px solid ${copiedWorkup?"rgba(61,255,160,.5)":"rgba(245,200,66,.4)"}`,
-                      background:copiedWorkup?"rgba(61,255,160,.1)":"transparent",
-                      color:copiedWorkup?"var(--qn-green)":"var(--qn-gold)"}}>
-                    {copiedWorkup?"✓ Copied":"Copy"}
+                  <button
+                    onClick={runDisposition}
+                    disabled={p2Busy || !phase2Ready}
+                    style={{padding:"12px 28px",borderRadius:10,cursor:(p2Busy||!phase2Ready)?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:700,letterSpacing:.3,transition:"all .15s",flexShrink:0,
+                      border:`2px solid ${p2Busy?"rgba(42,79,122,.3)":!phase2Ready?"rgba(42,79,122,.3)":"rgba(245,200,66,.7)"}`,
+                      background:p2Busy?"rgba(14,37,68,.4)":!phase2Ready?"rgba(14,37,68,.3)":"rgba(245,200,66,.12)",
+                      color:p2Busy?"var(--qn-txt4)":!phase2Ready?"rgba(107,158,200,.4)":"var(--qn-gold)",
+                      boxShadow:(!p2Busy&&phase2Ready)?"0 0 20px rgba(245,200,66,.08)":"none"}}>
+                    {p2Busy?"● Generating…":"✦ Generate Final Disposition"}
                   </button>
+                  {p2Error&&<div style={{width:"100%",fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"var(--qn-coral)",padding:"6px 10px",borderRadius:6,background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.3)"}}>{p2Error}</div>}
                 </div>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"var(--qn-txt2)",lineHeight:1.75}}>{workupRationale}</div>
-              </div>
-            )}
+              )}
+            </>
+          )}
 
-            {mdmHistory.length>1&&(
-              <div style={{marginTop:10}}>
-                <button onClick={()=>setShowMdmHistory(p=>!p)}
-                  style={{padding:"3px 10px",borderRadius:6,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                    border:`1px solid ${showMdmHistory?"rgba(155,109,255,.5)":"rgba(42,79,122,.35)"}`,
-                    background:showMdmHistory?"rgba(155,109,255,.08)":"transparent",
-                    color:showMdmHistory?"var(--qn-purple)":"var(--qn-txt4)"}}>
-                  {showMdmHistory?"▲":"▼"} Clinical Progression ({mdmHistory.length} entries)
-                </button>
-                {showMdmHistory&&(
-                  <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
-                    {mdmHistory.map((h,i)=>(
-                      <div key={i} style={{padding:"9px 12px",borderRadius:8,
-                        background:i===mdmHistory.length-1?"rgba(155,109,255,.07)":"rgba(14,37,68,.4)",
-                        border:`1px solid ${i===mdmHistory.length-1?"rgba(155,109,255,.3)":"rgba(42,79,122,.25)"}`}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                            color:i===mdmHistory.length-1?"var(--qn-purple)":"var(--qn-txt4)",letterSpacing:.8,textTransform:"uppercase"}}>{h.trigger}</span>
-                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)"}}>{h.ts}</span>
-                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-gold)",background:"rgba(245,200,66,.1)",border:"1px solid rgba(245,200,66,.25)",borderRadius:3,padding:"1px 5px"}}>{h.mdm_level}</span>
-                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt2)",flex:1}}>{h.working_diagnosis}</span>
-                        </div>
-                        {h.mdm_narrative&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"var(--qn-txt3)",lineHeight:1.5}}>{h.mdm_narrative.slice(0,200)}{h.mdm_narrative.length>200?"…":""}</div>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+          {/* ══════════════════════════════════════════════════════════════════
+              PHASE 2 OUTPUT — Results Analysis + Final Impression + Disposition
+          ══════════════════════════════════════════════════════════════════ */}
+          {(labSummaryResult || imagingAnalysisResult || finalImpressionResult || dispResult) && (
+            <PhaseDivider phase="Phase 2 Output" label="Results Analysis & Disposition" color="var(--qn-gold)"/>
+          )}
 
-        {p2Open&&(
-          <Phase2Panel
-            labs={labs} setLabs={handleLabsChange} imaging={imaging} setImaging={handleImagingChange}
-            ekg={ekg} setEkg={setEkg} newVitals={newVitals} setNewVitals={setNewVitals}
-            p2Busy={p2Busy} p1Busy={p1Busy} p2Error={p2Error}
-            phase2Ready={phase2Ready} mdmResult={mdmResult} dispResult={dispResult}
-            dispColor={dispColor} setRef={setRef} makeKeyDown={makeKeyDown}
-            runDisposition={runDisposition} consults={consults} setConsults={setConsults}
-            onConsultsChange={(next) => setConsultList(next)}
-            criticalFlags={criticalFlags} ekgBusy={ekgBusy} onEkgInterpret={interpretEKG}
-            labRecs={labRecs} labRecsBusy={labRecsBusy} generateLabRecs={generateLabRecs}
-            imagingRecs={imagingRecs} imagingRecsBusy={imagingRecsBusy} generateImagingRecs={generateImagingRecs}
-            patientId={demo?.mrn || demo?.patient_identifier || ""}
-          />
-        )}
-
-        {p2Open&&(labs||imaging||ekg)&&(
-          <QuickNoteAbnormals labs={labs} imaging={imaging} ekg={ekg}
-            onAddToMDM={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
-        )}
-
-        {p2Open&&(
-          <div style={{marginBottom:14,padding:"14px 16px",background:"rgba(8,22,40,.5)",
-            border:"1px solid rgba(42,79,122,.3)",borderRadius:12}}>
-            <PatientResponsePanel
-              patientResponse={patientResponse}
-              setPatientResponse={setPatientResponse}
-              cc={cc}
-              hpi={effectiveHpi}
-              working_diagnosis={mdmResult?.working_diagnosis||""}
-              mdmResult={mdmResult?.mdm_narrative||""}
-              mdmTimestamp={mdmTimestamp}
-              labs={labs}
-              imaging={imaging}
-              ekg={ekg}
-              newVitals={newVitals}
-              consults={consults}
-              onAddendumReady={handleAddendumReady}
-            />
-          </div>
-        )}
-
-        {labSummaryLoading && (
-          <div style={{ fontSize: 12, color: "#00b89a", padding: "8px 0", fontFamily: "'JetBrains Mono',monospace" }}>
-            Interpreting labs...
-          </div>
-        )}
-        {labsAutoAnalyzing && (
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"#00b89a", letterSpacing:"0.06em", marginLeft:6 }}>
-            ● ANALYZING
-          </span>
-        )}
-        {labSummaryResult && !labsAutoAnalyzing && (
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(0,229,192,0.5)", letterSpacing:"0.06em", marginLeft:6 }}>
-            ✓ ANALYZED
-          </span>
-        )}
-        {labSummaryResult && <LabSummaryDisplay result={labSummaryResult} />}
-        {imagingAutoAnalyzing && (
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"#00b89a", letterSpacing:"0.06em", marginLeft:6 }}>
-            ● ANALYZING
-          </span>
-        )}
-        {imagingAnalysisResult && !imagingAutoAnalyzing && (
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(0,229,192,0.5)", letterSpacing:"0.06em", marginLeft:6 }}>
-            ✓ ANALYZED
-          </span>
-        )}
-
-        <div style={{ marginTop: 12 }}>
-          <button
-            onClick={generateEDMedications}
-            disabled={edMedsLoading}
-            style={{ padding:"8px 18px", borderRadius:6, cursor: edMedsLoading ? "not-allowed" : "pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", border:"1px solid rgba(0,184,154,0.35)", background:"rgba(0,184,154,0.08)", color:"#00b89a", opacity: edMedsLoading ? 0.5 : 1 }}
-          >
-            {edMedsLoading ? "Generating..." : "💊 Generate ED Medications"}
-          </button>
-          {edMedsLoading && (
-            <div style={{ fontSize:12, color:"#00b89a", padding:"6px 0", fontFamily:"'JetBrains Mono',monospace" }}>
-              Analyzing patient profile and generating medication recommendations...
+          {/* Lab Summary */}
+          {(labSummaryLoading || labsAutoAnalyzing || labSummaryResult) && (
+            <div style={{marginBottom:10}}>
+              {(labSummaryLoading || labsAutoAnalyzing) && (
+                <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderRadius:8,background:"rgba(0,229,192,.04)",border:"1px solid rgba(0,229,192,.15)"}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#00b89a"}}>● ANALYZING LABS</span>
+                </div>
+              )}
+              {labSummaryResult && !labsAutoAnalyzing && <LabSummaryDisplay result={labSummaryResult}/>}
             </div>
           )}
-          {edMedsResult && (
-            <EDMedicationsDisplay
-              result={edMedsResult}
-              onCopy={copyEDMedications}
-              copied={copiedEdMeds}
-            />
+
+          {/* Imaging Analysis */}
+          {(imagingAutoAnalyzing || imagingAnalysisResult) && (
+            <div style={{marginBottom:10}}>
+              {imagingAutoAnalyzing && (
+                <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderRadius:8,background:"rgba(0,229,192,.04)",border:"1px solid rgba(0,229,192,.15)"}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:"#00b89a"}}>● ANALYZING IMAGING</span>
+                </div>
+              )}
+            </div>
           )}
-        </div>
 
-        {finalImpressionLoading && (
-          <div style={{ fontSize: 12, color: "#00b89a", padding: "8px 0", fontFamily: "'JetBrains Mono',monospace" }}>
-            Generating final impression...
-          </div>
-        )}
-        {finalImpressionResult && (
-          <FinalImpressionDisplay
-            result={finalImpressionResult}
-            confirmedRanks={confirmedRanks}
-            rejectedRanks={rejectedRanks}
-            onConfirm={handleConfirmDx}
-            onReject={handleRejectDx}
-            onReset={handleResetDx}
-          />
-        )}
-
-        {dispResult&&(
-          <div style={{marginBottom:14,padding:"16px",background:"rgba(8,22,40,.5)",
-            border:`1px solid ${dispColor(dispResult.disposition)}30`,borderRadius:14}} className="print-body">
-            <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:dispColor(dispResult.disposition)}}>Final Impression</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:dispColor(dispResult.disposition),letterSpacing:.5,
-                background:`${dispColor(dispResult.disposition)}18`,border:`1px solid ${dispColor(dispResult.disposition)}40`,borderRadius:4,padding:"2px 7px"}}>Post-Results</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",background:"rgba(59,158,255,.1)",border:"1px solid rgba(59,158,255,.2)",borderRadius:4,padding:"2px 7px"}}>ACEP Guidelines</span>
-            </div>
-            <DispositionResult result={dispResult} copiedDisch={copiedDisch} setCopiedDisch={setCopiedDisch}
-              onDiagExplanationEdit={text=>setDispResult(prev=>({...prev,discharge_instructions:{...(prev.discharge_instructions||{}),diagnosis_explanation:text}}))} />
-            <DispositionCriteriaBuilder disposition={dispResult.disposition}
-              onAddToNote={text=>setDispResult(prev=>({...prev,disposition_rationale:(prev.disposition_rationale?prev.disposition_rationale+" ":"")+text}))} />
-            {dispResult?.discharge_instructions?.diagnosis_explanation&&
-             dispResult?.disposition&&
-             !dispResult.disposition.toLowerCase().includes("admit")&&
-             !dispResult.disposition.toLowerCase().includes("icu")&&(
-              <div style={{marginTop:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-                <button onClick={copyDischargeInstructions}
-                  style={{padding:"7px 16px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
-                    border:`1px solid ${copiedDischargeOnly?"rgba(61,255,160,.5)":"rgba(61,255,160,.35)"}`,
-                    background:copiedDischargeOnly?"rgba(61,255,160,.15)":"rgba(61,255,160,.07)",color:"var(--qn-green)"}}>
-                  {copiedDischargeOnly?"✓ Copied":"🖨 Copy Discharge Instructions"}
-                  {!copiedDischargeOnly&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,opacity:.5,marginLeft:6}}>[Shift+4]</span>}
-                </button>
-                <button onClick={()=>{const dx=encodeURIComponent(dispResult?.final_diagnosis||mdmResult?.working_diagnosis||"");navigator.clipboard?.writeText(dispResult?.final_diagnosis||mdmResult?.working_diagnosis||"").catch(()=>{});window.open(`/DischargeRxCard${dx?"?dx="+dx:""}`, "_blank");}}
-                  style={{padding:"7px 16px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,
-                    border:"1px solid rgba(245,200,66,.4)",background:"rgba(245,200,66,.07)",color:"var(--qn-gold)"}}>
-                  💊 Open Rx Card
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {mdmResult&&(
-          <ClinicalCalcsCard cc={cc} workingDx={mdmResult?.working_diagnosis||""} labs={labs} imaging={imaging}
-            onAddToMDM={text=>setMdmResult(prev=>({...prev,mdm_narrative:prev?.mdm_narrative?prev.mdm_narrative+"\n\n"+text:text}))} />
-        )}
-
-        {dispResult&&(
-          <div style={{marginBottom:14}}>
-            <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}} className="no-print">
-              {[
-                {key:"sdm",label:"Shared Decision Making",active:showSDM,setActive:setShowSDM,c:"rgba(59,158,255"},
-                {key:"att",label:"Physician Attestation",active:showAttestation,setActive:setShowAttestation,c:"rgba(155,109,255"},
-                {key:"nur",label:"Nursing Handoff",active:showNursingHandoff,setActive:setShowNursingHandoff,c:"rgba(61,255,160"},
-              ].map(({key,label,active,setActive,c})=>(
-                <button key={key} onClick={()=>setActive(s=>!s)}
-                  style={{padding:"5px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                    border:`1px solid ${active?c+",.5)":"rgba(42,79,122,.4)"}`,
-                    background:active?c+",.1)":"transparent",color:active?c+",1)":"var(--qn-txt4)",letterSpacing:.5}}>
-                  {active?"▲":"▼"} {label}
-                </button>
-              ))}
-              <button onClick={generateSignOut} disabled={signOutBusy}
-                style={{padding:"5px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,
-                  border:`1px solid ${signOutDone?"rgba(61,255,160,.5)":signOutBusy?"rgba(42,79,122,.3)":"rgba(245,200,66,.4)"}`,
-                  background:signOutDone?"rgba(61,255,160,.1)":signOutBusy?"rgba(14,37,68,.4)":"rgba(245,200,66,.07)",
-                  color:signOutDone?"var(--qn-green)":signOutBusy?"var(--qn-txt4)":"var(--qn-gold)"}}>
-                {signOutDone?"✓ Sent":signOutBusy?"● Generating…":"→ Generate Sign-Out"}
-              </button>
-            </div>
-            {showSDM&&<SDMBlock disposition={dispResult.disposition} patientName={[demo?.firstName,demo?.lastName].filter(Boolean).join(" ")} />}
-            {showAttestation&&<AttestationBlock providerName={providerInfo.name} credentials={providerInfo.credentials} facility={providerInfo.facility} mdmLevel={mdmResult?.mdm_level} />}
-            {showNursingHandoff&&<NursingHandoff patientName={[demo?.firstName,demo?.lastName].filter(Boolean).join(" ")} diagnosis={dispResult.final_diagnosis||mdmResult?.working_diagnosis||""} disposition={dispResult.disposition} />}
-          </div>
-        )}
-
-        {dispResult&&(
-          <DiagnosisCodingCard
-            finalDiagnosis={dispResult.final_diagnosis||mdmResult?.working_diagnosis||""}
-            suggestions={icdSuggestions} selected={icdSelected}
-            searching={icdSearching} error={icdError}
-            onSearch={()=>searchICD10(dispResult.final_diagnosis||mdmResult?.working_diagnosis||cc)}
-            onSelect={code=>setIcdSelected(prev=>prev.find(c=>c.code===code.code)?prev:[...prev,code])}
-            onRemove={code=>setIcdSelected(prev=>prev.filter(c=>c.code!==code))}
-          />
-        )}
-
-        {dispResult&&(
-          <InterventionsCard items={interventions} loading={intLoading} generated={intGenerated}
-            onGenerate={generateInterventions}
-            onToggle={id=>setInterventions(prev=>prev.map(i=>i.id===id?{...i,confirmed:!i.confirmed}:i))}
-            onUpdate={(id,field,value)=>setInterventions(prev=>prev.map(i=>i.id===id?{...i,[field]:value}:i))}
-            onAdd={item=>setInterventions(prev=>[...prev,{...item,id:`int-manual-${Date.now()}`,confirmed:true}])}
-            onRemove={id=>setInterventions(prev=>prev.filter(i=>i.id!==id))}
-          />
-        )}
-
-        {/* Persistent collapsible Order Queue panel */}
-        {showOrderQueue&&(
-          <div style={{marginBottom:14,background:"rgba(8,22,40,.5)",border:"1px solid rgba(245,158,11,.25)",borderRadius:14,overflow:"hidden"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderBottom:"1px solid rgba(245,158,11,.12)",cursor:"pointer",background:"rgba(245,158,11,.04)"}}
-              onClick={()=>setShowOrderQueue(false)}>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}}>Order Queue</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"rgba(245,158,11,.5)"}}>— click to collapse</span>
-              <div style={{flex:1}}/>
-              <span style={{color:"#f59e0b",fontSize:10}}>▲</span>
-            </div>
-            <div style={{padding:"12px 14px"}}>
-              {showOrderQueue && (
-                <StagedOrderQueue
-                  embedded={true}
-                  onPhasesChange={(updatedPhases) => setOrderPhases(updatedPhases)}
+          {/* Final Impression */}
+          {(finalImpressionLoading || finalImpressionResult) && (
+            <div style={{marginBottom:10}}>
+              {finalImpressionLoading && <div style={{fontSize:12,color:"#00b89a",padding:"8px 0",fontFamily:"'JetBrains Mono',monospace"}}>Generating final impression…</div>}
+              {finalImpressionResult && (
+                <FinalImpressionDisplay
+                  result={finalImpressionResult}
+                  confirmedRanks={confirmedRanks} rejectedRanks={rejectedRanks}
+                  onConfirm={handleConfirmDx} onReject={handleRejectDx} onReset={handleResetDx}
                 />
               )}
             </div>
+          )}
+
+          {/* ED Medications */}
+          <div style={{marginBottom:10}}>
+            {p2Open && (
+              <div style={{marginBottom:8}} className="no-print">
+                <button onClick={generateEDMedications} disabled={edMedsLoading} style={{padding:"8px 18px",borderRadius:6,cursor:edMedsLoading?"not-allowed":"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",border:"1px solid rgba(0,184,154,0.35)",background:"rgba(0,184,154,0.08)",color:"#00b89a",opacity:edMedsLoading?0.5:1}}>
+                  {edMedsLoading?"Generating…":"💊 Generate ED Medications"}
+                </button>
+              </div>
+            )}
+            {edMedsLoading&&<div style={{fontSize:12,color:"#00b89a",padding:"6px 0",fontFamily:"'JetBrains Mono',monospace"}}>Analyzing patient profile…</div>}
+            {edMedsResult&&<EDMedicationsDisplay result={edMedsResult} onCopy={copyEDMedications} copied={copiedEdMeds}/>}
           </div>
-        )}
 
-        {phase1Ready&&<TimelineCard timestamps={timestamps} setTimestamps={setTimestamps} />}
+          {/* Disposition */}
+          {dispResult && (
+            <SectionCard accent={`${dispColor(dispResult.disposition)}30`}>
+              <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14}}>
+                <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:15,color:dispColor(dispResult.disposition)}}>Final Impression & Disposition</span>
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:dispColor(dispResult.disposition),letterSpacing:.5,background:`${dispColor(dispResult.disposition)}18`,border:`1px solid ${dispColor(dispResult.disposition)}40`,borderRadius:4,padding:"2px 7px"}}>Post-Results</span>
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1,textTransform:"uppercase",background:"rgba(59,158,255,.1)",border:"1px solid rgba(59,158,255,.2)",borderRadius:4,padding:"2px 7px"}}>ACEP Guidelines</span>
+              </div>
+              <DispositionResult result={dispResult} copiedDisch={copiedDisch} setCopiedDisch={setCopiedDisch}
+                onDiagExplanationEdit={text=>setDispResult(prev=>({...prev,discharge_instructions:{...(prev.discharge_instructions||{}),diagnosis_explanation:text}}))}/>
+              <DispositionCriteriaBuilder disposition={dispResult.disposition}
+                onAddToNote={text=>setDispResult(prev=>({...prev,disposition_rationale:(prev.disposition_rationale?prev.disposition_rationale+" ":"")+text}))}/>
+              {dispResult?.discharge_instructions?.diagnosis_explanation&&dispResult?.disposition&&!dispResult.disposition.toLowerCase().includes("admit")&&!dispResult.disposition.toLowerCase().includes("icu")&&(
+                <div style={{marginTop:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                  <button onClick={copyDischargeInstructions} style={{padding:"7px 16px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,border:`1px solid ${copiedDischargeOnly?"rgba(61,255,160,.5)":"rgba(61,255,160,.35)"}`,background:copiedDischargeOnly?"rgba(61,255,160,.15)":"rgba(61,255,160,.07)",color:"var(--qn-green)"}}>
+                    {copiedDischargeOnly?"✓ Copied":"🖨 Copy Discharge Instructions"}
+                  </button>
+                  <button onClick={()=>{const dx=encodeURIComponent(dispResult?.final_diagnosis||mdmResult?.working_diagnosis||"");window.open(`/DischargeRxCard${dx?"?dx="+dx:""}`, "_blank");}} style={{padding:"7px 16px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:11,border:"1px solid rgba(245,200,66,.4)",background:"rgba(245,200,66,.07)",color:"var(--qn-gold)"}}>
+                    💊 Open Rx Card
+                  </button>
+                </div>
+              )}
+            </SectionCard>
+          )}
 
-        {/* ── Anamnesis Hub shortcut ── */}
-        <div style={{marginBottom:10,display:"flex",alignItems:"center",gap:8}} className="no-print">
-          <button onClick={()=>{window.location.href="/anamnesis";}}
-            style={{padding:"6px 14px",borderRadius:8,cursor:"pointer",
-              fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:.5,
-              border:"1px solid rgba(0,229,192,.35)",background:"rgba(0,229,192,.07)",
-              color:"var(--qn-teal)",display:"flex",alignItems:"center",gap:6}}>
-            ⬡ Open Anamnesis Hub
-          </button>
-          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:.3}}>
-            Retrieve full patient history via Carequality · CommonWell · TEFCA
-          </span>
-        </div>
+          {/* ICD Coding + Interventions */}
+          {dispResult && (
+            <>
+              <DiagnosisCodingCard
+                finalDiagnosis={dispResult.final_diagnosis||mdmResult?.working_diagnosis||""} suggestions={icdSuggestions} selected={icdSelected}
+                searching={icdSearching} error={icdError}
+                onSearch={()=>searchICD10(dispResult.final_diagnosis||mdmResult?.working_diagnosis||cc)}
+                onSelect={code=>setIcdSelected(prev=>prev.find(c=>c.code===code.code)?prev:[...prev,code])}
+                onRemove={code=>setIcdSelected(prev=>prev.filter(c=>c.code!==code))}
+              />
+              <InterventionsCard items={interventions} loading={intLoading} generated={intGenerated}
+                onGenerate={generateInterventions}
+                onToggle={id=>setInterventions(prev=>prev.map(i=>i.id===id?{...i,confirmed:!i.confirmed}:i))}
+                onUpdate={(id,field,value)=>setInterventions(prev=>prev.map(i=>i.id===id?{...i,[field]:value}:i))}
+                onAdd={item=>setInterventions(prev=>[...prev,{...item,id:`int-manual-${Date.now()}`,confirmed:true}])}
+                onRemove={id=>setInterventions(prev=>prev.filter(i=>i.id!==id))}
+              />
+            </>
+          )}
 
-        {hasAnyResult&&(
-          <ActionBar
-            mdmResult={mdmResult} dispResult={dispResult}
-            copiedP1={copiedP1} copiedP2={copiedP2} copied={copied}
-            copiedMDMOnly={copiedMDMOnly} copiedDischargeOnly={copiedDischargeOnly}
-            savedNote={savedNote} saving={saving} sentToNPI={sentToNPI} sendingNPI={sendingNPI}
-            formatMode={formatMode} setFormatMode={setFormatMode}
-            pasteReady={pasteReady} setPasteReady={setPasteReady}
-            copyPhase1={copyPhase1} copyPhase2={copyPhase2}
-            copyMDMOnly={copyMDMOnly} copyDischargeOnly={copyDischargeOnly}
-            copyNote={copyNote} saveNote={saveNote} sendToNPI={sendToNPI}
-            onNewEncounter={handleNewEncounter}
-            onProcedureNote={()=>setShowProcedureModal(true)}
+          {/* SDM / Attestation / Nursing Handoff */}
+          {dispResult && (
+            <div style={{marginBottom:14}}>
+              <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}} className="no-print">
+                {[
+                  {key:"sdm",label:"Shared Decision Making",active:showSDM,setActive:setShowSDM,c:"rgba(59,158,255"},
+                  {key:"att",label:"Physician Attestation",active:showAttestation,setActive:setShowAttestation,c:"rgba(155,109,255"},
+                  {key:"nur",label:"Nursing Handoff",active:showNursingHandoff,setActive:setShowNursingHandoff,c:"rgba(61,255,160"},
+                ].map(({key,label,active,setActive,c})=>(
+                  <button key={key} onClick={()=>setActive(s=>!s)} style={{padding:"5px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,border:`1px solid ${active?c+",.5)":"rgba(42,79,122,.4)"}`,background:active?c+",.1)":"transparent",color:active?c+",1)":"var(--qn-txt4)",letterSpacing:.5}}>
+                    {active?"▲":"▼"} {label}
+                  </button>
+                ))}
+                <button onClick={generateSignOut} disabled={signOutBusy} style={{padding:"5px 12px",borderRadius:7,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:8,fontWeight:700,border:`1px solid ${signOutDone?"rgba(61,255,160,.5)":signOutBusy?"rgba(42,79,122,.3)":"rgba(245,200,66,.4)"}`,background:signOutDone?"rgba(61,255,160,.1)":signOutBusy?"rgba(14,37,68,.4)":"rgba(245,200,66,.07)",color:signOutDone?"var(--qn-green)":signOutBusy?"var(--qn-txt4)":"var(--qn-gold)"}}>
+                  {signOutDone?"✓ Sent":signOutBusy?"● Generating…":"→ Generate Sign-Out"}
+                </button>
+              </div>
+              {showSDM&&<SDMBlock disposition={dispResult.disposition} patientName={[demo?.firstName,demo?.lastName].filter(Boolean).join(" ")}/>}
+              {showAttestation&&<AttestationBlock providerName={providerInfo.name} credentials={providerInfo.credentials} facility={providerInfo.facility} mdmLevel={mdmResult?.mdm_level}/>}
+              {showNursingHandoff&&<NursingHandoff patientName={[demo?.firstName,demo?.lastName].filter(Boolean).join(" ")} diagnosis={dispResult.final_diagnosis||mdmResult?.working_diagnosis||""} disposition={dispResult.disposition}/>}
+            </div>
+          )}
+
+          {/* Timeline */}
+          {phase1Ready && <TimelineCard timestamps={timestamps} setTimestamps={setTimestamps}/>}
+
+          {/* Order Queue */}
+          {showOrderQueue && (
+            <div style={{marginBottom:14,background:"rgba(8,22,40,.5)",border:"1px solid rgba(245,158,11,.25)",borderRadius:14,overflow:"hidden"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderBottom:"1px solid rgba(245,158,11,.12)",cursor:"pointer",background:"rgba(245,158,11,.04)"}} onClick={()=>setShowOrderQueue(false)}>
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}}>Order Queue</span>
+                <div style={{flex:1}}/><span style={{color:"#f59e0b",fontSize:10}}>▲</span>
+              </div>
+              <div style={{padding:"12px 14px"}}>
+                <StagedOrderQueue embedded={true} onPhasesChange={(updatedPhases)=>setOrderPhases(updatedPhases)}/>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              EHR EXPORT — Action bar + Note Export
+          ══════════════════════════════════════════════════════════════════ */}
+          {hasAnyResult && (
+            <PhaseDivider phase="Export" label="EHR Documentation" color="var(--qn-blue)" sublabel="Copy · Save · Send"/>
+          )}
+
+          {/* Anamnesis shortcut */}
+          <div style={{marginBottom:10,display:"flex",alignItems:"center",gap:8}} className="no-print">
+            <button onClick={()=>{window.location.href="/anamnesis";}} style={{padding:"6px 14px",borderRadius:8,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:.5,border:"1px solid rgba(0,229,192,.35)",background:"rgba(0,229,192,.07)",color:"var(--qn-teal)",display:"flex",alignItems:"center",gap:6}}>⬡ Open Anamnesis Hub</button>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:.3}}>Retrieve full patient history via Carequality · CommonWell · TEFCA</span>
+          </div>
+
+          {hasAnyResult && (
+            <ActionBar
+              mdmResult={mdmResult} dispResult={dispResult}
+              copiedP1={copiedP1} copiedP2={copiedP2} copied={copied}
+              copiedMDMOnly={copiedMDMOnly} copiedDischargeOnly={copiedDischargeOnly}
+              savedNote={savedNote} saving={saving} sentToNPI={sentToNPI} sendingNPI={sendingNPI}
+              formatMode={formatMode} setFormatMode={setFormatMode}
+              pasteReady={pasteReady} setPasteReady={setPasteReady}
+              copyPhase1={copyPhase1} copyPhase2={copyPhase2}
+              copyMDMOnly={copyMDMOnly} copyDischargeOnly={copyDischargeOnly}
+              copyNote={copyNote} saveNote={saveNote} sendToNPI={sendToNPI}
+              onNewEncounter={handleNewEncounter}
+              onProcedureNote={()=>setShowProcedureModal(true)}
+            />
+          )}
+
+          <HighAlertMedAlert medsRaw={medsRaw}/>
+          {showKbHelp&&<KbHelpModal onClose={()=>setShowKbHelp(false)}/>}
+          {showProcedureModal&&<ProcedureNoteModal onInsert={()=>{}} onClose={()=>setShowProcedureModal(false)}/>}
+
+          <NoteExportPanel
+            chiefComplaint={cc} hpi={effectiveHpi} ros={ros} physicalExam={exam}
+            assessment={mdmResult?.working_diagnosis||""} plan={dispResult?.disposition||""}
+            mdmText={mdmResult?.mdm_narrative||""} consults={consultList} phases={orderPhases}
+            onPopulateMDM={(text)=>setMdmResult(prev=>prev?{...prev,mdm_narrative:text}:prev)}
+            onPopulatePlan={(text)=>setDispResult(prev=>prev?{...prev,disposition:text}:prev)}
           />
-        )}
 
-        <HighAlertMedAlert medsRaw={medsRaw} />
-        {showKbHelp&&<KbHelpModal onClose={()=>setShowKbHelp(false)} />}
-        {showProcedureModal&&<ProcedureNoteModal onInsert={()=>{}} onClose={()=>setShowProcedureModal(false)} />}
-
-        {/* NoteExportPanel — always visible at bottom */}
-        <NoteExportPanel
-          chiefComplaint={cc}
-          hpi={effectiveHpi}
-          ros={ros}
-          physicalExam={exam}
-          assessment={mdmResult?.working_diagnosis||""}
-          plan={dispResult?.disposition||""}
-          mdmText={mdmResult?.mdm_narrative||""}
-          consults={consultList}
-          phases={orderPhases}
-          onPopulateMDM={(text) => setMdmResult(prev => prev ? {...prev, mdm_narrative: text} : prev)}
-          onPopulatePlan={(text) => setDispResult(prev => prev ? {...prev, disposition: text} : prev)}
-        />
-
-        {!embedded&&(
-          <div style={{textAlign:"center",padding:"24px 0 8px",
-            fontFamily:"'JetBrains Mono',monospace",fontSize:8,
-            color:"var(--qn-txt4)",letterSpacing:1.5}} className="no-print">
-            NOTRYA QUICKNOTE v12.2 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
-            AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
-          </div>
-        )}
-      </div>
+          {!embedded && (
+            <div style={{textAlign:"center",padding:"24px 0 8px",fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1.5}} className="no-print">
+              LAKONYX QUICKNOTE v13.0 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+              AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 // Extracted from QuickNoteComponents.jsx
 // Exports: DifferentialCard, QuickDDxCard, MDMResult
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { CC_HUB_MAP } from "./QuickNoteData";
 import GuidelineSuggestionStrip from "@/components/notes/GuidelineSuggestionStrip";
 
@@ -862,7 +862,14 @@ function MedicationManager({ aiMedications, onCopy }) {
   const [copiedMeds, setCopiedMeds] = useState(false);
   const searchRef = useRef(null);
 
-  const searchResults = query.trim().length > 1 ? ED_DRUG_LIBRARY.filter(d => d.name.toLowerCase().includes(query.toLowerCase()) || d.category.toLowerCase().includes(query.toLowerCase())).slice(0, 10) : [];
+  const searchResults = useMemo(() => {
+    if (!query || query.trim().length < 2) return [];
+    const q = query.trim().toLowerCase();
+    return (ED_DRUG_LIBRARY || []).filter(d =>
+      (d.name || "").toLowerCase().includes(q) ||
+      (d.category || "").toLowerCase().includes(q)
+    ).slice(0, 10);
+  }, [query]);
 
   const toggle = id => setSelected(p => p.map(m => m.id===id ? {...m,checked:!m.checked} : m));
   const remove = id => setSelected(p => p.filter(m => m.id!==id));
@@ -911,21 +918,19 @@ function MedicationManager({ aiMedications, onCopy }) {
             onKeyDown={e=>{ if(e.key==="ArrowDown"){e.preventDefault();setSearchHL(h=>Math.min(h+1,searchResults.length-1));} if(e.key==="ArrowUp"){e.preventDefault();setSearchHL(h=>Math.max(h-1,0));} if(e.key==="Enter"&&searchResults[searchHL]){openRoutePicker(searchResults[searchHL]);} if(e.key==="Escape"){setShowSearch(false);setQuery("");} }}
             placeholder="Search 80+ ED medications (ketorolac, vancomycin, metoprolol...)"
             style={{ width:"100%", boxSizing:"border-box", background:"transparent", border:"none", color:"#c8dff0", fontFamily:"'DM Sans',sans-serif", fontSize:13, outline:"none" }} />
-          {query.trim().length > 1 && (
+          {searchResults.length > 0 && (
             <div style={{ marginTop:6 }}>
-              {searchResults.length === 0
-                ? <div style={{ fontSize:12, color:"rgba(200,223,240,0.35)", fontStyle:"italic", padding:"6px 8px" }}>No results for "{query}"</div>
-                : searchResults.map((drug, i) => (
-                    <div key={drug.name} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 8px", borderRadius:5, cursor:"pointer", background:i===searchHL?"rgba(0,229,192,0.1)":"transparent", border:i===searchHL?"1px solid rgba(0,229,192,0.2)":"1px solid transparent", marginBottom:2 }}
-                      onClick={()=>openRoutePicker(drug)} onMouseEnter={()=>setSearchHL(i)}>
-                      <span style={{ fontSize:12.5, color:i===searchHL?"#00e5c0":"#c8dff0", fontWeight:i===searchHL?600:400, flex:1 }}>{drug.name}</span>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(200,223,240,0.35)" }}>{drug.category}</span>
-                      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(200,223,240,0.25)" }}>{drug.routes.map(r=>r.route).join(" · ")}</span>
-                    </div>
-                  ))}
+              {searchResults.map((drug, i) => (
+                <div key={drug.name} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 8px", borderRadius:5, cursor:"pointer", background:i===searchHL?"rgba(0,229,192,0.1)":"transparent", border:i===searchHL?"1px solid rgba(0,229,192,0.2)":"1px solid transparent", marginBottom:2 }}
+                  onClick={()=>openRoutePicker(drug)} onMouseEnter={()=>setSearchHL(i)}>
+                  <span style={{ fontSize:12.5, color:i===searchHL?"#00e5c0":"#c8dff0", fontWeight:i===searchHL?600:400, flex:1 }}>{drug.name}</span>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(200,223,240,0.35)" }}>{drug.category}</span>
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(200,223,240,0.25)" }}>{drug.routes.map(r=>r.route).join(" · ")}</span>
+                </div>
+              ))}
             </div>
           )}
-          {query.trim().length <= 1 && <div style={{ marginTop:4, fontSize:11, color:"rgba(200,223,240,0.3)", fontFamily:"'JetBrains Mono',monospace" }}>Type 2+ characters to search</div>}
+          {(!query || query.trim().length < 2) && <div style={{ marginTop:4, fontSize:11, color:"rgba(200,223,240,0.3)", fontFamily:"'JetBrains Mono',monospace" }}>Type 2+ characters to search</div>}
         </div>
       )}
 

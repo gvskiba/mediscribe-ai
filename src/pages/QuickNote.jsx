@@ -1248,7 +1248,7 @@ Return JSON only.`,
         const s=slotMap[0];
         if (s.cc) setCC(s.cc); if (s.hpi) setHpi(s.hpi); if (s.ros) setRos(s.ros);
         if (s.exam) setExam(s.exam); if (s.labs) setLabs(s.labs); if (s.imaging) setImaging(s.imaging);
-        if (s.vitals) setVitals(s.vitals); if (s.ekg) setEkg(s.ekg);
+        if (s.vitals) setVitals(s.vitals); if (s.ekg) setEkg(s.ekg); if (s.newVitals) setNewVitals(s.newVitals);
         if (s.medsRaw) setMedsRaw(s.medsRaw); if (s.allergiesRaw) setAllergiesRaw(s.allergiesRaw);
         if (s.parsedMeds?.length) setParsedMeds(s.parsedMeds);
         if (s.parsedAllergies?.length) setParsedAllergies(s.parsedAllergies);
@@ -1312,7 +1312,7 @@ Return JSON only.`,
       if (!d.cc&&!d.hpi&&!d.mdmResult) return;
       if (d.cc) setCC(d.cc); if (d.vitals) setVitals(d.vitals); if (d.hpi) setHpi(d.hpi);
       if (d.ros) setRos(d.ros); if (d.exam) setExam(d.exam); if (d.labs) setLabs(d.labs);
-      if (d.imaging) setImaging(d.imaging); if (d.ekg) setEkg(d.ekg);
+      if (d.imaging) setImaging(d.imaging); if (d.ekg) setEkg(d.ekg); if (d.newVitals) setNewVitals(d.newVitals);
       if (d.medsRaw) setMedsRaw(d.medsRaw); if (d.allergiesRaw) setAllergiesRaw(d.allergiesRaw);
       if (d.parsedMeds?.length) setParsedMeds(d.parsedMeds);
       if (d.parsedAllergies?.length) setParsedAllergies(d.parsedAllergies);

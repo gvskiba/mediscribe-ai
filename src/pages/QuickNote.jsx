@@ -459,6 +459,8 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         } catch(e) { console.error("Auto lab analysis failed:", e); }
         finally { setLabsAutoAnalyzing(false); }
       }, 1800);
+    } else {
+      setLabsAutoAnalyzing(false);
     }
   }, [cc, mdmResult, parsedMeds, parsedAllergies]);
 
@@ -477,6 +479,8 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         } catch(e) { console.error("Auto imaging analysis failed:", e); }
         finally { setImagingAutoAnalyzing(false); }
       }, 1800);
+    } else {
+      setImagingAutoAnalyzing(false);
     }
   }, [cc, mdmResult, labSummaryResult]);
 

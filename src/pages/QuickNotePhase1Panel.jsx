@@ -1,13 +1,16 @@
 // QuickNotePhase1Panel.jsx
-// Phase 1 input card: CC, Vitals, HPI, ROS, Exam, QuickDDx, Meds, Generate MDM
+// Phase 1 input card, ordered:
+//   STEP 1: CC + Vitals
+//   STEP 2: HPI (paste detect, Structure, Summarize, OPQRST gaps, summary card)
+//   STEP 3: Review of Systems (compact From HPI button)
+//   STEP 4: Physical Exam (ExamShortcuts, VoiceDictation)
+//   STEP 5: Quick DDx (after ROS + Exam)
+//   STEP 6: Bounceback flag + date picker
+//   STEP 7: Copy HPI/ROS/PE utility button
+//   LAST:  Medications & Allergies (collapsible, collapsed by default,
+//          auto-expands when parsedMeds or parsedAllergies exist)
+// The Generate Initial Impression button lives in QuickNote.jsx below this panel.
 // Exported: Phase1Panel
-// v11.2 additions:
-//   1. Editable Structure output (textarea in preview card)
-//   2. Structure → Prose chain button
-//   3. Paste detection toast with quick-action buttons
-//   4. OPQRST completeness gap indicators
-//   5. CC auto-extract feedback badge
-//   6. HPI word + character counter
 
 import React, { useState, useCallback, useRef } from "react";
 import { InputZone, QuickDDxCard, InlineCopyBtn } from "./QuickNoteComponents";
@@ -24,9 +27,9 @@ export function Phase1Panel({
   hpiMode, setHpiMode, hpiSummary, setHpiSummary,
   hpiSumBusy, hpiSumError, copiedHpiSum, setCopiedHpiSum,
   summarizeHPI,
-  // v11.1 — Smart Structure HPI
+  // Smart Structure HPI
   structureHPI, hpiStructureBusy, hpiStructureError,
-  // v11.2 — Structure → Prose chain + gap indicators
+  // Structure -> Prose chain + gap indicators
   summarizeFromStructure, hpiGaps,
   // QuickDDx
   quickDDx, quickDDxBusy, quickDDxErr, quickDDxDismissed, setQuickDDxDismissed,
@@ -51,14 +54,18 @@ export function Phase1Panel({
   patientPregnant, setPatientPregnant,
   patientWeight, setPatientWeight,
   smartExpansions,
-  // v11.4: HPI auto-extract for MedsAllergyZone import nudge
+  // HPI auto-extract for MedsAllergyZone import nudge
   medsFromHpi, allergiesFromHpi,
 }) {
-
-  // ── v11.2: local state ──────────────────────────────────────────────────────
   // Paste detection toast
   const [hpiPastePrompt, setHpiPastePrompt] = useState(false);
   const pasteToastTimer = useRef(null);
+
+  // Meds & Allergies collapsible state - collapsed by default,
+  // auto-expands when parsed meds/allergies exist.
+  const [medsOpen, setMedsOpen] = useState(
+    Boolean(parsedMeds?.length || parsedAllergies?.length)
+  );
 
   const handleHpiPaste = useCallback((e) => {
     const text = e.clipboardData?.getData("text") || "";
@@ -74,7 +81,6 @@ export function Phase1Panel({
     setHpiPastePrompt(false);
   }, []);
 
-  // HPI word + char count
   const hpiWordCount = hpi.trim() ? hpi.trim().split(/\s+/).length : 0;
   const hpiCharCount = hpi.length;
 
@@ -83,7 +89,7 @@ export function Phase1Panel({
       background:"rgba(8,22,40,.5)", border:"1px solid rgba(42,79,122,.4)",
       borderRadius:14, padding:"16px" }}>
 
-      {/* ── Phase header ─────────────────────────────────────────────────── */}
+      {/* Phase header */}
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, flexWrap:"wrap" }}>
         <div style={{ width:24, height:24, borderRadius:"50%",
           background:"rgba(0,229,192,.15)", border:"1px solid rgba(0,229,192,.4)",
@@ -95,7 +101,7 @@ export function Phase1Panel({
             fontSize:15, color:"var(--qn-teal)" }}>Initial Assessment</div>
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
             color:"var(--qn-txt4)", letterSpacing:.8 }}>
-            Paste nurse note fields → AI generates MDM
+            {"CC, vitals, HPI, ROS, exam then AI generates Initial Impression"}
           </div>
         </div>
         {/* Encounter type selector */}
@@ -126,17 +132,17 @@ export function Phase1Panel({
               background:"var(--qn-green)", flexShrink:0 }} />
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
               color:"var(--qn-green)", letterSpacing:.5 }}>
-              MDM · {mdmResult.mdm_level}
+              {"MDM - " + (mdmResult.mdm_level || "")}
             </span>
           </div>
         )}
       </div>
 
-      {/* ── CC + Vitals row ───────────────────────────────────────────────── */}
+      {/* STEP 1: CC + Vitals */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
         <InputZone label="Chief Complaint" value={cc} onChange={setCC} phase={1}
           rows={2} templateType="cc" smartfill kbdHint="Alt+H"
-          placeholder="e.g. Chest pain, sharp, onset 2h ago — or press T to select"
+          placeholder="e.g. Chest pain, sharp, onset 2h ago - or press T to select"
           onRef={setRef(0)}
           onKeyDown={makeKeyDown(0, false, runMDM)} />
         <InputZone label="Triage Vitals" value={vitals} onChange={setVitals} phase={1}
@@ -145,15 +151,15 @@ export function Phase1Panel({
             const url = "/VitalsHub" + (vitals.trim() ? "?v=" + encodeURIComponent(vitals.trim()) : "");
             window.location.href = url;
           }}
-          placeholder="e.g. HR 102 BP 148/92 RR 18 SpO2 96% T 37.4°C"
+          placeholder="e.g. HR 102 BP 148/92 RR 18 SpO2 96% T 37.4C"
           onRef={setRef(1)}
           onKeyDown={makeKeyDown(1, false, runMDM)} />
       </div>
 
-      {/* ── HPI ──────────────────────────────────────────────────────────── */}
+      {/* STEP 2: HPI */}
       <div style={{ marginBottom:12 }}>
 
-        {/* ── v11.2: HPI label row with word/char counter ── */}
+        {/* HPI label row with word/char counter */}
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1 }}>
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
@@ -165,7 +171,7 @@ export function Phase1Panel({
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
               color: hpiWordCount >= 10 ? "rgba(0,229,192,.55)" : "rgba(107,158,200,.45)",
               letterSpacing:.3, transition:"color .3s" }}>
-              {hpiWordCount}w · {hpiCharCount}c
+              {hpiWordCount + "w - " + hpiCharCount + "c"}
             </span>
           )}
           <VoiceDictationButton
@@ -174,16 +180,16 @@ export function Phase1Panel({
           />
         </div>
 
-        {/* ── v11.2: Paste-detecting wrapper — fires toast on large paste ── */}
+        {/* Paste-detecting wrapper */}
         <div onPaste={handleHpiPaste}>
           <InputZone label="" value={hpi} onChange={setHpi} phase={1}
             rows={5} copyable kbdHint="Alt+H"
-            placeholder="Paste HPI from nurse note or EHR — onset, location, quality, severity, duration, modifying factors, associated symptoms..."
+            placeholder="Paste HPI from nurse note or EHR - onset, location, quality, severity, duration, modifying factors, associated symptoms..."
             onRef={setRef(2)}
             onKeyDown={makeKeyDown(2, false, runMDM)} />
         </div>
 
-        {/* ── v11.2: Paste detection toast ── */}
+        {/* Paste detection toast */}
         {hpiPastePrompt && !hpiSummary && (
           <div className="qn-fade" style={{ marginTop:6, padding:"8px 12px",
             borderRadius:8, background:"rgba(59,158,255,.08)",
@@ -191,7 +197,7 @@ export function Phase1Panel({
             display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
               color:"var(--qn-blue)", letterSpacing:.4, flex:1 }}>
-              Nursing note detected —
+              Nursing note detected -
             </span>
             <button
               onClick={() => { structureHPI(); dismissPastePrompt(); }}
@@ -201,7 +207,7 @@ export function Phase1Panel({
                 border:"1px solid rgba(59,158,255,.5)",
                 background:"rgba(59,158,255,.1)", color:"var(--qn-blue)",
                 transition:"all .15s" }}>
-              ⊞ Structure
+              Structure
             </button>
             <button
               onClick={() => { summarizeHPI(); dismissPastePrompt(); }}
@@ -211,32 +217,30 @@ export function Phase1Panel({
                 border:"1px solid rgba(0,229,192,.4)",
                 background:"rgba(0,229,192,.07)", color:"var(--qn-teal)",
                 transition:"all .15s" }}>
-              Σ Summarize
+              Summarize
             </button>
             <button onClick={dismissPastePrompt}
               style={{ padding:"3px 7px", borderRadius:5, cursor:"pointer",
                 fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                 border:"1px solid rgba(42,79,122,.35)", background:"transparent",
-                color:"var(--qn-txt4)", transition:"all .15s" }}>✕</button>
+                color:"var(--qn-txt4)", transition:"all .15s" }}>x</button>
           </div>
         )}
 
-        {/* ── HPI action row: Structure + mode toggle ── */}
+        {/* HPI action row: Structure + mode toggle */}
         {hpi.trim().length > 40 && (
           <div style={{ marginTop:6, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-
-            {/* ⊞ Structure button */}
             <button
               onClick={structureHPI}
               disabled={hpiStructureBusy}
-              title="Extract OPQRST fields from nursing note — only what is explicitly documented"
+              title="Extract OPQRST fields from nursing note - only what is explicitly documented"
               style={{ padding:"3px 11px", borderRadius:6, cursor:"pointer",
                 fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
                 transition:"all .15s",
                 border:`1px solid ${hpiStructureBusy ? "rgba(42,79,122,.3)" : "rgba(59,158,255,.5)"}`,
                 background:hpiStructureBusy ? "rgba(14,37,68,.4)" : "rgba(59,158,255,.1)",
                 color:hpiStructureBusy ? "var(--qn-txt4)" : "var(--qn-blue)" }}>
-              {hpiStructureBusy ? "● Structuring…" : "⊞ Structure"}
+              {hpiStructureBusy ? "Structuring..." : "Structure"}
             </button>
 
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
@@ -261,11 +265,11 @@ export function Phase1Panel({
                     border:`1px solid ${isActive ? "rgba(0,229,192,.5)" : "rgba(42,79,122,.35)"}`,
                     background:isActive ? "rgba(0,229,192,.12)" : "transparent",
                     color:isActive ? "var(--qn-teal)" : "var(--qn-txt4)" }}>
-                  {isLoading ? "● Generating…" : label}
+                  {isLoading ? "Generating..." : label}
                   {isActive && !isLoading && (
                     <span style={{ marginLeft:5, fontSize:9,
                       fontFamily:"'JetBrains Mono',monospace",
-                      color:"rgba(0,229,192,.6)" }}>✓ active</span>
+                      color:"rgba(0,229,192,.6)" }}>active</span>
                   )}
                 </button>
               );
@@ -275,7 +279,7 @@ export function Phase1Panel({
                 style={{ padding:"3px 8px", borderRadius:5, cursor:"pointer",
                   fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                   border:"1px solid rgba(42,79,122,.3)", background:"transparent",
-                  color:"var(--qn-txt4)", transition:"all .15s" }}>↺ Redo</button>
+                  color:"var(--qn-txt4)", transition:"all .15s" }}>Redo</button>
             )}
             {hpiSummary && (
               <button onClick={() => { setHpiSummary(null); setHpiMode("original"); }}
@@ -287,7 +291,7 @@ export function Phase1Panel({
           </div>
         )}
 
-        {/* ── v11.2: OPQRST gap indicators ── */}
+        {/* OPQRST gap indicators */}
         {hpiGaps?.length > 0 && (
           <div style={{ marginTop:6, padding:"6px 10px", borderRadius:7,
             background:"rgba(245,200,66,.06)", border:"1px solid rgba(245,200,66,.25)",
@@ -335,7 +339,7 @@ export function Phase1Panel({
           <MedTermHighlighter text={hpi} />
         )}
 
-        {/* ── HPI Summary / Structure preview card ── */}
+        {/* HPI Summary / Structure preview card */}
         {hpiSummary && (
           <div className="qn-fade" style={{ marginTop:8, padding:"12px 14px",
             borderRadius:10,
@@ -343,7 +347,6 @@ export function Phase1Panel({
             border:`1px solid ${hpiMode === "summary" ? "rgba(0,229,192,.35)" : "rgba(59,158,255,.25)"}`,
             transition:"all .2s" }}>
 
-            {/* Card header */}
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
               <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
                 fontWeight:700,
@@ -355,14 +358,14 @@ export function Phase1Panel({
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
                   color:"var(--qn-teal)", background:"rgba(0,229,192,.1)",
                   border:"1px solid rgba(0,229,192,.3)", borderRadius:4,
-                  padding:"1px 7px", letterSpacing:.4 }}>✓ In note</span>
+                  padding:"1px 7px", letterSpacing:.4 }}>In note</span>
               ) : (
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:"var(--qn-txt4)", letterSpacing:.3 }}>Preview — not active</span>
+                  color:"var(--qn-txt4)", letterSpacing:.3 }}>Preview - not active</span>
               )}
               <div style={{ flex:1 }} />
 
-              {/* ── v11.2: Structure → Prose chain button ── */}
+              {/* Structure to Prose chain button */}
               {summarizeFromStructure && (
                 <button
                   onClick={summarizeFromStructure}
@@ -374,7 +377,7 @@ export function Phase1Panel({
                     background:hpiSumBusy ? "rgba(14,37,68,.4)" : "rgba(0,229,192,.08)",
                     color:hpiSumBusy ? "var(--qn-txt4)" : "var(--qn-teal)",
                     letterSpacing:.5, transition:"all .15s" }}>
-                  {hpiSumBusy ? "● Converting…" : "→ Convert to narrative"}
+                  {hpiSumBusy ? "Converting..." : "Convert to narrative"}
                 </button>
               )}
 
@@ -389,11 +392,11 @@ export function Phase1Panel({
                   background:copiedHpiSum ? "rgba(61,255,160,.1)" : "rgba(59,158,255,.08)",
                   color:copiedHpiSum ? "var(--qn-green)" : "var(--qn-blue)",
                   letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-                {copiedHpiSum ? "✓ Copied" : "Copy"}
+                {copiedHpiSum ? "Copied" : "Copy"}
               </button>
             </div>
 
-            {/* ── v11.2: Editable textarea (replaces static div) ── */}
+            {/* Editable textarea */}
             <textarea
               value={hpiSummary}
               onChange={e => setHpiSummary(e.target.value)}
@@ -413,48 +416,69 @@ export function Phase1Panel({
               background:"rgba(245,200,66,.06)", border:"1px solid rgba(245,200,66,.2)",
               fontFamily:"'DM Sans',sans-serif", fontSize:10,
               color:"var(--qn-gold)", lineHeight:1.5 }}>
-              ⚠ AI restructured from pasted text only — no details were added or inferred.
+              AI restructured from pasted text only - no details were added or inferred.
               Verify against original HPI before charting.
             </div>
           </div>
         )}
       </div>
 
-      {/* ── ROS + Exam row ────────────────────────────────────────────────── */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
-        <InputZone label="Review of Systems" value={ros} onChange={setRos} phase={1}
+      {/* STEP 3: Review of Systems */}
+      <div style={{ marginBottom:12 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
+              textTransform:"uppercase" }}>Review of Systems</span>
+            <InlineCopyBtn getValue={() => ros} label="Copy ROS" />
+          </div>
+          {hpi.trim().length > 30 && (
+            <button onClick={autoRosFromHpi} disabled={autoRosBusy}
+              style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:`1px solid ${autoRosBusy ? "rgba(42,79,122,.3)" : "rgba(155,109,255,.4)"}`,
+                background:autoRosBusy ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.07)",
+                color:autoRosBusy ? "var(--qn-txt4)" : "var(--qn-purple)",
+                letterSpacing:.4, textTransform:"uppercase", transition:"all .15s" }}>
+              {autoRosBusy ? "..." : "From HPI"}
+            </button>
+          )}
+        </div>
+        <InputZone label="" value={ros} onChange={setRos} phase={1}
           rows={4} copyable templateType="ros" smartfill kbdHint="Alt+R"
           placeholder="Paste ROS, or press T to insert a template..."
           onRef={setRef(3)}
           onKeyDown={makeKeyDown(3, false, runMDM)} />
-        <div>
-          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1 }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
-                textTransform:"uppercase" }}>Physical Exam</span>
-              <InlineCopyBtn getValue={() => exam} label="Copy Exam" />
-            </div>
-            <VoiceDictationButton
-              fieldLabel="Physical Exam"
-              compact
-              onTranscript={(t) => setExam(prev => (prev ? prev.trimEnd() + " " + t.trimStart() : t.trimStart()))}
-            />
-          </div>
-          <InputZone label="" value={exam} onChange={setExam} phase={1}
-            rows={4} copyable templateType="pe" smartfill kbdHint="Alt+E"
-            placeholder="Paste physical exam, or press T to insert a template..."
-            onRef={setRef(4)}
-            onKeyDown={makeKeyDown(4, true, runMDM)} />
-          <ExamShortcuts onInsert={(phrase) =>
-            setExam(prev => prev ? prev.trimEnd() + "\n" + phrase : phrase)
-          } />
-        </div>
       </div>
 
-      {/* ── Quick DDx ─────────────────────────────────────────────────────── */}
-      {(cc.trim().length > 5 || hpi.trim().length > 20) && !mdmResult && (
-        <div style={{ marginBottom:8 }}>
+      {/* STEP 4: Physical Exam */}
+      <div style={{ marginBottom:12 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1 }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
+              textTransform:"uppercase" }}>Physical Exam</span>
+            <InlineCopyBtn getValue={() => exam} label="Copy Exam" />
+          </div>
+          <VoiceDictationButton
+            fieldLabel="Physical Exam"
+            compact
+            onTranscript={(t) => setExam(prev => (prev ? prev.trimEnd() + " " + t.trimStart() : t.trimStart()))}
+          />
+        </div>
+        <InputZone label="" value={exam} onChange={setExam} phase={1}
+          rows={4} copyable templateType="pe" smartfill kbdHint="Alt+E"
+          placeholder="Paste physical exam, or press T to insert a template..."
+          onRef={setRef(4)}
+          onKeyDown={makeKeyDown(4, true, runMDM)} />
+        <ExamShortcuts onInsert={(phrase) =>
+          setExam(prev => prev ? prev.trimEnd() + "\n" + phrase : phrase)
+        } />
+      </div>
+
+      {/* STEP 5: Quick DDx - after ROS + Exam */}
+      {(ros.trim().length > 10 || exam.trim().length > 10) && !mdmResult && (
+        <div style={{ marginBottom:10 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <button onClick={runQuickDDx} disabled={quickDDxBusy}
               style={{ padding:"3px 12px", borderRadius:6, cursor:"pointer",
@@ -463,7 +487,7 @@ export function Phase1Panel({
                 background:quickDDxBusy ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.08)",
                 color:quickDDxBusy ? "var(--qn-txt4)" : "var(--qn-purple)",
                 letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-              {quickDDxBusy ? "● Generating…" : "✦ Quick DDx"}
+              {quickDDxBusy ? "Generating..." : "Quick DDx"}
             </button>
             {quickDDxErr && (
               <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
@@ -481,54 +505,7 @@ export function Phase1Panel({
         </div>
       )}
 
-      {/* ── Medications & Allergies ───────────────────────────────────────── */}
-      <MedsAllergyZone
-        medsRaw={medsRaw}           setMedsRaw={setMedsRaw}
-        allergiesRaw={allergiesRaw} setAllergiesRaw={setAllergiesRaw}
-        parsedMeds={parsedMeds}     parsedAllergies={parsedAllergies}
-        onParse={parseMedsAllergies}
-        parsing={medsParsing}       parseError={medsError}
-        onEditMed={(idx, field, val) =>
-          setParsedMeds(prev => prev.map((m,i) => i===idx ? {...m,[field]:val} : m))
-        }
-        onRemoveMed={idx => setParsedMeds(prev => prev.filter((_,i) => i !== idx))}
-        onEditAllergy={(idx, field, val) =>
-          setParsedAllergies(prev => prev.map((a,i) => i===idx ? {...a,[field]:val} : a))
-        }
-        onRemoveAllergy={idx => setParsedAllergies(prev => prev.filter((_,i) => i !== idx))}
-        medsFromHpi={medsFromHpi}
-        allergiesFromHpi={allergiesFromHpi}
-      />
-
-      {/* ── Copy clinical inputs ──────────────────────────────────────────── */}
-      {(hpi.trim() || ros.trim() || exam.trim()) && (
-        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8, gap:6, flexWrap:"wrap" }}
-          className="no-print">
-          {hpi.trim().length > 30 && (
-            <button onClick={autoRosFromHpi} disabled={autoRosBusy}
-              style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
-                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
-                border:`1px solid ${autoRosBusy ? "rgba(42,79,122,.3)" : "rgba(155,109,255,.4)"}`,
-                background:autoRosBusy ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.07)",
-                color:autoRosBusy ? "var(--qn-txt4)" : "var(--qn-purple)",
-                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-              {autoRosBusy ? "● Generating…" : "✦ Auto-ROS from HPI"}
-            </button>
-          )}
-          <button onClick={copyClinicalInputs}
-            style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
-              fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
-              border:`1px solid ${copiedInputs ? "rgba(61,255,160,.5)" : "rgba(59,158,255,.35)"}`,
-              background:copiedInputs ? "rgba(61,255,160,.1)" : "rgba(59,158,255,.07)",
-              color:copiedInputs ? "var(--qn-green)" : "var(--qn-blue)",
-              letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-            {copiedInputs ? "✓ Copied — paste into EHR" : "Copy HPI / ROS / PE  "}
-            {!copiedInputs && <span style={{ opacity:.5 }}>[Shift+C]</span>}
-          </button>
-        </div>
-      )}
-
-      {/* ── Bounceback flag ───────────────────────────────────────────────── */}
+      {/* STEP 6: Bounceback flag + date picker */}
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10,
         padding:"8px 12px", borderRadius:8,
         background: isBounceback ? "rgba(255,107,107,.08)" : "rgba(14,37,68,.4)",
@@ -541,7 +518,7 @@ export function Phase1Panel({
             background:isBounceback ? "rgba(255,107,107,.2)" : "transparent",
             display:"flex", alignItems:"center", justifyContent:"center",
             transition:"all .15s" }}>
-            {isBounceback && <span style={{ fontSize:10, color:"var(--qn-coral)", lineHeight:1 }}>✓</span>}
+            {isBounceback && <span style={{ fontSize:10, color:"var(--qn-coral)", lineHeight:1 }}>{"check"}</span>}
           </div>
           <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
             color:isBounceback ? "var(--qn-coral)" : "var(--qn-txt4)" }}>
@@ -550,7 +527,7 @@ export function Phase1Panel({
           {isBounceback && (
             <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
               color:"rgba(255,107,107,.6)", letterSpacing:.4 }}>
-              — bounceback documentation added to MDM
+              - bounceback documentation added to MDM
             </span>
           )}
         </div>
@@ -568,30 +545,77 @@ export function Phase1Panel({
         )}
       </div>
 
-      {/* ── Generate MDM button ───────────────────────────────────────────── */}
-      <button className="qn-btn" onClick={runMDM}
-        disabled={p1Busy || !phase1Ready}
-        style={{ width:"100%",
-          border:`1px solid ${!phase1Ready || p1Busy ? "rgba(42,79,122,.3)" : "rgba(0,229,192,.5)"}`,
-          background:!phase1Ready || p1Busy
-            ? "rgba(14,37,68,.5)"
-            : "linear-gradient(135deg,rgba(0,229,192,.15),rgba(0,229,192,.04))",
-          color:!phase1Ready || p1Busy ? "var(--qn-txt4)" : "var(--qn-teal)" }}>
-        {p1Busy ? (
-          <><span className="qn-busy-dot">●</span>Generating MDM...</>
-        ) : (
-          <>✦ Generate MDM  <span style={{ fontFamily:"'JetBrains Mono',monospace",
-            fontSize:10, opacity:.6 }}>[Cmd+Enter]</span></>
-        )}
-      </button>
+      {/* STEP 7: Copy HPI/ROS/PE utility button */}
+      {(hpi.trim() || ros.trim() || exam.trim()) && (
+        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:10, gap:6, flexWrap:"wrap" }}
+          className="no-print">
+          <button onClick={copyClinicalInputs}
+            style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+              border:`1px solid ${copiedInputs ? "rgba(61,255,160,.5)" : "rgba(59,158,255,.35)"}`,
+              background:copiedInputs ? "rgba(61,255,160,.1)" : "rgba(59,158,255,.07)",
+              color:copiedInputs ? "var(--qn-green)" : "var(--qn-blue)",
+              letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
+            {copiedInputs ? "Copied - paste into EHR" : "Copy HPI / ROS / PE"}
+            {!copiedInputs && <span style={{ opacity:.5 }}> [Shift+C]</span>}
+          </button>
+        </div>
+      )}
 
       {p1Error && (
-        <div style={{ marginTop:8, padding:"8px 11px", borderRadius:8,
+        <div style={{ marginBottom:10, padding:"8px 11px", borderRadius:8,
           background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)",
           fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-coral)" }}>
           {p1Error}
         </div>
       )}
+
+      {/* LAST: Medications & Allergies - collapsible */}
+      <div style={{ marginBottom:6 }}>
+        <button
+          onClick={() => setMedsOpen(o => !o)}
+          style={{ width:"100%", display:"flex", alignItems:"center", gap:8,
+            padding:"8px 12px", borderRadius:8, cursor:"pointer",
+            background:"rgba(14,37,68,.4)", border:"1px solid rgba(42,79,122,.3)",
+            color:"var(--qn-txt4)", fontFamily:"'JetBrains Mono',monospace",
+            fontSize:9, fontWeight:700, letterSpacing:.5, textTransform:"uppercase",
+            transition:"all .15s" }}>
+          <span>{medsOpen ? "v" : ">"}</span>
+          <span>Medications & Allergies</span>
+          {(parsedMeds?.length || parsedAllergies?.length) ? (
+            <span style={{ marginLeft:"auto", fontSize:8, color:"var(--qn-teal)",
+              background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.3)",
+              borderRadius:4, padding:"1px 7px", letterSpacing:.3 }}>
+              {(parsedMeds?.length || 0) + (parsedAllergies?.length || 0)} parsed
+            </span>
+          ) : (
+            <span style={{ marginLeft:"auto", fontSize:8, color:"rgba(107,158,200,.4)" }}>
+              {medsOpen ? "collapse" : "expand"}
+            </span>
+          )}
+        </button>
+        {medsOpen && (
+          <div style={{ marginTop:8 }}>
+            <MedsAllergyZone
+              medsRaw={medsRaw}           setMedsRaw={setMedsRaw}
+              allergiesRaw={allergiesRaw} setAllergiesRaw={setAllergiesRaw}
+              parsedMeds={parsedMeds}     parsedAllergies={parsedAllergies}
+              onParse={parseMedsAllergies}
+              parsing={medsParsing}       parseError={medsError}
+              onEditMed={(idx, field, val) =>
+                setParsedMeds(prev => prev.map((m,i) => i===idx ? {...m,[field]:val} : m))
+              }
+              onRemoveMed={idx => setParsedMeds(prev => prev.filter((_,i) => i !== idx))}
+              onEditAllergy={(idx, field, val) =>
+                setParsedAllergies(prev => prev.map((a,i) => i===idx ? {...a,[field]:val} : a))
+              }
+              onRemoveAllergy={idx => setParsedAllergies(prev => prev.filter((_,i) => i !== idx))}
+              medsFromHpi={medsFromHpi}
+              allergiesFromHpi={allergiesFromHpi}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

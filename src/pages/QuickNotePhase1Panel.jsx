@@ -1,18 +1,16 @@
-// QuickNotePhase1Panel.jsx
-// Phase 1 input card, ordered:
-//   STEP 1: CC + Vitals
-//   STEP 2: HPI (paste detect, Structure, Summarize, OPQRST gaps, summary card)
-//   STEP 3: Review of Systems (compact From HPI button)
-//   STEP 4: Physical Exam (ExamShortcuts, VoiceDictation)
-//   STEP 5: Quick DDx (after ROS + Exam)
-//   STEP 6: Bounceback flag + date picker
-//   STEP 7: Copy HPI/ROS/PE utility button
-//   LAST:  Medications & Allergies (collapsible, collapsed by default,
-//          auto-expands when parsedMeds or parsedAllergies exist)
-// The Generate Initial Impression button lives in QuickNote.jsx below this panel.
-// Exported: Phase1Panel
+// QuickNotePhase1Panel.jsx  v14.0 — CC-Driven additions
+// Carries forward all v13.1 layout (7-step field order, collapsible Meds)
+// v14.0 adds:
+//   - ccProfile prop: when set and not "general", panel becomes CC-branded
+//   - onChangeCC prop: "Change CC" button in panel header
+//   - HPI, ROS, Exam auto-seeded from ccProfile templates on CC change
+//   - "Reset to CC template" buttons on ROS and Exam when user has edited
+//   - Key Diagnostics strip below Exam (collapsible, informational)
+//   - Risk Scores line below diagnostics strip
+//   - CC accent color applied to panel header circle and title
+//   - Generate Initial Impression button still NOT here (lives in QuickNote.jsx)
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { InputZone, QuickDDxCard, InlineCopyBtn } from "./QuickNoteComponents";
 import { MedsAllergyZone } from "./QuickNoteMedsAllergy";
 import MedTermHighlighter from "@/components/MedTermHighlighter";
@@ -29,7 +27,7 @@ export function Phase1Panel({
   summarizeHPI,
   // Smart Structure HPI
   structureHPI, hpiStructureBusy, hpiStructureError,
-  // Structure -> Prose chain + gap indicators
+  // Structure → Prose chain + gap indicators
   summarizeFromStructure, hpiGaps,
   // QuickDDx
   quickDDx, quickDDxBusy, quickDDxErr, quickDDxDismissed, setQuickDDxDismissed,
@@ -44,11 +42,11 @@ export function Phase1Panel({
   copiedInputs, copyClinicalInputs,
   // Refs + nav
   setRef, makeKeyDown,
-  // Submit
+  // Submit (Cmd+Enter keyboard shortcut only — button lives in QuickNote.jsx)
   runMDM,
   // Bounceback
   isBounceback, setIsBounceback, bouncebackDate, setBouncebackDate,
-  // Auto-ROS
+  // Auto-ROS (legacy — kept for prop compat)
   autoRosFromHpi, autoRosBusy,
   // Extra props
   patientPregnant, setPatientPregnant,
@@ -56,17 +54,50 @@ export function Phase1Panel({
   smartExpansions,
   // HPI auto-extract for MedsAllergyZone import nudge
   medsFromHpi, allergiesFromHpi,
+  // ── v14.0: CC-driven props ──────────────────────────────────────────────
+  ccProfile,    // full CC profile object from QuickNoteCCProfiles.js, or null
+  onChangeCC,   // callback — opens CCLauncher when physician clicks "Change CC"
 }) {
-  // Paste detection toast
-  const [hpiPastePrompt, setHpiPastePrompt] = useState(false);
+
+  // ── Local state ────────────────────────────────────────────────────────────
+  const [hpiPastePrompt,   setHpiPastePrompt]   = useState(false);
+  const [medsOpen,         setMedsOpen]          = useState(false);
+  const [diagnosticsOpen,  setDiagnosticsOpen]   = useState(true);
+  const [checkedDiagnostics, setCheckedDiagnostics] = useState(new Set());
   const pasteToastTimer = useRef(null);
 
-  // Meds & Allergies collapsible state - collapsed by default,
-  // auto-expands when parsed meds/allergies exist.
-  const [medsOpen, setMedsOpen] = useState(
-    Boolean(parsedMeds?.length || parsedAllergies?.length)
-  );
+  // Track whether ROS/PE/HPI have been user-edited since CC was applied
+  const [rosEdited,  setRosEdited]  = useState(false);
+  const [examEdited, setExamEdited] = useState(false);
+  const [hpiEdited,  setHpiEdited]  = useState(false);
 
+  // ── v14.0: Seed HPI, ROS, Exam from CC profile on profile change ──────────
+  useEffect(() => {
+    if (!ccProfile || ccProfile.id === "general") return;
+
+    // Reset edit-tracking flags whenever CC changes
+    setRosEdited(false);
+    setExamEdited(false);
+    setHpiEdited(false);
+    setCheckedDiagnostics(new Set());
+    setDiagnosticsOpen(true);
+
+    // Seed HPI scaffold only if field is empty
+    if (ccProfile.hpi_scaffold && !hpi.trim()) {
+      setHpi(ccProfile.hpi_scaffold);
+    }
+    // Seed ROS template only if field is empty
+    if (ccProfile.ros_template && !ros.trim()) {
+      setRos(ccProfile.ros_template);
+    }
+    // Seed PE template only if field is empty
+    if (ccProfile.pe_template && !exam.trim()) {
+      setExam(ccProfile.pe_template);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ccProfile?.id]);
+
+  // ── Paste detection ────────────────────────────────────────────────────────
   const handleHpiPaste = useCallback((e) => {
     const text = e.clipboardData?.getData("text") || "";
     if (text.length > 80 && !hpiSummary) {
@@ -81,29 +112,159 @@ export function Phase1Panel({
     setHpiPastePrompt(false);
   }, []);
 
+  // Wrapped setters that track user edits for CC template reset buttons
+  const handleRosChange = useCallback((val) => {
+    setRos(val);
+    if (ccProfile && ccProfile.id !== "general" && val !== ccProfile.ros_template) {
+      setRosEdited(true);
+    }
+  }, [setRos, ccProfile]);
+
+  const handleExamChange = useCallback((val) => {
+    setExam(val);
+    if (ccProfile && ccProfile.id !== "general" && val !== ccProfile.pe_template) {
+      setExamEdited(true);
+    }
+  }, [setExam, ccProfile]);
+
+  const handleHpiChange = useCallback((val) => {
+    setHpi(val);
+    if (ccProfile && ccProfile.id !== "general" && val !== ccProfile.hpi_scaffold) {
+      setHpiEdited(true);
+    }
+  }, [setHpi, ccProfile]);
+
+  // Reset to CC template handlers
+  const resetRosToCCTemplate = useCallback(() => {
+    if (ccProfile?.ros_template) {
+      setRos(ccProfile.ros_template);
+      setRosEdited(false);
+    }
+  }, [ccProfile, setRos]);
+
+  const resetExamToCCTemplate = useCallback(() => {
+    if (ccProfile?.pe_template) {
+      setExam(ccProfile.pe_template);
+      setExamEdited(false);
+    }
+  }, [ccProfile, setExam]);
+
+  const resetHpiToCCTemplate = useCallback(() => {
+    if (ccProfile?.hpi_scaffold) {
+      setHpi(ccProfile.hpi_scaffold);
+      setHpiEdited(false);
+    }
+  }, [ccProfile, setHpi]);
+
+  // Toggle diagnostics checkbox
+  const toggleDiagnostic = useCallback((item) => {
+    setCheckedDiagnostics(prev => {
+      const next = new Set(prev);
+      if (next.has(item)) next.delete(item);
+      else next.add(item);
+      return next;
+    });
+  }, []);
+
+  // Auto-expand Meds if there is data
+  const hasMedsData = parsedMeds?.length > 0 || parsedAllergies?.length > 0
+    || medsRaw?.trim() || allergiesRaw?.trim()
+    || medsFromHpi?.length > 0 || allergiesFromHpi?.length > 0;
+
   const hpiWordCount = hpi.trim() ? hpi.trim().split(/\s+/).length : 0;
   const hpiCharCount = hpi.length;
 
-  return (
-    <div style={{ marginBottom:14,
-      background:"rgba(8,22,40,.5)", border:"1px solid rgba(42,79,122,.4)",
-      borderRadius:14, padding:"16px" }}>
+  // ── CC accent color (falls back to teal for no CC or General) ─────────────
+  const isCC       = ccProfile && ccProfile.id !== "general";
+  const accentColor = isCC ? (ccProfile.color || "var(--qn-teal)") : "var(--qn-teal)";
 
-      {/* Phase header */}
+  // ── Shared label style ─────────────────────────────────────────────────────
+  const sectionLabel = {
+    fontFamily:    "'JetBrains Mono',monospace",
+    fontSize:      8,
+    fontWeight:    700,
+    color:         "var(--qn-txt4)",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  };
+
+  // Small inline "Reset to CC template" button
+  const ResetToTemplateBtn = ({ onReset, label = "Reset to CC template" }) => (
+    <button
+      onClick={onReset}
+      title={label}
+      style={{
+        padding:      "1px 8px",
+        borderRadius: 4,
+        cursor:       "pointer",
+        fontFamily:   "'JetBrains Mono',monospace",
+        fontSize:     7,
+        fontWeight:   700,
+        border:       `1px solid ${accentColor}50`,
+        background:   `${accentColor}08`,
+        color:        accentColor,
+        letterSpacing:.3,
+        transition:   "all .15s",
+        flexShrink:   0,
+      }}
+    >
+      ↺ {label}
+    </button>
+  );
+
+  return (
+    <div style={{
+      marginBottom: 14,
+      background:   "rgba(8,22,40,.5)",
+      border:       `1px solid rgba(42,79,122,.4)`,
+      borderRadius: 14,
+      padding:      "16px",
+      // Subtle CC accent on left border when CC is active
+      borderLeft:   isCC ? `3px solid ${accentColor}60` : "1px solid rgba(42,79,122,.4)",
+    }}>
+
+      {/* ── Panel header ─────────────────────────────────────────────────── */}
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, flexWrap:"wrap" }}>
-        <div style={{ width:24, height:24, borderRadius:"50%",
-          background:"rgba(0,229,192,.15)", border:"1px solid rgba(0,229,192,.4)",
-          display:"flex", alignItems:"center", justifyContent:"center",
-          fontFamily:"'JetBrains Mono',monospace", fontSize:11,
-          fontWeight:700, color:"var(--qn-teal)", flexShrink:0 }}>1</div>
+
+        {/* Circle badge */}
+        <div style={{
+          width:          24, height:24, borderRadius:"50%",
+          background:     `${accentColor}20`,
+          border:         `1px solid ${accentColor}60`,
+          display:        "flex", alignItems:"center", justifyContent:"center",
+          fontFamily:     isCC ? "inherit" : "'JetBrains Mono',monospace",
+          fontSize:       isCC ? 13 : 11,
+          fontWeight:     700,
+          color:          accentColor,
+          flexShrink:     0,
+          transition:     "all .25s",
+        }}>
+          {isCC ? ccProfile.icon : "1"}
+        </div>
+
+        {/* Title */}
         <div>
-          <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
-            fontSize:15, color:"var(--qn-teal)" }}>Initial Assessment</div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-            color:"var(--qn-txt4)", letterSpacing:.8 }}>
-            {"CC, vitals, HPI, ROS, exam then AI generates Initial Impression"}
+          <div style={{
+            fontFamily: "'Playfair Display',serif",
+            fontWeight: 700,
+            fontSize:   15,
+            color:      accentColor,
+            transition: "color .25s",
+          }}>
+            {isCC ? ccProfile.label : "Initial Assessment"}
+          </div>
+          <div style={{
+            fontFamily:    "'JetBrains Mono',monospace",
+            fontSize:      9,
+            color:         "var(--qn-txt4)",
+            letterSpacing: .8,
+          }}>
+            {isCC
+              ? `${ccProfile.category} · CC-Driven · ROS + PE pre-configured`
+              : "CC → Vitals → HPI → ROS → Exam"}
           </div>
         </div>
+
         {/* Encounter type selector */}
         <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginLeft:"auto" }}>
           {[
@@ -114,64 +275,118 @@ export function Phase1Panel({
             { id:"obs",    label:"Obs"       },
           ].map(({ id, label }) => (
             <button key={id} onClick={() => setEncounterType(id)}
-              style={{ padding:"3px 9px", borderRadius:5, cursor:"pointer",
-                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
-                letterSpacing:.4, transition:"all .12s",
-                border:`1px solid ${encounterType === id ? "rgba(0,229,192,.5)" : "rgba(42,79,122,.35)"}`,
-                background:encounterType === id ? "rgba(0,229,192,.12)" : "transparent",
-                color:encounterType === id ? "var(--qn-teal)" : "var(--qn-txt4)" }}>
+              style={{
+                padding:     "3px 9px", borderRadius:5, cursor:"pointer",
+                fontFamily:  "'JetBrains Mono',monospace", fontSize:8, fontWeight:700, letterSpacing:.4,
+                border:      `1px solid ${encounterType === id ? "rgba(0,229,192,.5)" : "rgba(42,79,122,.35)"}`,
+                background:  encounterType === id ? "rgba(0,229,192,.12)" : "transparent",
+                color:       encounterType === id ? "var(--qn-teal)" : "var(--qn-txt4)",
+              }}>
               {label}
             </button>
           ))}
         </div>
+
+        {/* Change CC button — always visible when onChangeCC is provided */}
+        {onChangeCC && (
+          <button
+            onClick={onChangeCC}
+            style={{
+              padding:      "4px 12px",
+              borderRadius: 7,
+              cursor:       "pointer",
+              fontFamily:   "'JetBrains Mono',monospace",
+              fontSize:     8,
+              fontWeight:   700,
+              letterSpacing:.4,
+              border:       `1px solid ${accentColor}50`,
+              background:   `${accentColor}08`,
+              color:        accentColor,
+              transition:   "all .15s",
+              flexShrink:   0,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = `${accentColor}18`; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = `${accentColor}08`; }}
+          >
+            {isCC ? `⇄ Change CC` : `⊞ Select CC`}
+          </button>
+        )}
+
+        {/* MDM done badge */}
         {mdmResult && (
-          <div style={{ display:"flex", alignItems:"center", gap:6,
+          <div style={{
+            display:"flex", alignItems:"center", gap:6,
             padding:"4px 10px", borderRadius:7,
-            background:"rgba(61,255,160,.08)", border:"1px solid rgba(61,255,160,.3)" }}>
-            <div style={{ width:7, height:7, borderRadius:"50%",
-              background:"var(--qn-green)", flexShrink:0 }} />
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-              color:"var(--qn-green)", letterSpacing:.5 }}>
-              {"MDM - " + (mdmResult.mdm_level || "")}
+            background:"rgba(61,255,160,.08)", border:"1px solid rgba(61,255,160,.3)",
+          }}>
+            <div style={{ width:7, height:7, borderRadius:"50%", background:"var(--qn-green)", flexShrink:0 }} />
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--qn-green)", letterSpacing:.5 }}>
+              MDM · {mdmResult.mdm_level}
             </span>
           </div>
         )}
       </div>
 
-      {/* STEP 1: CC + Vitals */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
-        <InputZone label="Chief Complaint" value={cc} onChange={setCC} phase={1}
+      {/* ══════════════════════════════════════════════════════════════════════
+          STEP 1: CC + VITALS
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+        <InputZone
+          label="Chief Complaint" value={cc} onChange={setCC} phase={1}
           rows={2} templateType="cc" smartfill kbdHint="Alt+H"
-          placeholder="e.g. Chest pain, sharp, onset 2h ago - or press T to select"
+          placeholder="e.g. Chest pain, sharp, onset 2h ago — or press T to select"
           onRef={setRef(0)}
-          onKeyDown={makeKeyDown(0, false, runMDM)} />
-        <InputZone label="Triage Vitals" value={vitals} onChange={setVitals} phase={1}
+          onKeyDown={makeKeyDown(0, false, runMDM)}
+        />
+        <InputZone
+          label="Triage Vitals" value={vitals} onChange={setVitals} phase={1}
           rows={2}
           vitalsTrendLink={() => {
             const url = "/VitalsHub" + (vitals.trim() ? "?v=" + encodeURIComponent(vitals.trim()) : "");
             window.location.href = url;
           }}
-          placeholder="e.g. HR 102 BP 148/92 RR 18 SpO2 96% T 37.4C"
+          placeholder="e.g. HR 102 BP 148/92 RR 18 SpO2 96% T 37.4°C"
           onRef={setRef(1)}
-          onKeyDown={makeKeyDown(1, false, runMDM)} />
+          onKeyDown={makeKeyDown(1, false, runMDM)}
+        />
       </div>
 
-      {/* STEP 2: HPI */}
-      <div style={{ marginBottom:12 }}>
+      {/* ══════════════════════════════════════════════════════════════════════
+          STEP 2: HPI
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div style={{ marginBottom:14 }}>
 
-        {/* HPI label row with word/char counter */}
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1 }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
-              textTransform:"uppercase" }}>HPI</span>
-            <InlineCopyBtn getValue={() => hpi} label="Copy HPI" />
+        {/* HPI label row */}
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4, flexWrap:"wrap" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1, gap:6 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={sectionLabel}>HPI</span>
+              {/* v14.0: CC scaffold badge */}
+              {isCC && ccProfile.hpi_scaffold && (
+                <span style={{
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                  color:accentColor, background:`${accentColor}10`,
+                  border:`1px solid ${accentColor}30`, borderRadius:4, padding:"1px 6px",
+                }}>
+                  {ccProfile.label} scaffold
+                </span>
+              )}
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              {/* v14.0: Reset to CC template */}
+              {isCC && hpiEdited && ccProfile.hpi_scaffold && (
+                <ResetToTemplateBtn onReset={resetHpiToCCTemplate} label="Reset scaffold" />
+              )}
+              <InlineCopyBtn getValue={() => hpi} label="Copy HPI" />
+            </div>
           </div>
           {hpiCharCount > 0 && (
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            <span style={{
+              fontFamily:"'JetBrains Mono',monospace", fontSize:7,
               color: hpiWordCount >= 10 ? "rgba(0,229,192,.55)" : "rgba(107,158,200,.45)",
-              letterSpacing:.3, transition:"color .3s" }}>
-              {hpiWordCount + "w - " + hpiCharCount + "c"}
+              letterSpacing:.3,
+            }}>
+              {hpiWordCount}w · {hpiCharCount}c
             </span>
           )}
           <VoiceDictationButton
@@ -180,78 +395,63 @@ export function Phase1Panel({
           />
         </div>
 
-        {/* Paste-detecting wrapper */}
+        {/* HPI textarea with paste detection */}
         <div onPaste={handleHpiPaste}>
-          <InputZone label="" value={hpi} onChange={setHpi} phase={1}
+          <InputZone
+            label="" value={hpi} onChange={handleHpiChange} phase={1}
             rows={5} copyable kbdHint="Alt+H"
-            placeholder="Paste HPI from nurse note or EHR - onset, location, quality, severity, duration, modifying factors, associated symptoms..."
+            placeholder={
+              isCC && ccProfile.hpi_scaffold
+                ? `${ccProfile.label} OPQRST scaffold loaded — fill in bracket placeholders`
+                : "Paste HPI from nurse note or EHR — onset, location, quality, severity, duration, modifying factors, associated symptoms..."
+            }
             onRef={setRef(2)}
-            onKeyDown={makeKeyDown(2, false, runMDM)} />
+            onKeyDown={makeKeyDown(2, false, runMDM)}
+          />
         </div>
 
         {/* Paste detection toast */}
         {hpiPastePrompt && !hpiSummary && (
-          <div className="qn-fade" style={{ marginTop:6, padding:"8px 12px",
-            borderRadius:8, background:"rgba(59,158,255,.08)",
-            border:"1px solid rgba(59,158,255,.3)",
-            display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:"var(--qn-blue)", letterSpacing:.4, flex:1 }}>
-              Nursing note detected -
+          <div className="qn-fade" style={{
+            marginTop:6, padding:"8px 12px", borderRadius:8,
+            background:"rgba(59,158,255,.08)", border:"1px solid rgba(59,158,255,.3)",
+            display:"flex", alignItems:"center", gap:8, flexWrap:"wrap",
+          }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--qn-blue)", letterSpacing:.4, flex:1 }}>
+              Nursing note detected —
             </span>
-            <button
-              onClick={() => { structureHPI(); dismissPastePrompt(); }}
-              disabled={hpiStructureBusy}
-              style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
-                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                border:"1px solid rgba(59,158,255,.5)",
-                background:"rgba(59,158,255,.1)", color:"var(--qn-blue)",
-                transition:"all .15s" }}>
-              Structure
+            <button onClick={() => { structureHPI(); dismissPastePrompt(); }} disabled={hpiStructureBusy}
+              style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11, border:"1px solid rgba(59,158,255,.5)", background:"rgba(59,158,255,.1)", color:"var(--qn-blue)" }}>
+              ⊞ Structure
             </button>
-            <button
-              onClick={() => { summarizeHPI(); dismissPastePrompt(); }}
-              disabled={hpiSumBusy}
-              style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
-                fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                border:"1px solid rgba(0,229,192,.4)",
-                background:"rgba(0,229,192,.07)", color:"var(--qn-teal)",
-                transition:"all .15s" }}>
-              Summarize
+            <button onClick={() => { summarizeHPI(); dismissPastePrompt(); }} disabled={hpiSumBusy}
+              style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11, border:"1px solid rgba(0,229,192,.4)", background:"rgba(0,229,192,.07)", color:"var(--qn-teal)" }}>
+              Σ Summarize
             </button>
             <button onClick={dismissPastePrompt}
-              style={{ padding:"3px 7px", borderRadius:5, cursor:"pointer",
-                fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                border:"1px solid rgba(42,79,122,.35)", background:"transparent",
-                color:"var(--qn-txt4)", transition:"all .15s" }}>x</button>
+              style={{ padding:"3px 7px", borderRadius:5, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:8, border:"1px solid rgba(42,79,122,.35)", background:"transparent", color:"var(--qn-txt4)" }}>✕</button>
           </div>
         )}
 
         {/* HPI action row: Structure + mode toggle */}
         {hpi.trim().length > 40 && (
           <div style={{ marginTop:6, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-            <button
-              onClick={structureHPI}
-              disabled={hpiStructureBusy}
-              title="Extract OPQRST fields from nursing note - only what is explicitly documented"
-              style={{ padding:"3px 11px", borderRadius:6, cursor:"pointer",
+            <button onClick={structureHPI} disabled={hpiStructureBusy}
+              style={{
+                padding:"3px 11px", borderRadius:6, cursor:"pointer",
                 fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                transition:"all .15s",
                 border:`1px solid ${hpiStructureBusy ? "rgba(42,79,122,.3)" : "rgba(59,158,255,.5)"}`,
                 background:hpiStructureBusy ? "rgba(14,37,68,.4)" : "rgba(59,158,255,.1)",
-                color:hpiStructureBusy ? "var(--qn-txt4)" : "var(--qn-blue)" }}>
-              {hpiStructureBusy ? "Structuring..." : "Structure"}
+                color:hpiStructureBusy ? "var(--qn-txt4)" : "var(--qn-blue)",
+              }}>
+              {hpiStructureBusy ? "● Structuring…" : "⊞ Structure"}
             </button>
-
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:"var(--qn-txt4)", letterSpacing:.5, textTransform:"uppercase",
-              flexShrink:0 }}>HPI in note:</span>
-
+            <span style={{ ...sectionLabel, flexShrink:0 }}>HPI in note:</span>
             {[
               { id:"original", label:"My HPI as entered" },
               { id:"summary",  label:"AI-generated summary" },
             ].map(({ id, label }) => {
-              const isActive = hpiMode === id;
+              const isActive  = hpiMode === id;
               const isLoading = id === "summary" && hpiSumBusy;
               return (
                 <button key={id}
@@ -259,60 +459,49 @@ export function Phase1Panel({
                     setHpiMode(id);
                     if (id === "summary" && !hpiSummary && !hpiSumBusy) summarizeHPI();
                   }}
-                  style={{ padding:"3px 11px", borderRadius:6, cursor:"pointer",
+                  style={{
+                    padding:"3px 11px", borderRadius:6, cursor:"pointer",
                     fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:11,
-                    transition:"all .15s",
                     border:`1px solid ${isActive ? "rgba(0,229,192,.5)" : "rgba(42,79,122,.35)"}`,
                     background:isActive ? "rgba(0,229,192,.12)" : "transparent",
-                    color:isActive ? "var(--qn-teal)" : "var(--qn-txt4)" }}>
-                  {isLoading ? "Generating..." : label}
+                    color:isActive ? "var(--qn-teal)" : "var(--qn-txt4)",
+                  }}>
+                  {isLoading ? "● Generating…" : label}
                   {isActive && !isLoading && (
-                    <span style={{ marginLeft:5, fontSize:9,
-                      fontFamily:"'JetBrains Mono',monospace",
-                      color:"rgba(0,229,192,.6)" }}>active</span>
+                    <span style={{ marginLeft:5, fontSize:9, fontFamily:"'JetBrains Mono',monospace", color:"rgba(0,229,192,.6)" }}>✓ active</span>
                   )}
                 </button>
               );
             })}
             {hpiSummary && hpiMode === "summary" && (
               <button onClick={summarizeHPI} disabled={hpiSumBusy}
-                style={{ padding:"3px 8px", borderRadius:5, cursor:"pointer",
-                  fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  border:"1px solid rgba(42,79,122,.3)", background:"transparent",
-                  color:"var(--qn-txt4)", transition:"all .15s" }}>Redo</button>
+                style={{ padding:"3px 8px", borderRadius:5, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:8, border:"1px solid rgba(42,79,122,.3)", background:"transparent", color:"var(--qn-txt4)" }}>↺ Redo</button>
             )}
             {hpiSummary && (
               <button onClick={() => { setHpiSummary(null); setHpiMode("original"); }}
-                style={{ padding:"3px 8px", borderRadius:5, cursor:"pointer",
-                  fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  border:"1px solid rgba(42,79,122,.3)", background:"transparent",
-                  color:"var(--qn-txt4)", transition:"all .15s" }}>Clear summary</button>
+                style={{ padding:"3px 8px", borderRadius:5, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:8, border:"1px solid rgba(42,79,122,.3)", background:"transparent", color:"var(--qn-txt4)" }}>Clear summary</button>
             )}
           </div>
         )}
 
         {/* OPQRST gap indicators */}
         {hpiGaps?.length > 0 && (
-          <div style={{ marginTop:6, padding:"6px 10px", borderRadius:7,
+          <div style={{
+            marginTop:6, padding:"6px 10px", borderRadius:7,
             background:"rgba(245,200,66,.06)", border:"1px solid rgba(245,200,66,.25)",
-            display:"flex", alignItems:"flex-start", gap:8, flexWrap:"wrap" }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              fontWeight:700, color:"var(--qn-gold)", letterSpacing:.5,
-              textTransform:"uppercase", flexShrink:0, paddingTop:1 }}>
+            display:"flex", alignItems:"flex-start", gap:8, flexWrap:"wrap",
+          }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:"var(--qn-gold)", letterSpacing:.5, textTransform:"uppercase", flexShrink:0, paddingTop:1 }}>
               Not documented:
             </span>
             <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
               {hpiGaps.map(gap => (
-                <span key={gap} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:"var(--qn-gold)", background:"rgba(245,200,66,.1)",
-                  border:"1px solid rgba(245,200,66,.25)", borderRadius:4,
-                  padding:"1px 7px", letterSpacing:.3 }}>
+                <span key={gap} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--qn-gold)", background:"rgba(245,200,66,.1)", border:"1px solid rgba(245,200,66,.25)", borderRadius:4, padding:"1px 7px", letterSpacing:.3 }}>
                   {gap}
                 </span>
               ))}
             </div>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7,
-              color:"rgba(245,200,66,.5)", alignSelf:"center", marginLeft:"auto" }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:"rgba(245,200,66,.5)", alignSelf:"center", marginLeft:"auto" }}>
               Consider asking patient
             </span>
           </div>
@@ -320,178 +509,273 @@ export function Phase1Panel({
 
         {/* Errors */}
         {hpiStructureError && (
-          <div style={{ marginTop:6, padding:"6px 10px", borderRadius:7,
-            background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)",
-            fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-coral)" }}>
+          <div style={{ marginTop:6, padding:"6px 10px", borderRadius:7, background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)", fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-coral)" }}>
             {hpiStructureError}
           </div>
         )}
         {hpiSumError && (
-          <div style={{ marginTop:6, padding:"6px 10px", borderRadius:7,
-            background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)",
-            fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-coral)" }}>
+          <div style={{ marginTop:6, padding:"6px 10px", borderRadius:7, background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)", fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-coral)" }}>
             {hpiSumError}
           </div>
         )}
 
         {/* Medical term auto-linker */}
-        {hpi.trim().length > 20 && (
-          <MedTermHighlighter text={hpi} />
-        )}
+        {hpi.trim().length > 20 && <MedTermHighlighter text={hpi} />}
 
         {/* HPI Summary / Structure preview card */}
         {hpiSummary && (
-          <div className="qn-fade" style={{ marginTop:8, padding:"12px 14px",
-            borderRadius:10,
+          <div className="qn-fade" style={{
+            marginTop:8, padding:"12px 14px", borderRadius:10,
             background: hpiMode === "summary" ? "rgba(0,229,192,.05)" : "rgba(59,158,255,.04)",
             border:`1px solid ${hpiMode === "summary" ? "rgba(0,229,192,.35)" : "rgba(59,158,255,.25)"}`,
-            transition:"all .2s" }}>
-
+          }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-                fontWeight:700,
-                color: hpiMode === "summary" ? "var(--qn-teal)" : "var(--qn-txt4)",
-                letterSpacing:1.2, textTransform:"uppercase", transition:"color .2s" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, color: hpiMode === "summary" ? "var(--qn-teal)" : "var(--qn-txt4)", letterSpacing:1.2, textTransform:"uppercase" }}>
                 AI HPI Summary
               </span>
-              {hpiMode === "summary" ? (
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:"var(--qn-teal)", background:"rgba(0,229,192,.1)",
-                  border:"1px solid rgba(0,229,192,.3)", borderRadius:4,
-                  padding:"1px 7px", letterSpacing:.4 }}>In note</span>
-              ) : (
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-                  color:"var(--qn-txt4)", letterSpacing:.3 }}>Preview - not active</span>
-              )}
+              {hpiMode === "summary"
+                ? <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--qn-teal)", background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.3)", borderRadius:4, padding:"1px 7px" }}>✓ In note</span>
+                : <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--qn-txt4)" }}>Preview — not active</span>
+              }
               <div style={{ flex:1 }} />
-
-              {/* Structure to Prose chain button */}
               {summarizeFromStructure && (
-                <button
-                  onClick={summarizeFromStructure}
-                  disabled={hpiSumBusy}
-                  title="Convert this structured OPQRST into a physician narrative paragraph"
-                  style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
-                    fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
-                    border:`1px solid ${hpiSumBusy ? "rgba(42,79,122,.3)" : "rgba(0,229,192,.4)"}`,
-                    background:hpiSumBusy ? "rgba(14,37,68,.4)" : "rgba(0,229,192,.08)",
-                    color:hpiSumBusy ? "var(--qn-txt4)" : "var(--qn-teal)",
-                    letterSpacing:.5, transition:"all .15s" }}>
-                  {hpiSumBusy ? "Converting..." : "Convert to narrative"}
+                <button onClick={summarizeFromStructure} disabled={hpiSumBusy}
+                  style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, border:`1px solid ${hpiSumBusy ? "rgba(42,79,122,.3)" : "rgba(0,229,192,.4)"}`, background:hpiSumBusy ? "rgba(14,37,68,.4)" : "rgba(0,229,192,.08)", color:hpiSumBusy ? "var(--qn-txt4)" : "var(--qn-teal)" }}>
+                  {hpiSumBusy ? "● Converting…" : "→ Convert to narrative"}
                 </button>
               )}
-
-              <button onClick={() => {
-                  navigator.clipboard.writeText(hpiSummary);
-                  setCopiedHpiSum(true);
-                  setTimeout(() => setCopiedHpiSum(false), 2000);
-                }}
-                style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer",
-                  fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
-                  border:`1px solid ${copiedHpiSum ? "rgba(61,255,160,.5)" : "rgba(59,158,255,.4)"}`,
-                  background:copiedHpiSum ? "rgba(61,255,160,.1)" : "rgba(59,158,255,.08)",
-                  color:copiedHpiSum ? "var(--qn-green)" : "var(--qn-blue)",
-                  letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-                {copiedHpiSum ? "Copied" : "Copy"}
+              <button onClick={() => { navigator.clipboard.writeText(hpiSummary); setCopiedHpiSum(true); setTimeout(() => setCopiedHpiSum(false), 2000); }}
+                style={{ padding:"2px 10px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, border:`1px solid ${copiedHpiSum ? "rgba(61,255,160,.5)" : "rgba(59,158,255,.4)"}`, background:copiedHpiSum ? "rgba(61,255,160,.1)" : "rgba(59,158,255,.08)", color:copiedHpiSum ? "var(--qn-green)" : "var(--qn-blue)" }}>
+                {copiedHpiSum ? "✓ Copied" : "Copy"}
               </button>
             </div>
-
-            {/* Editable textarea */}
             <textarea
               value={hpiSummary}
               onChange={e => setHpiSummary(e.target.value)}
               rows={Math.max(4, (hpiSummary || "").split("\n").length + 1)}
-              style={{ width:"100%", boxSizing:"border-box", resize:"vertical",
-                background:"transparent",
-                border:"1px solid rgba(0,229,192,.15)", borderRadius:6,
-                padding:"6px 8px",
-                fontFamily:"'DM Sans',sans-serif", fontSize:12,
-                color:"var(--qn-txt2)", lineHeight:1.75,
-                outline:"none", transition:"border-color .15s" }}
+              style={{ width:"100%", boxSizing:"border-box", resize:"vertical", background:"transparent", border:"1px solid rgba(0,229,192,.15)", borderRadius:6, padding:"6px 8px", fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"var(--qn-txt2)", lineHeight:1.75, outline:"none" }}
               onFocus={e => e.target.style.borderColor = "rgba(0,229,192,.45)"}
               onBlur={e => e.target.style.borderColor = "rgba(0,229,192,.15)"}
             />
-
-            <div style={{ marginTop:8, padding:"5px 9px", borderRadius:6,
-              background:"rgba(245,200,66,.06)", border:"1px solid rgba(245,200,66,.2)",
-              fontFamily:"'DM Sans',sans-serif", fontSize:10,
-              color:"var(--qn-gold)", lineHeight:1.5 }}>
-              AI restructured from pasted text only - no details were added or inferred.
-              Verify against original HPI before charting.
+            <div style={{ marginTop:8, padding:"5px 9px", borderRadius:6, background:"rgba(245,200,66,.06)", border:"1px solid rgba(245,200,66,.2)", fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--qn-gold)", lineHeight:1.5 }}>
+              ⚠ AI restructured from pasted text only — verify before charting.
             </div>
           </div>
         )}
       </div>
 
-      {/* STEP 3: Review of Systems */}
-      <div style={{ marginBottom:12 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1 }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
-              textTransform:"uppercase" }}>Review of Systems</span>
+      {/* ══════════════════════════════════════════════════════════════════════
+          STEP 3: REVIEW OF SYSTEMS
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div style={{ marginBottom:14 }}>
+
+        {/* ROS label row */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4, flexWrap:"wrap", gap:6 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={sectionLabel}>Review of Systems</span>
+              {/* v14.0: CC systems badge */}
+              {isCC && ccProfile.ros_sections?.length > 0 && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:"var(--qn-txt4)", letterSpacing:.3 }}>
+                  Systems: {ccProfile.ros_sections.join(" · ")}
+                </span>
+              )}
+            </div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            {/* v14.0: From HPI button */}
+            {hpi.trim().length > 30 && (
+              <button onClick={autoRosFromHpi} disabled={autoRosBusy}
+                style={{
+                  padding:"2px 9px", borderRadius:5, cursor:"pointer",
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:7, fontWeight:700,
+                  border:`1px solid ${autoRosBusy ? "rgba(42,79,122,.3)" : "rgba(155,109,255,.35)"}`,
+                  background:autoRosBusy ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.07)",
+                  color:autoRosBusy ? "var(--qn-txt4)" : "var(--qn-purple)",
+                  letterSpacing:.4,
+                }}>
+                {autoRosBusy ? "● Generating…" : "✦ From HPI"}
+              </button>
+            )}
+            {/* v14.0: Reset to CC template */}
+            {isCC && rosEdited && ccProfile.ros_template && (
+              <ResetToTemplateBtn onReset={resetRosToCCTemplate} />
+            )}
             <InlineCopyBtn getValue={() => ros} label="Copy ROS" />
           </div>
-          {hpi.trim().length > 30 && (
-            <button onClick={autoRosFromHpi} disabled={autoRosBusy}
-              style={{ padding:"3px 10px", borderRadius:5, cursor:"pointer",
-                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
-                border:`1px solid ${autoRosBusy ? "rgba(42,79,122,.3)" : "rgba(155,109,255,.4)"}`,
-                background:autoRosBusy ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.07)",
-                color:autoRosBusy ? "var(--qn-txt4)" : "var(--qn-purple)",
-                letterSpacing:.4, textTransform:"uppercase", transition:"all .15s" }}>
-              {autoRosBusy ? "..." : "From HPI"}
-            </button>
-          )}
         </div>
-        <InputZone label="" value={ros} onChange={setRos} phase={1}
-          rows={4} copyable templateType="ros" smartfill kbdHint="Alt+R"
-          placeholder="Paste ROS, or press T to insert a template..."
+
+        <InputZone
+          label="" value={ros} onChange={handleRosChange} phase={1}
+          rows={5} copyable templateType="ros" smartfill kbdHint="Alt+R"
+          placeholder={
+            isCC && ccProfile.ros_template
+              ? `${ccProfile.label} ROS pre-loaded — edit pertinent positives and negatives`
+              : "Review of systems — AI will auto-populate from HPI, or paste directly..."
+          }
           onRef={setRef(3)}
-          onKeyDown={makeKeyDown(3, false, runMDM)} />
+          onKeyDown={makeKeyDown(3, false, runMDM)}
+        />
       </div>
 
-      {/* STEP 4: Physical Exam */}
-      <div style={{ marginBottom:12 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flex:1 }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              fontWeight:700, color:"var(--qn-txt4)", letterSpacing:1,
-              textTransform:"uppercase" }}>Physical Exam</span>
-            <InlineCopyBtn getValue={() => exam} label="Copy Exam" />
+      {/* ══════════════════════════════════════════════════════════════════════
+          STEP 4: PHYSICAL EXAM
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div style={{ marginBottom:14 }}>
+
+        {/* PE label row */}
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4, flexWrap:"wrap" }}>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", gap:2 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={sectionLabel}>Physical Exam</span>
+              {/* v14.0: CC components badge */}
+              {isCC && ccProfile.pe_sections?.length > 0 && (
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:"var(--qn-txt4)", letterSpacing:.3 }}>
+                  Components: {ccProfile.pe_sections.join(" · ")}
+                </span>
+              )}
+            </div>
           </div>
-          <VoiceDictationButton
-            fieldLabel="Physical Exam"
-            compact
-            onTranscript={(t) => setExam(prev => (prev ? prev.trimEnd() + " " + t.trimStart() : t.trimStart()))}
-          />
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            {/* v14.0: Reset to CC template */}
+            {isCC && examEdited && ccProfile.pe_template && (
+              <ResetToTemplateBtn onReset={resetExamToCCTemplate} />
+            )}
+            <InlineCopyBtn getValue={() => exam} label="Copy Exam" />
+            <VoiceDictationButton
+              fieldLabel="Physical Exam"
+              compact
+              onTranscript={(t) => setExam(prev => (prev ? prev.trimEnd() + " " + t.trimStart() : t.trimStart()))}
+            />
+          </div>
         </div>
-        <InputZone label="" value={exam} onChange={setExam} phase={1}
-          rows={4} copyable templateType="pe" smartfill kbdHint="Alt+E"
-          placeholder="Paste physical exam, or press T to insert a template..."
+
+        <InputZone
+          label="" value={exam} onChange={handleExamChange} phase={1}
+          rows={5} copyable templateType="pe" smartfill kbdHint="Alt+E"
+          placeholder={
+            isCC && ccProfile.pe_template
+              ? `${ccProfile.label} PE pre-loaded — fill in [FINDING] bracket placeholders`
+              : "Focused physical exam — AI will auto-populate template from HPI, or paste directly..."
+          }
           onRef={setRef(4)}
-          onKeyDown={makeKeyDown(4, true, runMDM)} />
+          onKeyDown={makeKeyDown(4, true, runMDM)}
+        />
+
         <ExamShortcuts onInsert={(phrase) =>
           setExam(prev => prev ? prev.trimEnd() + "\n" + phrase : phrase)
         } />
       </div>
 
-      {/* STEP 5: Quick DDx - after ROS + Exam */}
-      {(ros.trim().length > 10 || exam.trim().length > 10) && !mdmResult && (
-        <div style={{ marginBottom:10 }}>
+      {/* ══════════════════════════════════════════════════════════════════════
+          v14.0: KEY DIAGNOSTICS STRIP
+          Only shown when CC profile is active and has key_diagnostics
+      ══════════════════════════════════════════════════════════════════════ */}
+      {isCC && ccProfile.key_diagnostics?.length > 0 && (
+        <div style={{ marginBottom:12 }}>
+          <button
+            onClick={() => setDiagnosticsOpen(o => !o)}
+            style={{
+              width:"100%", display:"flex", alignItems:"center", gap:8,
+              padding:"7px 12px", borderRadius:8, cursor:"pointer", textAlign:"left",
+              background: diagnosticsOpen ? `${accentColor}08` : "rgba(14,37,68,.4)",
+              border:`1px solid ${diagnosticsOpen ? accentColor + "35" : "rgba(42,79,122,.3)"}`,
+              marginBottom: diagnosticsOpen ? 8 : 0,
+            }}
+          >
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:diagnosticsOpen ? accentColor : "var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase" }}>
+              🔬 Suggested Diagnostics — {ccProfile.label}
+            </span>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:"var(--qn-txt4)" }}>
+              (informational · {checkedDiagnostics.size}/{ccProfile.key_diagnostics.length} noted)
+            </span>
+            <div style={{ flex:1 }} />
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--qn-txt4)" }}>
+              {diagnosticsOpen ? "▲" : "▼"}
+            </span>
+          </button>
+
+          {diagnosticsOpen && (
+            <div style={{
+              padding:"10px 12px",
+              background:"rgba(14,37,68,.35)",
+              border:`1px solid ${accentColor}20`,
+              borderRadius:8,
+              display:"flex", flexWrap:"wrap", gap:8,
+            }}>
+              {ccProfile.key_diagnostics.map((item) => {
+                const checked = checkedDiagnostics.has(item);
+                return (
+                  <button
+                    key={item}
+                    onClick={() => toggleDiagnostic(item)}
+                    style={{
+                      display:"flex", alignItems:"center", gap:6,
+                      padding:"4px 12px", borderRadius:16, cursor:"pointer",
+                      border:`1px solid ${checked ? "rgba(61,255,160,.4)" : accentColor + "35"}`,
+                      background: checked ? "rgba(61,255,160,.08)" : `${accentColor}06`,
+                      transition:"all .15s",
+                    }}
+                  >
+                    {/* Checkbox */}
+                    <div style={{
+                      width:12, height:12, borderRadius:3, flexShrink:0,
+                      border:`1.5px solid ${checked ? "#3dffa0" : accentColor + "60"}`,
+                      background: checked ? "rgba(61,255,160,.2)" : "transparent",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      transition:"all .15s",
+                    }}>
+                      {checked && <span style={{ fontSize:7, color:"#3dffa0", fontWeight:700 }}>✓</span>}
+                    </div>
+                    <span style={{
+                      fontFamily:"'DM Sans',sans-serif", fontSize:11,
+                      fontWeight: checked ? 600 : 400,
+                      color: checked ? "#3dffa0" : "var(--qn-txt2)",
+                      transition:"all .15s",
+                    }}>
+                      {item}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* v14.0: Risk Scores line */}
+          {ccProfile.risk_scores?.length > 0 && (
+            <div style={{ marginTop:6, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color:"var(--qn-gold)", letterSpacing:.5 }}>
+                Risk Scores:
+              </span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"rgba(245,200,66,.7)", letterSpacing:.3 }}>
+                {ccProfile.risk_scores.join("  ·  ")}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          STEP 5: QUICK DDx (after ROS + Exam — needs full clinical picture)
+      ══════════════════════════════════════════════════════════════════════ */}
+      {(cc.trim().length > 5 || hpi.trim().length > 20) && !mdmResult && (
+        <div style={{ marginBottom:12 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <button onClick={runQuickDDx} disabled={quickDDxBusy}
-              style={{ padding:"3px 12px", borderRadius:6, cursor:"pointer",
+              style={{
+                padding:"3px 12px", borderRadius:6, cursor:"pointer",
                 fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
                 border:`1px solid ${quickDDxBusy ? "rgba(42,79,122,.3)" : "rgba(155,109,255,.4)"}`,
                 background:quickDDxBusy ? "rgba(14,37,68,.4)" : "rgba(155,109,255,.08)",
                 color:quickDDxBusy ? "var(--qn-txt4)" : "var(--qn-purple)",
-                letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-              {quickDDxBusy ? "Generating..." : "Quick DDx"}
+                letterSpacing:.5, textTransform:"uppercase",
+              }}>
+              {quickDDxBusy ? "● Generating…" : "✦ Quick DDx"}
             </button>
             {quickDDxErr && (
-              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10,
-                color:"var(--qn-coral)" }}>{quickDDxErr}</span>
+              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:10, color:"var(--qn-coral)" }}>
+                {quickDDxErr}
+              </span>
             )}
           </div>
           {quickDDx && !quickDDxDismissed && (
@@ -505,96 +789,97 @@ export function Phase1Panel({
         </div>
       )}
 
-      {/* STEP 6: Bounceback flag + date picker */}
-      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10,
+      {/* ══════════════════════════════════════════════════════════════════════
+          STEP 6: BOUNCEBACK FLAG
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div style={{
+        display:"flex", alignItems:"center", gap:10, marginBottom:12,
         padding:"8px 12px", borderRadius:8,
         background: isBounceback ? "rgba(255,107,107,.08)" : "rgba(14,37,68,.4)",
         border:`1px solid ${isBounceback ? "rgba(255,107,107,.4)" : "rgba(42,79,122,.3)"}`,
-        transition:"all .2s" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer",
-          flex:1 }} onClick={() => setIsBounceback(b => !b)}>
-          <div style={{ width:16, height:16, borderRadius:4, flexShrink:0,
+      }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", flex:1 }}
+          onClick={() => setIsBounceback(b => !b)}>
+          <div style={{
+            width:16, height:16, borderRadius:4, flexShrink:0,
             border:`2px solid ${isBounceback ? "var(--qn-coral)" : "rgba(42,79,122,.6)"}`,
             background:isBounceback ? "rgba(255,107,107,.2)" : "transparent",
             display:"flex", alignItems:"center", justifyContent:"center",
-            transition:"all .15s" }}>
-            {isBounceback && <span style={{ fontSize:10, color:"var(--qn-coral)", lineHeight:1 }}>{"check"}</span>}
+          }}>
+            {isBounceback && <span style={{ fontSize:10, color:"var(--qn-coral)", lineHeight:1 }}>✓</span>}
           </div>
-          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600,
-            color:isBounceback ? "var(--qn-coral)" : "var(--qn-txt4)" }}>
+          <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, color:isBounceback ? "var(--qn-coral)" : "var(--qn-txt4)" }}>
             Return visit within 72h
           </span>
           {isBounceback && (
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:"rgba(255,107,107,.6)", letterSpacing:.4 }}>
-              - bounceback documentation added to MDM
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"rgba(255,107,107,.6)", letterSpacing:.4 }}>
+              — bounceback added to MDM
             </span>
           )}
         </div>
         {isBounceback && (
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              color:"var(--qn-txt4)" }}>Prior visit:</span>
-            <input type="date" value={bouncebackDate}
-              onChange={e => setBouncebackDate(e.target.value)}
-              style={{ padding:"2px 7px", borderRadius:5, fontSize:10,
-                background:"rgba(14,37,68,.8)", border:"1px solid rgba(255,107,107,.4)",
-                color:"var(--qn-txt)", fontFamily:"'JetBrains Mono',monospace",
-                outline:"none" }} />
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, color:"var(--qn-txt4)" }}>Prior visit:</span>
+            <input type="date" value={bouncebackDate} onChange={e => setBouncebackDate(e.target.value)}
+              style={{ padding:"2px 7px", borderRadius:5, fontSize:10, background:"rgba(14,37,68,.8)", border:"1px solid rgba(255,107,107,.4)", color:"var(--qn-txt)", fontFamily:"'JetBrains Mono',monospace", outline:"none" }} />
           </div>
         )}
       </div>
 
-      {/* STEP 7: Copy HPI/ROS/PE utility button */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          STEP 7: COPY CLINICAL INPUTS
+      ══════════════════════════════════════════════════════════════════════ */}
       {(hpi.trim() || ros.trim() || exam.trim()) && (
-        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:10, gap:6, flexWrap:"wrap" }}
-          className="no-print">
+        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12, gap:6, flexWrap:"wrap" }} className="no-print">
           <button onClick={copyClinicalInputs}
-            style={{ padding:"4px 12px", borderRadius:7, cursor:"pointer",
+            style={{
+              padding:"4px 12px", borderRadius:7, cursor:"pointer",
               fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
               border:`1px solid ${copiedInputs ? "rgba(61,255,160,.5)" : "rgba(59,158,255,.35)"}`,
               background:copiedInputs ? "rgba(61,255,160,.1)" : "rgba(59,158,255,.07)",
               color:copiedInputs ? "var(--qn-green)" : "var(--qn-blue)",
-              letterSpacing:.5, textTransform:"uppercase", transition:"all .15s" }}>
-            {copiedInputs ? "Copied - paste into EHR" : "Copy HPI / ROS / PE"}
-            {!copiedInputs && <span style={{ opacity:.5 }}> [Shift+C]</span>}
+              letterSpacing:.5, textTransform:"uppercase",
+            }}>
+            {copiedInputs ? "✓ Copied — paste into EHR" : "Copy HPI / ROS / PE"}
+            {!copiedInputs && <span style={{ opacity:.5, marginLeft:4 }}>[Shift+C]</span>}
           </button>
         </div>
       )}
 
-      {p1Error && (
-        <div style={{ marginBottom:10, padding:"8px 11px", borderRadius:8,
-          background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)",
-          fontFamily:"'DM Sans',sans-serif", fontSize:11, color:"var(--qn-coral)" }}>
-          {p1Error}
-        </div>
-      )}
-
-      {/* LAST: Medications & Allergies - collapsible */}
-      <div style={{ marginBottom:6 }}>
+      {/* ══════════════════════════════════════════════════════════════════════
+          MEDICATIONS & ALLERGIES — Collapsible, collapsed by default
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div style={{ marginBottom:4 }}>
         <button
           onClick={() => setMedsOpen(o => !o)}
-          style={{ width:"100%", display:"flex", alignItems:"center", gap:8,
-            padding:"8px 12px", borderRadius:8, cursor:"pointer",
-            background:"rgba(14,37,68,.4)", border:"1px solid rgba(42,79,122,.3)",
-            color:"var(--qn-txt4)", fontFamily:"'JetBrains Mono',monospace",
-            fontSize:9, fontWeight:700, letterSpacing:.5, textTransform:"uppercase",
-            transition:"all .15s" }}>
-          <span>{medsOpen ? "v" : ">"}</span>
-          <span>Medications & Allergies</span>
-          {(parsedMeds?.length || parsedAllergies?.length) ? (
-            <span style={{ marginLeft:"auto", fontSize:8, color:"var(--qn-teal)",
-              background:"rgba(0,229,192,.1)", border:"1px solid rgba(0,229,192,.3)",
-              borderRadius:4, padding:"1px 7px", letterSpacing:.3 }}>
-              {(parsedMeds?.length || 0) + (parsedAllergies?.length || 0)} parsed
-            </span>
-          ) : (
-            <span style={{ marginLeft:"auto", fontSize:8, color:"rgba(107,158,200,.4)" }}>
-              {medsOpen ? "collapse" : "expand"}
+          style={{
+            width:"100%", display:"flex", alignItems:"center", gap:8,
+            padding:"8px 12px", borderRadius:8, cursor:"pointer", textAlign:"left",
+            background: medsOpen ? "rgba(245,200,66,.06)" : "rgba(14,37,68,.4)",
+            border:`1px solid ${medsOpen ? "rgba(245,200,66,.3)" : "rgba(42,79,122,.3)"}`,
+          }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700, color: medsOpen ? "var(--qn-gold)" : "var(--qn-txt4)", letterSpacing:1, textTransform:"uppercase" }}>
+            💊 Medications & Allergies
+          </span>
+          {hasMedsData && (
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:"var(--qn-gold)", background:"rgba(245,200,66,.1)", border:"1px solid rgba(245,200,66,.25)", borderRadius:4, padding:"1px 6px" }}>
+              {parsedMeds?.length > 0 ? `${parsedMeds.length} med${parsedMeds.length > 1 ? "s" : ""}` : ""}
+              {parsedMeds?.length > 0 && parsedAllergies?.length > 0 ? " · " : ""}
+              {parsedAllergies?.length > 0 ? `${parsedAllergies.length} allerg${parsedAllergies.length > 1 ? "ies" : "y"}` : ""}
             </span>
           )}
+          {(medsFromHpi?.length > 0 || allergiesFromHpi?.length > 0) && !hasMedsData && (
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:"var(--qn-blue)", background:"rgba(59,158,255,.1)", border:"1px solid rgba(59,158,255,.25)", borderRadius:4, padding:"1px 6px" }}>
+              meds found in HPI
+            </span>
+          )}
+          <div style={{ flex:1 }} />
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"var(--qn-txt4)" }}>
+            {medsOpen ? "▲ collapse" : "▼ expand"}
+          </span>
         </button>
-        {medsOpen && (
+
+        {(medsOpen || hasMedsData) && (
           <div style={{ marginTop:8 }}>
             <MedsAllergyZone
               medsRaw={medsRaw}           setMedsRaw={setMedsRaw}
@@ -616,6 +901,10 @@ export function Phase1Panel({
           </div>
         )}
       </div>
+
+      {/* NOTE: Generate Initial Impression button lives in QuickNote.jsx
+          immediately below this panel. Do not add it here. */}
+
     </div>
   );
 }

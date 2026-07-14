@@ -57,6 +57,10 @@ import { EMLevel, PatientResponsePanel } from "@/components/QuickNote/QuickNoteM
 import { MDMHandoffBridge } from "@/components/quicknote/MDMHandoffBridge";
 import StagedOrderQueue from "@/components/StagedOrderQueue";
 import NoteExportPanel from "@/components/NoteExportPanel";
+// ── v14.0: CC-driven imports ──────────────────────────────────────────────────
+import { CCLauncher } from "./QuickNoteCCLauncher";
+import { MustNotMissBanner } from "./QuickNoteMustNotMiss";
+import { getCCProfile } from "./QuickNoteCCProfiles";
 
 injectQNStyles();
 
@@ -290,6 +294,7 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
     edMedsLoading:false, finalImpressionLoading:false, dispLoading:false,
     copiedPhase1:false, copiedImaging:false, copiedEdMeds:false,
     copiedFinal:false, showPlanSelector:false,
+    ccProfile:null,   // v14.0 — active CC profile for this slot
   });
   const [slots,      setSlots]      = useState(() => [EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT(),EMPTY_SLOT()]);
   const [activeSlot, setActiveSlot] = useState(0);
@@ -344,6 +349,9 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
       setHpiGaps([]);
       setLabRecs(null); setImagingRecs(null);
       setTreatmentPlan(""); setActionPlan("");
+      // v14.0: restore CC profile for this slot
+      setCCProfile(slot.ccProfile || null);
+      setMustNotMissDismissed(false);
       return prev;
     });
     setActiveSlot(idx); slotRef.current = idx;
@@ -425,6 +433,10 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
   const [pmhMDMData,       setPmhMDMData]       = useState(null);
   const [showCCPicker,     setShowCCPicker]     = useState(false);
   const [showHPIBuilder,   setShowHPIBuilder]   = useState(false);
+  // ── v14.0: CC-driven state ────────────────────────────────────────────────
+  const [ccProfile,             setCCProfile]             = useState(null);
+  const [showCCLauncher,        setShowCCLauncher]        = useState(true);
+  const [mustNotMissDismissed,  setMustNotMissDismissed]  = useState(false);
   const [hpiTemplate,      setHpiTemplate]      = useState("");
   const [hpiBuilderCC,     setHpiBuilderCC]     = useState("");
   const [patientRecord,    setPatientRecord]    = useState(null);
@@ -459,8 +471,6 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         } catch(e) { console.error("Auto lab analysis failed:", e); }
         finally { setLabsAutoAnalyzing(false); }
       }, 1800);
-    } else {
-      setLabsAutoAnalyzing(false);
     }
   }, [cc, mdmResult, parsedMeds, parsedAllergies]);
 
@@ -479,8 +489,6 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         } catch(e) { console.error("Auto imaging analysis failed:", e); }
         finally { setImagingAutoAnalyzing(false); }
       }, 1800);
-    } else {
-      setImagingAutoAnalyzing(false);
     }
   }, [cc, mdmResult, labSummaryResult]);
 
@@ -503,7 +511,7 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         patientAllergies.length?`ALLERGIES (Hx tab): ${patientAllergies.join(", ")}.`:"",
       ].filter(Boolean).join("\n");
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildMDMPrompt(cc,vitals,hpi,ros,exam,vhAnalysis,parsedMeds,parsedAllergies,encounterType)
+        prompt: buildMDMPrompt(cc,vitals,hpi,ros,exam,vhAnalysis,parsedMeds,parsedAllergies,encounterType,ccProfile)
           + (bouncebackCtx ? "\n"+bouncebackCtx : "") + (patientCtx ? "\n"+patientCtx : "")
           + (pmhCtx ? "\n"+pmhCtx : ""),
         response_json_schema: MDM_SCHEMA,
@@ -614,7 +622,7 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
       const consultCtx = consults.length
         ? "\nCONSULTS:\n"+consults.map(c=>`  ${c.service}${c.provider?" — Dr."+c.provider:""}${c.time?" at "+c.time:""}: ${c.recommendation}`).join("\n"):"";
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildDispPrompt(mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,parsedMeds,parsedAllergies,ekg,encounterType)
+        prompt: buildDispPrompt(mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,parsedMeds,parsedAllergies,ekg,encounterType,ccProfile)
           + consultCtx
           + (patientResponse.trim()?`\n\nPATIENT RESPONSE TO TREATMENT:\n${patientResponse}`:""),
         response_json_schema: DISP_SCHEMA,
@@ -1124,6 +1132,8 @@ Return JSON only.`,
     setPatientResponse(""); setMdmHistory([]); setMdmInitialTs(null);
     setHpiGaps([]); setLabRecs(null); setImagingRecs(null);
     setShowHPIBuilder(false); setHpiTemplate(""); setHpiBuilderCC("");
+    // v14.0: reset CC profile, reopen launcher for new encounter
+    setCCProfile(null); setShowCCLauncher(true); setMustNotMissDismissed(false);
     clearSlotCache(activeSlot);
     setShowUndo(true);
     const t=setTimeout(()=>{setShowUndo(false);setUndoData(null);},6000);
@@ -1252,7 +1262,7 @@ Return JSON only.`,
         const s=slotMap[0];
         if (s.cc) setCC(s.cc); if (s.hpi) setHpi(s.hpi); if (s.ros) setRos(s.ros);
         if (s.exam) setExam(s.exam); if (s.labs) setLabs(s.labs); if (s.imaging) setImaging(s.imaging);
-        if (s.vitals) setVitals(s.vitals); if (s.ekg) setEkg(s.ekg); if (s.newVitals) setNewVitals(s.newVitals);
+        if (s.vitals) setVitals(s.vitals); if (s.ekg) setEkg(s.ekg);
         if (s.medsRaw) setMedsRaw(s.medsRaw); if (s.allergiesRaw) setAllergiesRaw(s.allergiesRaw);
         if (s.parsedMeds?.length) setParsedMeds(s.parsedMeds);
         if (s.parsedAllergies?.length) setParsedAllergies(s.parsedAllergies);
@@ -1293,7 +1303,8 @@ Return JSON only.`,
       patientName:[demo?.firstName,demo?.lastName].filter(Boolean).join(" "),
       patientAge:demo?.age||"",lastActivity:Date.now(),
       treatmentResult,labSummaryResult,imagingAnalysisResult,
-      edMedsResult,finalImpressionResult,confirmedRanks,rejectedRanks};
+      edMedsResult,finalImpressionResult,confirmedRanks,rejectedRanks,
+      ccProfile}; // v14.0
   });
 
   const LS_KEY="qn_autosave_v1";
@@ -1316,7 +1327,7 @@ Return JSON only.`,
       if (!d.cc&&!d.hpi&&!d.mdmResult) return;
       if (d.cc) setCC(d.cc); if (d.vitals) setVitals(d.vitals); if (d.hpi) setHpi(d.hpi);
       if (d.ros) setRos(d.ros); if (d.exam) setExam(d.exam); if (d.labs) setLabs(d.labs);
-      if (d.imaging) setImaging(d.imaging); if (d.ekg) setEkg(d.ekg); if (d.newVitals) setNewVitals(d.newVitals);
+      if (d.imaging) setImaging(d.imaging); if (d.ekg) setEkg(d.ekg);
       if (d.medsRaw) setMedsRaw(d.medsRaw); if (d.allergiesRaw) setAllergiesRaw(d.allergiesRaw);
       if (d.parsedMeds?.length) setParsedMeds(d.parsedMeds);
       if (d.parsedAllergies?.length) setParsedAllergies(d.parsedAllergies);
@@ -1409,7 +1420,11 @@ Return JSON only.`,
                   const hasP1Data=!!(slot.cc||slot.hpi);
                   const hasCacheId=!!slotCacheIds[i];
                   const status=isEmpty?null:isSaved?{label:"Saved",color:"var(--qn-green)",bg:"rgba(61,255,160,.12)",bd:"rgba(61,255,160,.4)"}:hasDisp?{label:"Dispo Done",color:"var(--qn-purple)",bg:"rgba(155,109,255,.12)",bd:"rgba(155,109,255,.4)"}:hasMDM&&hasP2Data?{label:"Phase 2",color:"var(--qn-blue)",bg:"rgba(59,158,255,.12)",bd:"rgba(59,158,255,.4)"}:hasMDM?{label:"MDM Done",color:"var(--qn-teal)",bg:"rgba(0,229,192,.12)",bd:"rgba(0,229,192,.4)"}:hasP1Data?{label:"Phase 1",color:"var(--qn-gold)",bg:"rgba(245,200,66,.1)",bd:"rgba(245,200,66,.35)"}:null;
-                  const displayName=slot.patientName||(slot.cc?slot.cc.slice(0,22)+(slot.cc.length>22?"…":""):null);
+                  // v14.0: prefix slot display with CC icon when a non-general CC is set
+                  const rawName=slot.patientName||(slot.cc?slot.cc.slice(0,22)+(slot.cc.length>22?"…":""):null);
+                  const displayName=slot.ccProfile&&slot.ccProfile.id!=="general"
+                    ? `${slot.ccProfile.icon} ${rawName||slot.ccProfile.label}`
+                    : rawName;
                   const hasData=!!(slot.cc||slot.hpi||slot.vitals||slot.labs||slot.mdmResult);
                   return (
                     <button key={i} onClick={()=>switchToSlot(i)} style={{flex:1,padding:"8px 10px",borderRadius:9,cursor:"pointer",textAlign:"left",transition:"all .15s",position:"relative",border:`1px solid ${isActive?"rgba(0,229,192,.55)":isEmpty?"rgba(42,79,122,.2)":"rgba(42,79,122,.45)"}`,background:isActive?"rgba(0,229,192,.1)":isEmpty?"rgba(8,22,40,.3)":"rgba(14,37,68,.55)"}}>
@@ -1458,6 +1473,34 @@ Return JSON only.`,
           <PriorVisitsPanel visits={priorVisits} loading={priorVisitsLoading} onLoad={loadPriorVisits}/>
           {(vitals.trim().length>10||labs.trim().length>5)&&<SepsisBanner vitalsText={vitals} labsText={labs}/>}
 
+          {/* ── v14.0: CC Launcher — full-screen CC selection modal ── */}
+          <CCLauncher
+            isOpen={showCCLauncher}
+            onSelect={(profile) => {
+              setCCProfile(profile);
+              setShowCCLauncher(false);
+              setMustNotMissDismissed(false);
+              // Sync CC text field with selected profile label (skip for General)
+              if (profile.id !== "general") setCC(profile.label);
+              // Persist profile into current slot state immediately
+              setSlots(prev => {
+                const next = [...prev];
+                next[activeSlot] = { ...next[activeSlot], ccProfile: profile };
+                return next;
+              });
+            }}
+            onClose={() => setShowCCLauncher(false)}
+            currentProfileId={ccProfile?.id || null}
+          />
+
+          {/* ── v14.0: Must Not Miss Banner — sticky danger rail ── */}
+          <MustNotMissBanner
+            profile={ccProfile}
+            dispResult={dispResult}
+            onDismiss={() => setMustNotMissDismissed(true)}
+            dismissed={mustNotMissDismissed}
+          />
+
           {/* ── Modals ── */}
           <CCPicker isOpen={showCCPicker} onClose={()=>setShowCCPicker(false)} onSelect={handleCCSelect} patientAge={slots[activeSlot]?.patientAge||demo?.age} patientAgeUnit="year"/>
           {showHPIBuilder&&hpiTemplate&&(<HPIBuilder template={hpiTemplate} ccLabel={hpiBuilderCC} onApply={(completedHpi)=>{if(typeof setHpi==="function")setHpi(completedHpi);}} onClose={()=>setShowHPIBuilder(false)}/>)}
@@ -1504,6 +1547,8 @@ Return JSON only.`,
             patientWeight={patientWeight} setPatientWeight={setPatientWeight}
             smartExpansions={smartExpansions}
             medsFromHpi={medsFromHpi} allergiesFromHpi={allergiesFromHpi}
+            ccProfile={ccProfile}
+            onChangeCC={() => setShowCCLauncher(true)}
           />
 
           {/* ── v13.0: HPI→ROS+PE AI status strip ── */}
@@ -1958,7 +2003,7 @@ Return JSON only.`,
 
           {!embedded && (
             <div style={{textAlign:"center",padding:"24px 0 8px",fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:1.5}} className="no-print">
-              LAKONYX QUICKNOTE v13.0 · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
+              LAKONYX QUICKNOTE v14.0 · CC-DRIVEN · AMA/CMS 2023 E&M · ACEP CLINICAL POLICY ALIGNED ·
               AI OUTPUT REQUIRES PHYSICIAN REVIEW BEFORE CHARTING
             </div>
           )}

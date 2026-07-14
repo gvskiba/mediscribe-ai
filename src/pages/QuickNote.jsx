@@ -471,6 +471,8 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         } catch(e) { console.error("Auto lab analysis failed:", e); }
         finally { setLabsAutoAnalyzing(false); }
       }, 1800);
+    } else {
+      setLabsAutoAnalyzing(false);
     }
   }, [cc, mdmResult, parsedMeds, parsedAllergies]);
 
@@ -489,6 +491,8 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         } catch(e) { console.error("Auto imaging analysis failed:", e); }
         finally { setImagingAutoAnalyzing(false); }
       }, 1800);
+    } else {
+      setImagingAutoAnalyzing(false);
     }
   }, [cc, mdmResult, labSummaryResult]);
 
@@ -529,7 +533,7 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
     } catch(e) { setP1Error("MDM generation failed: "+(e.message||"Check API")); }
     finally { setP1Busy(false); }
   }, [cc,vitals,hpi,ros,exam,phase1Ready,p1Busy,vhAnalysis,parsedMeds,parsedAllergies,
-      encounterType,isBounceback,bouncebackDate,patientPregnant,patientWeight,pmh,psh,patientMeds,patientAllergies]);
+      encounterType,isBounceback,bouncebackDate,patientPregnant,patientWeight,pmh,psh,patientMeds,patientAllergies,ccProfile]);
 
   const generateFinalImpression = useCallback(async (resolvedDispResult) => {
     setFinalImpressionLoading(true);
@@ -631,7 +635,7 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
       generateFinalImpression(res);
     } catch(e) { setP2Error("Disposition generation failed: "+(e.message||"Check API")); }
     finally { setP2Busy(false); }
-  }, [mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,p2Busy,ekg,parsedMeds,parsedAllergies,consults,patientResponse]);
+  }, [mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,p2Busy,ekg,parsedMeds,parsedAllergies,consults,patientResponse,ccProfile]);
 
   const runWorkupRationale = useCallback(async () => {
     if (!mdmResult||workupRationaleBusy) return;

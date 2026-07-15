@@ -611,7 +611,11 @@ export function Phase1Panel({
         </div>
 
         {/* QuickNoteROSHelper — the single ROS panel */}
-        <QuickNoteROSHelper ros={ros} onChange={handleRosChange} />
+        <QuickNoteROSHelper
+    ros={ros}
+    onChange={handleRosChange}
+    defaultText={ros}
+  />
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════

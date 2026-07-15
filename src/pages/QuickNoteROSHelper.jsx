@@ -35,12 +35,25 @@ function buildRosText(statuses, positives) {
     .join("\n");
 }
 
-export function QuickNoteROSHelper({ ros, onChange }) {
+export function QuickNoteROSHelper({ ros, onChange, defaultText }) {
   const panelRef  = useRef(null);
   const cardRefs  = useRef({});
 
   const initStatuses  = () => Object.fromEntries(SYSTEMS.map(s => [s.id, "unset"]));
   const initPositives = () => Object.fromEntries(SYSTEMS.map(s => [s.id, []]));
+
+  const [mode,    setMode]    = useState(defaultText ? "text" : "kb");
+  const [textVal, setTextVal] = useState(defaultText || "");
+
+  // Sync defaultText into textVal when it changes from outside
+  // (CC selection, AI generation).
+  useEffect(() => {
+    if (defaultText && defaultText !== textVal) {
+      setTextVal(defaultText);
+      setMode("text");
+      onChange(defaultText);
+    }
+  }, [defaultText]);
 
   const [statuses,      setStatuses]      = useState(initStatuses);
   const [positives,     setPositives]     = useState(initPositives);
@@ -203,6 +216,76 @@ export function QuickNoteROSHelper({ ros, onChange }) {
       onBlur={handlePanelBlur}
       style={{ display: "flex", flexDirection: "column", gap: 8 }}
     >
+      {/* Mode Toggle */}
+      <div style={{
+        display:"flex", alignItems:"center", gap:6, marginBottom:8,
+      }}>
+        <button
+          onClick={() => setMode("text")}
+          style={{
+            padding:"2px 10px", borderRadius:5, cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            fontWeight:700, letterSpacing:.4,
+            border: mode==="text"
+              ? "1px solid rgba(0,229,192,.5)"
+              : "1px solid rgba(42,79,122,.3)",
+            background: mode==="text"
+              ? "rgba(0,229,192,.1)" : "transparent",
+            color: mode==="text" ? "var(--qn-teal)" : "var(--qn-txt4)",
+          }}
+        >
+          ✎ Text
+        </button>
+        <button
+          onClick={() => setMode("kb")}
+          style={{
+            padding:"2px 10px", borderRadius:5, cursor:"pointer",
+            fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            fontWeight:700, letterSpacing:.4,
+            border: mode==="kb"
+              ? "1px solid rgba(0,229,192,.5)"
+              : "1px solid rgba(42,79,122,.3)",
+            background: mode==="kb"
+              ? "rgba(0,229,192,.1)" : "transparent",
+            color: mode==="kb" ? "var(--qn-teal)" : "var(--qn-txt4)",
+          }}
+        >
+          ⊞ KB Mode
+        </button>
+        {defaultText && mode==="kb" && (
+          <span style={{
+            fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+            color:"rgba(245,200,66,.5)",
+          }}>
+            AI-generated ROS available — switch to Text to view
+          </span>
+        )}
+      </div>
+
+      {mode === "text" && (
+        <textarea
+          value={textVal}
+          onChange={e => {
+            setTextVal(e.target.value);
+            onChange(e.target.value);
+          }}
+          rows={6}
+          style={{
+            width:"100%", boxSizing:"border-box",
+            resize:"vertical", padding:"9px 12px",
+            borderRadius:8, background:"rgba(14,37,68,.6)",
+            border:"1px solid rgba(42,79,122,.4)",
+            color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif",
+            fontSize:12, lineHeight:1.7, outline:"none",
+          }}
+          onFocus={e => { e.target.style.borderColor="rgba(0,229,192,.5)"; }}
+          onBlur={e  => { e.target.style.borderColor="rgba(42,79,122,.4)"; }}
+          placeholder="Review of systems — edit or switch to KB Mode..."
+        />
+      )}
+
+      {mode === "kb" && (
+        <>
       {/* KB Status Bar */}
       <div style={{
         display: "flex", alignItems: "center", gap: 10,
@@ -372,6 +455,8 @@ export function QuickNoteROSHelper({ ros, onChange }) {
             </button>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

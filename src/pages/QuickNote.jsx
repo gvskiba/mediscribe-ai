@@ -16,7 +16,7 @@ import { base44 } from "@/api/base44Client";
 import { dispColor, StepProgress, MDMResult, DispositionResult,
          DiagnosisCodingCard, InterventionsCard,
          DifferentialCard, ClinicalCalcsCard, InlineCopyBtn,
-         CCPicker, HPIBuilder } from "./QuickNoteComponents";
+         CCPicker, HPIBuilder, CC_LIBRARY } from "./QuickNoteComponents";
 import { InitialImpressionDisplay, TreatmentDisplay } from "./QuickNoteMDM";
 import { PMH_CATS, PMH_CAT_ICONS, PMH_PRI_STYLE, PMH_MDM_HIGH, PMH_MDM_MOD, computePMHMDM, PMHTab } from "./QuickNotePatientHx";
 import { usePMHConditionInjector } from "@/components/MDMBuilderPMHBridge";
@@ -1477,14 +1477,48 @@ Return JSON only.`,
               setCCProfile(profile);
               setShowCCLauncher(false);
               setMustNotMissDismissed(false);
-              // Sync CC text field with selected profile label (skip for General)
-              if (profile.id !== "general") setCC(profile.label);
+
+              if (profile.id === "general") return;
+
+              // Set CC text field
+              setCC(profile.label);
+
               // Persist profile into current slot state immediately
               setSlots(prev => {
                 const next = [...prev];
                 next[activeSlot] = { ...next[activeSlot], ccProfile: profile };
                 return next;
               });
+
+              // v15.0: look up HPIBuilder template from CC_LIBRARY
+              // Match by id first, then by label (handles sob↔shortness_of_breath etc.)
+              const profileLabelLower = profile.label.toLowerCase();
+              const libEntry = CC_LIBRARY.find(c =>
+                c.id === profile.id ||
+                c.label.toLowerCase() === profileLabelLower ||
+                profileLabelLower.includes(c.label.toLowerCase().split(" / ")[0].toLowerCase()) ||
+                c.label.toLowerCase().includes(profileLabelLower.split(" / ")[0].toLowerCase())
+              );
+
+              if (libEntry) {
+                // Open HPIBuilder with bracket-chip template
+                const age = slots[activeSlot]?.patientAge || demo?.age || 20;
+                const unit = "year";
+                const tpl = typeof libEntry.hpi_template === "function"
+                  ? libEntry.hpi_template(age, unit)
+                  : libEntry.hpi_template;
+                setHpiTemplate(tpl);
+                setHpiBuilderCC(profile.label);
+                setShowHPIBuilder(true);
+                // Also seed ROS + PE from CC_LIBRARY if physician hasn't entered them
+                if (!ros.trim() && libEntry.ros)   setRos(libEntry.ros);
+                if (!exam.trim() && libEntry.exam) setExam(libEntry.exam);
+              } else if (profile.hpi_scaffold) {
+                // Fall back to plain scaffold text from CC_PROFILES
+                if (!hpi.trim()) setHpi(profile.hpi_scaffold);
+                if (!ros.trim() && profile.ros_template)  setRos(profile.ros_template);
+                if (!exam.trim() && profile.pe_template)  setExam(profile.pe_template);
+              }
             }}
             onClose={() => setShowCCLauncher(false)}
             currentProfileId={ccProfile?.id || null}

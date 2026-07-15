@@ -4,7 +4,7 @@
 //           MDMResult, DispositionResult, DifferentialCard, QuickDDxCard,
 //           ClinicalCalcsCard, DiagnosisCodingCard, InterventionsCard
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { PLAN_CATEGORIES } from "@/pages/QuickNotePrompts";
 import { TemplatePicker } from "./QuickNotePickers";
 import { SmartFillBar } from "./QuickNoteSmartFill";
@@ -519,119 +519,568 @@ export { MedsAllergyZone };
 export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard };
 export { DiagnosisCodingCard, InterventionsCard, DispositionResult };
 
-// ─── HPI BUILDER ─────────────────────────────────────────────────────────────
+// ─── HPI BUILDER v2.0 ────────────────────────────────────────────────────────
+// Replaces parseHPITemplate, buildHPIOutput, and HPIBuilder in QuickNoteComponents.jsx
+//
+// Architecture:
+//   - parseHPITemplate returns an array of "questions" (one per bracket group)
+//     plus the surrounding sentence text as context
+//   - Each question has: id, label, type (choice|multi|input), options, state
+//   - buildHPIOutput reconstructs the paragraph from question states
+//   - HPIBuilder renders:
+//     TOP: live sentence preview (updates on every tap)
+//     BODY: stacked question rows — one per field, label + completion + chips
+//     BOTTOM: Progress bar, Apply button
+
+// ─── PARSER ──────────────────────────────────────────────────────────────────
+// Returns: { questions: Question[], segments: Segment[] }
+// Segment: { type: "text"|"field", value?: string, qIdx?: number }
+// Question: { id, label, type: "choice"|"multi"|"input",
+//             options?: string[], value: string|string[], done: boolean,
+//             placeholder?: string }
+//
+// Multi-select detection: if the label contains "associated" or "aggravat"
+// or "reliev" — these are additive findings, not single-choice.
 
 function parseHPITemplate(template) {
+  if (!template) return { questions: [], segments: [] };
+
+  const MULTI_LABELS = ["associated", "aggravat", "reliev", "symptom", "other complaint"];
+
   const segments = [];
+  const questions = [];
   const regex = /\[([^\]]+)\]/g;
-  let lastIndex = 0, match;
+  let lastIndex = 0;
+  let match;
+  let qIdx = 0;
+
   while ((match = regex.exec(template)) !== null) {
-    if (match.index > lastIndex) segments.push({ type:"text", value:template.slice(lastIndex, match.index) });
-    const inner = match[1].trim();
-    const labelMatch = inner.match(/^([^:]+):\s*(.+)$/);
-    const content = labelMatch ? labelMatch[2] : inner;
-    const label   = labelMatch ? labelMatch[1].trim() : null;
-    if (content.includes(" / ")) {
-      const options = content.split(" / ").map(o => o.trim());
-      segments.push({ type:"choice", label, options, selected:null, custom:"" });
-    } else {
-      segments.push({ type:"input", label:label||content, value:"", placeholder:content });
+    // Text before this bracket
+    if (match.index > lastIndex) {
+      segments.push({ type: "text", value: template.slice(lastIndex, match.index) });
     }
+
+    const inner = match[1].trim();
+    // Label extraction: "label: opt1 / opt2" or plain "opt1 / opt2"
+    const labelMatch = inner.match(/^([^:]+):\s*(.+)$/);
+    const rawContent = labelMatch ? labelMatch[2] : inner;
+    const label      = labelMatch ? labelMatch[1].trim() : null;
+
+    if (rawContent.includes(" / ")) {
+      const options    = rawContent.split(" / ").map(o => o.trim());
+      const isMulti    = label && MULTI_LABELS.some(k => label.toLowerCase().includes(k));
+      const q = {
+        id:      `q${qIdx}`,
+        label:   label || options.join(" / "),
+        type:    isMulti ? "multi" : "choice",
+        options,
+        value:   isMulti ? [] : null,
+        done:    false,
+      };
+      questions.push(q);
+      segments.push({ type: "field", qIdx });
+      qIdx++;
+    } else {
+      // Free-text input field
+      const q = {
+        id:          `q${qIdx}`,
+        label:       label || rawContent,
+        type:        "input",
+        placeholder: rawContent,
+        value:       "",
+        done:        false,
+      };
+      questions.push(q);
+      segments.push({ type: "field", qIdx });
+      qIdx++;
+    }
+
     lastIndex = match.index + match[0].length;
   }
-  if (lastIndex < template.length) segments.push({ type:"text", value:template.slice(lastIndex) });
-  return segments;
+
+  if (lastIndex < template.length) {
+    segments.push({ type: "text", value: template.slice(lastIndex) });
+  }
+
+  return { questions, segments };
 }
 
-function buildHPIOutput(segments) {
+// ─── OUTPUT BUILDER ───────────────────────────────────────────────────────────
+function buildHPIOutput(questions, segments) {
   return segments.map(seg => {
-    if (seg.type === "text")   return seg.value;
-    if (seg.type === "choice") {
-      if (seg.selected === "__custom__") return seg.custom || "[" + (seg.label||"...") + "]";
-      return seg.selected || "[" + (seg.label || seg.options?.join(" / ") || "...") + "]";
+    if (seg.type === "text") return seg.value;
+    const q = questions[seg.qIdx];
+    if (!q) return "";
+    if (q.type === "choice") {
+      if (q.value === "__custom__") return q.custom || `[${q.label}]`;
+      return q.value || `[${q.label}]`;
     }
-    if (seg.type === "input") return seg.value || "[" + (seg.label||"...") + "]";
+    if (q.type === "multi") {
+      if (!q.value?.length) return `[${q.label}]`;
+      return q.value.join(", ");
+    }
+    if (q.type === "input") {
+      return q.value || `[${q.label}]`;
+    }
     return "";
   }).join("");
 }
 
+// ─── HPIBUILDER COMPONENT ─────────────────────────────────────────────────────
 export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
-  const [segments, setSegments] = useState(() => parseHPITemplate(template || ""));
-  const [showPreview, setShowPreview] = useState(false);
-  const prevTemplate = useRef(template);
+  const MONO  = "'JetBrains Mono',monospace";
+  const SANS  = "'DM Sans',sans-serif";
+  const SERIF = "'Playfair Display',serif";
 
+  const parsed        = useRef(parseHPITemplate(template || ""));
+  const [questions,   setQuestions]   = useState(() => parsed.current.questions);
+  const [segments]                    = useState(() => parsed.current.segments);
+  const [customVals,  setCustomVals]  = useState({});   // { [qId]: string }
+  const [activeQIdx,  setActiveQIdx]  = useState(null); // which row is expanded
+  const inputRefs     = useRef({});
+  const prevTemplate  = useRef(template);
+
+  // Reset when template changes (CC switch)
   useEffect(() => {
     if (template !== prevTemplate.current) {
       prevTemplate.current = template;
-      setSegments(parseHPITemplate(template || ""));
+      const p = parseHPITemplate(template || "");
+      parsed.current = p;
+      setQuestions(p.questions);
+      setCustomVals({});
+      setActiveQIdx(null);
     }
   }, [template]);
 
-  const setChoice  = (i, v) => setSegments(p => p.map((s, idx) => idx===i ? { ...s, selected:v, custom:v==="__custom__"?s.custom:"" } : s));
-  const setCustom  = (i, v) => setSegments(p => p.map((s, idx) => idx===i ? { ...s, custom:v } : s));
-  const setInput   = (i, v) => setSegments(p => p.map((s, idx) => idx===i ? { ...s, value:v } : s));
-  const clearChoice= (i)    => setSegments(p => p.map((s, idx) => idx===i ? { ...s, selected:null, custom:"" } : s));
+  // ── State updaters ──────────────────────────────────────────────────────────
+  const setChoice = useCallback((qIdx, val) => {
+    setQuestions(prev => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const toggling = q.value === val;
+      return { ...q, value: toggling ? null : val, done: !toggling };
+    }));
+  }, []);
 
-  const output      = buildHPIOutput(segments);
-  const choiceSegs  = segments.filter(s => s.type==="choice");
-  const inputSegs   = segments.filter(s => s.type==="input");
-  const totalFields = choiceSegs.length + inputSegs.length;
-  const totalDone   = choiceSegs.filter(s => s.selected).length + inputSegs.filter(s => s.value.trim()).length;
-  const allDone     = totalDone === totalFields;
-  const pct         = totalFields > 0 ? Math.round((totalDone/totalFields)*100) : 100;
+  const setCustomChoice = useCallback((qIdx) => {
+    setQuestions(prev => prev.map((q, i) =>
+      i !== qIdx ? q : { ...q, value: "__custom__", done: false }
+    ));
+    setTimeout(() => inputRefs.current[`custom_${qIdx}`]?.focus(), 40);
+  }, []);
 
-  const chip = (active) => ({ display:"inline-flex", alignItems:"center", padding:"2px 9px", borderRadius:12, cursor:"pointer", fontSize:12, fontWeight:active?600:400, fontFamily:"'DM Sans',sans-serif", border:active?"1px solid #00e5c0":"1px solid rgba(0,184,154,0.2)", background:active?"rgba(0,229,192,0.15)":"rgba(11,30,54,0.5)", color:active?"#00e5c0":"rgba(200,223,240,0.5)", transition:"all 0.1s", userSelect:"none" });
+  const setCustomText = useCallback((qIdx, val) => {
+    setCustomVals(prev => ({ ...prev, [`q${qIdx}`]: val }));
+    setQuestions(prev => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      // Merge custom value back so buildHPIOutput can see it
+      return { ...q, custom: val, done: val.trim().length > 0 };
+    }));
+  }, []);
+
+  const toggleMulti = useCallback((qIdx, opt) => {
+    setQuestions(prev => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const cur  = Array.isArray(q.value) ? q.value : [];
+      const next = cur.includes(opt) ? cur.filter(v => v !== opt) : [...cur, opt];
+      return { ...q, value: next, done: next.length > 0 };
+    }));
+  }, []);
+
+  const setInputVal = useCallback((qIdx, val) => {
+    setQuestions(prev => prev.map((q, i) =>
+      i !== qIdx ? q : { ...q, value: val, done: val.trim().length > 0 }
+    ));
+  }, []);
+
+  const clearQuestion = useCallback((qIdx) => {
+    setQuestions(prev => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      return { ...q, value: q.type === "multi" ? [] : null, done: false, custom: "" };
+    }));
+    setCustomVals(prev => { const n = { ...prev }; delete n[`q${qIdx}`]; return n; });
+  }, []);
+
+  // ── Computed ────────────────────────────────────────────────────────────────
+  const output    = buildHPIOutput(questions, segments);
+  const total     = questions.length;
+  const done      = questions.filter(q => q.done).length;
+  const pct       = total > 0 ? Math.round((done / total) * 100) : 100;
+  const allDone   = done === total;
+
+  // First incomplete question index for Tab navigation
+  const firstIncomplete = questions.findIndex(q => !q.done);
+
+  // ── Keyboard: Tab advances to next incomplete ────────────────────────────
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const next = questions.findIndex((q, i) => !q.done && i > (activeQIdx ?? -1));
+      setActiveQIdx(next >= 0 ? next : firstIncomplete >= 0 ? firstIncomplete : null);
+    }
+    if (e.key === "Escape") onClose();
+  }, [questions, activeQIdx, firstIncomplete, onClose]);
+
+  // ── Styles ──────────────────────────────────────────────────────────────────
+  const chipBase = {
+    display: "inline-flex", alignItems: "center",
+    padding: "4px 12px", borderRadius: 20,
+    cursor: "pointer", fontSize: 12,
+    fontFamily: SANS, fontWeight: 400,
+    transition: "all .1s", userSelect: "none",
+    border: "1px solid rgba(0,184,154,0.2)",
+    background: "rgba(11,30,54,0.5)",
+    color: "rgba(200,223,240,0.55)",
+  };
+  const chipActive = {
+    border: "1px solid #00e5c0",
+    background: "rgba(0,229,192,0.14)",
+    color: "#00e5c0",
+    fontWeight: 600,
+  };
+  const chipMultiActive = {
+    border: "1px solid rgba(245,200,66,.6)",
+    background: "rgba(245,200,66,.1)",
+    color: "#f5c842",
+    fontWeight: 600,
+  };
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:9400, background:"rgba(3,8,16,0.85)", backdropFilter:"blur(4px)", display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"60px 16px 20px" }} onClick={onClose}>
-      <div style={{ background:"#081628", border:"1px solid rgba(0,184,154,0.3)", borderRadius:12, width:620, maxWidth:"96vw", maxHeight:"calc(100vh - 100px)", display:"flex", flexDirection:"column", boxShadow:"0 24px 64px rgba(0,0,0,0.7)" }} onClick={e=>e.stopPropagation()}>
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 9400,
+        background: "rgba(3,8,16,0.88)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "flex-start", justifyContent: "center",
+        padding: "40px 16px 20px",
+      }}
+      onClick={onClose}
+      onKeyDown={handleKeyDown}
+    >
+      <div
+        style={{
+          background: "#081628",
+          border: "1px solid rgba(0,184,154,0.3)",
+          borderRadius: 14,
+          width: 660, maxWidth: "96vw",
+          maxHeight: "calc(100vh - 80px)",
+          display: "flex", flexDirection: "column",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.7)",
+          overflow: "hidden",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
 
-        <div style={{ padding:"14px 18px 12px", borderBottom:"1px solid rgba(0,184,154,0.12)", flexShrink:0 }}>
+        {/* ── HEADER ─────────────────────────────────────────────────────── */}
+        <div style={{
+          padding: "14px 20px 12px",
+          borderBottom: "1px solid rgba(0,184,154,0.12)",
+          flexShrink: 0,
+        }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-            <p style={{ fontFamily:"'Playfair Display',serif", fontSize:13, fontWeight:700, color:"#00e5c0", margin:0 }}>HPI Builder</p>
+            <span style={{ fontFamily:SERIF, fontSize:14, fontWeight:700, color:"#00e5c0" }}>
+              HPI Builder
+            </span>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              {ccLabel && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"#00b89a", border:"1px solid rgba(0,184,154,0.3)", borderRadius:3, padding:"1px 7px" }}>{ccLabel}</span>}
-              <button onClick={onClose} style={{ background:"none", border:"none", color:"rgba(200,223,240,0.4)", fontSize:16, cursor:"pointer" }}>✕</button>
-            </div>
-          </div>
-          <div style={{ height:3, background:"rgba(0,184,154,0.1)", borderRadius:2, overflow:"hidden" }}>
-            <div style={{ height:"100%", width:pct+"%", background:allDone?"#00e5c0":"rgba(0,184,154,0.5)", transition:"width 0.3s", borderRadius:2 }} />
-          </div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:allDone?"#00e5c0":"rgba(200,223,240,0.35)", letterSpacing:"0.06em", marginTop:4 }}>
-            {totalFields > 0 ? totalDone+" of "+totalFields+" fields completed" : "Ready to apply"}
-          </div>
-        </div>
-
-        <div style={{ overflowY:"auto", flex:1, padding:"14px 18px" }}>
-          <div style={{ fontSize:13.5, color:"#c8dff0", lineHeight:2.4, fontFamily:"'DM Sans',sans-serif" }}>
-            {segments.map((seg, i) => {
-              if (seg.type==="text") return <span key={i}>{seg.value}</span>;
-              if (seg.type==="choice") return (
-                <span key={i} style={{ display:"inline-flex", flexWrap:"wrap", gap:4, verticalAlign:"middle", margin:"0 2px" }}>
-                  {seg.label && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:"rgba(200,223,240,0.35)", marginRight:3, verticalAlign:"middle" }}>{seg.label}:</span>}
-                  {seg.options.map(opt => <span key={opt} style={chip(seg.selected===opt)} onClick={()=>seg.selected===opt?clearChoice(i):setChoice(i,opt)}>{opt}</span>)}
-                  <span style={chip(seg.selected==="__custom__")} onClick={()=>seg.selected==="__custom__"?clearChoice(i):setChoice(i,"__custom__")}>other...</span>
-                  {seg.selected==="__custom__" && <input autoFocus value={seg.custom||""} onChange={e=>setCustom(i,e.target.value)} placeholder="type here..." style={{ display:"inline-block", background:"rgba(11,30,54,0.7)", border:"1px solid rgba(0,229,192,0.35)", borderRadius:4, color:"#c8dff0", fontFamily:"'DM Sans',sans-serif", fontSize:12, padding:"2px 7px", outline:"none", width:120, marginLeft:4, verticalAlign:"middle" }} onClick={e=>e.stopPropagation()} />}
-                  {seg.selected && <span style={{ display:"inline-flex", alignItems:"center", padding:"2px 7px", borderRadius:12, cursor:"pointer", fontSize:10, fontFamily:"'JetBrains Mono',monospace", border:"1px solid rgba(255,77,79,0.25)", color:"rgba(255,77,79,0.4)", marginLeft:2 }} onClick={()=>clearChoice(i)}>✕</span>}
+              {ccLabel && (
+                <span style={{ fontFamily:MONO, fontSize:9, color:"#00b89a", border:"1px solid rgba(0,184,154,0.3)", borderRadius:3, padding:"1px 8px" }}>
+                  {ccLabel}
                 </span>
-              );
-              if (seg.type==="input") return <input key={i} value={seg.value} onChange={e=>setInput(i,e.target.value)} placeholder={seg.label||"..."} style={{ display:"inline-block", background:"rgba(11,30,54,0.6)", border:"1px solid rgba(0,184,154,0.2)", borderRadius:4, color:"#c8dff0", fontFamily:"'DM Sans',sans-serif", fontSize:12, padding:"2px 8px", outline:"none", minWidth:80, maxWidth:160, verticalAlign:"middle", margin:"0 2px" }} />;
-              return null;
-            })}
-          </div>
-          {showPreview && (
-            <div style={{ background:"rgba(11,30,54,0.6)", border:"1px solid rgba(0,184,154,0.15)", borderRadius:8, padding:"12px 14px", fontSize:13, color:"#c8dff0", lineHeight:1.7, marginTop:14, whiteSpace:"pre-wrap" }}>
-              {output}
+              )}
+              <button onClick={onClose} style={{ background:"none", border:"none", color:"rgba(200,223,240,0.4)", fontSize:18, cursor:"pointer", lineHeight:1, padding:0 }}>✕</button>
             </div>
-          )}
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ flex:1, height:4, background:"rgba(0,184,154,0.1)", borderRadius:2, overflow:"hidden" }}>
+              <div style={{
+                height: "100%", width: pct + "%",
+                background: allDone ? "#00e5c0" : "rgba(0,184,154,0.45)",
+                transition: "width .3s", borderRadius: 2,
+              }} />
+            </div>
+            <span style={{ fontFamily:MONO, fontSize:9, color: allDone ? "#00e5c0" : "rgba(200,223,240,0.35)", flexShrink:0 }}>
+              {done}/{total} fields
+            </span>
+          </div>
         </div>
 
-        <div style={{ padding:"12px 18px", borderTop:"1px solid rgba(0,184,154,0.12)", display:"flex", gap:8, alignItems:"center", flexShrink:0 }}>
-          <button onClick={()=>setShowPreview(p=>!p)} style={{ padding:"7px 14px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase", border:"1px solid rgba(0,184,154,0.25)", background:"transparent", color:"rgba(200,223,240,0.45)" }}>
-            {showPreview?"Hide Preview":"Preview HPI"}
+        {/* ── LIVE PREVIEW ───────────────────────────────────────────────── */}
+        <div style={{
+          padding: "12px 20px",
+          background: "rgba(5,15,30,0.6)",
+          borderBottom: "1px solid rgba(0,184,154,0.1)",
+          flexShrink: 0,
+        }}>
+          <div style={{
+            fontFamily:MONO, fontSize:7, fontWeight:700,
+            color:"rgba(0,229,192,0.4)", letterSpacing:1.4,
+            textTransform:"uppercase", marginBottom:6,
+          }}>
+            Live Preview
+          </div>
+          <div style={{
+            fontFamily: SANS, fontSize: 12.5, color: "#c8dff0",
+            lineHeight: 1.75, whiteSpace: "pre-wrap", wordBreak: "break-word",
+          }}>
+            {output}
+          </div>
+        </div>
+
+        {/* ── QUESTION ROWS ──────────────────────────────────────────────── */}
+        <div style={{ overflowY:"auto", flex:1, padding:"8px 0" }}>
+          {questions.map((q, qIdx) => {
+            const isActive    = activeQIdx === qIdx;
+            const isDone      = q.done;
+            const isCustom    = q.value === "__custom__";
+
+            // Value display label for the header row
+            let valueLabel = null;
+            if (isDone) {
+              if (q.type === "multi")  valueLabel = (q.value || []).join(", ");
+              else if (q.type === "choice" && isCustom) valueLabel = customVals[`q${qIdx}`] || "custom";
+              else if (q.type === "choice") valueLabel = q.value;
+              else if (q.type === "input")  valueLabel = q.value;
+            }
+
+            return (
+              <div
+                key={q.id}
+                style={{
+                  borderBottom: "1px solid rgba(42,79,122,0.2)",
+                  transition: "background .1s",
+                  background: isActive ? "rgba(0,229,192,0.04)" : "transparent",
+                }}
+              >
+                {/* Question label row */}
+                <div
+                  onClick={() => setActiveQIdx(isActive ? null : qIdx)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 20px", cursor: "pointer",
+                  }}
+                >
+                  {/* Done indicator */}
+                  <div style={{
+                    width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    border: `1.5px solid ${isDone ? "#00e5c0" : "rgba(42,79,122,0.5)"}`,
+                    background: isDone ? "rgba(0,229,192,0.15)" : "transparent",
+                    transition: "all .15s",
+                  }}>
+                    {isDone && <span style={{ fontSize:9, color:"#00e5c0", fontWeight:700, lineHeight:1 }}>✓</span>}
+                  </div>
+
+                  {/* Label */}
+                  <span style={{
+                    fontFamily: MONO, fontSize: 9, fontWeight: 700,
+                    color: isDone ? "#00b89a" : isActive ? "var(--qn-teal, #00e5c0)" : "rgba(200,223,240,0.45)",
+                    letterSpacing: 1, textTransform: "uppercase", flex: 1,
+                    transition: "color .15s",
+                  }}>
+                    {q.label}
+                  </span>
+
+                  {/* Selected value preview */}
+                  {isDone && valueLabel && (
+                    <span style={{
+                      fontFamily: SANS, fontSize: 11, fontWeight: 500,
+                      color: "rgba(0,229,192,0.7)",
+                      maxWidth: 200, overflow: "hidden",
+                      textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                      {valueLabel}
+                    </span>
+                  )}
+
+                  {/* Multi type badge */}
+                  {q.type === "multi" && (
+                    <span style={{
+                      fontFamily: MONO, fontSize: 7,
+                      color: "rgba(245,200,66,0.5)",
+                      border: "1px solid rgba(245,200,66,0.2)",
+                      borderRadius: 3, padding: "1px 5px",
+                      letterSpacing: .4, flexShrink: 0,
+                    }}>
+                      multi-select
+                    </span>
+                  )}
+
+                  {/* Clear button */}
+                  {isDone && (
+                    <button
+                      onClick={e => { e.stopPropagation(); clearQuestion(qIdx); }}
+                      style={{
+                        fontFamily: MONO, fontSize: 8, padding: "1px 6px",
+                        border: "1px solid rgba(255,77,79,0.2)",
+                        borderRadius: 3, background: "transparent",
+                        color: "rgba(255,77,79,0.4)", cursor: "pointer",
+                        flexShrink: 0,
+                      }}
+                    >
+                      clear
+                    </button>
+                  )}
+
+                  {/* Expand chevron */}
+                  <span style={{ fontFamily:MONO, fontSize:9, color:"rgba(107,158,200,0.3)", flexShrink:0 }}>
+                    {isActive ? "▲" : "▼"}
+                  </span>
+                </div>
+
+                {/* Expanded chip area */}
+                {isActive && (
+                  <div style={{ padding: "4px 20px 14px 48px" }}>
+                    {/* CHOICE */}
+                    {q.type === "choice" && (
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                        {q.options.map(opt => {
+                          const sel = q.value === opt;
+                          return (
+                            <span
+                              key={opt}
+                              onClick={() => setChoice(qIdx, opt)}
+                              style={{ ...chipBase, ...(sel ? chipActive : {}) }}
+                            >
+                              {opt}
+                            </span>
+                          );
+                        })}
+                        {/* Other chip */}
+                        <span
+                          onClick={() => isCustom ? clearQuestion(qIdx) : setCustomChoice(qIdx)}
+                          style={{ ...chipBase, ...(isCustom ? chipActive : {}), fontStyle:"italic" }}
+                        >
+                          other…
+                        </span>
+                        {isCustom && (
+                          <input
+                            ref={el => inputRefs.current[`custom_${qIdx}`] = el}
+                            autoFocus
+                            value={customVals[`q${qIdx}`] || ""}
+                            onChange={e => setCustomText(qIdx, e.target.value)}
+                            placeholder="type here..."
+                            onClick={e => e.stopPropagation()}
+                            style={{
+                              background: "rgba(11,30,54,0.7)",
+                              border: "1px solid rgba(0,229,192,0.35)",
+                              borderRadius: 6, color: "#c8dff0",
+                              fontFamily: SANS, fontSize: 12,
+                              padding: "4px 10px", outline: "none",
+                              width: 140,
+                            }}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* MULTI */}
+                    {q.type === "multi" && (
+                      <>
+                        <div style={{
+                          fontFamily: MONO, fontSize: 7,
+                          color: "rgba(245,200,66,0.5)",
+                          letterSpacing: .4, marginBottom: 8,
+                        }}>
+                          Select all that apply
+                        </div>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                          {q.options.map(opt => {
+                            const sel = Array.isArray(q.value) && q.value.includes(opt);
+                            return (
+                              <span
+                                key={opt}
+                                onClick={() => toggleMulti(qIdx, opt)}
+                                style={{ ...chipBase, ...(sel ? chipMultiActive : {}) }}
+                              >
+                                {sel && <span style={{ marginRight:4, fontSize:9 }}>✓</span>}
+                                {opt}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+
+                    {/* INPUT */}
+                    {q.type === "input" && (
+                      <input
+                        ref={el => inputRefs.current[`input_${qIdx}`] = el}
+                        autoFocus
+                        value={q.value || ""}
+                        onChange={e => setInputVal(qIdx, e.target.value)}
+                        placeholder={q.placeholder || q.label}
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          background: "rgba(11,30,54,0.7)",
+                          border: "1px solid rgba(0,184,154,0.25)",
+                          borderRadius: 6, color: "#c8dff0",
+                          fontFamily: SANS, fontSize: 12,
+                          padding: "7px 12px", outline: "none",
+                          width: "100%", boxSizing: "border-box",
+                        }}
+                        onFocus={e => { e.target.style.borderColor = "rgba(0,229,192,0.5)"; }}
+                        onBlur={e  => { e.target.style.borderColor = "rgba(0,184,154,0.25)"; }}
+                      />
+                    )}
+
+                    {/* Tab hint */}
+                    <div style={{
+                      marginTop: 8, fontFamily: MONO, fontSize: 7,
+                      color: "rgba(107,158,200,0.3)", letterSpacing: .4,
+                    }}>
+                      Tab → next field · Esc close
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── FOOTER ─────────────────────────────────────────────────────── */}
+        <div style={{
+          padding: "12px 20px",
+          borderTop: "1px solid rgba(0,184,154,0.12)",
+          display: "flex", gap: 8, alignItems: "center",
+          flexShrink: 0, background: "rgba(5,15,30,0.4)",
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px 16px", borderRadius: 6, cursor: "pointer",
+              fontFamily: MONO, fontSize: 10, fontWeight: 700,
+              letterSpacing: ".07em", textTransform: "uppercase",
+              border: "1px solid rgba(200,223,240,0.15)",
+              background: "transparent", color: "rgba(200,223,240,0.4)",
+            }}
+          >
+            Cancel
           </button>
-          <button onClick={onClose} style={{ padding:"7px 14px", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase", border:"1px solid rgba(200,223,240,0.15)", background:"transparent", color:"rgba(200,223,240,0.4)" }}>Cancel</button>
-          <button onClick={()=>{ onApply(output); onClose(); }} style={{ flex:1, padding:"9px 0", borderRadius:6, cursor:"pointer", fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase", border:"1px solid rgba(0,229,192,0.5)", background:"rgba(0,229,192,0.1)", color:"#00e5c0" }}>
+
+          {/* Skip incomplete warning */}
+          {!allDone && (
+            <span style={{
+              fontFamily: MONO, fontSize: 8,
+              color: "rgba(245,200,66,0.5)", flex: 1,
+            }}>
+              {total - done} field{total - done !== 1 ? "s" : ""} incomplete — will appear as [placeholder]
+            </span>
+          )}
+          {allDone && <div style={{ flex: 1 }} />}
+
+          <button
+            onClick={() => { onApply(output); onClose(); }}
+            style={{
+              padding: "9px 28px", borderRadius: 6, cursor: "pointer",
+              fontFamily: MONO, fontSize: 11, fontWeight: 700,
+              letterSpacing: ".07em", textTransform: "uppercase",
+              border: "1px solid rgba(0,229,192,0.5)",
+              background: allDone ? "rgba(0,229,192,0.15)" : "rgba(0,229,192,0.08)",
+              color: "#00e5c0",
+              boxShadow: allDone ? "0 0 16px rgba(0,229,192,0.1)" : "none",
+              transition: "all .2s",
+            }}
+          >
             Apply to HPI
           </button>
         </div>

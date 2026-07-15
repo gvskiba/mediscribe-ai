@@ -764,6 +764,7 @@ function InlineField({
                 transition: "all .1s",
               }}
             >
+              {sel && <span style={{ fontSize:9, marginRight:3 }}>✓</span>}
               {opt}
             </button>
           );
@@ -898,7 +899,7 @@ function InlineField({
         {/* Next / Done button */}
         <button
           onClick={() => onNext(qIdx)}
-          disabled={!isDone && question.type !== "multi"}
+          disabled={false}
           style={{
             padding: "4px 14px", borderRadius: 16,
             cursor: (isDone || question.type === "multi") ? "pointer" : "not-allowed",
@@ -997,11 +998,11 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
   const handleChoice = useCallback((qIdx, val) => {
     setQuestions(prev => prev.map((q, i) => {
       if (i !== qIdx) return q;
-      const toggling = q.value === val;
-      return { ...q, value: toggling ? null : val, done: !toggling };
+      // Toggle: if already selected, deselect. Otherwise select.
+      const newVal = q.value === val ? null : val;
+      return { ...q, value: newVal, done: newVal !== null };
     }));
-    if (val !== null) setTimeout(() => advanceFrom(qIdx), 120);
-  }, [advanceFrom]);
+  }, []);
 
   const handleMultiToggle = useCallback((qIdx, opt) => {
     setQuestions(prev => prev.map((q, i) => {

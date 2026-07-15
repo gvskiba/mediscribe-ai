@@ -522,8 +522,8 @@ export function Phase1Panel({
           </div>
         )}
 
-        {/* Medical term auto-linker */}
-        {hpi.trim().length > 20 && <MedTermHighlighter text={hpi} />}
+        {/* Medical term auto-linker — only after physician has edited HPI, not on scaffold text */}
+        {hpi.trim().length > 20 && hpiEdited && <MedTermHighlighter text={hpi} />}
 
         {/* HPI Summary / Structure preview card */}
         {hpiSummary && (

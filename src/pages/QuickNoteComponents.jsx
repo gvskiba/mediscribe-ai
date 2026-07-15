@@ -553,6 +553,7 @@ function parseHPITemplate(template) {
   let lastIndex = 0;
   let match;
   let qIdx = 0;
+  const labelCounts = {};
 
   while ((match = regex.exec(template)) !== null) {
     // Text before this bracket
@@ -566,12 +567,21 @@ function parseHPITemplate(template) {
     const rawContent = labelMatch ? labelMatch[2] : inner;
     const label      = labelMatch ? labelMatch[1].trim() : null;
 
+    const rawLabel = label || (rawContent.includes(" / ")
+      ? null
+      : inner);
+    const lk = (rawLabel || "field").toLowerCase();
+    labelCounts[lk] = (labelCounts[lk] || 0) + 1;
+    const uniqueLabel = labelCounts[lk] > 1
+      ? `${rawLabel} (${labelCounts[lk]})`
+      : rawLabel;
+
     if (rawContent.includes(" / ")) {
       const options    = rawContent.split(" / ").map(o => o.trim());
       const isMulti    = label && MULTI_LABELS.some(k => label.toLowerCase().includes(k));
       const q = {
         id:      `q${qIdx}`,
-        label:   label || options.join(" / "),
+        label:   uniqueLabel,
         type:    isMulti ? "multi" : "choice",
         options,
         value:   isMulti ? [] : null,
@@ -584,7 +594,7 @@ function parseHPITemplate(template) {
       // Free-text input field
       const q = {
         id:          `q${qIdx}`,
-        label:       label || rawContent,
+        label:       uniqueLabel,
         type:        "input",
         placeholder: rawContent,
         value:       "",

@@ -545,71 +545,60 @@ export { DiagnosisCodingCard, InterventionsCard, DispositionResult };
 function parseHPITemplate(template) {
   if (!template) return { questions: [], segments: [] };
 
-  const MULTI_LABELS = ["associated", "aggravat", "reliev", "symptom", "other complaint"];
-
-  const segments = [];
-  const questions = [];
-  const regex = /\[([^\]]+)\]/g;
+  const MULTI_LABELS = ["associated","aggravat","reliev","symptom"];
+  const labelCounts  = {};
+  const segments     = [];
+  const questions    = [];
+  const regex        = /\[([^\]]+)\]/g;
   let lastIndex = 0;
   let match;
   let qIdx = 0;
-  const labelCounts = {};
 
   while ((match = regex.exec(template)) !== null) {
-    // Text before this bracket
     if (match.index > lastIndex) {
-      segments.push({ type: "text", value: template.slice(lastIndex, match.index) });
+      segments.push({ type:"text", value:template.slice(lastIndex, match.index) });
     }
 
-    const inner = match[1].trim();
-    // Label extraction: "label: opt1 / opt2" or plain "opt1 / opt2"
+    const inner      = match[1].trim();
     const labelMatch = inner.match(/^([^:]+):\s*(.+)$/);
-    const rawContent = labelMatch ? labelMatch[2] : inner;
-    const label      = labelMatch ? labelMatch[1].trim() : null;
-
-    const rawLabel = label || (rawContent.includes(" / ")
-      ? null
-      : inner);
-    const lk = (rawLabel || "field").toLowerCase();
-    labelCounts[lk] = (labelCounts[lk] || 0) + 1;
-    const uniqueLabel = labelCounts[lk] > 1
-      ? `${rawLabel} (${labelCounts[lk]})`
-      : rawLabel;
+    const rawContent = labelMatch ? labelMatch[2].trim() : inner;
+    const explicitLabel = labelMatch ? labelMatch[1].trim() : null;
 
     if (rawContent.includes(" / ")) {
-      const options    = rawContent.split(" / ").map(o => o.trim());
-      const isMulti    = label && MULTI_LABELS.some(k => label.toLowerCase().includes(k));
-      const q = {
-        id:      `q${qIdx}`,
-        label:   uniqueLabel,
-        type:    isMulti ? "multi" : "choice",
-        options,
-        value:   isMulti ? [] : null,
-        done:    false,
-      };
-      questions.push(q);
-      segments.push({ type: "field", qIdx });
-      qIdx++;
+      const options   = rawContent.split(" / ").map(o => o.trim());
+      const isMulti   = explicitLabel &&
+        MULTI_LABELS.some(k => explicitLabel.toLowerCase().includes(k));
+      // Label: explicit label if present, otherwise join first 3 options
+      const baseLabel = explicitLabel || options.slice(0, 3).join(" / ") +
+        (options.length > 3 ? " / …" : "");
+      const lk        = baseLabel.toLowerCase();
+      labelCounts[lk] = (labelCounts[lk] || 0) + 1;
+      const label     = labelCounts[lk] > 1
+        ? `${baseLabel} (${labelCounts[lk]})` : baseLabel;
+      questions.push({
+        id: `q${qIdx}`, label, type: isMulti ? "multi" : "choice",
+        options, value: isMulti ? [] : null, done: false,
+      });
     } else {
-      // Free-text input field
-      const q = {
-        id:          `q${qIdx}`,
-        label:       uniqueLabel,
-        type:        "input",
-        placeholder: rawContent,
-        value:       "",
-        done:        false,
-      };
-      questions.push(q);
-      segments.push({ type: "field", qIdx });
-      qIdx++;
+      // Free-text input
+      const baseLabel = explicitLabel || rawContent;
+      const lk        = baseLabel.toLowerCase();
+      labelCounts[lk] = (labelCounts[lk] || 0) + 1;
+      const label     = labelCounts[lk] > 1
+        ? `${baseLabel} (${labelCounts[lk]})` : baseLabel;
+      questions.push({
+        id: `q${qIdx}`, label, type: "input",
+        placeholder: rawContent, value: "", done: false,
+      });
     }
 
+    segments.push({ type:"field", qIdx });
+    qIdx++;
     lastIndex = match.index + match[0].length;
   }
 
   if (lastIndex < template.length) {
-    segments.push({ type: "text", value: template.slice(lastIndex) });
+    segments.push({ type:"text", value:template.slice(lastIndex) });
   }
 
   return { questions, segments };

@@ -352,6 +352,16 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
       return prev;
     });
     setActiveSlot(idx); slotRef.current = idx;
+    // v15.0: when switching to a slot, show CC launcher if the slot
+    // has no CC profile set yet. Skip if slot already has a profile.
+    const incomingProfile = slotsRef.current[idx]?.ccProfile || null;
+    if (!incomingProfile) {
+      setShowCCLauncher(true);
+    } else {
+      setCCProfile(incomingProfile);
+      setShowCCLauncher(false);
+    }
+    setMustNotMissDismissed(false);
   }, [activeSlot, saveCurrentToSlot]);
 
   const [mdmResult,  setMdmResult]  = useState(null);

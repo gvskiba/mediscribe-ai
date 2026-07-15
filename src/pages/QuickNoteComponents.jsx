@@ -1116,6 +1116,9 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
   const inputRef    = useRef(null);
   const listRef     = useRef(null);
   const prevTemplate = useRef(template);
+  const [freeformText, setFreeformText] = useState("");
+  const [dictating,    setDictating]    = useState(false);
+  const freeformRef = useRef(null);
 
   // Reset on template change (CC switch)
   useEffect(() => {
@@ -1147,7 +1150,10 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
   }, [activeQIdx]);
 
   // Computed
-  const output  = buildHPIOutput(questions, segments);
+  const structured = buildHPIOutput(questions, segments);
+  const output = freeformText.trim()
+    ? structured.trimEnd() + " " + freeformText.trim()
+    : structured;
   const total   = questions.length;
   const done    = questions.filter(q => q.done).length;
   const pct     = total > 0 ? Math.round((done / total) * 100) : 100;
@@ -1229,6 +1235,30 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
     setCustomVals(prev => { const n = {...prev}; delete n[`q${qIdx}`]; return n; });
     setActiveQIdx(qIdx);
     setChipFocusIdx(0);
+  }, []);
+
+  // ── Dictation handler ────────────────────────────────────────────────────────
+  const startDictation = useCallback(() => {
+    if (!("webkitSpeechRecognition" in window) &&
+        !("SpeechRecognition" in window)) {
+      alert("Dictation not supported in this browser.");
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SR();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+    setDictating(true);
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      setFreeformText(prev =>
+        prev.trim() ? prev.trimEnd() + " " + transcript : transcript
+      );
+    };
+    recognition.onerror = () => setDictating(false);
+    recognition.onend   = () => setDictating(false);
+    recognition.start();
   }, []);
 
   // ── Keyboard handler ────────────────────────────────────────────────────────
@@ -1442,27 +1472,126 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
             <div style={{ height: 20 }} />
           </div>
 
-          {/* RIGHT: Live preview */}
+          {/* RIGHT: Live preview + freeform */}
           <div style={{
-            flex: 1, overflowY: "auto",
+            flex: 1,
             background: "rgba(5,12,24,.4)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
           }}>
-            <LivePreview
-              questions={questions}
-              segments={segments}
-              activeQIdx={activeQIdx}
-              onFieldClick={(qIdx) => {
-                setActiveQIdx(qIdx);
-                setChipFocusIdx(0);
-                // Scroll the field list to the clicked field
-                setTimeout(() => {
-                  const el = listRef.current?.querySelector(
-                    `[data-qidx="${qIdx}"]`
-                  );
-                  el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-                }, 30);
-              }}
-            />
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              <LivePreview
+                questions={questions}
+                segments={segments}
+                activeQIdx={activeQIdx}
+                onFieldClick={(qIdx) => {
+                  setActiveQIdx(qIdx);
+                  setChipFocusIdx(0);
+                  // Scroll the field list to the clicked field
+                  setTimeout(() => {
+                    const el = listRef.current?.querySelector(
+                      `[data-qidx="${qIdx}"]`
+                    );
+                    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                  }, 30);
+                }}
+              />
+            </div>
+
+            {/* ── FREEFORM ADDITION ── */}
+            <div style={{
+              borderTop: "1px solid rgba(42,79,122,.2)",
+              padding: "14px 20px",
+              flexShrink: 0,
+              background: "rgba(4,10,20,.3)",
+            }}>
+              <div style={{
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: 8, fontWeight: 700,
+                color: "rgba(0,229,192,.35)",
+                letterSpacing: 1.5, textTransform: "uppercase",
+                marginBottom: 8,
+              }}>
+                Add to HPI — type or dictate
+              </div>
+              <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
+                <textarea
+                  ref={freeformRef}
+                  value={freeformText}
+                  onChange={e => setFreeformText(e.target.value)}
+                  placeholder="Additional history, context, or corrections…"
+                  rows={3}
+                  style={{
+                    flex: 1,
+                    background: "rgba(11,30,54,.7)",
+                    border: "1px solid rgba(42,79,122,.4)",
+                    borderRadius: 8,
+                    color: "#c8dff0",
+                    fontFamily: "'DM Sans',sans-serif",
+                    fontSize: 12,
+                    lineHeight: 1.7,
+                    padding: "8px 12px",
+                    outline: "none",
+                    resize: "vertical",
+                    minHeight: 64,
+                  }}
+                  onFocus={e => { e.target.style.borderColor = "rgba(0,229,192,.45)"; }}
+                  onBlur={e  => { e.target.style.borderColor = "rgba(42,79,122,.4)"; }}
+                />
+                <button
+                  onClick={startDictation}
+                  disabled={dictating}
+                  title={dictating ? "Listening…" : "Dictate additional history"}
+                  style={{
+                    width: 40, height: 40,
+                    borderRadius: 8,
+                    flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: dictating ? "not-allowed" : "pointer",
+                    border: dictating
+                      ? "1px solid rgba(0,229,192,.6)"
+                      : "1px solid rgba(42,79,122,.5)",
+                    background: dictating
+                      ? "rgba(0,229,192,.15)"
+                      : "rgba(11,30,54,.6)",
+                    fontSize: 16,
+                    transition: "all .15s",
+                    animation: dictating ? "qnpulse 1.2s ease-in-out infinite" : "none",
+                  }}
+                >
+                  {dictating ? "🔴" : "🎤"}
+                </button>
+              </div>
+              {freeformText.trim() && (
+                <div style={{
+                  marginTop: 6,
+                  display: "flex", alignItems: "center",
+                  justifyContent: "flex-end", gap: 8,
+                }}>
+                  <span style={{
+                    fontFamily: "'JetBrains Mono',monospace",
+                    fontSize: 7, color: "rgba(0,229,192,.4)",
+                  }}>
+                    Will append to end of HPI
+                  </span>
+                  <button
+                    onClick={() => setFreeformText("")}
+                    style={{
+                      fontFamily: "'JetBrains Mono',monospace",
+                      fontSize: 7, fontWeight: 700,
+                      padding: "1px 8px", borderRadius: 4,
+                      cursor: "pointer",
+                      border: "1px solid rgba(255,77,79,.2)",
+                      background: "transparent",
+                      color: "rgba(255,77,79,.4)",
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

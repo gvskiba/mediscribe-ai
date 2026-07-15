@@ -519,15 +519,23 @@ export { MedsAllergyZone };
 export { DifferentialCard, QuickDDxCard, MDMResult, ClinicalCalcsCard };
 export { DiagnosisCodingCard, InterventionsCard, DispositionResult };
 
-// ─── HPI BUILDER v3.0 ────────────────────────────────────────────────────────
-// Inline auto-advance paradigm — no expand/collapse rows, no modal grid
-// The template renders AS the interface: prose + embedded live chips
-// One tap per field, auto-advances to next, multi-select stays open until Tab/Next
-// Severity [X/10] rendered as inline numeric input, auto-focuses, Tab advances
+// ─── HPI BUILDER v4.0 ────────────────────────────────────────────────────────
+// Split-pane keyboard-first design
+// LEFT:  Navigable field list with inline chip expansion
+// RIGHT: Live sentence preview updating on every selection
 //
-// parseHPITemplate — returns { questions[], segments[] }
-// buildHPIOutput   — reconstructs paragraph from question states
-// HPIBuilder       — inline sentence builder with auto-advance
+// Keyboard controls:
+//   ↑ ↓          Navigate fields
+//   1 2 3 …      Select chip by number (single-select fields)
+//   Space / →    Open active field / select focused chip
+//   Tab / Enter  Confirm + advance to next field
+//   Backspace    Clear current field
+//   Cmd+Enter    Apply to HPI immediately
+//   Escape       Close builder
+//
+// Field types: choice | multi | input | numeric
+// Multi-select: gold chips, Tab/Enter to confirm and advance
+// Auto-advance: numeric fields auto-advance after valid entry
 
 // ─── PARSER ──────────────────────────────────────────────────────────────────
 function parseHPITemplate(template) {
@@ -547,45 +555,37 @@ function parseHPITemplate(template) {
       segments.push({ type: "text", value: template.slice(lastIndex, match.index) });
     }
 
-    const inner        = match[1].trim();
-    const labelMatch   = inner.match(/^([^:]+):\s*(.+)$/);
-    const rawContent   = labelMatch ? labelMatch[2].trim() : inner;
+    const inner         = match[1].trim();
+    const labelMatch    = inner.match(/^([^:]+):\s*(.+)$/);
+    const rawContent    = labelMatch ? labelMatch[2].trim() : inner;
     const explicitLabel = labelMatch ? labelMatch[1].trim() : null;
 
-    // Detect severity pattern: single letter or "X" — treat as numeric input
     const isSeverity = /^X$/i.test(rawContent.trim()) ||
                        /^severity$/i.test(rawContent.trim());
 
     if (isSeverity) {
-      const baseLabel = "severity";
       labelCounts["severity"] = (labelCounts["severity"] || 0) + 1;
       const label = labelCounts["severity"] > 1
         ? `severity (${labelCounts["severity"]})` : "severity";
       questions.push({
         id: `q${qIdx}`, label, type: "numeric",
-        placeholder: "0-10", value: "", done: false,
-        suffix: "/10",
+        placeholder: "0–10", value: "", done: false, suffix: "/10",
       });
-      segments.push({ type: "field", qIdx });
-      qIdx++;
     } else if (rawContent.includes(" / ")) {
-      const options    = rawContent.split(" / ").map(o => o.trim());
-      const isMulti    = explicitLabel &&
+      const options   = rawContent.split(" / ").map(o => o.trim());
+      const isMulti   = explicitLabel &&
         MULTI_LABELS.some(k => explicitLabel.toLowerCase().includes(k));
-      const baseLabel  = explicitLabel ||
+      const baseLabel = explicitLabel ||
         options.slice(0, 3).join(" / ") + (options.length > 3 ? " / …" : "");
-      const lk         = baseLabel.toLowerCase();
-      labelCounts[lk]  = (labelCounts[lk] || 0) + 1;
-      const label      = labelCounts[lk] > 1
+      const lk        = baseLabel.toLowerCase();
+      labelCounts[lk] = (labelCounts[lk] || 0) + 1;
+      const label     = labelCounts[lk] > 1
         ? `${baseLabel} (${labelCounts[lk]})` : baseLabel;
       questions.push({
         id: `q${qIdx}`, label, type: isMulti ? "multi" : "choice",
         options, value: isMulti ? [] : null, done: false,
       });
-      segments.push({ type: "field", qIdx });
-      qIdx++;
     } else {
-      // Free-text input
       const baseLabel = explicitLabel || rawContent;
       const lk        = baseLabel.toLowerCase();
       labelCounts[lk] = (labelCounts[lk] || 0) + 1;
@@ -595,10 +595,10 @@ function parseHPITemplate(template) {
         id: `q${qIdx}`, label, type: "input",
         placeholder: rawContent, value: "", done: false,
       });
-      segments.push({ type: "field", qIdx });
-      qIdx++;
     }
 
+    segments.push({ type: "field", qIdx });
+    qIdx++;
     lastIndex = match.index + match[0].length;
   }
 
@@ -617,346 +617,491 @@ function buildHPIOutput(questions, segments) {
     if (!q) return "";
     if (q.type === "choice") {
       if (q.value === "__custom__") return q.custom || `[${q.label}]`;
+      if (Array.isArray(q.value))   return q.value.length ? q.value.join(", ") : `[${q.label}]`;
       return q.value || `[${q.label}]`;
     }
     if (q.type === "multi") {
-      if (!q.value?.length) return `[${q.label}]`;
-      return q.value.join(", ");
+      return q.value?.length ? q.value.join(", ") : `[${q.label}]`;
     }
     if (q.type === "numeric") {
       return q.value ? q.value + q.suffix : `[${q.label}]`;
     }
-    if (q.type === "input") {
-      return q.value || `[${q.label}]`;
-    }
-    return "";
+    return q.value || `[${q.label}]`;
   }).join("");
 }
 
-// ─── INLINE FIELD CHIP ────────────────────────────────────────────────────────
-// Renders a single field inline within the sentence
-function InlineField({
-  question, qIdx, isActive, isDone,
-  onActivate, onChoice, onMultiToggle, onInput, onNumeric, onCustom, onCustomText,
-  onNext, onClear, customVals, inputRef, accentColor,
+// ─── LIVE PREVIEW ─────────────────────────────────────────────────────────────
+function LivePreview({ questions, segments, activeQIdx }) {
+  const SANS = "'DM Sans',sans-serif";
+  const MONO = "'JetBrains Mono',monospace";
+
+  return (
+    <div style={{
+      padding: "20px 22px",
+      height: "100%",
+      overflowY: "auto",
+      display: "flex",
+      flexDirection: "column",
+      gap: 0,
+    }}>
+      <div style={{
+        fontFamily: MONO, fontSize: 8, fontWeight: 700,
+        color: "rgba(0,229,192,.35)", letterSpacing: 1.5,
+        textTransform: "uppercase", marginBottom: 14,
+      }}>
+        Live Preview
+      </div>
+      <div style={{
+        fontFamily: SANS, fontSize: 13.5,
+        lineHeight: 2.2, color: "#c8dff0",
+        wordBreak: "break-word",
+      }}>
+        {segments.map((seg, i) => {
+          if (seg.type === "text") {
+            return <span key={i}>{seg.value}</span>;
+          }
+          const q       = questions[seg.qIdx];
+          const isAct   = seg.qIdx === activeQIdx;
+          const isDone  = q?.done;
+
+          let display = "";
+          if (q?.type === "choice") {
+            if (q.value === "__custom__") display = q.custom || "";
+            else if (Array.isArray(q.value)) display = q.value.join(", ");
+            else display = q.value || "";
+          } else if (q?.type === "multi") {
+            display = q.value?.join(", ") || "";
+          } else if (q?.type === "numeric") {
+            display = q.value ? q.value + q.suffix : "";
+          } else {
+            display = q?.value || "";
+          }
+
+          if (isDone && display) {
+            return (
+              <span key={i} style={{
+                color: isAct ? "#00e5c0" : "#00c9a7",
+                fontWeight: 600,
+                borderBottom: isAct ? "2px solid #00e5c0" : "none",
+                transition: "all .15s",
+              }}>
+                {display}
+              </span>
+            );
+          }
+
+          return (
+            <span key={i} style={{
+              color: isAct ? "rgba(0,229,192,.7)" : "rgba(107,158,200,.35)",
+              fontStyle: "italic",
+              borderBottom: isAct
+                ? "1.5px solid rgba(0,229,192,.5)"
+                : "1px dashed rgba(107,158,200,.2)",
+              padding: "0 2px",
+              transition: "all .15s",
+            }}>
+              {q?.label || "…"}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── FIELD ROW ────────────────────────────────────────────────────────────────
+function FieldRow({
+  question, qIdx, isActive, isDone, customVal,
+  onSelect, onMultiToggle, onInput, onNumeric,
+  onCustom, onCustomText, onClear,
+  inputRef, chipFocusIdx, setChipFocusIdx,
 }) {
   const SANS = "'DM Sans',sans-serif";
   const MONO = "'JetBrains Mono',monospace";
-  const color = accentColor || "#00e5c0";
+  const C    = "#00e5c0";
+  const GOLD = "#f5c842";
 
-  // Chip showing current value when done and not active
   const valueLabel = (() => {
     if (!isDone) return null;
-    if (question.type === "multi")   return (question.value || []).join(", ");
-    if (question.type === "numeric") return question.value + question.suffix;
+    if (question.type === "multi")
+      return (question.value || []).join(", ");
+    if (question.type === "numeric")
+      return question.value + question.suffix;
     if (question.type === "choice" && question.value === "__custom__")
-      return customVals[question.id] || "custom";
+      return customVal || "custom";
+    if (Array.isArray(question.value))
+      return question.value.join(", ");
     return question.value;
   })();
 
-  // Inactive done state — show selected value as a teal inline token
-  if (isDone && !isActive) {
-    return (
-      <span
-        onClick={() => onActivate(qIdx)}
-        title="Click to change"
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 4,
-          padding: "1px 8px", borderRadius: 10,
-          background: `${color}18`,
-          border: `1px solid ${color}40`,
-          cursor: "pointer",
-          fontFamily: SANS, fontSize: 13, fontWeight: 600,
-          color, lineHeight: 1.6,
-          transition: "all .12s",
-          verticalAlign: "middle",
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = `${color}28`; }}
-        onMouseLeave={e => { e.currentTarget.style.background = `${color}18`; }}
-      >
-        {valueLabel}
-        <span style={{ fontSize: 9, opacity: .5 }}>✎</span>
-      </span>
-    );
-  }
-
-  // Inactive not-done — show field name as muted placeholder
-  if (!isActive) {
-    return (
-      <span
-        onClick={() => onActivate(qIdx)}
-        title={`Tap to fill: ${question.label}`}
-        style={{
-          display: "inline-flex", alignItems: "center",
-          padding: "1px 10px", borderRadius: 10,
-          background: "rgba(42,79,122,0.2)",
-          border: "1px dashed rgba(107,158,200,0.3)",
-          cursor: "pointer",
-          fontFamily: MONO, fontSize: 10, fontWeight: 600,
-          color: "rgba(107,158,200,0.5)",
-          letterSpacing: .4,
-          transition: "all .12s",
-          verticalAlign: "middle",
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.background = "rgba(42,79,122,0.35)";
-          e.currentTarget.style.borderColor = `${color}50`;
-          e.currentTarget.style.color = `${color}80`;
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = "rgba(42,79,122,0.2)";
-          e.currentTarget.style.borderColor = "rgba(107,158,200,0.3)";
-          e.currentTarget.style.color = "rgba(107,158,200,0.5)";
-        }}
-      >
-        {question.label.length > 22
-          ? question.label.slice(0, 22) + "…"
-          : question.label}
-      </span>
-    );
-  }
-
-  // ── ACTIVE STATE ────────────────────────────────────────────────────────────
-  const isCustomActive = question.value === "__custom__";
-
   return (
-    <span style={{ display: "inline-block", verticalAlign: "middle" }}>
-      {/* Active field container */}
-      <span style={{
-        display: "inline-flex", flexWrap: "wrap", alignItems: "center",
-        gap: 4, padding: "6px 10px",
-        background: `${color}08`,
-        border: `1.5px solid ${color}60`,
-        borderRadius: 10,
-        boxShadow: `0 0 12px ${color}10`,
-        maxWidth: "min(520px, 90vw)",
-      }}>
+    <div style={{
+      borderLeft: isActive ? `3px solid ${C}` : "3px solid transparent",
+      background: isActive ? "rgba(0,229,192,.04)" : "transparent",
+      transition: "all .12s",
+    }}>
+      {/* Label row */}
+      <div
+        onClick={() => onSelect(qIdx)}
+        style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "9px 16px 9px 14px",
+          cursor: "pointer",
+        }}
+      >
+        {/* Completion circle */}
+        <div style={{
+          width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: `1.5px solid ${isDone ? C : isActive ? `${C}60` : "rgba(42,79,122,.5)"}`,
+          background: isDone ? `${C}18` : "transparent",
+          transition: "all .15s",
+        }}>
+          {isDone && (
+            <span style={{ fontSize: 9, color: C, fontWeight: 700, lineHeight: 1 }}>✓</span>
+          )}
+          {isActive && !isDone && (
+            <div style={{
+              width: 6, height: 6, borderRadius: "50%",
+              background: C, opacity: .7,
+            }}/>
+          )}
+        </div>
 
-        {/* Field type label */}
+        {/* Field label */}
         <span style={{
-          fontFamily: MONO, fontSize: 8, fontWeight: 700,
-          color: `${color}80`, letterSpacing: 1,
-          textTransform: "uppercase", marginRight: 2,
-          flexBasis: "100%",
+          fontFamily: MONO, fontSize: 9, fontWeight: 700,
+          letterSpacing: 1, textTransform: "uppercase", flex: 1,
+          color: isDone ? C : isActive ? `${C}90` : "rgba(200,223,240,.35)",
+          transition: "color .12s",
         }}>
           {question.label}
-          {question.type === "multi" && (
-            <span style={{ color: "rgba(245,200,66,.6)", marginLeft: 6 }}>
-              · select all that apply
-            </span>
-          )}
         </span>
 
-        {/* CHOICE chips */}
-        {question.type === "choice" && question.options.map(opt => {
-          const sel = question.value === opt;
-          return (
-            <button
-              key={opt}
-              onClick={() => onChoice(qIdx, opt)}
-              style={{
-                padding: "4px 12px", borderRadius: 16,
-                cursor: "pointer", fontSize: 12,
-                fontFamily: SANS, fontWeight: sel ? 600 : 400,
-                border: sel ? `1px solid ${color}` : "1px solid rgba(42,79,122,.4)",
-                background: sel ? `${color}20` : "rgba(11,30,54,0.6)",
-                color: sel ? color : "rgba(200,223,240,0.6)",
-                transition: "all .1s",
-              }}
-            >
-              {sel && <span style={{ fontSize:9, marginRight:3 }}>✓</span>}
-              {opt}
-            </button>
-          );
-        })}
-        {question.type === "choice" && (
-          <>
-            <button
-              onClick={() => isCustomActive
-                ? onChoice(qIdx, null)
-                : onCustom(qIdx)
-              }
-              style={{
-                padding: "4px 12px", borderRadius: 16,
-                cursor: "pointer", fontSize: 12,
-                fontFamily: SANS, fontStyle: "italic", fontWeight: 400,
-                border: isCustomActive
-                  ? `1px solid ${color}`
-                  : "1px solid rgba(42,79,122,.4)",
-                background: isCustomActive
-                  ? `${color}20`
-                  : "rgba(11,30,54,0.6)",
-                color: isCustomActive ? color : "rgba(200,223,240,0.4)",
-                transition: "all .1s",
-              }}
-            >
-              other…
-            </button>
-            {isCustomActive && (
-              <input
-                ref={inputRef}
-                autoFocus
-                value={customVals[question.id] || ""}
-                onChange={e => onCustomText(qIdx, question.id, e.target.value)}
-                placeholder="type here…"
-                onClick={e => e.stopPropagation()}
-                style={{
-                  background: "rgba(11,30,54,0.8)",
-                  border: `1px solid ${color}40`,
-                  borderRadius: 6, color: "#c8dff0",
-                  fontFamily: SANS, fontSize: 12,
-                  padding: "3px 10px", outline: "none", width: 130,
-                }}
-              />
-            )}
-          </>
-        )}
-
-        {/* MULTI chips */}
-        {question.type === "multi" && question.options.map(opt => {
-          const sel = Array.isArray(question.value) && question.value.includes(opt);
-          return (
-            <button
-              key={opt}
-              onClick={() => onMultiToggle(qIdx, opt)}
-              style={{
-                padding: "4px 12px", borderRadius: 16,
-                cursor: "pointer", fontSize: 12,
-                fontFamily: SANS, fontWeight: sel ? 600 : 400,
-                border: sel
-                  ? "1px solid rgba(245,200,66,.7)"
-                  : "1px solid rgba(42,79,122,.4)",
-                background: sel
-                  ? "rgba(245,200,66,.12)"
-                  : "rgba(11,30,54,0.6)",
-                color: sel ? "#f5c842" : "rgba(200,223,240,0.6)",
-                transition: "all .1s",
-                display: "inline-flex", alignItems: "center", gap: 4,
-              }}
-            >
-              {sel && <span style={{ fontSize: 9, color: "#f5c842" }}>✓</span>}
-              {opt}
-            </button>
-          );
-        })}
-
-        {/* NUMERIC input */}
-        {question.type === "numeric" && (
-          <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
-            <input
-              ref={inputRef}
-              autoFocus
-              type="number" min="0" max="10"
-              value={question.value || ""}
-              onChange={e => onNumeric(qIdx, e.target.value)}
-              placeholder="0-10"
-              onKeyDown={e => {
-                if (e.key === "Enter" || e.key === "Tab") {
-                  e.preventDefault();
-                  if (question.value) onNext(qIdx);
-                }
-              }}
-              style={{
-                background: "rgba(11,30,54,0.8)",
-                border: `1px solid ${color}50`,
-                borderRadius: 6, color: color,
-                fontFamily: SANS, fontSize: 18, fontWeight: 700,
-                padding: "3px 8px", outline: "none",
-                width: 64, textAlign: "center",
-              }}
-            />
-            <span style={{ fontFamily: SANS, fontSize: 14, color: "rgba(200,223,240,0.5)" }}>
-              /10
-            </span>
+        {/* Multi badge */}
+        {question.type === "multi" && (
+          <span style={{
+            fontFamily: MONO, fontSize: 7,
+            color: "rgba(245,200,66,.4)",
+            border: "1px solid rgba(245,200,66,.2)",
+            borderRadius: 3, padding: "1px 5px", letterSpacing: .4,
+          }}>
+            multi
           </span>
         )}
 
-        {/* FREE TEXT input */}
-        {question.type === "input" && (
-          <input
-            ref={inputRef}
-            autoFocus
-            value={question.value || ""}
-            onChange={e => onInput(qIdx, e.target.value)}
-            placeholder={question.placeholder || question.label}
-            onKeyDown={e => {
-              if (e.key === "Enter" || e.key === "Tab") {
-                e.preventDefault();
-                if (question.value?.trim()) onNext(qIdx);
-              }
-            }}
-            style={{
-              background: "rgba(11,30,54,0.8)",
-              border: `1px solid ${color}50`,
-              borderRadius: 6, color: "#c8dff0",
-              fontFamily: SANS, fontSize: 12,
-              padding: "4px 12px", outline: "none",
-              width: 160,
-            }}
-          />
+        {/* Selected value */}
+        {isDone && valueLabel && (
+          <span style={{
+            fontFamily: SANS, fontSize: 11, fontWeight: 500,
+            color: `${C}80`, maxWidth: 140,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>
+            {valueLabel}
+          </span>
         )}
 
-        {/* Next / Done button */}
-        <button
-          onClick={() => onNext(qIdx)}
-          disabled={false}
-          style={{
-            padding: "4px 14px", borderRadius: 16,
-            cursor: (isDone || question.type === "multi") ? "pointer" : "not-allowed",
-            fontFamily: MONO, fontSize: 9, fontWeight: 700,
-            letterSpacing: .5, textTransform: "uppercase",
-            border: `1px solid ${color}50`,
-            background: (isDone || question.type === "multi")
-              ? `${color}20` : "rgba(42,79,122,.15)",
-            color: (isDone || question.type === "multi")
-              ? color : "rgba(107,158,200,0.3)",
-            transition: "all .1s",
-          }}
-        >
-          {question.type === "multi" ? "Done ↵" : "Next →"}
-        </button>
-
-        {/* Clear button when done */}
+        {/* Clear */}
         {isDone && (
           <button
-            onClick={() => onClear(qIdx)}
+            onClick={e => { e.stopPropagation(); onClear(qIdx); }}
             style={{
-              padding: "3px 8px", borderRadius: 10,
-              cursor: "pointer", fontSize: 9,
-              fontFamily: MONO, fontWeight: 700,
-              border: "1px solid rgba(255,77,79,0.2)",
-              background: "transparent",
-              color: "rgba(255,77,79,0.4)",
-              transition: "all .1s",
+              fontFamily: MONO, fontSize: 8, padding: "1px 7px",
+              border: "1px solid rgba(255,77,79,.2)",
+              borderRadius: 3, background: "transparent",
+              color: "rgba(255,77,79,.4)", cursor: "pointer", flexShrink: 0,
             }}
           >
             ✕
           </button>
         )}
-      </span>
-    </span>
+      </div>
+
+      {/* Expanded chip area — only when active */}
+      {isActive && (
+        <div style={{ padding: "2px 16px 14px 46px" }}>
+
+          {/* CHOICE */}
+          {question.type === "choice" && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {question.options.map((opt, i) => {
+                const sel = Array.isArray(question.value)
+                  ? question.value.includes(opt)
+                  : question.value === opt;
+                const isFocused = chipFocusIdx === i;
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => onSelect(qIdx, opt)}
+                    style={{
+                      padding: "5px 13px", borderRadius: 16,
+                      cursor: "pointer", fontSize: 12,
+                      fontFamily: SANS, fontWeight: sel ? 600 : 400,
+                      border: sel
+                        ? `1.5px solid ${C}`
+                        : isFocused
+                        ? `1.5px solid ${C}60`
+                        : "1px solid rgba(42,79,122,.45)",
+                      background: sel
+                        ? `${C}1a`
+                        : isFocused
+                        ? "rgba(0,229,192,.07)"
+                        : "rgba(11,30,54,.6)",
+                      color: sel ? C : isFocused ? `${C}90` : "rgba(200,223,240,.65)",
+                      transition: "all .1s",
+                      outline: "none",
+                      display: "inline-flex", alignItems: "center", gap: 5,
+                      boxShadow: isFocused ? `0 0 0 2px ${C}20` : "none",
+                    }}
+                  >
+                    {/* Number shortcut badge */}
+                    <span style={{
+                      fontFamily: MONO, fontSize: 8, fontWeight: 700,
+                      color: sel ? C : "rgba(107,158,200,.35)",
+                      background: sel ? `${C}18` : "rgba(42,79,122,.3)",
+                      border: `1px solid ${sel ? C + "40" : "rgba(42,79,122,.4)"}`,
+                      borderRadius: 3, padding: "0 4px", lineHeight: 1.6,
+                      minWidth: 16, textAlign: "center",
+                      transition: "all .1s",
+                    }}>
+                      {i + 1}
+                    </span>
+                    {sel && <span style={{ fontSize: 9 }}>✓</span>}
+                    {opt}
+                  </button>
+                );
+              })}
+              {/* Other */}
+              <button
+                onClick={() => question.value === "__custom__"
+                  ? onClear(qIdx)
+                  : onCustom(qIdx)
+                }
+                style={{
+                  padding: "5px 13px", borderRadius: 16,
+                  cursor: "pointer", fontSize: 12,
+                  fontFamily: SANS, fontStyle: "italic", fontWeight: 400,
+                  border: question.value === "__custom__"
+                    ? `1.5px solid ${C}` : "1px solid rgba(42,79,122,.4)",
+                  background: question.value === "__custom__"
+                    ? `${C}1a` : "rgba(11,30,54,.6)",
+                  color: question.value === "__custom__"
+                    ? C : "rgba(200,223,240,.4)",
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  outline: "none",
+                }}
+              >
+                <span style={{
+                  fontFamily: MONO, fontSize: 8, fontWeight: 700,
+                  color: "rgba(107,158,200,.35)",
+                  background: "rgba(42,79,122,.3)",
+                  border: "1px solid rgba(42,79,122,.4)",
+                  borderRadius: 3, padding: "0 4px", lineHeight: 1.6,
+                  minWidth: 16, textAlign: "center",
+                }}>
+                  {question.options.length + 1}
+                </span>
+                other…
+              </button>
+              {question.value === "__custom__" && (
+                <input
+                  ref={inputRef}
+                  autoFocus
+                  value={customVal || ""}
+                  onChange={e => onCustomText(qIdx, e.target.value)}
+                  placeholder="type here…"
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    background: "rgba(11,30,54,.8)",
+                    border: `1px solid ${C}40`,
+                    borderRadius: 6, color: "#c8dff0",
+                    fontFamily: SANS, fontSize: 12,
+                    padding: "4px 12px", outline: "none", width: 150,
+                  }}
+                />
+              )}
+            </div>
+          )}
+
+          {/* MULTI */}
+          {question.type === "multi" && (
+            <>
+              <div style={{
+                fontFamily: MONO, fontSize: 7, letterSpacing: .5,
+                color: "rgba(245,200,66,.45)", marginBottom: 7,
+              }}>
+                Select all that apply · Tab to confirm
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {question.options.map((opt, i) => {
+                  const sel = Array.isArray(question.value) && question.value.includes(opt);
+                  const isFocused = chipFocusIdx === i;
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => onMultiToggle(qIdx, opt)}
+                      style={{
+                        padding: "5px 13px", borderRadius: 16,
+                        cursor: "pointer", fontSize: 12,
+                        fontFamily: SANS, fontWeight: sel ? 600 : 400,
+                        border: sel
+                          ? "1.5px solid rgba(245,200,66,.7)"
+                          : isFocused
+                          ? "1.5px solid rgba(245,200,66,.4)"
+                          : "1px solid rgba(42,79,122,.4)",
+                        background: sel
+                          ? "rgba(245,200,66,.12)"
+                          : isFocused
+                          ? "rgba(245,200,66,.06)"
+                          : "rgba(11,30,54,.6)",
+                        color: sel ? GOLD : isFocused ? `${GOLD}80` : "rgba(200,223,240,.6)",
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        outline: "none",
+                        transition: "all .1s",
+                      }}
+                    >
+                      <span style={{
+                        fontFamily: MONO, fontSize: 8, fontWeight: 700,
+                        color: sel ? GOLD : "rgba(107,158,200,.35)",
+                        background: sel ? "rgba(245,200,66,.15)" : "rgba(42,79,122,.3)",
+                        border: `1px solid ${sel ? "rgba(245,200,66,.4)" : "rgba(42,79,122,.4)"}`,
+                        borderRadius: 3, padding: "0 4px", lineHeight: 1.6,
+                        minWidth: 16, textAlign: "center",
+                        transition: "all .1s",
+                      }}>
+                        {i + 1}
+                      </span>
+                      {sel && <span style={{ fontSize: 9 }}>✓</span>}
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* NUMERIC */}
+          {question.type === "numeric" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                ref={inputRef}
+                autoFocus
+                type="number" min="0" max="10"
+                value={question.value || ""}
+                onChange={e => onNumeric(qIdx, e.target.value)}
+                placeholder="0–10"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === "Tab") {
+                    e.preventDefault();
+                    if (question.value) onSelect(qIdx, null, true);
+                  }
+                }}
+                style={{
+                  background: "rgba(11,30,54,.8)",
+                  border: `1.5px solid ${C}50`,
+                  borderRadius: 8, color: C,
+                  fontFamily: SANS, fontSize: 22, fontWeight: 700,
+                  padding: "4px 10px", outline: "none",
+                  width: 80, textAlign: "center",
+                }}
+              />
+              <span style={{
+                fontFamily: SANS, fontSize: 16,
+                color: "rgba(200,223,240,.4)",
+              }}>
+                / 10
+              </span>
+              <span style={{
+                fontFamily: MONO, fontSize: 8,
+                color: "rgba(107,158,200,.3)", marginLeft: 8,
+              }}>
+                Enter to advance
+              </span>
+            </div>
+          )}
+
+          {/* FREE TEXT INPUT */}
+          {question.type === "input" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                ref={inputRef}
+                autoFocus
+                value={question.value || ""}
+                onChange={e => onInput(qIdx, e.target.value)}
+                placeholder={question.placeholder || question.label}
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === "Tab") {
+                    e.preventDefault();
+                    if (question.value?.trim()) onSelect(qIdx, null, true);
+                  }
+                }}
+                style={{
+                  background: "rgba(11,30,54,.8)",
+                  border: `1px solid ${C}40`,
+                  borderRadius: 8, color: "#c8dff0",
+                  fontFamily: SANS, fontSize: 13,
+                  padding: "6px 14px", outline: "none", width: 220,
+                }}
+                onFocus={e  => { e.target.style.borderColor = `${C}70`; }}
+                onBlur={e   => { e.target.style.borderColor = `${C}40`; }}
+              />
+              <span style={{
+                fontFamily: MONO, fontSize: 8,
+                color: "rgba(107,158,200,.3)",
+              }}>
+                Enter to advance
+              </span>
+            </div>
+          )}
+
+          {/* Keyboard hint */}
+          <div style={{
+            marginTop: 10,
+            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+          }}>
+            {question.type !== "input" && question.type !== "numeric" && (
+              <span style={{
+                fontFamily: MONO, fontSize: 7,
+                color: "rgba(107,158,200,.3)", letterSpacing: .3,
+              }}>
+                {question.type === "multi"
+                  ? "1–9 toggle · Tab confirm"
+                  : "1–9 select · Tab advance"}
+              </span>
+            )}
+            <span style={{
+              fontFamily: MONO, fontSize: 7,
+              color: "rgba(107,158,200,.3)", letterSpacing: .3,
+            }}>
+              Backspace clear · ↑↓ navigate
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-// ─── HPIBUILDER v3.0 ──────────────────────────────────────────────────────────
+// ─── HPIBUILDER v4.0 ──────────────────────────────────────────────────────────
 export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
   const SANS  = "'DM Sans',sans-serif";
   const SERIF = "'Playfair Display',serif";
   const MONO  = "'JetBrains Mono',monospace";
-  const ACCENT = "#00e5c0";
+  const C     = "#00e5c0";
 
-  const parsed      = useRef(parseHPITemplate(template || ""));
-  const [questions, setQuestions] = useState(() => parsed.current.questions);
-  const [segments]                = useState(() => parsed.current.segments);
+  const parsed       = useRef(parseHPITemplate(template || ""));
+  const [questions,  setQuestions]  = useState(() => parsed.current.questions);
+  const [segments]                  = useState(() => parsed.current.segments);
   const [activeQIdx, setActiveQIdx] = useState(
     () => parsed.current.questions.length > 0 ? 0 : null
   );
-  const [customVals, setCustomVals] = useState({});
+  const [customVals,    setCustomVals]    = useState({});
+  const [chipFocusIdx,  setChipFocusIdx] = useState(0);
   const inputRef    = useRef(null);
+  const listRef     = useRef(null);
   const prevTemplate = useRef(template);
-  const containerRef = useRef(null);
 
-  // Reset on template change
+  // Reset on template change (CC switch)
   useEffect(() => {
     if (template !== prevTemplate.current) {
       prevTemplate.current = template;
@@ -965,13 +1110,23 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
       setQuestions(p.questions);
       setCustomVals({});
       setActiveQIdx(p.questions.length > 0 ? 0 : null);
+      setChipFocusIdx(0);
     }
   }, [template]);
 
-  // Auto-focus input when active field changes
+  // Auto-focus input fields when active changes
   useEffect(() => {
     if (activeQIdx !== null) {
-      setTimeout(() => inputRef.current?.focus(), 60);
+      setChipFocusIdx(0);
+      const q = questions[activeQIdx];
+      if (q?.type === "input" || q?.type === "numeric") {
+        setTimeout(() => inputRef.current?.focus(), 60);
+      }
+      // Scroll active row into view
+      setTimeout(() => {
+        const el = listRef.current?.querySelector(`[data-qidx="${activeQIdx}"]`);
+        el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }, 30);
     }
   }, [activeQIdx]);
 
@@ -982,27 +1137,35 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
   const pct     = total > 0 ? Math.round((done / total) * 100) : 100;
   const allDone = done === total;
 
-  // Advance to next incomplete after current
-  const advanceFrom = useCallback((qIdx) => {
-    const next = questions.findIndex((q, i) => !q.done && i > qIdx);
-    if (next >= 0) {
-      setActiveQIdx(next);
-    } else {
-      // wrap to first incomplete if any remain
-      const first = questions.findIndex(q => !q.done);
-      setActiveQIdx(first >= 0 ? first : null);
-    }
+  // Advance to next incomplete field
+  const advanceFrom = useCallback((from) => {
+    const next = questions.findIndex((q, i) => !q.done && i > from);
+    if (next >= 0) { setActiveQIdx(next); return; }
+    const first = questions.findIndex(q => !q.done);
+    setActiveQIdx(first >= 0 ? first : null);
   }, [questions]);
 
-  // ── Field updaters ──────────────────────────────────────────────────────────
-  const handleChoice = useCallback((qIdx, val) => {
+  // ── Field handlers ──────────────────────────────────────────────────────────
+  const handleSelect = useCallback((qIdx, val, forceAdvance = false) => {
     setQuestions(prev => prev.map((q, i) => {
       if (i !== qIdx) return q;
-      // Toggle: if already selected, deselect. Otherwise select.
-      const newVal = q.value === val ? null : val;
-      return { ...q, value: newVal, done: newVal !== null };
+      if (q.type === "choice") {
+        if (val === null) return { ...q, value: null, done: false };
+        // Toggle selection
+        const cur = Array.isArray(q.value) ? q.value : (q.value ? [q.value] : []);
+        const next = cur.includes(val)
+          ? cur.filter(v => v !== val)
+          : [...cur, val];
+        // Simplify to string when single value
+        const newVal = next.length === 1 ? next[0] : next.length === 0 ? null : next;
+        return { ...q, value: newVal, done: newVal !== null && newVal !== "__custom__" };
+      }
+      return q;
     }));
-  }, []);
+    if (forceAdvance || (val !== null && val !== "__custom__")) {
+      setTimeout(() => advanceFrom(qIdx), 120);
+    }
+  }, [advanceFrom]);
 
   const handleMultiToggle = useCallback((qIdx, opt) => {
     setQuestions(prev => prev.map((q, i) => {
@@ -1020,12 +1183,12 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
   }, []);
 
   const handleNumeric = useCallback((qIdx, val) => {
-    const clamped = Math.min(10, Math.max(0, parseInt(val) || 0));
-    const strVal  = val === "" ? "" : String(clamped);
+    const n       = parseInt(val);
+    const clamped = isNaN(n) ? "" : String(Math.min(10, Math.max(0, n)));
     setQuestions(prev => prev.map((q, i) =>
-      i !== qIdx ? q : { ...q, value: strVal, done: strVal.length > 0 }
+      i !== qIdx ? q : { ...q, value: clamped, done: clamped.length > 0 }
     ));
-    if (strVal.length > 0) setTimeout(() => advanceFrom(qIdx), 300);
+    if (clamped.length > 0) setTimeout(() => advanceFrom(qIdx), 300);
   }, [advanceFrom]);
 
   const handleCustom = useCallback((qIdx) => {
@@ -1035,60 +1198,132 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
     setTimeout(() => inputRef.current?.focus(), 60);
   }, []);
 
-  const handleCustomText = useCallback((qIdx, qId, val) => {
-    setCustomVals(prev => ({ ...prev, [qId]: val }));
+  const handleCustomText = useCallback((qIdx, val) => {
+    setCustomVals(prev => ({ ...prev, [`q${qIdx}`]: val }));
     setQuestions(prev => prev.map((q, i) =>
       i !== qIdx ? q : { ...q, custom: val, done: val.trim().length > 0 }
     ));
   }, []);
-
-  const handleNext = useCallback((qIdx) => {
-    advanceFrom(qIdx);
-  }, [advanceFrom]);
 
   const handleClear = useCallback((qIdx) => {
     setQuestions(prev => prev.map((q, i) => {
       if (i !== qIdx) return q;
       return { ...q, value: q.type === "multi" ? [] : null, done: false, custom: "" };
     }));
-    setCustomVals(prev => {
-      const n = { ...prev };
-      delete n[questions[qIdx]?.id];
-      return n;
-    });
+    setCustomVals(prev => { const n = {...prev}; delete n[`q${qIdx}`]; return n; });
     setActiveQIdx(qIdx);
-  }, [questions]);
-
-  const handleActivate = useCallback((qIdx) => {
-    setActiveQIdx(prev => prev === qIdx ? null : qIdx);
+    setChipFocusIdx(0);
   }, []);
 
-  // Keyboard
+  // ── Keyboard handler ────────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e) => {
-    if (e.key === "Escape") { e.stopPropagation(); onClose(); }
-  }, [onClose]);
+    const activeQ = activeQIdx !== null ? questions[activeQIdx] : null;
+
+    // Global shortcuts
+    if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault(); onApply(output); onClose(); return;
+    }
+
+    // Navigate fields
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveQIdx(prev => Math.max(0, (prev ?? 0) - 1));
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveQIdx(prev => Math.min(questions.length - 1, (prev ?? 0) + 1));
+      return;
+    }
+
+    // Tab / Enter — advance from current field
+    if (e.key === "Tab" || (e.key === "Enter" && activeQ?.type !== "input" && activeQ?.type !== "numeric")) {
+      e.preventDefault();
+      if (activeQIdx !== null) advanceFrom(activeQIdx);
+      return;
+    }
+
+    // Backspace — clear current field
+    if (e.key === "Backspace" && activeQ &&
+        activeQ.type !== "input" && activeQ.type !== "numeric") {
+      e.preventDefault();
+      handleClear(activeQIdx);
+      return;
+    }
+
+    // Number shortcuts for chips
+    if (activeQ && /^[1-9]$/.test(e.key)) {
+      const idx = parseInt(e.key) - 1;
+      if (activeQ.type === "choice") {
+        // Include "other…" as the last option
+        const allOpts = [...(activeQ.options || []), "__custom__"];
+        if (idx < allOpts.length) {
+          e.preventDefault();
+          const chosen = allOpts[idx];
+          if (chosen === "__custom__") { handleCustom(activeQIdx); }
+          else { handleSelect(activeQIdx, chosen); }
+        }
+      } else if (activeQ.type === "multi") {
+        if (idx < (activeQ.options?.length || 0)) {
+          e.preventDefault();
+          handleMultiToggle(activeQIdx, activeQ.options[idx]);
+        }
+      }
+    }
+
+    // Arrow keys navigate chips within active field
+    if (activeQ?.type === "choice" || activeQ?.type === "multi") {
+      const optCount = (activeQ.options?.length || 0) + 1; // +1 for other
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setChipFocusIdx(prev => (prev + 1) % optCount);
+        return;
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setChipFocusIdx(prev => (prev - 1 + optCount) % optCount);
+        return;
+      }
+      // Space / Enter selects focused chip
+      if (e.key === " " || e.key === "Enter") {
+        if (activeQ.type !== "input") {
+          e.preventDefault();
+          const allOpts = [...(activeQ.options || []), "__custom__"];
+          const chosen  = allOpts[chipFocusIdx];
+          if (chosen === "__custom__") { handleCustom(activeQIdx); }
+          else if (activeQ.type === "choice") { handleSelect(activeQIdx, chosen); }
+          else { handleMultiToggle(activeQIdx, chosen); }
+        }
+      }
+    }
+  }, [
+    activeQIdx, questions, chipFocusIdx, output,
+    onClose, onApply, advanceFrom,
+    handleSelect, handleMultiToggle, handleCustom, handleClear,
+  ]);
 
   return (
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 9400,
-        background: "rgba(3,8,16,.9)", backdropFilter: "blur(4px)",
-        display: "flex", alignItems: "flex-start", justifyContent: "center",
-        padding: "32px 16px 20px", overflowY: "auto",
+        background: "rgba(3,8,16,.92)", backdropFilter: "blur(5px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "24px 16px",
       }}
       onClick={onClose}
       onKeyDown={handleKeyDown}
+      tabIndex={-1}
     >
       <div
-        ref={containerRef}
         style={{
-          background: "#081628",
-          border: "1px solid rgba(0,184,154,0.3)",
+          background: "#071422",
+          border: "1px solid rgba(0,184,154,.25)",
           borderRadius: 16,
-          width: 700, maxWidth: "96vw",
-          maxHeight: "calc(100vh - 64px)",
+          width: 860, maxWidth: "97vw",
+          height: "min(680px, calc(100vh - 48px))",
           display: "flex", flexDirection: "column",
-          boxShadow: "0 24px 80px rgba(0,0,0,.75)",
+          boxShadow: "0 28px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(0,229,192,.06)",
           overflow: "hidden",
         }}
         onClick={e => e.stopPropagation()}
@@ -1096,34 +1331,39 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
 
         {/* ── HEADER ─────────────────────────────────────────────────────── */}
         <div style={{
-          padding: "14px 20px 10px",
-          borderBottom: "1px solid rgba(0,184,154,.1)",
-          flexShrink: 0,
+          padding: "13px 20px 10px",
+          borderBottom: "1px solid rgba(42,79,122,.3)",
+          flexShrink: 0, display: "flex", flexDirection: "column", gap: 8,
         }}>
-          <div style={{
-            display: "flex", alignItems: "center",
-            justifyContent: "space-between", marginBottom: 8,
-          }}>
-            <span style={{
-              fontFamily: SERIF, fontSize: 14, fontWeight: 700, color: ACCENT,
-            }}>
-              HPI Builder
-            </span>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div style={{ display:"flex", alignItems:"center", gap: 10 }}>
+              <span style={{
+                fontFamily: SERIF, fontSize: 14, fontWeight: 700, color: C,
+              }}>
+                HPI Builder
+              </span>
               {ccLabel && (
                 <span style={{
                   fontFamily: MONO, fontSize: 9, color: "#00b89a",
-                  border: "1px solid rgba(0,184,154,.3)", borderRadius: 3,
-                  padding: "1px 8px",
+                  border: "1px solid rgba(0,184,154,.3)", borderRadius: 4,
+                  padding: "2px 9px", letterSpacing: .4,
                 }}>
                   {ccLabel}
                 </span>
               )}
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <span style={{
+                fontFamily: MONO, fontSize: 9,
+                color: allDone ? C : "rgba(200,223,240,.25)",
+              }}>
+                {done}/{total} fields
+              </span>
               <button
                 onClick={onClose}
                 style={{
                   background:"none", border:"none",
-                  color:"rgba(200,223,240,.4)", fontSize:18,
+                  color:"rgba(200,223,240,.3)", fontSize:18,
                   cursor:"pointer", lineHeight:1, padding:0,
                 }}
               >
@@ -1131,139 +1371,162 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
               </button>
             </div>
           </div>
-          {/* Progress */}
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+
+          {/* Progress bar */}
+          <div style={{
+            height: 3, background:"rgba(0,184,154,.1)",
+            borderRadius:2, overflow:"hidden",
+          }}>
             <div style={{
-              flex:1, height:3,
-              background:"rgba(0,184,154,.1)",
-              borderRadius:2, overflow:"hidden",
-            }}>
-              <div style={{
-                height:"100%",
-                width: pct + "%",
-                background: allDone ? ACCENT : "rgba(0,184,154,.4)",
-                transition:"width .3s", borderRadius:2,
-              }}/>
-            </div>
-            <span style={{
-              fontFamily:MONO, fontSize:9, flexShrink:0,
-              color: allDone ? ACCENT : "rgba(200,223,240,.3)",
-            }}>
-              {done}/{total}
-            </span>
+              height:"100%", width: pct + "%",
+              background: allDone ? C : "rgba(0,184,154,.35)",
+              transition:"width .3s", borderRadius:2,
+            }}/>
           </div>
         </div>
 
-        {/* ── INLINE SENTENCE BUILDER ────────────────────────────────────── */}
+        {/* ── MAIN SPLIT PANE ────────────────────────────────────────────── */}
         <div style={{
-          padding: "20px 24px",
-          overflowY: "auto", flex: 1,
-          lineHeight: 2.4,
-          fontSize: 14,
-          fontFamily: SANS,
-          color: "#c8dff0",
-          wordBreak: "break-word",
+          flex: 1, display: "flex", overflow: "hidden",
         }}>
-          {segments.map((seg, segIdx) => {
-            if (seg.type === "text") {
-              return (
-                <span key={`t${segIdx}`} style={{ lineHeight: 2.4 }}>
-                  {seg.value}
-                </span>
-              );
-            }
-            const q      = questions[seg.qIdx];
-            const isAct  = activeQIdx === seg.qIdx;
-            const isDone = q?.done;
-            return (
-              <InlineField
-                key={`f${seg.qIdx}`}
-                question={q}
-                qIdx={seg.qIdx}
-                isActive={isAct}
-                isDone={isDone}
-                onActivate={handleActivate}
-                onChoice={handleChoice}
-                onMultiToggle={handleMultiToggle}
-                onInput={handleInput}
-                onNumeric={handleNumeric}
-                onCustom={handleCustom}
-                onCustomText={handleCustomText}
-                onNext={handleNext}
-                onClear={handleClear}
-                customVals={customVals}
-                inputRef={isAct ? inputRef : null}
-                accentColor={ACCENT}
-              />
-            );
-          })}
+
+          {/* LEFT: Field list */}
+          <div
+            ref={listRef}
+            style={{
+              width: "42%", minWidth: 260,
+              borderRight: "1px solid rgba(42,79,122,.2)",
+              overflowY: "auto", flexShrink: 0,
+            }}
+          >
+            {questions.map((q, qIdx) => (
+              <div key={q.id} data-qidx={qIdx}>
+                <FieldRow
+                  question={q}
+                  qIdx={qIdx}
+                  isActive={activeQIdx === qIdx}
+                  isDone={q.done}
+                  customVal={customVals[`q${qIdx}`] || ""}
+                  onSelect={handleSelect}
+                  onMultiToggle={handleMultiToggle}
+                  onInput={handleInput}
+                  onNumeric={handleNumeric}
+                  onCustom={handleCustom}
+                  onCustomText={(qIdx, val) => handleCustomText(qIdx, val)}
+                  onClear={handleClear}
+                  inputRef={activeQIdx === qIdx ? inputRef : null}
+                  chipFocusIdx={activeQIdx === qIdx ? chipFocusIdx : -1}
+                  setChipFocusIdx={setChipFocusIdx}
+                />
+                <div style={{ height:1, background:"rgba(42,79,122,.12)", margin:"0 16px" }}/>
+              </div>
+            ))}
+
+            {/* Bottom padding */}
+            <div style={{ height: 20 }} />
+          </div>
+
+          {/* RIGHT: Live preview */}
+          <div style={{
+            flex: 1, overflowY: "auto",
+            background: "rgba(5,12,24,.4)",
+          }}>
+            <LivePreview
+              questions={questions}
+              segments={segments}
+              activeQIdx={activeQIdx}
+            />
+          </div>
         </div>
 
-        {/* ── HINT BAR ───────────────────────────────────────────────────── */}
+        {/* ── KEYBOARD SHORTCUT BAR ──────────────────────────────────────── */}
         <div style={{
-          padding: "6px 24px",
-          background: "rgba(5,15,30,.4)",
+          padding: "6px 20px",
           borderTop: "1px solid rgba(42,79,122,.2)",
-          display: "flex", gap: 16, alignItems: "center",
-          flexShrink: 0,
+          background: "rgba(4,10,20,.6)",
+          display: "flex", gap: 0, alignItems: "center",
+          flexShrink: 0, flexWrap: "wrap",
         }}>
           {[
-            { key:"tap",   hint:"tap a field to fill it"     },
-            { key:"next",  hint:"Next → auto-advances"       },
-            { key:"enter", hint:"Enter/Tab in text fields"   },
-            { key:"esc",   hint:"Esc to close"               },
-          ].map(({ key, hint }) => (
-            <span key={key} style={{
-              fontFamily:MONO, fontSize:8,
-              color:"rgba(107,158,200,.35)", letterSpacing:.3,
+            { key:"↑↓",        hint:"navigate"     },
+            { key:"1–9",        hint:"select chip"  },
+            { key:"←→",        hint:"focus chip"   },
+            { key:"Space",      hint:"select"       },
+            { key:"Tab",        hint:"next field"   },
+            { key:"⌫",         hint:"clear"        },
+            { key:"⌘+Enter",   hint:"apply"        },
+            { key:"Esc",        hint:"close"        },
+          ].map(({ key, hint }, i) => (
+            <span key={i} style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              marginRight: 16, padding: "1px 0",
             }}>
-              {hint}
+              <span style={{
+                fontFamily: MONO, fontSize: 8, fontWeight: 700,
+                color: "rgba(107,158,200,.5)",
+                background: "rgba(42,79,122,.25)",
+                border: "1px solid rgba(42,79,122,.4)",
+                borderRadius: 3, padding: "1px 6px", letterSpacing: .3,
+              }}>
+                {key}
+              </span>
+              <span style={{
+                fontFamily: MONO, fontSize: 7,
+                color: "rgba(107,158,200,.3)", letterSpacing: .3,
+              }}>
+                {hint}
+              </span>
             </span>
           ))}
         </div>
 
         {/* ── FOOTER ─────────────────────────────────────────────────────── */}
         <div style={{
-          padding: "12px 20px",
-          borderTop: "1px solid rgba(0,184,154,.1)",
+          padding: "11px 20px",
+          borderTop: "1px solid rgba(42,79,122,.2)",
           display: "flex", gap: 8, alignItems: "center",
-          flexShrink: 0,
-          background: "rgba(5,15,30,.5)",
+          flexShrink: 0, background: "rgba(4,10,20,.5)",
         }}>
           <button
             onClick={onClose}
             style={{
-              padding: "8px 16px", borderRadius: 6, cursor: "pointer",
+              padding: "7px 16px", borderRadius: 6, cursor: "pointer",
               fontFamily: MONO, fontSize: 10, fontWeight: 700,
               letterSpacing: ".06em", textTransform: "uppercase",
-              border: "1px solid rgba(200,223,240,.15)",
-              background: "transparent", color: "rgba(200,223,240,.35)",
+              border: "1px solid rgba(200,223,240,.12)",
+              background: "transparent", color: "rgba(200,223,240,.3)",
             }}
           >
             Cancel
           </button>
 
-          {!allDone && (
+          {!allDone ? (
             <span style={{
               fontFamily: MONO, fontSize: 8, flex: 1,
-              color: "rgba(245,200,66,.4)",
+              color: "rgba(245,200,66,.35)",
             }}>
               {total - done} field{total - done !== 1 ? "s" : ""} remaining
               — will appear as [placeholder]
             </span>
+          ) : (
+            <span style={{
+              fontFamily: MONO, fontSize: 8, flex: 1,
+              color: "rgba(0,229,192,.4)",
+            }}>
+              ✓ All fields complete
+            </span>
           )}
-          {allDone && <div style={{ flex: 1 }} />}
 
           <button
             onClick={() => { onApply(output); onClose(); }}
             style={{
-              padding: "9px 28px", borderRadius: 6, cursor: "pointer",
+              padding: "8px 28px", borderRadius: 6, cursor: "pointer",
               fontFamily: MONO, fontSize: 11, fontWeight: 700,
               letterSpacing: ".07em", textTransform: "uppercase",
-              border: `1px solid ${ACCENT}60`,
-              background: allDone ? `${ACCENT}18` : `${ACCENT}08`,
-              color: ACCENT,
-              boxShadow: allDone ? `0 0 20px ${ACCENT}12` : "none",
+              border: `1px solid ${C}60`,
+              background: allDone ? `${C}18` : `${C}08`,
+              color: C,
+              boxShadow: allDone ? `0 0 20px ${C}15` : "none",
               transition: "all .2s",
             }}
           >

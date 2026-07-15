@@ -16,6 +16,9 @@ import { MedsAllergyZone } from "./QuickNoteMedsAllergy";
 import MedTermHighlighter from "@/components/MedTermHighlighter";
 import ExamShortcuts from "@/components/quicknote/ExamShortcuts";
 import VoiceDictationButton from "@/components/quicknote/VoiceDictationButton";
+// v15.0: KB-mode ROS and PE panels — these ARE the ROS and PE fields
+import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
+import { QuickNoteExamHelper } from "@/components/quicknote/QuickNoteExamHelper";
 
 export function Phase1Panel({
   // Core inputs
@@ -566,24 +569,30 @@ export function Phase1Panel({
 
       {/* ══════════════════════════════════════════════════════════════════════
           STEP 3: REVIEW OF SYSTEMS
+          v15.0: QuickNoteROSHelper IS the ROS field — KB mode, system grid,
+          positive/negative toggles, all-negative quick action.
+          No separate InputZone. No duplicate panel in QuickNote.jsx.
       ══════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom:14 }}>
 
         {/* ROS label row */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4, flexWrap:"wrap", gap:6 }}>
-          <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <span style={sectionLabel}>Review of Systems</span>
-              {/* v14.0: CC systems badge */}
-              {isCC && ccProfile.ros_sections?.length > 0 && (
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:"var(--qn-txt4)", letterSpacing:.3 }}>
-                  Systems: {ccProfile.ros_sections.join(" · ")}
-                </span>
-              )}
-            </div>
+        <div style={{
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          marginBottom:8, flexWrap:"wrap", gap:6,
+        }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={sectionLabel}>Review of Systems</span>
+            {isCC && ccProfile.ros_sections?.length > 0 && (
+              <span style={{
+                fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:"var(--qn-txt4)", letterSpacing:.3,
+              }}>
+                Systems: {ccProfile.ros_sections.join(" · ")}
+              </span>
+            )}
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            {/* v14.0: From HPI button */}
+            {/* From HPI */}
             {hpi.trim().length > 30 && (
               <button onClick={autoRosFromHpi} disabled={autoRosBusy}
                 style={{
@@ -597,50 +606,39 @@ export function Phase1Panel({
                 {autoRosBusy ? "● Generating…" : "✦ From HPI"}
               </button>
             )}
-            {/* v14.0: Reset to CC template */}
-            {isCC && rosEdited && ccProfile.ros_template && (
-              <ResetToTemplateBtn onReset={resetRosToCCTemplate} />
-            )}
             <InlineCopyBtn getValue={() => ros} label="Copy ROS" />
           </div>
         </div>
 
-        <InputZone
-          label="" value={ros} onChange={handleRosChange} phase={1}
-          rows={5} copyable templateType="ros" smartfill kbdHint="Alt+R"
-          placeholder={
-            isCC && ccProfile.ros_template
-              ? `${ccProfile.label} ROS pre-loaded — edit pertinent positives and negatives`
-              : "Review of systems — AI will auto-populate from HPI, or paste directly..."
-          }
-          onRef={setRef(3)}
-          onKeyDown={makeKeyDown(3, false, runMDM)}
-        />
+        {/* QuickNoteROSHelper — the single ROS panel */}
+        <QuickNoteROSHelper ros={ros} onChange={handleRosChange} />
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
           STEP 4: PHYSICAL EXAM
+          v15.0: QuickNoteExamHelper IS the PE field — KB mode, system grid,
+          normal/abnormal toggles, all-normal quick action, abnormal textarea.
+          No separate InputZone. No duplicate panel in QuickNote.jsx.
       ══════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom:14 }}>
 
         {/* PE label row */}
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4, flexWrap:"wrap" }}>
-          <div style={{ flex:1, display:"flex", flexDirection:"column", gap:2 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <span style={sectionLabel}>Physical Exam</span>
-              {/* v14.0: CC components badge */}
-              {isCC && ccProfile.pe_sections?.length > 0 && (
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:7, color:"var(--qn-txt4)", letterSpacing:.3 }}>
-                  Components: {ccProfile.pe_sections.join(" · ")}
-                </span>
-              )}
-            </div>
+        <div style={{
+          display:"flex", alignItems:"center", gap:6,
+          marginBottom:8, flexWrap:"wrap",
+        }}>
+          <div style={{ flex:1, display:"flex", alignItems:"center", gap:6 }}>
+            <span style={sectionLabel}>Physical Exam</span>
+            {isCC && ccProfile.pe_sections?.length > 0 && (
+              <span style={{
+                fontFamily:"'JetBrains Mono',monospace", fontSize:7,
+                color:"var(--qn-txt4)", letterSpacing:.3,
+              }}>
+                Components: {ccProfile.pe_sections.join(" · ")}
+              </span>
+            )}
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            {/* v14.0: Reset to CC template */}
-            {isCC && examEdited && ccProfile.pe_template && (
-              <ResetToTemplateBtn onReset={resetExamToCCTemplate} />
-            )}
             <InlineCopyBtn getValue={() => exam} label="Copy Exam" />
             <VoiceDictationButton
               fieldLabel="Physical Exam"
@@ -650,21 +648,8 @@ export function Phase1Panel({
           </div>
         </div>
 
-        <InputZone
-          label="" value={exam} onChange={handleExamChange} phase={1}
-          rows={5} copyable templateType="pe" smartfill kbdHint="Alt+E"
-          placeholder={
-            isCC && ccProfile.pe_template
-              ? `${ccProfile.label} PE pre-loaded — fill in [FINDING] bracket placeholders`
-              : "Focused physical exam — AI will auto-populate template from HPI, or paste directly..."
-          }
-          onRef={setRef(4)}
-          onKeyDown={makeKeyDown(4, true, runMDM)}
-        />
-
-        <ExamShortcuts onInsert={(phrase) =>
-          setExam(prev => prev ? prev.trimEnd() + "\n" + phrase : phrase)
-        } />
+        {/* QuickNoteExamHelper — the single PE panel */}
+        <QuickNoteExamHelper exam={exam} onChange={handleExamChange} />
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════

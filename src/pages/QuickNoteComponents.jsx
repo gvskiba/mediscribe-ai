@@ -631,7 +631,7 @@ function buildHPIOutput(questions, segments) {
 }
 
 // ─── LIVE PREVIEW ─────────────────────────────────────────────────────────────
-function LivePreview({ questions, segments, activeQIdx }) {
+function LivePreview({ questions, segments, activeQIdx, onFieldClick }) {
   const SANS = "'DM Sans',sans-serif";
   const MONO = "'JetBrains Mono',monospace";
 
@@ -679,27 +679,43 @@ function LivePreview({ questions, segments, activeQIdx }) {
 
           if (isDone && display) {
             return (
-              <span key={i} style={{
-                color: isAct ? "#00e5c0" : "#00c9a7",
-                fontWeight: 600,
-                borderBottom: isAct ? "2px solid #00e5c0" : "none",
-                transition: "all .15s",
-              }}>
+              <span
+                key={i}
+                onClick={() => onFieldClick(seg.qIdx)}
+                title={`Click to edit: ${q?.label}`}
+                style={{
+                  color: isAct ? "#00e5c0" : "#00c9a7",
+                  fontWeight: 600,
+                  borderBottom: isAct ? "2px solid #00e5c0" : "none",
+                  transition: "all .15s",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+              >
                 {display}
               </span>
             );
           }
 
           return (
-            <span key={i} style={{
-              color: isAct ? "rgba(0,229,192,.7)" : "rgba(107,158,200,.35)",
-              fontStyle: "italic",
-              borderBottom: isAct
-                ? "1.5px solid rgba(0,229,192,.5)"
-                : "1px dashed rgba(107,158,200,.2)",
-              padding: "0 2px",
-              transition: "all .15s",
-            }}>
+            <span
+              key={i}
+              onClick={() => onFieldClick(seg.qIdx)}
+              title={`Click to fill: ${q?.label}`}
+              style={{
+                color: isAct ? "rgba(0,229,192,.7)" : "rgba(107,158,200,.35)",
+                fontStyle: "italic",
+                borderBottom: isAct
+                  ? "1.5px solid rgba(0,229,192,.5)"
+                  : "1px dashed rgba(107,158,200,.2)",
+                padding: "0 2px",
+                transition: "all .15s",
+                cursor: "pointer",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = "rgba(0,229,192,.55)"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = isAct ? "rgba(0,229,192,.7)" : "rgba(107,158,200,.35)"; }}
+            >
               {q?.label || "…"}
             </span>
           );
@@ -1435,6 +1451,17 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
               questions={questions}
               segments={segments}
               activeQIdx={activeQIdx}
+              onFieldClick={(qIdx) => {
+                setActiveQIdx(qIdx);
+                setChipFocusIdx(0);
+                // Scroll the field list to the clicked field
+                setTimeout(() => {
+                  const el = listRef.current?.querySelector(
+                    `[data-qidx="${qIdx}"]`
+                  );
+                  el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                }, 30);
+              }}
             />
           </div>
         </div>

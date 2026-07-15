@@ -32,12 +32,9 @@ import { SepsisBanner } from "./QuickNoteSepsis";
 import { ProcedureNoteModal } from "./QuickNoteProcedure";
 import { SDMBlock, AttestationBlock, NursingHandoff, PriorVisitsPanel, MDMPlanEntry } from "./QuickNoteExtras";
 import { DEFAULT_EXPANSIONS } from "./QuickNoteVoice";
-import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
-import { QuickNoteExamHelper } from "@/components/quicknote/QuickNoteExamHelper";
 import { QuickNoteAbnormals } from "@/components/quicknote/QuickNoteAbnormals";
 import { GuidelineAssist } from "@/components/quicknote/QuickNoteGuidelines";
 import { DispositionCriteriaBuilder } from "@/components/quicknote/QuickNoteDispositionCriteria";
-import { QuickNoteROSPEScaffolds } from "@/components/quicknote/QuickNoteROSPEScaffolds";
 import HighAlertMedAlert from "@/components/quicknote/HighAlertMedAlert";
 import {
   MDM_SCHEMA, DISP_SCHEMA, TREATMENT_SCHEMA,
@@ -471,8 +468,6 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         } catch(e) { console.error("Auto lab analysis failed:", e); }
         finally { setLabsAutoAnalyzing(false); }
       }, 1800);
-    } else {
-      setLabsAutoAnalyzing(false);
     }
   }, [cc, mdmResult, parsedMeds, parsedAllergies]);
 
@@ -491,8 +486,6 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         } catch(e) { console.error("Auto imaging analysis failed:", e); }
         finally { setImagingAutoAnalyzing(false); }
       }, 1800);
-    } else {
-      setImagingAutoAnalyzing(false);
     }
   }, [cc, mdmResult, labSummaryResult]);
 
@@ -533,7 +526,7 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
     } catch(e) { setP1Error("MDM generation failed: "+(e.message||"Check API")); }
     finally { setP1Busy(false); }
   }, [cc,vitals,hpi,ros,exam,phase1Ready,p1Busy,vhAnalysis,parsedMeds,parsedAllergies,
-      encounterType,isBounceback,bouncebackDate,patientPregnant,patientWeight,pmh,psh,patientMeds,patientAllergies,ccProfile]);
+      encounterType,isBounceback,bouncebackDate,patientPregnant,patientWeight,pmh,psh,patientMeds,patientAllergies]);
 
   const generateFinalImpression = useCallback(async (resolvedDispResult) => {
     setFinalImpressionLoading(true);
@@ -635,7 +628,7 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
       generateFinalImpression(res);
     } catch(e) { setP2Error("Disposition generation failed: "+(e.message||"Check API")); }
     finally { setP2Busy(false); }
-  }, [mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,p2Busy,ekg,parsedMeds,parsedAllergies,consults,patientResponse,ccProfile]);
+  }, [mdmResult,labs,imaging,newVitals,cc,hpi,vitals,ros,exam,p2Busy,ekg,parsedMeds,parsedAllergies,consults,patientResponse]);
 
   const runWorkupRationale = useCallback(async () => {
     if (!mdmResult||workupRationaleBusy) return;
@@ -1576,15 +1569,6 @@ Return JSON only.`,
               {(hpiRosDone||hpiExamDone)&&!hpiRosBusy&&!hpiExamBusy&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(61,255,160,.6)"}}>Review and edit below before generating Initial Impression</span>}
             </div>
           )}
-
-          {/* ROS helper — immediately after HPI */}
-          <QuickNoteROSHelper ros={ros} onChange={setRos}/>
-
-          {/* CC-driven ROS + PE scaffold injection */}
-          <QuickNoteROSPEScaffolds cc={cc} ros={ros} setRos={setRos} exam={exam} setExam={setExam}/>
-
-          {/* PE helper — immediately after ROS */}
-          <QuickNoteExamHelper exam={exam} onChange={setExam} cc={cc} autoExamFromCC={autoExamFromCC} autoExamBusy={autoExamBusy}/>
 
           {/* HPI Scaffold — inline, before generate button */}
           {cc.trim()&&(()=>{

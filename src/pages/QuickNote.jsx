@@ -36,9 +36,6 @@ import { QuickNoteAbnormals } from "@/components/quicknote/QuickNoteAbnormals";
 import { GuidelineAssist } from "@/components/quicknote/QuickNoteGuidelines";
 import { DispositionCriteriaBuilder } from "@/components/quicknote/QuickNoteDispositionCriteria";
 import HighAlertMedAlert from "@/components/quicknote/HighAlertMedAlert";
-import { QuickNoteROSHelper } from "./QuickNoteROSHelper";
-import { QuickNoteROSPEScaffolds } from "@/components/quicknote/QuickNoteROSPEScaffolds";
-import { QuickNoteExamHelper } from "@/components/quicknote/QuickNoteExamHelper";
 import {
   MDM_SCHEMA, DISP_SCHEMA, TREATMENT_SCHEMA,
   buildMDMPrompt, buildDispPrompt, buildMDMBlock,
@@ -471,8 +468,6 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         } catch(e) { console.error("Auto lab analysis failed:", e); }
         finally { setLabsAutoAnalyzing(false); }
       }, 1800);
-    } else {
-      setLabsAutoAnalyzing(false);
     }
   }, [cc, mdmResult, parsedMeds, parsedAllergies]);
 
@@ -491,8 +486,6 @@ Return JSON: { "exam_text": "System-by-system PE template here..." }`,
         } catch(e) { console.error("Auto imaging analysis failed:", e); }
         finally { setImagingAutoAnalyzing(false); }
       }, 1800);
-    } else {
-      setImagingAutoAnalyzing(false);
     }
   }, [cc, mdmResult, labSummaryResult]);
 
@@ -934,7 +927,7 @@ Return JSON only.`,
     setRerunAddendumBusy(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildMDMPrompt(cc,vitals,hpi,ros,exam,vhAnalysis,parsedMeds,parsedAllergies,encounterType,ccProfile)
+        prompt: buildMDMPrompt(cc,vitals,hpi,ros,exam,vhAnalysis,parsedMeds,parsedAllergies,encounterType)
           + `\n\nADDENDUM: Prev Dx: ${mdmResult.working_diagnosis} (${mdmResult.mdm_level}). Labs: ${labs||"pending"}. Imaging: ${imaging||"pending"}. Revise if warranted.`,
         response_json_schema: MDM_SCHEMA,
       });
@@ -1610,29 +1603,6 @@ Return JSON only.`,
               {(hpiRosDone||hpiExamDone)&&!hpiRosBusy&&!hpiExamBusy&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:7,color:"rgba(61,255,160,.6)"}}>Review and edit below before generating Initial Impression</span>}
             </div>
           )}
-
-          {/* ── v15.0: QuickNoteROSHelper — KB-mode ROS panel ── */}
-          <div style={{marginBottom:12,padding:"12px 14px",background:"rgba(8,22,40,.5)",border:"1px solid rgba(42,79,122,.35)",borderRadius:12}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-teal)"}}>Review of Systems</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:.5,background:"rgba(0,229,192,.08)",border:"1px solid rgba(0,229,192,.2)",borderRadius:4,padding:"2px 7px"}}>KB MODE</span>
-            </div>
-            <QuickNoteROSHelper ros={ros} onChange={setRos} />
-          </div>
-
-          {/* ── v15.0: QuickNoteROSPEScaffolds — CC-driven template injection ── */}
-          <div style={{marginBottom:12}}>
-            <QuickNoteROSPEScaffolds cc={cc} ros={ros} setRos={setRos} exam={exam} setExam={setExam} />
-          </div>
-
-          {/* ── v15.0: QuickNoteExamHelper — KB-mode PE panel ── */}
-          <div style={{marginBottom:12,padding:"12px 14px",background:"rgba(8,22,40,.5)",border:"1px solid rgba(42,79,122,.35)",borderRadius:12}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:14,color:"var(--qn-teal)"}}>Physical Exam</span>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,color:"var(--qn-txt4)",letterSpacing:.5,background:"rgba(0,229,192,.08)",border:"1px solid rgba(0,229,192,.2)",borderRadius:4,padding:"2px 7px"}}>KB MODE</span>
-            </div>
-            <QuickNoteExamHelper exam={exam} onChange={setExam} />
-          </div>
 
           {/* HPI Scaffold — inline, before generate button */}
           {cc.trim()&&(()=>{

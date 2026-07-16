@@ -617,7 +617,9 @@ function buildHPIOutput(questions, segments) {
     if (!q) return "";
     if (q.type === "choice") {
       if (q.value === "__custom__") return q.custom || `[${q.label}]`;
-      if (Array.isArray(q.value))   return q.value.length ? q.value.join(", ") : `[${q.label}]`;
+      if (Array.isArray(q.value)) {
+        return q.value.length ? q.value.join(" and ") : `[${q.label}]`;
+      }
       return q.value || `[${q.label}]`;
     }
     if (q.type === "multi") {
@@ -1173,19 +1175,30 @@ export function HPIBuilder({ template, onApply, onClose, ccLabel }) {
       if (i !== qIdx) return q;
       if (q.type === "choice") {
         if (val === null) return { ...q, value: null, done: false };
-        // Toggle selection
-        const cur = Array.isArray(q.value) ? q.value : (q.value ? [q.value] : []);
-        const next = cur.includes(val)
+        // Toggle: tap same chip to deselect, tap another to select
+        // Support multiple selections: value is array when multi-tapped
+        const cur = Array.isArray(q.value)
+          ? q.value
+          : q.value && q.value !== "__custom__"
+          ? [q.value]
+          : [];
+        const alreadySelected = cur.includes(val);
+        const next = alreadySelected
           ? cur.filter(v => v !== val)
           : [...cur, val];
-        // Simplify to string when single value
-        const newVal = next.length === 1 ? next[0] : next.length === 0 ? null : next;
-        return { ...q, value: newVal, done: newVal !== null && newVal !== "__custom__" };
+        const newVal = next.length === 0
+          ? null
+          : next.length === 1
+          ? next[0]
+          : next;
+        const isDone = newVal !== null && newVal !== "__custom__";
+        return { ...q, value: newVal, done: isDone };
       }
       return q;
     }));
-    if (forceAdvance || (val !== null && val !== "__custom__")) {
-      setTimeout(() => advanceFrom(qIdx), 120);
+    // Only advance when explicitly forced (Tab key or Next button)
+    if (forceAdvance) {
+      setTimeout(() => advanceFrom(qIdx), 80);
     }
   }, [advanceFrom]);
 

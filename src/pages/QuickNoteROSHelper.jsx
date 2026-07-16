@@ -21,6 +21,20 @@ const SYSTEMS = [
 
 const KEY_MAP = Object.fromEntries(SYSTEMS.map((s, i) => [s.key, i]));
 
+// Additional systems NOT in the main KB grid — available via the "Other Systems" picker.
+const ADDITIONAL_SYSTEMS = [
+  "Endocrine",
+  "Heme / Immune",
+  "Reproductive / OB-GYN",
+  "Psychiatric",
+  "Allergic / Immunologic",
+  "Eyes (Ophthalmologic)",
+  "Ears / Nose / Throat",
+  "Vascular / Peripheral",
+  "Lymphatic",
+  "Integumentary",
+];
+
 function buildRosText(statuses, positives) {
   return SYSTEMS
     .filter(s => statuses[s.id] !== "unset")
@@ -62,9 +76,19 @@ export function QuickNoteROSHelper({ ros, onChange, defaultText }) {
   const [focusedSymIdx, setFocusedSymIdx] = useState(null);
   const [showLegend,    setShowLegend]    = useState(false);
 
+  // Other Systems — additional systems not in the main KB grid
+  const [otherSystems,    setOtherSystems]    = useState([]);
+  const [showOtherPicker, setShowOtherPicker] = useState(false);
+  const [otherFreeText,   setOtherFreeText]   = useState("");
+
   const emit = useCallback((nextStatuses, nextPositives) => {
-    if (onChange) onChange(buildRosText(nextStatuses, nextPositives));
-  }, [onChange]);
+    if (!onChange) return;
+    const mainText = buildRosText(nextStatuses, nextPositives);
+    const combined = [mainText,
+      ...otherSystems.filter(s => s.text.trim()).map(s => `${s.system}: ${s.text.trim()}`)
+    ].filter(Boolean).join("\n");
+    onChange(combined);
+  }, [onChange, otherSystems]);
 
   const markAllNegative = useCallback((id, nextStatuses, nextPositives) => {
     const ns = nextStatuses || { ...statuses, [id]: "all-negative" };
@@ -141,6 +165,7 @@ export function QuickNoteROSHelper({ ros, onChange, defaultText }) {
 
   const handleKeyDown = useCallback((e) => {
     if (!kbActive) return;
+    if (e.target.tagName === "INPUT") return;
     const meta = e.metaKey || e.ctrlKey;
 
     if (meta && e.key === "Enter") { e.preventDefault(); markAllNegAll(); return; }
@@ -209,6 +234,8 @@ export function QuickNoteROSHelper({ ros, onChange, defaultText }) {
     }
   }
 
+  const mainRosText = mode === "text" ? textVal : buildRosText(statuses, positives);
+
   return (
     <div
       ref={panelRef}
@@ -267,7 +294,10 @@ export function QuickNoteROSHelper({ ros, onChange, defaultText }) {
           value={textVal}
           onChange={e => {
             setTextVal(e.target.value);
-            onChange(e.target.value);
+            const combined = [e.target.value,
+              ...otherSystems.filter(s => s.text.trim()).map(s => `${s.system}: ${s.text.trim()}`)
+            ].filter(Boolean).join("\n");
+            onChange(combined);
           }}
           rows={6}
           style={{
@@ -458,6 +488,139 @@ export function QuickNoteROSHelper({ ros, onChange, defaultText }) {
       )}
         </>
       )}
+
+      {/* Other Systems */}
+      <div style={{ marginTop: 12, borderTop: "1px solid rgba(42,79,122,.2)", paddingTop: 10 }}>
+
+        {/* Render each added other system */}
+        {otherSystems.map((s, idx) => (
+          <div key={s.system} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+            <span style={{
+              fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700,
+              color:"var(--qn-txt4)", letterSpacing:.8, textTransform:"uppercase",
+              minWidth:160, flexShrink:0,
+            }}>
+              {s.system}:
+            </span>
+            <input
+              autoFocus={idx === otherSystems.length - 1}
+              value={s.text}
+              onChange={e => {
+                const updated = otherSystems.map((sys, i) =>
+                  i === idx ? { ...sys, text: e.target.value, done: e.target.value.trim().length > 0 } : sys
+                );
+                setOtherSystems(updated);
+                const combined = [mainRosText,
+                  ...updated.filter(sys => sys.text.trim()).map(sys => `${sys.system}: ${sys.text.trim()}`)
+                ].filter(Boolean).join("\n");
+                onChange(combined);
+              }}
+              placeholder={`(+/-) findings for ${s.system}...`}
+              style={{
+                flex:1, padding:"5px 10px", borderRadius:7,
+                background:"rgba(14,37,68,.6)",
+                border:"1px solid rgba(42,79,122,.4)",
+                color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif",
+                fontSize:12, outline:"none",
+              }}
+              onFocus={e => { e.target.style.borderColor = "rgba(0,229,192,.5)"; }}
+              onBlur={e  => { e.target.style.borderColor = "rgba(42,79,122,.4)"; }}
+            />
+            <button
+              onClick={() => {
+                const updated = otherSystems.filter((_, i) => i !== idx);
+                setOtherSystems(updated);
+                const combined = [mainRosText,
+                  ...updated.filter(sys => sys.text.trim()).map(sys => `${sys.system}: ${sys.text.trim()}`)
+                ].filter(Boolean).join("\n");
+                onChange(combined);
+              }}
+              style={{
+                padding:"3px 8px", borderRadius:5, cursor:"pointer",
+                fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+                border:"1px solid rgba(255,77,79,.2)", background:"transparent",
+                color:"rgba(255,77,79,.4)",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+
+        {/* Add system button and picker */}
+        <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+          <button
+            onClick={() => setShowOtherPicker(p => !p)}
+            style={{
+              padding:"4px 12px", borderRadius:7, cursor:"pointer",
+              fontFamily:"'JetBrains Mono',monospace", fontSize:8, fontWeight:700,
+              letterSpacing:.5, textTransform:"uppercase",
+              border:"1px solid rgba(0,229,192,.35)",
+              background: showOtherPicker ? "rgba(0,229,192,.1)" : "transparent",
+              color:"var(--qn-teal)",
+            }}
+          >
+            + Add System
+          </button>
+
+          {/* Free-text other entry */}
+          <input
+            value={otherFreeText}
+            onChange={e => setOtherFreeText(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && otherFreeText.trim()) {
+                const newSystem = { system: "Other", text: otherFreeText.trim(), done: true };
+                const updated = [...otherSystems, newSystem];
+                setOtherSystems(updated);
+                setOtherFreeText("");
+                const combined = [mainRosText,
+                  ...updated.filter(s => s.text.trim()).map(s => `${s.system}: ${s.text.trim()}`)
+                ].filter(Boolean).join("\n");
+                onChange(combined);
+              }
+            }}
+            placeholder="Type finding + Enter to add..."
+            style={{
+              flex:1, minWidth:180, padding:"4px 10px", borderRadius:7,
+              background:"rgba(14,37,68,.5)",
+              border:"1px solid rgba(42,79,122,.3)",
+              color:"var(--qn-txt)", fontFamily:"'DM Sans',sans-serif",
+              fontSize:11, outline:"none",
+            }}
+            onFocus={e => { e.target.style.borderColor = "rgba(0,229,192,.4)"; }}
+            onBlur={e  => { e.target.style.borderColor = "rgba(42,79,122,.3)"; }}
+          />
+        </div>
+
+        {/* System picker dropdown */}
+        {showOtherPicker && (
+          <div style={{
+            marginTop:8, display:"flex", flexWrap:"wrap", gap:6,
+          }}>
+            {ADDITIONAL_SYSTEMS
+              .filter(s => !otherSystems.find(o => o.system === s))
+              .map(sys => (
+                <button
+                  key={sys}
+                  onClick={() => {
+                    setOtherSystems(prev => [...prev, { system: sys, text: "", done: false }]);
+                    setShowOtherPicker(false);
+                  }}
+                  style={{
+                    padding:"4px 12px", borderRadius:16, cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:500,
+                    border:"1px solid rgba(42,79,122,.4)",
+                    background:"rgba(14,37,68,.5)",
+                    color:"var(--qn-txt2)",
+                  }}
+                >
+                  {sys}
+                </button>
+              ))
+            }
+          </div>
+        )}
+      </div>
     </div>
   );
 }

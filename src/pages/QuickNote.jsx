@@ -175,21 +175,44 @@ export default function QuickNote({ embedded = false, demo, vitals: initVitals, 
     setHpiRosBusy(true);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a board-certified emergency physician. The nursing staff has documented the following HPI. Generate a complete, complaint-appropriate Review of Systems (ROS) based on this HPI.
+        prompt: `You are a board-certified emergency physician documenting a
+Review of Systems for an ED chart.
 
 Chief Complaint: ${ccText || "not specified"}
 HPI: ${hpiText}
 
-Rules:
-1. Only include systems relevant to this chief complaint and its major differentials
-2. Format each system as: "System: (+) positive symptom, (-) negative symptom"
-3. Extract explicitly mentioned symptoms as positives
-4. Include pertinent negatives for high-risk differentials (e.g. for chest pain: deny diaphoresis, syncope, leg swelling)
-5. Do NOT invent symptoms — only document what is stated or can be clinically inferred from the CC/HPI
-6. Include 4-8 relevant systems
-7. Common systems to consider: Constitutional, Cardiovascular, Pulmonary, GI, GU, Musculoskeletal, Neurological, Dermatologic, Psychiatric
+RULES — follow in this exact order:
 
-Return JSON: { "ros_text": "System-by-system ROS here..." }`,
+RULE 1 — CHIEF COMPLAINT IS ALWAYS A POSITIVE:
+The chief complaint is by definition a symptom the patient has.
+Always document it as (+) in the appropriate system.
+For headache: Neurological: (+) headache
+For chest pain: Cardiovascular: (+) chest pain
+For shortness of breath: Pulmonary: (+) shortness of breath
+For abdominal pain: GI: (+) abdominal pain
+Never omit the chief complaint from the ROS.
+
+RULE 2 — EXTRACT EXPLICITLY STATED SYMPTOMS:
+Read the HPI carefully. Any symptom the patient reported
+(nausea, vomiting, photophobia, neck stiffness, fever, etc.)
+must appear as (+) in the correct system.
+Do NOT invent symptoms. Only document what is stated.
+
+RULE 3 — ADD PERTINENT NEGATIVES FOR HIGH-RISK DIFFERENTIALS:
+For the chief complaint, add clinically important negatives that
+help exclude dangerous diagnoses. These should appear as (-).
+For headache add: (-) worst headache of life, (-) fever/chills,
+(-) neck stiffness, (-) vision changes, (-) focal weakness,
+(-) loss of consciousness — unless any are stated as positive
+in the HPI, in which case mark them (+).
+
+RULE 4 — FORMAT:
+Each system on its own line:
+System: (+) positive symptom, (-) negative symptom
+Include only systems relevant to this chief complaint.
+Include 4-8 systems.
+
+Return JSON: { "ros_text": "complete ROS here" }`,
         response_json_schema: { type:"object", required:["ros_text"], properties:{ ros_text:{type:"string"} } },
       });
       if (res?.ros_text?.trim()) {

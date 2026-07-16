@@ -39,12 +39,11 @@ function buildRosText(statuses, positives) {
   return SYSTEMS
     .filter(s => statuses[s.id] !== "unset")
     .map(s => {
-      if (statuses[s.id] === "all-negative") return `${s.label}: Negative.`;
       const pos = positives[s.id] || [];
       const neg = s.symptoms.filter(sym => !pos.includes(sym));
-      const posPart = pos.length ? `Positive for ${pos.join(", ")}` : "";
+      const posPart = pos.length ? `Admits ${pos.join(", ")}` : "";
       const negPart = neg.length ? `Denies ${neg.join(", ")}` : "";
-      return `${s.label}: ${[posPart, negPart].filter(Boolean).join("; ")}.`;
+      return `${s.label}: ${[posPart, negPart].filter(Boolean).join(", ")}.`;
     })
     .join("\n");
 }
@@ -338,7 +337,7 @@ export function QuickNoteROSHelper({ ros, onChange, defaultText }) {
       {/* Toolbar */}
       <div style={{ display: "flex", gap: 6 }}>
         <button onClick={markAllNegAll} style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 10px", borderRadius: 5, cursor: "pointer", border: "1px solid rgba(0,229,192,0.4)", background: "rgba(0,229,192,0.08)", color: "#00e5c0", display: "flex", alignItems: "center", gap: 6 }}>
-          ✓ All Negative
+          ✓ All Denies
           {kbActive && <span style={{ color: "rgba(0,229,192,0.4)", fontSize: 9 }}>⌘↵</span>}
         </button>
         <button onClick={resetAll} style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 10px", borderRadius: 5, cursor: "pointer", border: "1px solid rgba(200,223,240,0.12)", background: "transparent", color: "rgba(200,223,240,0.4)", display: "flex", alignItems: "center", gap: 6 }}>
@@ -399,7 +398,7 @@ export function QuickNoteROSHelper({ ros, onChange, defaultText }) {
               {/* Partial summary when not focused */}
               {isPartial && !isFocused && posSyms.length > 0 && (
                 <div style={{ fontFamily: SANS, fontSize: 10, color: "#f5a623", marginBottom: 4, lineHeight: 1.4 }}>
-                  + {posSyms.join(", ")}
+                  Admits {posSyms.join(", ")}
                 </div>
               )}
 
@@ -515,7 +514,7 @@ export function QuickNoteROSHelper({ ros, onChange, defaultText }) {
                 ].filter(Boolean).join("\n");
                 onChange(combined);
               }}
-              placeholder={`(+/-) findings for ${s.system}...`}
+              placeholder={`Admits/Denies findings for ${s.system}...`}
               style={{
                 flex:1, padding:"5px 10px", borderRadius:7,
                 background:"rgba(14,37,68,.6)",

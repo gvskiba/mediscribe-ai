@@ -32,7 +32,7 @@ export const CC_PROFILES = {
     ],
 
     ros_template: `Constitutional: (+) chest pain onset [TIME] ago, (-) fever, (-) chills, (+/-) diaphoresis, (+/-) generalized weakness
-Cardiovascular: (+/-) palpitations, (+/-) syncope or near-syncope, (+/-) orthopnea, (+/-) PND, (+/-) lower extremity edema, (-) history of similar pain
+Cardiovascular: (+) chest pain, (+/-) palpitations, (+/-) syncope or near-syncope, (+/-) orthopnea, (+/-) PND, (+/-) lower extremity edema, (-) history of similar pain
 Pulmonary: (+/-) dyspnea at rest, (+/-) dyspnea on exertion, (+/-) pleuritic component, (-) hemoptysis, (-) cough
 GI: (+/-) nausea, (+/-) vomiting, (+/-) heartburn or reflux symptoms, (-) abdominal pain, (-) dysphagia
 Musculoskeletal: (+/-) reproducible with palpation, (+/-) pain with movement, (-) recent trauma, (-) recent prolonged immobilization
@@ -110,7 +110,7 @@ Risk factors: [HTN / DM / hyperlipidemia / smoking / family history / obesity]`,
 
     ros_template: `Constitutional: (+) shortness of breath onset [TIME] ago, (+/-) fever [VALUE], (+/-) chills, (+/-) fatigue, (+/-) diaphoresis
 Cardiovascular: (+/-) chest pain or pressure, (+/-) palpitations, (+/-) orthopnea, (+/-) PND, (+/-) lower extremity edema, (+/-) syncope
-Pulmonary: (+/-) dyspnea at rest, (+/-) dyspnea on exertion, (+/-) wheezing, (+/-) stridor, (+/-) cough [productive/dry], (+/-) hemoptysis, (+/-) pleuritic chest pain
+Pulmonary: (+) dyspnea at rest, (+/-) dyspnea on exertion, (+/-) wheezing, (+/-) stridor, (+/-) cough [productive/dry], (+/-) hemoptysis, (+/-) pleuritic chest pain
 Allergic / Immunologic: (+/-) known allergies, (+/-) recent new medication or food, (+/-) rash or urticaria, (+/-) lip or tongue swelling
 GI: (+/-) nausea, (+/-) vomiting, (-) hematemesis
 Neurological: (-) focal weakness, (-) slurred speech, (+/-) anxiety`,
@@ -182,7 +182,7 @@ Medications: [inhalers / diuretics — compliance YES/NO]`,
     ],
 
     ros_template: `Constitutional: (+) abdominal pain onset [TIME] ago, (+/-) fever [VALUE], (+/-) chills, (+/-) anorexia, (+/-) fatigue
-GI: (+/-) nausea, (+/-) vomiting [FREQUENCY], (+/-) diarrhea [FREQUENCY / character], (+/-) constipation, (+/-) last bowel movement [DATE], (+/-) blood in stool, (+/-) melena, (+/-) hematemesis, (+/-) bloating, (+/-) similar prior episodes
+GI: (+) abdominal pain, (+/-) nausea, (+/-) vomiting [FREQUENCY], (+/-) diarrhea [FREQUENCY / character], (+/-) constipation, (+/-) last bowel movement [DATE], (+/-) blood in stool, (+/-) melena, (+/-) hematemesis, (+/-) bloating, (+/-) similar prior episodes
 GU / Reproductive: (+/-) dysuria, (+/-) hematuria, (+/-) vaginal discharge or bleeding [if applicable], (+/-) LMP [DATE], (+/-) pregnancy status [known/unknown], (+/-) flank pain
 Cardiovascular: (+/-) chest pain, (-) palpitations, (+/-) history of vascular disease or AAA
 Musculoskeletal: (-) back pain radiating to groin [if renal colic suspected], (+/-) pulsatile abdominal mass history`,
@@ -256,7 +256,7 @@ Prior episodes: [similar prior episodes — YES/NO, prior surgeries — APPENDEC
     ],
 
     ros_template: `Constitutional: (+) headache onset [TIME] ago, (+/-) fever [VALUE], (+/-) chills, (+/-) fatigue, (+/-) neck stiffness or pain
-Neurological: (+/-) vision changes [blurred/diplopia/photopsia], (+/-) photophobia, (+/-) phonophobia, (+/-) nausea, (+/-) vomiting, (+/-) focal weakness or numbness, (+/-) speech difficulty, (+/-) confusion or altered mental status, (+/-) seizure, (+/-) loss of consciousness, (+/-) gait difficulty, (+/-) prior similar headaches [migraines — YES/NO]
+Neurological: (+) headache onset [TIME] ago, (+/-) photophobia, (+/-) phonophobia, (+/-) nausea, (+/-) vomiting, (+/-) vision changes [blurred/diplopia], (+/-) focal weakness or numbness, (+/-) speech difficulty, (+/-) confusion, (+/-) neck stiffness, (-) loss of consciousness, (-) seizure
 HEENT: (+/-) eye pain or redness, (+/-) jaw claudication, (+/-) scalp tenderness [temporal], (+/-) sinus pain or congestion, (+/-) ear pain, (+/-) nasal discharge
 Cardiovascular: (+/-) chest pain, BP at triage [VALUE], (+/-) known hypertension — history of compliance with medications
 Psychiatric: (+/-) anxiety, (+/-) depression, (+/-) recent significant stressor`,
@@ -327,7 +327,7 @@ Red flags: [first or worst headache / onset with exertion or Valsalva / progress
     ],
 
     ros_template: `Constitutional: (+) syncope or near-syncope episode [TIME] ago, (+/-) prodrome [palpitations/lightheadedness/diaphoresis/nausea — DESCRIBE], (+/-) prior similar episodes
-Cardiovascular: (+/-) palpitations before event, (+/-) chest pain, (+/-) exertional syncope, (+/-) known structural heart disease, (+/-) family history sudden cardiac death
+Cardiovascular: (+) syncope/near-syncope, (+/-) palpitations before event, (+/-) chest pain, (+/-) exertional syncope, (+/-) known structural heart disease, (+/-) family history sudden cardiac death
 Neurological: (+/-) loss of consciousness [DURATION], (+/-) post-ictal confusion, (+/-) tongue biting, (+/-) incontinence, (+/-) focal neurological symptoms, (+/-) headache after event, (+/-) prior seizure history
 Pulmonary: (-) acute dyspnea, (+/-) pleuritic chest pain, (+/-) recent prolonged travel or immobilization
 GI / Autonomic: (+/-) prolonged standing before event, (+/-) warm environment, (+/-) pain or fright as trigger, (+/-) nausea immediately before event, (+/-) recent dehydration or poor oral intake`,
@@ -398,7 +398,7 @@ Family history: [sudden cardiac death in family member < 50 — YES/NO]`,
     ],
 
     ros_template: `Constitutional: (+) back pain onset [TIME] ago, (+/-) fever [VALUE], (+/-) chills, (+/-) night sweats, (+/-) unintentional weight loss, (+/-) history of malignancy
-Musculoskeletal: (+/-) mechanism of injury [DESCRIBE], (+/-) radiation of pain [to buttocks / leg / below knee], (+/-) pain with movement, (+/-) prior similar episodes, (+/-) history of osteoporosis or steroid use
+Musculoskeletal: (+) back pain, (+/-) mechanism of injury [DESCRIBE], (+/-) radiation of pain [to buttocks / leg / below knee], (+/-) pain with movement, (+/-) prior similar episodes, (+/-) history of osteoporosis or steroid use
 Neurological: (+/-) lower extremity weakness, (+/-) lower extremity numbness or tingling, (+/-) bowel dysfunction [incontinence / retention], (+/-) bladder dysfunction [retention / incontinence], (+/-) saddle anesthesia
 GU: (+/-) dysuria, (+/-) hematuria, (+/-) flank pain, (+/-) recent UTI or instrumentation
 Vascular: (+/-) abdominal pain associated, (+/-) known AAA, (+/-) history of vascular disease, (+/-) pain out of proportion to exam`,
@@ -469,7 +469,7 @@ Red flags: [fever / unintentional weight loss / cancer history / bowel or bladde
     ],
 
     ros_template: `Constitutional: (+) extremity pain onset [TIME] ago, (+/-) fever [VALUE], (+/-) chills, (+/-) night sweats
-Musculoskeletal: (+) [mechanism — fall / MVA / sports / spontaneous / other], (+/-) immediate swelling, (+/-) deformity noted, (+/-) inability to bear weight or use limb, (+/-) joint locking or instability, (+/-) prior injury to same area
+Musculoskeletal: (+) extremity pain, (+/-) mechanism of injury [fall / MVA / sports / spontaneous / other], (+/-) immediate swelling, (+/-) deformity noted, (+/-) inability to bear weight or use limb, (+/-) joint locking or instability, (+/-) prior injury to same area
 Vascular: (+/-) calf pain or swelling, (+/-) recent prolonged travel or immobilization, (+/-) known coagulopathy or clotting disorder, (+/-) pallor or color change of extremity, (+/-) pulselessness [5 Ps — Pain/Pallor/Paresthesia/Pulselessness/Paralysis]
 Neurological: (+/-) numbness or tingling [location — distribution], (+/-) weakness distal to injury
 Dermatologic: (+/-) skin breakdown or wound, (+/-) redness tracking proximally, (+/-) bullae or skin discoloration, (+/-) warmth`,
@@ -542,7 +542,7 @@ Infection concern: [fever / warmth / redness spreading / skin breakdown]`,
     ],
 
     ros_template: `Constitutional: (+) altered mental status — onset [sudden/gradual] [TIME] ago, (+/-) fever [VALUE], (+/-) chills, (+/-) recent illness
-Neurological: (+/-) headache, (+/-) focal weakness, (+/-) seizure activity witnessed, (+/-) loss of consciousness, (+/-) prior similar episodes, (+/-) recent head trauma, (+/-) history of dementia or baseline cognitive impairment [DESCRIBE BASELINE]
+Neurological: (+) altered mental status, (+/-) headache, (+/-) focal weakness, (+/-) seizure activity witnessed, (+/-) loss of consciousness, (+/-) prior similar episodes, (+/-) recent head trauma, (+/-) history of dementia or baseline cognitive impairment [DESCRIBE BASELINE]
 Metabolic / Endocrine: (+/-) history of diabetes — last glucose check [VALUE], (+/-) history of liver disease or alcohol use, (+/-) thyroid disease, (+/-) adrenal insufficiency, (+/-) uremia — dialysis patient
 Toxicologic: (+/-) alcohol ingestion [amount and timing], (+/-) illicit substance use [TYPE], (+/-) medication overdose [WHICH MEDICATIONS], (+/-) new medications, (+/-) medication changes, (+/-) access to substances
 Cardiovascular: (+/-) palpitations, (+/-) chest pain, (+/-) history of cardiac arrhythmia, (+/-) hypotension at home
@@ -766,7 +766,7 @@ Reason for coming to ED: [brought by family / self-presented / EMS / law enforce
     ],
 
     ros_template: `Constitutional: (+) flank pain onset [TIME] ago, (+/-) fever [VALUE], (+/-) chills / rigors, (+/-) nausea, (+/-) vomiting, (+/-) malaise
-GU: (+/-) hematuria [gross / microscopic], (+/-) dysuria, (+/-) urinary frequency or urgency, (+/-) difficulty urinating, (+/-) prior kidney stones [YES/NO — prior episodes similar to this / prior stone passage or procedures], (+/-) known kidney stone history, (+/-) single kidney or renal transplant
+GU: (+) flank pain, (+/-) hematuria [gross / microscopic], (+/-) dysuria, (+/-) urinary frequency or urgency, (+/-) difficulty urinating, (+/-) prior kidney stones [YES/NO — prior episodes similar to this / prior stone passage or procedures], (+/-) known kidney stone history, (+/-) single kidney or renal transplant
 GI: (+/-) nausea, (+/-) vomiting, (+/-) abdominal pain, (-) diarrhea, (-) blood in stool
 Vascular: (+/-) pain radiating to groin, (+/-) known AAA or vascular disease, (+/-) pain out of proportion to exam, (+/-) pulsatile abdominal mass history
 Reproductive (if applicable): LMP [DATE], (+/-) vaginal bleeding, (+/-) pelvic pain, (+/-) possibility of pregnancy`,

@@ -208,7 +208,11 @@ in the HPI, in which case mark them (+).
 
 RULE 4 — FORMAT:
 Each system on its own line:
-System: (+) positive symptom, (-) negative symptom
+Format each line as: "System: Admits [symptom], Denies [symptom]"
+Use "Admits" for symptoms the patient reports having.
+Use "Denies" for symptoms the patient reports not having.
+Use "Admits/Denies" when status is unclear from the HPI.
+Never use (+), (-), or (+/-) symbols.
 Include only systems relevant to this chief complaint.
 Include 4-8 systems.
 

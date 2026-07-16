@@ -35,12 +35,12 @@ export const CC_PROFILES = {
       "Esophageal Rupture",
     ],
     ros_sections: ["Constitutional","Cardiovascular","Pulmonary","GI","Musculoskeletal","Neurological"],
-    ros_template: `Constitutional: (+) chest pain onset [TIME] ago, (+/-) diaphoresis, (-) fever, (-) chills, (+/-) generalized weakness
-Cardiovascular: (+) chest pain as chief complaint, (+/-) palpitations, (-) syncope or near-syncope, (-) prior similar episodes, (-) orthopnea, (-) paroxysmal nocturnal dyspnea, (-) lower extremity edema
-Pulmonary: (-) dyspnea at rest, (-) pleuritic component [documents against PE and PTX], (-) hemoptysis, (-) cough
-GI: (+/-) nausea, (+/-) vomiting, (-) heartburn or reflux, (-) dysphagia [documents against esophageal rupture], (-) abdominal pain
-Musculoskeletal: (-) reproducible with palpation, (-) pain with movement or position change, (-) recent chest wall trauma
-Neurological: (-) headache, (-) focal weakness or numbness, (-) loss of consciousness
+    ros_template: `Constitutional: Admits chest pain onset [TIME] ago, Admits/Denies diaphoresis, Denies fever, Denies chills, Admits/Denies generalized weakness
+Cardiovascular: Admits chest pain as chief complaint, Admits/Denies palpitations, Denies syncope or near-syncope, Denies prior similar episodes, Denies orthopnea, Denies paroxysmal nocturnal dyspnea, Denies lower extremity edema
+Pulmonary: Denies dyspnea at rest, Denies pleuritic component [documents against PE and PTX], Denies hemoptysis, Denies cough
+GI: Admits/Denies nausea, Admits/Denies vomiting, Denies heartburn or reflux, Denies dysphagia [documents against esophageal rupture], Denies abdominal pain
+Musculoskeletal: Denies reproducible with palpation, Denies pain with movement or position change, Denies recent chest wall trauma
+Neurological: Denies headache, Denies focal weakness or numbness, Denies loss of consciousness
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs","Cardiovascular","Pulmonary","Abdomen","Extremities"],
     pe_template: `General: Alert and oriented x3, [DISTRESS LEVEL — no acute/mild/moderate/severe distress], [DIAPHORESIS — diaphoretic/no diaphoresis]
@@ -88,11 +88,11 @@ Risk factors: [HTN / DM / hyperlipidemia / smoking / family history / obesity]`,
       "Epiglottitis",
     ],
     ros_sections: ["Constitutional","Pulmonary","Cardiovascular","Allergic / Immunologic","Neurological"],
-    ros_template: `Constitutional: (+) dyspnea onset [TIME] ago, (+/-) fever [VALUE], (-) chills, (+/-) fatigue, (+/-) diaphoresis
-Pulmonary: (+) shortness of breath as chief complaint, (+/-) wheezing, (-) stridor [documents against epiglottitis and upper airway obstruction], (+/-) productive cough [sputum color if present], (-) hemoptysis, (-) pleuritic chest pain [documents against PE and PTX]
-Cardiovascular: (-) chest pain or pressure [documents against STEMI], (-) palpitations, (-) orthopnea, (-) paroxysmal nocturnal dyspnea, (-) lower extremity edema [documents against CHF]
-Allergic / Immunologic: (-) new food, medication, or allergen exposure [documents against anaphylaxis], (-) rash or urticaria, (-) lip or tongue or throat swelling [documents against angioedema and anaphylaxis]
-Neurological: (-) focal weakness, (-) confusion or altered mental status, (+/-) anxiety
+    ros_template: `Constitutional: Admits dyspnea onset [TIME] ago, Admits/Denies fever [VALUE], Denies chills, Admits/Denies fatigue, Admits/Denies diaphoresis
+Pulmonary: Admits shortness of breath as chief complaint, Admits/Denies wheezing, Denies stridor [documents against epiglottitis and upper airway obstruction], Admits/Denies productive cough [sputum color if present], Denies hemoptysis, Denies pleuritic chest pain [documents against PE and PTX]
+Cardiovascular: Denies chest pain or pressure [documents against STEMI], Denies palpitations, Denies orthopnea, Denies paroxysmal nocturnal dyspnea, Denies lower extremity edema [documents against CHF]
+Allergic / Immunologic: Denies new food, medication, or allergen exposure [documents against anaphylaxis], Denies rash or urticaria, Denies lip or tongue or throat swelling [documents against angioedema and anaphylaxis]
+Neurological: Denies focal weakness, Denies confusion or altered mental status, Admits/Denies anxiety
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs","HEENT","Pulmonary","Cardiovascular","Extremities"],
     pe_template: `General: Alert and oriented x3, [DISTRESS — in no/mild/moderate/severe respiratory distress], [POSITION — sitting upright/tripod/supine], speaking in [full sentences/short phrases/single words]
@@ -136,11 +136,11 @@ Medications: [inhalers / diuretics — compliance YES/NO]`,
       "Ovarian Torsion",
     ],
     ros_sections: ["Constitutional","GI","GU / Reproductive","Cardiovascular","Musculoskeletal"],
-    ros_template: `Constitutional: (+) abdominal pain onset [TIME] ago, (+/-) fever [VALUE], (-) chills, (+/-) anorexia, (+/-) fatigue
-GI: (+) abdominal pain as chief complaint, (+/-) nausea, (+/-) vomiting [FREQUENCY], (+/-) diarrhea [FREQUENCY and character], (+/-) constipation, last bowel movement [DATE — DOCUMENT], (-) blood in stool [documents against lower GI hemorrhage], (-) melena [documents against upper GI hemorrhage], (-) hematemesis, (+/-) prior similar episodes
-GU / Reproductive: (+/-) dysuria, (+/-) hematuria, LMP [DATE — MANDATORY for all reproductive-age females], pregnancy test [positive/negative/unknown — MANDATORY], (+/-) vaginal discharge or bleeding [if present with abdominal pain: ectopic until proven otherwise], (+/-) pelvic pain, (+/-) flank pain
-Cardiovascular: (-) known AAA or vascular disease [documents against AAA and mesenteric ischemia], (-) atrial fibrillation [documents against mesenteric ischemia], (-) pain out of proportion to exam [if present: mesenteric ischemia concern]
-Musculoskeletal: (-) back pain radiating to groin [documents against renal colic and AAA]
+    ros_template: `Constitutional: Admits abdominal pain onset [TIME] ago, Admits/Denies fever [VALUE], Denies chills, Admits/Denies anorexia, Admits/Denies fatigue
+GI: Admits abdominal pain as chief complaint, Admits/Denies nausea, Admits/Denies vomiting [FREQUENCY], Admits/Denies diarrhea [FREQUENCY and character], Admits/Denies constipation, last bowel movement [DATE — DOCUMENT], Denies blood in stool [documents against lower GI hemorrhage], Denies melena [documents against upper GI hemorrhage], Denies hematemesis, Admits/Denies prior similar episodes
+GU / Reproductive: Admits/Denies dysuria, Admits/Denies hematuria, LMP [DATE — MANDATORY for all reproductive-age females], pregnancy test [positive/negative/unknown — MANDATORY], Admits/Denies vaginal discharge or bleeding [if present with abdominal pain: ectopic until proven otherwise], Admits/Denies pelvic pain, Admits/Denies flank pain
+Cardiovascular: Denies known AAA or vascular disease [documents against AAA and mesenteric ischemia], Denies atrial fibrillation [documents against mesenteric ischemia], Denies pain out of proportion to exam [if present: mesenteric ischemia concern]
+Musculoskeletal: Denies back pain radiating to groin [documents against renal colic and AAA]
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs","Abdomen","Pelvic (if indicated)","Rectal (if indicated)","Extremities"],
     pe_template: `General: Alert and oriented x3, [DISTRESS — no acute/mild/moderate/severe distress], [POSITION — lying still / writhing / guarding]
@@ -186,11 +186,11 @@ Prior episodes: [similar prior episodes YES/NO, prior surgeries — APPENDECTOMY
       "Carbon Monoxide Poisoning",
     ],
     ros_sections: ["Constitutional","Neurological","Head / Eyes / Ears / Nose / Throat","Cardiovascular","Psychiatric"],
-    ros_template: `Constitutional: (+/-) fever [VALUE — if present: meningitis, encephalitis, sinusitis concern], (-) chills, (+/-) fatigue, (+/-) neck pain or stiffness [if present: meningitis until excluded]
-Neurological: (+) headache as chief complaint — onset [sudden/gradual], duration [TIME], (+/-) worst headache of life [MUST DOCUMENT — if yes: SAH until proven otherwise], (-) thunderclap onset — sudden maximal intensity in seconds [MUST DOCUMENT — if absent: documents against SAH], (+/-) photophobia, (+/-) phonophobia, (+/-) nausea, (+/-) vomiting, (-) focal weakness or numbness [documents against stroke and intracranial mass], (-) speech difficulty, (-) confusion or altered mental status, (-) seizure, (-) loss of consciousness, (+/-) prior similar headaches or known migraines [DOCUMENT — exact similarity to prior migraines lowers suspicion for organic cause]
-HEENT: (-) eye pain or redness [documents against acute glaucoma], (-) jaw claudication [if age > 50: documents against GCA], (-) scalp tenderness [if age > 50: documents against GCA], (-) sinus pain or pressure, (-) ear pain
-Cardiovascular: blood pressure at triage [VALUE — MANDATORY: if > 180/120 with symptoms, hypertensive emergency], (+/-) known hypertension and medication compliance
-Psychiatric: (+/-) recent significant stressor, (+/-) anxiety or depression
+    ros_template: `Constitutional: Admits/Denies fever [VALUE — if present: meningitis, encephalitis, sinusitis concern], Denies chills, Admits/Denies fatigue, Admits/Denies neck pain or stiffness [if present: meningitis until excluded]
+Neurological: Admits headache as chief complaint — onset [sudden/gradual], duration [TIME], Admits/Denies worst headache of life [MUST DOCUMENT — if yes: SAH until proven otherwise], Denies thunderclap onset — sudden maximal intensity in seconds [MUST DOCUMENT — if absent: documents against SAH], Admits/Denies photophobia, Admits/Denies phonophobia, Admits/Denies nausea, Admits/Denies vomiting, Denies focal weakness or numbness [documents against stroke and intracranial mass], Denies speech difficulty, Denies confusion or altered mental status, Denies seizure, Denies loss of consciousness, Admits/Denies prior similar headaches or known migraines [DOCUMENT — exact similarity to prior migraines lowers suspicion for organic cause]
+HEENT: Denies eye pain or redness [documents against acute glaucoma], Denies jaw claudication [if age > 50: documents against GCA], Denies scalp tenderness [if age > 50: documents against GCA], Denies sinus pain or pressure, Denies ear pain
+Cardiovascular: blood pressure at triage [VALUE — MANDATORY: if > 180/120 with symptoms, hypertensive emergency], Admits/Denies known hypertension and medication compliance
+Psychiatric: Admits/Denies recent significant stressor, Admits/Denies anxiety or depression
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs","Neurological","HEENT","Meningeal Signs"],
     pe_template: `General: Alert and oriented x3 [or DESCRIBE DEFICITS], [DISTRESS — no acute/mild/moderate/severe distress], [PHOTOPHOBIA — present/absent], [PHONOPHOBIA — present/absent]
@@ -234,11 +234,11 @@ Red flags: [first or worst headache / onset with exertion / progressive / age > 
       "Subarachnoid Hemorrhage",
     ],
     ros_sections: ["Constitutional","Cardiovascular","Neurological","Pulmonary","GI / Autonomic"],
-    ros_template: `Constitutional: (+) syncope or near-syncope episode [TIME] ago, (+/-) prodrome [palpitations/lightheadedness/diaphoresis/nausea/vision darkening — DOCUMENT ALL present], (-) prior similar episodes [or document number]
-Cardiovascular: (+/-) palpitations immediately before event [arrhythmia concern], (-) chest pain before or after event [documents against STEMI], (+/-) exertional onset [MUST DOCUMENT — exertional syncope is high-risk for HCM and aortic stenosis], (+/-) known structural heart disease or prior cardiac history, (+/-) family history of sudden cardiac death under age 50 [MUST DOCUMENT — suggests channelopathy or HCM]
-Neurological: duration of loss of consciousness [DOCUMENT seconds/minutes/unknown], (-) post-ictal confusion [documents against seizure], (-) tongue biting [documents against seizure], (-) incontinence [documents against seizure], (-) focal neurological symptoms, (-) headache after event [documents against SAH]
-Pulmonary: (-) acute dyspnea, (-) pleuritic chest pain, (-) recent prolonged travel or immobilization [documents against PE]
-GI / Autonomic: (+/-) prolonged standing before event, (+/-) warm environment or pain or fright as trigger, (+/-) nausea immediately before event, (+/-) recent dehydration or poor oral intake
+    ros_template: `Constitutional: Admits syncope or near-syncope episode [TIME] ago, Admits/Denies prodrome [palpitations/lightheadedness/diaphoresis/nausea/vision darkening — DOCUMENT ALL present], Denies prior similar episodes [or document number]
+Cardiovascular: Admits/Denies palpitations immediately before event [arrhythmia concern], Denies chest pain before or after event [documents against STEMI], Admits/Denies exertional onset [MUST DOCUMENT — exertional syncope is high-risk for HCM and aortic stenosis], Admits/Denies known structural heart disease or prior cardiac history, Admits/Denies family history of sudden cardiac death under age 50 [MUST DOCUMENT — suggests channelopathy or HCM]
+Neurological: duration of loss of consciousness [DOCUMENT seconds/minutes/unknown], Denies post-ictal confusion [documents against seizure], Denies tongue biting [documents against seizure], Denies incontinence [documents against seizure], Denies focal neurological symptoms, Denies headache after event [documents against SAH]
+Pulmonary: Denies acute dyspnea, Denies pleuritic chest pain, Denies recent prolonged travel or immobilization [documents against PE]
+GI / Autonomic: Admits/Denies prolonged standing before event, Admits/Denies warm environment or pain or fright as trigger, Admits/Denies nausea immediately before event, Admits/Denies recent dehydration or poor oral intake
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs (orthostatics)","Cardiovascular","Neurological","Skin"],
     pe_template: `General: Alert and oriented x3 [or DESCRIBE], [DISTRESS — no acute distress], [INJURIES — no apparent head or extremity injury / DESCRIBE any trauma]
@@ -282,11 +282,11 @@ Family history: [sudden cardiac death in family member < 50 — YES/NO — MUST 
       "Spinal Cord Compression / Malignancy",
     ],
     ros_sections: ["Constitutional","Musculoskeletal","Neurological","GU","Vascular"],
-    ros_template: `Constitutional: (+) back pain onset [TIME] ago, (+/-) fever [VALUE — if present: epidural abscess concern], (-) chills, (-) night sweats [documents against malignancy], (-) unintentional weight loss [documents against malignancy], (-) known history of malignancy [DOCUMENT — risk factor for pathologic fracture]
-Musculoskeletal: (+) back pain as chief complaint, (+/-) mechanism of injury [DOCUMENT if present], (+/-) radiation [to buttocks / leg / below knee / foot — DOCUMENT distribution], (+/-) pain with movement, (+/-) prior similar episodes, (+/-) history of osteoporosis or prolonged steroid use
-Neurological: (-) lower extremity weakness [CAUDA EQUINA RED FLAG — MUST DOCUMENT INDIVIDUALLY], (-) lower extremity numbness or tingling [CAUDA EQUINA RED FLAG — MUST DOCUMENT INDIVIDUALLY], (-) bowel dysfunction — incontinence or retention [CAUDA EQUINA RED FLAG — MUST DOCUMENT INDIVIDUALLY], (-) bladder dysfunction — retention or incontinence [CAUDA EQUINA RED FLAG — MUST DOCUMENT INDIVIDUALLY], (-) saddle anesthesia — perineal numbness [CAUDA EQUINA RED FLAG — MUST DOCUMENT INDIVIDUALLY]
-GU: (-) dysuria, (-) hematuria, (-) flank pain, (-) recent UTI or urinary instrumentation
-Vascular: (-) abdominal pain [documents against AAA], (-) known AAA or vascular disease, (-) pain out of proportion to examination [if present: AAA concern], (+/-) history of IV drug use [IVDU + fever + back pain = epidural abscess]
+    ros_template: `Constitutional: Admits back pain onset [TIME] ago, Admits/Denies fever [VALUE — if present: epidural abscess concern], Denies chills, Denies night sweats [documents against malignancy], Denies unintentional weight loss [documents against malignancy], Denies known history of malignancy [DOCUMENT — risk factor for pathologic fracture]
+Musculoskeletal: Admits back pain as chief complaint, Admits/Denies mechanism of injury [DOCUMENT if present], Admits/Denies radiation [to buttocks / leg / below knee / foot — DOCUMENT distribution], Admits/Denies pain with movement, Admits/Denies prior similar episodes, Admits/Denies history of osteoporosis or prolonged steroid use
+Neurological: Denies lower extremity weakness [CAUDA EQUINA RED FLAG — MUST DOCUMENT INDIVIDUALLY], Denies lower extremity numbness or tingling [CAUDA EQUINA RED FLAG — MUST DOCUMENT INDIVIDUALLY], Denies bowel dysfunction — incontinence or retention [CAUDA EQUINA RED FLAG — MUST DOCUMENT INDIVIDUALLY], Denies bladder dysfunction — retention or incontinence [CAUDA EQUINA RED FLAG — MUST DOCUMENT INDIVIDUALLY], Denies saddle anesthesia — perineal numbness [CAUDA EQUINA RED FLAG — MUST DOCUMENT INDIVIDUALLY]
+GU: Denies dysuria, Denies hematuria, Denies flank pain, Denies recent UTI or urinary instrumentation
+Vascular: Denies abdominal pain [documents against AAA], Denies known AAA or vascular disease, Denies pain out of proportion to examination [if present: AAA concern], Admits/Denies history of IV drug use [IVDU + fever + back pain = epidural abscess]
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs","Musculoskeletal / Spine","Neurological","Abdomen / Vascular","Rectal (if cauda equina suspected)"],
     pe_template: `General: Alert and oriented x3, [DISTRESS — no acute/mild/moderate/severe distress], [AMBULATION — ambulatory / unable to bear weight]
@@ -329,11 +329,11 @@ Red flags: [fever / weight loss / cancer history / bowel or bladder changes / sa
       "Necrotizing Fasciitis",
     ],
     ros_sections: ["Constitutional","Musculoskeletal","Vascular","Neurological","Dermatologic"],
-    ros_template: `Constitutional: (+) extremity pain onset [TIME] ago, (+/-) fever [VALUE — if present with joint pain: septic arthritis concern], (-) chills
-Musculoskeletal: (+) [right/left upper/lower extremity] pain as chief complaint, (+/-) mechanism [fall / MVA / sports / spontaneous — DOCUMENT], (+/-) immediate swelling, (+/-) deformity, (+/-) inability to bear weight or use limb, (+/-) audible pop or crack, (+/-) prior injury to same area
-Vascular: (-) limb pallor or color change [documents against arterial occlusion — 5 Ps must be addressed], (-) pulselessness distal to injury [MUST DOCUMENT — documents against vascular injury], (-) paresthesia or numbness distal to injury [MUST DOCUMENT — documents against vascular compromise], (-) calf pain or swelling [documents against DVT], (-) recent prolonged travel or immobilization [documents against DVT]
-Neurological: (-) weakness distal to injury [MUST DOCUMENT], (-) numbness or tingling [DOCUMENT distribution if present]
-Dermatologic: (-) skin breakdown or open wound, (-) redness tracking proximally [documents against lymphangitis and NF], (-) bullae or skin discoloration [documents against necrotizing fasciitis], (-) warmth, (-) pain out of proportion to appearance [if present: compartment syndrome or NF concern]
+    ros_template: `Constitutional: Admits extremity pain onset [TIME] ago, Admits/Denies fever [VALUE — if present with joint pain: septic arthritis concern], Denies chills
+Musculoskeletal: Admits [right/left upper/lower extremity] pain as chief complaint, Admits/Denies mechanism [fall / MVA / sports / spontaneous — DOCUMENT], Admits/Denies immediate swelling, Admits/Denies deformity, Admits/Denies inability to bear weight or use limb, Admits/Denies audible pop or crack, Admits/Denies prior injury to same area
+Vascular: Denies limb pallor or color change [documents against arterial occlusion — 5 Ps must be addressed], Denies pulselessness distal to injury [MUST DOCUMENT — documents against vascular injury], Denies paresthesia or numbness distal to injury [MUST DOCUMENT — documents against vascular compromise], Denies calf pain or swelling [documents against DVT], Denies recent prolonged travel or immobilization [documents against DVT]
+Neurological: Denies weakness distal to injury [MUST DOCUMENT], Denies numbness or tingling [DOCUMENT distribution if present]
+Dermatologic: Denies skin breakdown or open wound, Denies redness tracking proximally [documents against lymphangitis and NF], Denies bullae or skin discoloration [documents against necrotizing fasciitis], Denies warmth, Denies pain out of proportion to appearance [if present: compartment syndrome or NF concern]
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs","Affected Extremity","Neurovascular","Skin / Soft Tissue"],
     pe_template: `General: Alert and oriented x3, [DISTRESS — no acute/mild/moderate/severe pain distress]
@@ -376,11 +376,11 @@ Infection concern: [fever / spreading redness / skin breakdown]`,
       "CO Poisoning",
     ],
     ros_sections: ["Constitutional","Neurological","Metabolic / Endocrine","Toxicologic","Cardiovascular"],
-    ros_template: `Constitutional: (+) altered mental status — baseline mental status [MANDATORY: document prior baseline — independent/mild cognitive impairment/dementia], onset [sudden/gradual — DOCUMENT: sudden onset suggests vascular or metabolic emergency], (+/-) fever [VALUE — if present: meningitis, encephalitis, septic encephalopathy], (-) chills, (+/-) recent illness
-Neurological: (+) altered mental status as chief complaint, (-) headache [documents against SAH, hypertensive emergency, mass], (-) focal weakness [documents against stroke and intracranial hemorrhage], (-) seizure activity [documents against seizure disorder], (-) loss of consciousness [DOCUMENT duration if present], (-) recent head trauma [documents against traumatic intracranial injury], (+/-) prior episodes, (+/-) history of dementia or cognitive impairment [DOCUMENT baseline]
-Metabolic / Endocrine: (+/-) history of diabetes [MANDATORY — last glucose VALUE if known], (+/-) history of liver disease or alcohol use [MANDATORY — Wernicke encephalopathy risk], (+/-) dialysis patient, (+/-) thyroid disease
-Toxicologic: (+/-) alcohol ingestion [DOCUMENT amount and timing], (+/-) illicit substance use [DOCUMENT type], (+/-) medication overdose concern [DOCUMENT medications], (+/-) recent new medications or changes, (+/-) access to medications or substances
-Cardiovascular: (-) palpitations, (-) chest pain, (+/-) known hypertension [check BP for hypertensive emergency]
+    ros_template: `Constitutional: Admits altered mental status — baseline mental status [MANDATORY: document prior baseline — independent/mild cognitive impairment/dementia], onset [sudden/gradual — DOCUMENT: sudden onset suggests vascular or metabolic emergency], Admits/Denies fever [VALUE — if present: meningitis, encephalitis, septic encephalopathy], Denies chills, Admits/Denies recent illness
+Neurological: Admits altered mental status as chief complaint, Denies headache [documents against SAH, hypertensive emergency, mass], Denies focal weakness [documents against stroke and intracranial hemorrhage], Denies seizure activity [documents against seizure disorder], Denies loss of consciousness [DOCUMENT duration if present], Denies recent head trauma [documents against traumatic intracranial injury], Admits/Denies prior episodes, Admits/Denies history of dementia or cognitive impairment [DOCUMENT baseline]
+Metabolic / Endocrine: Admits/Denies history of diabetes [MANDATORY — last glucose VALUE if known], Admits/Denies history of liver disease or alcohol use [MANDATORY — Wernicke encephalopathy risk], Admits/Denies dialysis patient, Admits/Denies thyroid disease
+Toxicologic: Admits/Denies alcohol ingestion [DOCUMENT amount and timing], Admits/Denies illicit substance use [DOCUMENT type], Admits/Denies medication overdose concern [DOCUMENT medications], Admits/Denies recent new medications or changes, Admits/Denies access to medications or substances
+Cardiovascular: Denies palpitations, Denies chest pain, Admits/Denies known hypertension [check BP for hypertensive emergency]
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs","Neurological","HEENT","Toxidrome Assessment","Skin"],
     pe_template: `General: [LEVEL OF CONSCIOUSNESS — alert / lethargic / obtunded / stuporous / comatose], [ORIENTATION — oriented to person/place/time/situation — SPECIFY], [BEHAVIOR — agitated / combative / calm / withdrawn]
@@ -425,12 +425,12 @@ Environment: [found at home / found down / CO exposure concern — enclosed spac
       "Neutropenic Fever",
     ],
     ros_sections: ["Constitutional","Pulmonary / ENT","GI","GU","Skin / Musculoskeletal","Neurological"],
-    ros_template: `Constitutional: (+) fever [VALUE — MUST DOCUMENT TEMPERATURE] onset [TIME] ago, (+/-) chills or rigors [rigors suggest bacteremia and sepsis], (-) night sweats, (+/-) fatigue or malaise, (+/-) anorexia, travel history [MANDATORY — recent international travel destination and dates: malaria, typhoid, viral hemorrhagic fever], immunocompromised status [MANDATORY — chemotherapy/steroids/HIV/transplant/splenectomy YES/NO: neutropenic fever]
-Pulmonary / ENT: (+/-) cough [productive/dry — sputum color], (+/-) dyspnea, (+/-) sore throat, (+/-) ear pain, (-) nasal congestion, (-) sinus pain
-GI: (+/-) nausea, (+/-) vomiting, (+/-) diarrhea [FREQUENCY and character — bloody diarrhea + fever = infectious colitis concern], (-) abdominal pain, (+/-) RUQ pain [fever + RUQ pain = cholangitis concern — Charcot's triad]
-GU: (-) dysuria [documents against UTI], (-) urinary frequency, (-) hematuria, (-) flank pain [documents against pyelonephritis], (+/-) vaginal discharge or pelvic pain [if applicable]
-Skin / Musculoskeletal: (-) rash [DOCUMENT character if present — petechiae/purpura + fever = meningococcemia emergency], (-) joint pain or swelling, (-) wound or skin breakdown, (-) recent hospitalization or procedure, (+/-) IV drug use [IVDU + fever = endocarditis concern]
-Neurological: (-) headache, (-) neck stiffness [documents against meningitis], (-) photophobia, (-) altered mental status, (-) focal neurological symptoms
+    ros_template: `Constitutional: Admits fever [VALUE — MUST DOCUMENT TEMPERATURE] onset [TIME] ago, Admits/Denies chills or rigors [rigors suggest bacteremia and sepsis], Denies night sweats, Admits/Denies fatigue or malaise, Admits/Denies anorexia, travel history [MANDATORY — recent international travel destination and dates: malaria, typhoid, viral hemorrhagic fever], immunocompromised status [MANDATORY — chemotherapy/steroids/HIV/transplant/splenectomy YES/NO: neutropenic fever]
+Pulmonary / ENT: Admits/Denies cough [productive/dry — sputum color], Admits/Denies dyspnea, Admits/Denies sore throat, Admits/Denies ear pain, Denies nasal congestion, Denies sinus pain
+GI: Admits/Denies nausea, Admits/Denies vomiting, Admits/Denies diarrhea [FREQUENCY and character — bloody diarrhea + fever = infectious colitis concern], Denies abdominal pain, Admits/Denies RUQ pain [fever + RUQ pain = cholangitis concern — Charcot's triad]
+GU: Denies dysuria [documents against UTI], Denies urinary frequency, Denies hematuria, Denies flank pain [documents against pyelonephritis], Admits/Denies vaginal discharge or pelvic pain [if applicable]
+Skin / Musculoskeletal: Denies rash [DOCUMENT character if present — petechiae/purpura + fever = meningococcemia emergency], Denies joint pain or swelling, Denies wound or skin breakdown, Denies recent hospitalization or procedure, Admits/Denies IV drug use [IVDU + fever = endocarditis concern]
+Neurological: Denies headache, Denies neck stiffness [documents against meningitis], Denies photophobia, Denies altered mental status, Denies focal neurological symptoms
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs","HEENT","Pulmonary","Abdomen","Skin","Neurological (if AMS)"],
     pe_template: `General: Alert and oriented x3 [or DESCRIBE], [DISTRESS — no acute/mild/moderate/severe distress], [APPEARANCE — ill-appearing / non-toxic / toxic appearing]
@@ -475,11 +475,11 @@ Antibiotics: [recent antibiotic use — WHICH and WHEN]`,
       "Organic Cause of Psychiatric Symptoms (AMS, intoxication, metabolic)",
     ],
     ros_sections: ["Psychiatric","Neurological","Toxicologic / Substance","Constitutional","Medical"],
-    ros_template: `Psychiatric: (+) suicidal ideation as chief concern — [PASSIVE: wish to be dead without plan / ACTIVE: thoughts of killing self — DOCUMENT WHICH], plan [SPECIFIC PLAN YES/NO — DESCRIBE IF YES — MANDATORY INDIVIDUAL ITEM], means [ACCESS TO MEANS — firearms/medications/other YES/NO — MANDATORY INDIVIDUAL ITEM], intent [INTENDS TO ACT YES/NO — MANDATORY INDIVIDUAL ITEM], C-SSRS score [DOCUMENT SCORE — mandatory], prior suicide attempts [NUMBER — MANDATORY, most recent — MANDATORY, method — MANDATORY, medical severity — MANDATORY], current psychiatric diagnoses [LIST], current psychiatric medications [LIST — compliance YES/NO], current outpatient psychiatric care [YES/NO]
-Neurological: (+/-) command hallucinations [DESCRIBE — directing self-harm is high risk], (+/-) paranoid delusions, (+/-) disorganized thinking, (-) altered mental status, (-) recent head trauma
-Toxicologic / Substance: (+/-) alcohol intoxication at time of ideation [intoxication increases lethality risk], (+/-) chronic alcohol or substance use [TYPE and AMOUNT], (+/-) medication overdose or ingestion [WHAT and HOW MUCH — medical clearance required]
-Constitutional: (+/-) recent significant stressor [DESCRIBE], (+/-) recent loss [job/relationship/death], (+/-) hopelessness, (+/-) recent discharge from psychiatric hospitalization [high-risk period], support system [DOCUMENT — lives with family/alone/support available]
-Medical: (+/-) chronic pain, (+/-) terminal or newly diagnosed serious illness
+    ros_template: `Psychiatric: Admits suicidal ideation as chief concern — [PASSIVE: wish to be dead without plan / ACTIVE: thoughts of killing self — DOCUMENT WHICH], plan [SPECIFIC PLAN YES/NO — DESCRIBE IF YES — MANDATORY INDIVIDUAL ITEM], means [ACCESS TO MEANS — firearms/medications/other YES/NO — MANDATORY INDIVIDUAL ITEM], intent [INTENDS TO ACT YES/NO — MANDATORY INDIVIDUAL ITEM], C-SSRS score [DOCUMENT SCORE — mandatory], prior suicide attempts [NUMBER — MANDATORY, most recent — MANDATORY, method — MANDATORY, medical severity — MANDATORY], current psychiatric diagnoses [LIST], current psychiatric medications [LIST — compliance YES/NO], current outpatient psychiatric care [YES/NO]
+Neurological: Admits/Denies command hallucinations [DESCRIBE — directing self-harm is high risk], Admits/Denies paranoid delusions, Admits/Denies disorganized thinking, Denies altered mental status, Denies recent head trauma
+Toxicologic / Substance: Admits/Denies alcohol intoxication at time of ideation [intoxication increases lethality risk], Admits/Denies chronic alcohol or substance use [TYPE and AMOUNT], Admits/Denies medication overdose or ingestion [WHAT and HOW MUCH — medical clearance required]
+Constitutional: Admits/Denies recent significant stressor [DESCRIBE], Admits/Denies recent loss [job/relationship/death], Admits/Denies hopelessness, Admits/Denies recent discharge from psychiatric hospitalization [high-risk period], support system [DOCUMENT — lives with family/alone/support available]
+Medical: Admits/Denies chronic pain, Admits/Denies terminal or newly diagnosed serious illness
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs","Mental Status Exam","Neurological","Toxidrome","Medical Clearance"],
     pe_template: `General: [APPEARANCE — well-groomed / disheveled / appropriate], [BEHAVIOR — calm and cooperative / agitated / guarded / tearful], [EYE CONTACT — good / poor / avoidant]
@@ -525,11 +525,11 @@ Support system: [lives with family / alone / support available]`,
       "Spinal Epidural Abscess",
     ],
     ros_sections: ["Constitutional","GU","GI","Vascular","Reproductive (if applicable)"],
-    ros_template: `Constitutional: (+) flank pain onset [TIME] ago, (+/-) fever [VALUE — MANDATORY: fever + flank pain = infected obstructing stone or pyelonephritis with sepsis until excluded], (+/-) chills or rigors [rigors + fever + flank pain = sepsis concern], (+/-) nausea, (+/-) vomiting
-GU: (+) flank pain as chief complaint — [right/left] side, (+/-) gross hematuria [if present: supports renal colic, also consider tumor], (+/-) dysuria, (+/-) urinary frequency or urgency, (+/-) difficulty urinating or retention, prior kidney stones [YES/NO — MUST DOCUMENT: prior stone passage and prior interventions — lithotripsy/stent/ureteroscopy — affects management], (+/-) single kidney or renal transplant [MUST DOCUMENT — changes urgency and disposition]
-GI: (+/-) nausea, (+/-) vomiting, (-) abdominal pain [documents against AAA and GI pathology], (-) diarrhea, (-) blood in stool
-Vascular: (+/-) pain radiating to groin [classic renal colic radiation], (-) known AAA or vascular disease [documents against AAA], (-) pain out of proportion to examination [if present: AAA concern], (-) pulsatile abdominal mass history
-Reproductive (if applicable): LMP [DATE — MANDATORY for reproductive-age females], (+/-) vaginal bleeding, (+/-) pelvic pain [flank/pelvic pain + pregnancy = ectopic until excluded], pregnancy test [positive/negative/unknown — MANDATORY]
+    ros_template: `Constitutional: Admits flank pain onset [TIME] ago, Admits/Denies fever [VALUE — MANDATORY: fever + flank pain = infected obstructing stone or pyelonephritis with sepsis until excluded], Admits/Denies chills or rigors [rigors + fever + flank pain = sepsis concern], Admits/Denies nausea, Admits/Denies vomiting
+GU: Admits flank pain as chief complaint — [right/left] side, Admits/Denies gross hematuria [if present: supports renal colic, also consider tumor], Admits/Denies dysuria, Admits/Denies urinary frequency or urgency, Admits/Denies difficulty urinating or retention, prior kidney stones [YES/NO — MUST DOCUMENT: prior stone passage and prior interventions — lithotripsy/stent/ureteroscopy — affects management], Admits/Denies single kidney or renal transplant [MUST DOCUMENT — changes urgency and disposition]
+GI: Admits/Denies nausea, Admits/Denies vomiting, Denies abdominal pain [documents against AAA and GI pathology], Denies diarrhea, Denies blood in stool
+Vascular: Admits/Denies pain radiating to groin [classic renal colic radiation], Denies known AAA or vascular disease [documents against AAA], Denies pain out of proportion to examination [if present: AAA concern], Denies pulsatile abdominal mass history
+Reproductive (if applicable): LMP [DATE — MANDATORY for reproductive-age females], Admits/Denies vaginal bleeding, Admits/Denies pelvic pain [flank/pelvic pain + pregnancy = ectopic until excluded], pregnancy test [positive/negative/unknown — MANDATORY]
 All other systems reviewed and negative.`,
     pe_sections: ["General","Vital Signs","Abdomen","Genitourinary","Vascular"],
     pe_template: `General: Alert and oriented x3, [DISTRESS — writhing / unable to find comfortable position / no acute distress], [DIAPHORESIS — absent/present]
